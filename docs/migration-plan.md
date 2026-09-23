@@ -184,6 +184,10 @@ Website reader still uses the same Commerce Product record. Authenticated
 Website management reads keep drafts available to merchants; public Website
 reads exclude drafts and archived products. The isolated SQL catalog smoke,
 Commerce verification suite, and merchant development build pass.
+Website management updates now check Product versions; inventory changes
+cannot publish a draft or overdraw stock, and delete actions archive products.
+The SQL smoke covers a Website-less Product and a Website-linked Product
+crossing from draft to both public surfaces and back to archived.
 
 **Gate remains open:** the Angular marketplace still reads and writes the
 legacy Mongo API. Switching its catalog reader now would leave cart and
@@ -193,6 +197,8 @@ import for the hackathon release; historical import is deferred until such
 data exists. Cohort shadow comparisons, browser
 session/CORS rehearsal, and writer freeze have not occurred. See
 [catalog migration contract](catalog-migration-contract.md).
+The order, POS, invoice, and stock-service writers still need a shared
+transactional stock audit in Phase 4.
 
 **Work**
 

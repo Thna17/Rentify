@@ -193,6 +193,10 @@ into `platform-architecture.md` and remove stale notes.
 - The owner confirmed that there is no KhmerCraft data to migrate for the
   hackathon release. Keep mapping and import procedures for later, but do not
   create fictional historical rows or require an empty export at this gate.
+- The legacy Website Product edit, bulk edit, inventory, and delete paths now
+  use version checks and archive semantics. Stock adjustments preserve draft
+  state and reject a negative balance. Order, POS, invoice, and stock-service
+  writers still need transactional review before catalog cutover.
 
 ## Open product and architecture questions
 
