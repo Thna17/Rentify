@@ -1,6 +1,7 @@
 // services/websiteService.js
 const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox } = require('../models');
 const subscriptionService = require('./subscriptionService');
+const storeService = require('./storeService');
 const { logger } = require('../utils/logger');
 const { DEPLOYMENT } = require('../config/constants');
 
@@ -33,11 +34,18 @@ class WebsiteService {
         businessData
       );
 
+      const store = await storeService.ensureForWebsite({
+        ownerUserId: userId,
+        businessData,
+        transaction,
+      });
+
       // Create the website first because Subscription.websiteId is required.
       // Both rows stay in the same transaction so a failed trial rolls back
       // the website as well.
       const website = await Website.create({
         userId,
+        storeId: store.id,
         templateId,
         businessDetails: businessData,
         pricing: { totalPrice: 0 }, // Free trial
@@ -57,6 +65,7 @@ class WebsiteService {
       // Prepare data for external services
       website._ecommerceData = {
         websiteId: website.id,
+        storeId: store.id,
         userId,
         domain: website.domain || null,
         niche: businessData?.niche || "ecommerce",

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { Website, WebsiteTemplate, User, Staff, Package, Payment, Subscription, WebsiteSyncOutbox } = require('../../src/models');
 const websiteService = require('../../src/services/websiteService');
 const subscriptionService = require('../../src/services/subscriptionService');
+const storeService = require('../../src/services/storeService');
 const ecommerceSyncService = require('../../src/services/ecommerceSyncService');
 const deploymentController = require('../../src/controllers/deploymentController');
 
@@ -36,9 +37,16 @@ function setupCreation(t, { failSubscription = false } = {}) {
   t.mock.method(WebsiteTemplate, 'findByPk', async () => template);
   t.mock.method(Package, 'findByPk', async () => pkg);
   t.mock.method(User, 'findByPk', async () => user);
+  t.mock.method(storeService, 'ensureForWebsite', async ({ ownerUserId, transaction: tx }) => {
+    assert.equal(ownerUserId, user.id);
+    assert.equal(tx, transaction);
+    calls.push('ensure store');
+    return { id: 'store-1' };
+  });
   t.mock.method(Staff, 'findAll', async () => []);
   t.mock.method(Website, 'create', async (_data, options) => {
     assert.equal(options.transaction, transaction);
+    assert.equal(_data.storeId, 'store-1');
     calls.push('create website');
     return website;
   });
@@ -67,8 +75,9 @@ test('website and required trial subscription commit together in dependency orde
     userId: 'user-1', templateId: 'template-1', packageId: 'package-1', businessData,
   });
   assert.equal(result, website);
-  assert.deepEqual(calls, ['create website', 'create subscription', 'link subscription', 'queue commerce sync', 'commit']);
+  assert.deepEqual(calls, ['ensure store', 'create website', 'create subscription', 'link subscription', 'queue commerce sync', 'commit']);
   assert.equal(result._ecommerceData.websiteId, website.id);
+  assert.equal(result._ecommerceData.storeId, 'store-1');
 });
 
 test('failed trial creation rolls back the website', async (t) => {
@@ -79,7 +88,7 @@ test('failed trial creation rolls back the website', async (t) => {
     }),
     /subscription failed/
   );
-  assert.deepEqual(calls, ['create website', 'create subscription', 'rollback']);
+  assert.deepEqual(calls, ['ensure store', 'create website', 'create subscription', 'rollback']);
 });
 
 test('new and updated website statuses use Commerce-supported values', async (t) => {

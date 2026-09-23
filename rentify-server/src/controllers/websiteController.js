@@ -195,6 +195,7 @@ class WebsiteController {
 
       const response = {
         websiteId: website.id,
+        storeId: website.storeId,
         userId: website.userId,
         templateId: website.templateId,
         userEmail: website.User?.email || null,
@@ -299,6 +300,7 @@ class WebsiteController {
         id: website.id,
         domain: website.domain,
         websiteId: website.id,
+        storeId: website.storeId,
         userId: website.userId,
         niche: website.niche || "ecommerce",
         status: website.status,

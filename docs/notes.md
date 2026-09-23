@@ -1,0 +1,178 @@
+# Platform notes and open questions
+
+**Updated:** 2026-09-23. Keep observations tied to code; move settled choices
+into `platform-architecture.md` and remove stale notes.
+
+## Agreed decisions
+
+- Rentify will be the backend for the combined platform. Marketplace code is
+  being moved into this repository for migration and UI development.
+- Merchants may start with a marketplace-only store or a customizable
+  storefront. Storefront products also appear in the shared marketplace.
+- Storefront onboarding includes a primary store category.
+- One canonical catalog and transaction state serve both channels.
+- **Store cardinality decision (2026-09-23):** One merchant account owns one
+  Store. A Store has at most one Website; marketplace-only Stores have none.
+  An existing marketplace-only Store may add its single Website later.
+- **Domain decision (2026-09-23):** Give each Website a Rentify-owned subdomain
+  by default. A merchant may optionally connect a domain they own. Domain
+  registration for every merchant is not part of the default offering.
+- **Category decision (2026-09-23):** A Store has one editable primary category.
+  Additional Store categories are derived from its published products. Every
+  product has one specific marketplace category, which may differ from the
+  Store's primary category. Storefront template suggestions use the primary
+  category only as an initial recommendation and never auto-change a chosen
+  template. Merchant collections are separate from marketplace taxonomy.
+- **Buyer direction (2026-09-23):** The owner wants one Rentify buyer account
+  across the marketplace and all merchant storefronts. The proposed technical
+  design is recorded in `adr/0002-unified-buyer-identity.md`; its session and
+  migration details remain a draft until reviewed.
+- **Store authority and approval (2026-09-23):** Core owns Store profiles,
+  ownership, and marketplace seller approval. Commerce owns products and
+  enforces channel eligibility. Storefront merchants can accept launch COD
+  orders after basic account and platform checks; shared marketplace selling
+  requires Store-level approval. An “unverified” label alone is insufficient
+  for central marketplace selling. Product-level moderation remains possible.
+- **Launch payments (2026-09-23):** Both buyer channels accept COD only. Do
+  not present the planned bank integrations as launch features. Record actual
+  cash collection rather than marking orders paid at creation.
+- **Future bank settlement direction (2026-09-23):** Use one order/checkout
+  authority with two eventual online routes: merchant-specific bank API keys
+  and direct settlement for storefront purchases; bank-managed hold and seller
+  payout for central marketplace purchases. The bank quoted $100 for the
+  latter facility. The suggested 24-hour hold is not final; release criteria,
+  refund/dispute flows, and bank capabilities still need validation.
+- **Marketplace visibility (2026-09-23):** New storefront Stores default to
+  marketplace visibility on. A merchant can turn that default off and may
+  override it per Product. The switch affects marketplace visibility only;
+  Product data and stock stay canonical. Marketplace-only Stores list through
+  the marketplace channel. Seller approval still gates public marketplace
+  purchases. Basic listing access does not require a higher storefront tier.
+- **Launch order and COD policy (2026-09-23):** A marketplace order contains
+  products from one merchant only. Buyers purchasing from different merchants
+  place separate orders. Each merchant fulfills, collects COD cash directly,
+  and handles confirmed direct refunds. Rentify does not hold or remit COD
+  cash. Launch revenue is subscription fees only, with no per-order
+  marketplace commission. Marketplace-only merchants need a subscription
+  entitlement independent of Website creation.
+- **Future marketplace payment model (2026-09-23):** The hackathon release
+  keeps marketplace COD. Once the bank-managed online marketplace payment
+  flow is ready and validated, retire marketplace COD with notice and make
+  central marketplace checkout online-only. Storefronts may continue COD and
+  add direct-to-merchant bank payments. A marketplace online commission would
+  be deducted from seller payout; storefront sales remain subscription-funded.
+  The commission rate, fee basis, refund reversals, and bank contract remain
+  undecided. Do not pitch this as an implemented product capability.
+- **Seller approval checklist (2026-09-23):** Admin verifies seller phone and
+  email, responsible person/business identity, Store details and location,
+  buyer contact, a clear sample product with price and stock, and commitment
+  to delivery, COD, returns, and direct refunds. Outcomes are approved, needs
+  changes, or rejected with reason. Flagged/restricted products may require
+  separate review. Specific restricted-product rules remain to be written.
+- **COD exceptions (2026-09-23):** Failed deliveries record reasons and may
+  be retried by buyer agreement or cancelled unpaid with stock released.
+  Delivery and payment status stay separate. Buyers can request returns or
+  open order-linked complaints. Merchants perform direct refunds and record
+  confirmed amount, method, and date; admins review complaints and can
+  suspend marketplace access for serious/repeated failures. Return eligibility,
+  response deadlines, and minimum evidence remain policy details.
+
+## Study order
+
+- A code-backed snapshot of Rentify's present service boundaries is now in
+  `current-rentify-architecture.md`. Validate it against running services and
+  live data during migration Phase 0. The proposed Store ownership and client
+  contracts in `platform-architecture.md` remain provisional until then.
+- The relocated marketplace project is parked migration input while this
+  architecture study happens; relocation itself did not integrate its code.
+
+## Current code observations
+
+- Rentify currently treats `websiteId` as the commerce tenant key. Its
+  catalog and access model need a Store that works without a Website.
+- Rentify core originally created a trial subscription before its Website,
+  omitting the required `websiteId`. Initial commerce sync sent a Core-only
+  `customization` status. The Phase 0 repair now creates both records in one
+  transaction with the Website first and maps that status to Commerce
+  `inactive`. The model and cross-service contract passed a disposable
+  database check on 2026-09-23; this does not yet prove the full browser
+  onboarding flow or durable recovery from a failed sync.
+
+## Phase 0 implementation record (2026-09-23)
+
+- Reordered Website and trial Subscription creation within one transaction;
+  `Subscription.websiteId` is populated before commit, and rollback covers
+  failed trial creation. Paid Website subscriptions also now populate the
+  required Website foreign key.
+- Mapped Core deployment states to Commerce operational states. Commerce stays
+  inactive while the Website is being customized or built; the deployment
+  completion route updates Commerce when Core marks the site active. For new
+  Websites with an outbox row, failed status updates keep the latest status
+  queued for retry. Older Websites create a status-only retry row when their
+  deployment status next changes.
+- Persisted initial Commerce sync payloads in a Core outbox in the Website
+  transaction. A background job retries pending rows after temporary failures;
+  repeated Commerce sync avoids duplicate template-content rows. Corrected
+  the Windows quality scanner so both API `npm run verify` gates execute.
+- Verified Core signup, Website/trial creation and linkage, Commerce sync twice, and Product
+  creation against separate `rentify_core_test` and `rentify_commerce_test`
+  databases. A disposable Core check also verified that a new Website queues
+  a sync row, successful delivery marks it synced, and the retry worker
+  processes an aged pending row. The outbox migration
+  was applied to the running local development Core database. Both API
+  `npm run verify` commands passed.
+- Still to validate before Phase 0 exit: full browser/API signup and
+  storefront purchase flow in a disposable environment. Historical Websites
+  created before the outbox migration get a retry row on their next status
+  change, but there is no periodic audit yet comparing every Core Website
+  with its Commerce projection.
+- KhmerCraft's API is Express/TypeScript/Mongoose with its own User, Store,
+  Product, Cart, Order, Review, and payment models. Its Angular UI is a useful
+  central marketplace starting point; its admin dashboard currently uses
+  in-memory sample data.
+- KhmerCraft's public catalog can expose draft/archived products when status
+  is requested. Its seller order transition changes the whole mixed-seller
+  order, and cancellation can label a paid order refunded without executing
+  a refund. These behaviors must not be carried into the Rentify target.
+- The relocated marketplace web client currently defaults to API port 3002,
+  while the legacy API defaults to 3001. Treat local run instructions and URL
+  configuration as migration work, not as a settled deployment contract.
+
+## Store foundation implementation record (2026-09-23)
+
+- Core now creates one Store UUID per merchant, and each Website optionally
+  links to one Store. Database uniqueness enforces one Store per owner and one
+  Website per Store. A Store can exist without a Website.
+- A new Store defaults to `marketplaceEnabled: true` and seller approval
+  `pending`. The merchant may change the Store setting through the authenticated
+  `/api/stores/mine` route. The per-product override and actual publication
+  filtering belong to the Commerce catalog phase.
+- The additive Core migration backfilled five Websites in the isolated test
+  database and two in local development. Each mapped to exactly one Store.
+  Historical primary categories remain null with `needsCategoryReview: true`;
+  the old Website niche is not treated as marketplace taxonomy.
+- The Core verification gate and disposable marketplace-only Store smoke check
+  passed. Seller review, Commerce Store projection, commerce row backfills,
+  subscription entitlement, Store authorization, and UI onboarding are still
+  required before Phase 1 exit.
+
+## Open product and architecture questions
+
+1. What products are restricted or prohibited in marketplace listings, and
+   which require individual review?
+2. Set exact COD collection/refund evidence, return eligibility, and complaint
+   response deadlines before public launch. The main workflow is agreed.
+3. Confirm the proposed buyer sign-in handoff, storefront callback hosting,
+   and legacy customer account-linking process before implementation.
+4. Define launch subscription packages and entitlements for marketplace-only
+   and storefront merchants without introducing a per-order commission.
+5. Before the later online-payment phase, confirm the bank's per-order hold,
+   release, commission split/deduction, refund, callback, fee, and
+   reconciliation contracts. Define the final payout trigger and commission
+   rate from those capabilities.
+
+## Documentation practice
+
+Record a dated decision and its reason when an open question is resolved.
+Link code and tests when an implementation lands. Do not mark a phase complete
+solely because documentation or source relocation is complete.

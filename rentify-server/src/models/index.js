@@ -10,6 +10,12 @@ const WebsiteContent = require("./WebsiteContent");
 const OutcomeContract = require("./OutcomeContract");
 const ReminderLog = require("./ReminderLog");
 const WebsiteSyncOutbox = require('./WebsiteSyncOutbox');
+const Store = require('./Store');
+
+Store.belongsTo(User, { foreignKey: 'ownerUserId', as: 'owner' });
+User.hasOne(Store, { foreignKey: 'ownerUserId', as: 'store' });
+Website.belongsTo(Store, { foreignKey: 'storeId', as: 'store' });
+Store.hasOne(Website, { foreignKey: 'storeId', as: 'website' });
 
 Payment.belongsTo(User, { foreignKey: "userId" });
 Payment.belongsTo(Website, { foreignKey: "websiteId" });
@@ -109,5 +115,6 @@ module.exports = {
   WebsiteContent,
   OutcomeContract,
   ReminderLog,
-  WebsiteSyncOutbox
+  WebsiteSyncOutbox,
+  Store
 };
