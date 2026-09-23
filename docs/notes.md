@@ -197,6 +197,11 @@ into `platform-architecture.md` and remove stale notes.
   use version checks and archive semantics. Stock adjustments preserve draft
   state and reject a negative balance. Order, POS, invoice, and stock-service
   writers still need transactional review before catalog cutover.
+- The Phase 4 checkout audit found required Website IDs on Commerce Cart and
+  Order, a Core-versus-Commerce Website ID lookup mismatch in order creation,
+  non-COD payment paths, cached cart prices in order creation, and multiple
+  stock writers. This explains why Angular must not switch to the new catalog
+  reader while its checkout still targets Mongo.
 
 ## Open product and architecture questions
 

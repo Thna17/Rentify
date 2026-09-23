@@ -235,6 +235,18 @@ delta from the active writer.
 
 ## Phase 4 — shared checkout, inventory, and fulfillment
 
+**Pre-implementation audit (2026-09-23):** Existing Commerce `Cart` and
+`Order` require a Website ID, so a Website-less Store cannot check out through
+them yet. The Website online order controller looks up Commerce's internal
+WebsiteData row ID while clients pass the Core Website ID. Its order strategy
+accepts payment methods beyond launch COD and carries cached cart unit prices
+into order creation. Several order, POS, invoice, and stock-service paths
+mutate Product stock separately; some status helpers can turn an archived or
+draft Product active after stock changes. These paths need one order-time
+eligibility/price check and one transactional stock operation before Angular
+can switch its cart and checkout to Commerce. The Phase 3 catalog reader
+must remain behind the existing marketplace API until this gate passes.
+
 **Work**
 
 - Route marketplace carts and checkout to Commerce. At order time validate
