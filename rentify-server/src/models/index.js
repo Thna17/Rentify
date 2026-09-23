@@ -9,6 +9,7 @@ const Package = require('./Package');
 const WebsiteContent = require("./WebsiteContent");
 const OutcomeContract = require("./OutcomeContract");
 const ReminderLog = require("./ReminderLog");
+const WebsiteSyncOutbox = require('./WebsiteSyncOutbox');
 
 Payment.belongsTo(User, { foreignKey: "userId" });
 Payment.belongsTo(Website, { foreignKey: "websiteId" });
@@ -107,5 +108,6 @@ module.exports = {
   Package,
   WebsiteContent,
   OutcomeContract,
-  ReminderLog
+  ReminderLog,
+  WebsiteSyncOutbox
 };

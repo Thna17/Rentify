@@ -1,5 +1,5 @@
 // services/websiteService.js
-const { Website, WebsiteTemplate, User, Staff, Package } = require('../models');
+const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox } = require('../models');
 const subscriptionService = require('./subscriptionService');
 const { logger } = require('../utils/logger');
 const { DEPLOYMENT } = require('../config/constants');
@@ -27,38 +27,32 @@ class WebsiteService {
         })
       ]);
 
-      // Create subscription with trial
-      const subscription = await subscriptionService.createTrialSubscription(
-        userId, 
-        packageId, 
-        transaction
-      );
-
       // Personalize template content
       const initialContent = this.personalizeTemplateContent(
         template.TemplateContents, 
         businessData
       );
 
-      // Create website
+      // Create the website first because Subscription.websiteId is required.
+      // Both rows stay in the same transaction so a failed trial rolls back
+      // the website as well.
       const website = await Website.create({
         userId,
         templateId,
         businessDetails: businessData,
-        subscriptionId: subscription.id,
         pricing: { totalPrice: 0 }, // Free trial
         limits: packageData.limits,
         name: businessData.name,
         status: DEPLOYMENT.STATUS.CUSTOMIZATION,
       }, { transaction });
 
-
-      await transaction.commit();
-
-      logger.info('Website created successfully', { 
-        websiteId: website.id, 
-        userId 
-      });
+      const subscription = await subscriptionService.createTrialSubscription(
+        userId,
+        packageId,
+        website.id,
+        transaction
+      );
+      await website.update({ subscriptionId: subscription.id }, { transaction });
 
       // Prepare data for external services
       website._ecommerceData = {
@@ -76,10 +70,24 @@ class WebsiteService {
         package: this.serializePackageData(subscription)
       };
 
+      // Persist the exact projection in the same transaction. A failed HTTP
+      // request can then be retried without recreating the website or trial.
+      await WebsiteSyncOutbox.create({
+        websiteId: website.id,
+        payload: website._ecommerceData,
+      }, { transaction });
+
+      await transaction.commit();
+
+      logger.info('Website created successfully', {
+        websiteId: website.id,
+        userId
+      });
+
       return website;
 
     } catch (error) {
-      await transaction.rollback();
+      if (!transaction.finished) await transaction.rollback();
       logger.error('Website creation failed', { userId, error: error.message });
       throw error;
     }

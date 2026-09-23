@@ -51,12 +51,14 @@ exports.websiteData = async (req, res) => {
 
     await Promise.all(
       content.map(async (item) => {
-        return await WebsiteContent.create({
-          category: item.category,
-          label: item.label,
-          type: item.type,
-          value: item.value,
-          websiteId: data.id,
+        return WebsiteContent.findOrCreate({
+          where: {
+            websiteId: data.id,
+            category: item.category,
+            label: item.label,
+            type: item.type,
+          },
+          defaults: { value: item.value },
         });
       })
     );
@@ -88,7 +90,8 @@ exports.updateWebsiteData = async (req, res) => {
 
     res.status(200).json({ success: true });
   } catch (error) {
-    // ... error handling ...
+    console.error("Error in PUT /website-data/:websiteId:", error.message);
+    res.status(500).json({ message: "Failed to update website data" });
   }
 };
 
