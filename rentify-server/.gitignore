@@ -1,0 +1,77 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+dump.rdb
+*.rdb
+redis-data/
+.redis/
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Directory for temporary files
+tmp/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build directories
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Docker-related files
+docker-compose.override.yml
+.dockerignore
+
+# Test coverage reports
+coverage/
+
+# Debugger files
+.nyc_output/
+
+# Miscellaneous
+*.bak
+*.backup
+*.orig
+*.patch
+
+# Generated files by npm or yarn
+package-lock.json
+yarn.lock
+
+# Cache directories
+.cache/
+.npm/
+
+# Other project-specific files
+*.iml
+*.sublime-workspace
+*.sublime-project
+.qodo
