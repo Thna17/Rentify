@@ -1,7 +1,8 @@
 # Phase 4 COD checkout contract
 
-**Status:** Backend foundation and merchant-posted delivery fee implemented;
-UI and identity cutover pending (2026-09-24).
+**Status:** Backend foundation, merchant-posted delivery fee, and Rentify
+merchant order operations UI implemented; buyer UI and identity cutover pending
+(2026-09-24).
 This contract describes the new Commerce marketplace path. The Angular
 marketplace still uses its legacy API and must not be switched to the new
 catalog alone.
@@ -72,6 +73,13 @@ status. A failed delivery records a reason and either waits for a
 buyer-agreed retry or cancels and restores stock. Delivery cancellation is
 forbidden after collection. Every seller action and buyer report requires an
 idempotency key and writes an `OrderEvent`.
+
+Rentify's merchant dashboard now offers a Store-scoped marketplace order panel
+for both marketplace-only and storefront merchants. It shows the posted COD
+amount, delivery and payment state, reports and event history. The merchant
+can record delivery, failure, buyer-approved retry, cash collection, and a
+confirmed direct refund. This is an operator UI over Commerce; it does not
+switch Angular buyers to the new checkout yet.
 
 ## Stock and reconciliation
 

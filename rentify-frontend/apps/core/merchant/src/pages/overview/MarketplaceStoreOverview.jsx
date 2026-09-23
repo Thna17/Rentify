@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import StoreCatalogPage from '../product-management/StoreCatalogPage';
+import MarketplaceOrders from '../order-management/MarketplaceOrders';
 
 const base = `${RENTIFY_API_BASE}/api/stores`;
 
@@ -109,6 +110,7 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
           <a href={`${MARKETING_URL}/pricing`} className="mt-4 inline-block rounded-lg border border-blue-700 px-5 py-3 text-blue-700">Explore storefront plans</a>
         </div>
         <div className="mt-6 rounded-xl border bg-white"><StoreCatalogPage storeId={store.id} /></div>
+        <div className="mt-6 rounded-xl border bg-white"><MarketplaceOrders storeId={store.id} /></div>
         {message && <p role="status" className="mt-5 rounded-lg bg-blue-50 p-4 text-blue-900">{message}</p>}
       </div>
     </main>

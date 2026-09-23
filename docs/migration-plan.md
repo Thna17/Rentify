@@ -240,7 +240,8 @@ marketplace Cart/Order schema, Core-buyer-linked one-Store COD checkout,
 server-side eligibility and price checks, merchant-posted flat delivery fees
 shown in cart quotes and snapshotted on orders, transactional row-locked stock
 deduction, idempotent checkout keys, seller-scoped delivery/COD/refund actions,
-buyer complaint/return events, and a COD reconciliation command. Existing
+buyer complaint/return events, a Rentify merchant order operations panel, and
+a COD reconciliation command. Existing
 order strategies and stock restoration now use a shared stock operation.
 An isolated SQL smoke passes concurrent last-unit purchases across marketplace
 buyers and between storefront and marketplace stock writers, retry behavior,

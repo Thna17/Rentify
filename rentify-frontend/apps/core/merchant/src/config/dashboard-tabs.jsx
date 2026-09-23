@@ -90,6 +90,13 @@ export const ALL_TABS = [
     features: ['order-management'],
   },
   {
+    name: 'Marketplace orders',
+    icon: ClipboardList,
+    path: 'marketplace-orders',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+  },
+  {
     name: 'dashboard.invoices.title',
     icon: Receipt,
     path: 'invoices',
