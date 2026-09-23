@@ -1,0 +1,48 @@
+<main class="auth-page">
+  <section class="story-panel" aria-label="About KhmerCraft">
+    <div class="krama" aria-hidden="true"></div>
+
+    <a class="brand" routerLink="/" aria-label="KhmerCraft home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="img">
+          <path d="M24 4 42 14v20L24 44 6 34V14L24 4Z" />
+          <path d="m15 17 9 14 9-14M24 31v8" />
+        </svg>
+      </span>
+      <span>KhmerCraft</span>
+    </a>
+
+    <div class="story-copy">
+      <span class="story-kicker">{{ story().kicker }}</span>
+      <h2>{{ story().headline }}</h2>
+      <p>{{ story().body }}</p>
+    </div>
+
+    <ul class="story-marks">
+      @for (mark of story().marks; track mark) {
+        <li>{{ mark }}</li>
+      }
+    </ul>
+  </section>
+
+  <section class="form-panel">
+    <a class="mobile-brand" routerLink="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <path d="M24 4 42 14v20L24 44 6 34V14L24 4Z" />
+          <path d="m15 17 9 14 9-14M24 31v8" />
+        </svg>
+      </span>
+      KhmerCraft
+    </a>
+
+    <div class="form-wrap">
+      <div class="heading">
+        <span class="eyebrow">{{ eyebrow() }}</span>
+        <h1>{{ title() }}</h1>
+        <p>{{ subtitle() }}</p>
+      </div>
+      <ng-content />
+    </div>
+  </section>
+</main>

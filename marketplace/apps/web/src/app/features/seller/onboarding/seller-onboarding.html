@@ -1,0 +1,117 @@
+<div class="onboarding-shell">
+  <header class="topbar">
+    <a class="brand" routerLink="/" aria-label="KhmerCraft home">
+      <span class="brand-mark"><kc-icon name="leaf" [size]="17" /></span><span>KhmerCraft</span>
+    </a>
+    <div class="topbar-actions">
+      @if (user()) { <span class="account-chip"><kc-icon name="user" [size]="15" /> {{ user()!.name }}</span> }
+      <a class="exit-link" routerLink="/">Save & exit</a>
+    </div>
+  </header>
+
+  @if (step() !== 5) {
+    <div class="progress-line" aria-hidden="true"><span [style.width.%]="progressPercent()"></span></div>
+    <div class="workspace">
+      <aside class="journey-panel">
+        <div>
+          <p class="eyebrow">Seller setup</p>
+          <h1>{{ isAdditionalStore() ? 'Create another store' : 'Open your KhmerCraft store' }}</h1>
+          <p class="journey-copy">One account can buy products and manage multiple independent stores. Your buyer account stays exactly where it is.</p>
+        </div>
+        <nav class="steps" aria-label="Store setup progress">
+          @for (item of progress; track item.step) {
+            <button type="button" [class.current]="step() === item.step" [class.complete]="step() > item.step" [disabled]="item.step >= step()" (click)="goTo(item.step)">
+              <span class="step-number">@if (step() > item.step) { <kc-icon name="check" [size]="13" /> } @else { {{ item.step }} }</span>
+              <span><strong>{{ item.label }}</strong><small>Step {{ item.step }} of 4</small></span>
+            </button>
+          }
+        </nav>
+        <div class="account-note"><kc-icon name="shield" [size]="18" /><p><strong>Your account stays unified.</strong><span>Use the same login for shopping, orders, and every store you own.</span></p></div>
+      </aside>
+
+      <main class="form-panel">
+        @if (draftRestored()) {
+          <div class="draft-banner"><span><kc-icon name="clock" [size]="16" /><strong>Your saved draft is back.</strong> Continue where you stopped.</span><button type="button" (click)="discardDraft()">Start over</button></div>
+        }
+
+        @if (step() === 1) {
+          <section class="step-content compact">
+            <div class="section-heading"><p class="step-kicker">Step 1 of 4</p><h2>Let’s start with the essentials.</h2><p>These details identify this store. You can change them later from the seller dashboard.</p></div>
+            <div class="form-grid">
+              <label class="field full" [class.invalid]="fieldError('storeName')">
+                <span>Store name <b>*</b></span><input [(ngModel)]="form.storeName" (ngModelChange)="saveDraft()" name="storeName" maxlength="120" placeholder="e.g. Sothy Home & Living" autocomplete="organization" />
+                @if (fieldError('storeName')) { <small class="error">{{ fieldError('storeName') }}</small> }
+              </label>
+              <label class="field" [class.invalid]="fieldError('category')">
+                <span>Main category <b>*</b></span><select [(ngModel)]="form.category" (ngModelChange)="saveDraft()" name="category"><option value="" disabled>Select a category</option>@for (category of categories; track category) { <option [value]="category">{{ category }}</option> }</select>
+                @if (fieldError('category')) { <small class="error">{{ fieldError('category') }}</small> }
+              </label>
+              <label class="field" [class.invalid]="fieldError('location')">
+                <span>Operating location <b>*</b></span><select [(ngModel)]="form.location" (ngModelChange)="saveDraft()" name="location"><option value="" disabled>Select a province</option>@for (location of locations; track location) { <option [value]="location">{{ location }}</option> }</select>
+                @if (fieldError('location')) { <small class="error">{{ fieldError('location') }}</small> }
+              </label>
+              <label class="field full" [class.invalid]="fieldError('phoneNumber')">
+                <span>Store contact number <b>*</b></span><div class="input-with-prefix"><span>KH +855</span><input [(ngModel)]="form.phoneNumber" (ngModelChange)="saveDraft()" name="phoneNumber" placeholder="12 345 678" inputmode="tel" autocomplete="tel" /></div>
+                <small>Only shown to KhmerCraft support unless you choose to publish it later.</small>@if (fieldError('phoneNumber')) { <small class="error">{{ fieldError('phoneNumber') }}</small> }
+              </label>
+            </div>
+            <div class="tip-card"><kc-icon name="lightbulb" [size]="19" /><p><strong>Choose a memorable, specific name.</strong><span>Avoid names such as “Store 1”—buyers trust names that explain the business.</span></p></div>
+          </section>
+        }
+
+        @if (step() === 2) {
+          <section class="step-content storefront-step">
+            <div class="section-heading"><p class="step-kicker">Step 2 of 4</p><h2>Help buyers understand your store.</h2><p>A short, clear story is more useful than marketing language. Tell people what you sell and why they should trust it.</p></div>
+            <div class="story-layout">
+              <label class="field" [class.invalid]="fieldError('storeDescription')">
+                <span>Store description <b>*</b></span><textarea [(ngModel)]="form.storeDescription" (ngModelChange)="saveDraft()" name="storeDescription" maxlength="2000" placeholder="Describe your products, where they come from, and what makes your store different."></textarea>
+                <div class="field-meta"><span>Write at least 20 characters.</span><span>{{ form.storeDescription.length }}/2000</span></div>@if (fieldError('storeDescription')) { <small class="error">{{ fieldError('storeDescription') }}</small> }
+              </label>
+              <aside class="store-preview" aria-label="Store preview"><div class="preview-cover"><span>Store cover</span></div><div class="preview-body"><div class="preview-logo">{{ storeInitials() }}</div><span class="preview-category">{{ form.category || 'Your category' }}</span><h3>{{ form.storeName || 'Your store name' }}</h3><p>{{ form.storeDescription || 'Your store description will appear here for buyers.' }}</p><div class="preview-location"><kc-icon name="store" [size]="13" /> {{ form.location || 'Cambodia' }}</div></div></aside>
+            </div>
+            <div class="upload-note"><kc-icon name="image" [size]="18" /><p><strong>Add your logo and cover after setup.</strong><span>The dashboard includes image controls, so you can create the store now without searching for perfect photos.</span></p></div>
+          </section>
+        }
+
+        @if (step() === 3) {
+          <section class="step-content plan-step">
+            <div class="section-heading"><p class="step-kicker">Step 3 of 4</p><h2>Choose the plan that fits today.</h2><p>Start free and upgrade later. Plans belong to this store, so another store can use a different plan.</p></div>
+            <div class="plan-grid">
+              @for (plan of plans; track plan.key) {
+                <button type="button" class="plan-card" [class.selected]="selectedPlan() === plan.key" (click)="selectPlan(plan.key)">
+                  <span class="plan-select"><i></i>@if (plan.badge) { <b>{{ plan.badge }}</b> }</span><span class="plan-title">{{ plan.name }}</span><span class="plan-price"><strong>${{ plan.price }}</strong><small>/ month</small></span><span class="plan-description">{{ plan.description }}</span><span class="plan-divider"></span><span class="plan-features">@for (feature of plan.features; track feature) { <span><kc-icon name="check" [size]="13" /> {{ feature }}</span> }</span>
+                </button>
+              }
+            </div>
+            <div class="billing-truth"><kc-icon name="info" [size]="17" /><p><strong>No surprise charge.</strong><span>Starter is free. For Growth or Professional, KhmerCraft confirms ABA/KHQR billing separately before collecting payment.</span></p></div>
+          </section>
+        }
+
+        @if (step() === 4) {
+          <section class="step-content review-step">
+            <div class="section-heading"><p class="step-kicker">Step 4 of 4</p><h2>Review and create your store.</h2><p>Nothing is charged today. Confirm the information below, then open your seller workspace.</p></div>
+            <div class="review-layout">
+              <div class="review-main">
+                <article class="review-card"><header><span>Store details</span><button type="button" (click)="goTo(1)">Edit</button></header><dl><div><dt>Name</dt><dd>{{ form.storeName }}</dd></div><div><dt>Category</dt><dd>{{ form.category }}</dd></div><div><dt>Location</dt><dd>{{ form.location }}</dd></div><div><dt>Contact</dt><dd>+855 {{ form.phoneNumber }}</dd></div></dl></article>
+                <article class="review-card"><header><span>Store story</span><button type="button" (click)="goTo(2)">Edit</button></header><p>{{ form.storeDescription }}</p></article>
+                <article class="review-card billing-card"><header><span>Plan & billing</span><button type="button" (click)="goTo(3)">Edit</button></header><div class="chosen-plan"><span><strong>{{ currentPlan().name }}</strong><small>{{ currentPlan().description }}</small></span><b>${{ currentPlan().price }}<small>/mo</small></b></div>
+                  @if (selectedPlan() === 'STARTER') { <div class="payment-row"><span class="payment-icon"><kc-icon name="check" [size]="15" /></span><p><strong>No payment required</strong><small>Your free plan starts when the store is created.</small></p></div> } @else { <div class="payment-row"><span class="payment-icon khqr">KH</span><p><strong>ABA / KHQR billing</strong><small>No charge today. Activation is confirmed separately by KhmerCraft.</small></p></div> }
+                </article>
+                <label class="terms-check" [class.invalid]="fieldError('terms')"><input type="checkbox" [ngModel]="termsAccepted()" (ngModelChange)="updateTerms($event)" name="terms" /><span><i><kc-icon name="check" [size]="12" /></i>I agree to the <a routerLink="/terms" target="_blank">Seller Terms</a> and marketplace return policy.</span></label>
+                @if (fieldError('terms')) { <small class="error terms-error">{{ fieldError('terms') }}</small> } @if (submitError()) { <div class="submit-error"><kc-icon name="alert" [size]="18" />{{ submitError() }}</div> }
+              </div>
+              <aside class="summary-card"><p class="summary-label">Due today</p><strong>$0.00</strong><span>{{ currentPlan().name }} plan</span><ul><li><kc-icon name="check" [size]="13" />Storefront created immediately</li><li><kc-icon name="check" [size]="13" />Add products from dashboard</li><li><kc-icon name="shield" [size]="13" />Verification remains separate</li></ul><button type="button" class="primary wide" [disabled]="submitting()" (click)="createStore()">{{ submitting() ? 'Creating your store…' : 'Create my store' }} <span>→</span></button><small>You can edit store details after creation.</small></aside>
+            </div>
+          </section>
+        }
+
+        <footer class="form-actions">@if (step() > 1) { <button type="button" class="back-button" (click)="back()">← Back</button> } @else { <span></span> } @if (step() < 4) { <button type="button" class="primary" (click)="next()">Continue <span>→</span></button> }</footer>
+      </main>
+    </div>
+  } @else {
+    <main class="success-screen">
+      <section class="success-card"><div class="success-mark"><kc-icon name="check" [size]="32" /></div><p class="eyebrow">Store created</p><h1>{{ createdStore()?.storeName }} is ready for products.</h1><p>Your store is connected to {{ user()?.email }}. Your buyer account, orders, wishlist, and other stores all remain under the same login.</p><div class="success-summary"><div class="success-logo">{{ storeInitials() }}</div><span><strong>{{ createdStore()?.storeName }}</strong><small>{{ createdStore()?.category }} · {{ createdStore()?.location }}</small></span><b>{{ currentPlan().name }}</b></div><div class="success-actions"><button type="button" class="primary" (click)="openDashboard()">Add your first product <span>→</span></button><a class="secondary" [routerLink]="storeRoute()">View storefront</a></div><a class="quiet-link" routerLink="/">Return to marketplace</a></section>
+      <aside class="next-steps"><p class="eyebrow">Next best steps</p><h2>Turn an empty storefront into a shop buyers trust.</h2><ol><li><span>01</span><p><strong>Add 3–5 clear products</strong><small>Use honest photos, complete descriptions, prices, and stock.</small></p></li><li><span>02</span><p><strong>Add your store images</strong><small>A logo and wide cover make the storefront feel established.</small></p></li><li><span>03</span><p><strong>Submit verification details</strong><small>KhmerCraft verification happens after profile and contact review.</small></p></li></ol></aside>
+    </main>
+  }
+</div>

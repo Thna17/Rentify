@@ -1,0 +1,827 @@
+@import 'tailwindcss';
+/* ============================================================
+   KhmerCraft — Design System
+   Minimal, content-first visual language inspired by Notion's
+   calm neutral surfaces and Apple's precise type & motion.
+   ============================================================ */
+
+:root {
+  /* Neutral surface scale (Notion-like warm grays) */
+  --color-bg: #fffdf8;
+  --color-bg-alt: #f6f1e7;
+  --color-bg-hover: #eee7da;
+  --color-surface: #fffefa;
+  --color-surface-raised: #ffffff;
+
+  /* Ink scale */
+  --color-text: #241f19;
+  --color-text-secondary: #514a41;
+  --color-muted: #81786d;
+  --color-muted-2: #aaa095;
+  --color-border: #e8dfd1;
+  --color-border-strong: #d8cdbd;
+
+  /* Brand accent — restrained, used sparingly like a highlight not a wash */
+  --color-accent: #8e3021;
+  --color-accent-hover: #6e2419;
+  --color-accent-soft: rgba(142, 48, 33, 0.08);
+  --color-accent-soft-strong: rgba(142, 48, 33, 0.16);
+  --color-gold: #a87522;
+  --color-forest: #263c31;
+  --color-sand: #d9bd8b;
+
+  --color-danger: #d1453b;
+  --color-danger-soft: rgba(209, 69, 59, 0.08);
+  --color-success: #2f7a4f;
+  --color-success-soft: rgba(47, 122, 79, 0.08);
+
+  /* Radii */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-full: 999px;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(15, 15, 15, 0.04);
+  --shadow-sm: 0 3px 12px rgba(51, 38, 24, 0.07);
+  --shadow-md: 0 14px 36px rgba(51, 38, 24, 0.10);
+  --shadow-lg: 0 28px 70px rgba(51, 38, 24, 0.14);
+  --shadow-focus: 0 0 0 4px var(--color-accent-soft-strong);
+
+  /* Typography */
+  --font-body: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  --font-heading: Georgia, 'Times New Roman', serif;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 360ms;
+
+  /* KhmerCraft brand aliases — the auth screens were built against these
+     names; they now point at the same terracotta as --color-accent so the
+     storefront and the sign-in flow cannot drift apart. */
+  --red: #7b2a1b;
+  --red-dark: #5f1f15;
+  --gold: #e0b269;
+  --paper: #fbf8f1;
+  --surface: #fffdf8;
+  --ink: #28231f;
+  --muted: #756d64;
+  --line: #ded7ca;
+  --success: #2f694b;
+  --error: #a12f2f;
+  --font-display: Georgia, 'Times New Roman', serif;
+
+  --header-h: 62px;
+  --content-max: none;
+  --page-gutter: clamp(16px, 2.4vw, 64px);
+  --section-space: clamp(58px, 7vw, 112px);
+}
+
+* { box-sizing: border-box; }
+*::selection { background: var(--color-accent-soft-strong); }
+
+html { scroll-behavior: smooth; min-width: 320px; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-size: clamp(15px, 0.22vw + 13px, 17px);
+  letter-spacing: -0.006em;
+  overflow-x: clip;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-heading);
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.12;
+}
+
+p { margin: 0; color: var(--color-text-secondary); }
+a { text-decoration: none; color: inherit; transition: color var(--dur-fast) var(--ease-standard); }
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-standard), background var(--dur-base) var(--ease-standard),
+    border-color var(--dur-base) var(--ease-standard), color var(--dur-base) var(--ease-standard),
+    box-shadow var(--dur-base) var(--ease-standard);
+}
+button:active { transform: scale(0.97); }
+input, select, textarea {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  transition: border-color var(--dur-base) var(--ease-standard),
+    box-shadow var(--dur-base) var(--ease-standard),
+    transform var(--dur-base) var(--ease-standard);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-accent) !important;
+  box-shadow: var(--shadow-focus);
+  transform: translateY(-1px);
+}
+::placeholder { color: var(--color-muted-2); transition: color var(--dur-base) var(--ease-standard); }
+input:focus::placeholder, textarea:focus::placeholder { color: var(--color-muted); }
+
+/* A field's own validation message (e.g. `@if (invalid('email')) { <small>…`)
+   — the field turning red and the reason appearing should read as one
+   motion, not the border snapping red while the text pops in cold. */
+label small, .field-error, .form-error {
+  display: block;
+  animation: fadeInUp var(--dur-base) var(--ease-out) both;
+}
+
+.container {
+  /* 1240px left ~340px of dead margin either side on a 1920 screen. This
+     scales with the viewport instead, while still stopping text lines from
+     becoming uncomfortably long on very wide monitors. */
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding-inline: var(--page-gutter);
+}
+
+@media (max-width: 900px) {
+  .container { padding-inline: var(--page-gutter); }
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 11px 21px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.btn-primary { background: var(--color-accent); color: #fff; }
+.btn-primary:hover { background: var(--color-accent-hover); box-shadow: var(--shadow-sm); }
+.btn-accent { background: var(--color-accent); color: #fff; }
+.btn-accent:hover { background: var(--color-accent-hover); box-shadow: var(--shadow-sm); }
+.btn-gold { background: var(--color-gold); color: #fff; }
+.btn-gold:hover { background: #96702a; box-shadow: var(--shadow-sm); }
+.btn-outline { background: transparent; border: 1px solid var(--color-border-strong); color: var(--color-text); }
+.btn-outline:hover { background: var(--color-bg-alt); border-color: var(--color-muted); }
+.btn-ghost { background: transparent; border: 1px solid transparent; color: var(--color-text-secondary); }
+.btn-ghost:hover { background: var(--color-bg-alt); }
+.btn-danger { background: var(--color-danger); color: #fff; }
+.btn-danger:hover { background: #b83a31; }
+.btn-block { width: 100%; }
+.btn-lg { min-height: 52px; padding: 14px 27px; font-size: 15px; border-radius: 14px; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+
+/* ===== Badges & chips ===== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.badge-in-stock { background: var(--color-success-soft); color: var(--color-success); }
+.badge-low-stock { background: rgba(184, 134, 42, 0.1); color: var(--color-gold); }
+.badge-gold { background: rgba(184, 134, 42, 0.1); color: var(--color-gold); }
+.badge-soft { background: var(--color-accent-soft); color: var(--color-accent); }
+.badge-neutral { background: var(--color-bg-alt); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+
+/* ===== Stars / rating ===== */
+.stars { color: var(--color-gold); display: inline-flex; gap: 1px; }
+.rating-row { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--color-text); }
+.rating-row .count { color: var(--color-muted); font-weight: 400; }
+
+/* ===== Card ===== */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard);
+}
+.card-hover:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); transform: translateY(-4px); }
+
+/* Placeholder image blocks */
+.img-placeholder {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(217, 189, 139, .35), transparent 25%),
+    radial-gradient(circle at 82% 72%, rgba(142, 48, 33, .12), transparent 30%),
+    repeating-linear-gradient(135deg, rgba(80, 60, 35, .028) 0 1px, transparent 1px 16px),
+    #f1ecdf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 8px;
+}
+.img-placeholder.dark {
+  background:
+    linear-gradient(135deg, #262b21 0%, #1c1f18 55%, #14150f 100%),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 14px);
+  color: rgba(255,255,255,0.45);
+}
+
+/* ===== Form fields ===== */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--color-text-secondary); }
+.field .hint { font-size: 12px; color: var(--color-muted); }
+.field input, .field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--color-surface);
+}
+.field .input-icon-wrap { position: relative; }
+.field .input-icon-wrap input { padding-left: 40px; }
+.field .input-icon-wrap:has(.toggle-visibility) input { padding-right: 42px; }
+.field .input-icon-wrap > ui-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--color-muted); pointer-events: none; }
+.field .input-icon-wrap .toggle-visibility {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--color-muted);
+  width: 30px; height: 30px; border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+}
+.field .input-icon-wrap .toggle-visibility:hover { color: var(--color-text); background: var(--color-bg-alt); }
+.field-error { font-size: 12px; color: var(--color-danger); }
+.field input.invalid { border-color: var(--color-danger); }
+
+/* ===== Custom checkbox & radio ===== */
+input[type="checkbox"], input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface);
+  display: inline-block;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--dur-fast) var(--ease-standard);
+}
+input[type="checkbox"] { border-radius: 5px; }
+input[type="radio"] { border-radius: 50%; }
+input[type="checkbox"]:hover, input[type="radio"]:hover { border-color: var(--color-accent); }
+input[type="checkbox"]:checked, input[type="radio"]:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px; top: 1.5px;
+  width: 4px; height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+}
+input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+
+/* ===== Motion utilities ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-in { animation: fadeInUp var(--dur-slow) var(--ease-out) both; }
+.animate-fade { animation: fadeIn var(--dur-slow) var(--ease-out) both; }
+.animate-scale { animation: scaleIn var(--dur-base) var(--ease-out) both; }
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 120ms; }
+.delay-3 { animation-delay: 180ms; }
+.delay-4 { animation-delay: 240ms; }
+
+/* ===== Page transitions (Router withViewTransitions) =====
+   The browser's View Transitions API snapshots the outgoing page and
+   crossfades it with the incoming one; without this block that crossfade is
+   a flat, instant-feeling opacity swap. Giving old/new their own timing plus
+   a small rise/fall makes a route change read as one continuous motion
+   rather than a page just replacing another. */
+::view-transition-old(root) {
+  animation: kc-page-out var(--dur-base) var(--ease-standard) both;
+}
+::view-transition-new(root) {
+  animation: kc-page-in var(--dur-slow) var(--ease-out) both;
+}
+@keyframes kc-page-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes kc-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* ===== animate.enter / animate.leave utilities =====
+   Paired with Angular's native `animate.enter="..."` / `animate.leave="..."`
+   template bindings: `enter` runs once the element is in the DOM, `leave`
+   runs before Angular actually removes it, so a drawer/menu/backdrop closes
+   with the same motion it opened with instead of just vanishing. Reuse
+   these rather than one-off animations per component so every popover in
+   the app closes with the same feel. */
+@keyframes kc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kc-fade-out { from { opacity: 1; } to { opacity: 0; } }
+.kc-fade-enter { animation: kc-fade-in var(--dur-base) var(--ease-standard) both; }
+.kc-fade-leave { animation: kc-fade-out var(--dur-base) var(--ease-standard) both; }
+
+@keyframes kc-pop-in {
+  from { opacity: 0; transform: scale(.94) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes kc-pop-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(.96) translateY(-4px); }
+}
+.kc-pop-enter { animation: kc-pop-in var(--dur-base) var(--ease-out) both; transform-origin: top; }
+.kc-pop-leave { animation: kc-pop-out var(--dur-fast) var(--ease-standard) both; transform-origin: top; }
+
+@keyframes kc-panel-in-right {
+  from { opacity: .85; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes kc-panel-out-right {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: .85; transform: translateX(100%); }
+}
+.kc-panel-enter-right { animation: kc-panel-in-right var(--dur-slow) cubic-bezier(.22,.85,.32,1) both; }
+.kc-panel-leave-right { animation: kc-panel-out-right 260ms var(--ease-standard) both; }
+
+@keyframes kc-panel-in-left {
+  from { opacity: .85; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes kc-panel-out-left {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: .85; transform: translateX(-100%); }
+}
+.kc-panel-enter-left { animation: kc-panel-in-left var(--dur-slow) cubic-bezier(.22,.85,.32,1) both; }
+.kc-panel-leave-left { animation: kc-panel-out-left 260ms var(--ease-standard) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kc-fade-enter, .kc-fade-leave, .kc-pop-enter, .kc-pop-leave,
+  .kc-panel-enter-right, .kc-panel-leave-right,
+  .kc-panel-enter-left, .kc-panel-leave-left {
+    animation-duration: 1ms !important;
+  }
+}
+
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted-2); }
+
+/* ============================================================
+   Auth screens (login, register, password reset)
+   ============================================================ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  /* No background here: the storefront is white (--color-bg, set above) and
+     the auth screens paint their own cream via .auth-page. Setting --paper
+     globally would tint every storefront page. */
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1.05rem;
+}
+
+.auth-form.compact {
+  gap: 0.8rem;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: #403a35;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.auth-form label em {
+  margin-left: 0.35rem;
+  color: #928a81;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.auth-form a,
+.auth-switch a,
+.admin-link {
+  color: var(--red);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-form a:hover,
+.auth-switch a:hover,
+.admin-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.22rem;
+}
+
+.auth-form input {
+  width: 100%;
+  height: 3rem;
+  padding: 0 1rem;
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.auth-form input::placeholder {
+  color: #a29a90;
+}
+
+.auth-form input:focus {
+  background: #fff;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(123, 42, 27, 0.1);
+}
+
+.auth-form label:has(input.ng-invalid.ng-touched) input {
+  border-color: var(--error);
+}
+
+.auth-form small {
+  color: var(--error);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.primary-button {
+  width: 100%;
+  min-height: 3.1rem;
+  display: inline-grid;
+  place-items: center;
+  margin-top: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  color: #fffaf0;
+  background: var(--red);
+  border: 0;
+  border-radius: 0.65rem;
+  box-shadow: 0 0.7rem 1.5rem rgba(91, 31, 20, 0.14);
+  cursor: pointer;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--red-dark);
+  box-shadow: 0 0.9rem 1.8rem rgba(91, 31, 20, 0.2);
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.primary-button.admin-button {
+  background: #263238;
+}
+
+.primary-button.admin-button:hover:not(:disabled) {
+  background: #172126;
+}
+
+.button-link {
+  margin-top: 1.25rem;
+}
+
+.text-button {
+  padding: 0.4rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.text-button:hover {
+  color: var(--red);
+}
+
+.auth-switch {
+  margin: 1.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.admin-link {
+  display: block;
+  margin-top: 1rem;
+  color: #797169;
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.notice {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  border-radius: 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.notice.success {
+  color: var(--success);
+  background: #eff7f1;
+  border-color: #bcd7c5;
+}
+
+.notice.error {
+  color: var(--error);
+  background: #fff2f0;
+  border-color: #ebc0bb;
+}
+
+/* Context, not an outcome — explains why a guard sent someone here. */
+.notice.info {
+  color: #6b4a1f;
+  background: #fdf6e9;
+  border-color: #e6d5b4;
+  font-weight: 550;
+}
+
+@media (max-width: 480px) {
+  .auth-form input {
+    height: 2.85rem;
+  }
+}
+
+/* ============================================================
+   Responsive storefront composition
+   These host-level rules intentionally improve existing pages without
+   coupling presentation to catalog/API implementation details.
+   ============================================================ */
+app-home .hero {
+  padding-block: 0 !important;
+  background: #fffdf8 !important;
+}
+
+app-home .features-strip {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 !important;
+  padding-block: 10px !important;
+  border-bottom: 1px solid var(--color-border);
+}
+
+app-home .feature-item {
+  min-height: 42px;
+  justify-content: center;
+  padding-inline: 20px;
+  border-right: 1px solid var(--color-border);
+}
+
+app-home .feature-item:last-child { border-right: 0; }
+
+app-home .section {
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+}
+
+/* The category discovery row belongs to the opening viewport, directly after
+   the trust strip, so it uses a tighter transition than later sections. */
+app-home app-promo-image-marquee + .section {
+  padding-top: 22px !important;
+}
+
+app-home app-promo-image-marquee + .section + .section {
+  padding-top: 18px !important;
+}
+
+app-home .section-head { margin-bottom: 10px !important; }
+app-home .section-head h2,
+app-home h2.center { font-size: clamp(22px, 1.8vw, 30px) !important; }
+
+/* The category rail is a horizontal scroller styled in home.component.ts.
+   No grid override here - it would fight the flex row. */
+
+app-home .category-pill:not(.more) {
+  min-height: 86px;
+  justify-content: center;
+  padding: 12px 8px !important;
+  border-radius: 15px !important;
+  background: var(--color-surface) !important;
+}
+
+app-home .category-pill span { font-size: 12px !important; }
+app-home .category-pill small { display: none; }
+app-home .category-pill.more { background: none !important; }
+app-home .cat-icon { margin-bottom: 3px; transform: scale(1.08); }
+
+app-home .stores-row { gap: 16px !important; }
+app-home .store-chip {
+  flex: 0 0 300px;
+  max-width: 300px;
+  min-width: 300px;
+  width: 300px;
+  min-height: 74px;
+  padding: 13px !important;
+  border: 1px solid var(--color-border);
+  border-radius: 16px !important;
+  background: var(--color-surface);
+}
+
+app-home .collection-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 20px !important;
+}
+
+app-home .collection-card {
+  min-height: clamp(170px, 16vw, 270px);
+  border-radius: 24px !important;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: clamp(22px, 2vw, 34px) !important;
+}
+
+app-home .three-banners { gap: 22px !important; }
+app-home .banner-card {
+  min-height: 260px !important;
+  padding: 34px !important;
+  border-radius: 26px !important;
+}
+app-home .banner-card h3 { font-size: clamp(25px, 2vw, 34px); }
+
+app-home .blog-grid { gap: 24px !important; }
+app-home .blog-thumb { height: clamp(190px, 17vw, 280px) !important; border-radius: 20px !important; }
+app-home .testimonial-card { padding: 26px !important; border-radius: 18px !important; }
+
+/* Sparse result pages stay balanced on ultrawide and zoomed-out screens. */
+app-category-detail .body {
+  grid-template-columns: minmax(240px, 290px) minmax(0, 1fr) !important;
+  gap: clamp(24px, 3vw, 52px) !important;
+}
+
+/* Filters toggled off: the products take the whole row. Needs !important to
+   beat the two-column rule above, which is itself !important. */
+app-category-detail .body.no-rail {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* 270px forced only three cards into the 1030px content column, so each one
+   came out 324px wide and the page felt like a lookbook rather than a shop.
+   210px fits four or five, at a size closer to the rest of the storefront. */
+app-category-detail .product-grid,
+app-products .product-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)) !important;
+  gap: clamp(14px, 1.4vw, 22px) !important;
+}
+
+app-store-detail .product-grid app-product-card:nth-child(3n + 1) .product-photo { object-position: 76% center; }
+app-store-detail .product-grid app-product-card:nth-child(3n + 2) .product-photo { object-position: 61% center; }
+app-store-detail .product-grid app-product-card:nth-child(3n + 3) .product-photo { object-position: 88% center; }
+
+@media (min-width: 1500px) {
+  app-category-detail .product-grid > *,
+  app-products .product-grid > * { min-width: 0; }
+}
+
+/* Browsers expose a much larger CSS viewport when zoomed out. Keep the page
+   full-width and scale discovery content up so it remains comfortable to scan. */
+@media (min-width: 1900px) {
+  :root {
+    --page-gutter: clamp(36px, 2.5vw, 78px);
+  }
+
+  /* category rail sizes itself; nothing to override at this width */
+
+  app-category-detail .body {
+    grid-template-columns: 310px minmax(0, 1fr) !important;
+  }
+
+  app-category-detail .body.no-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  app-category-detail .product-grid,
+  app-products .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  app-home .features-strip { grid-template-columns: 1fr 1fr; }
+  app-home .feature-item:nth-child(2) { border-right: 0; }
+  app-home .feature-item:nth-child(-n + 2) { border-bottom: 1px solid var(--color-border); }
+  app-home .collection-grid { grid-template-columns: 1fr 1fr !important; }
+  /* the rail already scrolls horizontally at every width */
+  app-category-detail .body { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 600px) {
+  app-home .features-strip { grid-template-columns: 1fr; }
+  app-home .feature-item { justify-content: flex-start; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  app-home .feature-item:last-child { border-bottom: 0; }
+  app-home .collection-grid { grid-template-columns: 1fr !important; }
+  app-home .three-banners { grid-template-columns: 1fr !important; }
+  app-home .trust-row { align-items: center; flex-direction: column; gap: 12px !important; }
+  app-category-detail .body { padding-top: 24px !important; }
+}
+
+/* ============================================================
+   Scroll reveal — driven by the [kcReveal] directive.
+   Global (not component-scoped) because the directive attaches
+   these classes from outside whichever component's template
+   it's used in. GPU-only (opacity + transform); a no-op under
+   prefers-reduced-motion (the directive skips straight to the
+   visible class there, so this transition never even runs).
+   ============================================================ */
+.kc-reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); will-change: opacity, transform; }
+.kc-reveal-visible { opacity: 1; transform: none; }
