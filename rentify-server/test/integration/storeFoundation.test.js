@@ -1,7 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Store, User } = require('../../src/models');
+const { Store, User, Website } = require('../../src/models');
 const storeService = require('../../src/services/storeService');
+const storeSyncService = require('../../src/services/storeSyncService');
 
 test('marketplace-only Store defaults to marketplace enabled and needs approval', async (t) => {
   const transaction = {};
@@ -14,6 +15,10 @@ test('marketplace-only Store defaults to marketplace enabled and needs approval'
     created.push(data);
     return data;
   });
+  t.mock.method(storeSyncService, 'queueStore', async (store, options) => {
+    assert.equal(store.ownerUserId, 'owner-1');
+    assert.equal(options.transaction, transaction);
+  });
   const result = await storeService.createMarketplaceStore({
     ownerUserId: 'owner-1', name: 'My Shop', primaryCategory: 'Fashion',
   });
@@ -24,16 +29,24 @@ test('marketplace-only Store defaults to marketplace enabled and needs approval'
 });
 
 test('merchant can opt out of marketplace without losing the Store', async (t) => {
+  const transaction = { LOCK: { UPDATE: 'UPDATE' } };
   const store = {
-    marketplaceEnabled: true,
+    id: 'store-1', marketplaceEnabled: true, projectionVersion: 1,
     async update(changes) { Object.assign(this, changes); },
   };
+  t.mock.method(Store.sequelize, 'transaction', async (callback) => callback(transaction));
   t.mock.method(Store, 'findOne', async () => store);
+  t.mock.method(Website, 'findOne', async () => null);
+  t.mock.method(storeSyncService, 'queueStore', async (updated, options) => {
+    assert.equal(updated.marketplaceEnabled, false);
+    assert.equal(options.transaction, transaction);
+  });
   const result = await storeService.updateOwnStore({
     ownerUserId: 'owner-1', marketplaceEnabled: false,
   });
   assert.equal(result, store);
   assert.equal(result.marketplaceEnabled, false);
+  assert.equal(result.projectionVersion, 2);
 });
 
 test('website creation reuses a marketplace-only Store', async (t) => {

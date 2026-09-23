@@ -98,15 +98,15 @@ record count, and import destination. Architecture and decisions are recorded.
 ## Phase 1 — Store foundation and safe schema expansion
 
 **Progress (2026-09-23):** Core Store UUID, one-owner uniqueness, optional
-Website linkage, and enabled-by-default Store marketplace preference are
-implemented. Existing Core Websites were backfilled to Stores in isolated test
-and local development databases. Their primary categories remain null and are
-flagged for review because the old Website data has no dependable category.
-Marketplace-only Store creation and merchant-owned preference editing have
-Core API endpoints. Seller approval workflow, Commerce Store projection,
-Store-keyed commerce authorization and schema, subscription entitlements,
-category validation, and full data reconciliation remain before this phase's
-exit gate.
+Website linkage, and enabled-by-default marketplace preference are in place.
+Core has a seller application and audited admin review API. A versioned,
+retryable Core outbox projects Store access and the free pilot entitlement to
+Commerce. Nullable Store keys, canonical assignment on website-scoped writes,
+and an audit command cover existing commerce records. The local development
+audit reports zero unmapped or conflicting rows. Historical Store categories
+remain flagged for review; a controlled primary-category list, broader data
+reconciliation, and complete Store-keyed commerce routes remain before the
+phase exit gate.
 
 **Work**
 
@@ -115,8 +115,8 @@ exit gate.
   Website mandatory. Enforce one Store per merchant and at most one Website
   per Store with database uniqueness and idempotent creation. Define staff
   access by Store and permitted Website where narrower access is needed.
-- Add a seller application review with verified phone/email, responsible
-  identity, Store and operating details, a sample product, and COD/fulfillment
+- Add a seller application review with verified account contact, responsible
+  identity, Store and operating details, a sample product description, and COD/fulfillment
   commitment. Record approved, needs changes, or rejected with reasons and
   admin audit history. Marketplace publication waits for approval.
 - Add a Commerce Store reference or projection and Store keyed authorization.
@@ -126,7 +126,8 @@ exit gate.
 - Keep marketplace taxonomy, Store primary category, merchant-managed
   categories, and Product category as distinct concepts with explicit maps.
 - Change subscription and billing rules so a Store can exist without a
-  Website. Define a subscription entitlement for marketplace-only merchants;
+  Website. Use a free pilot entitlement for marketplace-only merchants in the
+  hackathon release; define paid pricing later.
   storefront entitlements continue where relevant. No launch transaction
   commission is charged.
 - Backfill each Rentify Website to one Store and each related commerce row to

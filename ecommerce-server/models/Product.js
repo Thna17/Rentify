@@ -66,6 +66,7 @@ const Product = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
+    storeId: { type: DataTypes.UUID, allowNull: true },
     // Dynamic product type based on niche
     productType: {
       type: DataTypes.STRING,

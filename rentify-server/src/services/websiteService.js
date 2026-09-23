@@ -2,6 +2,7 @@
 const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox } = require('../models');
 const subscriptionService = require('./subscriptionService');
 const storeService = require('./storeService');
+const storeSyncService = require('./storeSyncService');
 const { logger } = require('../utils/logger');
 const { DEPLOYMENT } = require('../config/constants');
 
@@ -53,6 +54,9 @@ class WebsiteService {
         name: businessData.name,
         status: DEPLOYMENT.STATUS.CUSTOMIZATION,
       }, { transaction });
+
+      await store.update({ projectionVersion: store.projectionVersion + 1 }, { transaction });
+      await storeSyncService.queueStore(store, { websiteId: website.id, transaction });
 
       const subscription = await subscriptionService.createTrialSubscription(
         userId,

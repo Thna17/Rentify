@@ -1,4 +1,5 @@
 const storeService = require('../services/storeService');
+const storeSyncService = require('../services/storeSyncService');
 const { asyncHandler } = require('../utils/helpers');
 
 exports.getOwnStore = asyncHandler(async (req, res) => {
@@ -15,6 +16,7 @@ exports.createStore = asyncHandler(async (req, res) => {
     primaryCategory: body.primaryCategory,
     marketplaceEnabled: body.marketplaceEnabled ?? true,
   });
+  if (created) storeSyncService.syncStore(store.id).catch(() => {});
   return res.status(created ? 201 : 200).json({ success: true, data: store });
 });
 
@@ -25,5 +27,6 @@ exports.updateOwnStore = asyncHandler(async (req, res) => {
     primaryCategory: body.primaryCategory,
     marketplaceEnabled: body.marketplaceEnabled,
   });
+  storeSyncService.syncStore(store.id).catch(() => {});
   return res.json({ success: true, data: store });
 });

@@ -1,33 +1,25 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+const { sequelize } = require('../config/db');
 
-const Store = sequelize.define('Store', {
-  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  ownerUserId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    unique: true,
-    references: { model: 'Users', key: 'id' },
-  },
-  name: { type: DataTypes.STRING(120), allowNull: false },
-  slug: { type: DataTypes.STRING(160), allowNull: false, unique: true },
+const StoreAccess = sequelize.define('StoreAccess', {
+  storeId: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+  ownerUserId: { type: DataTypes.UUID, allowNull: false },
+  websiteId: { type: DataTypes.UUID, allowNull: true, unique: true },
   primaryCategory: { type: DataTypes.STRING(120), allowNull: true },
   needsCategoryReview: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   marketplaceEnabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   marketplaceApprovalStatus: {
     type: DataTypes.ENUM('pending', 'approved', 'needs_changes', 'rejected', 'suspended'),
     allowNull: false,
-    defaultValue: 'pending',
   },
   status: {
     type: DataTypes.ENUM('active', 'suspended', 'closed'),
     allowNull: false,
-    defaultValue: 'active',
   },
-  projectionVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+  version: { type: DataTypes.INTEGER, allowNull: false },
   marketplaceEntitlement: {
     type: DataTypes.ENUM('pilot', 'none'), allowNull: false, defaultValue: 'pilot',
   },
-}, { timestamps: true });
+}, { indexes: [{ fields: ['ownerUserId'] }] });
 
-module.exports = Store;
+module.exports = StoreAccess;

@@ -9,6 +9,7 @@ exports.websiteData = async (req, res) => {
 
     const {
       websiteId,
+      storeId,
       userId,
       content = [],
       status,
@@ -31,6 +32,7 @@ exports.websiteData = async (req, res) => {
     const upsertData = {
       id: websiteId,
       websiteId,
+      storeId,
       userId,
       domain,
       niche,

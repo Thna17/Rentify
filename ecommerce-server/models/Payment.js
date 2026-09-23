@@ -15,6 +15,7 @@ const Payment = sequelize.define("Payment", {
       key: 'id'
     }
   },
+  storeId: { type: DataTypes.UUID, allowNull: true },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,

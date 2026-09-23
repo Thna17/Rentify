@@ -55,6 +55,11 @@ into `platform-architecture.md` and remove stale notes.
   cash. Launch revenue is subscription fees only, with no per-order
   marketplace commission. Marketplace-only merchants need a subscription
   entitlement independent of Website creation.
+- **Hackathon marketplace-only entitlement (2026-09-23):** Use a free pilot
+  entitlement for marketplace-only Stores. A Store and seller application can
+  exist without a Website subscription. The pilot is a temporary product
+  entitlement, not a permanently agreed pricing plan; no launch order
+  commission applies. Marketplace selling still requires seller approval.
 - **Future marketplace payment model (2026-09-23):** The hackathon release
   keeps marketplace COD. Once the bank-managed online marketplace payment
   flow is ready and validated, retire marketplace COD with notice and make
@@ -151,10 +156,16 @@ into `platform-architecture.md` and remove stale notes.
   database and two in local development. Each mapped to exactly one Store.
   Historical primary categories remain null with `needsCategoryReview: true`;
   the old Website niche is not treated as marketplace taxonomy.
-- The Core verification gate and disposable marketplace-only Store smoke check
-  passed. Seller review, Commerce Store projection, commerce row backfills,
-  subscription entitlement, Store authorization, and UI onboarding are still
-  required before Phase 1 exit.
+- The initial Core verification gate and disposable marketplace-only Store
+  smoke check passed. The later increment below extends that foundation.
+- A later Phase 1 increment added Core seller application and admin review
+  endpoints, decision audit rows, a retryable versioned Store projection into
+  Commerce, nullable Store keys for website-scoped commerce rows, and a free
+  pilot entitlement. Commerce's `npm run db:audit-stores` reports zero mapping
+  conflicts in the local development database. The isolated test database
+  retains two deliberately unmapped legacy fixtures, so that audit does not
+  pass there. Both API verification suites and a fresh Core migration run
+  passed. Store-keyed commerce operations and category policy are still open.
 
 ## Open product and architecture questions
 
@@ -164,8 +175,8 @@ into `platform-architecture.md` and remove stale notes.
    response deadlines before public launch. The main workflow is agreed.
 3. Confirm the proposed buyer sign-in handoff, storefront callback hosting,
    and legacy customer account-linking process before implementation.
-4. Define launch subscription packages and entitlements for marketplace-only
-   and storefront merchants without introducing a per-order commission.
+4. Define post-pilot marketplace-only package pricing and the transition from
+   the free pilot entitlement without introducing a launch order commission.
 5. Before the later online-payment phase, confirm the bank's per-order hold,
    release, commission split/deduction, refund, callback, fee, and
    reconciliation contracts. Define the final payout trigger and commission

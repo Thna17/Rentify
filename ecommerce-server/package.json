@@ -18,6 +18,7 @@
     "security:migrate-payment-configs": "node scripts/encryptPaymentConfigs.js",
     "db:migrate": "node migrations/runner.js migrate",
     "db:migrate:verify": "node migrations/runner.js verify",
+    "db:audit-stores": "node scripts/auditStoreMapping.js",
     "db:seed": "node scripts/seed.js"
   },
   "keywords": [],

@@ -1,5 +1,6 @@
 const { randomUUID } = require('node:crypto');
 const { Store, User } = require('../models');
+const storeSyncService = require('./storeSyncService');
 
 const clean = (value, maxLength) =>
   typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
@@ -29,10 +30,12 @@ class StoreService {
           error.statusCode = 404;
           throw error;
         }
-        return this.createForOwner({
+        const created = await this.createForOwner({
           ownerUserId, name: storeName, primaryCategory: category,
           marketplaceEnabled, transaction,
         });
+        await storeSyncService.queueStore(created, { transaction });
+        return created;
       });
       return { store, created: true };
     } catch (error) {
@@ -72,12 +75,6 @@ class StoreService {
   }
 
   async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled }) {
-    const store = await this.getOwnStore(ownerUserId);
-    if (!store) {
-      const error = new Error('Store not found');
-      error.statusCode = 404;
-      throw error;
-    }
     const changes = {};
     if (primaryCategory !== undefined) {
       const category = clean(primaryCategory, 120);
@@ -97,8 +94,23 @@ class StoreService {
       }
       changes.marketplaceEnabled = marketplaceEnabled;
     }
-    if (Object.keys(changes).length) await store.update(changes);
-    return store;
+    return Store.sequelize.transaction(async (transaction) => {
+      const store = await Store.findOne({
+        where: { ownerUserId }, transaction, lock: transaction.LOCK.UPDATE,
+      });
+      if (!store) {
+        const error = new Error('Store not found');
+        error.statusCode = 404;
+        throw error;
+      }
+      if (Object.keys(changes).length) {
+        await store.update({ ...changes, projectionVersion: store.projectionVersion + 1 }, { transaction });
+        const { Website } = require('../models');
+        const website = await Website.findOne({ where: { storeId: store.id }, attributes: ['id'], transaction });
+        await storeSyncService.queueStore(store, { websiteId: website?.id || null, transaction });
+      }
+      return store;
+    });
   }
 }
 

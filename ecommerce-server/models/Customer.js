@@ -14,6 +14,10 @@ const Customer = sequelize.define(
       allowNull: false,
       // references: { model: "WebsiteData", key: "platformWebsiteId" },
     },
+    // The existing storeId is a Website identifier in customer auth flows.
+    // Keep it until buyer identity migration, and backfill the canonical Store
+    // key separately.
+    tenantStoreId: { type: DataTypes.UUID, allowNull: true },
     dateOfBirth: {
       type: DataTypes.DATE,
       allowNull: true,
