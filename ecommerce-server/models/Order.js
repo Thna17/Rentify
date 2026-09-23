@@ -17,9 +17,13 @@ const Order = sequelize.define(
     },
     websiteId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     storeId: { type: DataTypes.UUID, allowNull: true },
+    buyerId: { type: DataTypes.UUID, allowNull: true },
+    checkoutKey: { type: DataTypes.STRING(64), allowNull: true, unique: true },
+    salesChannel: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'storefront' },
+    deliveryStatus: { type: DataTypes.STRING(24), allowNull: false, defaultValue: 'pending' },
     userId: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -128,6 +132,8 @@ const Order = sequelize.define(
     indexes: [
       { fields: ["status"] },
       { fields: ["websiteId"] },
+      { fields: ["buyerId", "createdAt"] },
+      { fields: ["storeId", "createdAt"] },
       { fields: ["userId"] },
       { fields: ["sessionId"] },
       { fields: ["orderNiche"] },

@@ -139,54 +139,14 @@ class NicheStrategy {
 
   // Inventory management for this niche
   async updateInventory(items, transaction = null) {
-    for (const item of items) {
+    for (const item of [...items].sort((a, b) => a.productId.localeCompare(b.productId))) {
       await this.updateItemInventory(item, transaction);
     }
   }
 
   async updateItemInventory(item, transaction = null) {
-    const { Product, ProductVariant } = require('../../../models');
-    
-    const product = await Product.findByPk(item.productId, { transaction, lock: transaction?.LOCK.UPDATE });
-    let stockItem = product;
-
-    if (item.variantId) {
-      stockItem = await ProductVariant.findByPk(item.variantId, { transaction, lock: transaction?.LOCK.UPDATE });
-    }
-
-    if (stockItem.trackInventory) {
-      const newQuantity = stockItem.stockQuantity - item.quantity;
-      
-      if (newQuantity < 0 && !stockItem.allowBackorders) {
-        throw new Error(`Insufficient stock for ${product.name}`);
-      }
-
-      // Update stock quantity
-      if (item.variantId) {
-        await stockItem.update({ stockQuantity: newQuantity }, { transaction });
-      } else {
-        await product.update({ stockQuantity: newQuantity, version: product.version + 1 }, { transaction });
-      }
-
-      // Update product status if needed
-      await this.updateProductStatus(product, newQuantity, transaction);
-    }
-  }
-
-  async updateProductStatus(product, newQuantity, transaction = null) {
-    let newStatus = product.status;
-    
-    if (newQuantity <= 0 && !product.allowBackorders) {
-      newStatus = 'out_of_stock';
-    } else if (newQuantity > 0 && newQuantity <= product.lowStockThreshold) {
-      newStatus = 'low_stock';
-    } else if (newQuantity > product.lowStockThreshold) {
-      newStatus = 'active';
-    }
-
-    if (newStatus !== product.status) {
-      await product.update({ status: newStatus }, { transaction });
-    }
+    const { changeStock } = require('../../../services/sharedStockService');
+    await changeStock(item.productId, -item.quantity, transaction, item.variantId || null);
   }
 
   // Order metadata for this niche

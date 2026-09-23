@@ -29,12 +29,13 @@ exports.createOrder = async (req, res) => {
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
-      where: { id: websiteId },
-      attributes: ['niche'],
+      where: { websiteId, status: 'active' },
+      attributes: ['niche', 'storeId'],
       transaction
     });
     
     if (!website) {
+      await transaction.rollback();
       return res.status(404).json({ error: "Website not found" });
     }
 
@@ -87,7 +88,7 @@ exports.createInvoice = async (req, res) => {
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
-      where: { id: websiteId },
+      where: { websiteId },
       attributes: ['niche']
     });
     
@@ -132,7 +133,7 @@ exports.createPOSOrder = async (req, res) => {
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
-      where: { id: websiteId },
+      where: { websiteId },
       attributes: ['niche']
     });
     

@@ -18,6 +18,7 @@ const UsageEvent = require("./UsageEvent");
 const PricingRule = require("./PricingRule");
 const BillingStatement = require("./BillingStatement");
 const StoreAccess = require('./StoreAccess');
+const OrderEvent = require('./OrderEvent');
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -98,6 +99,8 @@ Invoice.belongsTo(Order, { foreignKey: "orderId" });
 
 Order.hasOne(ShippingDetail, { foreignKey: "orderId", as: "ShippingDetail" });
 ShippingDetail.belongsTo(Order, { foreignKey: "orderId" });
+Order.hasMany(OrderEvent, { foreignKey: 'orderId', as: 'OrderEvents' });
+OrderEvent.belongsTo(Order, { foreignKey: 'orderId' });
 
 // Website associations
 WebsiteData.hasMany(WebsiteContent, {
@@ -138,5 +141,6 @@ module.exports = {
   UsageEvent,
   PricingRule,
   BillingStatement,
-  StoreAccess
+  StoreAccess,
+  OrderEvent
 };

@@ -83,18 +83,17 @@ class POSOrderStrategy extends OrderTypeStrategy {
     const { Customer } = this.models;
     
     let customer = await Customer.findOne({
-      where: { email: customerInfo.email, websiteId },
+      where: { email: customerInfo.email, storeId: websiteId },
       transaction
     });
 
     if (!customer) {
       customer = await Customer.create({
-        websiteId,
+        storeId: websiteId,
         email: customerInfo.email,
-        firstName: customerInfo.firstName || 'POS',
-        lastName: customerInfo.lastName || 'Customer',
-        phone: customerInfo.phone,
-        addresses: customerInfo.addresses || [],
+        name: customerInfo.name || 'POS Customer',
+        phoneNumber: customerInfo.phone,
+        shippingAddress: customerInfo.addresses || [],
       }, { transaction });
     }
 

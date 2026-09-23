@@ -40,16 +40,28 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     if (!cart) throw new Error("Cart not found");
     if (!cart.CartItems?.length) throw new Error("Cart is empty");
 
-    // Prepare items for validation
-    const items = cart.CartItems.map(item => ({
-      productId: item.productId,
-      variantId: item.variantId,
-      quantity: item.quantity,
-      price: item.unitPrice,
-      selectedOptions: item.selectedOptions,
-      customizations: item.customizations,
-      productType: item.Product?.productType
-    }));
+    // Lock the canonical Product before reading price or stock. A cart unit
+    // price is a display cache and must never become the order price.
+    const items = [];
+    for (const item of [...cart.CartItems].sort((a, b) => a.productId.localeCompare(b.productId))) {
+      const product = await Product.findOne({ where: { id: item.productId, websiteId, status: 'active' },
+        transaction, lock: transaction.LOCK.UPDATE });
+      if (!product) throw new Error('Product is not available on this Website');
+      const variant = item.variantId ? await ProductVariant.findOne({
+        where: { id: item.variantId, productId: product.id, status: 'active' },
+        transaction, lock: transaction.LOCK.UPDATE,
+      }) : null;
+      if (item.variantId && !variant) throw new Error('Product variant is not available');
+      if (!Number.isSafeInteger(item.quantity) || item.quantity < 1) throw new Error('Invalid quantity');
+      items.push({
+        productId: product.id, variantId: item.variantId,
+        quantity: item.quantity,
+        price: this.nicheStrategy.calculateItemPrice(product, variant, item.selectedOptions, item.customizations),
+        selectedOptions: item.selectedOptions,
+        customizations: item.customizations,
+        productType: product.productType,
+      });
+    }
 
     // Validate products using niche strategy
     await this.validateOrderItems(items, transaction);
@@ -163,36 +175,18 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
 
   async findOrCreateCustomer(user, shippingDetails, websiteId, transaction) {
     const { Customer } = this.models;
-    let customer = null;
-
     if (user.type === "customer") {
-      customer = await Customer.findOne({
-        where: { id: user.id, websiteId },
+      const customer = await Customer.findOne({
+        where: { id: user.id, storeId: websiteId },
         transaction
       });
+      if (!customer) throw new Error('Customer account does not belong to this Website');
+      return customer;
     }
-
-    if (!customer && shippingDetails.email) {
-      customer = await Customer.findOne({
-        where: { email: shippingDetails.email, websiteId },
-        transaction
-      });
-
-      if (!customer) {
-        customer = await Customer.create({
-          websiteId,
-          email: shippingDetails.email,
-          firstName: shippingDetails.firstName || '',
-          lastName: shippingDetails.lastName || '',
-          phone: shippingDetails.phone,
-          addresses: [shippingDetails],
-          defaultShippingAddress: shippingDetails,
-          defaultBillingAddress: shippingDetails
-        }, { transaction });
-      }
-    }
-
-    return customer;
+    // An order's contact email is not proof of account ownership. Guest and
+    // Core-user orders keep their shipping snapshot without linking a local
+    // Website Customer by email.
+    return null;
   }
 
   async createShippingDetail(orderId, shippingDetails, transaction) {
@@ -224,14 +218,10 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
 
   async updateCustomerStatistics(customerId, totalAmount, transaction) {
     const { Customer } = this.models;
-    await Customer.update(
-      { 
-        totalOrders: sequelize.literal('totalOrders + 1'),
-        totalSpent: sequelize.literal(`totalSpent + ${totalAmount}`),
-        lastOrderDate: new Date()
-      },
-      { where: { id: customerId }, transaction }
-    );
+    await Customer.increment({ totalOrders: 1, totalSpent: Number(totalAmount) },
+      { where: { id: customerId }, transaction });
+    await Customer.update({ lastOrderDate: new Date() },
+      { where: { id: customerId }, transaction });
   }
 
   generateInvoiceNumber() {

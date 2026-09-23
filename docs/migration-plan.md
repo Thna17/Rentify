@@ -235,6 +235,27 @@ delta from the active writer.
 
 ## Phase 4 — shared checkout, inventory, and fulfillment
 
+**Progress (2026-09-24):** Commerce has an additive Website-optional
+marketplace Cart/Order schema, Core-buyer-linked one-Store COD checkout,
+server-side eligibility and price checks, transactional row-locked stock
+deduction, idempotent checkout keys, seller-scoped delivery/COD/refund actions,
+buyer complaint/return events, and a COD reconciliation command. Existing
+order strategies and stock restoration now use a shared stock operation.
+An isolated SQL smoke passes concurrent last-unit purchases across marketplace
+buyers and between storefront and marketplace stock writers, retry behavior,
+seller isolation, and COD state transitions. The new Commerce API is described
+in [the checkout contract](checkout-migration-contract.md).
+
+**Gate remains open:** Angular still uses the legacy marketplace API for
+buyer auth, cart, checkout, and seller operations. The new Store-scoped API is
+not a live client cutover. Core buyer identity is accepted for marketplace
+checkout, but custom-domain sessions and legacy account linking in ADR 0002
+are not implemented. Variant checkout, full storefront/POS/invoice HTTP
+journeys, tax/delivery/return policy, admin dispute workflow, and launch
+COD-only UI are still pending. The Phase 3 reader switch waits for this
+combined client cutover. No old checkout or payment writer should be retired
+yet.
+
 **Pre-implementation audit (2026-09-23):** Existing Commerce `Cart` and
 `Order` require a Website ID, so a Website-less Store cannot check out through
 them yet. The Website online order controller looks up Commerce's internal

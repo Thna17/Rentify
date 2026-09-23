@@ -1,6 +1,6 @@
 # Platform notes and open questions
 
-**Updated:** 2026-09-23. Keep observations tied to code; move settled choices
+**Updated:** 2026-09-24. Keep observations tied to code; move settled choices
 into `platform-architecture.md` and remove stale notes.
 
 ## Agreed decisions
@@ -223,3 +223,10 @@ into `platform-architecture.md` and remove stale notes.
 Record a dated decision and its reason when an open question is resolved.
 Link code and tests when an implementation lands. Do not mark a phase complete
 solely because documentation or source relocation is complete.
+## 2026-09-24 buyer checkout decision
+
+For the hackathon marketplace COD checkout, buyers must sign in with a
+verified Rentify buyer account. Guest COD checkout is deferred. Commerce's
+new marketplace route uses the verified Core user ID as `buyerId` and never
+accepts a client-supplied buyer ID. This does not yet switch Angular login or
+merchant custom-domain sessions; see the Phase 4 checkout contract.
