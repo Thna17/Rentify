@@ -81,7 +81,7 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
         </div>
         <div className="mt-6 rounded-xl border bg-white p-6">
           <h2 className="text-xl font-semibold">Seller approval</h2>
-          <p className="mt-2 text-slate-600">Submit your operating details for admin review. You can add products now; they appear in the marketplace after approval.</p>
+          <p className="mt-2 text-slate-600">Submit your operating details for admin review. You can add products now; they appear in the marketplace after approval and after you post a delivery fee below.</p>
           {applicationStatus === 'pending' && <p className="mt-3 text-blue-800">Your application is waiting for admin review.</p>}
           {canApply && <form onSubmit={submitApplication} className="mt-5 grid gap-4 md:grid-cols-2">
             {[

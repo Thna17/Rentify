@@ -5,6 +5,10 @@ const wrap = (handler) => async (req, res, next) => {
 };
 
 module.exports = {
+  getDeliveryPolicy: wrap(async (req, res) => res.json({ policy: await service.getDeliveryPolicy(req.params.storeId) })),
+  setDeliveryPolicy: wrap(async (req, res) => res.json({ policy: await service.setDeliveryPolicy(
+    req.params.storeId, req.body,
+  ) })),
   getCart: wrap(async (req, res) => res.json({ carts: await service.getCart(req.user.id, req.query.storeId) })),
   setCartItem: wrap(async (req, res) => res.json({ carts: await service.setCartItem({
     buyerId: req.user.id, storeId: req.params.storeId, productId: req.params.productId,
@@ -13,6 +17,7 @@ module.exports = {
   checkout: wrap(async (req, res) => res.status(201).json({ order: await service.checkout({
     buyerId: req.user.id, storeId: req.body.storeId,
     checkoutKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
+    expectedTotalAmount: req.body.expectedTotalAmount,
     customerInfo: req.body.customerInfo, shippingInfo: req.body.shippingInfo,
   }) })),
   buyerOrders: wrap(async (req, res) => res.json({ orders: await service.buyerOrders(req.user.id) })),

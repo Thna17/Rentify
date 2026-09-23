@@ -230,3 +230,13 @@ verified Rentify buyer account. Guest COD checkout is deferred. Commerce's
 new marketplace route uses the verified Core user ID as `buyerId` and never
 accepts a client-supplied buyer ID. This does not yet switch Angular login or
 merchant custom-domain sessions; see the Phase 4 checkout contract.
+
+## 2026-09-24 marketplace delivery fee decision
+
+For the hackathon marketplace COD checkout, the buyer pays a merchant-set
+delivery fee that is posted before order placement. Commerce stores one flat
+USD fee per Store for the pilot, including zero for posted free delivery. The
+cart displays the current fee and full COD total; checkout requires that
+quoted total and rejects a changed price or fee. The fee and policy version
+are snapshotted on the order. Merchants deliver and collect the entire COD
+amount directly. Zone/weight rates and tax treatment remain later decisions.

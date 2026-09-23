@@ -237,7 +237,8 @@ delta from the active writer.
 
 **Progress (2026-09-24):** Commerce has an additive Website-optional
 marketplace Cart/Order schema, Core-buyer-linked one-Store COD checkout,
-server-side eligibility and price checks, transactional row-locked stock
+server-side eligibility and price checks, merchant-posted flat delivery fees
+shown in cart quotes and snapshotted on orders, transactional row-locked stock
 deduction, idempotent checkout keys, seller-scoped delivery/COD/refund actions,
 buyer complaint/return events, and a COD reconciliation command. Existing
 order strategies and stock restoration now use a shared stock operation.

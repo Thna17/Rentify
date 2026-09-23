@@ -19,9 +19,13 @@ const PricingRule = require("./PricingRule");
 const BillingStatement = require("./BillingStatement");
 const StoreAccess = require('./StoreAccess');
 const OrderEvent = require('./OrderEvent');
+const StoreDeliveryPolicy = require('./StoreDeliveryPolicy');
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
+});
+StoreAccess.hasOne(StoreDeliveryPolicy, {
+  as: 'deliveryPolicy', foreignKey: 'storeId', sourceKey: 'storeId', constraints: false,
 });
 
 // During the compatibility period, website routes still create commerce rows.
@@ -142,5 +146,6 @@ module.exports = {
   PricingRule,
   BillingStatement,
   StoreAccess,
-  OrderEvent
+  OrderEvent,
+  StoreDeliveryPolicy
 };

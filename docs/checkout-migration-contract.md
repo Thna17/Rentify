@@ -1,6 +1,7 @@
 # Phase 4 COD checkout contract
 
-**Status:** Backend foundation implemented, UI and identity cutover pending (2026-09-24).
+**Status:** Backend foundation and merchant-posted delivery fee implemented;
+UI and identity cutover pending (2026-09-24).
 This contract describes the new Commerce marketplace path. The Angular
 marketplace still uses its legacy API and must not be switched to the new
 catalog alone.
@@ -31,28 +32,38 @@ All paths below are relative to `/api` and use the Core session cookies.
 | `POST /marketplace/checkout` | buyer | Place one-Store COD order. |
 | `GET /marketplace/my-orders` and `GET /marketplace/my-orders/:orderId` | buyer | Read own marketplace orders. |
 | `POST /marketplace/my-orders/:orderId/reports/:type` | buyer | Submit `complaint` or `return_requested`. |
+| `GET /stores/:storeId/marketplace-delivery` | seller | Read the posted delivery fee and version. |
+| `PUT /stores/:storeId/marketplace-delivery` | seller | Set a flat USD fee, using `expectedVersion` on updates. Zero means posted free delivery. |
 | `GET /stores/:storeId/marketplace-orders` and `GET /stores/:storeId/marketplace-orders/:orderId` | seller | Read own orders. |
 | `GET /stores/:storeId/marketplace-orders/:orderId/events` | seller | Read delivery, cash, return, and complaint audit events. |
 | `POST /stores/:storeId/marketplace-orders/:orderId/actions/:action` | seller | Record `delivered`, `delivery_failed`, `retry_delivery`, `collect_cod`, or `confirm_refund`. |
 
 Checkout requires `Idempotency-Key: <UUID>` (or `idempotencyKey` in JSON),
-`storeId`, `customerInfo: {name, phone}`, and `shippingInfo: {address}`.
+`storeId`, `expectedTotalAmount` from the cart quote,
+`customerInfo: {name, phone}`, and `shippingInfo: {address}`.
 The same key from the same buyer returns the first order; reuse with another
 buyer or Store is rejected. Cart lines are Store-scoped, so a multi-merchant
 basket becomes separate orders. `PUT` cart quantity is absolute, which makes
-client retries safe.
+client retries safe. `GET /marketplace/cart` returns each Store's current
+item subtotal, posted delivery fee, total, and checkout readiness. A changed
+price or fee rejects checkout so the buyer can review the updated total.
 
 The server rechecks Store approval, entitlement, publication, opt-out, Product
 status, variant support, stock, and price in a SQL transaction. Product rows
 are locked in ID order. It snapshots product name, category, seller Store ID,
-price, tax, shipping, and commission on each OrderItem. The current pilot
-sets tax, platform commission, and shipping charge to zero; the seller
-arranges and absorbs delivery, so the COD amount due equals the shown item
-total. This pilot rule needs explicit product and legal review before public
-release. Variant checkout is rejected until variant inventory and price
-selection have an end-to-end test.
+price, tax, and commission on each OrderItem, with the delivery fee and policy
+version on the Order. Marketplace discovery
+requires a posted Store delivery policy. For the pilot, the merchant sets a
+flat USD delivery fee per order, including `0.00` for free delivery. The buyer
+pays the shown item subtotal plus that fee directly to the merchant by COD.
+Commerce snapshots the fee and policy version on the order; later changes do
+not affect placed orders. Platform commission and modeled tax remain zero for
+this pilot. Tax and delivery scope need review before public release. Variant
+checkout is rejected until variant inventory and price selection have an
+end-to-end test.
 
-`Payment.status` starts `pending` with `collectedAmount = 0`. Marking delivery
+`Payment.status` starts `pending` with `collectedAmount = 0` and amount due
+equal to the item subtotal plus posted delivery fee. Marking delivery
 `delivered` changes only fulfillment. `collect_cod` requires delivered status
 and the full amount due, and stores collector and timestamp. `confirm_refund`
 requires collected cash, a positive amount no greater than the remaining
@@ -96,4 +107,5 @@ parity.
    HTTP auth and cookies. Complete cross-origin CORS and cookie tests.
 4. Set return/complaint response deadlines, acceptable refund evidence,
    restricted-product moderation, tax and delivery policy, and an admin case
-   review workflow before public release.
+   review workflow before public release. Decide whether a flat delivery fee
+   is sufficient beyond the pilot or whether zones and weights are needed.

@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
-const { Product, StoreAccess, WebsiteData } = require('../models');
+const { Product, StoreAccess, StoreDeliveryPolicy, WebsiteData } = require('../models');
 const { canonicalCategory } = require('../config/marketplaceTaxonomy');
 
 function fail(message, statusCode = 400) {
@@ -169,6 +169,7 @@ const eligibleStore = {
     needsCategoryReview: false,
   },
   attributes: ['storeId', 'primaryCategory'],
+  include: [{ model: StoreDeliveryPolicy, as: 'deliveryPolicy', required: true, attributes: [] }],
 };
 
 function publicProduct(product) {

@@ -5,7 +5,8 @@ const cents = (value) => Math.round(Number(value || 0) * 100);
 
 async function run() {
   const orders = await Order.findAll({ where: { salesChannel: 'marketplace' },
-    attributes: ['id', 'storeId', 'buyerId', 'websiteId', 'status', 'deliveryStatus', 'stockDeducted', 'totalAmount'] });
+    attributes: ['id', 'storeId', 'buyerId', 'websiteId', 'status', 'deliveryStatus',
+      'stockDeducted', 'subtotal', 'shippingFee', 'taxTotal', 'totalAmount'] });
   const findings = [];
   let collected = 0;
   let refunded = 0;
@@ -28,8 +29,11 @@ async function run() {
     collected += collectedAmount;
     refunded += refundedAmount;
     if (due !== cents(order.totalAmount)) problem('Payment amount differs from order total');
-    if (items.reduce((sum, item) => sum + cents(item.total), 0) !== cents(order.totalAmount)) {
-      problem('Order line totals differ from order total');
+    if (items.reduce((sum, item) => sum + cents(item.total), 0) !== cents(order.subtotal)) {
+      problem('Order line totals differ from subtotal');
+    }
+    if (cents(order.subtotal) + cents(order.shippingFee) + cents(order.taxTotal) !== cents(order.totalAmount)) {
+      problem('Subtotal, delivery, and tax do not reconcile to total');
     }
     if (items.some((item) => item.itemMetadata?.seller?.storeId !== order.storeId)) {
       problem('Order contains a line for another Store');

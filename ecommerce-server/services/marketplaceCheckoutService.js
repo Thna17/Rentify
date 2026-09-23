@@ -1,6 +1,7 @@
 const { sequelize } = require('../config/db');
 const { createHash } = require('node:crypto');
-const { Cart, CartItem, Product, ProductVariant, StoreAccess, Order, OrderItem, Payment, OrderEvent } = require('../models');
+const { Cart, CartItem, Product, ProductVariant, StoreAccess, StoreDeliveryPolicy,
+  Order, OrderItem, Payment, OrderEvent } = require('../models');
 const { changeStock } = require('./sharedStockService');
 
 function fail(message, statusCode = 400) {
@@ -28,6 +29,42 @@ function cents(value) {
 }
 
 function dollars(value) { return (value / 100).toFixed(2); }
+
+function deliveryFeeCents(value) {
+  const fee = cents(value);
+  if (fee > 100_000) fail('Delivery fee must be no more than 1000.00');
+  return fee;
+}
+
+async function getDeliveryPolicy(storeId) {
+  uuid(storeId, 'Store');
+  const policy = await StoreDeliveryPolicy.findByPk(storeId);
+  return policy ? { storeId, flatFee: policy.flatFee, currency: policy.currency,
+    version: policy.version } : null;
+}
+
+async function setDeliveryPolicy(storeId, { flatFee, expectedVersion } = {}) {
+  uuid(storeId, 'Store');
+  const fee = dollars(deliveryFeeCents(flatFee));
+  return sequelize.transaction(async (transaction) => {
+    const store = await StoreAccess.findByPk(storeId, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!store || store.status !== 'active') fail('Store is not active', 403);
+    const policy = await StoreDeliveryPolicy.findByPk(storeId, {
+      transaction, lock: transaction.LOCK.UPDATE,
+    });
+    if (!policy) {
+      if (expectedVersion !== undefined && expectedVersion !== null) fail('Delivery policy version has changed', 409);
+      const created = await StoreDeliveryPolicy.create({ storeId, flatFee: fee, currency: 'USD', version: 1 },
+        { transaction });
+      return { storeId, flatFee: created.flatFee, currency: created.currency, version: created.version };
+    }
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion !== policy.version) {
+      fail('Delivery policy version has changed; refresh and retry', 409);
+    }
+    await policy.update({ flatFee: fee, version: policy.version + 1 }, { transaction });
+    return { storeId, flatFee: policy.flatFee, currency: policy.currency, version: policy.version };
+  });
+}
 
 function actionFingerprint(action, input) {
   const fields = {
@@ -72,11 +109,41 @@ async function getCart(buyerId, storeId) {
     include: [{ model: CartItem, as: 'CartItems' }],
     order: [['createdAt', 'ASC']],
   });
-  return carts.map((cart) => ({
-    id: cart.id, storeId: cart.storeId,
-    items: cart.CartItems.map((item) => ({
-      productId: item.productId, quantity: item.quantity, unitPrice: item.unitPrice,
-    })),
+  return Promise.all(carts.map(async (cart) => {
+    const productIds = cart.CartItems.map((item) => item.productId);
+    const [store, policy, products, variants] = await Promise.all([
+      StoreAccess.findByPk(cart.storeId),
+      StoreDeliveryPolicy.findByPk(cart.storeId),
+      Product.findAll({ where: { id: productIds } }),
+      ProductVariant.findAll({ where: { productId: productIds }, attributes: ['productId'] }),
+    ]);
+    const byId = new Map(products.map((product) => [product.id, product]));
+    const variantProductIds = new Set(variants.map((variant) => variant.productId));
+    const issues = [];
+    if (!store || store.status !== 'active' || store.marketplaceApprovalStatus !== 'approved' ||
+        store.marketplaceEntitlement !== 'pilot' || store.needsCategoryReview) {
+      issues.push('Seller is not available for marketplace checkout');
+    }
+    if (!policy) issues.push('Seller has not posted a delivery fee');
+    let subtotal = 0;
+    const items = cart.CartItems.map((item) => {
+      const product = byId.get(item.productId);
+      const available = store && eligibleProduct(product, store) &&
+        !variantProductIds.has(item.productId) &&
+        (!product.trackInventory || product.stockQuantity >= item.quantity);
+      if (!available) issues.push(`Product ${item.productId} is unavailable or has insufficient stock`);
+      const currentPrice = product ? dollars(cents(product.price)) : null;
+      if (currentPrice) subtotal += cents(currentPrice) * item.quantity;
+      return { productId: item.productId, quantity: item.quantity,
+        unitPrice: item.unitPrice, currentPrice, available: Boolean(available) };
+    });
+    if (!items.length) issues.push('Cart is empty');
+    const fee = policy ? cents(policy.flatFee) : null;
+    return { id: cart.id, storeId: cart.storeId, items,
+      subtotal: dollars(subtotal), deliveryFee: fee === null ? null : dollars(fee),
+      totalAmount: fee === null || issues.length ? null : dollars(subtotal + fee),
+      currency: 'USD', deliveryPolicyVersion: policy?.version ?? null,
+      checkoutReady: issues.length === 0, issues };
   }));
 }
 
@@ -110,7 +177,8 @@ function orderView(order, items, payment) {
   return {
     id: order.id, orderNumber: order.orderNumber, storeId: order.storeId,
     buyerId: order.buyerId, status: order.status, deliveryStatus: order.deliveryStatus,
-    salesChannel: order.salesChannel, totalAmount: order.totalAmount, currency: order.currency,
+    salesChannel: order.salesChannel, subtotal: order.subtotal,
+    deliveryFee: order.shippingFee, totalAmount: order.totalAmount, currency: order.currency,
     customerInfo: order.customerInfo, shippingInfo: order.shippingInfo,
     items: items.map((item) => ({
       productId: item.productId, name: item.name, quantity: item.quantity,
@@ -135,14 +203,16 @@ async function findOrderByKey(checkoutKey, buyerId, transaction = null) {
   return orderView(order, items, payment);
 }
 
-async function checkout({ buyerId, storeId, checkoutKey, customerInfo, shippingInfo }) {
+async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, customerInfo, shippingInfo }) {
   uuid(buyerId, 'buyer'); uuid(storeId, 'Store'); uuid(checkoutKey, 'idempotency key');
+  if (expectedTotalAmount === undefined || expectedTotalAmount === null) fail('Expected cart total is required');
+  const expectedTotal = cents(expectedTotalAmount);
   const name = requiredText(customerInfo?.name, 'customer name', 120);
   const phone = requiredText(customerInfo?.phone, 'contact phone', 40);
   const address = requiredText(shippingInfo?.address, 'delivery address', 500);
   const matchesRequest = (order) => order.storeId === storeId &&
     order.customerInfo?.name === name && order.customerInfo?.phone === phone &&
-    order.shippingInfo?.address === address;
+    order.shippingInfo?.address === address && cents(order.totalAmount) === expectedTotal;
   const existing = await findOrderByKey(checkoutKey, buyerId);
   if (existing) {
     if (!matchesRequest(existing)) fail('Checkout key was already used for a different request', 409);
@@ -176,15 +246,22 @@ async function checkout({ buyerId, storeId, checkoutKey, customerInfo, shippingI
         if (!Number.isSafeInteger(subtotal) || subtotal > 100_000_000) fail('Order total is too large');
         snapshots.push({ item, product, price });
       }
-      // Shipping/tax are explicitly zero until a seller rate and tax policy
-      // have been confirmed; merchants arrange delivery directly.
+      const policy = await StoreDeliveryPolicy.findByPk(storeId, {
+        transaction, lock: transaction.LOCK.UPDATE,
+      });
+      if (!policy || policy.currency !== 'USD') fail('Seller has not posted a USD delivery fee', 409);
+      const deliveryFee = cents(policy.flatFee);
+      const total = subtotal + deliveryFee;
+      if (total !== expectedTotal) fail('Cart price or delivery fee changed; refresh before checkout', 409);
+      if (total > 100_000_000) fail('Order total is too large');
       const order = await Order.create({
         storeId, websiteId: null, buyerId, checkoutKey,
         salesChannel: 'marketplace', deliveryStatus: 'pending', orderType: 'delivery',
-        status: 'pending', subtotal: dollars(subtotal), totalAmount: dollars(subtotal),
-        taxTotal: '0.00', shippingFee: '0.00', discountTotal: '0.00', currency: 'USD',
+        status: 'pending', subtotal: dollars(subtotal), totalAmount: dollars(total),
+        taxTotal: '0.00', shippingFee: dollars(deliveryFee), discountTotal: '0.00', currency: 'USD',
         customerInfo: { name, phone }, shippingInfo: { address }, stockDeducted: true,
-        metadata: { paymentMethod: 'cod', deliveryTerms: 'Seller arranges delivery and collects cash directly', commission: '0.00' },
+        metadata: { paymentMethod: 'cod', deliveryTerms: 'Seller delivers and collects cash directly',
+          deliveryPolicyVersion: policy.version, commission: '0.00' },
       }, { transaction });
       const items = [];
       for (const { item, product, price } of snapshots) {
@@ -200,7 +277,7 @@ async function checkout({ buyerId, storeId, checkoutKey, customerInfo, shippingI
         await changeStock(product.id, -item.quantity, transaction);
       }
       const payment = await Payment.create({
-        orderId: order.id, storeId, amount: dollars(subtotal), currency: 'USD',
+        orderId: order.id, storeId, amount: dollars(total), currency: 'USD',
         paymentMethod: 'COD', status: 'pending', collectedAmount: '0.00', refundedAmount: '0.00',
       }, { transaction });
       await CartItem.destroy({ where: { cartId: cart.id }, transaction });
@@ -368,5 +445,5 @@ async function buyerReport({ buyerId, orderId, eventKey, type, details }) {
   }
 }
 
-module.exports = { getCart, setCartItem, checkout, buyerOrders, buyerOrder,
+module.exports = { getDeliveryPolicy, setDeliveryPolicy, getCart, setCartItem, checkout, buyerOrders, buyerOrder,
   buyerOrderForStore, sellerOrders, orderEvents, merchantAction, buyerReport };

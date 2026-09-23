@@ -1,8 +1,9 @@
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { sequelize } = require('../config/db');
-const { StoreAccess, WebsiteData, Product } = require('../models');
+const { StoreAccess, StoreDeliveryPolicy, WebsiteData, Product } = require('../models');
 const catalog = require('../services/storeCatalogService');
+const checkout = require('../services/marketplaceCheckoutService');
 const ProductService = require('../services/ProductService');
 
 async function run() {
@@ -27,6 +28,8 @@ async function run() {
     assert.equal((await catalog.listOwn(storeId)).total, 1);
     assert.equal((await catalog.listPublic({ storeId })).total, 0);
     await store.update({ marketplaceApprovalStatus: 'approved' });
+    assert.equal((await catalog.listPublic({ storeId })).total, 0);
+    await checkout.setDeliveryPolicy(storeId, { flatFee: '3.50' });
     assert.equal((await catalog.listPublic({ storeId })).total, 1);
     assert.equal((await catalog.getPublic(product.id)).id, product.id);
     await store.update({ status: 'suspended' });
@@ -87,6 +90,7 @@ async function run() {
   } finally {
     await Product.destroy({ where: { storeId }, force: true });
     await WebsiteData.destroy({ where: { websiteId } });
+    await StoreDeliveryPolicy.destroy({ where: { storeId } });
     await StoreAccess.destroy({ where: { storeId } });
     await sequelize.close();
   }

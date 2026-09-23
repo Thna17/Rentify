@@ -17,6 +17,9 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [deliveryPolicy, setDeliveryPolicy] = useState(null);
+  const [deliveryFee, setDeliveryFee] = useState('');
+  const [deliveryBusy, setDeliveryBusy] = useState(false);
   const [form, setForm] = useState({
     name: '', description: '', price: '', stockQuantity: 0,
     marketplaceCategory: '', imageUrl: '', status: 'draft',
@@ -25,6 +28,12 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   async function refresh(id) {
     const result = await getJson(`${commerce}/stores/${id}/products`);
     setProducts(result.products || []);
+  }
+
+  async function loadDelivery(id) {
+    const result = await getJson(`${commerce}/stores/${id}/marketplace-delivery`);
+    setDeliveryPolicy(result.policy);
+    setDeliveryFee(result.policy?.flatFee ?? '');
   }
 
   useEffect(() => {
@@ -37,7 +46,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
       if (!active) return;
       setCategories(taxonomy.categories || []);
       setStoreId(storeResult.data.id);
-      await refresh(storeResult.data.id);
+      await Promise.all([refresh(storeResult.data.id), loadDelivery(storeResult.data.id)]);
     }).catch((error) => { if (active) setMessage(error.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -76,10 +85,47 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
     finally { setBusy(false); }
   }
 
+  async function saveDeliveryFee(event) {
+    event.preventDefault();
+    const amount = Number(deliveryFee);
+    if (!/^\d+(\.\d{1,2})?$/.test(deliveryFee.trim()) ||
+        !Number.isFinite(amount) || amount > 1000) {
+      setMessage('Enter a USD delivery fee from 0.00 to 1000.00 with at most two decimals.');
+      return;
+    }
+    setDeliveryBusy(true);
+    setMessage('');
+    try {
+      const result = await getJson(`${commerce}/stores/${storeId}/marketplace-delivery`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flatFee: amount.toFixed(2),
+          ...(deliveryPolicy ? { expectedVersion: deliveryPolicy.version } : {}) }),
+      });
+      setDeliveryPolicy(result.policy);
+      setDeliveryFee(result.policy.flatFee);
+      setMessage('Marketplace delivery fee posted. Buyers will see it before checkout.');
+    } catch (error) { setMessage(error.message); }
+    finally { setDeliveryBusy(false); }
+  }
+
   if (loading) return <div className="p-6">Loading catalog…</div>;
   return <section className="space-y-6 p-4 md:p-6">
     <div><h2 className="text-2xl font-bold">Store catalog</h2>
       <p className="text-sm text-slate-600">One product ID, price, and stock balance for your storefront and the marketplace.</p></div>
+    <form onSubmit={saveDeliveryFee} className="rounded-xl border bg-white p-5">
+      <h3 className="text-lg font-semibold">Marketplace delivery fee</h3>
+      <p className="mt-1 text-sm text-slate-600">Post one flat fee per order. Buyers pay the shown fee with the product total on delivery. Enter 0 for free delivery.</p>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <label className="text-sm">Delivery fee (USD)
+          <input required type="number" min="0" max="1000" step="0.01" value={deliveryFee}
+            onChange={(event) => setDeliveryFee(event.target.value)} className="mt-1 block w-40 rounded border px-3 py-2" />
+        </label>
+        <button disabled={deliveryBusy || !storeId} className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">
+          {deliveryBusy ? 'Saving…' : deliveryPolicy ? 'Update fee' : 'Post fee'}
+        </button>
+      </div>
+      {!deliveryPolicy && <p className="mt-3 text-sm text-amber-700">Post a fee before your approved products appear in the marketplace.</p>}
+    </form>
     <form onSubmit={create} className="grid gap-3 rounded-xl border bg-white p-5 md:grid-cols-2">
       <h3 className="text-lg font-semibold md:col-span-2">Add a product</h3>
       <label className="text-sm">Name<input required maxLength={200} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2" /></label>

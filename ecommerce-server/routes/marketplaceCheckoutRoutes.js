@@ -17,6 +17,10 @@ router.post('/marketplace/checkout', requireBuyer, controller.checkout);
 router.get('/marketplace/my-orders', requireBuyer, controller.buyerOrders);
 router.get('/marketplace/my-orders/:orderId', requireBuyer, controller.buyerOrder);
 router.post('/marketplace/my-orders/:orderId/reports/:type', requireBuyer, controller.buyerReport);
+router.get('/stores/:storeId/marketplace-delivery',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_settings'] }), controller.getDeliveryPolicy);
+router.put('/stores/:storeId/marketplace-delivery',
+  createRequireStoreAccess({ permissions: ['manage_settings'] }), controller.setDeliveryPolicy);
 router.get('/stores/:storeId/marketplace-orders',
   createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.sellerOrders);
 router.get('/stores/:storeId/marketplace-orders/:orderId',

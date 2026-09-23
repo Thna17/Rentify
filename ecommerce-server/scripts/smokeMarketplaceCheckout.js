@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { sequelize } = require('../config/db');
-const { StoreAccess, WebsiteData, Product, Cart, CartItem, Order, OrderItem, Payment, OrderEvent } = require('../models');
+const { StoreAccess, StoreDeliveryPolicy, WebsiteData, Product,
+  Cart, CartItem, Order, OrderItem, Payment, OrderEvent } = require('../models');
 const catalog = require('../services/storeCatalogService');
 const checkout = require('../services/marketplaceCheckoutService');
 const NicheStrategy = require('../core/orderCreation/strategies/NicheStrategy');
@@ -23,6 +24,7 @@ async function run() {
         marketplaceEntitlement: 'pilot', version: 1,
       });
     }
+    await checkout.setDeliveryPolicy(storeId, { flatFee: '3.50' });
     const product = await catalog.create({ storeId, websiteId: null }, {
       name: 'Checkout smoke item', price: 12.5, stockQuantity: 1,
       marketplaceCategory: 'Clothing', status: 'active',
@@ -30,19 +32,25 @@ async function run() {
     for (const buyerId of [buyerA, buyerB]) {
       await checkout.setCartItem({ buyerId, storeId, productId: product.id, quantity: 1 });
     }
-    const payload = (buyerId) => ({
-      buyerId, storeId, checkoutKey: randomUUID(),
+    const payload = (buyerId, expectedTotalAmount) => ({
+      buyerId, storeId, checkoutKey: randomUUID(), expectedTotalAmount,
       customerInfo: { name: 'Test Buyer', phone: '+85512345678' },
       shippingInfo: { address: 'Phnom Penh test address' },
     });
-    const firstPayload = payload(buyerA);
-    const secondPayload = payload(buyerB);
+    const quote = (await checkout.getCart(buyerA, storeId))[0];
+    assert.equal(quote.deliveryFee, '3.50');
+    assert.equal(quote.totalAmount, '16.00');
+    assert.equal(quote.checkoutReady, true);
+    const firstPayload = payload(buyerA, quote.totalAmount);
+    const secondPayload = payload(buyerB, quote.totalAmount);
     const outcomes = await Promise.allSettled([checkout.checkout(firstPayload), checkout.checkout(secondPayload)]);
     assert.equal(outcomes.filter((result) => result.status === 'fulfilled').length, 1);
     assert.equal(outcomes.filter((result) => result.status === 'rejected').length, 1);
     const winner = outcomes[0].status === 'fulfilled' ? outcomes[0].value : outcomes[1].value;
     const winningPayload = outcomes[0].status === 'fulfilled' ? firstPayload : secondPayload;
-    assert.equal(winner.totalAmount, '12.50');
+    assert.equal(winner.subtotal, '12.50');
+    assert.equal(winner.deliveryFee, '3.50');
+    assert.equal(winner.totalAmount, '16.00');
     assert.equal(winner.payment.status, 'pending');
     assert.equal((await Product.findByPk(product.id)).stockQuantity, 0);
     assert.equal(await Order.count({ where: { storeId } }), 1);
@@ -56,11 +64,11 @@ async function run() {
     assert.equal(delivered.payment.status, 'pending');
     const collectionKey = randomUUID();
     const collected = await checkout.merchantAction({ storeId, orderId: winner.id,
-      actorId: ownerId, eventKey: collectionKey, action: 'collect_cod', details: { amount: '12.50' } });
+      actorId: ownerId, eventKey: collectionKey, action: 'collect_cod', details: { amount: '16.00' } });
     assert.equal(collected.payment.status, 'paid');
-    assert.equal(collected.payment.collectedAmount, '12.50');
+    assert.equal(collected.payment.collectedAmount, '16.00');
     await checkout.merchantAction({ storeId, orderId: winner.id,
-      actorId: ownerId, eventKey: collectionKey, action: 'collect_cod', details: { amount: '12.50' } });
+      actorId: ownerId, eventKey: collectionKey, action: 'collect_cod', details: { amount: '16.00' } });
     await assert.rejects(checkout.merchantAction({ storeId, orderId: winner.id,
       actorId: ownerId, eventKey: collectionKey, action: 'collect_cod',
       details: { amount: '10.00' } }), { statusCode: 409 });
@@ -75,13 +83,18 @@ async function run() {
       details: { reason: 'Test complaint' } });
     assert.equal(report.type, 'complaint');
 
+    await checkout.setDeliveryPolicy(storeId, { flatFee: '4.00', expectedVersion: 1 });
+    assert.equal((await checkout.buyerOrder(winningPayload.buyerId, winner.id)).deliveryFee, '3.50');
+
     const cancellationProduct = await catalog.create({ storeId, websiteId: null }, {
       name: 'Cancellation smoke item', price: 8, stockQuantity: 1,
       marketplaceCategory: 'Clothing', status: 'active',
     });
     await checkout.setCartItem({ buyerId: buyerB, storeId, productId: product.id, quantity: 0 });
     await checkout.setCartItem({ buyerId: buyerB, storeId, productId: cancellationProduct.id, quantity: 1 });
-    const cancelPayload = payload(buyerB);
+    const cancelPayload = payload(buyerB, '12.00');
+    await assert.rejects(checkout.checkout({ ...cancelPayload, expectedTotalAmount: '11.50' }),
+      { statusCode: 409 });
     const sameKey = await Promise.all([checkout.checkout(cancelPayload), checkout.checkout(cancelPayload)]);
     assert.equal(sameKey[0].id, sameKey[1].id);
     assert.equal(await Order.count({ where: { checkoutKey: cancelPayload.checkoutKey } }), 1);
@@ -106,7 +119,7 @@ async function run() {
       marketplaceCategory: 'Clothing', status: 'active',
     });
     await checkout.setCartItem({ buyerId: buyerA, storeId, productId: sharedProduct.id, quantity: 1 });
-    const sharedPayload = payload(buyerA);
+    const sharedPayload = payload(buyerA, '19.00');
     const niche = new NicheStrategy('ecommerce');
     const crossChannel = await Promise.allSettled([
       checkout.checkout(sharedPayload),
@@ -132,6 +145,7 @@ async function run() {
     await Cart.destroy({ where: { storeId } });
     await Product.destroy({ where: { storeId }, force: true });
     await WebsiteData.destroy({ where: { websiteId } });
+    await StoreDeliveryPolicy.destroy({ where: { storeId } });
     await StoreAccess.destroy({ where: { storeId: [storeId, otherStoreId] } });
     await sequelize.close();
   }
