@@ -1,0 +1,128 @@
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+# Node.js dependencies
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+.vite/
+.next/
+out/
+.cache/
+
+# Environment variables
+.env
+.env.*.local
+.env.local
+
+# IDE/editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Dependency directories
+jspm_packages/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.lcov
+
+# Linting
+.eslintcache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Parcel files
+.cache/
+
+# Package-manager lockfiles
+yarn.lock
+pnpm-lock.yaml
+
+# Tailwind generated files
+*.css.map
+
+# Storybook
+.storybook/
+storybook-static/
+
+# React Native
+.expo/
+.expo-shared/
+android/
+ios/
+
+# Misc
+*.gz
+*.sqlite
+*.db
+*.sqlite-journal
+dump.rdb
+*.rdb
+redis-data/
+.redis/
+*.pid
+*.seed
+*.pid.lock
+*.log
+
+# Firebase
+.firebase/
+
+# SASS cache
+.sass-cache/
+
+# Haste
+.haste/
+
+# IDE backups and project files
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+
+# Sentry
+.sentryclirc
+artifacts/
+
+# Coverage
+.nyc_output/
+coverage/
+
+# Production
+production/
+
+
+# Nx Workspace-specific files
+.nx/
+.nx/cache/
+.nx/workspace-data/
+
+# Next.js
+.next
+out
+.qodo

@@ -1,0 +1,9 @@
+{
+  "name": "order-confirmation",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/order-confirmation/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project order-confirmation --web",
+  "targets": {}
+}

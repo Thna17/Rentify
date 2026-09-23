@@ -1,0 +1,9 @@
+{
+  "name": "customer-order",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/customer-order/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project customer-order --web",
+  "targets": {}
+}

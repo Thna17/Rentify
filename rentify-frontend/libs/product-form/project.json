@@ -1,0 +1,9 @@
+{
+  "name": "product-form",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/product-form/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project product-form --web",
+  "targets": {}
+}

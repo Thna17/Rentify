@@ -1,0 +1,29 @@
+{
+  "name": "auth",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/core/auth/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project auth --web",
+  "targets": {
+     "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/core/auth",
+        "configFile": "apps/core/auth/vite.config.ts",
+        "base": "/",
+        "mode": "production",
+        "define": {
+          "process.env.NODE_ENV": "'production'"
+        }
+      },
+      "serve": {
+        "executor": "@nx/vite:dev-server",
+        "options": {
+          "buildTarget": "auth:build",
+          "port": 4300
+        }
+      }
+    }
+  }
+}

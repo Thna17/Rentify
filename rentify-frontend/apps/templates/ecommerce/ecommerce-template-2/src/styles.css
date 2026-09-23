@@ -1,0 +1,99 @@
+/* styles.css (Remove var definitions, keep structure) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Modern E-Commerce Storefront Theme - Clean & Minimal */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-primary antialiased;
+  }
+
+  /* Storefront container */
+  .store-container {
+    @apply bg-[oklch(var(--store-bg))] min-h-screen;
+  }
+}
+
+@layer components {
+  /* Container - Responsive widths */
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl; /* Wider for storefronts */
+  }
+
+  /* Product grid - Flexible for categories */
+  .product-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6;
+  }
+
+  /* Hero banner - For promotions */
+  .hero-banner {
+    @apply relative bg-[oklch(var(--hero-bg))] bg-gradient-to-br from-[oklch(var(--gradient-hero))] py-16 px-4 sm:px-6 lg:py-24 lg:px-8 text-center rounded-xl shadow-md;
+  }
+
+  /* Product card - Clean, hoverable */
+  .product-card {
+    @apply bg-[oklch(var(--product-bg))] border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300;
+  }
+
+  .product-image {
+    @apply w-full h-48 object-cover; /* Fixed height for uniformity */
+  }
+
+  .product-details {
+    @apply p-4;
+  }
+
+  .product-title {
+    @apply text-lg font-semibold text-foreground mb-2;
+  }
+
+  .product-price {
+    @apply text-primary font-bold;
+  }
+
+  .category-preview {
+    @apply flex flex-col items-center p-4 bg-card rounded-lg shadow-sm hover:bg-muted transition-colors;
+  }
+
+  .add-to-cart-btn {
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-[oklch(var(--primary-dark))] transition-colors;
+  }
+
+  /* Gradients as utilities */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+}
+
+/* Dialog adjustments - Keep for modals like cart previews */
+[data-radix-dialog-content] {
+  z-index: 1000 !important;
+}
+
+.fullscreen-dialog {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 90vw !important;
+  height: 90vh !important;
+  max-width: none !important;
+  border-radius: 0 !important;
+}

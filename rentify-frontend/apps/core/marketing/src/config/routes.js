@@ -1,0 +1,15 @@
+export const ROUTES = {
+  HOME: '/',
+  PRICING: '/pricing',
+  ABOUT: '/about',
+  DASHBOARD: '/dashboard',
+  BROWSE_TEMPLATES: '/templates',
+  TEMPLATE_DETAILS: '/templates/:templateId',
+  CUSTOMIZATION: '/customization/:websiteId',
+  LOGIN: '/login',
+  SIGNUP: '/signup',
+  TEST: '/test',
+  ONBOARDING: '/onboarding/:planName',
+  PRIVACY: '/privacy-policy',
+      OTP_VERIFICATION: "/verify-email",
+};

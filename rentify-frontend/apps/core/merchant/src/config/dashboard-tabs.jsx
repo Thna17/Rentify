@@ -1,0 +1,162 @@
+import {
+  LayoutDashboard,
+  BarChart2,
+  Package,
+  Store,
+  ClipboardList,
+  Receipt,
+  TerminalSquare,
+  Settings,
+  Database,
+  FileText,
+  HelpCircle,
+  Search,
+} from 'lucide-react';
+
+// Define tab structure with permission requirements 
+export const ALL_TABS = [
+  {
+    name: 'dashboard.overview',
+    icon: LayoutDashboard,
+    path: 'overview',
+    roles: ['admin', 'user'],
+    permission: null,
+    features: ['basic-dashboard'],
+  },
+  {
+    name: 'dashboard.product.detail',
+    icon: Package,
+    path: 'products/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    features: ['product-management'],
+    hideInSidebar: true,
+  },
+  {
+    name: 'dashboard.order.detail',
+    icon: Package,
+    path: 'orders/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    features: ['order-management'],
+    hideInSidebar: true,
+  },
+  {
+    name: 'dashboard.analytics',
+    icon: BarChart2,
+    path: 'analytics',
+    roles: ['admin', 'user'],
+    permission: null,
+    // features: ['advanced-analytics'],
+  },
+  {
+    name: 'dashboard.store_management.title',
+    icon: Store,
+    path: 'store-management',
+    roles: ['admin', 'user'],
+    permission: null,
+    features: ['store'],
+  },
+  {
+    name: 'dashboard.product.title',
+    icon: Package,
+    path: 'products',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    features: ['product-management'],
+  },
+    {
+    name: 'create product',
+    icon: Package,
+    path: 'products/create',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    features: ['product-management'],
+        hideInSidebar: true,
+  },
+  {
+    name: 'dashboard.order.title',
+    icon: ClipboardList,
+    path: 'orders',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    features: ['order-management'],
+  },
+  {
+    name: 'dashboard.invoices.title',
+    icon: Receipt,
+    path: 'invoices',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_invoices',
+    // features: ['invoice'],
+  },
+  {
+    name: 'dashboard.pos.title',
+    icon: TerminalSquare,
+    path: 'pos',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_pos',
+    // features: ['pos'],
+  },
+  {
+    name: 'dashboard.settings.title',
+    icon: Settings,
+    path: 'settings',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'settings',
+    hasSubmenu: true,
+    subItems: [
+      { name: 'Account', path: 'settings/account' },
+      { name: 'Preferences', path: 'settings/preferences' },
+      { name: 'Security', path: 'settings/security' },
+      { name: 'Payments', path: 'settings/payments' },
+      { name: 'Staff', path: 'settings/staff' },
+      { name: 'Billing', path: 'settings/billing' },
+
+
+    ],
+  },
+  {
+    name: 'dashboard.usage.title',
+    icon: BarChart2,
+    path: 'usage',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_analytics',
+    hasSubmenu: true,
+    subItems: [
+      { name: 'Dashboard', path: 'usage/dashboard' },
+      { name: 'Breakdown', path: 'usage/breakdown' },
+      { name: 'Billing', path: 'usage/billing' },
+    ],
+  },
+];
+
+
+export const ADDITIONAL_NAV_ITEMS = {
+  documents: [
+    {
+      name: 'Data Library',
+      icon: Database,
+      path: 'data-library',
+      element: <div>Data Library Placeholder</div>,
+    },
+    {
+      name: 'Reports',
+      icon: FileText,
+      path: 'reports',
+      element: <div>Reports Placeholder</div>,
+    },
+  ],
+  secondary: [
+    {
+      name: 'Get Help',
+      icon: HelpCircle,
+      path: 'help',
+    },
+    {
+      name: 'Search',
+      icon: Search,
+      path: 'search',
+    },
+  ],
+};

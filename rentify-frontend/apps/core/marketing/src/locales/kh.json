@@ -1,0 +1,635 @@
+{
+  "common": {
+    "get-started": "Get Started",
+    "learn-more": "Learn More",
+    "contact-us": "Contact Us",
+    "read-more": "Read More",
+    "view-all": "View All",
+    "close": "Close",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "export": "Export",
+    "import": "Import",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Finish",
+    "skip": "Skip",
+    "continue": "Continue",
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "solutions": "ដំណោះស្រាយ",
+    "templates": "គំរូ",
+    "feature": "មុខងារ",
+    "live-demo": "សាកល្បងផ្ទាល់",
+    "contact": "Contact",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "help": "Help",
+    "support": "Support",
+    "documentation": "Documentation",
+    "add-to-cart": "Add to Cart",
+    "contact-sales": "Contact Sales",
+    "most-popular": "Most Popular",
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "platform": "Platform",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "getstarted": "Get Started"
+  },
+  "hero": {
+    "title": "Build Your Dream",
+    "subtitle": "Business Online",
+    "description": "Create stunning websites, manage inventory, and process payments - all in one powerful platform designed for Cambodian businesses.",
+    "startfree": "Start Free Trial",
+    "watchdemo": "Watch Demo"
+  },
+  "features": {
+    "subtitle": "From online stores to inventory management, we provide all the tools you need to grow your business in Cambodia and beyond.",
+    "ecommerce": {
+      "title": "Complete E-commerce Solution",
+      "description": "Build beautiful online stores with mobile-responsive designs, secure payment processing, and inventory management."
+    },
+    "inventory": {
+      "title": "Smart Inventory Management",
+      "description": "Track stock levels, manage suppliers, set reorder points, and get low-stock alerts automatically.",
+      "benefit1": "Real-time stock updates",
+      "benefit2": "Low stock alerts",
+      "benefit3": "Multi-warehouse support",
+      "benefit4": "Barcode integration"
+    },
+    "payments": {
+      "title": "KHQR & Payment Integration",
+      "description": "Accept payments through KHQR, credit cards, and popular Cambodian payment methods seamlessly."
+    },
+    "analytics": {
+      "title": "Business Intelligence",
+      "description": "Get detailed insights about your sales, customers, and inventory with beautiful charts and reports.",
+      "benefit1": "Sales performance dashboards",
+      "benefit2": "Customer behavior insights",
+      "benefit3": "Inventory turnover analysis",
+      "benefit4": "Custom report builder"
+    },
+    "support": {
+      "title": "24/7 Khmer Support",
+      "description": "Get help in Khmer language from our dedicated support team whenever you need assistance."
+    },
+    "mobile": {
+      "title": "Mobile-First Design",
+      "description": "Your store looks perfect on all devices. Manage your business from anywhere with our mobile app."
+    },
+    "badge": "Our Features",
+    "store": {
+      "title": "Online Store Builder",
+      "description": "Create and customize your online store with ease, featuring responsive design and seamless checkout.",
+      "badge": "E-commerce",
+      "benefit1": "Drag-and-drop store builder",
+      "benefit2": "Customizable themes",
+      "benefit3": "Secure checkout process",
+      "benefit4": "Multi-language support"
+    },
+    "pos": {
+      "title": "Point of Sale (POS) System",
+      "description": "Manage in-store and online sales with a fully integrated POS system tailored for Cambodian businesses.",
+      "badge": "POS",
+      "benefit1": "Sync online and offline sales",
+      "benefit2": "Mobile POS for on-the-go transactions",
+      "benefit3": "Real-time sales tracking",
+      "benefit4": "Support for multiple payment methods"
+    },
+    "invoices": {
+      "title": "Invoice Management",
+      "description": "Generate, send, and track professional invoices effortlessly to streamline your billing process.",
+      "badge": "Invoicing",
+      "benefit1": "Automated invoice generation",
+      "benefit2": "Customizable invoice templates",
+      "benefit3": "Payment status tracking",
+      "benefit4": "Multi-currency invoicing"
+    },
+    "customers": {
+      "benefit1": "Detailed customer profiles",
+      "benefit2": "Purchase history tracking",
+      "benefit3": "Loyalty program integration",
+      "benefit4": "Personalized marketing tools"
+    },
+    "comparison": {
+      "title": "Why Rentify Stands Out",
+      "subtitle": "Compare our platform with traditional methods and competitors to see the difference.",
+      "traditional": {
+        "title": "Traditional Methods",
+        "point1": "Manual inventory tracking",
+        "point2": "Limited payment options",
+        "point3": "No real-time analytics",
+        "point4": "Complex setup and maintenance",
+        "point5": "No mobile management"
+      },
+      "rentify": {
+        "title": "Rentify Platform",
+        "point1": "All-in-one business solution",
+        "point2": "Multiple payment integrations",
+        "point3": "Real-time analytics and reports",
+        "point4": "Easy setup and management",
+        "point5": "Mobile and cloud access"
+      },
+      "others": {
+        "title": "Other Platforms",
+        "point1": "Limited local payment support",
+        "point2": "Generic solutions not tailored for Cambodia",
+        "point3": "Partial feature set",
+        "point4": "Expensive add-ons",
+        "point5": "Limited local support"
+      }
+    },
+    "cta": {
+      "title": "Start Growing Your Business Today",
+      "description": "Join thousands of Cambodian businesses using Rentify to streamline operations and boost growth.",
+      "trial": "Start Free Trial",
+      "demo": "Request a Demo"
+    }
+  },
+  "services": {
+    "title": "Why Choose Rentify Over Others?",
+    "subtitle": "We understand the unique needs of Cambodian businesses and provide solutions that actually work.",
+    "description": "Explore our range of services designed to help your business thrive in the digital world.",
+    "localized": {
+      "title": "Built for Cambodia",
+      "description": "Full Khmer language support, KHQR payments, and understanding of local business practices."
+    },
+    "allinone": {
+      "title": "All-in-One Platform",
+      "description": "Store builder, inventory management, POS system, and analytics - everything in one place."
+    },
+    "support": {
+      "title": "Local Expert Support",
+      "description": "Get help from our Cambodian team who understand your business challenges and speak your language."
+    },
+    "affordable": {
+      "title": "Transparent Pricing",
+      "description": "No hidden fees, no setup costs. Pay only for what you use with pricing that makes sense for local businesses."
+    },
+        "onboarding_title": "Enhance with premium services",
+    "onboarding_description": "Optional services to make your business more professional",
+    "summary": "Additional Services Summary",
+    "monthly": "Monthly services",
+    "annual": "Annual services",
+    "protip": "Pro tip: You can add or remove these services anytime after setup. Start with the basics and upgrade as your business grows!",
+    "continue": "Review & Continue",
+    "badge": "Our Services",
+    "website": {
+      "title": "Website Development",
+      "description": "Build a professional, mobile-responsive website tailored to your brand and business needs.",
+      "price": "$500",
+      "timeline": "2-4 weeks",
+      "feature1": "Custom website design",
+      "feature2": "Mobile-responsive layout",
+      "feature3": "SEO optimization",
+      "feature4": "Content management system",
+      "feature5": "E-commerce integration",
+      "feature6": "Basic analytics setup"
+    },
+    "email": {
+      "title": "Email Marketing",
+      "description": "Engage your customers with targeted email campaigns to boost loyalty and sales.",
+      "price": "$200/month",
+      "timeline": "Ongoing",
+      "feature1": "Custom email templates",
+      "feature2": "Automated email campaigns",
+      "feature3": "Audience segmentation",
+      "feature4": "Performance tracking",
+      "feature5": "A/B testing",
+      "feature6": "Integration with CRM"
+    },
+    "domain": {
+      "title": "Domain Registration",
+      "description": "Secure a unique domain name to establish your brand's online presence.",
+      "price": "$15/year",
+      "timeline": "1-2 days",
+      "feature1": "Custom domain name",
+      "feature2": "Domain privacy protection",
+      "feature3": "DNS management",
+      "feature4": "Auto-renewal options",
+      "feature5": "Multiple domain extensions",
+      "feature6": "24/7 support"
+    },
+    "hosting": {
+      "title": "Web Hosting",
+      "description": "Reliable, high-performance hosting to keep your website fast and secure.",
+      "price": "$10/month",
+      "timeline": "Ongoing",
+      "feature1": "99.9% uptime guarantee",
+      "feature2": "SSD storage",
+      "feature3": "Free SSL certificate",
+      "feature4": "Daily backups",
+      "feature5": "Scalable resources",
+      "feature6": "One-click app installs"
+    },
+    "marketing": {
+      "title": "Digital Marketing",
+      "description": "Grow your online presence with SEO, social media, and targeted ad campaigns.",
+      "price": "$300/month",
+      "timeline": "Ongoing",
+      "feature1": "SEO optimization",
+      "feature2": "Social media management",
+      "feature3": "Pay-per-click advertising",
+      "feature4": "Content creation",
+      "feature5": "Analytics and reporting",
+      "feature6": "Local market targeting"
+    },
+    "maintenance": {
+      "title": "Website Maintenance",
+      "description": "Keep your website secure, updated, and running smoothly with ongoing support.",
+      "price": "$100/month",
+      "timeline": "Ongoing",
+      "feature1": "Regular updates",
+      "feature2": "Security monitoring",
+      "feature3": "Performance optimization",
+      "feature4": "Content updates",
+      "feature5": "Bug fixes",
+      "feature6": "24/7 support"
+    },
+    "popular": "Most Popular",
+    "cta": "Get Started Now",
+    "process": {
+      "title": "Our Process",
+      "subtitle": "A streamlined approach to deliver exceptional results for your business.",
+      "step1": {
+        "title": "Discovery",
+        "description": "We discuss your business goals and requirements to tailor our services."
+      },
+      "step2": {
+        "title": "Planning",
+        "description": "We create a detailed plan and timeline to ensure a smooth execution."
+      },
+      "step3": {
+        "title": "Implementation",
+        "description": "Our team builds and deploys your solution with precision and care."
+      },
+      "step4": {
+        "title": "Support",
+        "description": "We provide ongoing support to ensure your success and growth."
+      }
+    },
+    "page": {
+      "hero": {
+        "badge": "🎯 Our Services",
+        "title": "Comprehensive Solutions for",
+        "highlight": "Your Business Growth",
+        "description": "From website development to digital marketing, we provide end-to-end solutions tailored for Cambodian businesses.",
+        "getstarted": "Get Started Today",
+        "learnmore": "Learn More"
+      },
+      "featured": {
+        "title": "Featured Services",
+        "subtitle": "Our most popular services that drive real results"
+      },
+      "all": {
+        "title": "All Services",
+        "subtitle": "Complete range of digital services for your business"
+      },
+      "cta": {
+        "title": "Ready to Grow Your Business?",
+        "description": "Let's discuss how our services can help take your business to the next level.",
+        "button": "Get Free Consultation"
+      }
+    }
+  },
+  "pricing": {
+        "review": {
+      "title": "Review your plan",
+      "description": "Everything looks great! Here's your customized pricing"
+    },
+    "summary": {
+      "business": "Business Setup",
+      "features": "Platform Features",
+      "services": "Additional Services",
+      "monthly": "Monthly subtotal",
+      "annual": "Annual services",
+      "firstyear": "First year total"
+    },
+    "promo": {
+      "title": "🎉 Launch Special - 20% Off First Year!",
+      "regular": "Regular first year price",
+      "discount": "Launch discount (20%)",
+      "price": "Your first year price",
+      "no_fees": "No setup fees",
+      "guarantee": "30-day money-back guarantee",
+      "cancel": "Cancel anytime"
+    },
+    "continue": "Continue to Payment",
+    "title": "Ready to Transform Your Business?",
+    "subtitle": "Choose the perfect plan for your business size and growth goals.",
+    "monthly": "Monthly",
+    "annually": "Annually",
+    "save": "Save 20%",
+    "most_popular": "Most Popular",
+    "starter": {
+      "title": "Starter",
+      "price": "Free",
+      "description": "Perfect for small businesses just getting started",
+      "feature1": "Basic online store",
+      "feature2": "Up to 10 products",
+      "feature3": "KHQR payment support",
+      "feature4": "Basic analytics",
+      "cta": "Start Free"
+    },
+    "business": {
+      "title": "Business",
+      "price": "$29/month",
+      "description": "For growing businesses that need more features",
+      "feature1": "Unlimited products",
+      "feature2": "Advanced inventory management",
+      "feature3": "Multiple payment methods",
+      "feature4": "Advanced analytics & reports",
+      "feature5": "Priority support",
+      "cta": "Start Trial"
+    },
+    "enterprise": {
+      "title": "Enterprise",
+      "price": "Custom",
+      "description": "For large businesses with custom needs",
+      "feature1": "Everything in Business",
+      "feature2": "Custom integrations",
+      "feature3": "Dedicated account manager",
+      "feature4": "Advanced security features",
+      "feature5": "Custom reporting",
+      "cta": "Contact Sales"
+    },
+    "page": {
+      
+      "hero": {
+        "badge": "💰 Transparent Pricing",
+        "title": "Choose the Perfect Plan for",
+        "highlight": "Your Business",
+        "description": "Start free and scale as you grow. No hidden fees, no surprises - just transparent pricing that works for Cambodian businesses.",
+        "monthly": "Monthly",
+        "annual": "Annual",
+        "save": "Save 20%"
+      },
+      "plan": {
+        "starter": {
+          "title": "Starter",
+          "description": "Perfect for small businesses just getting started online"
+        },
+        "business": {
+          "title": "Business",
+          "description": "Best for growing businesses that need advanced features"
+        },
+        "enterprise": {
+          "title": "Enterprise",
+          "description": "For large businesses with custom requirements"
+        }
+      },
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "subtitle": "Everything you need to know about our pricing and features"
+      }
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about Rentify"
+  },
+  "platform": {
+    "badge": "🚀 Platform Overview",
+    "hero": {
+      "title": "All-in-One Solution for",
+      "highlight": "Your Business",
+      "description": "Manage online, in-store, and social media sales from a single platform with unified inventory.",
+      "setup": "Set everything up in under 5 minutes! No technical skills required.",
+      "starttrial": "Start Free Trial",
+      "watchdemo": "Watch Demo"
+    },
+    "features": {
+      "learnmore": "Learn More",
+      "getstarted": "Get Started Now",
+      "website": {
+        "title": "Website & Digital Menu",
+        "description": "Create a beautiful online store showcasing your products with a customizable digital menu.",
+        "benefit1": "Stunning templates with full layout control",
+        "benefit2": "Digital menu for walk-in customers",
+        "benefit3": "Works on all devices from phones to tablets"
+      },
+      "ordersystem": {
+        "title": "Order System",
+        "description": "A complete shopping system with cart and payment functionality.",
+        "benefit1": "Customizable shopping cart",
+        "benefit2": "Secure payments with KHQR and credit cards",
+        "benefit3": "Real-time order tracking"
+      },
+      "pos": {
+        "title": "POS System",
+        "description": "Take direct orders from customers with an easy-to-use POS system.",
+        "benefit1": "Offline mode when internet is unavailable",
+        "benefit2": "Instant receipt printing",
+        "benefit3": "Connect printer and cash drawer"
+      },
+      "social": {
+        "title": "Social Media Orders",
+        "description": "Manage orders from Telegram, Facebook, and other social platforms.",
+        "benefit1": "Manually create invoices from social messages",
+        "benefit2": "Sync with customer conversations",
+        "benefit3": "Send direct notifications to customers via Telegram"
+      },
+      "inventory": {
+        "title": "Unified Inventory",
+        "description": "Inventory that auto-updates across all sales channels.",
+        "benefit1": "Real-time stock visibility",
+        "benefit2": "Auto alerts for low stock",
+        "benefit3": "Inventory reports across all locations"
+      }
+    },
+    "unified": {
+      "title": "All-in-One Unified System",
+      "description": "Manage every aspect of your business from one place.",
+      "inventory": {
+        "title": "Auto-Synced Inventory",
+        "description": "All orders — online, in-store, or from social — deduct from one inventory system."
+      }
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "description": "Join thousands of businesses using our platform to grow their business.",
+      "button": "Start Your Free Trial"
+    }
+  },
+  "consultation": {
+    "book": "Book a Consultation",
+    "demo": "Book a Demo"
+  },
+  "onboarding": {
+    "business": "Business Details",
+    "template": "Choose Template",
+    "features": "Select Features",
+    "services": "Add Services",
+    "pricing": "Review Pricing",
+    "payment": "Payment",
+    "deployment": "Deployment",
+    "step": "Step",
+    "of": "of",
+    "previous": "Previous",
+    "continue": "Continue"
+  },
+  "business": {
+    "title": "Tell us about your business",
+    "description": "We'll use this information to personalize your store and services",
+    "name": {
+      "label": "Business Name *"
+    },
+    "logo": {
+      "label": "Business Logo (Optional)",
+      "upload": "Click to upload or drag and drop",
+      "format": "PNG, JPG up to 2MB",
+      "button": "Choose File"
+    },
+    "location": {
+      "label": "Location *",
+      "placeholder": "Select location"
+    },
+    "contact": {
+      "label": "Contact Number *",
+      "placeholder": "+855 12 345 678"
+    },
+    "email": {
+      "label": "Business Email *",
+      "placeholder": "business@example.com"
+    },
+    "continue": "Continue to Templates"
+  },
+  "payment": {
+    "title": "Secure Payment",
+    "description": "Choose your preferred payment method to complete setup",
+    "khqr": {
+      "title": "KHQR Payment",
+      "description": "Pay with any Cambodian banking app",
+      "recommended": "Recommended"
+    },
+    "stripe": {
+      "title": "Credit/Debit Card",
+      "description": "Visa, Mastercard, American Express"
+    },
+    "form": {
+      "card": {
+        "label": "Card Number",
+        "placeholder": "1234 5678 9012 3456"
+      },
+      "expiry": {
+        "label": "Expiry Date",
+        "placeholder": "MM/YY"
+      },
+      "cvv": {
+        "label": "CVV",
+        "placeholder": "123"
+      }
+    },
+    "summary": {
+      "title": "Order Summary",
+      "firstyear": "First year (with 20% discount)",
+      "regular": "Regular price after first year",
+      "total": "Total Due Today"
+    },
+    "security": {
+      "ssl": "SSL Encrypted",
+      "secure": "Secure Payment"
+    },
+    "button": "Complete Payment",
+    "processing": "Processing...",
+    "terms": "by completing your purchase, you agree to our Terms of Service and Privacy Policy. You can cancel your subscription at any time."
+  },
+  "deployment": {
+    "title": {
+      "deploying": "Deploying Your Business...",
+      "completed": "🎉 Congratulations!",
+      "building": "Building Your Business..."
+    },
+    "description": {
+      "deploying": "We're setting up your store, POS system, and all selected features...",
+      "completed": "Your business is now live and ready to serve customers!",
+      "building": "We are constructing your store and setting up the necessary components..."
+    },
+    "progress": {
+      "title": "Deployment Progress"
+    },
+    "stages": {
+      "template": "Setting up Template",
+      "features": "Configuring Features",
+      "infra": "Preparing Infrastructure",
+      "build": "Building Application",
+      "deploy": "Deploying to Servers",
+      "dns": "Configuring DNS",
+      "finalize": "Finalizing Deployment"
+    },
+    "store": {
+      "title": "Your Live Store",
+      "button": "Visit Your Store"
+    },
+    "dashboard": {
+      "title": "Management Dashboard",
+      "button": "Open Dashboard"
+    },
+    "next": {
+      "title": "🚀 What's Next?",
+      "products": "Add your products and services",
+      "design": "Customize your store design",
+      "payment": "Set up payment methods",
+      "pos": "Configure POS system (if selected)",
+      "test": "Test your store functionality",
+      "launch": "Launch and start selling!"
+    },
+    "support": {
+      "title": "Need Help Getting Started?",
+      "call": "📞 Call Support",
+      "chat": "💬 Live Chat",
+      "guides": "📚 View Guides"
+    },
+    "cta": "Start Managing Your Business",
+    "welcome": "Welcome to the Rentify family! 🎉",
+    "log": {
+      "title": "Deployment Log",
+      "empty": "No deployment logs yet"
+    },
+    "detail": {
+      "starting": "Starting deployment process...",
+      "websiteCreated": "Website created successfully",
+      "deploymentStarted": "Deployment started",
+      "completed": "Deployment completed successfully",
+      "error": "Error occurred: {error}",
+      "pollingError": "Error checking deployment status",
+      "copied": "Copied to clipboard: {text}"
+    },
+    "failed": {
+      "title": "Deployment Failed",
+      "description": "Something went wrong during deployment. Please try again or contact support.",
+      "retry": "Retry Deployment",
+      "troubleshooting": "Troubleshooting Tips",
+      "tip1": "Check your internet connection",
+      "tip2": "Ensure all required fields are filled correctly",
+      "tip3": "Contact our support team for assistance"
+    },
+    "success": {
+      "title": "Deployment Successful!",
+      "description": "Your website is now live and ready to use."
+    }
+  }
+}

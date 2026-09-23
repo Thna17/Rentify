@@ -1,0 +1,29 @@
+{
+  "name": "marketing",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/core/marketing/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project marketing --web",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/core/marketing",
+        "configFile": "apps/core/marketing/vite.config.ts",
+        "base": "/",
+        "mode": "production",
+        "define": {
+          "process.env.NODE_ENV": "'production'"
+        }
+      },
+      "serve": {
+        "executor": "@nx/vite:dev-server",
+        "options": {
+          "buildTarget": "marketing:build",
+          "port": 4200
+        }
+      }
+    }
+  }
+}

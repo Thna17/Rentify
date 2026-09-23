@@ -1,0 +1,26 @@
+{
+  "name": "merchant",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/core/merchant/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project merchant --web",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/core/merchant",
+        "configFile": "apps/core/merchant/vite.config.ts",
+        "base": "/",
+        "mode": "production"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "options": {
+        "buildTarget": "merchant:build",
+        "port": 4400
+      }
+    }
+  }
+}
