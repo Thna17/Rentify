@@ -19,16 +19,21 @@ class ProductBuilder {
     return this;
   }
 
-  setBasicInfo({ name, description, price, productType = 'physical' }) {
+  setBasicInfo({ name, description, price, productType, status }) {
+    const defaultType = {
+      restaurant: 'food', cafe: 'beverage', fashion: 'clothing',
+      skincare: 'cleanser', electronics: 'device', grocery: 'fresh',
+    }[this.websiteNiche] || 'physical';
     this.productData = {
       name,
       description,
       price: parseFloat(price),
-      productType,
+      productType: productType || defaultType,
       websiteId: this.websiteId,
       websiteNiche: this.websiteNiche,
       nicheAttributes: this.strategy.generateDefaultAttributes()
     };
+    if (status !== undefined) this.productData.status = status;
     return this;
   }
 
@@ -48,6 +53,12 @@ class ProductBuilder {
 
   setCategory(categoryId) {
     this.productData.categoryId = categoryId;
+    return this;
+  }
+
+  setMarketplaceCategory(category, visibility) {
+    this.productData.marketplaceCategory = category;
+    if (visibility !== undefined) this.productData.marketplaceVisibility = visibility;
     return this;
   }
 

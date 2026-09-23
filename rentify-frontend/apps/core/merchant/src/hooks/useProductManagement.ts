@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
-  useGetAllProductsQuery,
+  useGetManagedProductsQuery,
   useUpdateInventoryMutation,
   useDeleteProductMutation,
   useBulkUpdateProductsMutation,
@@ -132,7 +132,7 @@ export const useProductManagement = (
   }>({ type: null, id: null });
 
   // Fetch products with query
-  const { data, isLoading, isError, refetch } = useGetAllProductsQuery({
+  const { data, isLoading, isError, refetch } = useGetManagedProductsQuery({
     websiteId,
     page,
     limit: rowsPerPage,

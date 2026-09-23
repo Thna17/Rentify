@@ -7,6 +7,7 @@ const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
+const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
@@ -33,6 +34,7 @@ export const dashboardRoutes = {
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
     { path: 'products', element: <ProductManagement /> },
+    { path: 'catalog', element: <StoreCatalogPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },

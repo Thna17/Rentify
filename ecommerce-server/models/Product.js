@@ -64,9 +64,11 @@ const Product = sequelize.define(
     },
     websiteId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     storeId: { type: DataTypes.UUID, allowNull: true },
+    marketplaceCategory: { type: DataTypes.STRING(120), allowNull: true },
+    marketplaceVisibility: { type: DataTypes.BOOLEAN, allowNull: true },
     // Dynamic product type based on niche
     productType: {
       type: DataTypes.STRING,
@@ -142,6 +144,9 @@ const Product = sequelize.define(
     ],
     hooks: {
       beforeValidate: async (product) => {
+        if (!product.websiteId && product.storeId && !product.websiteNiche) {
+          product.websiteNiche = 'ecommerce';
+        }
         // Get website niche if not already set
         if (!product.websiteNiche && product.websiteId) {
           const WebsiteData = require('./WebsiteData');
@@ -172,7 +177,7 @@ const Product = sequelize.define(
 
         // Auto status based on inventory
         if (product.trackInventory) {
-          if (product.stockQuantity <= 0 && !product.allowBackorders) {
+          if (product.status === 'active' && product.stockQuantity <= 0 && !product.allowBackorders) {
             product.status = "out_of_stock";
           }
         }

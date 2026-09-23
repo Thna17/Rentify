@@ -226,6 +226,8 @@ export {
 
 export {
   useGetAllProductsQuery,
+  useGetManagedProductsQuery,
+  useGetManagedProductQuery,
   useGetProductQuery,
   useGetAdvancedFilterProductsQuery,
   useSearchProductsQuery,

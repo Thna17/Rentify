@@ -19,6 +19,7 @@
     "db:migrate": "node migrations/runner.js migrate",
     "db:migrate:verify": "node migrations/runner.js verify",
     "db:audit-stores": "node scripts/auditStoreMapping.js",
+    "db:smoke-catalog": "node scripts/smokeStoreCatalog.js",
     "db:seed": "node scripts/seed.js"
   },
   "keywords": [],

@@ -68,7 +68,7 @@ import {
   TableRow,
 } from '@rentify/shared/ui/table';
 
-import { useGetProductQuery } from '@rentify/apis';
+import { useGetManagedProductQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
 // ===== TYPE DEFINITIONS =====
@@ -181,7 +181,7 @@ export function ProductDetailView({
     data: product,
     isLoading,
     isError,
-  } = useGetProductQuery({ websiteId, productId: id });
+  } = useGetManagedProductQuery({ websiteId, productId: id });
 
   // Local state management
   const [selectedImage, setSelectedImage] = React.useState<number>(0);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import StoreCatalogPage from '../product-management/StoreCatalogPage';
 
 const base = `${RENTIFY_API_BASE}/api/stores`;
 
@@ -80,7 +81,7 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
         </div>
         <div className="mt-6 rounded-xl border bg-white p-6">
           <h2 className="text-xl font-semibold">Seller approval</h2>
-          <p className="mt-2 text-slate-600">Submit your operating details for admin review. Product listing tools will use this same Store when the shared catalog is enabled.</p>
+          <p className="mt-2 text-slate-600">Submit your operating details for admin review. You can add products now; they appear in the marketplace after approval.</p>
           {applicationStatus === 'pending' && <p className="mt-3 text-blue-800">Your application is waiting for admin review.</p>}
           {canApply && <form onSubmit={submitApplication} className="mt-5 grid gap-4 md:grid-cols-2">
             {[
@@ -107,6 +108,7 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
           <p className="mt-2 text-slate-600">Add a template and Website to this Store. Your Store identity stays the same.</p>
           <a href={`${MARKETING_URL}/pricing`} className="mt-4 inline-block rounded-lg border border-blue-700 px-5 py-3 text-blue-700">Explore storefront plans</a>
         </div>
+        <div className="mt-6 rounded-xl border bg-white"><StoreCatalogPage storeId={store.id} /></div>
         {message && <p role="status" className="mt-5 rounded-lg bg-blue-50 p-4 text-blue-900">{message}</p>}
       </div>
     </main>

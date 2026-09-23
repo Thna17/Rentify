@@ -174,6 +174,26 @@ into `platform-architecture.md` and remove stale notes.
   domain verification, and full browser journey still need implementation and
   validation. Product management for Website-less Stores begins in Phase 3.
 
+## Catalog increment (2026-09-23)
+
+- Commerce Product now supports a null Website key and a specific marketplace
+  category plus nullable per-product marketplace visibility. Store-keyed owner
+  routes create/list/update those Products; public marketplace reads apply
+  seller approval, active Store, reviewed primary category, pilot entitlement,
+  publication, and visibility at query time.
+- The merchant Store catalog screen can create Website-less Products and
+  manage the shared Product category, stock, publication, and visibility.
+  Storefront Product creation accepts a specific marketplace category too.
+  Existing storefront products without one need category review before they
+  can enter public marketplace discovery.
+- Public Website Product reads now exclude drafts and archived products.
+  Authenticated Website management reads preserve access to those states.
+  The catalog is still a partial Phase 3 increment; Angular, checkout, legacy
+  import, and cohort cutover have not moved.
+- The owner confirmed that there is no KhmerCraft data to migrate for the
+  hackathon release. Keep mapping and import procedures for later, but do not
+  create fictional historical rows or require an empty export at this gate.
+
 ## Open product and architecture questions
 
 1. What products are restricted or prohibited in marketplace listings, and

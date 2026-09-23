@@ -7,7 +7,13 @@ const hasRequiredPermission = (user, requiredPermissions = []) => {
   return requiredPermissions.some((permission) => permissions.has(permission));
 };
 
-const createRequireWebsiteAccess = ({ findWebsite = (websiteId) => require("../models").WebsiteData.findOne({ where: { id: websiteId } }), requiredPermissions = [] } = {}) =>
+const createRequireWebsiteAccess = ({
+  findWebsite = async (websiteId) => {
+    const { WebsiteData } = require('../models');
+    return (await WebsiteData.findOne({ where: { websiteId } })) || WebsiteData.findByPk(websiteId);
+  },
+  requiredPermissions = [],
+} = {}) =>
   async (req, res, next) => {
     if (!req.user || req.user.type === "guest" || req.user.type === "customer") {
       return res.status(401).json({ error: "Merchant authentication required" });

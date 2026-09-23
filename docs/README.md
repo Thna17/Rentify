@@ -10,6 +10,8 @@ code so implementation work can proceed without relying on chat history.
   service map and existing flows that migration must preserve.
 - [Migration plan](migration-plan.md) — staged work for absorbing KhmerCraft's
   marketplace into Rentify, with release gates and rollback paths.
+- [Catalog migration contract](catalog-migration-contract.md) — Phase 3 data
+  mapping, read/write boundaries, and checks before a marketplace cohort moves.
 - [Notes and open questions](notes.md) — verified observations, unresolved
   choices, and items requiring product decisions.
 

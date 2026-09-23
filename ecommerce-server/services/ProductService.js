@@ -11,6 +11,21 @@ const ProductBuilder = require("../core/product/builders/ProductBuilder");
 const StrategyFactory = require("../core/product/factories/StrategyFactory");
 const { logger } = require("../utils/logger");
 const { ApiError } = require("../utils/ApiError");
+const { canonicalCategory } = require('../config/marketplaceTaxonomy');
+
+function validMarketplaceCategory(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const category = canonicalCategory(value);
+  if (!category) throw new ApiError(400, 'Choose a valid marketplace category');
+  return category;
+}
+
+function validMarketplaceVisibility(value) {
+  if (value !== undefined && value !== null && typeof value !== 'boolean') {
+    throw new ApiError(400, 'Marketplace visibility must be true, false, or null');
+  }
+  return value;
+}
 
 class ProductService {
   constructor(websiteId) {
@@ -19,7 +34,7 @@ class ProductService {
 
   async getWebsiteNiche() {
     const website = await WebsiteData.findOne({
-      where: { id: this.websiteId },
+      where: { websiteId: this.websiteId },
       attributes: ["niche"],
     });
     return website ? website.niche : "ecommerce";
@@ -267,6 +282,8 @@ async create(productData, transaction = null) {
       .setInventoryInfo(productData)
       .setSeoInfo(productData)
       .setCategory(productData.categoryId)
+      .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+        validMarketplaceVisibility(productData.marketplaceVisibility))
       .setImages(productData.images)
       .setTags(productData.tags)
       .setNicheAttributes(productData.nicheAttributes || {});
@@ -290,11 +307,30 @@ async create(productData, transaction = null) {
 
   async update(productId, updates, transaction = null) {
     try {
-      const product = await this.findById(productId);
+      const product = await Product.findOne({
+        where: { id: productId, websiteId: this.websiteId },
+        transaction,
+        lock: transaction?.LOCK.UPDATE,
+      });
+      if (!product) throw new ApiError(404, 'Product not found');
+      if (!Number.isSafeInteger(updates.expectedVersion) ||
+          updates.expectedVersion !== product.version) {
+        throw new ApiError(409, 'Product version has changed; refresh and retry');
+      }
 
       const updateData = { ...updates };
+      for (const protectedField of ['id', 'websiteId', 'storeId', 'websiteNiche', 'version', 'expectedVersion', 'createdAt', 'updatedAt']) {
+        delete updateData[protectedField];
+      }
+      if (updates.marketplaceCategory !== undefined) {
+        updateData.marketplaceCategory = validMarketplaceCategory(updates.marketplaceCategory);
+      }
+      if (updates.marketplaceVisibility !== undefined) {
+        updateData.marketplaceVisibility = validMarketplaceVisibility(updates.marketplaceVisibility);
+      }
       delete updateData.variants;
       delete updateData.options;
+      updateData.version = product.version + 1;
 
       await product.update(updateData, { transaction });
 
@@ -334,7 +370,7 @@ async create(productData, transaction = null) {
         }
       }
 
-      return await this.findById(productId);
+      return await this.findById(productId, transaction);
     } catch (error) {
       if (error instanceof ApiError) throw error;
       logger.error("Error updating product:", error);
@@ -462,6 +498,8 @@ async create(productData, transaction = null) {
           .setInventoryInfo(productData)
           .setSeoInfo(productData)
           .setCategory(productData.categoryId)
+          .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+            validMarketplaceVisibility(productData.marketplaceVisibility))
           .setImages(productData.images || [])
           .setTags(productData.tags || [])
           .setNicheAttributes(productData.nicheAttributes || {});
@@ -684,6 +722,8 @@ async create(productData, transaction = null) {
             .setInventoryInfo(productData)
             .setSeoInfo(productData)
             .setCategory(productData.categoryId)
+            .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+              validMarketplaceVisibility(productData.marketplaceVisibility))
             .setImages(productData.images || [])
             .setTags(productData.tags || [])
             .setNicheAttributes(productData.nicheAttributes || {});
@@ -719,6 +759,9 @@ async create(productData, transaction = null) {
       trackInventory: row.trackInventory !== "false",
       allowBackorders: row.allowBackorders === "true",
       categoryId: row.categoryId,
+      marketplaceCategory: row.marketplaceCategory || null,
+      marketplaceVisibility: row.marketplaceVisibility === 'true' ? true
+        : row.marketplaceVisibility === 'false' ? false : undefined,
       seoTitle: row.seoTitle,
       seoDescription: row.seoDescription,
       slug: row.slug,

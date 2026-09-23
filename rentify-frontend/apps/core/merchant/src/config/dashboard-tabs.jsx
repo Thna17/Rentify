@@ -65,6 +65,13 @@ export const ALL_TABS = [
     permission: 'manage_products',
     features: ['product-management'],
   },
+  {
+    name: 'Store catalog',
+    icon: Package,
+    path: 'catalog',
+    roles: ['admin', 'user'],
+    permission: null,
+  },
     {
     name: 'create product',
     icon: Package,

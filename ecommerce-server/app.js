@@ -29,6 +29,7 @@ app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 // Your routes
 app.use('/api/website-data', require('./routes/websiteRoutes'));
 app.use('/api/store-access', require('./routes/storeAccessRoutes'));
+app.use('/api', require('./routes/storeCatalogRoutes'));
 app.use('/ecommerce/stats', require('./routes/ecommerceStatsRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));

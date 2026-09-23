@@ -173,6 +173,27 @@ subscriptions, or Websites; existing merchants retain dashboard access.
 
 ## Phase 3 — one catalog on both surfaces
 
+**Progress (2026-09-23):** Commerce now has additive Product channel fields,
+nullable `websiteId` for Website-less Store products, Store-keyed merchant
+create/list/update routes, and public marketplace category/list/detail routes.
+Public marketplace reads require active publication, an approved active Store,
+pilot entitlement, reviewed primary category, and Store or Product visibility.
+The merchant dashboard can manage Website-less Store products. The existing
+storefront Product form collects a specific marketplace category, while its
+Website reader still uses the same Commerce Product record. Authenticated
+Website management reads keep drafts available to merchants; public Website
+reads exclude drafts and archived products. The isolated SQL catalog smoke,
+Commerce verification suite, and merchant development build pass.
+
+**Gate remains open:** the Angular marketplace still reads and writes the
+legacy Mongo API. Switching its catalog reader now would leave cart and
+checkout on a different Product authority, so that switch waits for the
+Phase 4 checkout adapter. The owner confirmed there is no KhmerCraft data to
+import for the hackathon release; historical import is deferred until such
+data exists. Cohort shadow comparisons, browser
+session/CORS rehearsal, and writer freeze have not occurred. See
+[catalog migration contract](catalog-migration-contract.md).
+
 **Work**
 
 - Make Commerce the sole Product and inventory writer. Add Store keyed APIs

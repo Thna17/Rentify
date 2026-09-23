@@ -19,6 +19,10 @@ const PricingRule = require("./PricingRule");
 const BillingStatement = require("./BillingStatement");
 const StoreAccess = require('./StoreAccess');
 
+Product.belongsTo(StoreAccess, {
+  as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
+});
+
 // During the compatibility period, website routes still create commerce rows.
 // Attach the canonical Store key from the trusted Website projection and reject
 // a client-supplied Store key that points at another tenant.
