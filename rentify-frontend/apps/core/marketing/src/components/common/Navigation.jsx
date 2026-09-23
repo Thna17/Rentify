@@ -10,7 +10,6 @@ import {
 } from '@rentify/shared/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@rentify/shared/ui/sheet';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { AUTH_URL } from '@rentify/shared/config/urls';
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -159,7 +158,7 @@ const Navigation = () => {
               <span className="text-sm font-medium">+855 96 123 4567</span>
             </div>
             
-            <Link to={AUTH_URL}>
+            <Link to="/start">
               <Button className="bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
                 <Star className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                 {t('nav.getstarted')}
@@ -248,7 +247,7 @@ const Navigation = () => {
                     </div>
                   </div>
                   
-                  <Link to={AUTH_URL} className="block">
+                  <Link to="/start" className="block">
                     <Button className="w-full bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white">
                       <Star className="h-4 w-4 mr-2" />
                       {t('nav.getstarted')}

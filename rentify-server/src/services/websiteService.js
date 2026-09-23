@@ -17,6 +17,14 @@ class WebsiteService {
       // Validate inputs
       await this.validateCreationInputs({ templateId, packageId, userId });
 
+      // A deployment retry must reuse the same Website and trial. A merchant
+      // may own only one Website, including after starting as marketplace-only.
+      const existingWebsite = await Website.findOne({ where: { userId }, transaction });
+      if (existingWebsite) {
+        await transaction.commit();
+        return existingWebsite;
+      }
+
       // Get package and template
       const [packageData, template, user, staffs] = await Promise.all([
         Package.findByPk(packageId, { transaction }),

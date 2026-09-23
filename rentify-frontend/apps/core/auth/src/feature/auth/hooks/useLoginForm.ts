@@ -90,7 +90,7 @@ export const useLoginForm = () => {
       const destination = isPlatformLogin
         ? response?.data?.hasStore
           ? `${DASHBOARD_URL}/overview`
-          : MARKETING_URL
+          : `${MARKETING_URL}/start`
         : redirectUrl;
       setSuccess('Login successful! Redirecting...');
       setTimeout(() => {

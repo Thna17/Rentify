@@ -1,6 +1,7 @@
 const { randomUUID } = require('node:crypto');
 const { Store, User } = require('../models');
 const storeSyncService = require('./storeSyncService');
+const { normalizeStoreCategory } = require('../config/storeCategories');
 
 const clean = (value, maxLength) =>
   typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
@@ -12,7 +13,7 @@ class StoreService {
 
   async createMarketplaceStore({ ownerUserId, name, primaryCategory, marketplaceEnabled = true }) {
     const storeName = clean(name, 120);
-    const category = clean(primaryCategory, 120);
+    const category = normalizeStoreCategory(primaryCategory);
     if (!storeName || !category || typeof marketplaceEnabled !== 'boolean') {
       const error = new Error('Store name, primary category, and a boolean marketplace setting are required');
       error.statusCode = 400;
@@ -49,7 +50,7 @@ class StoreService {
 
   async createForOwner({ ownerUserId, name, primaryCategory, marketplaceEnabled = true, transaction }) {
     const id = randomUUID();
-    const category = clean(primaryCategory, 120);
+    const category = normalizeStoreCategory(primaryCategory);
     return Store.create({
       id,
       ownerUserId,
@@ -64,12 +65,26 @@ class StoreService {
   }
 
   async ensureForWebsite({ ownerUserId, businessData, transaction }) {
+    const category = normalizeStoreCategory(businessData?.primaryCategory);
+    if (!category) {
+      const error = new Error('Choose a valid primary Store category');
+      error.statusCode = 400;
+      throw error;
+    }
     const existing = await Store.findOne({ where: { ownerUserId }, transaction });
-    if (existing) return existing;
+    if (existing) {
+      if (category && (existing.primaryCategory !== category || existing.needsCategoryReview)) {
+        await existing.update({
+          primaryCategory: category, needsCategoryReview: false,
+          projectionVersion: existing.projectionVersion + 1,
+        }, { transaction });
+      }
+      return existing;
+    }
     return this.createForOwner({
       ownerUserId,
       name: businessData?.name,
-      primaryCategory: businessData?.primaryCategory,
+      primaryCategory: category,
       transaction,
     });
   }
@@ -77,7 +92,7 @@ class StoreService {
   async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled }) {
     const changes = {};
     if (primaryCategory !== undefined) {
-      const category = clean(primaryCategory, 120);
+      const category = normalizeStoreCategory(primaryCategory);
       if (!category) {
         const error = new Error('Primary category is required');
         error.statusCode = 400;

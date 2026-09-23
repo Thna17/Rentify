@@ -165,7 +165,14 @@ into `platform-architecture.md` and remove stale notes.
   conflicts in the local development database. The isolated test database
   retains two deliberately unmapped legacy fixtures, so that audit does not
   pass there. Both API verification suites and a fresh Core migration run
-  passed. Store-keyed commerce operations and category policy are still open.
+  passed. Store-keyed commerce operations and taxonomy mapping are still open.
+- The onboarding increment now uses a controlled primary category list and
+  sends merchants without a Store to `/start` after login. Marketplace-only
+  Stores have a focused dashboard for Store settings and seller application.
+  Existing marketplace-only Stores can begin the storefront plan/template
+  path without creating a second Store. The live default subdomain, custom
+  domain verification, and full browser journey still need implementation and
+  validation. Product management for Website-less Stores begins in Phase 3.
 
 ## Open product and architecture questions
 

@@ -1,6 +1,6 @@
 const express = require("express");
 const sequelize = require("../config/db");
-const { User, Website } = require("../models");
+const { User, Store } = require("../models");
 const AuthService = require("../services/authService");
 const { ApiError } = require("../utils/errors");
 const router = express.Router();
@@ -84,8 +84,8 @@ router.post(
     // destination. It avoids a client-side follow-up request that can race the
     // cross-origin session cookie being set.
     const hasStore = Boolean(
-      await Website.count({
-        where: { userId: result.entity.id },
+      await Store.count({
+        where: { ownerUserId: result.entity.id },
         transaction,
       })
     );

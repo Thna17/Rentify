@@ -132,9 +132,9 @@ const Onboarding = () => {
   const isStepComplete = useCallback(() => {
     switch (currentStep) {
       case 1: {
-        const { name, location, contact, email } =
+        const { name, location, contact, email, primaryCategory } =
           formData.businessDetails || {};
-        return name && location && contact && email;
+        return name && location && contact && email && primaryCategory;
       }
       case 2:
         return !!formData.template;

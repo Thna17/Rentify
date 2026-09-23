@@ -105,7 +105,7 @@ Commerce. Nullable Store keys, canonical assignment on website-scoped writes,
 and an audit command cover existing commerce records. The local development
 audit reports zero unmapped or conflicting rows. Historical Store categories
 remain flagged for review; a controlled primary-category list, broader data
-reconciliation, and complete Store-keyed commerce routes remain before the
+reconciliation, taxonomy mapping, and complete Store-keyed commerce routes remain before the
 phase exit gate.
 
 **Work**
@@ -140,6 +140,17 @@ to exactly one Store; marketplace-only Store creation succeeds without a
 Website; Store keyed routes enforce owner and staff permissions.
 
 ## Phase 2 — unified merchant onboarding
+
+**Progress (2026-09-23):** Login now checks Core Store ownership rather than
+Website count. A marketing entry offers marketplace-only Store creation with
+a free pilot entitlement or the existing template/storefront path. Both paths
+collect a controlled primary Store category. Marketplace-only merchants reach
+a Store dashboard for visibility, seller application, and adding a Website
+later. Website creation reuses an existing Store and retry requests reuse the
+existing Website and trial. Development builds of auth, marketing, and
+merchant apps pass. Domain assignment/verification and a complete browser
+journey remain before this phase's exit gate. Marketplace-only product tools
+depend on Phase 3 Store-keyed catalog APIs.
 
 **Work**
 

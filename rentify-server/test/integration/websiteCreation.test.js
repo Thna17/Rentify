@@ -12,6 +12,7 @@ const businessData = {
   name: 'Test shop',
   email: 'shop@example.test',
   contact: '012345678',
+  primaryCategory: 'Fashion',
 };
 
 function setupCreation(t, { failSubscription = false } = {}) {
@@ -35,6 +36,7 @@ function setupCreation(t, { failSubscription = false } = {}) {
   };
 
   t.mock.method(Website.sequelize, 'transaction', async () => transaction);
+  t.mock.method(Website, 'findOne', async () => null);
   t.mock.method(WebsiteTemplate, 'findByPk', async () => template);
   t.mock.method(Package, 'findByPk', async () => pkg);
   t.mock.method(User, 'findByPk', async () => user);
@@ -102,6 +104,16 @@ test('failed trial creation rolls back the website', async (t) => {
     /subscription failed/
   );
   assert.deepEqual(calls, ['ensure store', 'create website', 'version store', 'queue store sync', 'create subscription', 'rollback']);
+});
+
+test('website creation retry reuses the Website and does not create another trial', async (t) => {
+  const { calls, website } = setupCreation(t);
+  Website.findOne.mock.mockImplementation(async () => website);
+  const result = await websiteService.createWebsiteWithTrial({
+    userId: 'user-1', templateId: 'template-1', packageId: 'package-1', businessData,
+  });
+  assert.equal(result, website);
+  assert.deepEqual(calls, ['commit']);
 });
 
 test('new and updated website statuses use Commerce-supported values', async (t) => {

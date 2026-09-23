@@ -1,6 +1,9 @@
 const storeService = require('../services/storeService');
 const storeSyncService = require('../services/storeSyncService');
 const { asyncHandler } = require('../utils/helpers');
+const { STORE_CATEGORIES } = require('../config/storeCategories');
+
+exports.getCategories = (req, res) => res.json({ success: true, data: STORE_CATEGORIES });
 
 exports.getOwnStore = asyncHandler(async (req, res) => {
   const store = await storeService.getOwnStore(req.user.id);

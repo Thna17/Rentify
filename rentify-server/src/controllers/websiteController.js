@@ -1,6 +1,7 @@
 // controllers/websiteController.js
 const websiteService = require("../services/websiteService");
 const ecommerceSyncService = require("../services/ecommerceSyncService");
+const storeSyncService = require('../services/storeSyncService');
 const { logger } = require("../utils/logger");
 const { asyncHandler } = require("../utils/helpers");
 const { ERROR_CODES } = require("../config/constants");
@@ -40,6 +41,7 @@ class WebsiteController {
         error: error.message,
       });
     });
+    if (website.storeId) storeSyncService.syncStore(website.storeId).catch(() => {});
 
     res.status(201).json({
       success: true,

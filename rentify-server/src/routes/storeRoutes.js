@@ -3,6 +3,7 @@ const { verifyToken } = require('../middlewares/auth');
 const controller = require('../controllers/storeController');
 const sellerReviewController = require('../controllers/sellerReviewController');
 
+router.get('/categories', controller.getCategories);
 router.use(verifyToken);
 router.get('/mine', controller.getOwnStore);
 router.post('/', controller.createStore);

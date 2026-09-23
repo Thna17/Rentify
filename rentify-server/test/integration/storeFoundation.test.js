@@ -50,8 +50,8 @@ test('merchant can opt out of marketplace without losing the Store', async (t) =
 });
 
 test('website creation reuses a marketplace-only Store', async (t) => {
-  const store = { id: 'store-1' };
+  const store = { id: 'store-1', primaryCategory: 'Fashion', needsCategoryReview: false };
   t.mock.method(Store, 'findOne', async () => store);
   t.mock.method(Store, 'create', async () => { throw new Error('unexpected duplicate Store'); });
-  assert.equal(await storeService.ensureForWebsite({ ownerUserId: 'owner-1', businessData: { name: 'Shop' } }), store);
+  assert.equal(await storeService.ensureForWebsite({ ownerUserId: 'owner-1', businessData: { name: 'Shop', primaryCategory: 'Fashion' } }), store);
 });
