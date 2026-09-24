@@ -23,10 +23,10 @@ export function UnauthorizedAccess({ requiredPermission, currentFeature }) {
             <Lock className="h-6 w-6 text-red-600" />
           </div>
           <CardTitle className="text-2xl">
-            {t('dashboard.unauthorized.title')}
+            {t('dashboard.unauthorized.title') && t('dashboard.unauthorized.title') !== 'dashboard.unauthorized.title' ? t('dashboard.unauthorized.title') : 'Access Restricted'}
           </CardTitle>
           <CardDescription>
-            {t('dashboard.unauthorized.description')}
+            {t('dashboard.unauthorized.description') && t('dashboard.unauthorized.description') !== 'dashboard.unauthorized.description' ? t('dashboard.unauthorized.description') : 'You do not have permission to access this page.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -46,7 +46,7 @@ export function UnauthorizedAccess({ requiredPermission, currentFeature }) {
             onClick={() => navigate('/overview')}
             className="w-full"
           >
-            {t('dashboard.unauthorized.back_to_dashboard')}
+            {t('dashboard.unauthorized.back_to_dashboard') && t('dashboard.unauthorized.back_to_dashboard') !== 'dashboard.unauthorized.back_to_dashboard' ? t('dashboard.unauthorized.back_to_dashboard') : 'Back to Dashboard'}
           </Button>
         </CardContent>
       </Card>

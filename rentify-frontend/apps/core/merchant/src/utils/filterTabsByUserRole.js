@@ -24,7 +24,10 @@ export const filterTabsByUserRole = (
     }
 
     if (userRole === 'staff' && tab.permission) {
-      const hasPermission = userPermissions?.includes(tab.permission);
+      const hasPermission =
+        userPermissions?.includes(tab.permission) ||
+        (tab.permission === 'settings' && userPermissions?.includes('manage_settings')) ||
+        (tab.permission === 'manage_settings' && userPermissions?.includes('settings'));
       if (!hasPermission) return false;
     }
 
