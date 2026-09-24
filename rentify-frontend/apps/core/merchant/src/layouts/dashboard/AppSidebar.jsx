@@ -29,7 +29,7 @@ export function AppSidebar({
     : tabs;
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-background text-foreground w-64 border-r border-border select-none">
+    <div className="flex h-full flex-col bg-background text-foreground w-[270px] border-r border-border select-none">
       {/* Header */}
       <div className="p-3.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -70,7 +70,7 @@ export function AppSidebar({
       </div>
 
       {/* Navigation Content */}
-      <div className="flex-1 overflow-y-auto px-2.5 py-3">
+      <div className="flex-1 overflow-y-auto px-3 py-3.5">
         <NavMain
           items={filteredTabs}
           currentTab={currentTab}
@@ -80,7 +80,7 @@ export function AppSidebar({
 
       {/* Storefront Upsell for Marketplace-only Merchants */}
       {!hasStorefront && (
-        <div className="mx-2.5 mb-2.5 p-3 rounded-xl border border-blue-200 bg-blue-50/70 dark:bg-blue-950/30 dark:border-blue-900 text-xs">
+        <div className="mx-3 mb-3 p-3 rounded-xl border border-blue-200 bg-blue-50/70 dark:bg-blue-950/30 dark:border-blue-900 text-xs">
           <div className="font-semibold text-blue-950 dark:text-blue-300 flex items-center gap-1.5 mb-1">
             <Store className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             Launch Storefront
@@ -98,7 +98,7 @@ export function AppSidebar({
       )}
 
       {/* User Section */}
-      <div className="p-2.5 border-t border-border bg-background">
+      <div className="p-3 border-t border-border bg-background">
         <NavUser user={userData} onLogout={onLogout} />
       </div>
     </div>
@@ -107,7 +107,7 @@ export function AppSidebar({
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={setOpen}>
-        <SheetContent side="left" className="p-0 w-64">
+        <SheetContent side="left" className="p-0 w-[270px]">
           {sidebarContent}
         </SheetContent>
       </Sheet>

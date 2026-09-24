@@ -716,7 +716,7 @@
     },
     "pos": {
       "pos_system": "POS System",
-      "title": "POS",
+      "title": "Point of Sale",
       "orders": "Orders",
       "customer_display": "Customer Display",
       "single_screen": "Single Screen",
@@ -1048,41 +1048,28 @@
     "sign_out": "Sign Out",
     "sign_in": "Sign In",
     "create_account": "Create Account",
-    "app_version": "Rentify App v2.1.3"
-  },
-  "dashboard": {
-    "overview": "Overview",
-    "analytics": "Analytics",
-    "pos": {
-      "title": "Point of Sale"
-    },
-    "invoices": {
-      "title": "Invoices"
-    },
-    "product": {
-      "title": "Products",
-      "detail": "Product Detail",
-      "bulk_delete_success": "Selected products deleted successfully"
-    },
+    "app_version": "Rentify App v2.1.3",
     "order": {
       "title": "Orders",
       "detail": "Order Detail"
     },
-    "store_management": {
-      "title": "Storefront Website",
-      "description": "Manage and customize your storefront website",
-      "failed_to_load": "Failed to load store management"
-    },
-    "settings": {
-      "title": "Settings"
-    },
     "usage": {
-      "title": "Usage & Billing"
+      "title": "Plan & Billing"
     },
     "auth_required": {
       "title": "Authentication Required",
       "description": "Please sign in to access your merchant dashboard.",
       "login": "Sign In to Dashboard"
+    },
+    "sections": {
+      "overview": "Overview",
+      "inventory": "Catalog & Products",
+      "orders": "Sales & Orders",
+      "channels": "Sales Channels",
+      "analytics": "Analytics",
+      "billing": "Store Plan & Billing",
+      "settings": "Store Settings",
+      "support": "Issues & Support"
     }
   }
 }

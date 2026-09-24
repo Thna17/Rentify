@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard,
+  LayoutGrid,
   BarChart2,
   Package,
   Store,
@@ -9,33 +9,24 @@ import {
   Settings,
   ShoppingBag,
   CreditCard,
-  HelpCircle,
+  Headphones,
   Search,
 } from 'lucide-react';
 
 // Define tab structure with clean labels, grouping sections, and channel requirements
 export const ALL_TABS = [
-  // --- General ---
+  // --- Top Featured: Overview ---
   {
     name: 'dashboard.overview',
     label: 'Overview',
-    icon: LayoutDashboard,
+    icon: LayoutGrid,
     path: 'overview',
     roles: ['admin', 'user'],
     permission: null,
-    section: 'general',
-  },
-  {
-    name: 'dashboard.analytics',
-    label: 'Analytics',
-    icon: BarChart2,
-    path: 'analytics',
-    roles: ['admin', 'user'],
-    permission: null,
-    section: 'general',
+    section: 'overview',
   },
 
-  // --- Operations ---
+  // --- Catalog & Products ---
   {
     name: 'dashboard.product.title',
     label: 'Products',
@@ -43,7 +34,7 @@ export const ALL_TABS = [
     path: 'products',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_products',
-    section: 'operations',
+    section: 'inventory',
   },
   {
     name: 'dashboard.product.detail',
@@ -73,6 +64,8 @@ export const ALL_TABS = [
     channel: 'storefront',
     hideInSidebar: true,
   },
+
+  // --- Sales & Orders ---
   {
     name: 'dashboard.order.title',
     label: 'Orders',
@@ -80,7 +73,7 @@ export const ALL_TABS = [
     path: 'orders',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
-    section: 'operations',
+    section: 'orders',
   },
   {
     name: 'dashboard.order.detail',
@@ -98,20 +91,10 @@ export const ALL_TABS = [
     path: 'invoices',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_invoices',
-    section: 'operations',
-  },
-  {
-    name: 'dashboard.pos.title',
-    label: 'Point of Sale',
-    icon: TerminalSquare,
-    path: 'pos',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_pos',
-    channel: 'pos',
-    section: 'operations',
+    section: 'orders',
   },
 
-  // --- Channels ---
+  // --- Sales Channels ---
   {
     name: 'dashboard.store_management.title',
     label: 'Storefront Website',
@@ -133,34 +116,37 @@ export const ALL_TABS = [
     channel: 'marketplace',
     section: 'channels',
   },
-
-  // --- System ---
   {
-    name: 'dashboard.settings.title',
-    label: 'Settings',
-    icon: Settings,
-    path: 'settings',
+    name: 'dashboard.pos.title',
+    label: 'Point of Sale',
+    icon: TerminalSquare,
+    path: 'pos',
     roles: ['admin', 'user', 'staff'],
-    permission: 'settings',
-    section: 'system',
-    hasSubmenu: true,
-    subItems: [
-      { name: 'Account', path: 'settings/account' },
-      { name: 'Preferences', path: 'settings/preferences' },
-      { name: 'Security', path: 'settings/security' },
-      { name: 'Payments', path: 'settings/payments' },
-      { name: 'Staff', path: 'settings/staff' },
-      { name: 'Billing', path: 'settings/billing' },
-    ],
+    permission: 'manage_pos',
+    channel: 'pos',
+    section: 'channels',
   },
+
+  // --- Analytics ---
+  {
+    name: 'dashboard.analytics',
+    label: 'Analytics',
+    icon: BarChart2,
+    path: 'analytics',
+    roles: ['admin', 'user'],
+    permission: null,
+    section: 'analytics',
+  },
+
+  // --- Store Plan & Billing ---
   {
     name: 'dashboard.usage.title',
-    label: 'Usage & Billing',
+    label: 'Plan & Billing',
     icon: CreditCard,
     path: 'usage',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_analytics',
-    section: 'system',
+    section: 'billing',
     hasSubmenu: true,
     subItems: [
       { name: 'Dashboard', path: 'usage/dashboard' },
@@ -168,16 +154,42 @@ export const ALL_TABS = [
       { name: 'Billing', path: 'usage/billing' },
     ],
   },
+
+  // --- Store Settings ---
+  {
+    name: 'dashboard.settings.title',
+    label: 'Store Settings',
+    icon: Settings,
+    path: 'settings',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'settings',
+    section: 'settings',
+    hasSubmenu: true,
+    subItems: [
+      { name: 'Account', path: 'settings/account' },
+      { name: 'Payments', path: 'settings/payments' },
+      { name: 'Staff & Roles', path: 'settings/staff' },
+      { name: 'Security', path: 'settings/security' },
+      { name: 'Billing Settings', path: 'settings/billing' },
+      { name: 'Preferences', path: 'settings/preferences' },
+    ],
+  },
+
+  // --- Issues & Support ---
+  {
+    name: 'dashboard.support',
+    label: 'Support',
+    icon: Headphones,
+    path: 'help',
+    roles: ['admin', 'user', 'staff'],
+    permission: null,
+    section: 'support',
+  },
 ];
 
 export const ADDITIONAL_NAV_ITEMS = {
   documents: [],
   secondary: [
-    {
-      name: 'Get Help',
-      icon: HelpCircle,
-      path: 'help',
-    },
     {
       name: 'Search',
       icon: Search,
