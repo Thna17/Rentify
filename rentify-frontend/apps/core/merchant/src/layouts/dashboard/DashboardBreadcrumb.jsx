@@ -36,7 +36,8 @@ export function DashboardBreadcrumb() {
       // Try to find a matching tab for better naming
       const matchedTab = ALL_TABS.find((tab) => tab.path === name);
       if (matchedTab) {
-        displayName = t(matchedTab.name);
+        const trans = t(matchedTab.name);
+        displayName = (trans && trans !== matchedTab.name) ? trans : (matchedTab.label || name);
       }
     }
 

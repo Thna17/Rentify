@@ -524,7 +524,7 @@ async function seedCore() {
       email: 'staff@rentify.local',
       phoneNumber: '+85512000003',
       password: staffPassword,
-      permissions: ['manage_products', 'manage_orders', 'manage_invoices', 'manage_pos'],
+      permissions: ['manage_products', 'manage_orders', 'manage_invoices', 'manage_pos', 'manage_settings', 'manage_analytics', 'manage_staff'],
       isActive: true,
       isVerified: true,
     });
@@ -540,11 +540,14 @@ async function seedCore() {
       email: 'tech.staff@rentify.local',
       phoneNumber: '+85512000005',
       password: staffPassword,
-      permissions: ['manage_products', 'manage_orders', 'manage_invoices', 'manage_pos'],
+      permissions: ['manage_products', 'manage_orders', 'manage_invoices', 'manage_pos', 'manage_settings', 'manage_analytics', 'manage_staff'],
       isActive: true,
       isVerified: true,
     });
   }
+
+  const seedTechStore = require('./seedTechStore');
+  await seedTechStore();
 
   console.log('✅ Rentify Core Database Seeding completed successfully!');
 }

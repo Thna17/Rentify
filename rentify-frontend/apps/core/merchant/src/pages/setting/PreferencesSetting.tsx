@@ -11,11 +11,13 @@ import { Label } from '@rentify/shared/ui/label';
 import { Switch } from '@rentify/shared/ui/switch';
 import { Separator } from '@rentify/shared/ui/separator';
 import { Button } from '@rentify/shared/ui/button';
-import { Bell, Mail, MessageSquare, Megaphone, Save, Loader2 } from 'lucide-react';
+import { Bell, Mail, MessageSquare, Megaphone, Save, Loader2, Store, TerminalSquare, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
+import { useChannels } from '../../context/ChannelContext';
 
 export const PreferencesSetting = () => {
+  const { hasPos, hasMarketplace, togglePos, toggleMarketplace } = useChannels();
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
     smsNotifications: false,
@@ -53,7 +55,7 @@ export const PreferencesSetting = () => {
   }) => (
     <div className="flex items-center justify-between py-4">
       <div className="flex items-center space-x-4">
-        <div className="p-2 bg-gray-100 rounded-lg">
+        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
           {icon}
         </div>
         <div>
@@ -73,10 +75,50 @@ export const PreferencesSetting = () => {
 
   return (
     <SettingsLayout
-      title="Notification Preferences"
-      description="Choose how you want to be notified about your account activity"
+      title="Preferences"
+      description="Manage sales channels and account notification preferences"
       icon={<Bell />}
     >
+      {/* Sales Channels Management */}
+      <Card className="shadow-sm border-border mb-6">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Store className="h-5 w-5 text-primary" />
+            Sales Channels
+          </CardTitle>
+          <CardDescription>
+            Enable or disable sales channels and operational tools for your store
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0 px-6">
+          <div className="divide-y divide-border">
+            <PreferenceSwitch
+              id="pos-channel"
+              checked={hasPos}
+              onCheckedChange={(checked) => {
+                togglePos(checked);
+                toast.success(checked ? 'POS channel enabled in sidebar' : 'POS channel disabled in sidebar');
+              }}
+              label="Point of Sale (POS)"
+              description="Enable in-person counter checkout, cash collection, and barcode terminal in dashboard"
+              icon={<TerminalSquare className="h-4 w-4 text-purple-600" />}
+            />
+            <PreferenceSwitch
+              id="marketplace-channel"
+              checked={hasMarketplace}
+              onCheckedChange={(checked) => {
+                toggleMarketplace(checked);
+                toast.success(checked ? 'Marketplace listing enabled' : 'Marketplace listing disabled');
+              }}
+              label="Rentify Marketplace"
+              description="List eligible store products in the central Rentify marketplace"
+              icon={<ShoppingBag className="h-4 w-4 text-emerald-600" />}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notification Preferences */}
       <Card className="shadow-sm border-0">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -101,8 +143,8 @@ export const PreferencesSetting = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <div className="divide-y">
+        <CardContent className="p-0 px-6">
+          <div className="divide-y divide-border">
             <PreferenceSwitch
               id="email-notifications"
               checked={preferences.emailNotifications}
@@ -117,63 +159,28 @@ export const PreferencesSetting = () => {
               checked={preferences.smsNotifications}
               onCheckedChange={(checked) => setPreferences({...preferences, smsNotifications: checked})}
               label="SMS Notifications"
-              description="Get text message alerts for urgent matters"
+              description="Get urgent alerts directly to your phone"
               icon={<MessageSquare className="h-4 w-4 text-gray-600" />}
-            />
-
-            <PreferenceSwitch
-              id="push-notifications"
-              checked={preferences.pushNotifications}
-              onCheckedChange={(checked) => setPreferences({...preferences, pushNotifications: checked})}
-              label="Push Notifications"
-              description="Receive browser and mobile push notifications"
-              icon={<Bell className="h-4 w-4 text-gray-600" />}
             />
 
             <PreferenceSwitch
               id="marketing-emails"
               checked={preferences.marketingEmails}
               onCheckedChange={(checked) => setPreferences({...preferences, marketingEmails: checked})}
-              label="Marketing Emails"
-              description="Get updates about new features and promotions"
+              label="Marketing Updates"
+              description="Receive product updates, tips, and promotional offers"
               icon={<Megaphone className="h-4 w-4 text-gray-600" />}
-            />
-
-            <PreferenceSwitch
-              id="security-alerts"
-              checked={preferences.securityAlerts}
-              onCheckedChange={(checked) => setPreferences({...preferences, securityAlerts: checked})}
-              label="Security Alerts"
-              description="Immediate notifications for security-related activities"
-              icon={<Mail className="h-4 w-4 text-gray-600" />}
-            />
-
-            <PreferenceSwitch
-              id="rental-updates"
-              checked={preferences.rentalUpdates}
-              onCheckedChange={(checked) => setPreferences({...preferences, rentalUpdates: checked})}
-              label="Rental Updates"
-              description="Notifications about your rental properties and bookings"
-              icon={<Bell className="h-4 w-4 text-gray-600" />}
-            />
-
-            <PreferenceSwitch
-              id="payment-reminders"
-              checked={preferences.paymentReminders}
-              onCheckedChange={(checked) => setPreferences({...preferences, paymentReminders: checked})}
-              label="Payment Reminders"
-              description="Reminders for upcoming payments and invoices"
-              icon={<Mail className="h-4 w-4 text-gray-600" />}
             />
           </div>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-0">
+      {/* Notification Frequency */}
+      <Card className="shadow-sm border-0 mt-6">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Notification Frequency</CardTitle>
           <CardDescription>
-            How often you'd like to receive summary emails
+            Choose how often you want to receive digest emails
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,8 +190,8 @@ export const PreferencesSetting = () => {
                 key={frequency}
                 className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                   frequency === 'Weekly' 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
+                    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300'
                 }`}
               >
                 <div className="flex items-center justify-between">

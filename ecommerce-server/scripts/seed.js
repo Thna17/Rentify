@@ -974,6 +974,9 @@ async function seedCommerce() {
     });
   }
 
+  const seedTechMarketplace = require('./seedTechMarketplace');
+  await seedTechMarketplace();
+
   console.log('✅ Rentify Commerce Database Seeding completed successfully!');
 }
 

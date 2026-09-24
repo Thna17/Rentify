@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard,
+  LayoutGrid,
   BarChart2,
   Package,
   Store,
@@ -7,166 +7,182 @@ import {
   Receipt,
   TerminalSquare,
   Settings,
-  Database,
-  FileText,
-  HelpCircle,
+  ShoppingBag,
+  CreditCard,
+  Headphones,
   Search,
 } from 'lucide-react';
 
-// Define tab structure with permission requirements 
+// Define tab structure with clean labels, grouping sections, and channel requirements
 export const ALL_TABS = [
+  // --- Top Featured: Overview ---
   {
     name: 'dashboard.overview',
-    icon: LayoutDashboard,
+    label: 'Overview',
+    icon: LayoutGrid,
     path: 'overview',
-    roles: ['admin', 'user'],
-    permission: null,
-    features: ['basic-dashboard'],
-  },
-  {
-    name: 'dashboard.product.detail',
-    icon: Package,
-    path: 'products/:id',
     roles: ['admin', 'user', 'staff'],
-    permission: 'manage_products',
-    features: ['product-management'],
-    hideInSidebar: true,
-  },
-  {
-    name: 'dashboard.order.detail',
-    icon: Package,
-    path: 'orders/:id',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_orders',
-    features: ['order-management'],
-    hideInSidebar: true,
-  },
-  {
-    name: 'dashboard.analytics',
-    icon: BarChart2,
-    path: 'analytics',
-    roles: ['admin', 'user'],
     permission: null,
-    // features: ['advanced-analytics'],
+    section: 'overview',
   },
-  {
-    name: 'dashboard.store_management.title',
-    icon: Store,
-    path: 'store-management',
-    roles: ['admin', 'user'],
-    permission: null,
-    features: ['store'],
-  },
+
+  // --- Catalog & Products ---
   {
     name: 'dashboard.product.title',
+    label: 'Products',
     icon: Package,
     path: 'products',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_products',
-    features: ['product-management'],
+    section: 'inventory',
   },
   {
-    name: 'Store catalog',
+    name: 'dashboard.product.detail',
+    label: 'Product Detail',
     icon: Package,
-    path: 'catalog',
-    roles: ['admin', 'user'],
-    permission: null,
+    path: 'products/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
   },
-    {
+  {
     name: 'create product',
+    label: 'Create Product',
     icon: Package,
     path: 'products/create',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_products',
-    features: ['product-management'],
-        hideInSidebar: true,
+    hideInSidebar: true,
   },
   {
+    name: 'edit product',
+    label: 'Edit Product',
+    icon: Package,
+    path: 'products/edit/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
+  },
+  {
+    name: 'Store catalog',
+    label: 'Store Catalog',
+    icon: Package,
+    path: 'catalog',
+    roles: ['admin', 'user', 'staff'],
+    permission: null,
+    channel: 'storefront',
+    hideInSidebar: true,
+  },
+
+  // --- Sales & Orders ---
+  {
     name: 'dashboard.order.title',
+    label: 'Orders',
     icon: ClipboardList,
     path: 'orders',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
-    features: ['order-management'],
+    section: 'orders',
   },
   {
-    name: 'COD orders',
+    name: 'dashboard.order.detail',
+    label: 'Order Detail',
     icon: ClipboardList,
-    path: 'marketplace-orders',
+    path: 'orders/:id',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
+    hideInSidebar: true,
   },
   {
     name: 'dashboard.invoices.title',
+    label: 'Invoices',
     icon: Receipt,
     path: 'invoices',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_invoices',
-    // features: ['invoice'],
+    section: 'orders',
+  },
+
+  // --- Sales Channels ---
+  {
+    name: 'dashboard.store_management.title',
+    label: 'Storefront Customization',
+    icon: Store,
+    path: 'store-management',
+    roles: ['admin', 'user', 'staff'],
+    permission: null,
+    channel: 'storefront',
+    section: 'channels',
+  },
+  {
+    name: 'COD orders',
+    label: 'Marketplace Orders',
+    icon: ShoppingBag,
+    path: 'marketplace-orders',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    channel: 'marketplace',
+    section: 'channels',
   },
   {
     name: 'dashboard.pos.title',
+    label: 'Point of Sale',
     icon: TerminalSquare,
     path: 'pos',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_pos',
-    // features: ['pos'],
+    channel: 'pos',
+    section: 'channels',
   },
+
+  // --- Analytics ---
+  {
+    name: 'dashboard.analytics',
+    label: 'Analytics',
+    icon: BarChart2,
+    path: 'analytics',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_analytics',
+    section: 'analytics',
+  },
+
+  // --- Store Plan & Billing ---
+  {
+    name: 'dashboard.usage.title',
+    label: 'Plan & Billing',
+    icon: CreditCard,
+    path: 'usage',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_analytics',
+    section: 'billing',
+  },
+
+  // --- Store Settings ---
   {
     name: 'dashboard.settings.title',
+    label: 'Store Settings',
     icon: Settings,
     path: 'settings',
     roles: ['admin', 'user', 'staff'],
     permission: 'settings',
-    hasSubmenu: true,
-    subItems: [
-      { name: 'Account', path: 'settings/account' },
-      { name: 'Preferences', path: 'settings/preferences' },
-      { name: 'Security', path: 'settings/security' },
-      { name: 'Payments', path: 'settings/payments' },
-      { name: 'Staff', path: 'settings/staff' },
-      { name: 'Billing', path: 'settings/billing' },
-
-
-    ],
+    section: 'settings',
   },
+
+  // --- Issues & Support ---
   {
-    name: 'dashboard.usage.title',
-    icon: BarChart2,
-    path: 'usage',
+    name: 'dashboard.support',
+    label: 'Support',
+    icon: Headphones,
+    path: 'help',
     roles: ['admin', 'user', 'staff'],
-    permission: 'manage_analytics',
-    hasSubmenu: true,
-    subItems: [
-      { name: 'Dashboard', path: 'usage/dashboard' },
-      { name: 'Breakdown', path: 'usage/breakdown' },
-      { name: 'Billing', path: 'usage/billing' },
-    ],
+    permission: null,
+    section: 'support',
   },
 ];
 
-
 export const ADDITIONAL_NAV_ITEMS = {
-  documents: [
-    {
-      name: 'Data Library',
-      icon: Database,
-      path: 'data-library',
-      element: <div>Data Library Placeholder</div>,
-    },
-    {
-      name: 'Reports',
-      icon: FileText,
-      path: 'reports',
-      element: <div>Reports Placeholder</div>,
-    },
-  ],
+  documents: [],
   secondary: [
-    {
-      name: 'Get Help',
-      icon: HelpCircle,
-      path: 'help',
-    },
     {
       name: 'Search',
       icon: Search,

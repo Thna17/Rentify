@@ -50,7 +50,6 @@ sellers remain blocked; production review is separate.
    the intended owned HTTPS hosts. Angular normal routes must make no calls
    to the KhmerCraft API.
 
-The older Angular components and KhmerCraft API remain in the source tree as
-reference code. The active Rentify buyer shell has a smaller public Product
-response than the old Mongo-shaped `ApiProduct` contract; do not route old
-components to the new endpoint without an explicit adapter.
+The archived KhmerCraft API remains reference code only. The designed Angular
+marketplace screens use an adapter for Rentify's public Product response,
+which is smaller than the old Mongo-shaped `ApiProduct` contract.

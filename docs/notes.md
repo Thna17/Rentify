@@ -188,7 +188,7 @@ into `platform-architecture.md` and remove stale notes.
   can enter public marketplace discovery.
 - Public Website Product reads now exclude drafts and archived products.
   Authenticated Website management reads preserve access to those states.
-  This was the Phase 3 state before the Rentify buyer shell became the normal
+  This was the Phase 3 state before the designed marketplace UI became the normal
   Angular development route.
 - The owner confirmed KhmerCraft has no independent data. Existing Rentify
   Stores and Products supply marketplace listings through the default-on
@@ -204,7 +204,7 @@ into `platform-architecture.md` and remove stale notes.
   Order, a Core-versus-Commerce Website ID lookup mismatch in order creation,
   non-COD payment paths, cached cart prices in order creation, and multiple
   stock writers. This explains why Angular must not switch to the new catalog
-  reader before its checkout moved to Commerce. The Rentify buyer shell now
+  reader before its checkout moved to Commerce. The marketplace UI now
   uses Commerce for both in development.
 
 ## Development seller rule (2026-09-24)
@@ -220,7 +220,7 @@ into `platform-architecture.md` and remove stale notes.
   one, Core can approve and project them to Commerce.
 - Commerce still checks Store publication eligibility, Product publication,
   valid marketplace Product category, visibility, price, and stock at checkout.
-- Normal Angular development routes now use the Rentify buyer shell; the
+- Normal Angular development routes now use the designed Rentify Marketplace UI; the
   KhmerCraft API remains reference code only. Production domain, browser,
   and operational checks remain open.
 

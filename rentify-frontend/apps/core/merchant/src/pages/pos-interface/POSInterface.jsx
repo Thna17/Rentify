@@ -126,7 +126,7 @@ export const POSInterface = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-full">
       {/* Consistent Page Header */}
       <PageHeader
         title={t('dashboard.pos.pos_system')}

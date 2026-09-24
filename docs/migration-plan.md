@@ -199,10 +199,10 @@ cannot publish a draft or overdraw stock, and delete actions archive products.
 The SQL smoke covers a Website-less Product and a Website-linked Product
 crossing from draft to both public surfaces and back to archived.
 
-**Gate remains open:** normal Angular development routes now use the Rentify
-buyer shell, catalog, cart, and checkout. Browser session/CORS rehearsal and
-full seller/category eligibility checks have not occurred. The old Angular
-components and API remain only as reference code. See
+**Gate remains open:** normal Angular development routes now use the designed
+marketplace UI with Rentify catalog, cart, and checkout APIs. Browser session/CORS
+rehearsal and full seller/category eligibility checks have not occurred. The
+archived KhmerCraft API remains reference code only. See
 [catalog migration contract](catalog-migration-contract.md).
 The order, POS, invoice, and stock-service writers still need a shared
 transactional stock audit in Phase 4.
@@ -262,16 +262,14 @@ Both React templates now have a default-off hosted buyer mode that uses Core
 login and Commerce's storefront COD path; the existing Website buyer UI offers
 COD/USD only. The merchant order panel includes both sales channels.
 
-**Gate remains open:** normal Angular development routes serve the minimal
-Rentify buyer shell. Its catalog, Core buyer login, single-Store cart, posted
-delivery fee, COD order placement, order history, and return request passed a
-local browser rehearsal on 2026-09-24 after repairing demo fixture IDs and
-Core buyer accounts. This shell is a functional integration preview, not the
-finished KhmerCraft marketplace UX: `cutoverEnabled` currently sends all
-normal routes to `RentifyPreviewComponent`, hiding the existing home, search,
-category, product detail, store, cart, and account pages. Reconnect those
-screens to Rentify APIs and repeat browser QA before treating the client as
-ready. Marketplace authentication UI pages (/login, /register, /forgot-password,
+**Gate remains open:** the designed Angular home, search, category, product
+detail, store, cart, and account routes have been restored and connected to
+Rentify Core and Commerce. The obsolete product-only preview route and cutover
+router have been removed. The earlier preview's catalog, Core buyer login,
+single-Store cart, posted delivery fee, COD order placement, order history,
+and return request passed a local browser rehearsal on 2026-09-24 after
+repairing demo fixture IDs and Core buyer accounts. Repeat full browser QA on
+the designed routes before treating the client as ready. Marketplace authentication UI pages (/login, /register, /forgot-password,
 /reset-password, /verify-email, /seller/login, /admin/login) have been retired
 in favor of the unified Rentify Auth portal (http://localhost:4300); route guards
 and deep links now forward unauthenticated visitors to Rentify Auth with preserved return URLs.

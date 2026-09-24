@@ -30,22 +30,16 @@ describe('RentifyMarketplaceService', () => {
     expect(service.auth).toBe('http://localhost:4300');
     expect(service.merchantDashboard).toBe('http://localhost:4400');
     expect(service.configured).toBe(true);
-    expect(service.enabled).toBe(false);
-    expect(service.cutoverEnabled).toBe(false);
   });
 
   it('reads runtime configuration dynamically when present', () => {
     window.__RENTIFY_MARKETPLACE__ = {
-      enabled: true,
-      cutoverEnabled: true,
       coreApiUrl: 'https://core.rentify.local/',
       commerceApiUrl: 'https://commerce.rentify.local/',
       authUrl: 'https://auth.rentify.local/',
       merchantDashboardUrl: 'https://merchant.rentify.local/',
     };
 
-    expect(service.enabled).toBe(true);
-    expect(service.cutoverEnabled).toBe(true);
     expect(service.core).toBe('https://core.rentify.local');
     expect(service.commerce).toBe('https://commerce.rentify.local');
     expect(service.auth).toBe('https://auth.rentify.local');

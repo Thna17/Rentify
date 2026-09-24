@@ -9,7 +9,17 @@ export class DomainService {
   getDomainFromQuery(): string {
     if (typeof window === 'undefined') return '';
     const queryParams = new URLSearchParams(window.location.search);
-    return queryParams.get('domain') || '';
+    const domain = queryParams.get('domain');
+    if (domain) return domain;
+    const returnUrl = queryParams.get('returnUrl');
+    if (returnUrl) {
+      try {
+        return new URL(returnUrl).host;
+      } catch {
+        return '';
+      }
+    }
+    return '';
   }
 
   isAuthDomain(domain: string): boolean {
