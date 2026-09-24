@@ -264,7 +264,7 @@ export const POSInterface = () => {
           <div className="flex-1 flex flex-col xl:flex-row items-start w-full">
             {/* Products Panel - Left */}
             <div className="flex-1 min-w-0 w-full border-r border-border/80">
-              <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} />
+              <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} />
             </div>
 
             {/* Cart Panel - Middle */}
@@ -312,7 +312,7 @@ export const POSInterface = () => {
               <div className="flex-1 flex flex-col lg:flex-row items-start w-full">
                 {/* Product Catalog Column */}
                 <div className="flex-1 min-w-0 w-full">
-                  <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} />
+                  <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} />
                 </div>
 
                 {/* Cart Column */}
@@ -337,7 +337,7 @@ export const POSInterface = () => {
 
             {activeTab === 'orders' && (
               <div className="flex-1 w-full p-4 md:p-6 bg-background">
-                <OrderHistory orders={orders} />
+                <OrderHistory orders={orders} websiteId={websiteId} storeId={storeId} />
               </div>
             )}
 
