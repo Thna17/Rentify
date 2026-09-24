@@ -146,7 +146,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
           @if (!isAuthenticated()) {
             <p class="login-note">
               <ui-icon name="lock" [size]="13" />
-              Guest checkout is being connected. This version currently asks you to sign in.
+              Browse and add items without an account. Sign in or create one when you check out.
             </p>
           }
 

@@ -8,6 +8,10 @@ development. KhmerCraft's Express/Mongoose API is not used. Local Angular
 development runs on `http://localhost:4500`; Core and Commerce must allow that
 origin for credentialed requests, and Auth must allow it as a return URL.
 
+Visitors can browse products, categories, and stores and build a local cart
+without registering. Checkout and buyer account pages require Rentify sign-in;
+the checkout redirect returns the buyer to the order flow afterward.
+
 Before serving the Angular app outside localhost, replace the blank public
 Core, Commerce, Auth, and merchant dashboard URLs in
 `public/marketplace-config.js`. The local fallback URLs are for a developer
