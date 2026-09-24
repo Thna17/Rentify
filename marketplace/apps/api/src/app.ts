@@ -16,6 +16,7 @@ import {
   preventOperatorInjection,
 } from './middleware/security';
 import { AppError } from './errors/app-error';
+import { legacyWriteFreeze } from './middleware/legacy-write-freeze';
 import authRoutes from './modules/auth/auth.routes';
 import cartRoutes from './modules/cart/cart.routes';
 import catalogRoutes from './modules/catalog/catalog.routes';
@@ -67,6 +68,7 @@ export const createApp = () => {
   app.use(cookieParser());
   app.use(preventOperatorInjection);
   app.use(apiRateLimit);
+  app.use(legacyWriteFreeze);
 
   app.get('/', (_request, response) => {
     response.json({ name: 'KhmerCraft API', status: 'ok' });

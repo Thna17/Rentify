@@ -246,6 +246,9 @@ order strategies and stock restoration now use a shared stock operation.
 Marketplace cart writes and checkout are disabled by default at the Commerce
 HTTP boundary until the legacy writer is frozen for an isolated rehearsal or
 the combined client cutover.
+The legacy Express API now has an opt-in HTTP write freeze that preserves
+reads and existing PayWay callbacks. Its staging procedure and limitations
+are in [the cutover rehearsal](marketplace-cutover-rehearsal.md).
 An isolated SQL smoke passes concurrent last-unit purchases across marketplace
 buyers and between storefront and marketplace stock writers, retry behavior,
 seller isolation, and COD state transitions. The new Commerce API is described

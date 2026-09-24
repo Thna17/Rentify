@@ -92,6 +92,9 @@ Angular routes continue using the legacy API until the combined cutover gate
 passes. No production buyer traffic is switched by this preview. Core exposes
 only approved public Store profile fields through `GET /api/stores/public?ids=...`
 and a safe `GET /api/auth/session` for the buyer shell.
+The opt-in legacy HTTP write freeze and staging order of operations are in
+[the cutover rehearsal](marketplace-cutover-rehearsal.md). The freeze cannot
+stop scripts or direct Mongo writes, which require an operations check.
 
 ## Stock and reconciliation
 

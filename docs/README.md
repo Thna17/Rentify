@@ -14,6 +14,8 @@ code so implementation work can proceed without relying on chat history.
   mapping, read/write boundaries, and checks before a marketplace cohort moves.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
+- [Marketplace cutover rehearsal](marketplace-cutover-rehearsal.md) — staging
+  write freeze, buyer preview checks, and rollback boundary.
 - [Notes and open questions](notes.md) — verified observations, unresolved
   choices, and items requiring product decisions.
 

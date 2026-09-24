@@ -63,6 +63,9 @@ export const env = {
   get trustProxy() {
     return process.env.TRUST_PROXY === 'true';
   },
+  get legacyWritesFrozen() {
+    return process.env.LEGACY_MARKETPLACE_WRITES_FROZEN === 'true';
+  },
   get maxFailedLogins() {
     return asPositiveNumber(process.env.MAX_FAILED_LOGINS, 5);
   },
@@ -113,4 +116,8 @@ export const env = {
  */
 export const assertEnv = () => {
   void env.jwtSecret;
+  const frozen = process.env.LEGACY_MARKETPLACE_WRITES_FROZEN;
+  if (frozen !== undefined && frozen !== 'true' && frozen !== 'false') {
+    throw new Error('LEGACY_MARKETPLACE_WRITES_FROZEN must be true or false');
+  }
 };
