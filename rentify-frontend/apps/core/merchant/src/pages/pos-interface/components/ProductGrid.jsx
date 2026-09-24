@@ -98,7 +98,12 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
           product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.description?.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
+        const matchesCategory =
+          selectedCategory === 'all' ||
+          product.categoryId === selectedCategory ||
+          product.category === selectedCategory ||
+          (product.Category && String(product.Category.id) === selectedCategory) ||
+          (product.Category && product.Category.name === selectedCategory);
         
         return matchesSearch && matchesCategory;
       })
