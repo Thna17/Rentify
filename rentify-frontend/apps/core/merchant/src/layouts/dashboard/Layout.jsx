@@ -21,11 +21,11 @@ export const DashboardLayout = () => {
   const { websiteId, isLoading: websiteLoading } = useWebsiteData();
   const [store, setStore] = useState(null);
   const [storeLoaded, setStoreLoaded] = useState(false);
-  const pkg = websiteData.package;
+  const pkg = websiteData?.package || null;
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, isAuthenticated, role, handleLogout } = useAuth();
+  const { profile, isAuthenticated, role, isLoading: authLoading, handleLogout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   useEffect(() => {
@@ -37,6 +37,10 @@ export const DashboardLayout = () => {
       .catch(() => { if (active) setStoreLoaded(true); });
     return () => { active = false; };
   }, [isAuthenticated]);
+
+  if (authLoading) {
+    return <div className="min-h-screen grid place-items-center">Loading…</div>;
+  }
 
   // Show authentication required if not authenticated
   if (!isAuthenticated) {
@@ -56,7 +60,7 @@ export const DashboardLayout = () => {
   const platformTabs = filterTabsByUserRole(
     ALL_TABS,
     role,
-    profile.roleSpecific?.permissions,
+    profile?.roleSpecific?.permissions,
     pkg?.features
   ).map((tab) => ({
     ...tab,
@@ -80,7 +84,7 @@ export const DashboardLayout = () => {
     );
   }
 
-  const currentTabData = matchedTab || platformTabs[0];
+  const currentTabData = matchedTab || platformTabs[0] || ALL_TABS[0];
 
   // Handler to navigate to tab
   const handleTabChange = (tabPath) => {

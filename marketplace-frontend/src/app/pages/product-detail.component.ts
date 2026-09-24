@@ -586,6 +586,12 @@ export class ProductDetailComponent {
       this.quantity.set(1);
       this.feedback.set('');
     });
+    effect(() => {
+      const currentId = this.id();
+      if (currentId && !this.catalog.productById(currentId)) {
+        void this.catalog.loadProduct(currentId);
+      }
+    });
   }
 
   protected step(delta: number): void {

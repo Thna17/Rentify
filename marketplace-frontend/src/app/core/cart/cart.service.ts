@@ -1,53 +1,87 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CommerceApiService } from '../api/commerce-api.service';
-import { ApiCart, ApiCartItem } from '../api/api.models';
 import { AuthService } from '../auth/auth.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { CartItem, CartLine, Product } from '../catalog/catalog.models';
+import {
+  RentifyMarketplaceService,
+  StoreCart,
+} from '../rentify/rentify-marketplace.service';
 
 const STORAGE_KEY = 'khmercraft.cart';
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FLAT_RATE = 3.5;
 
 /**
- * Cart state, shared app-wide, in one of two modes.
+ * Cart state, shared app-wide.
  *
- *   Signed in  → the server is the source of truth. Every mutation is a
- *                request, and the response replaces local state, so the
- *                totals shown are always the ones the server will charge.
- *   Guest      → localStorage, priced from the local catalog.
+ * Connected to Rentify Commerce API via RentifyMarketplaceService.
+ *   Signed in  → Rentify Commerce API store-grouped cart (/api/marketplace/cart).
+ *   Guest      → localStorage, priced from the catalog.
  *
- * On sign-in the guest basket is pushed to the server and then cleared, so a
- * visitor who fills a cart and only then logs in does not lose it — the single
- * most annoying bug this design avoids.
+ * On sign-in the guest basket is pushed to Rentify and then cleared.
  */
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private readonly api = inject(CommerceApiService);
+  private readonly rentify = inject(RentifyMarketplaceService);
   private readonly auth = inject(AuthService);
   private readonly catalog = inject(CatalogService);
 
   /** Guest basket. Ignored entirely while signed in. */
   private readonly guestItems = signal<CartItem[]>(this.restore());
 
-  /** Server cart. Null until the first fetch completes. */
-  private readonly serverCart = signal<ApiCart | null>(null);
+  /** Store carts from Rentify Commerce API. */
+  private readonly storeCarts = signal<StoreCart[]>([]);
 
   private readonly signedIn = this.auth.isAuthenticated;
 
   readonly loading = signal(false);
-  /** Last error from a cart mutation, e.g. "Only 3 left in stock". */
+  /** Last error from a cart mutation. */
   readonly error = signal('');
 
   readonly lines = computed<CartLine[]>(() => {
-    const cart = this.serverCart();
-    if (this.signedIn() && cart) {
-      return cart.items.map((item) => ({
-        product: this.toProduct(item),
-        quantity: item.quantity,
-        lineTotal: item.subtotal,
-      }));
+    if (this.signedIn()) {
+      const allLines: CartLine[] = [];
+      for (const cart of this.storeCarts()) {
+        const store = this.catalog.storeById(cart.storeId);
+        const sellerName = store?.name || 'Local Merchant';
+        for (const item of cart.items) {
+          const known = this.catalog.productById(item.productId);
+          const price = item.currentPrice
+            ? parseFloat(item.currentPrice) || 0
+            : known?.price || 0;
+          const product: Product = known
+            ? { ...known, price, sellerName: store?.name || known.sellerName || 'Local Merchant' }
+            : {
+                id: item.productId,
+                name: 'Product',
+                slug: item.productId,
+                image: null,
+                images: [],
+                price,
+                categorySlug: 'general',
+                categoryName: 'General',
+                subcategory: null,
+                subcategorySlug: null,
+                sellerName,
+                storeId: cart.storeId,
+                rating: 5,
+                reviewCount: 0,
+                stock: 99,
+                status: item.available ? 'in-stock' : 'out-of-stock',
+                description: '',
+                soldCount: 0,
+                createdAt: new Date().toISOString(),
+                collections: [],
+              };
+          allLines.push({
+            product,
+            quantity: item.quantity,
+            lineTotal: round(price * item.quantity),
+          });
+        }
+      }
+      return allLines;
     }
 
     return this.guestItems()
@@ -65,25 +99,32 @@ export class CartService {
   });
 
   readonly count = computed(() => {
-    const cart = this.serverCart();
-    if (this.signedIn() && cart) {
-      return cart.itemCount;
+    if (this.signedIn()) {
+      return this.storeCarts().reduce(
+        (sum, cart) => sum + cart.items.reduce((s, it) => s + it.quantity, 0),
+        0,
+      );
     }
     return this.guestItems().reduce((total, item) => total + item.quantity, 0);
   });
 
   readonly subtotal = computed(() => {
-    const cart = this.serverCart();
-    if (this.signedIn() && cart) {
-      return cart.subtotal;
+    if (this.signedIn()) {
+      return round(
+        this.storeCarts().reduce((sum, cart) => sum + (parseFloat(cart.subtotal) || 0), 0),
+      );
     }
     return round(this.lines().reduce((total, line) => total + line.lineTotal, 0));
   });
 
   readonly shipping = computed(() => {
-    const cart = this.serverCart();
-    if (this.signedIn() && cart) {
-      return cart.deliveryFee;
+    if (this.signedIn()) {
+      return round(
+        this.storeCarts().reduce(
+          (sum, cart) => sum + (parseFloat(cart.deliveryFee || '0') || 0),
+          0,
+        ),
+      );
     }
     const subtotal = this.subtotal();
     return subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD
@@ -92,9 +133,14 @@ export class CartService {
   });
 
   readonly total = computed(() => {
-    const cart = this.serverCart();
-    if (this.signedIn() && cart) {
-      return cart.total;
+    if (this.signedIn()) {
+      return round(
+        this.storeCarts().reduce(
+          (sum, cart) =>
+            sum + (parseFloat(cart.totalAmount || cart.subtotal) || 0),
+          0,
+        ),
+      );
     }
     return round(this.subtotal() + this.shipping());
   });
@@ -108,15 +154,12 @@ export class CartService {
   );
 
   constructor() {
-    // Persist the guest basket only. A signed-in cart lives on the server, and
-    // mirroring it here would go stale the moment another tab changed it.
     effect(() => {
       if (!this.signedIn()) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.guestItems()));
       }
     });
 
-    // Sign-in and sign-out both need the cart re-resolved.
     let wasSignedIn = false;
     effect(() => {
       const signedIn = this.signedIn();
@@ -125,32 +168,39 @@ export class CartService {
         void this.adoptGuestCart();
       } else if (!signedIn && wasSignedIn) {
         wasSignedIn = false;
-        this.serverCart.set(null);
+        this.storeCarts.set([]);
       }
     });
   }
 
-  /**
-   * Push the guest basket to the server, then load the merged result.
-   *
-   * Failures per line are swallowed on purpose: an item that went out of stock
-   * while the visitor was browsing should not block the rest of the basket
-   * from being adopted.
-   */
+  getStoreCarts(): StoreCart[] {
+    return this.storeCarts();
+  }
+
   private async adoptGuestCart(): Promise<void> {
     this.loading.set(true);
     try {
       const pending = this.guestItems();
+      const remaining: CartItem[] = [];
       for (const item of pending) {
         try {
-          await firstValueFrom(this.api.addToCart(item.productId, item.quantity));
+          const product = this.catalog.productById(item.productId) || await this.catalog.loadProduct(item.productId);
+          if (product?.storeId) {
+            await firstValueFrom(
+              this.rentify.setQuantity(product.storeId, item.productId, item.quantity),
+            );
+          } else {
+            remaining.push(item);
+          }
         } catch {
-          // Skip this line; the rest of the basket still transfers.
+          remaining.push(item);
         }
       }
-      if (pending.length) {
-        this.guestItems.set([]);
+      this.guestItems.set(remaining);
+      if (remaining.length === 0) {
         localStorage.removeItem(STORAGE_KEY);
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
       }
       await this.refresh();
     } finally {
@@ -158,15 +208,15 @@ export class CartService {
     }
   }
 
-  /** Re-read the server cart. Safe to call when signed out (no-op). */
   async refresh(): Promise<void> {
     if (!this.signedIn()) {
       return;
     }
     try {
-      this.serverCart.set(await firstValueFrom(this.api.getCart()));
+      const res = await firstValueFrom(this.rentify.carts());
+      this.storeCarts.set(res.carts || []);
     } catch {
-      // Leave the previous snapshot in place rather than blanking the cart.
+      // Leave previous in place
     }
   }
 
@@ -196,7 +246,22 @@ export class CartService {
       return true;
     }
 
-    return this.mutate(() => this.api.addToCart(product.id, quantity));
+    try {
+      this.loading.set(true);
+      const existingCart = this.storeCarts().find((c) => c.storeId === product.storeId);
+      const existingItem = existingCart?.items.find((it) => it.productId === product.id);
+      const currentQty = existingItem?.quantity || 0;
+      const res = await firstValueFrom(
+        this.rentify.setQuantity(product.storeId, product.id, currentQty + quantity),
+      );
+      this.storeCarts.set(res.carts || []);
+      return true;
+    } catch (error: unknown) {
+      this.error.set(cartErrorMessage(error));
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   async changeQuantity(productId: string, delta: number): Promise<void> {
@@ -219,17 +284,33 @@ export class CartService {
       return;
     }
 
-    const line = this.serverItem(productId);
-    if (!line) {
+    let targetStoreId: string | null = null;
+    let targetItem: { productId: string; quantity: number } | null = null;
+    for (const cart of this.storeCarts()) {
+      const it = cart.items.find((i) => i.productId === productId);
+      if (it) {
+        targetStoreId = cart.storeId;
+        targetItem = it;
+        break;
+      }
+    }
+
+    if (!targetStoreId || !targetItem) {
       return;
     }
 
-    const next = line.quantity + delta;
-    if (next <= 0) {
-      await this.mutate(() => this.api.removeCartItem(line.id));
-      return;
+    const next = targetItem.quantity + delta;
+    try {
+      this.loading.set(true);
+      const res = await firstValueFrom(
+        this.rentify.setQuantity(targetStoreId, productId, Math.max(0, next)),
+      );
+      this.storeCarts.set(res.carts || []);
+    } catch (error: unknown) {
+      this.error.set(cartErrorMessage(error));
+    } finally {
+      this.loading.set(false);
     }
-    await this.mutate(() => this.api.updateCartItem(line.id, next));
   }
 
   async remove(productId: string): Promise<void> {
@@ -240,9 +321,28 @@ export class CartService {
       return;
     }
 
-    const line = this.serverItem(productId);
-    if (line) {
-      await this.mutate(() => this.api.removeCartItem(line.id));
+    let targetStoreId: string | null = null;
+    for (const cart of this.storeCarts()) {
+      if (cart.items.some((it) => it.productId === productId)) {
+        targetStoreId = cart.storeId;
+        break;
+      }
+    }
+
+    if (!targetStoreId) {
+      return;
+    }
+
+    try {
+      this.loading.set(true);
+      const res = await firstValueFrom(
+        this.rentify.setQuantity(targetStoreId, productId, 0),
+      );
+      this.storeCarts.set(res.carts || []);
+    } catch (error: unknown) {
+      this.error.set(cartErrorMessage(error));
+    } finally {
+      this.loading.set(false);
     }
   }
 
@@ -251,12 +351,23 @@ export class CartService {
       this.guestItems.set([]);
       return;
     }
-    await this.mutate(() => this.api.clearCart());
+    for (const cart of this.storeCarts()) {
+      for (const item of cart.items) {
+        try {
+          await firstValueFrom(this.rentify.setQuantity(cart.storeId, item.productId, 0));
+        } catch {}
+      }
+    }
+    await this.refresh();
   }
 
   quantityOf(productId: string): number {
     if (this.signedIn()) {
-      return this.serverItem(productId)?.quantity ?? 0;
+      for (const cart of this.storeCarts()) {
+        const item = cart.items.find((i) => i.productId === productId);
+        if (item) return item.quantity;
+      }
+      return 0;
     }
     return (
       this.guestItems().find((item) => item.productId === productId)?.quantity ??
@@ -268,64 +379,11 @@ export class CartService {
     return this.quantityOf(productId) > 0;
   }
 
-  /** Called after checkout: the server already emptied it. */
+  /** Called after checkout: mirrors emptied state. */
   markEmptied(): void {
-    this.serverCart.update((cart) =>
-      cart ? { ...cart, items: [], itemCount: 0, subtotal: 0, deliveryFee: 0, total: 0 } : cart,
-    );
+    this.storeCarts.set([]);
     this.guestItems.set([]);
-  }
-
-  private serverItem(productId: string): ApiCartItem | undefined {
-    return this.serverCart()?.items.find((item) => item.productId === productId);
-  }
-
-  /** Run a cart request, adopt its response, and surface any error message. */
-  private async mutate(
-    request: () => import('rxjs').Observable<ApiCart>,
-  ): Promise<boolean> {
-    this.loading.set(true);
-    this.error.set('');
-    try {
-      this.serverCart.set(await firstValueFrom(request()));
-      return true;
-    } catch (error: unknown) {
-      this.error.set(cartErrorMessage(error));
-      return false;
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  /** Adapt a server cart line to the Product shape the UI already renders. */
-  private toProduct(item: ApiCartItem): Product {
-    const known = this.catalog.productById(item.productId);
-    return {
-      id: item.productId,
-      name: item.productName,
-      slug: item.productSlug,
-      image: item.productImage,
-      price: item.price,
-      categorySlug: known?.categorySlug ?? '',
-      categoryName: known?.categoryName ?? '',
-      subcategory: known?.subcategory ?? null,
-      subcategorySlug: known?.subcategorySlug ?? null,
-      sellerName: item.sellerName,
-      storeId: item.sellerId ?? known?.storeId ?? '',
-      rating: known?.rating ?? 0,
-      reviewCount: known?.reviewCount ?? 0,
-      stock: item.stock,
-      status:
-        item.stock === 0
-          ? 'out-of-stock'
-          : item.stock <= 5
-            ? 'low-stock'
-            : 'in-stock',
-      description: known?.description ?? '',
-      soldCount: known?.soldCount ?? 0,
-      createdAt: known?.createdAt ?? '',
-      collections: known?.collections ?? [],
-    };
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   private restore(): CartItem[] {
@@ -355,8 +413,7 @@ const clamp = (quantity: number, product: Product) =>
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-/** Pull the server's message out, so "Only 3 left in stock" reaches the user. */
 export const cartErrorMessage = (error: unknown): string => {
-  const body = (error as { error?: { error?: { message?: string } } })?.error;
-  return body?.error?.message ?? 'Could not update your cart. Please try again.';
+  const body = (error as { error?: { error?: string; message?: string } })?.error;
+  return body?.error || body?.message || 'Could not update your cart. Please try again.';
 };

@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
 @Component({
@@ -21,22 +21,24 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
         <div><small>STATUS</small><span class="badge badge-gold">{{ order.status }}</span></div>
       </div>
 
-      <div class="order-summary">
-        <h4>Order Summary</h4>
-        <div class="order-item" *ngFor="let item of order.items">
-          <div class="thumb img-placeholder"></div>
-          <div class="info">
-            <strong>{{ item.name }}</strong>
-            <small>Qty: {{ item.qty }} &middot; {{ item.variant }}</small>
+      @if (order.items.length > 0) {
+        <div class="order-summary">
+          <h4>Order Summary</h4>
+          <div class="order-item" *ngFor="let item of order.items">
+            <div class="thumb img-placeholder"></div>
+            <div class="info">
+              <strong>{{ item.name }}</strong>
+              <small>Qty: {{ item.qty }} &middot; {{ item.variant }}</small>
+            </div>
+            <span class="price">\${{ item.price.toFixed(2) }}</span>
           </div>
-          <span class="price">\${{ item.price.toFixed(2) }}</span>
+          <div class="total-row"><span>Total</span><span>\${{ total.toFixed(2) }}</span></div>
         </div>
-        <div class="total-row"><span>Total</span><span>\${{ total.toFixed(2) }}</span></div>
-      </div>
+      }
 
       <div class="actions">
-        <button class="btn btn-primary">View My Orders</button>
-        <button class="btn btn-outline" routerLink="/products">Continue Shopping</button>
+        <a class="btn btn-primary" routerLink="/orders">View My Orders</a>
+        <a class="btn btn-outline" routerLink="/products">Continue Shopping</a>
       </div>
     </div>
 
@@ -94,15 +96,16 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
   `]
 })
 export class OrderSuccessComponent {
+  private readonly route = inject(ActivatedRoute);
+
+  readonly orderNumber = this.route.snapshot.queryParamMap.get('order') || 'Confirmed';
+
   order = {
-    id: 'KC-000001',
-    date: 'Jul 28, 2026',
+    id: this.orderNumber,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     payment: 'COD',
     status: 'Pending',
-    items: [
-      { name: 'Hand-woven Silk Scarf', variant: 'Indigo Gold', qty: 1, price: 45.00 },
-      { name: 'Ceramic Tea Bowl', variant: 'Celadon Glaze', qty: 2, price: 36.00 }
-    ]
+    items: [] as { name: string; variant: string; qty: number; price: number }[],
   };
 
   get total() {

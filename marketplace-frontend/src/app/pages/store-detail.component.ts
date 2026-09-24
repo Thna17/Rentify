@@ -5,6 +5,7 @@ import { map } from 'rxjs';
 import { SellerService } from '../core/api/seller.service';
 import { AuthService } from '../core/auth/auth.service';
 import { CatalogService } from '../core/catalog/catalog.service';
+import { RentifyMarketplaceService } from '../core/rentify/rentify-marketplace.service';
 import { Product, ProductSort } from '../core/catalog/catalog.models';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
@@ -350,6 +351,7 @@ export class StoreDetailComponent {
   protected readonly catalog = inject(CatalogService);
   private readonly auth = inject(AuthService);
   private readonly sellers = inject(SellerService);
+  private readonly rentify = inject(RentifyMarketplaceService);
   protected readonly activeCategory = signal<string | null>(null);
   protected readonly activeSection = signal<'products' | 'about' | 'reviews'>('products');
   private readonly storeId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id') ?? '')), { initialValue: this.route.snapshot.paramMap.get('id') ?? '' });
@@ -410,15 +412,31 @@ export class StoreDetailComponent {
   private readonly ownedStoreIds = signal<string[]>([]);
 
   constructor() {
+    effect(() => {
+      const id = this.storeId();
+      if (id && !this.catalog.store(id)) {
+        void this.catalog.loadStore(id);
+      }
+    });
+
     // Only sellers have stores to own, so anonymous and buyer visitors never
     // pay for this request.
     effect(() => {
       const role = this.auth.user()?.role;
       if ((role !== 'SELLER' && role !== 'ADMIN') || this.ownedStoresRequested) return;
       this.ownedStoresRequested = true;
-      this.sellers.getMyStores().subscribe({
-        next: (stores) => this.ownedStoreIds.set(stores.map((store) => store.id)),
-        error: () => this.ownedStoreIds.set([]),
+      this.rentify.myStore().subscribe({
+        next: (res) => {
+          if (res?.store?.id) {
+            this.ownedStoreIds.set([res.store.id]);
+          }
+        },
+        error: () => {
+          this.sellers.getMyStores().subscribe({
+            next: (stores) => this.ownedStoreIds.set(stores.map((store) => store.id)),
+            error: () => this.ownedStoreIds.set([]),
+          });
+        },
       });
     });
 

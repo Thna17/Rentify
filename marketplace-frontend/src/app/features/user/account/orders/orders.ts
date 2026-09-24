@@ -5,6 +5,8 @@ import { firstValueFrom } from 'rxjs';
 import { CommerceApiService } from '../../../../core/api/commerce-api.service';
 import { ApiOrder } from '../../../../core/api/api.models';
 import { cartErrorMessage } from '../../../../core/cart/cart.service';
+import { CatalogService } from '../../../../core/catalog/catalog.service';
+import { RentifyMarketplaceService } from '../../../../core/rentify/rentify-marketplace.service';
 import { NavbarComponent } from '../../../../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../../../../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../../../../components/shared/ui/icon/icon.component';
@@ -273,7 +275,8 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
   ],
 })
 export class Orders {
-  private readonly api = inject(CommerceApiService);
+  private readonly rentify = inject(RentifyMarketplaceService);
+  private readonly catalog = inject(CatalogService);
 
   protected readonly orders = signal<ApiOrder[]>([]);
   protected readonly loading = signal(true);
@@ -287,8 +290,53 @@ export class Orders {
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const response = await firstValueFrom(this.api.myOrders(1, 25));
-      this.orders.set(response.orders);
+      const response = await firstValueFrom(this.rentify.orders());
+      const marketplaceOrders = response.orders || [];
+      this.orders.set(marketplaceOrders.map((ord) => {
+        const store = this.catalog.store(ord.storeId);
+        return {
+          id: ord.id,
+          orderNumber: ord.orderNumber,
+          buyerId: '',
+          buyerName: (ord as any).customerInfo?.name || '',
+          buyerPhone: (ord as any).customerInfo?.phone || '',
+          hasPaymentTranId: false,
+          statusHistory: [],
+          orderStatus: (ord.status?.toUpperCase() || 'PENDING') as any,
+          paymentStatus: (ord.payment?.status?.toUpperCase() || 'UNPAID') as any,
+          deliveryInfo: {
+            fullName: (ord as any).customerInfo?.name || '',
+            phone: (ord as any).customerInfo?.phone || '',
+            address: (ord as any).shippingInfo?.address || '',
+            city: (ord as any).shippingInfo?.city || '',
+            province: (ord as any).shippingInfo?.province || '',
+          },
+          paymentMethod: 'COD' as any,
+          items: (ord.items || []).map((it) => {
+            const product = this.catalog.productById(it.productId);
+            return {
+              productId: it.productId,
+              productName: it.name || product?.name || 'Item',
+              quantity: it.quantity,
+              price: it.quantity ? Math.round((parseFloat(it.total) / it.quantity) * 100) / 100 : 0,
+              subtotal: parseFloat(it.total) || 0,
+              sellerName: product?.sellerName || store?.name || 'Seller',
+              sellerId: ord.storeId || null,
+              sellerUserId: null,
+              storeName: store?.name || null,
+              productImage: product?.images?.[0] || null,
+            };
+          }),
+        itemCount: (ord.items || []).reduce((sum, it) => sum + it.quantity, 0),
+        subtotal: parseFloat(ord.subtotal) || 0,
+        deliveryFee: parseFloat(ord.deliveryFee) || 0,
+        discount: 0,
+        totalAmount: parseFloat(ord.totalAmount) || 0,
+        timeline: [],
+        createdAt: (ord as any).createdAt || new Date().toISOString(),
+        updatedAt: (ord as any).updatedAt || new Date().toISOString(),
+      };
+    }));
       this.error.set('');
     } catch (error: unknown) {
       this.error.set(cartErrorMessage(error));
@@ -300,14 +348,11 @@ export class Orders {
   protected async cancel(order: ApiOrder): Promise<void> {
     this.busyId.set(order.id);
     try {
-      const updated = await firstValueFrom(
-        this.api.setOrderStatus(order.id, 'CANCELLED'),
+      const key = `rpt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      await firstValueFrom(
+        this.rentify.report(order.id, 'complaint', 'Customer requested cancellation', key),
       );
-      this.orders.update((orders) =>
-        orders.map((candidate) =>
-          candidate.id === updated.id ? updated : candidate,
-        ),
-      );
+      await this.load();
     } catch (error: unknown) {
       this.error.set(cartErrorMessage(error));
     } finally {

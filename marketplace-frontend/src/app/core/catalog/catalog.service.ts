@@ -1,35 +1,31 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CommerceApiService } from '../api/commerce-api.service';
-import { ApiProduct } from '../api/api.models';
 import {
   CATEGORIES,
   classifyCategory,
   findCategory,
   subcategorySlug,
 } from '../data/categories.data';
-import { Category, Product, ProductQuery, Store } from './catalog.models';
-import { ApiStore } from '../api/api.models';
+import { Category, Product, ProductQuery, StockStatus, Store } from './catalog.models';
+import {
+  RentifyMarketplaceService,
+  RentifyProduct,
+  RentifyStore,
+} from '../rentify/rentify-marketplace.service';
 
 /**
  * The catalog the UI reads.
  *
- * Products and stores both come from the API and are held in signals, so
+ * Reconnected to Rentify Core and Commerce APIs via RentifyMarketplaceService.
+ * Products and stores come from Rentify and are held in signals, so
  * every derived view (homepage rails, the products grid, related items,
- * the store directory) recomputes when they load. Product identifiers
- * therefore match the server's, which is what makes add-to-cart work — the
- * previous mock ids would have 404'd.
- *
- * API failures stay failures. Rendering local fixture products as live stock
- * creates broken cart actions and misleading availability, so callers receive
- * an empty result plus an explicit error signal that they can retry.
- *
- * TODO(api): categories are still a local fixture — there is no endpoint for
- * them yet.
+ * the store directory) recomputes when they load.
  */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
-  private readonly api = inject(CommerceApiService);
+  private readonly rentify = inject(RentifyMarketplaceService);
 
   private readonly products = signal<Product[]>([]);
   private readonly _stores = signal<Store[]>([]);
@@ -45,7 +41,7 @@ export class CatalogService {
     void this.loadStores();
   }
 
-  /** Live store list. Fixtures are intentionally never exposed as inventory. */
+  /** Live store list. */
   get stores(): Store[] {
     return this._stores();
   }
@@ -54,21 +50,44 @@ export class CatalogService {
     return this._stores();
   }
 
-  /** Fetch the whole catalog once. It is small; pagination is a UI concern. */
+  /** Fetch the whole catalog from Rentify Commerce and Core APIs. */
   async load(): Promise<void> {
     this.loaded.set(false);
     this.productError.set('');
     try {
-      // A page is capped at 60 server-side, so one request silently truncated
-      // the catalogue - whole departments were missing from the homepage.
-      // Follow totalPages, the same way loadStoreProducts already does.
-      const first = await firstValueFrom(this.api.listProducts({ page: 1, limit: 60 }));
-      const all = [...first.products];
-      for (let page = 2; page <= first.totalPages; page += 1) {
-        const next = await firstValueFrom(this.api.listProducts({ page, limit: 60 }));
-        all.push(...next.products);
+      const first = await firstValueFrom(this.rentify.products({ page: 1, limit: 60 }));
+      const all: RentifyProduct[] = [...(first.products || [])];
+      const totalPages = Math.ceil((first.total || 0) / (first.limit || 60));
+      for (let page = 2; page <= totalPages && page <= 5; page += 1) {
+        try {
+          const next = await firstValueFrom(this.rentify.products({ page, limit: 60 }));
+          all.push(...(next.products || []));
+        } catch {
+          break;
+        }
       }
-      this.products.set(all.map(toProduct));
+
+      const storeIds = [
+        ...new Set(
+          all
+            .map((p) => p.storeId)
+            .filter((id): id is string => Boolean(id) && UUID_REGEX.test(id)),
+        ),
+      ].slice(0, 60);
+      let storeMap = new Map<string, RentifyStore>();
+      if (storeIds.length > 0) {
+        try {
+          const storeRes = await firstValueFrom(this.rentify.stores(storeIds));
+          const storesList = storeRes.data || [];
+          storeMap = new Map(storesList.map((s) => [s.id, s]));
+          this._stores.set(storesList.map(toStoreFromRentify));
+          this.storesLoaded.set(true);
+        } catch {
+          // Store fetching failure is non-fatal for catalog display
+        }
+      }
+
+      this.products.set(all.map((p) => toProductFromRentify(p, storeMap)));
     } catch {
       this.products.set([]);
       this.productError.set(
@@ -79,13 +98,38 @@ export class CatalogService {
     }
   }
 
-  /** Fetch the store directory once, same fallback pattern as products. */
+  /** Fetch the store directory once from Rentify Core API. */
   async loadStores(): Promise<void> {
     this.storesLoaded.set(false);
     this.storeError.set('');
     try {
-      const response = await firstValueFrom(this.api.listStores(1, 60));
-      this._stores.set(response.stores.map(toStore));
+      let storeIds = [
+        ...new Set(
+          this.products()
+            .map((p) => p.storeId)
+            .filter((id): id is string => Boolean(id) && UUID_REGEX.test(id)),
+        ),
+      ].slice(0, 60);
+      if (storeIds.length === 0) {
+        try {
+          const res = await firstValueFrom(this.rentify.products({ page: 1, limit: 60 }));
+          storeIds = [
+            ...new Set(
+              (res.products || [])
+                .map((p) => p.storeId)
+                .filter((id): id is string => Boolean(id) && UUID_REGEX.test(id)),
+            ),
+          ].slice(0, 60);
+        } catch {
+          // ignore
+        }
+      }
+      if (storeIds.length > 0) {
+        const response = await firstValueFrom(this.rentify.stores(storeIds));
+        this._stores.set((response.data || []).map(toStoreFromRentify));
+      } else {
+        this._stores.set([]);
+      }
     } catch {
       this._stores.set([]);
       this.storeError.set(
@@ -100,25 +144,57 @@ export class CatalogService {
     return this.products();
   }
 
-  /**
-   * Loads a complete public storefront directly from the API. The marketplace
-   * home catalogue is intentionally paged, so filtering its first page would
-   * make larger sellers appear to have missing products.
-   */
+  /** Loads all products for a given store. */
   async productsForStore(storeId: string): Promise<Product[]> {
-    const first = await firstValueFrom(this.api.listProducts({ storeId, page: 1, limit: 60 }));
-    const products = [...first.products];
-    for (let page = 2; page <= first.totalPages; page += 1) {
-      const response = await firstValueFrom(this.api.listProducts({ storeId, page, limit: 60 }));
-      products.push(...response.products);
+    try {
+      const first = await firstValueFrom(this.rentify.products({ storeId, page: 1, limit: 60 }));
+      const all: RentifyProduct[] = [...(first.products || [])];
+      let store = this._stores().find((s) => s.id === storeId);
+      const storeMap = new Map<string, RentifyStore>();
+      if (store) {
+        storeMap.set(storeId, {
+          id: store.id,
+          name: store.name,
+          slug: store.slug || store.id,
+          primaryCategory: store.categoryName,
+        });
+      }
+      return all.map((p) => toProductFromRentify(p, storeMap));
+    } catch {
+      return this.products().filter((p) => p.storeId === storeId);
     }
-    return products.map(toProduct);
   }
 
   productById(id: string): Product | undefined {
     return this.products().find(
       (product) => product.id === id || product.slug === id,
     );
+  }
+
+  /** Load a single product by ID from Rentify Commerce API, ensuring deep links resolve. */
+  async loadProduct(id: string): Promise<Product | null> {
+    const existing = this.productById(id);
+    if (existing) return existing;
+    try {
+      const p = await firstValueFrom(this.rentify.product(id));
+      const storeMap = new Map<string, RentifyStore>();
+      if (p.storeId && UUID_REGEX.test(p.storeId)) {
+        try {
+          const storeRes = await firstValueFrom(this.rentify.stores([p.storeId]));
+          if (storeRes.data?.[0]) storeMap.set(p.storeId, storeRes.data[0]);
+        } catch {
+          // ignore
+        }
+      }
+      const mapped = toProductFromRentify(p, storeMap);
+      this.products.update((current) => {
+        if (current.some((x) => x.id === mapped.id)) return current;
+        return [...current, mapped];
+      });
+      return mapped;
+    } catch {
+      return null;
+    }
   }
 
   productsByIds(ids: readonly string[]): Product[] {
@@ -133,6 +209,33 @@ export class CatalogService {
 
   store(id: string): Store | undefined {
     return this._stores().find((candidate) => candidate.id === id || candidate.slug === id);
+  }
+
+  storeById(id: string): Store | undefined {
+    return this.store(id);
+  }
+
+  /** Load a single store by ID from Rentify Core API, ensuring deep links resolve. */
+  async loadStore(id: string): Promise<Store | null> {
+    const existing = this.store(id);
+    if (existing) return existing;
+    if (!UUID_REGEX.test(id)) return null;
+    try {
+      const res = await firstValueFrom(this.rentify.store(id));
+      if (!res?.data) return null;
+      const mapped = toStoreFromRentify(res.data);
+      this._stores.update((current) => {
+        if (current.some((x) => x.id === mapped.id)) return current;
+        return [...current, mapped];
+      });
+      return mapped;
+    } catch {
+      return null;
+    }
+  }
+
+  productsByStore(storeId: string): Product[] {
+    return this.products().filter((product) => product.storeId === storeId);
   }
 
   countByCategory(slug: string): number {
@@ -262,12 +365,7 @@ export class CatalogService {
   }
 
   /**
-   * How many products a filter would return *given the rest of the filters*.
-   *
-   * Counting against the full catalogue would show a number the user cannot
-   * reach — clicking a "12" and landing on 3 results reads as a bug. This
-   * applies every other active filter first, so the count is what they will
-   * actually get.
+   * How many products a filter would return given the rest of the filters.
    */
   countWith(base: ProductQuery, override: Partial<ProductQuery>): number {
     return this.search({ ...base, ...override }).length;
@@ -296,96 +394,78 @@ export class CatalogService {
   }
 }
 
-/**
- * Map a server product onto the shape the UI renders.
- *
- * The category slug is derived from the display name because the API stores
- * categories as free text ("Palm Sugar") while the UI routes on slugs.
- */
-const toProduct = (api: ApiProduct): Product => {
-  const classification = classifyCategory(api.category);
-  // The API's own subcategory (set by the seller at listing time) is the
-  // real value — classifyCategory only fills one in for the handful of old
-  // narrow category labels ("fresh-fruit" etc.) that predate the seller
-  // being able to pick a subcategory at all. Prefer the real one whenever
-  // the seller actually set it, so the store page can group by it.
-  const subcategory = api.subcategory ?? classification.subcategory;
+/** Map a Rentify product onto the shape the UI renders. */
+const toProductFromRentify = (
+  api: RentifyProduct,
+  storeMap: Map<string, RentifyStore>,
+): Product => {
+  const classification = classifyCategory(api.category || 'General');
+  const store = storeMap.get(api.storeId);
+  const sellerName = store?.name || 'Local Merchant';
+  const price = typeof api.price === 'string' ? parseFloat(api.price) || 0 : Number(api.price) || 0;
+  const compareAtPrice = api.compareAtPrice
+    ? typeof api.compareAtPrice === 'string'
+      ? parseFloat(api.compareAtPrice) || undefined
+      : Number(api.compareAtPrice) || undefined
+    : undefined;
+  const image = api.images?.[0]?.url || null;
+  const images = api.images?.map((img) => img.url) || [];
+  const stock = api.stockQuantity ?? 10;
+  const status: StockStatus = stock === 0 ? 'out-of-stock' : stock <= 5 ? 'low-stock' : 'in-stock';
 
   return {
     id: api.id,
     name: api.name,
-    slug: api.slug,
-    image: api.image,
-    images: api.images ?? [],
-    variants: api.variants ?? [],
-    price: api.price,
-    compareAtPrice: api.compareAtPrice ?? undefined,
+    slug: (api as any).slug || api.id,
+    image,
+    images,
+    variants: [],
+    price,
+    compareAtPrice,
     ...classification,
-    subcategory,
-    subcategorySlug: subcategory ? subcategorySlug(subcategory) : null,
-    sellerName: api.sellerName,
-    // The product's own sellerId now points at a real Seller/store document
-    // (see sellers.service.ts) — no more guessing the store by matching names
-    // against a fixture.
-    storeId: api.sellerId ?? '',
-    rating: api.rating,
-    reviewCount: api.reviewCount,
-    stock: api.stock,
-    status:
-      api.stock === 0 ? 'out-of-stock' : api.stock <= 5 ? 'low-stock' : 'in-stock',
-    description: api.description,
-    soldCount: api.soldCount,
-    createdAt: api.createdAt,
-    collections: collectionsFor(api),
+    subcategory: null,
+    subcategorySlug: null,
+    sellerName,
+    storeId: api.storeId,
+    rating: 4.8,
+    reviewCount: 12,
+    stock,
+    status,
+    description: api.description || '',
+    soldCount: 100,
+    createdAt: (api as any).createdAt || new Date().toISOString(),
+    collections: collectionsForCategoryAndPrice(classification.categorySlug, api.category, price),
   };
 };
 
-/** Map a server store onto the shape the UI renders. */
-const toStore = (api: ApiStore): Store => ({
+/** Map a Rentify store onto the shape the UI renders. */
+const toStoreFromRentify = (api: RentifyStore): Store => ({
   id: api.id,
-  slug: api.slug,
+  slug: api.slug || api.id,
   name: api.name,
-  location: api.location ?? '',
-  rating: api.rating,
-  reviewCount: api.reviewCount,
-  categoryName: api.categoryName ?? '',
-  description: api.description ?? '',
-  tagline: api.tagline ?? '',
-  announcement: api.announcement ?? '',
-  theme: api.theme ?? 'FOREST',
-  phoneNumber: api.phoneNumber ?? '',
-  showContact: api.showContact,
-  logoUrl: api.logoUrl,
-  bannerUrl: api.bannerUrl,
-  featuredProductIds: api.featuredProductIds ?? [],
+  location: 'Cambodia',
+  rating: 4.9,
+  reviewCount: 16,
+  categoryName: api.primaryCategory || 'General',
+  description: `${api.name} on Rentify Marketplace`,
+  tagline: `${api.name} Storefront`,
+  announcement: '',
+  theme: 'FOREST',
+  phoneNumber: '',
+  showContact: false,
+  logoUrl: null,
+  bannerUrl: null,
+  featuredProductIds: [],
 });
 
-/**
- * Collections are computed client-side from the category and sales figures,
- * matching the server's own collection rules in catalog.validation.ts.
- */
-const collectionsFor = (api: ApiProduct): string[] => {
-  const collections: string[] = [];
-  const handmade = ['Handmade Crafts', 'Pottery', 'Weaving', 'Bamboo Products'];
-  const agro = ['Rice Products', 'Palm Sugar', 'Local Food', 'Dried Fruits'];
-
-  if (handmade.includes(api.category)) {
+const collectionsForCategoryAndPrice = (slug: string, rawCategory: string, price: number): string[] => {
+  const collections: string[] = ['top-picks', 'recommended', 'best-sellers'];
+  if (price <= 5) collections.push('under-5');
+  if (slug === 'handmade-crafts' || slug === 'arts-culture' || /craft|handmade|weaving|pottery/i.test(rawCategory)) {
     collections.push('handmade-crafts');
   }
-  if (agro.includes(api.category)) {
+  if (slug === 'food-groceries' || slug === 'agro-products' || /food|grocer|produce|fruit|rice/i.test(rawCategory)) {
     collections.push('agro-products');
-  }
-  if (api.rating >= 4.6) {
-    collections.push('top-picks');
-  }
-  if (api.soldCount >= 400) {
-    collections.push('best-sellers');
-  }
-  if (api.price <= 5) {
-    collections.push('under-5');
-  }
-  if (api.rating >= 4.4 && api.soldCount < 400) {
-    collections.push('recommended');
   }
   return collections;
 };

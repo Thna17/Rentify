@@ -11,6 +11,7 @@ import { CommerceApiService } from '../core/api/commerce-api.service';
 import { PaymentMethod } from '../core/api/api.models';
 import { AuthService } from '../core/auth/auth.service';
 import { CartService, cartErrorMessage } from '../core/cart/cart.service';
+import { RentifyMarketplaceService } from '../core/rentify/rentify-marketplace.service';
 import { CartLine } from '../core/catalog/catalog.models';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
@@ -437,6 +438,7 @@ export class CheckoutComponent {
   private readonly api = inject(CommerceApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly rentify = inject(RentifyMarketplaceService);
 
   protected readonly paymentOptions = PAYMENT_OPTIONS;
   protected readonly method = signal<PaymentMethod>('COD');
@@ -496,34 +498,54 @@ export class CheckoutComponent {
     }
 
     this.submitting.set(true);
-    const { note, ...rest } = this.form.getRawValue();
+    const { note, address, city, province, fullName, phone } = this.form.getRawValue();
+    const fullAddress = [address, city, province, note.trim()].filter(Boolean).join(', ');
 
     try {
-      const created = await firstValueFrom(
-        this.api.createOrder(
-          { ...rest, ...(note.trim() ? { note: note.trim() } : {}) },
-          this.method(),
-        ),
-      );
+      const storeCarts = this.cart.getStoreCarts().filter((c) => c.items.length > 0);
+      let orderNumber = '';
 
-      // The server empties the cart as part of checkout; mirror that locally
-      // so the badge does not keep showing items that are already ordered.
-      this.cart.markEmptied();
-
-      if (this.method() === 'ABA_PAYWAY') {
-        // The order already exists (unpaid); this hands the buyer off to
-        // ABA's own page to actually pay. There's nothing to navigate to
-        // afterward here — redirectToPayway() leaves this page entirely.
-        await this.redirectToPayway(created.orderId);
-        return;
+      if (storeCarts.length > 0) {
+        for (const cart of storeCarts) {
+          const idempotencyKey = `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          const expectedTotal = cart.totalAmount || cart.subtotal || '0';
+          const res = await firstValueFrom(
+            this.rentify.checkout(
+              cart.storeId,
+              expectedTotal,
+              fullName,
+              phone,
+              fullAddress,
+              idempotencyKey,
+            ),
+          );
+          orderNumber = res.order.orderNumber;
+        }
+      } else {
+        const groups = this.shipmentGroups();
+        for (const g of groups) {
+          const idempotencyKey = `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          const groupTotal = g.lines.reduce((s, l) => s + l.lineTotal, 0).toFixed(2);
+          const res = await firstValueFrom(
+            this.rentify.checkout(
+              g.storeId,
+              groupTotal,
+              fullName,
+              phone,
+              fullAddress,
+              idempotencyKey,
+            ),
+          );
+          orderNumber = res.order.orderNumber;
+        }
       }
 
+      this.cart.markEmptied();
+
       await this.router.navigate(['/order-success'], {
-        queryParams: { order: created.orderNumber },
+        queryParams: { order: orderNumber || 'confirmed' },
       });
     } catch (error: unknown) {
-      // Surfaces the real reason — an item selling out between cart and
-      // checkout is the common one.
       this.error.set(cartErrorMessage(error));
       await this.cart.refresh();
     } finally {

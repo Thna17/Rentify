@@ -101,6 +101,7 @@ interface UseProductManagementReturn {
     expectedVersion: number;
   }) => Promise<any>;
   deleteProduct: any;
+  updateInventory: any;
   setSelected: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
@@ -114,8 +115,8 @@ export const useProductManagement = (
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState(PRODUCT_SORT.NEWEST);
-  const [filterStatus, setFilterStatus] = useState(PRODUCT_STATUS.ALL);
+  const [sortBy, setSortBy] = useState<string>(PRODUCT_SORT.NEWEST);
+  const [filterStatus, setFilterStatus] = useState<string>(PRODUCT_STATUS.ALL);
   const [selected, setSelected] = useState<string[]>([]);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -153,6 +154,7 @@ export const useProductManagement = (
   }, [data]);
 
   const [deleteProduct] = useDeleteProductMutation();
+  const [updateInventory] = useUpdateInventoryMutation();
   const [bulkUpdateMutation] = useBulkUpdateProductsMutation();
 
   const deleteProductHandle = useCallback(
@@ -379,6 +381,7 @@ export const useProductManagement = (
     handleBulkOperation,
     deleteProductHandle,
     deleteProduct,
+    updateInventory,
     setSelected,
   };
 };

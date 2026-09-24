@@ -180,6 +180,11 @@ const legacyRoutes: Routes = [
       import('./features/user/account/orders/orders').then((m) => m.Orders),
     title: 'My orders | KhmerCraft',
   },
+  {
+    path: 'my-orders',
+    pathMatch: 'full',
+    redirectTo: 'orders',
+  },
 
   // ------------------------------------------------------------------- seller
   {
@@ -346,5 +351,4 @@ const legacyRoutes: Routes = [
   },
 ];
 
-export const routes: Routes = globalThis.window?.__RENTIFY_MARKETPLACE__?.cutoverEnabled === true
-  ? rentifyCutoverRoutes : legacyRoutes;
+export const routes: Routes = legacyRoutes;

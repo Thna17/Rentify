@@ -15,6 +15,7 @@ export interface RentifyProduct {
   name: string;
   description: string;
   price: string;
+  compareAtPrice?: string | null;
   category: string;
   images: { url: string }[];
   stockQuantity: number;
@@ -59,6 +60,14 @@ export interface MarketplaceOrder {
   payment: { status: string; amountDue: string; collectedAmount: string; refundedAmount: string } | null;
 }
 
+export interface ProductQueryOptions {
+  page?: number;
+  limit?: number;
+  category?: string;
+  search?: string;
+  storeId?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RentifyMarketplaceService {
   private readonly http = inject(HttpClient);
@@ -95,9 +104,22 @@ export class RentifyMarketplaceService {
     return this.http.get<{ user: BuyerSession }>(`${this.core}/api/auth/session`);
   }
 
-  products(page = 1): Observable<{ products: RentifyProduct[]; total: number; page: number; limit: number }> {
+  products(
+    pageOrQuery: number | ProductQueryOptions = 1,
+  ): Observable<{ products: RentifyProduct[]; total: number; page: number; limit: number }> {
+    let params = new HttpParams();
+    if (typeof pageOrQuery === 'number') {
+      params = params.set('page', pageOrQuery).set('limit', 24);
+    } else {
+      params = params.set('page', pageOrQuery.page ?? 1).set('limit', pageOrQuery.limit ?? 24);
+      if (pageOrQuery.category) params = params.set('category', pageOrQuery.category);
+      if (pageOrQuery.search) params = params.set('search', pageOrQuery.search);
+      if (pageOrQuery.storeId) params = params.set('storeId', pageOrQuery.storeId);
+    }
     return this.http.get<{ products: RentifyProduct[]; total: number; page: number; limit: number }>(
-      `${this.commerce}/api/marketplace/products`, { params: new HttpParams().set('page', page).set('limit', 24) });
+      `${this.commerce}/api/marketplace/products`,
+      { params },
+    );
   }
 
   product(id: string): Observable<RentifyProduct> {
@@ -110,20 +132,43 @@ export class RentifyMarketplaceService {
     });
   }
 
+  store(id: string): Observable<{ data: RentifyStore }> {
+    return this.http.get<{ data: RentifyStore }>(`${this.core}/api/stores/public/${id}`);
+  }
+
+  myStore(): Observable<{ store: RentifyStore | null }> {
+    return this.http.get<{ store: RentifyStore | null }>(`${this.core}/api/stores/mine`);
+  }
+
   carts(): Observable<{ carts: StoreCart[] }> {
     return this.http.get<{ carts: StoreCart[] }>(`${this.commerce}/api/marketplace/cart`);
   }
 
   setQuantity(storeId: string, productId: string, quantity: number): Observable<{ carts: StoreCart[] }> {
     return this.http.put<{ carts: StoreCart[] }>(
-      `${this.commerce}/api/marketplace/cart/${storeId}/items/${productId}`, { quantity });
+      `${this.commerce}/api/marketplace/cart/${storeId}/items/${productId}`,
+      { quantity },
+    );
   }
 
-  checkout(storeId: string, expectedTotalAmount: string, name: string, phone: string, address: string,
-    key: string): Observable<{ order: MarketplaceOrder }> {
-    return this.http.post<{ order: MarketplaceOrder }>(`${this.commerce}/api/marketplace/checkout`, {
-      storeId, expectedTotalAmount, customerInfo: { name, phone }, shippingInfo: { address },
-    }, { headers: { 'Idempotency-Key': key } });
+  checkout(
+    storeId: string,
+    expectedTotalAmount: string,
+    name: string,
+    phone: string,
+    address: string,
+    key: string,
+  ): Observable<{ order: MarketplaceOrder }> {
+    return this.http.post<{ order: MarketplaceOrder }>(
+      `${this.commerce}/api/marketplace/checkout`,
+      {
+        storeId,
+        expectedTotalAmount,
+        customerInfo: { name, phone },
+        shippingInfo: { address },
+      },
+      { headers: { 'Idempotency-Key': key } },
+    );
   }
 
   orders(): Observable<{ orders: MarketplaceOrder[] }> {
@@ -131,11 +176,16 @@ export class RentifyMarketplaceService {
   }
 
   report(orderId: string, type: 'complaint' | 'return_requested', reason: string, key: string) {
-    return this.http.post(`${this.commerce}/api/marketplace/my-orders/${orderId}/reports/${type}`,
-      { reason }, { headers: { 'Idempotency-Key': key } });
+    return this.http.post(
+      `${this.commerce}/api/marketplace/my-orders/${orderId}/reports/${type}`,
+      { reason },
+      { headers: { 'Idempotency-Key': key } },
+    );
   }
 
-  logout() { return this.http.post(`${this.core}/api/auth/logout`, {}); }
+  logout() {
+    return this.http.post(`${this.core}/api/auth/logout`, {});
+  }
 
   authLink(path: 'login' | 'signup') {
     const returnUrl = encodeURIComponent(globalThis.location.href);

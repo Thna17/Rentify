@@ -79,7 +79,7 @@ export function ProductStatusBadge({
         }`}
       >
         <SelectValue>
-          <Badge variant={currentStatus.variant} className="text-xs cursor-pointer">
+          <Badge variant={currentStatus.variant as any} className="text-xs cursor-pointer">
             {isMobile ? currentStatus.label.substring(0, 3) : currentStatus.label}
           </Badge>
         </SelectValue>
@@ -88,7 +88,7 @@ export function ProductStatusBadge({
       <SelectContent className="min-w-32">
         {Object.entries(statusConfig).map(([statusKey, config]) => (
           <SelectItem key={statusKey} value={statusKey} className="text-xs">
-            <Badge variant={config.variant} className="text-xs">
+            <Badge variant={config.variant as any} className="text-xs">
               {config.label}
             </Badge>
           </SelectItem>
