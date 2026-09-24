@@ -21,7 +21,7 @@ cd rentify-frontend && npm run dev:marketing
 cd rentify-frontend && npm run dev:ecommerce-template-1
 ```
 
-Template 2 uses `npm run dev:ecommerce-template-2`. Development defaults are Core `http://localhost:3001`, Commerce `http://localhost:4001`, Auth `http://localhost:4300`, Merchant `http://localhost:4400`, Marketing `http://localhost:4200`, Marketplace `http://localhost:4201`, and Template 1 `http://localhost:4700`.
+Template 2 uses `npm run dev:ecommerce-template-2`. Development defaults are Core `http://localhost:3001`, Commerce `http://localhost:4001`, Auth `http://localhost:4300`, Merchant `http://localhost:4400`, Marketing `http://localhost:4200`, Marketplace `http://localhost:4500`, and Template 1 `http://localhost:4700`.
 
 ## Staging and production
 

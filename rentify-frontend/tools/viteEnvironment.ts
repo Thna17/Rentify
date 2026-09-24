@@ -23,7 +23,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     authUrl: 'http://localhost:4300',
     merchantDashboardUrl: 'http://localhost:4400',
     marketingUrl: 'http://localhost:4200',
-    marketplaceUrl: 'http://localhost:4201',
+    marketplaceUrl: 'http://localhost:4500',
     storefrontOrigin: 'http://localhost:4700',
   };
   const config = {

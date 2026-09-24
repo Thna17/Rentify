@@ -9,7 +9,7 @@ Docker Compose starts the complete local Rentify stack with isolated MySQL and R
 - Merchant dashboard: `http://localhost:4400`
 - Storefront Template 1: `http://localhost:4700`
 - Storefront Template 2: `http://localhost:4600`
-- Marketplace UI: `http://localhost:4201` (run locally via `cd marketplace-frontend && npm start`)
+- Marketplace UI: `http://localhost:4500` (run locally via `cd marketplace-frontend && npm start`)
 - MySQL (Host): `localhost:3307` (mapped to internal `3306`)
 - Redis (Host): `localhost:6379`
 

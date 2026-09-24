@@ -13,7 +13,7 @@ not a production release.
    development settings; Core refuses automatic seller approval outside
    `NODE_ENV=development`.
 2. Start `marketplace-frontend` with `npm start` (inside `marketplace-frontend/`) and open
-   `http://localhost:4201`. Its committed runtime config serves the Rentify
+   `http://localhost:4500`. Its committed runtime config serves the Rentify
    shell on `/`, `/cart`, `/checkout`, `/orders`, and old deep links. Localhost
    Core, Commerce, and Auth URLs are the fallback. Replace the blank public
    URLs before using another host.

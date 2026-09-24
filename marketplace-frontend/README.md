@@ -6,7 +6,7 @@ Normal Angular routes and `/rentify-preview` use Core identity plus Commerce
 catalog and COD checkout. The committed public config selects this Rentify
 shell, and local Compose enables `MARKETPLACE_COD_CHECKOUT_ENABLED` for
 development. KhmerCraft's Express/Mongoose API is not used. Local Angular
-development runs on `http://localhost:4201`; Core and Commerce must allow that
+development runs on `http://localhost:4500`; Core and Commerce must allow that
 origin for credentialed requests, and Auth must allow it as a return URL.
 
 Before serving the Angular app outside localhost, replace the blank public
@@ -25,7 +25,7 @@ To start a local development server, run:
 npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4201/`. The application will automatically reload whenever you modify any of the source files.
+Once the server is running, open your browser and navigate to `http://localhost:4500/`. The application will automatically reload whenever you modify any of the source files.
 
 ## Code scaffolding
 
