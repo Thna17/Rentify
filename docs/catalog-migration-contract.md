@@ -1,14 +1,17 @@
 # Catalog migration contract
 
 **Status: partial implementation, 2026-09-23.** Commerce is the target Product
-and stock authority. The relocated KhmerCraft Mongo catalog and Angular
-marketplace remain live together until a cohort can use one catalog and one
-checkout writer. This document records the mapping and switch checks; it does
-not authorize a traffic switch.
+and stock authority. The Angular marketplace still calls KhmerCraft's Mongo
+API on normal routes, even though that database has no independent data.
+This document records the mapping and switch checks; it does not authorize a
+traffic switch.
 
-The owner confirmed there is no KhmerCraft data to import for the hackathon
-release. The source-to-target mapping below is retained for a future real-data
-cutover; no empty import or invented historical records are needed now.
+The owner confirmed KhmerCraft has no independent data. Existing Rentify Stores
+and Products are the launch source for marketplace listings. Core Store
+projection and Commerce Product eligibility, category review, and seller
+approval need reconciliation; no empty import or invented historical records
+are needed. The source-to-target mapping below is contingency for a later
+nonempty KhmerCraft source.
 
 ## Current Commerce contract
 
@@ -32,7 +35,7 @@ win over either visibility setting. Draft, archived, and uncategorized
 Products cannot appear in public marketplace queries. The free pilot
 entitlement is the hackathon rule, not final subscription pricing.
 
-## KhmerCraft source to Rentify target
+## Contingency: KhmerCraft source to Rentify target
 
 | Source | Target and transformation | Required check |
 | --- | --- | --- |
@@ -55,11 +58,13 @@ they are never silently assigned to `Other`.
 
 ## Cutover sequence for each cohort
 
-1. Export source records with counts, ID maps, snapshots, and checksums.
-   Dry-run import without changing live readers. Record rejected rows.
-2. Import and reconcile Store, Product, stock, image, variant, and review
-   references. Re-run safely to prove idempotence. Compare public listing
-   sets, prices, categories, images, and search results.
+1. Snapshot existing Rentify Stores, Products, category review, seller approval,
+   marketplace settings, and the Core-to-Commerce projections. Confirm the
+   independent KhmerCraft source is empty for the release.
+2. Reconcile existing Rentify Store, Product, stock, and image references.
+   Compare public listing sets, prices, categories, images, and search results.
+   If independent KhmerCraft records appear, first dry-run an idempotent
+   import with source counts, ID maps, checksums, and rejected-row reports.
 3. Rehearse API origins, `credentials: include`, and host-only buyer cookies
    on localhost and intended production domains. A cross-domain browser
    session needs the agreed auth callback design.
@@ -72,5 +77,5 @@ they are never silently assigned to `Other`.
 The current Angular `CommerceApiService` expects Mongo-shaped `ApiProduct`
 fields and `/api/products` on the old API. Commerce's new public response is
 intentionally smaller; its adapter and checkout must be built together before
-the Angular URL changes. A future real-data import will also need a source
-export and target image bucket.
+the Angular URL changes. A future nonempty KhmerCraft import would also need a
+source export and target image bucket.

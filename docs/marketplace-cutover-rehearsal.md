@@ -6,9 +6,10 @@ still use KhmerCraft's Mongo API.
 
 ## Before the freeze
 
-1. Use an isolated staging environment with a restorable Mongo snapshot and a
-   separate migrated Commerce database. Record both backup identifiers and
-   database counts. Do not run the SQL smoke scripts against a shared database.
+1. Use an isolated staging environment with restorable Core and Commerce
+   backups. Snapshot any deployed Mongo database to verify its expected zero
+   source records. Record backup identifiers and database counts. Do not run
+   the SQL smoke scripts against a shared database.
 2. Ensure there are no new PayWay checkouts and identify every in-flight
    payment. The legacy API will continue to accept **existing** PayWay
    callbacks after the freeze; its callback handler verifies transaction
@@ -18,9 +19,10 @@ still use KhmerCraft's Mongo API.
    scripts, and direct database access. Stop external writers before declaring
    the freeze effective. The HTTP guard only protects requests through the
    legacy Express API.
-4. Record catalog, cart, open-order, payment, and stock counts. Since the
-   owner reports no KhmerCraft data to import for the hackathon release,
-   rehearsal fixtures must be disposable and clearly identified.
+4. Record existing Rentify Store, catalog, cart, open-order, payment, and stock
+   counts, plus the independent Mongo counts. The owner confirmed KhmerCraft
+   has no independent data; rehearsal fixtures must be disposable and clearly
+   identified.
 
 ## Freeze and exercise the Rentify path
 

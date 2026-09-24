@@ -7,6 +7,9 @@ sell directly in the marketplace without a storefront, or create a storefront
 whose products also appear in the marketplace. The integration architecture is
 planned in [docs/](docs/README.md). Core now has an initial Store identity and
 Website linkage and Commerce has Store-keyed catalog and COD checkout APIs.
+Existing Rentify Stores and Products are the marketplace data source; there is
+no independent KhmerCraft catalog to import for launch. Store listings default
+on but public visibility still requires seller approval and valid categories.
 The marketplace buyer UI has a disabled Rentify preview; normal Angular routes
 still use the legacy API. Migration and release gates remain in progress.
 

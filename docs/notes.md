@@ -188,11 +188,14 @@ into `platform-architecture.md` and remove stale notes.
   can enter public marketplace discovery.
 - Public Website Product reads now exclude drafts and archived products.
   Authenticated Website management reads preserve access to those states.
-  The catalog is still a partial Phase 3 increment; Angular, checkout, legacy
-  import, and cohort cutover have not moved.
-- The owner confirmed that there is no KhmerCraft data to migrate for the
-  hackathon release. Keep mapping and import procedures for later, but do not
-  create fictional historical rows or require an empty export at this gate.
+  The catalog is still a partial Phase 3 increment; Angular, checkout, and
+  cohort cutover have not moved.
+- The owner confirmed KhmerCraft has no independent data. Existing Rentify
+  Stores and Products supply marketplace listings through the default-on
+  Store setting and shared Commerce catalog. Seller approval, reviewed Store
+  and Product categories, publication, entitlement, and opt-outs still gate
+  public visibility. Keep KhmerCraft import procedures only as contingency;
+  do not create fictional historical rows.
 - The legacy Website Product edit, bulk edit, inventory, and delete paths now
   use version checks and archive semantics. Stock adjustments preserve draft
   state and reject a negative balance. Order, POS, invoice, and stock-service

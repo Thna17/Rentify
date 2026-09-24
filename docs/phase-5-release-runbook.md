@@ -1,9 +1,10 @@
 # Phase 5 release and retirement runbook
 
 **Status (2026-09-24):** Preparation only. No production cutover, historical
-import, traffic switch, or legacy API retirement has occurred. The owner reports
-no KhmerCraft records to migrate for the hackathon release. Verify that fact
-again against the actual deployment before calling an import empty.
+import, traffic switch, or legacy API retirement has occurred. The owner
+confirmed KhmerCraft has no independent data: existing Rentify Stores and
+Products are the launch source. Verify the deployed source counts before
+cutover and reconcile Rentify's Core and Commerce records.
 
 ## Release record
 
@@ -16,14 +17,16 @@ payments, and operations owners before a traffic switch.
 
 ## Preflight and evidence
 
-1. Inventory Mongo users, Stores, products, reviews, open orders, PayWay
-   transactions, images, and direct/background writers. Record source counts
-   even if every count is zero. If records exist, implement and dry run
-   idempotent `source + legacy ID -> Rentify ID` maps and account linking before
-   cutover; do not treat this release's zero-data assumption as an import tool.
-2. Take restorable Mongo, Core SQL, Commerce SQL, and media backups and prove a
-   restore in an isolated environment. Record checksums for any historical
-   export. Preserve the legacy payment ledger; never replay a charge.
+1. Inventory existing Rentify Stores, Websites, Products, categories, active
+   orders, payments, stock, and marketplace eligibility. Record how many
+   storefront Stores default to marketplace enabled, how many opted out, and
+   how many Products are blocked by seller approval or category review.
+   Record zero counts for independent Mongo users, Stores, products, reviews,
+   orders, payments, and images. If nonzero records appear, stop and scope a
+   separate idempotent import and account-linking rehearsal.
+2. Take restorable Core SQL, Commerce SQL, and media backups and prove a
+   restore in an isolated environment. Preserve any deployed legacy database
+   snapshot until its zero-record inventory is verified. Never replay a charge.
 3. Run `node scripts/cutover-projection-audit.mjs` at the repository root while
    the local Compose stack is running. It compares Core Store/Website rows,
    Commerce projections, versions, ownership, status, and pending outbox IDs.
@@ -59,9 +62,9 @@ payments, and operations owners before a traffic switch.
    capture final deltas, and switch one staging cohort. Re-run all preflight
    audits and compare the before/after ledgers. Measure auth errors, listing
    lag, stock drift, callback age, order failures, and COD reconciliation.
-4. Time the freeze, backfill, verification, switch, and rollback drill. Write
-   down the observed duration, not an estimate. A failed check stops further
-   cohorts until the data owner resolves it.
+4. Time the freeze, Rentify reconciliation, verification, switch, and rollback
+   drill. Write down the observed duration, not an estimate. A failed check
+   stops further cohorts until the data owner resolves it.
 
 ## Production cohorts and rollback
 
@@ -82,16 +85,17 @@ does not move an order or payment between databases.
 
 Keep the legacy API read only through an agreed observation period. Retire it
 only after all normal Angular routes, jobs, callbacks, and operators use Rentify;
-the source inventory and ID maps are preserved; financial and stock ledgers
-match; restore and rollback drills have succeeded; and legacy credentials have
-been removed. Record the retirement approval and retain backups according to
-the agreed retention policy.
+the zero-record source inventory and Rentify mappings are preserved; financial
+and stock ledgers match; restore and rollback drills have succeeded; and legacy
+credentials have been removed. Record the retirement approval and retain
+backups according to the agreed retention policy.
 
 ## Current blockers
 
 - Phase 3 reader and Phase 4 checkout switches have not passed their gates.
 - Hosted HTTPS domain/session and browser rehearsal are incomplete.
 - Full POS/invoice and return/dispute policy checks are incomplete.
-- No historical import scripts exist because no source records have been
-  provided or found; a nonempty source inventory requires that work.
+- Existing Rentify product/category eligibility and Core-to-Commerce mappings
+  still need staging reconciliation. A nonempty KhmerCraft source inventory
+  would require a separate import plan.
 - No staging or production backup/restore and timed cutover evidence exists.
