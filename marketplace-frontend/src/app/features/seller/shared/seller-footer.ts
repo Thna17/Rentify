@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-seller-footer',
@@ -7,14 +8,14 @@ import { RouterLink } from '@angular/router';
   template: `
     <footer class="seller-footer">
       <div class="wrap footer-inner">
-        <a class="footer-brand" routerLink="/">KhmerCraft</a>
+        <a class="footer-brand" routerLink="/">Rentify Marketplace</a>
         <nav aria-label="Seller footer">
           <a routerLink="/">Marketplace</a>
           <a routerLink="/about">About</a>
-          <a routerLink="/seller/login">Seller sign in</a>
+          <a [href]="sellerLoginUrl">Seller sign in</a>
           <a routerLink="/seller/onboarding">Start selling</a>
         </nav>
-        <small>KhmerCraft seller experience</small>
+        <small>Rentify Marketplace seller experience</small>
       </div>
     </footer>
   `,
@@ -32,4 +33,9 @@ import { RouterLink } from '@angular/router';
     @media(max-width:600px){.footer-inner small{width:100%;margin:0}}
   `],
 })
-export class SellerFooter {}
+export class SellerFooter {
+  private readonly auth = inject(AuthService);
+  protected readonly sellerLoginUrl = this.auth.getLoginUrl(
+    typeof window !== 'undefined' ? `${window.location.origin}/seller/dashboard` : '/seller/dashboard',
+  );
+}

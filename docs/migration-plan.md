@@ -271,7 +271,11 @@ finished KhmerCraft marketplace UX: `cutoverEnabled` currently sends all
 normal routes to `RentifyPreviewComponent`, hiding the existing home, search,
 category, product detail, store, cart, and account pages. Reconnect those
 screens to Rentify APIs and repeat browser QA before treating the client as
-ready. Old Angular seller and admin components are not reached on normal
+ready. Marketplace authentication UI pages (/login, /register, /forgot-password,
+/reset-password, /verify-email, /seller/login, /admin/login) have been retired
+in favor of the unified Rentify Auth portal (http://localhost:4300); route guards
+and deep links now forward unauthenticated visitors to Rentify Auth with preserved return URLs.
+Old Angular seller and admin components are not reached on normal
 routes; equivalent operations must use Rentify merchant and admin tools.
 Core buyer identity is accepted for marketplace and hosted storefront
 checkout, but hosted-domain browser session testing and custom-domain sessions

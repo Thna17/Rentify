@@ -33,12 +33,12 @@ import { IconComponent } from '../../../../components/shared/ui/icon/icon.compon
               <button class="btn btn-primary btn-sm" routerLink="/orders">
                 View my orders
               </button>
-              <button
+              <a
                 class="btn btn-outline btn-sm"
-                routerLink="/account/change-password"
+                [href]="changePasswordUrl"
               >
                 Change password
-              </button>
+              </a>
               <button
                 class="btn btn-ghost btn-sm"
                 (click)="signOut()"
@@ -183,6 +183,9 @@ export class Profile {
 
   protected readonly user = this.auth.user;
   protected readonly signingOut = signal(false);
+  protected readonly changePasswordUrl = this.auth.getForgotPasswordUrl(
+    typeof window !== 'undefined' ? `${window.location.origin}/profile` : '/profile',
+  );
 
   protected signOut(): void {
     this.signingOut.set(true);

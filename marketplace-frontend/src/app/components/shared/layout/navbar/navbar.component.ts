@@ -30,7 +30,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
     <div class="announce">
       <div class="container announce-inner">
         @if (sellerArea()) {
-          <span><ui-icon name="store" [size]="13" /> KhmerCraft for sellers</span>
+          <span><ui-icon name="store" [size]="13" /> Rentify for sellers</span>
           <span class="dot">·</span>
           <span><ui-icon name="banknote" [size]="13" /> Seller plans from $0</span>
         } @else {
@@ -54,10 +54,12 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
     <header class="navbar" [class.scrolled]="scrolled()" [class.nav-hidden]="hidden()">
       <div class="navbar-inner container">
         <a routerLink="/" class="logo">
-          <span class="logo-mark"
-            ><ui-icon name="leaf" [size]="16" color="#fff"
-          /></span>
-          KhmerCraft
+          <img
+            src="/assets/rentify-logo.webp"
+            alt="Rentify Marketplace"
+            class="logo-mark"
+          />
+          Rentify Marketplace
         </a>
 
         <div class="search-group">
@@ -218,7 +220,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
           } @else {
             <a
               class="signin-btn"
-              [routerLink]="sellerArea() ? '/seller/login' : '/login'"
+              [href]="authLoginUrl(sellerArea() ? 'seller' : undefined)"
             >
               <ui-icon name="user" [size]="15" />
               <span class="signin-label">Sign In</span>
@@ -456,13 +458,12 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
         letter-spacing: -0.02em;
       }
       .logo-mark {
-        width: 34px;
-        height: 30px;
-        border-radius: 11px 11px 17px 11px;
-        background: var(--color-accent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        object-fit: contain;
+        display: block;
+        flex-shrink: 0;
       }
       .nav-actions {
         display: flex;
@@ -894,7 +895,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
         .announce-inner { justify-content: center; font-size: 10.5px; }
         .announce .dot, .announce-inner > span:nth-of-type(2) { display: none; }
         .logo { font-size: 18px; }
-        .logo-mark { width: 32px; height: 32px; }
+        .logo-mark { width: 28px; height: 28px; }
         .signin-label { display: none; }
         .signin-btn { padding-inline: 11px; margin-left: 0; }
         /* Avatar + chip only. The chevron is the first thing to go: at this
@@ -1029,6 +1030,14 @@ export class NavbarComponent implements AfterViewInit {
   protected readonly isSeller = computed(() => this.user()?.role === 'SELLER');
 
   protected readonly isAdmin = computed(() => this.user()?.role === 'ADMIN');
+
+  protected authLoginUrl(target?: 'seller'): string {
+    const returnPath = target === 'seller' ? '/seller/dashboard' : this.url();
+    const returnUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}${returnPath}`
+      : returnPath;
+    return this.auth.getLoginUrl(returnUrl);
+  }
 
   protected isPath(path: string): boolean {
     return this.url().split('?')[0].startsWith(path);

@@ -157,8 +157,12 @@ describe('RentifyMarketplaceService', () => {
   it('builds auth link for login and signup with returnUrl', () => {
     const loginLink = service.authLink('login');
     const signupLink = service.authLink('signup');
+    const registerLink = service.authLink('register', 'http://localhost:4500/seller/dashboard');
+    const forgotLink = service.authLink('forgot-password', 'http://localhost:4500/profile');
 
     expect(loginLink).toContain('http://localhost:4300/?returnUrl=');
     expect(signupLink).toContain('http://localhost:4300/signup?returnUrl=');
+    expect(registerLink).toBe('http://localhost:4300/signup?returnUrl=http%3A%2F%2Flocalhost%3A4500%2Fseller%2Fdashboard');
+    expect(forgotLink).toBe('http://localhost:4300/forgot-password?returnUrl=http%3A%2F%2Flocalhost%3A4500%2Fprofile');
   });
 });

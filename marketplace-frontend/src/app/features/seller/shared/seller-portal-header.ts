@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 
 /**
  * Every nav item here is a real route, not a same-page anchor — clicking
@@ -13,7 +14,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   template: `
     <header class="seller-header">
       <div class="header-inner">
-        <a class="brand" routerLink="/">KhmerCraft</a>
+        <a class="brand" routerLink="/">
+          <img src="/assets/rentify-logo.webp" alt="Rentify Marketplace" style="width: 28px; height: 28px; border-radius: 7px; object-fit: contain;" />
+          Rentify Marketplace
+        </a>
 
         <nav class="desktop-nav" aria-label="Seller navigation">
           <a routerLink="/become-a-seller" routerLinkActive="current" [routerLinkActiveOptions]="{ exact: true }">Why Sell</a>
@@ -24,7 +28,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         </nav>
 
         <div class="desktop-actions">
-          <a class="sign-in" routerLink="/seller/login">Seller Sign In</a>
+          <a class="sign-in" [href]="sellerLoginUrl">Seller Sign In</a>
           <a class="start" routerLink="/seller/onboarding">Start Selling</a>
         </div>
 
@@ -40,7 +44,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <a routerLink="/become-a-seller/pricing" routerLinkActive="current" (click)="menuOpen.set(false)">Pricing</a>
           <a routerLink="/become-a-seller/faq" routerLinkActive="current" (click)="menuOpen.set(false)">FAQ</a>
           <a routerLink="/about" (click)="menuOpen.set(false)">About us</a>
-          <a routerLink="/seller/login" (click)="menuOpen.set(false)">Seller Sign In</a>
+          <a [href]="sellerLoginUrl" (click)="menuOpen.set(false)">Seller Sign In</a>
           <a class="start" routerLink="/seller/onboarding" (click)="menuOpen.set(false)">Start Selling</a>
         </nav>
       }
@@ -50,7 +54,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     :host { display: block; position: sticky; top: 0; z-index: 60; }
     .seller-header { background: rgba(252,250,245,.94); border-bottom: 1px solid #e4dbce; backdrop-filter: blur(14px); }
     .header-inner { align-items: center; display: flex; justify-content: space-between; margin: 0 auto; max-width: 1210px; min-height: 72px; padding: 0 32px; }
-    .brand { color: #213b30; font-family: var(--font-heading); font-size: 21px; font-weight: 700; letter-spacing: -.025em; text-decoration: none; }
+    .brand { display: inline-flex; align-items: center; gap: 9px; color: #213b30; font-family: var(--font-heading); font-size: 21px; font-weight: 700; letter-spacing: -.025em; text-decoration: none; }
     .desktop-nav, .desktop-actions { align-items: center; display: flex; }
     .desktop-nav { gap: 34px; }
     .desktop-actions { gap: 22px; }
@@ -75,5 +79,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `],
 })
 export class SellerPortalHeader {
+  private readonly auth = inject(AuthService);
   protected readonly menuOpen = signal(false);
+  protected readonly sellerLoginUrl = this.auth.getLoginUrl(
+    typeof window !== 'undefined' ? `${window.location.origin}/seller/dashboard` : '/seller/dashboard',
+  );
 }

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { buyerGuard } from './core/auth/auth.guard';
 import { adminGuard } from './core/auth/admin.guard';
 import { sellerGuard } from './core/auth/seller.guard';
+import { externalAuthRedirectGuard } from './pages/auth-redirect.component';
 
 const rentifyBuyer = () => import('./pages/rentify-preview.component')
   .then((m) => m.RentifyPreviewComponent);
@@ -29,13 +30,13 @@ const legacyRoutes: Routes = [
     path: '',
     loadComponent: () =>
       import('./pages/home.component').then((m) => m.HomeComponent),
-    title: 'KhmerCraft — Cambodia’s local-first marketplace',
+    title: 'Rentify Marketplace',
   },
   {
     path: 'products',
     loadComponent: () =>
       import('./pages/products.component').then((m) => m.ProductsComponent),
-    title: 'Products | KhmerCraft',
+    title: 'Products | Rentify Marketplace',
   },
   {
     path: 'product/:id',
@@ -48,7 +49,7 @@ const legacyRoutes: Routes = [
     path: 'categories',
     loadComponent: () =>
       import('./pages/categories.component').then((m) => m.CategoriesComponent),
-    title: 'Categories | KhmerCraft',
+    title: 'Categories | Rentify Marketplace',
   },
   {
     path: 'categories/:slug',
@@ -61,7 +62,7 @@ const legacyRoutes: Routes = [
     path: 'stores',
     loadComponent: () =>
       import('./pages/stores.component').then((m) => m.StoresComponent),
-    title: 'Stores | KhmerCraft',
+    title: 'Stores | Rentify Marketplace',
   },
   {
     path: 'stores/:id',
@@ -74,38 +75,33 @@ const legacyRoutes: Routes = [
     path: 'cart',
     loadComponent: () =>
       import('./pages/cart.component').then((m) => m.CartComponent),
-    title: 'Your cart | KhmerCraft',
+    title: 'Your cart | Rentify Marketplace',
   },
   {
     path: 'wishlist',
     loadComponent: () =>
       import('./pages/wishlist.component').then((m) => m.WishlistComponent),
-    title: 'Your wishlist | KhmerCraft',
+    title: 'Your wishlist | Rentify Marketplace',
   },
 
   // ------------------------------------------------------------------ checkout
-  // Guarded: an anonymous visitor is sent to /login with a returnUrl rather
+  // Guarded: an anonymous visitor is redirected to Rentify Auth with a returnUrl rather
   // than filling in a delivery address they cannot submit.
-  // One real checkout page replaces the four-step mock chain: the server
-  // prices the order, so there is no intermediate state worth three extra
-  // navigations. The old step URLs still resolve so no link breaks.
   {
     path: 'checkout',
     canActivate: [buyerGuard],
     loadComponent: () =>
       import('./pages/checkout.component').then((m) => m.CheckoutComponent),
-    title: 'Checkout | KhmerCraft',
+    title: 'Checkout | Rentify Marketplace',
   },
   {
-    // Where an ABA_PAYWAY order goes to actually be paid: the KHQR from ABA,
-    // plus polling that settles the order once ABA confirms the transaction.
     path: 'checkout/pay/:orderNumber',
     canActivate: [buyerGuard],
     loadComponent: () =>
       import('./pages/payway-payment.component').then(
         (m) => m.PaywayPaymentComponent,
       ),
-    title: 'Pay with ABA | KhmerCraft',
+    title: 'Pay with ABA | Rentify Marketplace',
   },
   { path: 'checkout/shipping', pathMatch: 'full', redirectTo: 'checkout' },
   { path: 'checkout/payment', pathMatch: 'full', redirectTo: 'checkout' },
@@ -116,7 +112,7 @@ const legacyRoutes: Routes = [
       import('./pages/order-success.component').then(
         (m) => m.OrderSuccessComponent,
       ),
-    title: 'Order confirmed | KhmerCraft',
+    title: 'Order confirmed | Rentify Marketplace',
   },
 
   // ----------------------------------------------------------------- marketing
@@ -124,21 +120,15 @@ const legacyRoutes: Routes = [
     path: 'about',
     loadComponent: () =>
       import('./pages/about.component').then((m) => m.AboutComponent),
-    title: 'About | KhmerCraft',
+    title: 'About | Rentify Marketplace',
   },
   {
-    // Seller landing, onboarding and dashboard are Seypa47's work from
-    // origin/prototype, ported into this tree's structure.
-    //
-    // Why Sell / Explore / Pricing / FAQ are separate routes rather than
-    // anchors on one long page — clicking a nav item takes you to that
-    // page, not to a spot further down whatever page you were already on.
     path: 'become-a-seller',
     loadComponent: () =>
       import('./features/seller/landing/seller-landing').then(
         (m) => m.SellerPage,
       ),
-    title: 'Become a seller | KhmerCraft',
+    title: 'Become a seller | Rentify Marketplace',
   },
   {
     path: 'become-a-seller/explore',
@@ -146,7 +136,7 @@ const legacyRoutes: Routes = [
       import('./features/seller/explore/seller-explore').then(
         (m) => m.SellerExplore,
       ),
-    title: 'See KhmerCraft in action | KhmerCraft',
+    title: 'See Rentify Marketplace in action | Rentify Marketplace',
   },
   {
     path: 'become-a-seller/pricing',
@@ -154,15 +144,14 @@ const legacyRoutes: Routes = [
       import('./features/seller/pricing/seller-pricing').then(
         (m) => m.SellerPricing,
       ),
-    title: 'Seller pricing | KhmerCraft',
+    title: 'Seller pricing | Rentify Marketplace',
   },
   {
     path: 'become-a-seller/faq',
     loadComponent: () =>
       import('./features/seller/faq/seller-faq').then((m) => m.SellerFaq),
-    title: 'Seller FAQ | KhmerCraft',
+    title: 'Seller FAQ | Rentify Marketplace',
   },
-  // The spec uses /become-seller; keep both spellings working.
   { path: 'become-seller', pathMatch: 'full', redirectTo: 'become-a-seller' },
 
   // ------------------------------------------------------------------- account
@@ -171,14 +160,14 @@ const legacyRoutes: Routes = [
     canActivate: [buyerGuard],
     loadComponent: () =>
       import('./features/user/account/profile/profile').then((m) => m.Profile),
-    title: 'My profile | KhmerCraft',
+    title: 'My profile | Rentify Marketplace',
   },
   {
     path: 'orders',
     canActivate: [buyerGuard],
     loadComponent: () =>
       import('./features/user/account/orders/orders').then((m) => m.Orders),
-    title: 'My orders | KhmerCraft',
+    title: 'My orders | Rentify Marketplace',
   },
   {
     path: 'my-orders',
@@ -189,11 +178,11 @@ const legacyRoutes: Routes = [
   // ------------------------------------------------------------------- seller
   {
     path: 'seller/login',
+    canActivate: [externalAuthRedirectGuard('login', '/seller/dashboard')],
     loadComponent: () =>
-      import('./features/authentication/seller/login/seller-login').then(
-        (m) => m.SellerLogin,
-      ),
-    title: 'Seller sign in | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'login', defaultReturn: '/seller/dashboard' },
+    title: 'Seller sign in | Rentify Marketplace',
   },
   {
     path: 'seller/onboarding',
@@ -202,7 +191,7 @@ const legacyRoutes: Routes = [
       import('./features/seller/onboarding/seller-onboarding').then(
         (m) => m.SellerOnboardingPage,
       ),
-    title: 'Seller onboarding | KhmerCraft',
+    title: 'Seller onboarding | Rentify Marketplace',
   },
   {
     path: 'seller/dashboard',
@@ -211,7 +200,7 @@ const legacyRoutes: Routes = [
       import('./pages/seller-dashboard/seller-dashboard').then(
         (m) => m.SellerDashboardPage,
       ),
-    title: 'Seller dashboard | KhmerCraft',
+    title: 'Seller dashboard | Rentify Marketplace',
   },
   {
     path: 'seller/orders',
@@ -220,87 +209,69 @@ const legacyRoutes: Routes = [
       import('./features/seller/orders/seller-orders').then(
         (m) => m.SellerOrders,
       ),
-    title: 'Incoming orders | KhmerCraft',
+    title: 'Incoming orders | Rentify Marketplace',
   },
 
   // ---------------------------------------------------------------------- auth
+  // Auth is handled by the unified Rentify Auth portal. Direct route visits
+  // are forwarded with returnUrl preserved.
   {
     path: 'login',
+    canActivate: [externalAuthRedirectGuard('login', '/')],
     loadComponent: () =>
-      import('./features/authentication/buyer/login/login').then(
-        (module) => module.Login,
-      ),
-    title: 'Sign in | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'login', defaultReturn: '/' },
+    title: 'Sign in | Rentify Marketplace',
   },
   {
     path: 'register',
+    canActivate: [externalAuthRedirectGuard('signup', '/')],
     loadComponent: () =>
-      import('./features/authentication/buyer/register/register').then(
-        (module) => module.Register,
-      ),
-    title: 'Create buyer account | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'signup', defaultReturn: '/' },
+    title: 'Create buyer account | Rentify Marketplace',
   },
-  // The storefront nav links to /signup; route it at the real register page.
   { path: 'signup', pathMatch: 'full', redirectTo: 'register' },
   {
     path: 'forgot-password',
+    canActivate: [externalAuthRedirectGuard('forgot-password', '/')],
     loadComponent: () =>
-      import(
-        './features/authentication/buyer/forgot-password/forgot-password'
-      ).then(
-        (module) => module.ForgotPassword,
-      ),
-    title: 'Forgot password | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'forgot-password', defaultReturn: '/' },
+    title: 'Forgot password | Rentify Marketplace',
   },
-  // Retired simulated reset-code screens. Password reset now happens only
-  // through the secure token link produced by /forgot-password.
   { path: 'verify', pathMatch: 'full', redirectTo: 'forgot-password' },
   { path: 'verify-code', pathMatch: 'full', redirectTo: 'forgot-password' },
   {
-    // Registration's own verification step — separate from the password-reset
-    // /verify placeholder above, and actually wired to the API.
     path: 'verify-email',
+    canActivate: [externalAuthRedirectGuard('login', '/')],
     loadComponent: () =>
-      import('./features/authentication/buyer/verify-email/verify-email').then(
-        (m) => m.VerifyEmail,
-      ),
-    title: 'Verify your email | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'login', defaultReturn: '/' },
+    title: 'Verify email | Rentify Marketplace',
   },
   {
     path: 'reset-password',
+    canActivate: [externalAuthRedirectGuard('forgot-password', '/')],
     loadComponent: () =>
-      import('./features/authentication/buyer/reset-password/reset-password').then(
-        (module) => module.ResetPassword,
-      ),
-    title: 'Reset password | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'forgot-password', defaultReturn: '/' },
+    title: 'Reset password | Rentify Marketplace',
   },
+  { path: 'account/change-password', pathMatch: 'full', redirectTo: 'forgot-password' },
   {
-    path: 'account/change-password',
-    canActivate: [buyerGuard],
-    loadComponent: () =>
-      import(
-        './features/authentication/buyer/change-password/change-password'
-      ).then(
-        (module) => module.ChangePassword,
-      ),
-    title: 'Change password | KhmerCraft',
-  },
-  {
-    // Khemara's admin area, lazily loaded as a child route tree behind
-    // adminGuard. The guard is ours: the branch this came from had no route
-    // protection on it at all.
     path: 'admin',
     canActivate: [adminGuard],
     loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES),
-    title: 'Administration | KhmerCraft',
+    title: 'Administration | Rentify Marketplace',
   },
   {
     path: 'admin/login',
+    canActivate: [externalAuthRedirectGuard('login', '/admin')],
     loadComponent: () =>
-      import('./features/admin/authentication/login/admin-login').then(
-        (module) => module.AdminLogin,
-      ),
-    title: 'Admin sign in | KhmerCraft',
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+    data: { mode: 'login', defaultReturn: '/admin' },
+    title: 'Admin sign in | Rentify Marketplace',
   },
 
   // ------------------------------------------------------------- support pages
@@ -310,35 +281,35 @@ const legacyRoutes: Routes = [
     loadComponent: () =>
       import('./pages/info.component').then((m) => m.InfoComponent),
     data: { page: 'help' },
-    title: 'Help centre | KhmerCraft',
+    title: 'Help centre | Rentify Marketplace',
   },
   {
     path: 'contact',
     loadComponent: () =>
       import('./pages/info.component').then((m) => m.InfoComponent),
     data: { page: 'contact' },
-    title: 'Contact us | KhmerCraft',
+    title: 'Contact us | Rentify Marketplace',
   },
   {
     path: 'shipping',
     loadComponent: () =>
       import('./pages/info.component').then((m) => m.InfoComponent),
     data: { page: 'shipping' },
-    title: 'Shipping information | KhmerCraft',
+    title: 'Shipping information | Rentify Marketplace',
   },
   {
     path: 'terms',
     loadComponent: () =>
       import('./pages/info.component').then((m) => m.InfoComponent),
     data: { page: 'terms' },
-    title: 'Terms of service | KhmerCraft',
+    title: 'Terms of service | Rentify Marketplace',
   },
   {
     path: 'privacy',
     loadComponent: () =>
       import('./pages/info.component').then((m) => m.InfoComponent),
     data: { page: 'privacy' },
-    title: 'Privacy policy | KhmerCraft',
+    title: 'Privacy policy | Rentify Marketplace',
   },
 
   // A real 404 rather than a silent redirect, so a broken link stays visible
@@ -347,7 +318,7 @@ const legacyRoutes: Routes = [
     path: '**',
     loadComponent: () =>
       import('./pages/not-found.component').then((m) => m.NotFoundComponent),
-    title: 'Page not found | KhmerCraft',
+    title: 'Page not found | Rentify Marketplace',
   },
 ];
 

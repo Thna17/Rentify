@@ -4,8 +4,6 @@ Components used across roles or across multiple feature domains.
 
 ```text
 shared/
-├── authentication/
-│   └── auth-layout/         # Buyer, seller and admin authentication shell
 ├── layout/
 │   ├── footer/              # Marketplace footer
 │   └── navbar/              # Global navigation

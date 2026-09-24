@@ -187,8 +187,13 @@ export class RentifyMarketplaceService {
     return this.http.post(`${this.core}/api/auth/logout`, {});
   }
 
-  authLink(path: 'login' | 'signup') {
-    const returnUrl = encodeURIComponent(globalThis.location.href);
-    return `${this.auth}/${path === 'login' ? '' : path}?returnUrl=${returnUrl}`;
+  authLink(
+    path: 'login' | 'signup' | 'register' | 'forgot-password' | 'reset-password' = 'login',
+    customReturnUrl?: string,
+  ) {
+    const targetUrl = customReturnUrl || (globalThis.location ? globalThis.location.href : '/');
+    const returnUrl = encodeURIComponent(targetUrl);
+    const segment = path === 'login' ? '' : path === 'register' ? 'signup' : path;
+    return `${this.auth}/${segment}?returnUrl=${returnUrl}`;
   }
 }

@@ -23,6 +23,33 @@ export class AuthService {
   readonly user = this.userState.asReadonly();
   readonly isAuthenticated = computed(() => Boolean(this.userState()));
 
+  getLoginUrl(returnUrl?: string): string {
+    const returnTarget = returnUrl || (typeof window !== 'undefined' ? window.location.href : '/');
+    return this.rentify.authLink('login', returnTarget);
+  }
+
+  getRegisterUrl(returnUrl?: string): string {
+    const returnTarget = returnUrl || (typeof window !== 'undefined' ? window.location.href : '/');
+    return this.rentify.authLink('signup', returnTarget);
+  }
+
+  getForgotPasswordUrl(returnUrl?: string): string {
+    const returnTarget = returnUrl || (typeof window !== 'undefined' ? window.location.href : '/');
+    return this.rentify.authLink('forgot-password', returnTarget);
+  }
+
+  redirectToLogin(returnUrl?: string): void {
+    if (typeof window !== 'undefined') {
+      window.location.href = this.getLoginUrl(returnUrl);
+    }
+  }
+
+  redirectToRegister(returnUrl?: string): void {
+    if (typeof window !== 'undefined') {
+      window.location.href = this.getRegisterUrl(returnUrl);
+    }
+  }
+
   /** Creates the account and sends a 6-digit code. */
   register(payload: {
     name: string;
