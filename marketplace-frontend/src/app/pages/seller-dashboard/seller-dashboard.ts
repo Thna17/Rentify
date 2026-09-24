@@ -795,7 +795,10 @@ interface DashboardMetric {
   template: `
     <div class="portal">
       <aside class="sidebar">
-        <h1 class="logo">KhmerCraft</h1>
+        <h1 class="logo" style="display:flex;align-items:center;gap:8px;font-size:17px">
+          <img src="/assets/rentify-logo.webp" alt="Rentify Marketplace" style="width:24px;height:24px;border-radius:6px;object-fit:contain" />
+          Rentify Marketplace
+        </h1>
         <p class="portal-label">Seller Portal</p>
         <div class="store-control">
           <label for="active-store">Working in</label>
@@ -1011,7 +1014,7 @@ interface DashboardMetric {
         } @else if (view() === 'add') {
           <main class="page">
             <h1>Add New Product</h1>
-            <p class="muted" style="max-width:690px">Create a new product listing for buyers to discover. Provide detailed information to increase your visibility in the KhmerCraft marketplace.</p>
+            <p class="muted" style="max-width:690px">Create a new product listing for buyers to discover. Provide detailed information to increase your visibility in the Rentify Marketplace.</p>
 
             <section class="add-layout">
               <div class="add-main">
@@ -1345,7 +1348,7 @@ interface DashboardMetric {
                   <label>Announcement
                     <input class="dash-input" maxlength="120" [ngModel]="storeProfile().announcement" (ngModelChange)="storeProfile.set({...storeProfile(), announcement: $event})" name="announcement" placeholder="Example: Free Phnom Penh delivery this weekend" />
                   </label>
-                  <div class="profile-section-title"><strong>Storefront theme</strong><span>Choose one tested color system. KhmerCraft keeps typography and shopping controls consistent.</span></div>
+                  <div class="profile-section-title"><strong>Storefront theme</strong><span>Choose one tested color system. Rentify Marketplace keeps typography and shopping controls consistent.</span></div>
                   <div class="theme-options">
                     @for (theme of storefrontThemes; track theme.value) {
                       <button type="button" class="theme-choice" [class.selected]="storeProfile().theme === theme.value" [style.--swatch]="theme.color" (click)="storeProfile.set({...storeProfile(), theme: theme.value})"><i></i>{{ theme.label }}</button>
@@ -1362,7 +1365,7 @@ interface DashboardMetric {
                     </label>
                     <label>Phone Number<input class="dash-input" [ngModel]="storeProfile().phoneNumber" (ngModelChange)="storeProfile.set({...storeProfile(), phoneNumber: $event})" name="phone" /></label>
                   </div>
-                  <label class="public-contact"><input type="checkbox" [ngModel]="storeProfile().showContact" (ngModelChange)="storeProfile.set({...storeProfile(), showContact: $event})" name="showContact" /><span><strong>Show the store phone number publicly</strong><br />Buyers will see it in the About section. Leave this off if orders should stay inside KhmerCraft.</span></label>
+                  <label class="public-contact"><input type="checkbox" [ngModel]="storeProfile().showContact" (ngModelChange)="storeProfile.set({...storeProfile(), showContact: $event})" name="showContact" /><span><strong>Show the store phone number publicly</strong><br />Buyers will see it in the About section. Leave this off if orders should stay inside Rentify Marketplace.</span></label>
                   <div class="profile-section-title"><strong>Featured products</strong><span>Select up to 6 products to place above the full store catalogue.</span></div>
                   @if (products().length) {
                     <div class="featured-picker">
@@ -1447,7 +1450,7 @@ interface DashboardMetric {
               <aside>
                 <article class="how-card">
                   <h2>How it works</h2>
-                  <p>KhmerCraft empowers artisans with a simple, flat-fee commission structure to keep our community sustainable.</p>
+                  <p>Rentify Marketplace empowers artisans with a simple, flat-fee commission structure to keep our community sustainable.</p>
                   <div class="calc-row"><span>Sale Price</span><strong>$100.00</strong></div>
                   <div class="calc-row"><span>Commission <small style="background:#e6ad69;color:#17382a;border-radius:999px;padding:2px 5px">10%</small></span><strong>-$10.00</strong></div>
                   <div class="earning">Your Earning $90.00</div>
@@ -1522,7 +1525,7 @@ interface DashboardMetric {
               </div>
             </section>
 
-            <p class="portal-version">KhmerCraft Seller Portal v2.4.0 · Secured by TLS 1.3</p>
+            <p class="portal-version">Rentify Marketplace Seller Portal v2.4.0 · Secured by TLS 1.3</p>
           </main>
         } @else {
           <main class="page">

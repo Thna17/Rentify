@@ -18,7 +18,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
       </nav>
       <h1>Browse by category</h1>
       <p class="sub">
-        Explore departments across KhmerCraft’s Cambodian local-first marketplace.
+        Explore departments across Rentify Marketplace’s Cambodian local-first marketplace.
       </p>
     </section>
 

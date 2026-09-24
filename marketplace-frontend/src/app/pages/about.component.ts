@@ -27,7 +27,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
       <div class="mission-card">
         <div class="mission-icon"><ui-icon name="users" [size]="22" color="var(--color-accent)"></ui-icon></div>
         <h3>Our community</h3>
-        <p>Over 1,200 artisans across 25 provinces — weavers, potters, farmers, and woodworkers — trust KhmerCraft to bring their work to new markets.</p>
+        <p>Over 1,200 artisans across 25 provinces — weavers, potters, farmers, and woodworkers — trust Rentify Marketplace to bring their work to new markets.</p>
       </div>
     </div>
   </section>
@@ -124,7 +124,7 @@ export class AboutComponent {
     { year: '2021', title: 'A small idea in Siem Reap', desc: 'Founded to help three weaving families sell directly to travelers, skipping unfair middlemen.' },
     { year: '2023', title: 'Opening the marketplace nationwide', desc: 'Expanded to 25 provinces, onboarding potters, farmers, and woodworkers across Cambodia.' },
     { year: '2025', title: 'Building trust at scale', desc: 'Launched escrow payments and authenticity certificates to protect both sellers and buyers.' },
-    { year: '2026', title: 'Reaching global shoppers', desc: 'KhmerCraft now ships worldwide, carrying Cambodian heritage into homes far beyond its borders.' }
+    { year: '2026', title: 'Reaching global shoppers', desc: 'Rentify Marketplace now ships worldwide, carrying Cambodian heritage into homes far beyond its borders.' }
   ];
 
   values = [

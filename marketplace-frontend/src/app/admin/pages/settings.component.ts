@@ -50,7 +50,7 @@ import { AdminService } from '../admin-data.service';
 })
 export class SettingsComponent {
   d = inject(AdminService);
-  s = signal({ name: 'KhmerCraft', maintenance: false, openSellers: true, commission: 10, boostFee: 25, boostDays: 7, cod: true, pickup: true, minPayout: 50, twofa: true, autoHide: false, digest: true });
+  s = signal({ name: 'Rentify Marketplace', maintenance: false, openSellers: true, commission: 10, boostFee: 25, boostDays: 7, cod: true, pickup: true, minPayout: 50, twofa: true, autoHide: false, digest: true });
   set(k: string, v: any) { this.s.update(x => ({ ...x, [k]: v })); }
   save() { this.d.log('Updated platform settings', 'active'); this.d.toast('Settings saved'); }
 }

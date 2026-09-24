@@ -1867,7 +1867,10 @@ interface DashboardMetric {
   template: `
     <div class="portal">
       <aside class="sidebar">
-        <h1 class="logo">KhmerCraft</h1>
+        <h1 class="logo" style="display:flex;align-items:center;gap:8px;font-size:17px">
+          <img src="/assets/rentify-logo.webp" alt="Rentify Marketplace" style="width:24px;height:24px;border-radius:6px;object-fit:contain" />
+          Rentify Marketplace
+        </h1>
         <p class="portal-label">Seller Portal</p>
         <nav class="nav">
           @for (item of navItems; track item.view) {
@@ -2056,7 +2059,7 @@ interface DashboardMetric {
         } @else if (view() === 'add') {
           <main class="page">
             <h1>Add New Product</h1>
-            <p class="muted" style="max-width:690px">Create a new product listing for buyers to discover. Provide detailed information to increase your visibility in the KhmerCraft marketplace.</p>
+            <p class="muted" style="max-width:690px">Create a new product listing for buyers to discover. Provide detailed information to increase your visibility in the Rentify Marketplace.</p>
 
             @if (saveProductError()) {
               <p class="muted" style="color:#c73030;font-weight:700">{{ saveProductError() }}</p>
@@ -2428,7 +2431,7 @@ interface DashboardMetric {
               <aside>
                 <article class="how-card">
                   <h2>How it works</h2>
-                  <p>KhmerCraft empowers artisans with a simple, flat-fee commission structure to keep our community sustainable.</p>
+                  <p>Rentify Marketplace empowers artisans with a simple, flat-fee commission structure to keep our community sustainable.</p>
                   <div class="calc-row"><span>Sale Price</span><strong>$100.00</strong></div>
                   <div class="calc-row"><span>Commission <small style="background:#e6ad69;color:#17382a;border-radius:999px;padding:2px 5px">10%</small></span><strong>-$10.00</strong></div>
                   <div class="earning">Your Earning $90.00</div>
@@ -2455,7 +2458,7 @@ interface DashboardMetric {
                   <form class="settings-form">
                     <div class="two-cols">
                       <label>Full Name<input class="dash-input" value="Sokha Reach" /></label>
-                      <label>Email Address<input class="dash-input" value="sokha.reach@khmercraft.com" /></label>
+                      <label>Email Address<input class="dash-input" value="sokha.reach@rentify.com" /></label>
                     </div>
                     <label>Phone Number<input class="dash-input" value="+855 12 345 678" /></label>
                     <div class="form-actions"><button class="btn btn-primary" type="button">Save Changes</button></div>
@@ -2503,7 +2506,7 @@ interface DashboardMetric {
               </div>
             </section>
 
-            <p class="portal-version">KhmerCraft Seller Portal v2.4.0 · Secured by TLS 1.3</p>
+            <p class="portal-version">Rentify Marketplace Seller Portal v2.4.0 · Secured by TLS 1.3</p>
           </main>
         } @else {
           <main class="page">

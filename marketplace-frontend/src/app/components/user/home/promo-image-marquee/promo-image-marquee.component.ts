@@ -4,7 +4,7 @@ import { Component } from '@angular/core';
   selector: 'app-promo-image-marquee',
   standalone: true,
   template: `
-    <section class="marquee" aria-label="Featured KhmerCraft collections">
+    <section class="marquee" aria-label="Featured Rentify Marketplace collections">
       <div class="track">
         @for (group of [0, 1, 2, 3]; track group) {
           <div class="image-group" [attr.aria-hidden]="group > 0 ? 'true' : null">

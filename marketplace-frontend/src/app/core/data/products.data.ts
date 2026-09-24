@@ -358,7 +358,7 @@ export const SUBCATEGORY_SHOWCASE_PRODUCTS: Product[] = CATEGORIES.flatMap(
         reviewCount: 12 + categoryIndex * 9 + subcategoryIndex * 3,
         stock: 8 + (subcategoryIndex % 8) * 3,
         status: 'in-stock' as const,
-        description: `A curated ${subcategory.name.toLowerCase()} product selected for the KhmerCraft marketplace showcase.`,
+        description: `A curated ${subcategory.name.toLowerCase()} product selected for the Rentify Marketplace showcase.`,
         soldCount: 24 + categoryIndex * 15 + subcategoryIndex * 7,
         createdAt: `2026-08-${String(24 - (subcategoryIndex % 18)).padStart(2, '0')}`,
         collections: subcategoryIndex % 3 === 0 ? ['recommended', 'new-arrivals'] : ['recommended'],

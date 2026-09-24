@@ -344,7 +344,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
       @if (results().length > 0 && results().length < 4 && suggestions().length) {
         <section class="container suggestions">
           <app-product-rail
-            title="More from KhmerCraft"
+            title="More from Rentify Marketplace"
             [products]="suggestions()"
             linkRoute="/products"
           />

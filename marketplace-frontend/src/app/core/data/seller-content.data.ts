@@ -32,7 +32,7 @@ export interface SellerStep {
 export const sellerSteps: SellerStep[] = [
   {
     number: '01',
-    title: 'Use your KhmerCraft account',
+    title: 'Use your Rentify account',
     description: 'Sign in or create one marketplace account for shopping, orders, and every store you own.',
     icon: 'user',
   },

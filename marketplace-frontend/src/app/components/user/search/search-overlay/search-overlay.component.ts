@@ -43,7 +43,7 @@ const POPULAR_SEARCHES = [
       class="scrim"
       role="dialog"
       aria-modal="true"
-      aria-label="Search KhmerCraft"
+      aria-label="Search Rentify Marketplace"
       animate.leave="scrim-leave"
       (click)="close.emit()"
     >

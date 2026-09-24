@@ -23,7 +23,7 @@ type PreviewView = 'storefront' | 'products' | 'orders';
         <div class="wrap">
           <p class="eyebrow">See the platform in action</p>
           <h1>Understand what you get before you register.</h1>
-          <p class="lead">Switch between workflows already represented in KhmerCraft. Everyday store tasks stay clear, even if this is your first online shop.</p>
+          <p class="lead">Switch between workflows already represented in Rentify Marketplace. Everyday store tasks stay clear, even if this is your first online shop.</p>
         </div>
       </section>
 

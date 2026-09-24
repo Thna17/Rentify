@@ -9,7 +9,7 @@ import { CartService } from './core/cart/cart.service';
   styleUrl: './app.css',
 })
 export class App {
-  protected readonly title = 'KhmerCraft';
+  protected readonly title = 'Rentify Marketplace';
 
   /**
    * Instantiated here so it exists for the whole app lifetime.

@@ -212,7 +212,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             </button>
 
             <p class="fine">
-              Totals are calculated by KhmerCraft when the order is placed.
+              Totals are calculated by Rentify Marketplace when the order is placed.
             </p>
           </aside>
         </div>

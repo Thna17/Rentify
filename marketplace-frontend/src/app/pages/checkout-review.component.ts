@@ -70,7 +70,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
         <label class="confirm-check">
           <input type="checkbox" [(ngModel)]="confirmed" name="confirm">
-          I confirm my order info is correct and agree to KhmerCraft's Terms &amp; Conditions.
+          I confirm my order info is correct and agree to Rentify Marketplace's Terms &amp; Conditions.
         </label>
 
         <button class="btn btn-primary btn-block btn-lg" [disabled]="!confirmed" (click)="placeOrder()">

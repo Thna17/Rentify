@@ -35,7 +35,7 @@ const PAGES: Record<string, InfoPage> = {
       },
       {
         heading: 'Can I return an item?',
-        body: 'Eligible returns follow KhmerCraft’s marketplace return policy. Sellers handle eligible returns, while KhmerCraft support handles disputes.',
+        body: 'Eligible returns follow Rentify Marketplace’s marketplace return policy. Sellers handle eligible returns, while Rentify Marketplace support handles disputes.',
       },
       {
         heading: 'How do sellers get paid?',
@@ -63,7 +63,7 @@ const PAGES: Record<string, InfoPage> = {
   },
   shipping: {
     title: 'Shipping information',
-    intro: 'How seller-grouped delivery will work on KhmerCraft.',
+    intro: 'How seller-grouped delivery will work on Rentify Marketplace.',
     sections: [
       {
         heading: 'Delivery charges',
@@ -85,7 +85,7 @@ const PAGES: Record<string, InfoPage> = {
       'Placeholder terms for the MVP. These require legal review before launch.',
     sections: [
       {
-        heading: 'Using KhmerCraft',
+        heading: 'Using Rentify Marketplace',
         body: 'You agree to use the marketplace lawfully and not to misrepresent yourself when buying or selling.',
       },
       {

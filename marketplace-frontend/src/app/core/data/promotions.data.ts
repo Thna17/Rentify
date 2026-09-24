@@ -49,12 +49,12 @@ export const PROMOTIONS: Promotion[] = [
     visual: 'Everything your home needs',
     image: '/assets/ads/premium-supermarket-landscape.png',
     imageOnly: true,
-    sponsoredLabel: 'Curated by KhmerCraft · Groceries',
+    sponsoredLabel: 'Curated by Rentify Marketplace · Groceries',
     offer: 'Fresh picks for the whole home',
   },
   {
     id: 'marketplace-week',
-    eyebrow: 'KhmerCraft marketplace week',
+    eyebrow: 'Rentify Marketplace week',
     headline: 'Selected offers from local stores',
     subtitle:
       'Discover featured products across fashion, beauty, homeware, children’s products and Cambodian-made gifts.',
@@ -67,7 +67,7 @@ export const PROMOTIONS: Promotion[] = [
     visual: 'Marketplace offers',
     image: '/assets/ads/multi-category-store-landscape.png',
     imageOnly: true,
-    sponsoredLabel: 'Curated by KhmerCraft · Marketplace edit',
+    sponsoredLabel: 'Curated by Rentify Marketplace · Marketplace edit',
     offer: 'Special finds from trusted stores',
   },
   {

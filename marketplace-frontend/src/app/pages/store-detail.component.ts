@@ -193,7 +193,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
             @if (s.showContact && s.phoneNumber) {
               <div><span>03</span><strong>Contact this store</strong><small>{{ s.phoneNumber }} · Seller chose to make this number public.</small></div>
             } @else {
-              <div><span>03</span><strong>Marketplace support</strong><small>Contact KhmerCraft when an order needs attention.</small></div>
+              <div><span>03</span><strong>Marketplace support</strong><small>Contact Rentify Marketplace when an order needs attention.</small></div>
             }
           </div>
         </section>

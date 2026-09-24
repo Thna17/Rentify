@@ -16,9 +16,9 @@ import { sellerSteps, sellerTools } from '../../../core/data/seller-content.data
       <section class="hero">
         <div class="wrap hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow">KhmerCraft for sellers</p>
+            <p class="eyebrow">Rentify Marketplace for sellers</p>
             <h1>Sell what you make.<br /><em>Reach more customers.</em></h1>
-            <p class="lead">Create a KhmerCraft storefront, publish your products, and manage buyer orders from one seller workspace built for Cambodian businesses.</p>
+            <p class="lead">Create a Rentify storefront, publish your products, and manage buyer orders from one seller workspace built for Cambodian businesses.</p>
             <div class="hero-actions">
               <button class="button primary" type="button" (click)="startOnboarding()">Start selling <span aria-hidden="true">→</span></button>
               <a class="text-link" routerLink="/become-a-seller/explore">See how it works <span aria-hidden="true">→</span></a>
@@ -29,10 +29,10 @@ import { sellerSteps, sellerTools } from '../../../core/data/seller-content.data
             </ul>
           </div>
 
-          <div class="workspace reveal delay" aria-label="Preview of the KhmerCraft seller workspace">
+          <div class="workspace reveal delay" aria-label="Preview of the Rentify seller workspace">
             <div class="chrome"><span></span><span></span><span></span><strong>Seller workspace</strong></div>
             <div class="shell">
-              <aside aria-hidden="true"><b>KhmerCraft</b><i class="active"></i><i></i><i></i><i></i></aside>
+              <aside aria-hidden="true"><b>Rentify</b><i class="active"></i><i></i><i></i><i></i></aside>
               <div class="workspace-main">
                 <div class="workspace-title"><div><small>STORE OVERVIEW</small><strong>Your shop at a glance</strong></div><span>Store draft</span></div>
                 <div class="metrics"><article><small>Products</small><b>12</b></article><article><small>New orders</small><b>3</b></article><article><small>Low stock</small><b>2</b></article></div>
@@ -125,7 +125,7 @@ import { sellerSteps, sellerTools } from '../../../core/data/seller-content.data
             <div class="form-row"><label><span>Store name</span><input required name="storeName" [(ngModel)]="form.storeName" placeholder="e.g. Silk Heritage Cambodia" /></label><label><span>Main category</span><select name="category" [(ngModel)]="form.category">@for (category of sellerCategories; track category.title) { <option [value]="category.value">{{ category.title }}</option> }</select></label></div>
             <div class="form-row"><label><span>Phone number</span><input required type="tel" name="phone" [(ngModel)]="form.phone" placeholder="12 345 678" /></label><label><span>Location</span><select name="location" [(ngModel)]="form.location"><option>Phnom Penh</option><option>Siem Reap</option><option>Battambang</option><option>Kampot</option><option>Kandal</option><option>Other province</option></select></label></div>
             <button class="button primary" type="submit">Continue to onboarding <span aria-hidden="true">→</span></button>
-            <p class="join-note">Your signed-in KhmerCraft account supplies your personal identity. These store details continue with you into onboarding.</p>
+            <p class="join-note">Your signed-in Rentify account supplies your personal identity. These store details continue with you into onboarding.</p>
           </form>
         </div>
       </section>
@@ -181,7 +181,7 @@ export class SellerPage {
   private readonly router = inject(Router);
 
   protected readonly whyBenefits = [
-    { icon: 'globe', title: 'Reach shoppers marketplace-wide', description: 'Your storefront is discoverable by every buyer browsing KhmerCraft, not just people who already know your shop.' },
+    { icon: 'globe', title: 'Reach shoppers marketplace-wide', description: 'Your storefront is discoverable by every buyer browsing Rentify Marketplace, not just people who already know your shop.' },
     { icon: 'wallet', title: 'Payouts you can track', description: 'Every order and its payment status live in your seller dashboard — no separate spreadsheet to reconcile.' },
     { icon: 'shield', title: 'You control what buyers see', description: 'Your store profile, contact details, and categories are yours to edit — nothing is published without you setting it.' },
     { icon: 'sparkles', title: 'Room to grow the storefront', description: 'Start with the basics, then build out categories, collections, and featured products as your catalogue grows.' },

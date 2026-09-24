@@ -16,8 +16,8 @@ export interface CheckoutStepDef {
   <div class="steps-bar">
     <div class="container top-row">
       <a routerLink="/" class="logo">
-        <span class="logo-mark"><ui-icon name="leaf" [size]="15" color="#fff"></ui-icon></span>
-        KhmerCraft
+        <img src="/assets/rentify-logo.webp" alt="Rentify Marketplace" class="logo-mark" />
+        Rentify Marketplace
       </a>
       <span class="secure-note"><ui-icon name="lock" [size]="13"></ui-icon> Secure Checkout</span>
     </div>
@@ -44,7 +44,7 @@ export interface CheckoutStepDef {
     .steps-bar { background: var(--color-surface); border-bottom: 1px solid var(--color-border); position: sticky; top: 0; z-index: 40; }
     .top-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px 0; }
     .logo { font-family: var(--font-heading); font-weight: 800; font-size: 16px; color: var(--color-text); display: flex; align-items: center; gap: 8px; }
-    .logo-mark { width: 24px; height: 24px; border-radius: 7px; background: var(--color-accent); display: flex; align-items: center; justify-content: center; }
+    .logo-mark { width: 24px; height: 24px; border-radius: 6px; object-fit: contain; display: block; flex-shrink: 0; }
     .secure-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-muted); font-weight: 600; }
     .steps-inner { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 18px 32px 20px; }
     .step { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--color-muted); font-weight: 600; }

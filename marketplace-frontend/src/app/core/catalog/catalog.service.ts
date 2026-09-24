@@ -413,6 +413,10 @@ const toProductFromRentify = (
   const stock = api.stockQuantity ?? 10;
   const status: StockStatus = stock === 0 ? 'out-of-stock' : stock <= 5 ? 'low-stock' : 'in-stock';
 
+  const explicitSub = (api as any).subcategory;
+  const subcategory = explicitSub || classification.subcategory;
+  const subcategorySlugVal = explicitSub ? subcategorySlug(explicitSub) : classification.subcategorySlug;
+
   return {
     id: api.id,
     name: api.name,
@@ -423,8 +427,8 @@ const toProductFromRentify = (
     price,
     compareAtPrice,
     ...classification,
-    subcategory: null,
-    subcategorySlug: null,
+    subcategory,
+    subcategorySlug: subcategorySlugVal,
     sellerName,
     storeId: api.storeId,
     rating: 4.8,
@@ -446,7 +450,7 @@ const toStoreFromRentify = (api: RentifyStore): Store => ({
   location: 'Cambodia',
   rating: 4.9,
   reviewCount: 16,
-  categoryName: api.primaryCategory || 'General',
+  categoryName: classifyCategory(api.primaryCategory || 'General').categoryName,
   description: `${api.name} on Rentify Marketplace`,
   tagline: `${api.name} Storefront`,
   announcement: '',

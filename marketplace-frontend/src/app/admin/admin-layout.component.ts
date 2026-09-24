@@ -8,7 +8,7 @@ import { IconComponent } from './ui/icon.component';
   template: `
   <div class="admin">
     <aside class="sidebar">
-      <div class="brand"><span class="logo"><kc-icon name="tag" [size]="14"></kc-icon></span><span class="brand-txt">KhmerCraft</span><small>ADMIN</small></div>
+      <div class="brand"><span class="logo" style="background:transparent"><img src="/assets/rentify-logo.webp" alt="Rentify Marketplace" style="width:26px;height:26px;border-radius:6px;object-fit:contain;display:block" /></span><span class="brand-txt" style="font-size:13.5px;letter-spacing:-0.01em">Rentify Marketplace</span><small>ADMIN</small></div>
       @for (g of nav; track g.label) {
         <div class="nav-group">
           <div class="nav-label">{{g.label}}</div>

@@ -16,7 +16,7 @@ import { faqItems, sellerTools } from '../../../core/data/seller-content.data';
         <div class="wrap">
           <p class="eyebrow">Simple, transparent pricing</p>
           <h1>Start free. Choose more support as your store grows.</h1>
-          <p class="lead">The original KhmerCraft plan options are kept here in one clear comparison, with every included feature visible before onboarding.</p>
+          <p class="lead">The original Rentify plan options are kept here in one clear comparison, with every included feature visible before onboarding.</p>
         </div>
       </section>
 

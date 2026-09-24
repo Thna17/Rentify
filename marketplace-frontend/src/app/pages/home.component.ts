@@ -326,7 +326,7 @@ interface CategoryShelf {
   <section class="container section purchase-confidence">
     <div class="purchase-copy">
       <span class="purchase-eyebrow">Shopping made simple</span>
-      <h2>Why shop with KhmerCraft?</h2>
+      <h2>Why shop with Rentify Marketplace?</h2>
       <p>Local products, trusted checkout and delivery updates in one place.</p>
     </div>
     <div class="confidence-grid">

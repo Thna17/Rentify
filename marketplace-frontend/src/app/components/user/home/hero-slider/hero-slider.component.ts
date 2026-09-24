@@ -66,7 +66,7 @@ const AUTOPLAY_MS = 5000;
                 [style.background-image]="'url(' + (promo.poster || promo.image) + ')'"
               >
                 @if (promo.video) {
-                  <video class="campaign-video" autoplay muted loop playsinline preload="metadata" [poster]="promo.poster" aria-label="KhmerCraft category advertisement">
+                  <video class="campaign-video" autoplay muted loop playsinline preload="metadata" [poster]="promo.poster" aria-label="Rentify Marketplace category advertisement">
                     @if (promo.videoWebm) { <source [src]="promo.videoWebm" type="video/webm" /> }
                     <source [src]="promo.video" type="video/mp4" />
                   </video>
@@ -112,7 +112,7 @@ const AUTOPLAY_MS = 5000;
               >
                   <div class="woven-disc" aria-hidden="true"></div>
                   <div class="visual-frame">
-                    <span class="frame-kicker">KhmerCraft collection</span>
+                    <span class="frame-kicker">Rentify Marketplace collection</span>
                     <strong>{{ promo.visual }}</strong>
                     <span class="frame-detail">Made in Cambodia · Crafted by hand</span>
                   </div>

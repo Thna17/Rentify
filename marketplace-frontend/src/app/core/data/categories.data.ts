@@ -201,10 +201,11 @@ export const CATEGORIES: Category[] = [
 export const findCategory = (slug: string): Category | undefined =>
   CATEGORIES.find((category) => category.slug === slug);
 
-/** Slug for a stored subcategory name, e.g. "Bowls & Plates" -> bowls-plates. */
+/** Slug for a stored subcategory name, e.g. "Bowls & Plates" -> bowls-plates, "Women's Clothing" -> womens-clothing. */
 export const subcategorySlug = (name: string): string =>
   name
     .toLowerCase()
+    .replace(/['’]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
@@ -223,18 +224,54 @@ const LEGACY_CATEGORY_MAP: Record<string, { slug: string; name: string; subcateg
   'handmade-crafts': { slug: 'arts-culture', name: 'Arts & Culture', subcategory: 'Handmade Crafts' },
 };
 
-/** Converts the original narrow category labels into scalable departments. */
+const COMMERCE_TAXONOMY_MAP: Record<string, { slug: string; name: string; subcategory: string }> = {
+  clothing: { slug: 'fashion', name: 'Fashion & Accessories', subcategory: "Women's Clothing" },
+  shoes: { slug: 'fashion', name: 'Fashion & Accessories', subcategory: 'Shoes' },
+  accessories: { slug: 'fashion', name: 'Fashion & Accessories', subcategory: 'Jewelry & Watches' },
+  jewelry: { slug: 'fashion', name: 'Fashion & Accessories', subcategory: 'Jewelry & Watches' },
+  skincare: { slug: 'beauty-wellness', name: 'Beauty & Wellness', subcategory: 'Skincare' },
+  beauty: { slug: 'beauty-wellness', name: 'Beauty & Wellness', subcategory: 'Makeup & Cosmetics' },
+  'beauty-skincare': { slug: 'beauty-wellness', name: 'Beauty & Wellness', subcategory: 'Skincare' },
+  'phones-devices': { slug: 'electronics', name: 'Electronics', subcategory: 'Phones & Tablets' },
+  'phones-tablets': { slug: 'electronics', name: 'Electronics', subcategory: 'Phones & Tablets' },
+  'electronics-accessories': { slug: 'electronics', name: 'Electronics', subcategory: 'Electronic Accessories' },
+  'electronic-accessories': { slug: 'electronics', name: 'Electronics', subcategory: 'Electronic Accessories' },
+  computers: { slug: 'electronics', name: 'Electronics', subcategory: 'Computers' },
+  'home-goods': { slug: 'home-living', name: 'Home & Living', subcategory: 'Home Décor' },
+  pottery: { slug: 'home-living', name: 'Home & Living', subcategory: 'Pottery & Ceramics' },
+  'pottery-ceramics': { slug: 'home-living', name: 'Home & Living', subcategory: 'Pottery & Ceramics' },
+  'bamboo-rattan': { slug: 'home-living', name: 'Home & Living', subcategory: 'Bamboo & Rattan' },
+  'bamboo-products': { slug: 'home-living', name: 'Home & Living', subcategory: 'Bamboo & Rattan' },
+  'handmade-crafts': { slug: 'arts-culture', name: 'Arts & Culture', subcategory: 'Handmade Crafts' },
+  weaving: { slug: 'arts-culture', name: 'Arts & Culture', subcategory: 'Textiles & Weaving' },
+  'textiles-weaving': { slug: 'arts-culture', name: 'Arts & Culture', subcategory: 'Textiles & Weaving' },
+  'food-beverage': { slug: 'food-groceries', name: 'Food & Groceries', subcategory: 'Drinks & Beverages' },
+  'drinks-beverages': { slug: 'food-groceries', name: 'Food & Groceries', subcategory: 'Drinks & Beverages' },
+  groceries: { slug: 'food-groceries', name: 'Food & Groceries', subcategory: 'Household Groceries' },
+  'household-groceries': { slug: 'food-groceries', name: 'Food & Groceries', subcategory: 'Household Groceries' },
+  'local-produce': { slug: 'food-groceries', name: 'Food & Groceries', subcategory: 'Fresh Produce' },
+  'fresh-produce': { slug: 'food-groceries', name: 'Food & Groceries', subcategory: 'Fresh Produce' },
+};
+
+/** Converts narrow category labels or taxonomy entries into scalable departments and subcategories. */
 export const classifyCategory = (category: string) => {
+  if (!category || !category.trim() || category.toLowerCase() === 'general') {
+    return {
+      categorySlug: 'general',
+      categoryName: 'General',
+      subcategory: null,
+      subcategorySlug: null,
+    };
+  }
+
   const originalSlug = subcategorySlug(category);
 
-  // A seller picks a department by its display name, and slugifying that name
-  // does not always give the department's own slug — "Fashion & Accessories"
-  // becomes "fashion-accessories" while the department is "fashion". Matching
-  // on the slugified name alone left every fashion listing belonging to no
-  // shelf at all, so resolve against the taxonomy before anything else.
+  // 1. Check if the label directly identifies a top-level department
   const department = CATEGORIES.find(
     (entry) =>
-      entry.slug === originalSlug || subcategorySlug(entry.name) === originalSlug,
+      entry.slug === originalSlug ||
+      subcategorySlug(entry.name) === originalSlug ||
+      Boolean(entry.shortName && subcategorySlug(entry.shortName) === originalSlug),
   );
   if (department) {
     return {
@@ -245,19 +282,38 @@ export const classifyCategory = (category: string) => {
     };
   }
 
-  const mapped = LEGACY_CATEGORY_MAP[originalSlug];
-  if (!mapped) {
+  // 2. Check if the label matches an existing subcategory in any department
+  for (const dept of CATEGORIES) {
+    const sub = dept.subcategories.find(
+      (s) =>
+        s.slug === originalSlug ||
+        subcategorySlug(s.name) === originalSlug,
+    );
+    if (sub) {
+      return {
+        categorySlug: dept.slug,
+        categoryName: dept.name,
+        subcategory: sub.name,
+        subcategorySlug: sub.slug,
+      };
+    }
+  }
+
+  // 3. Resolve through commerce taxonomy & legacy aliases
+  const mapped = COMMERCE_TAXONOMY_MAP[originalSlug] || LEGACY_CATEGORY_MAP[originalSlug];
+  if (mapped) {
     return {
-      categorySlug: originalSlug,
-      categoryName: category,
-      subcategory: null,
-      subcategorySlug: null,
+      categorySlug: mapped.slug,
+      categoryName: mapped.name,
+      subcategory: mapped.subcategory,
+      subcategorySlug: subcategorySlug(mapped.subcategory),
     };
   }
+
   return {
-    categorySlug: mapped.slug,
-    categoryName: mapped.name,
-    subcategory: mapped.subcategory,
-    subcategorySlug: subcategorySlug(mapped.subcategory),
+    categorySlug: originalSlug,
+    categoryName: category,
+    subcategory: null,
+    subcategorySlug: null,
   };
 };

@@ -16,8 +16,8 @@ import { faqItems, sellerSteps } from '../../../core/data/seller-content.data';
         <div class="wrap">
           <p class="eyebrow">Questions before you start</p>
           <h1>Seller FAQ</h1>
-          <p class="lead">Learn what to prepare before submitting your store. You can also read more about KhmerCraft.</p>
-          <a routerLink="/about" class="text-link">About KhmerCraft <span aria-hidden="true">→</span></a>
+          <p class="lead">Learn what to prepare before submitting your store. You can also read more about Rentify Marketplace.</p>
+          <a routerLink="/about" class="text-link">About Rentify Marketplace <span aria-hidden="true">→</span></a>
         </div>
       </section>
 
