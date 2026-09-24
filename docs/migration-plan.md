@@ -262,9 +262,16 @@ Both React templates now have a default-off hosted buyer mode that uses Core
 login and Commerce's storefront COD path; the existing Website buyer UI offers
 COD/USD only. The merchant order panel includes both sales channels.
 
-**Gate remains open:** normal Angular development routes serve the Rentify
-buyer shell, but its full browser journey has not passed a hosted HTTP
-rehearsal. Old Angular seller and admin components are not reached on normal
+**Gate remains open:** normal Angular development routes serve the minimal
+Rentify buyer shell. Its catalog, Core buyer login, single-Store cart, posted
+delivery fee, COD order placement, order history, and return request passed a
+local browser rehearsal on 2026-09-24 after repairing demo fixture IDs and
+Core buyer accounts. This shell is a functional integration preview, not the
+finished KhmerCraft marketplace UX: `cutoverEnabled` currently sends all
+normal routes to `RentifyPreviewComponent`, hiding the existing home, search,
+category, product detail, store, cart, and account pages. Reconnect those
+screens to Rentify APIs and repeat browser QA before treating the client as
+ready. Old Angular seller and admin components are not reached on normal
 routes; equivalent operations must use Rentify merchant and admin tools.
 Core buyer identity is accepted for marketplace and hosted storefront
 checkout, but hosted-domain browser session testing and custom-domain sessions
