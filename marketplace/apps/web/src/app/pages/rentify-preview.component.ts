@@ -14,6 +14,13 @@ function message(error: unknown): string {
   return error instanceof Error ? error.message : 'Request failed';
 }
 
+function initialTab(): 'catalog' | 'cart' | 'orders' {
+  const path = globalThis.location.pathname;
+  if (/^\/(cart|checkout)(\/|$)/.test(path)) return 'cart';
+  if (/^\/orders(\/|$)/.test(path)) return 'orders';
+  return 'catalog';
+}
+
 @Component({
   selector: 'app-rentify-preview',
   imports: [FormsModule],
@@ -21,6 +28,7 @@ function message(error: unknown): string {
     <main class="pilot">
       <header class="top">
         <div><p class="eyebrow">Rentify marketplace pilot</p><h1>Shop Cambodian merchants</h1></div>
+        @if (api.merchantDashboard) { <a [href]="api.merchantDashboard">Merchant dashboard</a> }
         @if (api.enabled && api.configured) { <div class="account">
           @if (buyer(); as user) {
             <span>{{ user.name }}</span><button type="button" (click)="signOut()">Sign out</button>
@@ -147,7 +155,7 @@ function message(error: unknown): string {
 })
 export class RentifyPreviewComponent {
   protected readonly api = inject(RentifyMarketplaceService);
-  protected readonly tab = signal<'catalog' | 'cart' | 'orders'>('catalog');
+  protected readonly tab = signal<'catalog' | 'cart' | 'orders'>(initialTab());
   protected readonly busy = signal(false);
   protected readonly notice = signal('');
   protected readonly buyer = signal<BuyerSession | null>(null);

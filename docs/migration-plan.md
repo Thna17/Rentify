@@ -258,7 +258,9 @@ in [the checkout contract](checkout-migration-contract.md).
 **Gate remains open:** Angular's live routes still use the legacy marketplace
 API for buyer auth, cart, checkout, and seller operations. An isolated,
 disabled Rentify buyer preview is available for staging but is not a live
-client cutover. Core buyer identity is accepted for marketplace
+client cutover. A second default-off flag can serve that buyer shell on normal
+Angular paths for a staging route rehearsal after freezing legacy writes.
+Core buyer identity is accepted for marketplace
 checkout, but custom-domain sessions and legacy account linking in ADR 0002
 are not implemented. Variant checkout, full storefront/POS/invoice HTTP
 journeys, tax/delivery/return policy, admin dispute workflow, and launch

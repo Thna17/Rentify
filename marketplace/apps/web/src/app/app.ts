@@ -26,6 +26,7 @@ export class App {
     // The Rentify buyer preview must not start the Mongo-backed cart's
     // sign-in effect. That effect can push a guest basket into legacy Mongo.
     if (!globalThis.window?.__RENTIFY_MARKETPLACE__?.enabled &&
+        !globalThis.window?.__RENTIFY_MARKETPLACE__?.cutoverEnabled &&
         !globalThis.location.pathname.startsWith('/rentify-preview')) {
       this.injector.get(CartService);
     }

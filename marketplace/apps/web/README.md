@@ -13,6 +13,14 @@ marketplace API. Local Angular development runs on `http://localhost:4201`;
 Core and Commerce must allow that origin for credentialed requests, and Auth
 must allow it as a return URL.
 
+For a staging route rehearsal after those checks, set `cutoverEnabled: true`
+alongside `enabled: true` and supply `merchantDashboardUrl`. This makes the
+Rentify buyer shell serve `/` and all old deep links, including `/cart`,
+`/checkout`, and `/orders`. The old Angular components then cannot create new
+Mongo writes. The switch is **off** in the committed public config and is not
+a production cutover. Return to `cutoverEnabled: false` on rollback only after
+the active writer and outstanding orders are reconciled.
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
 
 ## Development server

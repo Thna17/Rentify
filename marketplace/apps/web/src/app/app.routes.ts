@@ -3,11 +3,23 @@ import { buyerGuard } from './core/auth/auth.guard';
 import { adminGuard } from './core/auth/admin.guard';
 import { sellerGuard } from './core/auth/seller.guard';
 
+const rentifyBuyer = () => import('./pages/rentify-preview.component')
+  .then((m) => m.RentifyPreviewComponent);
+
+// This route tree is selected only by an explicit staging cutover flag. Every
+// old deep link lands in the Rentify shell, so no old buyer/seller component
+// can write to Mongo after its HTTP writer is frozen.
+const rentifyCutoverRoutes: Routes = [
+  { path: 'rentify-preview', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
+  { path: '', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
+  { path: '**', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
+];
+
 /**
  * Everything is lazy-loaded. The storefront branch imported all 19 page
  * components eagerly, which put the whole site in the initial bundle.
  */
-export const routes: Routes = [
+const legacyRoutes: Routes = [
   {
     path: 'rentify-preview',
     loadComponent: () => import('./pages/rentify-preview.component').then((m) => m.RentifyPreviewComponent),
@@ -334,3 +346,6 @@ export const routes: Routes = [
     title: 'Page not found | KhmerCraft',
   },
 ];
+
+export const routes: Routes = globalThis.window?.__RENTIFY_MARKETPLACE__?.cutoverEnabled === true
+  ? rentifyCutoverRoutes : legacyRoutes;

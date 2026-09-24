@@ -91,6 +91,10 @@ buyer path against Core identity and Commerce products, per-Store carts, COD
 checkout, and order history. `rentify-preview-config.js` disables it by default.
 The preview does not instantiate Angular's Mongo-backed guest-cart adoption
 effect.
+An independent `cutoverEnabled` public config flag can route every normal
+Angular URL to the Rentify buyer shell during a staging rehearsal. It defaults
+off; it does not retire the legacy API or satisfy the custom-domain release
+gate. Old merchant links should lead to Rentify's merchant dashboard.
 Enable it only in an isolated rehearsal environment after freezing legacy
 marketplace writes, using public Core, Commerce, and Auth URLs. Commerce also
 requires `MARKETPLACE_COD_CHECKOUT_ENABLED=true` for cart writes and order

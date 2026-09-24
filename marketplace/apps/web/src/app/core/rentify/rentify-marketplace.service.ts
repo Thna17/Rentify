@@ -6,9 +6,11 @@ declare global {
   interface Window {
     __RENTIFY_MARKETPLACE__?: {
       enabled?: boolean;
+      cutoverEnabled?: boolean;
       coreApiUrl?: string;
       commerceApiUrl?: string;
       authUrl?: string;
+      merchantDashboardUrl?: string;
     };
   }
 }
@@ -71,9 +73,11 @@ export interface MarketplaceOrder {
 export class RentifyMarketplaceService {
   private readonly http = inject(HttpClient);
   readonly enabled = runtime?.enabled === true;
+  readonly cutoverEnabled = runtime?.cutoverEnabled === true;
   readonly core = base(runtime?.coreApiUrl, 'http://localhost:3001');
   readonly commerce = base(runtime?.commerceApiUrl, 'http://localhost:4001');
   readonly auth = base(runtime?.authUrl, 'http://localhost:4300');
+  readonly merchantDashboard = base(runtime?.merchantDashboardUrl, 'http://localhost:4400');
   readonly configured = Boolean(this.core && this.commerce && this.auth);
 
   session(): Observable<{ user: BuyerSession }> {

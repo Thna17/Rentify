@@ -43,10 +43,16 @@ still use KhmerCraft's Mongo API.
 5. Run `npm run db:audit-marketplace-cod` in Commerce. Review every mismatch;
    zero orders is not proof of reconciliation. Check stock and order counts
    against the pre-freeze snapshot and new Commerce activity separately.
+6. After the preview passes, set `cutoverEnabled: true` in the Angular public
+   config and reload at `/`, `/cart`, `/checkout`, `/orders`, and an old deep
+   link. These paths must serve the Rentify buyer shell. The shell must not
+   construct the Mongo-backed guest cart or call the legacy API. The merchant
+   link must open the Rentify dashboard. Keep this route switch in staging
+   until the remaining Phase 4 release gates pass.
 
 ## Rollback boundary
 
-Disable the Angular preview and set
+Disable the Angular route switch and preview, then set
 `MARKETPLACE_COD_CHECKOUT_ENABLED=false` to stop **new** Commerce cart writes
 and checkouts. Existing Commerce COD orders stay in Commerce for fulfillment
 and cash reconciliation. Do not transfer them into Mongo or replay checkout.
