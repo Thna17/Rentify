@@ -22,7 +22,7 @@ export const UsageTabs = () => {
             onClick={() => navigate(tab.path)}
             className={`flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               isActive
-                ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 font-semibold'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-semibold'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
             }`}
           >

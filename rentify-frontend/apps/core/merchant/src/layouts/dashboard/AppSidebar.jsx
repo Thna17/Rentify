@@ -55,7 +55,7 @@ export function AppSidebar({
       </div>
 
       {/* Navigation Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-3.5">
+      <div className="flex-1 overflow-y-auto px-3 py-3.5 scrollbar-subtle">
         <NavMain
           items={filteredTabs}
           currentTab={currentTab}

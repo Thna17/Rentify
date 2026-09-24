@@ -44,7 +44,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           </Button>
 
           <div className="flex items-center space-x-3 mb-6">
-            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-500/20">
+            <div className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-900/60">
               {React.cloneElement(icon as React.ReactElement, {
                 className: 'h-6 w-6',
               })}
@@ -66,7 +66,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
                   onClick={() => navigate(tab.path)}
                   className={`flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                     isActive
-                      ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 font-semibold'
+                      ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-semibold'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
                   }`}
                 >

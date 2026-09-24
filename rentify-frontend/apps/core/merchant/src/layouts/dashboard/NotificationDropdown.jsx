@@ -104,7 +104,7 @@ export function NotificationDropdown({ onTabChange }) {
     switch (type) {
       case 'order':
         return (
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <ShoppingBag className="h-4 w-4" />
           </div>
         );
@@ -160,7 +160,7 @@ export function NotificationDropdown({ onTabChange }) {
             {unreadCount > 0 && (
               <Badge
                 variant="secondary"
-                className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 text-[11px] font-semibold px-1.5 py-0.5"
+                className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-[11px] font-semibold px-1.5 py-0.5"
               >
                 {unreadCount} new
               </Badge>
@@ -226,7 +226,7 @@ export function NotificationDropdown({ onTabChange }) {
                   </p>
                 </div>
                 {!item.read && (
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
+                  <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
                 )}
               </button>
             ))
@@ -252,7 +252,7 @@ export function NotificationDropdown({ onTabChange }) {
                 setIsOpen(false);
                 onTabChange?.('orders');
               }}
-              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline py-1"
+              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline py-1"
             >
               View all orders &amp; activity &rarr;
             </button>

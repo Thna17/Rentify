@@ -7,7 +7,6 @@ import React, { useState, useRef, useEffect } from 'react';
 
 export function SiteHeader({
   onSidebarToggle,
-  userData,
   isSidebarOpen = true,
   tabs = [],
   onTabChange,
@@ -103,7 +102,7 @@ export function SiteHeader({
 
           {/* Quick Menu Results Dropdown */}
           {isSearchFocused && searchFilter.trim() && (
-            <div className="absolute left-0 top-full mt-1.5 w-full rounded-xl border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1.5 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 top-full mt-1.5 w-full rounded-xl border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1.5 max-h-80 overflow-y-auto scrollbar-subtle">
               {filteredTabs.length > 0 ? (
                 filteredTabs.map((item) => {
                   const Icon = item.icon;

@@ -113,7 +113,7 @@ export const Overview = () => {
         ]}
       />
 
-      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+      <div className="p-6 md:p-8 space-y-6 md:space-y-8">
         {/* Sales Channels Status Bar */}
         <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-border bg-card text-card-foreground">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-2">

@@ -113,13 +113,13 @@ export const SupportPage: React.FC = () => {
         {/* Support Channel Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Email Support */}
-          <Card className="border-border hover:border-emerald-500/30 transition-all hover:shadow-sm">
+          <Card className="border-border hover:border-blue-500/30 transition-all hover:shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-2">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center">
                   <Mail className="h-5 w-5" />
                 </div>
-                <Badge variant="outline" className="text-[11px] font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <Badge variant="outline" className="text-[11px] font-medium border-blue-500/30 text-blue-600 dark:text-blue-400">
                   24/7 Desk
                 </Badge>
               </div>
@@ -138,7 +138,7 @@ export const SupportPage: React.FC = () => {
               </div>
               <a
                 href="mailto:support@rentify.com"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-medium transition-colors"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-xs font-medium transition-colors"
               >
                 Send Email
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -225,7 +225,7 @@ export const SupportPage: React.FC = () => {
             <Card className="border-border shadow-xs">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center">
                     <MessageSquare className="h-4 w-4" />
                   </div>
                   <div>
@@ -246,7 +246,7 @@ export const SupportPage: React.FC = () => {
                       id="category"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                     >
                       <option value="Marketplace">Marketplace Selling &amp; Approval</option>
                       <option value="Products">Products &amp; Catalog Management</option>
@@ -291,7 +291,7 @@ export const SupportPage: React.FC = () => {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-5"
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5"
                     >
                       {isSubmitting ? 'Sending...' : 'Submit Request'}
                     </Button>
@@ -310,7 +310,7 @@ export const SupportPage: React.FC = () => {
                     <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                     System Status
                   </CardTitle>
-                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs">
+                  <Badge variant="outline" className="border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs">
                     All Systems Operational
                   </Badge>
                 </div>
@@ -354,10 +354,10 @@ export const SupportPage: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-border bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-500/20">
+            <Card className="border-border bg-blue-50/40 dark:bg-blue-950/20 border-blue-500/20">
               <CardContent className="p-4 space-y-2">
                 <div className="font-semibold text-sm text-foreground flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   Need Dedicated Onboarding?
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -366,7 +366,7 @@ export const SupportPage: React.FC = () => {
                 <div className="pt-1">
                   <a
                     href="mailto:support@rentify.com?subject=Merchant%20Onboarding%20Assistance"
-                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Request an onboarding call &rarr;
                   </a>
@@ -379,7 +379,7 @@ export const SupportPage: React.FC = () => {
         {/* Frequently Asked Questions */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <h2 className="text-lg font-bold text-foreground">Frequently Asked Questions</h2>
           </div>
 

@@ -98,7 +98,7 @@ export function NavMain({ items, currentTab, onTabChange }) {
                       onClick={() => handleItemClick(item)}
                       className={`group flex w-full items-center rounded-xl px-3.5 py-2.5 text-left text-[14px] font-medium transition-all duration-150 ${
                         isCurrentActive
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 font-semibold border border-emerald-500/20 shadow-xs'
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 font-semibold border border-blue-200 dark:border-blue-900/60 shadow-xs'
                           : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                       }`}
                     >
@@ -106,7 +106,7 @@ export function NavMain({ items, currentTab, onTabChange }) {
                         <item.icon
                           className={`mr-3.5 h-5 w-5 shrink-0 transition-colors stroke-[1.8] ${
                             isCurrentActive
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-blue-600 dark:text-blue-400'
                               : 'text-muted-foreground/70 group-hover:text-foreground'
                           }`}
                         />
