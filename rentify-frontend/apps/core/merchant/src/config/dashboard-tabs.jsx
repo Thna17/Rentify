@@ -59,7 +59,7 @@ export const ALL_TABS = [
     label: 'Store Catalog',
     icon: Package,
     path: 'catalog',
-    roles: ['admin', 'user'],
+    roles: ['admin', 'user', 'staff'],
     permission: null,
     channel: 'storefront',
     hideInSidebar: true,
@@ -97,12 +97,11 @@ export const ALL_TABS = [
   // --- Sales Channels ---
   {
     name: 'dashboard.store_management.title',
-    label: 'Storefront Website',
+    label: 'Storefront Customization',
     icon: Store,
     path: 'store-management',
-    roles: ['admin', 'user'],
+    roles: ['admin', 'user', 'staff'],
     permission: null,
-    features: ['store'],
     channel: 'storefront',
     section: 'channels',
   },

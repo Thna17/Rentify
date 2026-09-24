@@ -66,7 +66,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Storefront',
     question: 'Can I customize my storefront website or add a custom domain?',
     answer:
-      'Storefront websites can be customized via Sales Channels > Storefront Website. You can change themes, configure banners, and connect a custom top-level domain.',
+      'Storefront websites can be customized via Sales Channels > Storefront Customization. You can change themes, configure banners, and connect a custom top-level domain.',
   },
 ];
 

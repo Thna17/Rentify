@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
+import { useAuth } from '@rentify/utils';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 export interface ChannelCapabilities {
@@ -46,6 +47,7 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
   onStoreChange,
 }) => {
   const { websiteId } = useWebsiteData();
+  const { profile } = useAuth();
   const [store, setStore] = useState<any>(initialStore || null);
 
   useEffect(() => {
@@ -74,7 +76,15 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
     }
   };
 
-  const hasStorefront = Boolean(websiteId);
+  const effectiveWebsiteId =
+    websiteId ||
+    store?.websiteId ||
+    store?.website ||
+    profile?.websiteId ||
+    profile?.roleSpecific?.websiteId ||
+    null;
+
+  const hasStorefront = Boolean(effectiveWebsiteId);
   const hasMarketplace = Boolean(store?.marketplaceEnabled ?? true);
 
   const toggleMarketplace = async (enabled?: boolean) => {
@@ -110,7 +120,7 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
         channels,
         store,
         setStore,
-        websiteId: websiteId || null,
+        websiteId: effectiveWebsiteId,
         hasStorefront,
         hasMarketplace,
         hasPos: posEnabled,

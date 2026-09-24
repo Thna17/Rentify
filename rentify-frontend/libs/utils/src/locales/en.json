@@ -348,8 +348,8 @@
     "analytics": "Analytics",
 
     "store_management": {
-      "title": "Store Management",
-      "description": "Manage your store settings and content",
+      "title": "Storefront Customization",
+      "description": "Customize your storefront theme, branding, fonts, and store content",
       "failed_to_load": "Failed to load store data",
       "error_updating_content": "Error updating content",
       "store_information": "Store Information",

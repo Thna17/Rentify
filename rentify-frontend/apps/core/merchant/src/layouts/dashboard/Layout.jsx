@@ -38,8 +38,18 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     }
   });
 
+  const effectiveWebsiteId =
+    websiteId ||
+    websiteData?.id ||
+    websiteData?.websiteId ||
+    profile?.websiteId ||
+    profile?.roleSpecific?.websiteId ||
+    store?.websiteId ||
+    store?.website ||
+    null;
+
   const channels = {
-    hasStorefront: Boolean(websiteId),
+    hasStorefront: Boolean(effectiveWebsiteId),
     hasMarketplace: Boolean(store?.marketplaceEnabled ?? true),
     hasPos: posEnabled,
   };
@@ -184,7 +194,15 @@ export const DashboardLayout = () => {
     return <div className="min-h-screen grid place-items-center">Loading your Store…</div>;
   }
 
-  if (!websiteId && !store) {
+  const effectiveWebsiteId =
+    websiteId ||
+    profile?.websiteId ||
+    profile?.roleSpecific?.websiteId ||
+    store?.websiteId ||
+    store?.website ||
+    null;
+
+  if (!effectiveWebsiteId && !store) {
     return (
       <main className="min-h-screen grid place-items-center text-center p-6">
         <div className="max-w-md space-y-4">
