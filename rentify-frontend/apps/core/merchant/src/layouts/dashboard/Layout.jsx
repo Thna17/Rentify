@@ -54,10 +54,13 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     hasPos: posEnabled,
   };
 
+  const effectiveRole = role || profile?.role || 'user';
+  const effectivePermissions = profile?.roleSpecific?.permissions || profile?.permissions || [];
+
   const platformTabs = filterTabsByUserRole(
     ALL_TABS,
-    role,
-    profile?.roleSpecific?.permissions,
+    effectiveRole,
+    effectivePermissions,
     pkg?.features,
     channels
   ).map((tab) => {

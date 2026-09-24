@@ -55,6 +55,15 @@ export const ALL_TABS = [
     hideInSidebar: true,
   },
   {
+    name: 'edit product',
+    label: 'Edit Product',
+    icon: Package,
+    path: 'products/edit/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
+  },
+  {
     name: 'Store catalog',
     label: 'Store Catalog',
     icon: Package,

@@ -35,6 +35,8 @@ export const dashboardRoutes = {
     { path: 'overview', element: <Overview /> },
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
+    { path: 'customization', element: <Navigate to="/store-management" replace /> },
+    { path: 'customization/:id', element: <Navigate to="/store-management" replace /> },
     { path: 'products', element: <ProductManagement /> },
     { path: 'catalog', element: <StoreCatalogPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
@@ -62,6 +64,7 @@ export const dashboardRoutes = {
     { path: 'ops/at-risk', element: <Navigate to="/usage/breakdown" replace /> },
     { path: 'ops/reminders', element: <Navigate to="/usage/breakdown" replace /> },
     { path: 'ops/contract', element: <Navigate to="/usage/billing" replace /> },
+    { path: 'search', element: <Navigate to="/overview" replace /> },
 
 
     { path: '*', element: <Navigate to="overview" replace /> },
