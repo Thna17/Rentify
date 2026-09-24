@@ -13,6 +13,7 @@ export const MobileSummaryDrawer = ({
   currency = 'USD',
   setCurrency,
   isCheckout = false,
+  showCurrencySwitch = true,
 }) => {
   const { t } = useTranslation();
   const [showCurrencyConverter, setShowCurrencyConverter] = useState(false);
@@ -134,7 +135,7 @@ export const MobileSummaryDrawer = ({
                   </div>
 
                   {/* Currency toggle for checkout */}
-                  {isCheckout && (
+                  {isCheckout && showCurrencySwitch && (
                     <div className="mb-6">
                       <div 
                         className="flex items-center justify-between p-4 bg-muted/30 rounded-xl cursor-pointer"

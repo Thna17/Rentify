@@ -8,6 +8,8 @@ export type PublicRuntimeConfig = {
   marketingUrl: string;
   marketplaceUrl: string;
   storefrontOrigin: string;
+  hostedStorefrontDomain: string;
+  hostedStorefrontBuyerEnabled: string;
 };
 
 const withoutTrailingSlash = (value: string) => value.replace(/\/+$/, '');
@@ -32,6 +34,8 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     marketingUrl: env.VITE_MARKETING_URL || env.MARKETING_URL || (development ? local.marketingUrl : ''),
     marketplaceUrl: env.VITE_MARKETPLACE_URL || env.MARKETPLACE_URL || (development ? local.marketplaceUrl : ''),
     storefrontOrigin: env.VITE_STOREFRONT_ORIGIN || env.STOREFRONT_ORIGIN || (development ? local.storefrontOrigin : ''),
+    hostedStorefrontDomain: env.VITE_HOSTED_STOREFRONT_DOMAIN || 'rentifystore.shop',
+    hostedStorefrontBuyerEnabled: env.VITE_HOSTED_STOREFRONT_BUYER_ENABLED || 'false',
   };
 
   for (const [key, value] of Object.entries(config)) {
@@ -54,5 +58,7 @@ export function vitePublicDefines(mode: string) {
     __MARKETING_URL__: JSON.stringify(config.marketingUrl),
     __MARKETPLACE_URL__: JSON.stringify(config.marketplaceUrl),
     __STOREFRONT_ORIGIN__: JSON.stringify(config.storefrontOrigin),
+    __HOSTED_STOREFRONT_DOMAIN__: JSON.stringify(config.hostedStorefrontDomain),
+    __HOSTED_STOREFRONT_BUYER_ENABLED__: JSON.stringify(config.hostedStorefrontBuyerEnabled === 'true'),
   };
 }

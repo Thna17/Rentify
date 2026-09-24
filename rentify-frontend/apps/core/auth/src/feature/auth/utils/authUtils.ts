@@ -1,7 +1,7 @@
 // Shared auth-related utilities
 import { useLocation } from 'react-router-dom';
 import { MARKETING_URL, MARKETPLACE_URL } from '@rentify/shared/config/urls';
-import { getSafeReturnUrl } from './returnUrl';
+import { getSafeReturnUrl, isHostedStorefrontReturn } from './returnUrl';
 
 export const useAuthConfig = () => {
   const location = useLocation();
@@ -12,12 +12,14 @@ export const useAuthConfig = () => {
   const marketingHost = new URL(MARKETING_URL).host;
   const marketplaceHost = new URL(MARKETPLACE_URL).host;
   const returnDomain = new URL(returnUrl).host;
+  const isHostedStorefrontBuyer = isHostedStorefrontReturn(returnUrl);
 
   return {
     returnDomain,
     redirectUrl: returnUrl,
     isMarketplace: returnDomain === marketplaceHost,
-    isWebsiteTemplate: returnDomain !== marketingHost && returnDomain !== marketplaceHost,
+    isHostedStorefrontBuyer,
+    isWebsiteTemplate: returnDomain !== marketingHost && returnDomain !== marketplaceHost && !isHostedStorefrontBuyer,
   };
 };
 

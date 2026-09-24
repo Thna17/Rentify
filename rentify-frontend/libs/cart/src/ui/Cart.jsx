@@ -35,6 +35,7 @@ export const Cart = () => {
     calculateSummary,
     isItemInStock,
     handleUpdateVariant,
+    hostedQuote,
   } = useCart();
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export const Cart = () => {
   // Check for out of stock items
   const outOfStockItems = cartItems.filter((item) => !isItemInStock(item));
   const hasOutOfStockItems = outOfStockItems.length > 0;
+  const cannotCheckout = hasOutOfStockItems || (hostedQuote && !hostedQuote.checkoutReady);
 
   if (isLoading) {
     return (
@@ -135,6 +137,12 @@ export const Cart = () => {
           </Alert>
         )}
 
+        {hostedQuote?.issues?.length > 0 && (
+          <Alert className="mb-6 rounded-xl"><AlertDescription>
+            {hostedQuote.issues.join('; ')}
+          </AlertDescription></Alert>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -194,7 +202,7 @@ export const Cart = () => {
                 currency="USD"
                 onAction={() => navigate('/checkout')}
                 showActionButtons={true}
-                disabled={hasOutOfStockItems}
+                disabled={cannotCheckout}
                 actionLabel={
                   hasOutOfStockItems
                     ? 'Update Cart to Checkout'
@@ -214,7 +222,7 @@ export const Cart = () => {
             actionLabel={
               hasOutOfStockItems ? 'Update Cart' : 'Proceed to Checkout'
             }
-            disabled={hasOutOfStockItems}
+            disabled={cannotCheckout}
           />
         )}
 
@@ -226,14 +234,14 @@ export const Cart = () => {
             summary={calculateSummary()}
             onAction={() => {
               toggleSummary();
-              if (!hasOutOfStockItems) {
+              if (!cannotCheckout) {
                 navigate('/checkout');
               }
             }}
             actionLabel={
               hasOutOfStockItems ? 'Update Cart' : 'Proceed to Checkout'
             }
-            disabled={hasOutOfStockItems}
+            disabled={cannotCheckout}
           />
         )}
       </div>

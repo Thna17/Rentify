@@ -90,7 +90,7 @@ export const ALL_TABS = [
     features: ['order-management'],
   },
   {
-    name: 'Marketplace orders',
+    name: 'COD orders',
     icon: ClipboardList,
     path: 'marketplace-orders',
     roles: ['admin', 'user', 'staff'],

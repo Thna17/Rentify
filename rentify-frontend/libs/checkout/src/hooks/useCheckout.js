@@ -1,14 +1,17 @@
 // hooks/useCheckout.js
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@rentify/storefront';
 import { useGetCustomerQuery } from '@rentify/storefront/api';
 import { useCreateOrderMutation } from '../services/orderApi'
 import { useStorefrontWebsite as useWebsiteData } from '@rentify/storefront/website';
 import { useCart } from '@rentify/cart/hooks/useCart';
+import { hostedCheckoutUrl, hostedRequest, isHostedStorefrontBuyer } from '@rentify/storefront/hostedBuyer';
 
 export const useCheckout = () => {
   const { websiteId } = useWebsiteData();
+  const hosted = isHostedStorefrontBuyer();
+  const checkoutAttempt = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, role } = useAuth();
@@ -28,7 +31,6 @@ export const useCheckout = () => {
     note: '',
     saveAddress: true,
   });
-  console.log(formData, paymentMethod);
   
   const [fieldErrors, setFieldErrors] = useState({
     name: false,
@@ -37,8 +39,8 @@ export const useCheckout = () => {
     street: false,
   });
 
-  const { data: user } = useGetCustomerQuery({
-    skip: !isAuthenticated && role !== 'customer',
+  const { data: user } = useGetCustomerQuery(undefined, {
+    skip: hosted || !isAuthenticated || role !== 'customer',
   });
   
   const {
@@ -46,6 +48,7 @@ export const useCheckout = () => {
     summary,
     isLoading: cartLoading,
     isError: cartError,
+    hostedQuote,
   } = useCart(websiteId);
 
   useEffect(() => {
@@ -138,23 +141,38 @@ export const useCheckout = () => {
       setLoading(true);
       setError('');
       
-      const orderResponse = await createOrder({
-        websiteId,
-        paymentMethod,
-        shippingDetails: formData,
-        currency,
-      }).unwrap();
-
-      console.log(orderResponse);
+      let orderResponse;
+      if (hosted) {
+        if (!hostedQuote?.checkoutReady || !hostedQuote.totalAmount) {
+          throw new Error(hostedQuote?.issues?.join('; ') || 'Cart is not ready for checkout');
+        }
+        const address = [formData.street, formData.commune, formData.district,
+          formData.province].filter(Boolean).join(', ');
+        const body = { expectedTotalAmount: hostedQuote.totalAmount,
+          customerInfo: { name: formData.name, phone: formData.phone },
+          shippingInfo: { address } };
+        const signature = JSON.stringify(body);
+        if (checkoutAttempt.current?.signature !== signature) {
+          checkoutAttempt.current = { signature, key: crypto.randomUUID() };
+        }
+        orderResponse = await hostedRequest(hostedCheckoutUrl(websiteId, '/checkout'), {
+          method: 'POST', headers: { 'Idempotency-Key': checkoutAttempt.current.key },
+          body: JSON.stringify(body),
+        });
+      } else {
+        orderResponse = await createOrder({
+          websiteId, paymentMethod, shippingDetails: formData, currency,
+        }).unwrap();
+      }
       
       navigate(`/confirmation/${orderResponse.order.id}`);
     } catch (err) {
-      setError(err.data?.error || 'Order submission failed');
+      setError(err.data?.error || err.message || 'Order submission failed');
       return err;
     } finally {
       setLoading(false);
     }
-  }, [createOrder, websiteId, paymentMethod, formData, currency, navigate]);
+  }, [createOrder, websiteId, paymentMethod, formData, currency, navigate, hosted, hostedQuote]);
 
   return {
     // State

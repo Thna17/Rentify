@@ -37,7 +37,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
     async function start() {
       try {
         const id = suppliedStoreId || (await request(`${RENTIFY_API_BASE}/api/stores/mine`)).data?.id;
-        if (!id) throw new Error('Create a Store to manage marketplace orders.');
+        if (!id) throw new Error('Create a Store to manage COD orders.');
         if (!active) return;
         setStoreId(id);
         await load(id);
@@ -81,22 +81,22 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
     finally { setBusy(false); }
   }
 
-  if (loading) return <div className="p-6">Loading marketplace orders…</div>;
+  if (loading) return <div className="p-6">Loading COD orders…</div>;
   return <section className="space-y-5 p-4 md:p-6">
     <div className="flex items-center justify-between gap-3">
-      <div><h2 className="text-2xl font-bold">Marketplace orders</h2>
+      <div><h2 className="text-2xl font-bold">COD orders</h2>
         <p className="text-sm text-slate-600">Deliver orders, collect cash directly, and record any refund.</p></div>
       <button type="button" disabled={!storeId || busy} onClick={() => load(storeId).catch((error) => setMessage(error.message))}
         className="rounded border px-3 py-2 text-sm">Refresh</button>
     </div>
     {message && <p role="status" className="rounded bg-blue-50 p-3 text-sm text-blue-900">{message}</p>}
-    {!orders.length && <p className="rounded border bg-white p-5">No marketplace orders yet.</p>}
+    {!orders.length && <p className="rounded border bg-white p-5">No COD orders yet.</p>}
     {!!orders.length && <div className="grid gap-5 lg:grid-cols-[minmax(14rem,1fr)_minmax(20rem,2fr)]">
       <div className="space-y-2">
         {orders.map((order) => <button key={order.id} type="button" onClick={() => setSelectedId(order.id)}
           className={`w-full rounded-lg border p-4 text-left ${selectedId === order.id ? 'border-blue-600 bg-blue-50' : 'bg-white'}`}>
           <strong className="block">{order.orderNumber || order.id.slice(0, 8)}</strong>
-          <span className="text-sm">{order.customerInfo?.name} · ${order.totalAmount} · {order.deliveryStatus}</span>
+          <span className="text-sm">{order.salesChannel === 'storefront' ? 'Storefront' : 'Marketplace'} · {order.customerInfo?.name} · ${order.totalAmount} · {order.deliveryStatus}</span>
         </button>)}
       </div>
       {selected && <div className="space-y-5 rounded-xl border bg-white p-5">

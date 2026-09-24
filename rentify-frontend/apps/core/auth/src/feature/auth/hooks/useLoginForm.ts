@@ -27,7 +27,7 @@ export const useLoginForm = () => {
 
   const { websiteId, userEmail, userPhoneNumber, staffs } = useWebsiteData();
 
-  const { returnDomain, redirectUrl, isWebsiteTemplate } = useAuthConfig();
+  const { returnDomain, redirectUrl, isWebsiteTemplate, isHostedStorefrontBuyer } = useAuthConfig();
   const marketingHost = new URL(MARKETING_URL).host;
   const marketplaceHost = new URL(MARKETPLACE_URL).host;
 
@@ -90,7 +90,7 @@ export const useLoginForm = () => {
       const isPlatformLogin =
         isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost || !isWebsiteTemplate;
       let destination = redirectUrl;
-      if (isPlatformLogin && returnDomain !== marketplaceHost) {
+      if (isPlatformLogin && returnDomain !== marketplaceHost && !isHostedStorefrontBuyer) {
         destination = response?.data?.hasStore
           ? `${DASHBOARD_URL}/overview`
           : `${MARKETING_URL}/start`;
