@@ -2,18 +2,16 @@
 
 ## Rentify marketplace development flow
 
-Normal Angular routes and `/rentify-preview` use Core identity plus Commerce
-catalog and COD checkout. The committed public config selects this Rentify
-shell, and local Compose enables `MARKETPLACE_COD_CHECKOUT_ENABLED` for
+Normal Angular routes use the designed Rentify Marketplace UI with Core identity
+and Commerce catalog and COD checkout. Local Compose enables `MARKETPLACE_COD_CHECKOUT_ENABLED` for
 development. KhmerCraft's Express/Mongoose API is not used. Local Angular
 development runs on `http://localhost:4500`; Core and Commerce must allow that
 origin for credentialed requests, and Auth must allow it as a return URL.
 
 Before serving the Angular app outside localhost, replace the blank public
 Core, Commerce, Auth, and merchant dashboard URLs in
-`public/rentify-preview-config.js`. The local fallback URLs are for a developer
-machine only. The old Angular components remain in the source tree as reference
-but are not reached by normal routes.
+`public/marketplace-config.js`. The local fallback URLs are for a developer
+machine only. The obsolete product-only preview page has been removed.
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
 

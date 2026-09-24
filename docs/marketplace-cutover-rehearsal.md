@@ -1,7 +1,7 @@
 # Rentify marketplace development rehearsal
 
-**Status (2026-09-24):** Normal Angular development routes use the Rentify
-buyer shell. Core and Commerce are the only active APIs. The KhmerCraft
+**Status (2026-09-24):** Normal Angular development routes use the designed
+Rentify Marketplace UI. Core and Commerce are the only active APIs. The KhmerCraft
 Express/Mongoose API and MongoDB are not used. This local configuration is
 not a production release.
 
@@ -13,8 +13,8 @@ not a production release.
    development settings; Core refuses automatic seller approval outside
    `NODE_ENV=development`.
 2. Start `marketplace-frontend` with `npm start` (inside `marketplace-frontend/`) and open
-   `http://localhost:4500`. Its committed runtime config serves the Rentify
-   shell on `/`, `/cart`, `/checkout`, `/orders`, and old deep links. Localhost
+   `http://localhost:4500`. Its routes serve the designed marketplace UI on
+   `/`, `/cart`, `/checkout`, and `/orders`. Localhost
    Core, Commerce, and Auth URLs are the fallback. Replace the blank public
    URLs before using another host.
 3. Run `docker compose exec -T core-api npm run db:approve-development-stores`
