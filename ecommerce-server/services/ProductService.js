@@ -54,7 +54,13 @@ class ProductService {
       inStock,
     } = options;
 
-    const where = { websiteId: this.websiteId };
+    const website = await WebsiteData.findOne({
+      where: { websiteId: this.websiteId },
+      attributes: ['storeId'],
+    });
+    const where = website?.storeId
+      ? { [Op.or]: [{ websiteId: this.websiteId }, { storeId: website.storeId }] }
+      : { websiteId: this.websiteId };
     const include = [
       {
         model: Category,
@@ -180,13 +186,20 @@ class ProductService {
     return orderMap[sort] || [["createdAt", "DESC"]];
   }
 
-async findById(productId, transaction = null) {
-  try {
-    const queryOptions = {
-      where: {
-        id: productId,
-        websiteId: this.websiteId,
-      },
+  async findById(productId, transaction = null) {
+    try {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: this.websiteId },
+        attributes: ['storeId'],
+        transaction,
+      });
+      const queryOptions = {
+        where: {
+          id: productId,
+          ...(website?.storeId
+            ? { [Op.or]: [{ websiteId: this.websiteId }, { storeId: website.storeId }] }
+            : { websiteId: this.websiteId }),
+        },
       include: [
         {
           model: Category,
@@ -327,6 +340,14 @@ async create(productData, transaction = null) {
       }
       if (updates.marketplaceVisibility !== undefined) {
         updateData.marketplaceVisibility = validMarketplaceVisibility(updates.marketplaceVisibility);
+      }
+      if (updates.stockQuantity !== undefined) {
+        const nextQty = Number(updates.stockQuantity);
+        if (nextQty > 0 && product.status === 'out_of_stock' && updates.status === undefined) {
+          updateData.status = 'active';
+        } else if (nextQty === 0 && product.status === 'active' && updates.status === undefined && !product.allowBackorders) {
+          updateData.status = 'out_of_stock';
+        }
       }
       delete updateData.variants;
       delete updateData.options;

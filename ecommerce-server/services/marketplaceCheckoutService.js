@@ -706,7 +706,9 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         if (!['retry', 'cancel'].includes(resolution)) fail('Choose retry or cancel');
         if (resolution === 'cancel') {
           const lines = await OrderItem.findAll({ where: { orderId }, transaction, order: [['productId', 'ASC']] });
-          for (const line of lines) await changeStock(line.productId, line.quantity, transaction);
+          for (const line of lines) {
+            await changeStock(line.productId, line.quantity, transaction, line.variantId || line.itemMetadata?.variantId || null);
+          }
           await order.update({ deliveryStatus: 'failed', status: 'cancelled', stockDeducted: false }, { transaction });
         } else {
           await order.update({ deliveryStatus: 'failed' }, { transaction });

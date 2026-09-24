@@ -16,6 +16,9 @@ class POSOrderStrategy extends OrderTypeStrategy {
       currency
     );
 
+    const normalizedMethod = String(paymentMethod || '').toLowerCase();
+    const isImmediatePayment = ['cash', 'card', 'credit_card', 'debit_card'].includes(normalizedMethod);
+
     // Create customer record for POS if provided
     let customer = null;
     if (customerInfo?.email) {
@@ -27,9 +30,9 @@ class POSOrderStrategy extends OrderTypeStrategy {
       websiteId,
       orderType: "pos",
       customerId: customer?.id,
-      status: paymentMethod === 'cash' ? 'completed' : 'pending',
+      status: isImmediatePayment ? 'completed' : 'pending',
       cashierId,
-      stockDeducted: paymentMethod === 'cash',
+      stockDeducted: isImmediatePayment,
       customerInfo,
       currency,
       ...totals
@@ -39,7 +42,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
     const orderItems = await this.createOrderItems(order.id, items, transaction);
 
     // Update inventory for immediate payments
-    if (paymentMethod === 'cash') {
+    if (isImmediatePayment) {
       await this.nicheStrategy.updateInventory(items, transaction);
     }
 
@@ -64,7 +67,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
     );
 
     // Update order status for instant payments
-    if (paymentMethod === 'cash') {
+    if (isImmediatePayment) {
       await order.update({ 
         status: 'completed',
         stockDeducted: true 
