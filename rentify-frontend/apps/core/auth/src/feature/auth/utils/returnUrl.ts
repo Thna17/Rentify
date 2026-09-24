@@ -2,12 +2,13 @@ import {
   AUTH_URL,
   DASHBOARD_URL,
   MARKETING_URL,
+  MARKETPLACE_URL,
   STOREFRONT_ORIGIN,
 } from '@rentify/shared/config/urls';
 
 const allowedOrigins = () =>
   new Set(
-    [AUTH_URL, MARKETING_URL, DASHBOARD_URL, STOREFRONT_ORIGIN].map(
+    [AUTH_URL, MARKETING_URL, MARKETPLACE_URL, DASHBOARD_URL, STOREFRONT_ORIGIN].map(
       (url) => new URL(url).origin
     )
   );

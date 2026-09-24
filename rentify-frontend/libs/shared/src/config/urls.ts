@@ -17,5 +17,7 @@ export const AUTH_URL = __AUTH__URL__;
 
 export const MARKETING_URL = __MARKETING_URL__;
 
+export const MARKETPLACE_URL = __MARKETPLACE_URL__;
+
 export const STOREFRONT_ORIGIN = __STOREFRONT_ORIGIN__;
 /// <reference path="./vite-globals.d.ts" />

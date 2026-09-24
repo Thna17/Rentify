@@ -132,6 +132,7 @@ class DeploymentService {
         VITE_AUTH_URL: runtimeUrls.authUrl,
         VITE_MERCHANT_DASHBOARD_URL: runtimeUrls.merchantDashboardUrl,
         VITE_MARKETING_URL: runtimeUrls.marketingUrl,
+        VITE_MARKETPLACE_URL: runtimeUrls.marketplaceUrl,
         VITE_STOREFRONT_ORIGIN: runtimeUrls.storefrontOrigin,
       },
       target: 'production',

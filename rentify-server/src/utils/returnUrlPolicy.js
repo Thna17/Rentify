@@ -3,6 +3,7 @@ const runtimeUrls = require("../config/runtimeUrls");
 const allowedOrigins = () => new Set([
   runtimeUrls.authUrl,
   runtimeUrls.marketingUrl,
+  runtimeUrls.marketplaceUrl,
   runtimeUrls.merchantDashboardUrl,
   runtimeUrls.storefrontOrigin,
   ...(process.env.AUTH_RETURN_URL_ALLOWLIST || "").split(","),

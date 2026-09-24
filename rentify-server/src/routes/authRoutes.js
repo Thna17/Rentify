@@ -9,6 +9,7 @@ const { verifyAccessToken } = require("../utils/jwtUtils");
 const transactionHandler = require("../utils/transactionHandler");
 const responseHandler = require("../utils/responseHandler");
 const { resolveReturnUrl } = require("../utils/returnUrlPolicy");
+const { verifyToken } = require('../middlewares/auth');
 
 // A login endpoint never redirects itself.  Validate navigation hints here so
 // clients cannot use the authentication flow as an open-redirect primitive.
@@ -28,6 +29,18 @@ const asyncHandler = (fn) => async (req, res, next) => {
     res.status(status).json({ error: err.message });
   }
 };
+
+router.get('/session', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: ['id', 'name', 'email', 'phoneNumber', 'role', 'isVerified'],
+    });
+    if (!user) return res.status(401).json({ error: 'Session is no longer valid' });
+    return res.json({ user });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Could not load session' });
+  }
+});
 
 router.post(
   "/signup",

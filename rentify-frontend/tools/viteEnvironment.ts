@@ -6,6 +6,7 @@ export type PublicRuntimeConfig = {
   authUrl: string;
   merchantDashboardUrl: string;
   marketingUrl: string;
+  marketplaceUrl: string;
   storefrontOrigin: string;
 };
 
@@ -20,6 +21,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     authUrl: 'http://localhost:4300',
     merchantDashboardUrl: 'http://localhost:4400',
     marketingUrl: 'http://localhost:4200',
+    marketplaceUrl: 'http://localhost:4201',
     storefrontOrigin: 'http://localhost:4700',
   };
   const config = {
@@ -28,6 +30,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     authUrl: env.VITE_AUTH_URL || env.AUTH_URL || (development ? local.authUrl : ''),
     merchantDashboardUrl: env.VITE_MERCHANT_DASHBOARD_URL || env.MERCHANT_DASHBOARD_URL || (development ? local.merchantDashboardUrl : ''),
     marketingUrl: env.VITE_MARKETING_URL || env.MARKETING_URL || (development ? local.marketingUrl : ''),
+    marketplaceUrl: env.VITE_MARKETPLACE_URL || env.MARKETPLACE_URL || (development ? local.marketplaceUrl : ''),
     storefrontOrigin: env.VITE_STOREFRONT_ORIGIN || env.STOREFRONT_ORIGIN || (development ? local.storefrontOrigin : ''),
   };
 
@@ -49,6 +52,7 @@ export function vitePublicDefines(mode: string) {
     __AUTH__URL__: JSON.stringify(config.authUrl),
     __DASHBOARD__URL__: JSON.stringify(config.merchantDashboardUrl),
     __MARKETING_URL__: JSON.stringify(config.marketingUrl),
+    __MARKETPLACE_URL__: JSON.stringify(config.marketplaceUrl),
     __STOREFRONT_ORIGIN__: JSON.stringify(config.storefrontOrigin),
   };
 }

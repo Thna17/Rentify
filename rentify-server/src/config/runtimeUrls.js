@@ -6,6 +6,7 @@ const local = {
   authUrl: "http://localhost:4300",
   merchantDashboardUrl: "http://localhost:4400",
   marketingUrl: "http://localhost:4200",
+  marketplaceUrl: "http://localhost:4201",
   storefrontOrigin: "http://localhost:4700",
 };
 
@@ -16,6 +17,7 @@ const runtimeUrls = {
   authUrl: pick("AUTH_URL", local.authUrl),
   merchantDashboardUrl: pick("MERCHANT_DASHBOARD_URL", local.merchantDashboardUrl),
   marketingUrl: pick("MARKETING_URL", local.marketingUrl),
+  marketplaceUrl: pick("MARKETPLACE_URL", local.marketplaceUrl),
   storefrontOrigin: pick("STOREFRONT_ORIGIN", local.storefrontOrigin),
 };
 

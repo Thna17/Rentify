@@ -5,6 +5,17 @@ const { STORE_CATEGORIES } = require('../config/storeCategories');
 
 exports.getCategories = (req, res) => res.json({ success: true, data: STORE_CATEGORIES });
 
+exports.listPublicStores = asyncHandler(async (req, res) => {
+  const stores = await storeService.listPublicStores(req.query.ids);
+  return res.json({ success: true, data: stores });
+});
+
+exports.getPublicStore = asyncHandler(async (req, res) => {
+  const store = await storeService.getPublicStore(req.params.storeId);
+  if (!store) return res.status(404).json({ message: 'Store not found' });
+  return res.json({ success: true, data: store });
+});
+
 exports.getOwnStore = asyncHandler(async (req, res) => {
   const store = await storeService.getOwnStore(req.user.id);
   if (!store) return res.status(404).json({ message: 'Store not found' });

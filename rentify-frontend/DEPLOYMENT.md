@@ -2,9 +2,9 @@
 
 ## Public URL contract
 
-All browser applications use these Vite variables: `VITE_RENTIFY_API_URL`, `VITE_ECOMMERCE_API_URL`, `VITE_AUTH_URL`, `VITE_MERCHANT_DASHBOARD_URL`, `VITE_MARKETING_URL`, and `VITE_STOREFRONT_ORIGIN`.
+All browser applications use these Vite variables: `VITE_RENTIFY_API_URL`, `VITE_ECOMMERCE_API_URL`, `VITE_AUTH_URL`, `VITE_MERCHANT_DASHBOARD_URL`, `VITE_MARKETING_URL`, `VITE_MARKETPLACE_URL`, and `VITE_STOREFRONT_ORIGIN`.
 
-Server services use the same names without the `VITE_` prefix: `RENTIFY_API_URL`, `ECOMMERCE_API_URL`, `AUTH_URL`, `MERCHANT_DASHBOARD_URL`, `MARKETING_URL`, and `STOREFRONT_ORIGIN`.
+Server services use the same names without the `VITE_` prefix: `RENTIFY_API_URL`, `ECOMMERCE_API_URL`, `AUTH_URL`, `MERCHANT_DASHBOARD_URL`, `MARKETING_URL`, `MARKETPLACE_URL`, and `STOREFRONT_ORIGIN`.
 
 `STOREFRONT_ORIGIN` must be the allowed production storefront origin (normally the custom storefront domain). Add it to both APIs' `CORS_ALLOWED_ORIGINS` when more than one storefront domain is used.
 
@@ -21,7 +21,7 @@ cd rentify-frontend && npm run dev:marketing
 cd rentify-frontend && npm run dev:ecommerce-template-1
 ```
 
-Template 2 uses `npm run dev:ecommerce-template-2`. Development defaults are Core `http://localhost:3001`, Commerce `http://localhost:4001`, Auth `http://localhost:4300`, Merchant `http://localhost:4400`, Marketing `http://localhost:4200`, and Template 1 `http://localhost:4700`.
+Template 2 uses `npm run dev:ecommerce-template-2`. Development defaults are Core `http://localhost:3001`, Commerce `http://localhost:4001`, Auth `http://localhost:4300`, Merchant `http://localhost:4400`, Marketing `http://localhost:4200`, Marketplace `http://localhost:4201`, and Template 1 `http://localhost:4700`.
 
 ## Staging and production
 
@@ -33,4 +33,4 @@ npx vite build --config apps/templates/ecommerce/ecommerce-template-1/vite.confi
 npx vite build --config apps/templates/ecommerce/ecommerce-template-2/vite.config.ts
 ```
 
-Core's Vercel deployment service deploys `Thna17/rentify-client` from `main` (the current `rentify-frontend` Git remote). Configure `VERCEL_GIT_REPOSITORY_ID` from Vercel for that repository. Template ID `1` builds `ecommerce-template-1` into `dist/apps/templates/ecommerce/ecommerce-template-1`; Template ID `2` builds `ecommerce-template-2` into `dist/apps/templates/ecommerce/ecommerce-template-2`. It injects `WEBSITE_ID`, `TEMPLATE_ID`, and the six public Vite URL variables.
+Core's Vercel deployment service deploys `Thna17/rentify-client` from `main` (the current `rentify-frontend` Git remote). Configure `VERCEL_GIT_REPOSITORY_ID` from Vercel for that repository. Template ID `1` builds `ecommerce-template-1` into `dist/apps/templates/ecommerce/ecommerce-template-1`; Template ID `2` builds `ecommerce-template-2` into `dist/apps/templates/ecommerce/ecommerce-template-2`. It injects `WEBSITE_ID`, `TEMPLATE_ID`, and the seven public Vite URL variables.

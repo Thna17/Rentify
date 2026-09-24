@@ -1,4 +1,5 @@
 const { randomUUID } = require('node:crypto');
+const { Op } = require('sequelize');
 const { Store, User } = require('../models');
 const storeSyncService = require('./storeSyncService');
 const { normalizeStoreCategory } = require('../config/storeCategories');
@@ -7,6 +8,33 @@ const clean = (value, maxLength) =>
   typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 
 class StoreService {
+  publicStoreWhere = {
+    status: 'active', marketplaceApprovalStatus: 'approved',
+    marketplaceEntitlement: 'pilot', needsCategoryReview: false,
+  };
+
+  publicStoreAttributes = ['id', 'name', 'slug', 'primaryCategory'];
+
+  async listPublicStores(ids) {
+    if (typeof ids !== 'string' || !ids.trim()) return [];
+    const unique = [...new Set(ids.split(',').map((id) => id.trim()))];
+    if (unique.length > 60 || unique.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) {
+      const error = new Error('Supply up to 60 Store IDs');
+      error.statusCode = 400;
+      throw error;
+    }
+    return Store.findAll({
+      where: { ...this.publicStoreWhere, id: { [Op.in]: unique } },
+      attributes: this.publicStoreAttributes,
+    });
+  }
+
+  async getPublicStore(storeId) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId)) return null;
+    return Store.findOne({ where: { ...this.publicStoreWhere, id: storeId },
+      attributes: this.publicStoreAttributes });
+  }
+
   async getOwnStore(ownerUserId) {
     return Store.findOne({ where: { ownerUserId } });
   }

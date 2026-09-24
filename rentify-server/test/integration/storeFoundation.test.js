@@ -4,6 +4,28 @@ const { Store, User, Website } = require('../../src/models');
 const storeService = require('../../src/services/storeService');
 const storeSyncService = require('../../src/services/storeSyncService');
 
+test('public Store lookup returns only approved profile fields', async (t) => {
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  t.mock.method(Store, 'findAll', async (options) => {
+    assert.equal(options.where.status, 'active');
+    assert.equal(options.where.marketplaceApprovalStatus, 'approved');
+    assert.equal(options.where.marketplaceEntitlement, 'pilot');
+    assert.equal(options.where.needsCategoryReview, false);
+    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory']);
+    return [{ id, name: 'Public Store' }];
+  });
+  assert.deepEqual(await storeService.listPublicStores(`${id},${id}`), [{ id, name: 'Public Store' }]);
+  await assert.rejects(storeService.listPublicStores('bad-id'), { statusCode: 400 });
+  assert.deepEqual(await storeService.listPublicStores(''), []);
+  t.mock.method(Store, 'findOne', async (options) => {
+    assert.equal(options.where.id, id);
+    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory']);
+    return { id, name: 'Public Store' };
+  });
+  assert.deepEqual(await storeService.getPublicStore(id), { id, name: 'Public Store' });
+  assert.equal(await storeService.getPublicStore('bad-id'), null);
+});
+
 test('marketplace-only Store defaults to marketplace enabled and needs approval', async (t) => {
   const transaction = {};
   const created = [];
