@@ -253,6 +253,8 @@ export const usePOS = () => {
   const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
   return {
+    websiteId,
+    storeId,
     activeTab,
     paymentStatus,
     setActiveTab,

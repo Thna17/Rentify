@@ -28,6 +28,8 @@ export const POSInterface = () => {
   const websiteName = "brathna";
   
   const {
+    websiteId,
+    storeId,
     activeTab,
     setActiveTab,
     paymentStatus,
