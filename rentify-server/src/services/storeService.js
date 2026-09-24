@@ -7,6 +7,21 @@ const { normalizeStoreCategory } = require('../config/storeCategories');
 const clean = (value, maxLength) =>
   typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 
+const developmentApprovalEnabled = () => process.env.NODE_ENV === 'development' &&
+  process.env.DEV_MARKETPLACE_AUTO_APPROVAL === 'true';
+
+const eligibleForDevelopmentApproval = (store, owner) =>
+  developmentApprovalEnabled() && store.status === 'active' &&
+  store.marketplaceApprovalStatus === 'pending' &&
+  !store.needsCategoryReview && Boolean(normalizeStoreCategory(store.primaryCategory)) &&
+  owner?.isVerified === true && Boolean(owner.email || owner.phoneNumber);
+
+const approvalCandidate = (store, changes = {}) => ({
+  status: store.status, marketplaceApprovalStatus: store.marketplaceApprovalStatus,
+  primaryCategory: changes.primaryCategory ?? store.primaryCategory,
+  needsCategoryReview: changes.needsCategoryReview ?? store.needsCategoryReview,
+});
+
 class StoreService {
   publicStoreWhere = {
     status: 'active', marketplaceApprovalStatus: 'approved',
@@ -79,6 +94,12 @@ class StoreService {
   async createForOwner({ ownerUserId, name, primaryCategory, marketplaceEnabled = true, transaction }) {
     const id = randomUUID();
     const category = normalizeStoreCategory(primaryCategory);
+    const owner = developmentApprovalEnabled()
+      ? await User.findByPk(ownerUserId, { transaction }) : null;
+    const approval = eligibleForDevelopmentApproval({
+      status: 'active', marketplaceApprovalStatus: 'pending',
+      primaryCategory: category, needsCategoryReview: !category,
+    }, owner) ? 'approved' : 'pending';
     return Store.create({
       id,
       ownerUserId,
@@ -87,7 +108,7 @@ class StoreService {
       primaryCategory: category || null,
       needsCategoryReview: !category,
       marketplaceEnabled,
-      marketplaceApprovalStatus: 'pending',
+      marketplaceApprovalStatus: approval,
       status: 'active',
     }, { transaction });
   }
@@ -101,11 +122,18 @@ class StoreService {
     }
     const existing = await Store.findOne({ where: { ownerUserId }, transaction });
     if (existing) {
-      if (category && (existing.primaryCategory !== category || existing.needsCategoryReview)) {
-        await existing.update({
-          primaryCategory: category, needsCategoryReview: false,
-          projectionVersion: existing.projectionVersion + 1,
-        }, { transaction });
+      const changes = {};
+      if (existing.primaryCategory !== category || existing.needsCategoryReview) {
+        changes.primaryCategory = category;
+        changes.needsCategoryReview = false;
+      }
+      const owner = developmentApprovalEnabled()
+        ? await User.findByPk(ownerUserId, { transaction }) : null;
+      if (eligibleForDevelopmentApproval(approvalCandidate(existing, changes), owner)) {
+        changes.marketplaceApprovalStatus = 'approved';
+      }
+      if (Object.keys(changes).length) {
+        await existing.update({ ...changes, projectionVersion: existing.projectionVersion + 1 }, { transaction });
       }
       return existing;
     }
@@ -146,6 +174,11 @@ class StoreService {
         error.statusCode = 404;
         throw error;
       }
+      const owner = developmentApprovalEnabled()
+        ? await User.findByPk(ownerUserId, { transaction }) : null;
+      if (eligibleForDevelopmentApproval(approvalCandidate(store, changes), owner)) {
+        changes.marketplaceApprovalStatus = 'approved';
+      }
       if (Object.keys(changes).length) {
         await store.update({ ...changes, projectionVersion: store.projectionVersion + 1 }, { transaction });
         const { Website } = require('../models');
@@ -158,3 +191,5 @@ class StoreService {
 }
 
 module.exports = new StoreService();
+module.exports.developmentApprovalEnabled = developmentApprovalEnabled;
+module.exports.eligibleForDevelopmentApproval = eligibleForDevelopmentApproval;

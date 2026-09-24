@@ -10,6 +10,8 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [applicationStatus, setApplicationStatus] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [primaryCategory, setPrimaryCategory] = useState(initialStore.primaryCategory || '');
   const [application, setApplication] = useState({
     responsibleName: '', pickupLocation: '', buyerContact: '', sampleProductDescription: '',
     acceptsDeliveryResponsibility: false, acceptsCodResponsibility: false,
@@ -27,10 +29,28 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
   }
 
   useEffect(() => {
+    request('/categories', 'GET')
+      .then((result) => setCategories(Array.isArray(result) ? result : []))
+      .catch(() => setMessage('Could not load Store categories. Refresh to retry.'));
     request('/mine/seller-application', 'GET')
       .then((result) => setApplicationStatus(result?.status || null))
       .catch(() => setMessage('Could not load seller review status. Refresh to retry.'));
   }, []);
+
+  async function updatePrimaryCategory(event) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage('');
+    try {
+      const updated = await request('/mine', 'PATCH', { primaryCategory });
+      setStore(updated);
+      onStoreChange(updated);
+      setMessage(updated.marketplaceApprovalStatus === 'approved'
+        ? 'Primary category saved. Your Store is approved for development marketplace listing.'
+        : 'Primary category saved. Verify your account contact to complete development approval.');
+    } catch (error) { setMessage(error.message); }
+    finally { setBusy(false); }
+  }
 
   async function updateMarketplaceEnabled() {
     setBusy(true);
@@ -58,7 +78,8 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
     finally { setBusy(false); }
   }
 
-  const canApply = !['pending', 'approved'].includes(applicationStatus) &&
+  const canApply = Boolean(store.primaryCategory) &&
+    !['pending', 'approved'].includes(applicationStatus) &&
     ['pending', 'needs_changes', 'rejected'].includes(store.marketplaceApprovalStatus);
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
@@ -69,10 +90,24 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
           <button onClick={onLogout} className="rounded-lg border px-4 py-2">Sign out</button>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border bg-white p-5"><p className="text-sm text-slate-500">Primary category</p><p className="mt-2 font-semibold">{store.primaryCategory}</p></div>
+          <div className="rounded-xl border bg-white p-5"><p className="text-sm text-slate-500">Primary category</p><p className="mt-2 font-semibold">{store.primaryCategory || 'Choose a category'}</p></div>
           <div className="rounded-xl border bg-white p-5"><p className="text-sm text-slate-500">Marketplace approval</p><p className="mt-2 font-semibold capitalize">{store.marketplaceApprovalStatus.replace('_', ' ')}</p></div>
           <div className="rounded-xl border bg-white p-5"><p className="text-sm text-slate-500">Pilot access</p><p className="mt-2 font-semibold">Free pilot</p></div>
         </div>
+        <form onSubmit={updatePrimaryCategory} className="mt-6 rounded-xl border bg-white p-6">
+          <label htmlFor="store-primary-category" className="block text-xl font-semibold">Store primary category</label>
+          <p className="mt-2 text-slate-600">Choose the category that best describes your Store. Individual products can use more specific marketplace categories.</p>
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <select id="store-primary-category" required value={primaryCategory}
+              onChange={(event) => setPrimaryCategory(event.target.value)}
+              className="rounded-lg border px-3 py-2">
+              <option value="">Choose a category</option>
+              {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+            <button disabled={busy || !primaryCategory || primaryCategory === store.primaryCategory}
+              className="rounded-lg bg-blue-700 px-5 py-2 text-white disabled:opacity-50">Save category</button>
+          </div>
+        </form>
         <div className="mt-6 rounded-xl border bg-white p-6">
           <h2 className="text-xl font-semibold">Marketplace visibility</h2>
           <p className="mt-2 text-slate-600">Your Store is {store.marketplaceEnabled ? 'set to appear' : 'hidden'} in the marketplace when approved products are available.</p>
@@ -82,8 +117,9 @@ export default function MarketplaceStoreOverview({ initialStore, onStoreChange, 
         </div>
         <div className="mt-6 rounded-xl border bg-white p-6">
           <h2 className="text-xl font-semibold">Seller approval</h2>
-          <p className="mt-2 text-slate-600">Submit your operating details for admin review. You can add products now; they appear in the marketplace after approval and after you post a delivery fee below.</p>
-          {applicationStatus === 'pending' && <p className="mt-3 text-blue-800">Your application is waiting for admin review.</p>}
+          <p className="mt-2 text-slate-600">In development, a pending Store is approved after you choose a primary category and verify your account contact. You can add products now; public listings also need a product category, stock, and a posted delivery fee. Admin review remains available for other environments.</p>
+          {applicationStatus === 'pending' && store.marketplaceApprovalStatus !== 'approved' &&
+            <p className="mt-3 text-blue-800">Your application is waiting for admin review.</p>}
           {canApply && <form onSubmit={submitApplication} className="mt-5 grid gap-4 md:grid-cols-2">
             {[
               ['responsibleName', 'Responsible person'], ['pickupLocation', 'Pickup or operating location'],

@@ -1,53 +1,24 @@
 # KhmerCraft — marketplace
 
-Cambodian local-first marketplace: buyer storefront, seller dashboard and the
-API behind both.
+The Angular buyer UI is being reused for Rentify's shared marketplace. Core
+and Commerce in the parent repository are its only active APIs. MongoDB and
+`apps/api` are not part of the development or launch runtime.
 
-- `apps/web` — Angular 21 (standalone components, signals), dev server on 4200
-- `apps/api` — Express 5 + Mongoose 9 + TypeScript, dev server on 3001
+- `apps/web` — Angular 21, local dev server on 4201
+- `apps/api` — inactive KhmerCraft reference implementation
 
-## Setup
+## Current development setup
 
-```bash
-npm install
-cd apps/api && npm install
-cd ../web && npm install
-```
+Start the parent repository's Core and Commerce services with its Docker
+instructions, then install dependencies under `apps/web` and run `npm start`
+there. The committed runtime config uses Rentify on normal Angular routes and
+localhost Core/Commerce/Auth fallbacks. Supply real public origins in
+`apps/web/public/rentify-preview-config.js` for any remote environment.
 
-Then create `apps/api/.env.local` from the template:
+## Legacy reference
 
-```bash
-cd apps/api && cp .env.example .env.local
-```
-
-Fill it in — **ask the project owner for the values**, they are not in git:
-
-| Variable | Notes |
-| --- | --- |
-| `MONGODB_URI` | MongoDB connection string |
-| `JWT_SECRET` | any 32+ character random string; `openssl rand -hex 32` |
-| `SMTP_*`, `MAIL_FROM` | optional. Without them the app skips email entirely and creates accounts already-verified, so registration still works |
-
-## Running
-
-Both servers, from the repo root:
-
-```bash
-npm run dev
-```
-
-Or separately: `npm run dev:api` and `npm run dev:web`.
-
-The API must be started from `apps/api` — `src/index.ts` loads `.env.local`
-relative to the working directory.
-
-## Tests
-
-```bash
-cd apps/api && npm test
-```
-
-154 tests, `mongodb-memory-server`, no live database needed.
+The old `apps/api` and Mongo-specific design notes document KhmerCraft's
+previous implementation. They do not describe the active Rentify backend.
 
 ## Layout
 

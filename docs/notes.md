@@ -139,9 +139,9 @@ into `platform-architecture.md` and remove stale notes.
   is requested. Its seller order transition changes the whole mixed-seller
   order, and cancellation can label a paid order refunded without executing
   a refund. These behaviors must not be carried into the Rentify target.
-- The relocated marketplace web client currently defaults to API port 3002,
-  while the legacy API defaults to 3001. Treat local run instructions and URL
-  configuration as migration work, not as a settled deployment contract.
+- The original KhmerCraft web client and API used separate ports. This is a
+  historical observation; normal Angular development routes now use Rentify
+  Core and Commerce only.
 
 ## Store foundation implementation record (2026-09-23)
 
@@ -188,14 +188,14 @@ into `platform-architecture.md` and remove stale notes.
   can enter public marketplace discovery.
 - Public Website Product reads now exclude drafts and archived products.
   Authenticated Website management reads preserve access to those states.
-  The catalog is still a partial Phase 3 increment; Angular, checkout, and
-  cohort cutover have not moved.
+  This was the Phase 3 state before the Rentify buyer shell became the normal
+  Angular development route.
 - The owner confirmed KhmerCraft has no independent data. Existing Rentify
   Stores and Products supply marketplace listings through the default-on
   Store setting and shared Commerce catalog. Seller approval, reviewed Store
   and Product categories, publication, entitlement, and opt-outs still gate
-  public visibility. Keep KhmerCraft import procedures only as contingency;
-  do not create fictional historical rows.
+  public visibility. No KhmerCraft import or MongoDB service is part of the
+  platform plan.
 - The legacy Website Product edit, bulk edit, inventory, and delete paths now
   use version checks and archive semantics. Stock adjustments preserve draft
   state and reject a negative balance. Order, POS, invoice, and stock-service
@@ -204,7 +204,25 @@ into `platform-architecture.md` and remove stale notes.
   Order, a Core-versus-Commerce Website ID lookup mismatch in order creation,
   non-COD payment paths, cached cart prices in order creation, and multiple
   stock writers. This explains why Angular must not switch to the new catalog
-  reader while its checkout still targets Mongo.
+  reader before its checkout moved to Commerce. The Rentify buyer shell now
+  uses Commerce for both in development.
+
+## Development seller rule (2026-09-24)
+
+- Core auto-approves only pending active Stores in development when the
+  merchant has a verified email or phone and a valid selected primary Store
+  category. The rule is enabled by `DEV_MARKETPLACE_AUTO_APPROVAL=true` and
+  refuses to run in production. Rejected and suspended sellers stay blocked.
+- The local approval check inspected two existing Rentify Stores. Both need
+  primary category selection; neither was automatically approved. No category
+  was guessed. Website merchants now see a category prompt in the dashboard;
+  marketplace-only merchants can edit their Store category. Once they select
+  one, Core can approve and project them to Commerce.
+- Commerce still checks Store publication eligibility, Product publication,
+  valid marketplace Product category, visibility, price, and stock at checkout.
+- Normal Angular development routes now use the Rentify buyer shell; the
+  KhmerCraft API remains reference code only. Production domain, browser,
+  and operational checks remain open.
 
 ## Open product and architecture questions
 

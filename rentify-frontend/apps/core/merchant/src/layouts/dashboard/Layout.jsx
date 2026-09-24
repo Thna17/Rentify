@@ -14,6 +14,7 @@ import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import MarketplaceStoreOverview from '../../pages/overview/MarketplaceStoreOverview';
+import StoreCategoryPrompt from '../../pages/overview/StoreCategoryPrompt';
 
 export const DashboardLayout = () => {
   const { websiteData } = useThemeService();
@@ -24,16 +25,9 @@ export const DashboardLayout = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, isAuthenticated, role, isLoading, handleLogout } = useAuth();
+  const { profile, isAuthenticated, role, handleLogout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const [isMounted, setIsMounted] = useState(false);
-  const [accessChecked, setAccessChecked] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   useEffect(() => {
     if (!isAuthenticated) return;
     let active = true;
@@ -69,7 +63,7 @@ export const DashboardLayout = () => {
     name: t(tab.name),
   }));
 
-  const { matchedTab, params } = getCurrentTabData(location.pathname, ALL_TABS);
+  const { matchedTab } = getCurrentTabData(location.pathname, ALL_TABS);
   
   // Check if user has access to the current tab
   const hasAccessToCurrentTab = matchedTab
@@ -133,6 +127,7 @@ export const DashboardLayout = () => {
         
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-background/50">
           <div className="max-w-7xl mx-auto w-full">
+            <StoreCategoryPrompt store={store} onStoreChange={setStore} />
             {/* Consistent Page Container */}
             <div className="bg-background rounded-2xl border border-border shadow-sm transition-all duration-300 min-h-[calc(100vh-200px)]">
               <Outlet /> {/* Child routes render here */}

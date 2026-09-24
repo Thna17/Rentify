@@ -1,25 +1,19 @@
 # Web
 
-## Rentify buyer preview
+## Rentify marketplace development flow
 
-`/rentify-preview` is a combined Core identity and Commerce catalog/COD
-checkout rehearsal. It is disabled by default in
-`public/rentify-preview-config.js`. To enable it in an isolated staging
-environment, replace that public config with `enabled: true` and the public
-Core API, Commerce API, and Auth app URLs. Freeze legacy marketplace writes
-before allowing test orders and set Commerce's
-`MARKETPLACE_COD_CHECKOUT_ENABLED=true`. The normal Angular routes still use the legacy
-marketplace API. Local Angular development runs on `http://localhost:4201`;
-Core and Commerce must allow that origin for credentialed requests, and Auth
-must allow it as a return URL.
+Normal Angular routes and `/rentify-preview` use Core identity plus Commerce
+catalog and COD checkout. The committed public config selects this Rentify
+shell, and local Compose enables `MARKETPLACE_COD_CHECKOUT_ENABLED` for
+development. KhmerCraft's Express/Mongoose API is not used. Local Angular
+development runs on `http://localhost:4201`; Core and Commerce must allow that
+origin for credentialed requests, and Auth must allow it as a return URL.
 
-For a staging route rehearsal after those checks, set `cutoverEnabled: true`
-alongside `enabled: true` and supply `merchantDashboardUrl`. This makes the
-Rentify buyer shell serve `/` and all old deep links, including `/cart`,
-`/checkout`, and `/orders`. The old Angular components then cannot create new
-Mongo writes. The switch is **off** in the committed public config and is not
-a production cutover. Return to `cutoverEnabled: false` on rollback only after
-the active writer and outstanding orders are reconciled.
+Before serving the Angular app outside localhost, replace the blank public
+Core, Commerce, Auth, and merchant dashboard URLs in
+`public/rentify-preview-config.js`. The local fallback URLs are for a developer
+machine only. The old Angular components remain in the source tree as reference
+but are not reached by normal routes.
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
 

@@ -74,12 +74,12 @@ The implementation sequence and release gates are in the
 | Area | Target owner | Current starting point |
 | --- | --- | --- |
 | Merchant, admin, staff identity and access | `rentify-server` | Core User/Staff authentication |
-| Store profile, seller approval, and optional website linkage | `rentify-server` Core API | Core Website plus KhmerCraft Store |
+| Store profile, seller approval, and optional website linkage | `rentify-server` Core API | Core Store and Website |
 | Templates, themes, domain, subscription, deployment | `rentify-server` | Existing core API and React storefronts |
-| Catalog, categories, price, stock, carts, orders, payments, POS, invoices | `ecommerce-server` | Existing commerce API, migrated KhmerCraft behavior |
+| Catalog, categories, price, stock, carts, orders, payments, POS, invoices | `ecommerce-server` | Existing commerce API and shared marketplace routes |
 | Marketplace buyer UI | `marketplace/apps/web` initially | Angular KhmerCraft app |
 | Merchant dashboard and storefront UI | `rentify-frontend` | Existing React/Vite apps |
-| Marketplace API | Temporary migration/reference code only | `marketplace/apps/api` Express/Mongoose |
+| KhmerCraft API | Inactive reference code only | `marketplace/apps/api` Express/Mongoose; never run as a platform service |
 
 Core owns the Store profile, owner relation, and marketplace seller approval.
 It exposes stable `storeId` and tenant authorization to Commerce, which may

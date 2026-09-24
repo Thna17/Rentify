@@ -3,9 +3,19 @@
 **Status:** In progress, 2026-09-24. Product direction is agreed:
 Rentify will become the backend for merchant storefronts and the shared
 marketplace. Store-keyed Commerce catalog and COD checkout paths exist behind
-release gates. KhmerCraft has no independent data to import: existing Rentify
-Stores and Products are the launch source for marketplace listings. Choices
-under **Decisions needed** remain open until the product owner answers them.
+release gates. KhmerCraft's MongoDB API will not be used. Existing Rentify
+Stores and Products are the marketplace source; normal Angular development
+routes now use Rentify APIs. Choices under **Decisions needed** remain open
+until the product owner answers them.
+
+**Development seller rule:** Core automatically approves a pending active
+Store only when `NODE_ENV=development` and
+`DEV_MARKETPLACE_AUTO_APPROVAL=true`, the owner has verified contact, and the
+Store has a selected primary category. Rejected and suspended sellers stay
+blocked. Commerce still requires an active published Product, a valid
+marketplace category, pilot entitlement, and marketplace visibility for public
+listing; checkout additionally validates current stock and price. Production
+seller review remains a separate release decision.
 
 Read [current Rentify architecture](current-rentify-architecture.md) for the
 existing service map and [platform architecture](platform-architecture.md) for
@@ -28,7 +38,7 @@ the product model.
   integrations are outside the initial release.
 - Existing accounts, storefront URLs, orders, and financial records remain
   accessible through migration. No payment is silently marked refunded.
-- The legacy marketplace API can be stopped without losing a live workflow.
+- Marketplace development and launch run without the KhmerCraft API or MongoDB.
 
 ## Proposed service boundary
 
@@ -48,13 +58,11 @@ need confirmation.
 
 ## Rules for a safe migration
 
-1. **One writer per record type.** Never dual-write product, stock, order,
-   payment, or customer mutations to MongoDB and MySQL. Existing Rentify
-   records stay in their Core/Commerce authorities. If a nonempty external
-   source appears, use an import and controlled final delta before cutover.
-2. **Stable IDs.** Persist `legacy_source + legacy_id -> new_uuid` mappings.
-   Keep the old ID for audit and idempotent reruns. Slugs and domains are not
-   identity keys.
+1. **One writer per record type.** Core owns Store and identity writes;
+   Commerce owns product, stock, order, and payment writes. Do not start the
+   KhmerCraft API or a MongoDB writer.
+2. **Stable IDs.** Preserve Rentify Store, Website, Product, and Order IDs.
+   Slugs and domains are not identity keys.
 3. **Compatible reads first.** Add Rentify APIs and adapters before removing
    website based routes or response fields. Existing storefronts keep serving
    during backfill.
@@ -83,7 +91,7 @@ before this phase's exit gate.
 - Trace current onboarding, website sync, product management, storefront
   reads, checkout, POS, invoices, payments, and refunds. Record API shapes,
   ownership, production dependencies, and tenant rules.
-- Inventory live Rentify and KhmerCraft data: account/store counts, active
+- Inventory live Rentify data: account/store counts, active
   orders, payment providers, domains, images, taxonomies, slugs, and retention
   requirements. Take restorable backups and rehearse a restore to an isolated
   environment.
@@ -94,8 +102,8 @@ before this phase's exit gate.
   diagrams before persistent schema work.
 
 **Exit gate:** existing Rentify merchant signup → website → product → purchase
-flow works in a disposable environment. Every source dataset has an owner,
-record count, and import destination. Architecture and decisions are recorded.
+flow works in a disposable environment. Every Rentify dataset has an owner
+and record count. Architecture and decisions are recorded.
 
 ## Phase 1 — Store foundation and safe schema expansion
 
@@ -135,7 +143,7 @@ phase exit gate.
 - Backfill each Rentify Website to one Store and each related commerce row to
   that Store. Make the mapping idempotent and auditable. Classify missing or
   ambiguous legacy categories before making primary category required for
-  imported Stores.
+  backfilled Stores.
 
 **Exit gate:** existing storefronts still work; every old commerce row maps
 to exactly one Store; marketplace-only Store creation succeeds without a
@@ -191,13 +199,10 @@ cannot publish a draft or overdraw stock, and delete actions archive products.
 The SQL smoke covers a Website-less Product and a Website-linked Product
 crossing from draft to both public surfaces and back to archived.
 
-**Gate remains open:** the Angular marketplace still reads and writes the
-legacy Mongo API. Switching its catalog reader now would leave cart and
-checkout on a different Product authority, so that switch waits for the
-Phase 4 checkout adapter. The owner confirmed KhmerCraft has no independent
-data. Existing Rentify Stores and Products are the launch source, so a
-KhmerCraft import is outside the launch path. Cohort shadow comparisons,
-browser session/CORS rehearsal, and writer freeze have not occurred. See
+**Gate remains open:** normal Angular development routes now use the Rentify
+buyer shell, catalog, cart, and checkout. Browser session/CORS rehearsal and
+full seller/category eligibility checks have not occurred. The old Angular
+components and API remain only as reference code. See
 [catalog migration contract](catalog-migration-contract.md).
 The order, POS, invoice, and stock-service writers still need a shared
 transactional stock audit in Phase 4.
@@ -217,9 +222,7 @@ transactional stock audit in Phase 4.
   through the marketplace channel. Do not gate basic marketplace access
   behind a higher storefront subscription tier.
 - Verify existing Rentify Store and Product mappings, including marketplace
-  category and seller approval, as the launch source. If independent
-  KhmerCraft data appears later, use explicit ID/category/image/review maps
-  and a separately audited import before moving those records.
+  category and development seller eligibility, as the only catalog source.
 - Update Angular marketplace and React storefronts to read the same Commerce
   product IDs, prices, and stock. Search indexes and caches are derived
   projections with versioned updates, retries, and reconciliation.
@@ -231,9 +234,8 @@ transactional stock audit in Phase 4.
 
 **Exit gate:** product create/edit/archive and stock changes appear correctly
 on both eligible surfaces; marketplace-only products work without a Website;
-draft/archived products remain private; migrated cohorts cannot write to the
-legacy catalog. An old reader may be restored only after replaying an audited
-delta from the active writer.
+draft/archived products remain private; no normal Angular route calls the old
+API.
 
 ## Phase 4 — shared checkout, inventory, and fulfillment
 
@@ -247,12 +249,11 @@ buyer complaint/return events, a Rentify merchant order operations panel, and
 a COD reconciliation command. Buyer routes now select Core identity explicitly
 when legacy Customer cookies coexist. Existing
 order strategies and stock restoration now use a shared stock operation.
-Marketplace and hosted storefront cart writes and checkout are disabled by
-default at the Commerce HTTP boundary until an isolated rehearsal and the
-combined client cutover.
-The legacy Express API now has an opt-in HTTP write freeze that preserves
-reads and existing PayWay callbacks. Its staging procedure and limitations
-are in [the cutover rehearsal](marketplace-cutover-rehearsal.md).
+Marketplace COD cart writes and checkout are enabled in local Compose for
+development; hosted storefront checkout remains disabled by default.
+The KhmerCraft Express API is reference code and is not in the runtime.
+The development procedure is in
+[the cutover rehearsal](marketplace-cutover-rehearsal.md).
 An isolated SQL smoke passes concurrent last-unit purchases across marketplace
 buyers and between storefront and marketplace stock writers, retry behavior,
 seller isolation, and COD state transitions. The new Commerce API is described
@@ -261,21 +262,19 @@ Both React templates now have a default-off hosted buyer mode that uses Core
 login and Commerce's storefront COD path; the existing Website buyer UI offers
 COD/USD only. The merchant order panel includes both sales channels.
 
-**Gate remains open:** Angular's live routes still use the legacy marketplace
-API for buyer auth, cart, checkout, and seller operations. An isolated,
-disabled Rentify buyer preview is available for staging but is not a live
-client cutover. A second default-off flag can serve that buyer shell on normal
-Angular paths for a staging route rehearsal after freezing legacy writes.
+**Gate remains open:** normal Angular development routes serve the Rentify
+buyer shell, but its full browser journey has not passed a hosted HTTP
+rehearsal. Old Angular seller and admin components are not reached on normal
+routes; equivalent operations must use Rentify merchant and admin tools.
 Core buyer identity is accepted for marketplace and hosted storefront
 checkout, but hosted-domain browser session testing and custom-domain sessions
-and legacy account linking in ADR 0002 are not implemented. The provisional
+and existing Commerce Customer linking in ADR 0002 are not implemented. The provisional
 hosted parent `rentifystore.shop` is not owned or deployed. Variant checkout,
 full storefront/POS/invoice HTTP journeys, tax/delivery/return policy, and an
-admin dispute workflow are still pending. The Phase 3 reader switch waits for
-this combined client cutover. No old checkout or payment writer should be retired
-yet.
+admin dispute workflow are still pending. This is a development configuration,
+not a production traffic switch.
 
-**Pre-implementation audit (2026-09-23):** Existing Commerce `Cart` and
+**Historical pre-implementation audit (2026-09-23):** Existing Commerce `Cart` and
 `Order` require a Website ID, so a Website-less Store cannot check out through
 them yet. The Website online order controller looks up Commerce's internal
 WebsiteData row ID while clients pass the Core Website ID. Its order strategy
@@ -284,8 +283,8 @@ into order creation. Several order, POS, invoice, and stock-service paths
 mutate Product stock separately; some status helpers can turn an archived or
 draft Product active after stock changes. These paths need one order-time
 eligibility/price check and one transactional stock operation before Angular
-can switch its cart and checkout to Commerce. The Phase 3 catalog reader
-must remain behind the existing marketplace API until this gate passes.
+could switch its cart and checkout to Commerce. These issues motivated the new
+Store-keyed checkout; remaining Website/POS/invoice paths still need review.
 
 **Work**
 
@@ -362,17 +361,16 @@ staged [release and retirement runbook](phase-5-release-runbook.md) defines
 inventory, backup/restore, audit, traffic, and rollback evidence. The local
 development projection check passes with two Stores and two Websites in each
 database and no pending sync rows; this is not staging parity. The launch path
-uses existing Rentify data; no KhmerCraft import or live cutover was performed.
+uses existing Rentify data. Angular development routes now use Rentify, but no
+production traffic switch has occurred.
 Phase 3 and 4 gates, staging rehearsal, timed rollback and restore, release
 policy, and the retirement observation period remain open.
 
 **Work**
 
-- Verify and record that the KhmerCraft source is empty for this release.
-  Reconcile existing Rentify Stores, Websites, Products, and orders against
-  their Commerce projections and marketplace eligibility. If independent
-  KhmerCraft records appear later, import with idempotent ID maps, preserved
-  audit trails, and verified account linking; never replay gateway charges.
+- Reconcile existing Rentify Stores, Websites, Products, and orders against
+  Core/Commerce projections and marketplace eligibility. Preserve their IDs,
+  audit trails, and historical payment references.
 - Rehearse any remaining Rentify Website-to-Store backfill and shadow reads in
   staging. Record counts, checksums, failed-record queues, and a timed cutover
   and rollback runbook.
@@ -380,43 +378,37 @@ policy, and the retirement observation period remain open.
   catalog reads, catalog writes, marketplace checkout, then operations.
   Monitor auth failures, listing lag, stock drift, callback age, order
   failures, and financial reconciliation at each step.
-- Freeze legacy writes, replay the final delta, reconcile, switch traffic,
-  and keep the legacy API read only for an agreed observation period. Retire
-  it after all clients and jobs use Rentify and data parity holds.
+- Confirm all Angular routes and jobs use Rentify and remove dependencies on
+  the inactive KhmerCraft API after browser and API checks pass.
 - Update root README, Docker Compose, deployment configuration, runbooks,
   and public API documentation for the final layout.
 
 **Exit gate:** both merchant choices and sales channels operate through
 Rentify APIs; existing records are accessible to the correct owner; money and
 stock reconcile; rollback and restore drills succeed; legacy API credentials
-are removed after observation.
+are removed.
 
 ## Data and compatibility inventory
 
-The following KhmerCraft mapping is contingency only if its independent
-database is later found to contain records. It is not a launch import task.
-
-| KhmerCraft source | Rentify destination | Required handling |
+| Rentify source | Marketplace use | Required handling |
 | --- | --- | --- |
-| `User` (BUYER/SELLER/ADMIN) | Core buyer/merchant/admin identity | Map role and status; prevent duplicate accounts; require verified linking/reset where passwords or sessions differ. |
-| `Store`, `SellerApplication` | Core Store and verification workflow | Map owner, slug, primary category, status, badge, and application history. |
-| `Product`, `StoreCategory`, reviews, embedded images | Commerce catalog, taxonomy, reviews, image storage | Map Store ownership, publication, slugs, categories, variants, stock, and moderation; preserve legacy IDs. |
-| `Cart` | Commerce Cart | Migrate sessions only if identity and price can be revalidated; otherwise expire old carts with clear user messaging. |
-| `Order`, PayWay transaction references | Commerce historical Order/Payment | Preserve snapshots and IDs; import as read only until lifecycle mapping is proven. Never replay payment requests. |
+| Core User and Store | Merchant owner, seller status, Store category | Keep one owner; development approval requires verified contact and reviewed category. |
+| Core Website | Optional storefront channel | Preserve Website-to-Store link and existing domain. |
+| Commerce Product and inventory | Shared marketplace and storefront catalog | Preserve Product ID, price, stock, publication, and marketplace visibility. |
+| Commerce Cart, Order, Payment, Invoice, Customer, UsageEvent | Buyer checkout and historical operations | Preserve Store assignment, financial state, and original payment references. |
 
-Existing Rentify Website, Product, Category, Cart, Order, Customer, Invoice,
-Payment, and UsageEvent records also need Website-to-Store backfills. Migration
-scripts must report unmapped rows and stop before enforcing new constraints.
+Remaining Website-to-Store backfills must report unmapped rows and stop before
+enforcing new constraints.
 
 ## Rollback boundaries
 
 | Stage | Switch | Data rule |
 | --- | --- | --- |
 | Schema expansion/backfill | Restore website keyed application reader | Keep old columns compatible; do not drop data yet. |
-| Catalog read switch | Route UI reads to old or new API | One active writer; replay an audited delta before old reads resume. |
-| Catalog write switch | Disable new writer per cohort | Never activate old and new writers together; reconcile first. |
+| Catalog read switch | Restore a prior Rentify Angular build if needed | Commerce remains the only Product authority. |
+| Catalog write switch | Disable affected Rentify merchant writes | Reconcile Commerce before resuming; never activate the KhmerCraft writer. |
 | Checkout switch | Disable new checkout for new purchases | Existing orders and payments stay with their original authority through completion. Feature flags never transfer an in-flight payment. |
-| Final retirement | Restore from backup/runbook if required | Retain verified historical exports and ID mappings for the agreed retention period. |
+| Final retirement | Restore from backup/runbook if required | Preserve Rentify IDs and account for writes after the backup. |
 
 Every gate needs named Core, Commerce, frontend, data, payments, and
 operations owners; measurable pass/fail criteria; and a recorded continue or

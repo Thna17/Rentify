@@ -1,10 +1,10 @@
 # Phase 4 COD checkout contract
 
 **Status:** Shared marketplace and hosted storefront COD paths implemented
-behind separate default-off write flags (2026-09-24). Angular live cutover,
-hosted-domain rehearsal, and operations policy remain open. The Angular
-marketplace still uses its legacy API and must not be switched to the new
-catalog alone.
+(2026-09-24). Local Compose enables marketplace COD and normal Angular routes
+use Rentify Core and Commerce. Hosted storefront COD remains default-off;
+hosted-domain rehearsal and operations policy remain open. The KhmerCraft API
+is inactive reference code.
 
 ## Identity and access
 
@@ -118,26 +118,18 @@ request idempotency key, and the central buyer cookie. It is not yet proven on
 the provisional domain. `STOREFRONT_COD_CHECKOUT_ENABLED=true` is required for
 new storefront cart writes and checkout; it defaults off.
 
-Angular now has an isolated `/rentify-preview` route for staging the complete
-buyer path against Core identity and Commerce products, per-Store carts, COD
-checkout, and order history. `rentify-preview-config.js` disables it by default.
-The preview does not instantiate Angular's Mongo-backed guest-cart adoption
-effect.
-An independent `cutoverEnabled` public config flag can route every normal
-Angular URL to the Rentify buyer shell during a staging rehearsal. It defaults
-off; it does not retire the legacy API or satisfy the custom-domain release
-gate. Old merchant links should lead to Rentify's merchant dashboard.
-Enable it only in an isolated rehearsal environment after freezing legacy
-marketplace writes, using public Core, Commerce, and Auth URLs. Commerce also
-requires `MARKETPLACE_COD_CHECKOUT_ENABLED=true` for cart writes and order
-placement; it defaults off. The normal
-Angular routes continue using the legacy API until the combined cutover gate
-passes. No production buyer traffic is switched by this preview. Core exposes
+Angular's normal development routes and `/rentify-preview` serve the Rentify
+buyer shell against Core identity and Commerce products, per-Store carts, COD
+checkout, and order history. The old Mongo-backed guest-cart effect is not
+instantiated on these routes. The committed public config enables the Rentify
+route tree; blank origins use localhost fallbacks. Supply real public Core,
+Commerce, Auth, and merchant dashboard URLs outside localhost. Local Compose
+sets `MARKETPLACE_COD_CHECKOUT_ENABLED=true`. This does not satisfy the
+hosted-domain or production release gate. Core exposes
 only approved public Store profile fields through `GET /api/stores/public?ids=...`
 and a safe `GET /api/auth/session` for the buyer shell.
-The opt-in legacy HTTP write freeze and staging order of operations are in
-[the cutover rehearsal](marketplace-cutover-rehearsal.md). The freeze cannot
-stop scripts or direct Mongo writes, which require an operations check.
+The local checks are in
+[the development rehearsal](marketplace-cutover-rehearsal.md).
 
 ## Stock and reconciliation
 

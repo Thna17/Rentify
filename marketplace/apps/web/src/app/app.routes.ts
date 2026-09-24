@@ -6,9 +6,8 @@ import { sellerGuard } from './core/auth/seller.guard';
 const rentifyBuyer = () => import('./pages/rentify-preview.component')
   .then((m) => m.RentifyPreviewComponent);
 
-// This route tree is selected only by an explicit staging cutover flag. Every
-// old deep link lands in the Rentify shell, so no old buyer/seller component
-// can write to Mongo after its HTTP writer is frozen.
+// The development default serves the Rentify shell on normal routes. Old deep
+// links cannot load components tied to KhmerCraft's retired API.
 const rentifyCutoverRoutes: Routes = [
   { path: 'rentify-preview', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
   { path: '', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },

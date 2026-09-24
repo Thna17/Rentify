@@ -1,8 +1,8 @@
-// Replace this public file with environment-specific values when rehearsing
-// the combined Core/Commerce cutover. It must contain only public URLs.
+// Normal marketplace routes use Rentify. Replace blank URLs with public
+// Core/Commerce/Auth origins before serving this outside localhost.
 window.__RENTIFY_MARKETPLACE__ = {
-  enabled: false,
-  cutoverEnabled: false,
+  enabled: true,
+  cutoverEnabled: true,
   coreApiUrl: '',
   commerceApiUrl: '',
   authUrl: '',

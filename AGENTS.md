@@ -14,8 +14,8 @@ before changing cross-service behavior.
 - `rentify-frontend/` contains the React/Vite merchant, auth, marketing, and
   storefront applications.
 - `marketplace/` contains the relocated KhmerCraft project. Its Angular web app
-  is the starting point for the shared marketplace UI. Its Express/Mongoose API
-  is migration source and reference code, not the target production backend.
+  is the shared marketplace UI. Its Express/Mongoose API is reference code
+  only; do not run it or add MongoDB to the Rentify platform.
 - `docs/current-rentify-architecture.md` records the present service map and
   migration constraints backed by the code.
 - `docs/platform-architecture.md` describes the product direction and labels
@@ -38,7 +38,9 @@ before changing cross-service behavior.
    chooses a template and creates a website linked to the store.
    Marketplace listing is enabled by default for storefront Stores, with a
    merchant Store-level opt-out and later per-product override. Seller
-   approval still gates public marketplace selling.
+   approval still gates public marketplace selling. In local development,
+   Core may approve pending sellers automatically after verified contact and
+   primary category checks when `DEV_MARKETPLACE_AUTO_APPROVAL=true`.
 5. Keep one identity and tenant authorization model across both onboarding
    paths. Do not equate `websiteId` with merchant or store identity.
 6. Treat checkout, stock reservation, refunds, and seller settlement as one

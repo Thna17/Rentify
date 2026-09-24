@@ -10,12 +10,12 @@ code so implementation work can proceed without relying on chat history.
   service map and existing flows that migration must preserve.
 - [Migration plan](migration-plan.md) — staged work for absorbing KhmerCraft's
   marketplace into Rentify, with release gates and rollback paths.
-- [Catalog migration contract](catalog-migration-contract.md) — Phase 3 data
-  mapping, read/write boundaries, and checks before a marketplace cohort moves.
+- [Shared catalog contract](catalog-migration-contract.md) — Rentify Product
+  ownership, marketplace eligibility, and data checks.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
-- [Marketplace cutover rehearsal](marketplace-cutover-rehearsal.md) — staging
-  write freeze, buyer preview checks, and rollback boundary.
+- [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —
+  Rentify-only local setup, seller approval check, and buyer journey.
 - [Phase 5 release runbook](phase-5-release-runbook.md) — inventory, parity
   audits, staged release evidence, and retirement gates.
 - [Notes and open questions](notes.md) — verified observations, unresolved
