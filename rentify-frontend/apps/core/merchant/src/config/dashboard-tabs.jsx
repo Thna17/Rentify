@@ -13,7 +13,7 @@ import {
   Search,
 } from 'lucide-react';
 
-// Define tab structure with permission requirements 
+// Define tab structure with permission requirements and sales channel association
 export const ALL_TABS = [
   {
     name: 'dashboard.overview',
@@ -47,7 +47,6 @@ export const ALL_TABS = [
     path: 'analytics',
     roles: ['admin', 'user'],
     permission: null,
-    // features: ['advanced-analytics'],
   },
   {
     name: 'dashboard.store_management.title',
@@ -56,6 +55,7 @@ export const ALL_TABS = [
     roles: ['admin', 'user'],
     permission: null,
     features: ['store'],
+    channel: 'storefront',
   },
   {
     name: 'dashboard.product.title',
@@ -71,15 +71,16 @@ export const ALL_TABS = [
     path: 'catalog',
     roles: ['admin', 'user'],
     permission: null,
+    channel: 'storefront',
   },
-    {
+  {
     name: 'create product',
     icon: Package,
     path: 'products/create',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_products',
     features: ['product-management'],
-        hideInSidebar: true,
+    hideInSidebar: true,
   },
   {
     name: 'dashboard.order.title',
@@ -95,6 +96,7 @@ export const ALL_TABS = [
     path: 'marketplace-orders',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
+    channel: 'marketplace',
   },
   {
     name: 'dashboard.invoices.title',
@@ -102,7 +104,6 @@ export const ALL_TABS = [
     path: 'invoices',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_invoices',
-    // features: ['invoice'],
   },
   {
     name: 'dashboard.pos.title',
@@ -110,7 +111,7 @@ export const ALL_TABS = [
     path: 'pos',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_pos',
-    // features: ['pos'],
+    channel: 'pos',
   },
   {
     name: 'dashboard.settings.title',
@@ -126,8 +127,6 @@ export const ALL_TABS = [
       { name: 'Payments', path: 'settings/payments' },
       { name: 'Staff', path: 'settings/staff' },
       { name: 'Billing', path: 'settings/billing' },
-
-
     ],
   },
   {
@@ -144,7 +143,6 @@ export const ALL_TABS = [
     ],
   },
 ];
-
 
 export const ADDITIONAL_NAV_ITEMS = {
   documents: [

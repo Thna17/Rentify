@@ -1,8 +1,9 @@
 import { useMediaQuery } from '@rentify/utils';
-import { Search, X } from 'lucide-react';
+import { Search, X, Store } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Sheet, SheetContent } from '@rentify/shared/ui/sheet';
 import { Input } from '@rentify/shared/ui/input';
+import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { ADDITIONAL_NAV_ITEMS } from '../../config/dashboard-tabs';
 import { NavDocuments } from './NavDocuments';
 import { NavMain } from './NavMain';
@@ -16,6 +17,7 @@ export function AppSidebar({
   onLogout,
   isOpen,
   setOpen,
+  hasStorefront = true,
 }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
 
@@ -73,6 +75,25 @@ export function AppSidebar({
           onTabChange={onTabChange}
         />
       </div>
+
+      {/* Storefront Upsell for Marketplace-only Merchants */}
+      {!hasStorefront && (
+        <div className="mx-4 mb-3 p-3 rounded-xl border border-blue-200 bg-blue-50/60 dark:bg-blue-950/20 dark:border-blue-900 text-xs">
+          <div className="font-semibold text-blue-900 dark:text-blue-300 flex items-center gap-1.5 mb-1">
+            <Store className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            Storefront Website
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 mb-2">
+            Get your own branded domain & customizable storefront.
+          </p>
+          <a
+            href={`${MARKETING_URL}/start`}
+            className="inline-block text-center font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md px-2.5 py-1 w-full transition-colors"
+          >
+            Launch Storefront
+          </a>
+        </div>
+      )}
 
       {/* User Section */}
       <div className="p-4 border-t border-border bg-background">

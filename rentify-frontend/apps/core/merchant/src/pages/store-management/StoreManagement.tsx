@@ -16,6 +16,7 @@ import { SocialMediaSection } from './components/SocialMediaSection';
 import { CollectionsSection } from './components/CollectionsSection';
 import { SavingIndicator } from './components/SavingIndicator';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 export const StoreManagement = () => {
   const { t } = useTranslation();
@@ -363,6 +364,43 @@ const handleFontChange = (field: string, value: string) => {
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-sm text-text-secondary">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!websiteData && !isFetching) {
+    return (
+      <div className="min-h-full bg-background">
+        <PageHeader
+          title={t('dashboard.store_management.title')}
+          description="Custom branded storefront website customization"
+          icon={Store}
+          breadcrumb={[
+            { label: 'Dashboard', href: '/overview' },
+            { label: t('dashboard.store_management.title') },
+          ]}
+        />
+        <div className="p-6 max-w-2xl mx-auto mt-6">
+          <div className="border border-border rounded-2xl bg-card p-8 text-center space-y-5 shadow-sm">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <Store className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">You don't have a Storefront website yet</h2>
+              <p className="text-muted-foreground">
+                You are currently selling on Rentify Marketplace. Launch your own branded storefront website to sell directly on your own custom domain with customizable themes.
+              </p>
+            </div>
+            <div className="pt-2">
+              <a
+                href={`${MARKETING_URL}/start`}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium shadow hover:bg-primary/90 transition"
+              >
+                Launch Storefront Website
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     );

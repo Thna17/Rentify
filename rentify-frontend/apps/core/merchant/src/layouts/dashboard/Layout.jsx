@@ -13,55 +13,42 @@ import { Outlet } from 'react-router-dom';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
-import MarketplaceStoreOverview from '../../pages/overview/MarketplaceStoreOverview';
 import StoreCategoryPrompt from '../../pages/overview/StoreCategoryPrompt';
+import { ChannelProvider } from '../../context/ChannelContext';
 
-export const DashboardLayout = () => {
+export const DashboardLayoutContent = ({ store, setStore }) => {
   const { websiteData } = useThemeService();
-  const { websiteId, isLoading: websiteLoading } = useWebsiteData();
-  const [store, setStore] = useState(null);
-  const [storeLoaded, setStoreLoaded] = useState(false);
+  const { websiteId } = useWebsiteData();
   const pkg = websiteData?.package || null;
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, isAuthenticated, role, isLoading: authLoading, handleLogout } = useAuth();
+  const { profile, role, handleLogout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    let active = true;
-    fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((result) => { if (active) { setStore(result?.data || null); setStoreLoaded(true); } })
-      .catch(() => { if (active) setStoreLoaded(true); });
-    return () => { active = false; };
-  }, [isAuthenticated]);
 
-  if (authLoading) {
-    return <div className="min-h-screen grid place-items-center">Loading…</div>;
-  }
+  // POS channel enabled state, persisted in localStorage
+  const [posEnabled] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rentify_pos_enabled');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
 
-  // Show authentication required if not authenticated
-  if (!isAuthenticated) {
-    return <AuthenticationRequired />;
-  }
-
-  if (websiteLoading || !storeLoaded) {
-    return <div className="min-h-screen grid place-items-center">Loading your Store…</div>;
-  }
-  if (!websiteId && store) {
-    return <MarketplaceStoreOverview initialStore={store} onStoreChange={setStore} onLogout={handleLogout} />;
-  }
-  if (!websiteId) {
-    return <main className="min-h-screen grid place-items-center"><a href={`${MARKETING_URL}/start`} className="text-blue-700 underline">Create your Store</a></main>;
-  }
+  const channels = {
+    hasStorefront: Boolean(websiteId),
+    hasMarketplace: Boolean(store?.marketplaceEnabled ?? true),
+    hasPos: posEnabled,
+  };
 
   const platformTabs = filterTabsByUserRole(
     ALL_TABS,
     role,
     profile?.roleSpecific?.permissions,
-    pkg?.features
+    pkg?.features,
+    channels
   ).map((tab) => ({
     ...tab,
     name: t(tab.name),
@@ -105,6 +92,7 @@ export const DashboardLayout = () => {
           onLogout={handleLogout}
           isOpen={sidebarOpen}
           setOpen={setSidebarOpen}
+          hasStorefront={channels.hasStorefront}
         />
       )}
 
@@ -118,6 +106,7 @@ export const DashboardLayout = () => {
           onLogout={handleLogout}
           isOpen={sidebarOpen}
           setOpen={setSidebarOpen}
+          hasStorefront={channels.hasStorefront}
         />
       )}
 
@@ -140,6 +129,56 @@ export const DashboardLayout = () => {
         </main>
       </div>
     </div>
+  );
+};
+
+export const DashboardLayout = () => {
+  const { websiteId, isLoading: websiteLoading } = useWebsiteData();
+  const [store, setStore] = useState(null);
+  const [storeLoaded, setStoreLoaded] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let active = true;
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((result) => { if (active) { setStore(result?.data || null); setStoreLoaded(true); } })
+      .catch(() => { if (active) setStoreLoaded(true); });
+    return () => { active = false; };
+  }, [isAuthenticated]);
+
+  if (authLoading) {
+    return <div className="min-h-screen grid place-items-center">Loading…</div>;
+  }
+
+  // Show authentication required if not authenticated
+  if (!isAuthenticated) {
+    return <AuthenticationRequired />;
+  }
+
+  if (websiteLoading || !storeLoaded) {
+    return <div className="min-h-screen grid place-items-center">Loading your Store…</div>;
+  }
+
+  if (!websiteId && !store) {
+    return (
+      <main className="min-h-screen grid place-items-center text-center p-6">
+        <div className="max-w-md space-y-4">
+          <h1 className="text-2xl font-bold">Welcome to Rentify</h1>
+          <p className="text-muted-foreground">You do not have an active store yet. Create your store to get started with marketplace or storefront selling.</p>
+          <a href={`${MARKETING_URL}/start`} className="inline-block bg-primary text-primary-foreground font-medium rounded-lg px-6 py-2.5">
+            Create your Store
+          </a>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <ChannelProvider initialStore={store} onStoreChange={setStore}>
+      <DashboardLayoutContent store={store} setStore={setStore} />
+    </ChannelProvider>
   );
 };
 
