@@ -1,7 +1,8 @@
 # ADR 0002: One buyer identity across the marketplace and storefronts
 
-**Status:** Proposed, 2026-09-23. The product direction is agreed; protocol,
-hosting, and migration details require design review before implementation.
+**Status:** Proposed for custom domains, 2026-09-24. The hosted subdomain pilot
+uses Core buyer identity behind default-off flags. Custom-domain protocol,
+hosting, and legacy migration still require design review and testing.
 
 ## Context
 
@@ -30,6 +31,15 @@ merchant, admin, staff, and cookie-safety rules remain relevant.
   text alone never proves two records belong to the same person.
 
 ## Sign-in across domains
+
+For the hackathon, storefront buyer checkout is limited to Rentify-hosted
+subdomains. The provisional parent is `rentifystore.shop`, which is not yet
+owned or deployed. A hosted storefront uses the Core buyer cookie scoped to
+the owned parent, and the auth app returns to that exact HTTPS storefront
+origin. The APIs accept only one-label hosted subdomains for credentialed
+CORS and return URLs when `HOSTED_STOREFRONT_DOMAIN` is configured. Browser
+verification on the real domain remains a release gate. A merchant custom
+domain stays outside this pilot.
 
 1. On the marketplace's own host, the buyer signs in through central Rentify
    authentication and receives a secure, HTTP-only session for that host.

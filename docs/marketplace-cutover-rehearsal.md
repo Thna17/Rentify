@@ -49,6 +49,17 @@ still use KhmerCraft's Mongo API.
    construct the Mongo-backed guest cart or call the legacy API. The merchant
    link must open the Rentify dashboard. Keep this route switch in staging
    until the remaining Phase 4 release gates pass.
+7. For the hosted storefront cohort, deploy Auth, Core, Commerce, marketplace,
+   and storefront HTTPS names under the chosen owned parent. Configure Core's
+   `COOKIE_DOMAIN`, both APIs' `HOSTED_STOREFRONT_DOMAIN`, and the frontend
+   `VITE_HOSTED_STOREFRONT_DOMAIN` and
+   `VITE_HOSTED_STOREFRONT_BUYER_ENABLED=true`. Confirm sign-in returns to the
+   exact storefront, the Core cookie reaches both APIs, a Website Product
+   enters the quoted cart, and COD checkout returns one Website-scoped order.
+   The provisional `rentifystore.shop` name must not be used until acquired.
+   After a successful read-only rehearsal, enable
+   `STOREFRONT_COD_CHECKOUT_ENABLED=true` only in the isolated environment and
+   exercise a real write, retry, delivery, collection, and order history.
 
 ## Rollback boundary
 
@@ -56,10 +67,14 @@ Disable the Angular route switch and preview, then set
 `MARKETPLACE_COD_CHECKOUT_ENABLED=false` to stop **new** Commerce cart writes
 and checkouts. Existing Commerce COD orders stay in Commerce for fulfillment
 and cash reconciliation. Do not transfer them into Mongo or replay checkout.
+Set `STOREFRONT_COD_CHECKOUT_ENABLED=false` to stop new hosted storefront cart
+writes and checkouts, and rebuild the hosted frontend with
+`VITE_HOSTED_STOREFRONT_BUYER_ENABLED=false` if reverting that cohort. Preserve
+its placed Commerce orders for fulfillment and reconciliation.
 Keep the legacy API frozen until the active writer's changes and stock are
 reconciled; re-enabling Mongo writes without a reviewed data plan would create
 two authorities. Record the decision, operator, time, counts, and open orders.
 
 The normal Angular buyer routes, custom-domain buyer session exchange,
-storefront COD-only switch, admin dispute flow, and full HTTP checkout tests
+hosted-domain browser rehearsal, admin dispute flow, and full HTTP checkout tests
 remain release gates in [the migration plan](migration-plan.md).

@@ -1,9 +1,8 @@
 # Phase 4 COD checkout contract
 
-**Status:** Backend foundation, merchant-posted delivery fee, merchant order
-operations UI, and a disabled Angular buyer preview implemented; live buyer
-cutover pending (2026-09-24).
-This contract describes the new Commerce marketplace path. The Angular
+**Status:** Shared marketplace and hosted storefront COD paths implemented
+behind separate default-off write flags (2026-09-24). Angular live cutover,
+hosted-domain rehearsal, and operations policy remain open. The Angular
 marketplace still uses its legacy API and must not be switched to the new
 catalog alone.
 
@@ -22,10 +21,20 @@ catalog alone.
   `buyerId`; seller views are filtered by `storeId`.
   Store catalog and marketplace order routes now choose valid staff credentials
   or a Core merchant account before considering any legacy Customer cookie.
-- Central buyer login on merchant custom domains is **not implemented**.
-  ADR 0002 remains Proposed. The host-local callback, one-time code exchange,
-  and verified legacy account linking must pass its release gate before
-  storefront buyer sessions are switched.
+- Hosted storefronts use Core buyer identity when the frontend build enables
+  `VITE_HOSTED_STOREFRONT_BUYER_ENABLED` for a single-label subdomain of
+  `VITE_HOSTED_STOREFRONT_DOMAIN`. The provisional parent is
+  `rentifystore.shop`; it has not been acquired or deployed. The Core and
+  Commerce APIs require the matching `HOSTED_STOREFRONT_DOMAIN` for HTTPS
+  return URLs and credentialed CORS. Core's `COOKIE_DOMAIN` must cover the
+  auth, API, marketplace, and hosted storefront names under an owned parent.
+  The hosted browser flow still needs a real-domain cookie/CORS rehearsal.
+  Review storefront content and CSP before enabling shared parent cookies:
+  credentialed API CORS accepts the configured hosted subdomains, so merchant
+  content must not be able to run arbitrary scripts there.
+- Custom-domain buyer login is **not implemented**. ADR 0002 remains Proposed
+  for its host-local callback, one-time code exchange, and verified legacy
+  account linking. Keep custom-domain buyer checkout on hold.
 
 ## Commerce API
 
@@ -43,6 +52,11 @@ All paths below are relative to `/api` and use the Core session cookies.
 | `GET /stores/:storeId/marketplace-orders` and `GET /stores/:storeId/marketplace-orders/:orderId` | seller | Read own orders. |
 | `GET /stores/:storeId/marketplace-orders/:orderId/events` | seller | Read delivery, cash, return, and complaint audit events. |
 | `POST /stores/:storeId/marketplace-orders/:orderId/actions/:action` | seller | Record `delivered`, `delivery_failed`, `retry_delivery`, `collect_cod`, or `confirm_refund`. |
+| `GET /storefront/:websiteId/cart` | Core buyer | Read the hosted Website's Store cart and live COD quote. |
+| `PUT /storefront/:websiteId/cart/items/:productId` | Core buyer | Set absolute quantity for a Website Product. |
+| `POST /storefront/:websiteId/checkout` | Core buyer | Place a one-Store storefront COD order. |
+| `GET /storefront/:websiteId/my-orders` and `GET /storefront/:websiteId/my-orders/:orderId` | Core buyer | Read own orders for that Website's Store. |
+| `POST /storefront/:websiteId/my-orders/:orderId/reports/:type` | Core buyer | Submit own order complaint or return request. |
 
 Checkout requires `Idempotency-Key: <UUID>` (or `idempotencyKey` in JSON),
 `storeId`, `expectedTotalAmount` from the cart quote,
@@ -68,6 +82,15 @@ this pilot. Tax and delivery scope need review before public release. Variant
 checkout is rejected until variant inventory and price selection have an
 end-to-end test.
 
+The storefront path uses the same canonical Product, stock deduction, COD
+payment state, posted Store delivery fee, event ledger, and merchant actions.
+It requires an active Website projection and an active Product linked to that
+Website. Direct storefront COD sales do not require marketplace seller
+approval; marketplace checkout still does. The shared buyer cart is keyed by
+buyer and Store, so adding items from both channels for one Store can produce
+an ineligible cart on one channel. Its quote reports that issue and refuses
+checkout. A separate per-channel cart is deferred.
+
 `Payment.status` starts `pending` with `collectedAmount = 0` and amount due
 equal to the item subtotal plus posted delivery fee. Marking delivery
 `delivered` changes only fulfillment. `collect_cod` requires delivered status
@@ -79,12 +102,21 @@ buyer-agreed retry or cancels and restores stock. Delivery cancellation is
 forbidden after collection. Every seller action and buyer report requires an
 idempotency key and writes an `OrderEvent`.
 
-Rentify's merchant dashboard now offers a Store-scoped marketplace order panel
+Rentify's merchant dashboard now offers a Store-scoped COD order panel
 for both marketplace-only and storefront merchants. It shows the posted COD
 amount, delivery and payment state, reports and event history. The merchant
 can record delivery, failure, buyer-approved retry, cash collection, and a
-confirmed direct refund. This is an operator UI over Commerce; it does not
-switch Angular buyers to the new checkout yet.
+confirmed direct refund for either channel. This is an operator UI over
+Commerce; it does not switch Angular buyers to the new checkout yet.
+
+Both React storefront templates now have a default-off hosted buyer mode that
+uses Core login, the Store cart quote, storefront COD checkout, and Website
+scoped order history. The old Website online buyer checkout accepts COD/USD
+only and no longer displays KHQR. When the hosted mode is enabled, the new
+checkout uses the Commerce quote (including the posted delivery fee), a
+request idempotency key, and the central buyer cookie. It is not yet proven on
+the provisional domain. `STOREFRONT_COD_CHECKOUT_ENABLED=true` is required for
+new storefront cart writes and checkout; it defaults off.
 
 Angular now has an isolated `/rentify-preview` route for staging the complete
 buyer path against Core identity and Commerce products, per-Store carts, COD
@@ -115,7 +147,7 @@ the legacy fulfillment/cancellation stock service. It uses Product/variant
 row locks, rejects negative stock, increments versions, and does not revive
 draft or archived products. The legacy Website online order path rechecks
 the Product's Website and current price before order creation. The existing
-Website payment, POS, and invoice routes still need full COD-only and buyer
+Website payment, POS, and invoice routes still need full HTTP journey and buyer
 identity cutover rehearsal; they are not yet the launch contract.
 
 Run `DB_NAME=rentify_commerce_test NODE_ENV=test npm run db:smoke-marketplace-checkout`
@@ -130,15 +162,15 @@ parity.
 
 ## Cutover work still required
 
-1. Adapt Angular catalog, cart, buyer auth, checkout, order history, and
+1. Rehearse Angular catalog, cart, buyer auth, checkout, order history, and
    seller operations together to these Core/Commerce contracts. Keep one
    active writer. Remove ABA PayWay from launch buyer checkout at that switch.
-2. Implement and stage-test ADR 0002's domain-local buyer session callback
-   for custom merchant domains. Do not merge existing Customer accounts by
-   matching email.
-3. Exercise a complete storefront COD order and POS/invoice order against the
-   same Product; test cancellation, collection, and reconciliation with live
-   HTTP auth and cookies. Complete cross-origin CORS and cookie tests.
+2. Acquire or choose the launch parent domain, deploy HTTPS names under that
+   same site, set `COOKIE_DOMAIN` and the hosted domain flags, then exercise
+   login, cart, checkout, and order history in a browser. Custom domains wait
+   for ADR 0002's domain-local callback and verified account linking.
+3. Exercise storefront COD and POS/invoice HTTP orders against the same Product;
+   test cancellation, collection, reconciliation, and cross-origin cookies.
 4. Set return/complaint response deadlines, acceptable refund evidence,
    restricted-product moderation, tax and delivery policy, and an admin case
    review workflow before public release. Decide whether a flat delivery fee

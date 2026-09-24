@@ -223,7 +223,16 @@ into `platform-architecture.md` and remove stale notes.
 Record a dated decision and its reason when an open question is resolved.
 Link code and tests when an implementation lands. Do not mark a phase complete
 solely because documentation or source relocation is complete.
+
 ## 2026-09-24 buyer checkout decision
+
+For the hackathon, buyer checkout on merchant storefronts launches only on
+Rentify-hosted subdomains. Custom merchant domains wait for the one-time-code
+handoff and host-local session in ADR 0002. `rentifystore.shop` is the
+provisional parent domain to configure; it is not yet owned or deployed.
+Auth, Core API, Commerce API, marketplace, and storefront hosts must be
+deployed under a compatible owned site for shared Core buyer cookies, and
+real-browser cookie/CORS tests must precede activation.
 
 For the hackathon marketplace COD checkout, buyers must sign in with a
 verified Rentify buyer account. Guest COD checkout is deferred. Commerce's

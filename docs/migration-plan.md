@@ -236,17 +236,18 @@ delta from the active writer.
 ## Phase 4 — shared checkout, inventory, and fulfillment
 
 **Progress (2026-09-24):** Commerce has an additive Website-optional
-marketplace Cart/Order schema, Core-buyer-linked one-Store COD checkout,
-server-side eligibility and price checks, merchant-posted flat delivery fees
+Cart/Order schema and Core-buyer-linked one-Store COD checkout for marketplace
+and hosted storefront channels, server-side eligibility and price checks,
+merchant-posted flat delivery fees
 shown in cart quotes and snapshotted on orders, transactional row-locked stock
 deduction, idempotent checkout keys, seller-scoped delivery/COD/refund actions,
 buyer complaint/return events, a Rentify merchant order operations panel, and
 a COD reconciliation command. Buyer routes now select Core identity explicitly
 when legacy Customer cookies coexist. Existing
 order strategies and stock restoration now use a shared stock operation.
-Marketplace cart writes and checkout are disabled by default at the Commerce
-HTTP boundary until the legacy writer is frozen for an isolated rehearsal or
-the combined client cutover.
+Marketplace and hosted storefront cart writes and checkout are disabled by
+default at the Commerce HTTP boundary until an isolated rehearsal and the
+combined client cutover.
 The legacy Express API now has an opt-in HTTP write freeze that preserves
 reads and existing PayWay callbacks. Its staging procedure and limitations
 are in [the cutover rehearsal](marketplace-cutover-rehearsal.md).
@@ -254,18 +255,22 @@ An isolated SQL smoke passes concurrent last-unit purchases across marketplace
 buyers and between storefront and marketplace stock writers, retry behavior,
 seller isolation, and COD state transitions. The new Commerce API is described
 in [the checkout contract](checkout-migration-contract.md).
+Both React templates now have a default-off hosted buyer mode that uses Core
+login and Commerce's storefront COD path; the existing Website buyer UI offers
+COD/USD only. The merchant order panel includes both sales channels.
 
 **Gate remains open:** Angular's live routes still use the legacy marketplace
 API for buyer auth, cart, checkout, and seller operations. An isolated,
 disabled Rentify buyer preview is available for staging but is not a live
 client cutover. A second default-off flag can serve that buyer shell on normal
 Angular paths for a staging route rehearsal after freezing legacy writes.
-Core buyer identity is accepted for marketplace
-checkout, but custom-domain sessions and legacy account linking in ADR 0002
-are not implemented. Variant checkout, full storefront/POS/invoice HTTP
-journeys, tax/delivery/return policy, admin dispute workflow, and launch
-COD-only UI are still pending. The Phase 3 reader switch waits for this
-combined client cutover. No old checkout or payment writer should be retired
+Core buyer identity is accepted for marketplace and hosted storefront
+checkout, but hosted-domain browser session testing and custom-domain sessions
+and legacy account linking in ADR 0002 are not implemented. The provisional
+hosted parent `rentifystore.shop` is not owned or deployed. Variant checkout,
+full storefront/POS/invoice HTTP journeys, tax/delivery/return policy, and an
+admin dispute workflow are still pending. The Phase 3 reader switch waits for
+this combined client cutover. No old checkout or payment writer should be retired
 yet.
 
 **Pre-implementation audit (2026-09-23):** Existing Commerce `Cart` and
