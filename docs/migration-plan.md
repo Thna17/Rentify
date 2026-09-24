@@ -243,14 +243,18 @@ deduction, idempotent checkout keys, seller-scoped delivery/COD/refund actions,
 buyer complaint/return events, a Rentify merchant order operations panel, and
 a COD reconciliation command. Existing
 order strategies and stock restoration now use a shared stock operation.
+Marketplace cart writes and checkout are disabled by default at the Commerce
+HTTP boundary until the legacy writer is frozen for an isolated rehearsal or
+the combined client cutover.
 An isolated SQL smoke passes concurrent last-unit purchases across marketplace
 buyers and between storefront and marketplace stock writers, retry behavior,
 seller isolation, and COD state transitions. The new Commerce API is described
 in [the checkout contract](checkout-migration-contract.md).
 
-**Gate remains open:** Angular still uses the legacy marketplace API for
-buyer auth, cart, checkout, and seller operations. The new Store-scoped API is
-not a live client cutover. Core buyer identity is accepted for marketplace
+**Gate remains open:** Angular's live routes still use the legacy marketplace
+API for buyer auth, cart, checkout, and seller operations. An isolated,
+disabled Rentify buyer preview is available for staging but is not a live
+client cutover. Core buyer identity is accepted for marketplace
 checkout, but custom-domain sessions and legacy account linking in ADR 0002
 are not implemented. Variant checkout, full storefront/POS/invoice HTTP
 journeys, tax/delivery/return policy, admin dispute workflow, and launch

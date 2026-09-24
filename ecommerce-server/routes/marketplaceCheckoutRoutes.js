@@ -2,6 +2,7 @@ const express = require('express');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { createRequireStoreAccess } = require('../middlewares/requireStoreAccess');
 const controller = require('../controllers/marketplaceCheckoutController');
+const { requireMarketplaceCheckoutEnabled } = require('../middlewares/marketplaceCheckoutGate');
 
 const router = express.Router();
 const requireBuyer = (req, res, next) => {
@@ -12,8 +13,9 @@ const requireBuyer = (req, res, next) => {
 
 router.use(verifyToken);
 router.get('/marketplace/cart', requireBuyer, controller.getCart);
-router.put('/marketplace/cart/:storeId/items/:productId', requireBuyer, controller.setCartItem);
-router.post('/marketplace/checkout', requireBuyer, controller.checkout);
+router.put('/marketplace/cart/:storeId/items/:productId', requireBuyer,
+  requireMarketplaceCheckoutEnabled, controller.setCartItem);
+router.post('/marketplace/checkout', requireBuyer, requireMarketplaceCheckoutEnabled, controller.checkout);
 router.get('/marketplace/my-orders', requireBuyer, controller.buyerOrders);
 router.get('/marketplace/my-orders/:orderId', requireBuyer, controller.buyerOrder);
 router.post('/marketplace/my-orders/:orderId/reports/:type', requireBuyer, controller.buyerReport);

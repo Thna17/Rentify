@@ -8,6 +8,11 @@ import { sellerGuard } from './core/auth/seller.guard';
  * components eagerly, which put the whole site in the initial bundle.
  */
 export const routes: Routes = [
+  {
+    path: 'rentify-preview',
+    loadComponent: () => import('./pages/rentify-preview.component').then((m) => m.RentifyPreviewComponent),
+    title: 'Rentify marketplace pilot',
+  },
   // ---------------------------------------------------------------- storefront
   {
     path: '',

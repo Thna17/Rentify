@@ -1,5 +1,18 @@
 # Web
 
+## Rentify buyer preview
+
+`/rentify-preview` is a combined Core identity and Commerce catalog/COD
+checkout rehearsal. It is disabled by default in
+`public/rentify-preview-config.js`. To enable it in an isolated staging
+environment, replace that public config with `enabled: true` and the public
+Core API, Commerce API, and Auth app URLs. Freeze legacy marketplace writes
+before allowing test orders and set Commerce's
+`MARKETPLACE_COD_CHECKOUT_ENABLED=true`. The normal Angular routes still use the legacy
+marketplace API. Local Angular development runs on `http://localhost:4201`;
+Core and Commerce must allow that origin for credentialed requests, and Auth
+must allow it as a return URL.
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
 
 ## Development server

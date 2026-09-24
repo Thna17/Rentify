@@ -1,8 +1,8 @@
 # Phase 4 COD checkout contract
 
-**Status:** Backend foundation, merchant-posted delivery fee, and Rentify
-merchant order operations UI implemented; buyer UI and identity cutover pending
-(2026-09-24).
+**Status:** Backend foundation, merchant-posted delivery fee, merchant order
+operations UI, and a disabled Angular buyer preview implemented; live buyer
+cutover pending (2026-09-24).
 This contract describes the new Commerce marketplace path. The Angular
 marketplace still uses its legacy API and must not be switched to the new
 catalog alone.
@@ -80,6 +80,18 @@ amount, delivery and payment state, reports and event history. The merchant
 can record delivery, failure, buyer-approved retry, cash collection, and a
 confirmed direct refund. This is an operator UI over Commerce; it does not
 switch Angular buyers to the new checkout yet.
+
+Angular now has an isolated `/rentify-preview` route for staging the complete
+buyer path against Core identity and Commerce products, per-Store carts, COD
+checkout, and order history. `rentify-preview-config.js` disables it by default.
+Enable it only in an isolated rehearsal environment after freezing legacy
+marketplace writes, using public Core, Commerce, and Auth URLs. Commerce also
+requires `MARKETPLACE_COD_CHECKOUT_ENABLED=true` for cart writes and order
+placement; it defaults off. The normal
+Angular routes continue using the legacy API until the combined cutover gate
+passes. No production buyer traffic is switched by this preview. Core exposes
+only approved public Store profile fields through `GET /api/stores/public?ids=...`
+and a safe `GET /api/auth/session` for the buyer shell.
 
 ## Stock and reconciliation
 
