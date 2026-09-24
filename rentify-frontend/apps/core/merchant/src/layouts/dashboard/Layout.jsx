@@ -49,10 +49,15 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     profile?.roleSpecific?.permissions,
     pkg?.features,
     channels
-  ).map((tab) => ({
-    ...tab,
-    name: t(tab.name),
-  }));
+  ).map((tab) => {
+    const translated = t(tab.name);
+    const label = (translated && translated !== tab.name) ? translated : (tab.label || tab.name);
+    return {
+      ...tab,
+      name: label,
+      displayName: label,
+    };
+  });
 
   const { matchedTab } = getCurrentTabData(location.pathname, ALL_TABS);
   

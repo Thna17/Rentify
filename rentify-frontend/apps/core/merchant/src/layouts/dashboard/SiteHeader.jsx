@@ -43,9 +43,9 @@ export function SiteHeader({ currentTab, onSidebarToggle, userData }) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={userData.avatar} alt={userData.name} />
+                <AvatarImage src={userData?.avatar} alt={userData?.name || 'User'} />
                 <AvatarFallback>
-                  {userData.name?.charAt(0) || 'U'}
+                  {userData?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
             </Button>
