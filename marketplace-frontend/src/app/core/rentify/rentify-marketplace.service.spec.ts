@@ -148,6 +148,35 @@ describe('RentifyMarketplaceService', () => {
     req.flush({ ok: true });
   });
 
+  it('calls product reviews endpoint', () => {
+    let result: unknown;
+    service.reviews('prod-123').subscribe((res) => { result = res; });
+
+    const req = httpTesting.expectOne('http://localhost:4001/api/marketplace/products/prod-123/reviews');
+    expect(req.request.method).toBe('GET');
+    req.flush({ reviews: [], summary: { total: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } } });
+
+    expect(result).toEqual({ reviews: [], summary: { total: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } } });
+  });
+
+  it('submits a product review with rating and comment', () => {
+    let result: unknown;
+    service.submitReview('prod-123', 5, 'Exceptional craftsmanship!').subscribe((res) => { result = res; });
+
+    const req = httpTesting.expectOne('http://localhost:4001/api/marketplace/products/prod-123/reviews');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ rating: 5, comment: 'Exceptional craftsmanship!' });
+    req.flush({
+      review: { id: 'rev-1', rating: 5, comment: 'Exceptional craftsmanship!' },
+      summary: { total: 1, average: 5, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 } },
+    });
+
+    expect(result).toEqual({
+      review: { id: 'rev-1', rating: 5, comment: 'Exceptional craftsmanship!' },
+      summary: { total: 1, average: 5, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 } },
+    });
+  });
+
   it('builds auth link for login and signup with returnUrl', () => {
     const loginLink = service.authLink('login');
     const signupLink = service.authLink('signup');

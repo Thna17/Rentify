@@ -1,11 +1,17 @@
 import { Component, computed, effect, ElementRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import { CartService } from '../core/cart/cart.service';
 import { FlyToCartService } from '../core/cart/fly-to-cart.service';
 import { CatalogService } from '../core/catalog/catalog.service';
 import { WishlistService } from '../core/wishlist/wishlist.service';
+import { AuthService } from '../core/auth/auth.service';
+import {
+  RentifyMarketplaceService,
+  ProductReview,
+  ProductReviewSummary,
+} from '../core/rentify/rentify-marketplace.service';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
@@ -99,14 +105,14 @@ import { Product } from '../core/catalog/catalog.models';
               </div>
             }
 
-            @if (p.reviewCount > 0) {
-              <div class="rating-row">
+            @if (effectiveReviewCount() > 0) {
+              <a class="rating-row rating-link" href="#reviews">
                 <ui-icon name="star" [size]="15" [filled]="true" class="stars" />
-                <span>{{ p.rating }}</span>
-                <span class="count">({{ p.reviewCount }} reviews)</span>
-              </div>
+                <span>{{ effectiveRating().toFixed(1) }}</span>
+                <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? 'review' : 'reviews' }})</span>
+              </a>
             } @else {
-              <div class="rating-row no-reviews">No customer reviews yet</div>
+              <a class="rating-row no-reviews rating-link" href="#reviews">No customer reviews yet — be first</a>
             }
 
             <a class="store-row card" [routerLink]="['/stores', p.storeId]">
@@ -197,6 +203,165 @@ import { Product } from '../core/catalog/catalog.models';
               </p>
             }
           </div>
+        </div>
+      </section>
+
+      <!-- Customer Reviews & Ratings Section -->
+      <section class="container reviews-section" id="reviews">
+        <div class="reviews-section-header">
+          <h2>Customer Reviews & Ratings</h2>
+          <p class="section-subtitle">Real experiences shared by verified shoppers on Rentify Marketplace</p>
+        </div>
+
+        <div class="reviews-summary-grid">
+          <div class="summary-score-card card">
+            <div class="score-number">{{ effectiveRating() ? effectiveRating().toFixed(1) : '0.0' }}</div>
+            <div class="score-stars">
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                <ui-icon name="star" [size]="18" [filled]="star <= Math.round(effectiveRating())" class="star-icon" />
+              }
+            </div>
+            <span class="score-count">Based on {{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? 'verified review' : 'verified reviews' }}</span>
+          </div>
+
+          <div class="summary-breakdown-card card">
+            <div class="breakdown-list">
+              @for (star of [5, 4, 3, 2, 1]; track star) {
+                <div class="breakdown-row">
+                  <span class="breakdown-star-label">{{ star }} <ui-icon name="star" [size]="12" [filled]="true" /></span>
+                  <div class="breakdown-bar-track">
+                    <div class="breakdown-bar-fill" [style.width.%]="getDistributionPercent(star)"></div>
+                  </div>
+                  <span class="breakdown-count">{{ getDistributionCount(star) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="write-review-prompt card">
+            @if (auth.isAuthenticated()) {
+              <h3>Leave Feedback</h3>
+              <p>Have you received this item? Help other buyers make informed choices.</p>
+              <a href="#write-review" class="btn btn-outline btn-block">Write a Review</a>
+            } @else {
+              <h3>Reviewed by Real Buyers</h3>
+              <p>Sign in to your Rentify account to submit a rating and verified review.</p>
+              <a [href]="auth.getLoginUrl()" class="btn btn-primary btn-block">Sign In to Review</a>
+            }
+          </div>
+        </div>
+
+        @if (auth.isAuthenticated()) {
+          <div class="review-form-card card" id="write-review">
+            <h3>Write a Review</h3>
+            <p class="form-desc">Share details about the craftsmanship, fit, or delivery from this seller.</p>
+
+            @if (reviewFeedback()) {
+              <div class="alert-box alert-success" role="status">
+                <ui-icon name="check-circle" [size]="16" />
+                <span>{{ reviewFeedback() }}</span>
+              </div>
+            }
+            @if (reviewError()) {
+              <div class="alert-box alert-danger" role="alert">
+                <ui-icon name="alert-circle" [size]="16" />
+                <span>{{ reviewError() }}</span>
+              </div>
+            }
+
+            <form (submit)="handleReviewSubmit($event)" class="review-form">
+              <div class="form-field">
+                <label class="field-label">Overall Rating</label>
+                <div class="star-picker" role="radiogroup" aria-label="Select star rating">
+                  @for (star of [1, 2, 3, 4, 5]; track star) {
+                    <button
+                      type="button"
+                      class="star-pick-btn"
+                      [class.active]="star <= newRating()"
+                      (click)="setNewRating(star)"
+                      [attr.aria-label]="star + ' stars'"
+                    >
+                      <ui-icon name="star" [size]="22" [filled]="star <= newRating()" />
+                    </button>
+                  }
+                  <span class="rating-label-text">{{ newRating() }} out of 5 stars</span>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label class="field-label" for="review-comment">Review Details</label>
+                <textarea
+                  id="review-comment"
+                  rows="3"
+                  class="review-textarea"
+                  placeholder="Describe your experience with this item..."
+                  [value]="newComment()"
+                  (input)="onCommentInput($event)"
+                  maxlength="2000"
+                  required
+                ></textarea>
+                <span class="char-count">{{ newComment().length }}/2000 characters</span>
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="submittingReview() || !newComment().trim()"
+              >
+                @if (submittingReview()) {
+                  <ui-icon name="loader" class="spin" [size]="15" /> Submitting...
+                } @else {
+                  Submit Review
+                }
+              </button>
+            </form>
+          </div>
+        }
+
+        <div class="reviews-feed">
+          <h3>Recent Customer Reviews</h3>
+
+          @if (reviewsLoading()) {
+            <div class="feed-state">
+              <ui-icon name="loader" class="spin" [size]="24" />
+              <span>Loading reviews...</span>
+            </div>
+          } @else if (reviews().length === 0) {
+            <div class="feed-empty card">
+              <ui-icon name="star" [size]="32" class="empty-star" />
+              <h4>No customer reviews yet</h4>
+              <p>Be the first customer to purchase and review this item.</p>
+            </div>
+          } @else {
+            <div class="reviews-list">
+              @for (rev of reviews(); track rev.id) {
+                <article class="review-item card">
+                  <div class="review-header">
+                    <div class="reviewer-info">
+                      <div class="reviewer-avatar">{{ (rev.buyerName || 'B')[0].toUpperCase() }}</div>
+                      <div>
+                        <div class="reviewer-title">
+                          <strong>{{ rev.buyerName || 'Verified Buyer' }}</strong>
+                          @if (rev.isVerifiedPurchase) {
+                            <span class="verified-tag">
+                              <ui-icon name="check-circle" [size]="12" /> Verified Purchase
+                            </span>
+                          }
+                        </div>
+                        <span class="review-time">{{ formatDate(rev.createdAt) }}</span>
+                      </div>
+                    </div>
+                    <div class="review-stars-row">
+                      @for (star of [1, 2, 3, 4, 5]; track star) {
+                        <ui-icon name="star" [size]="14" [filled]="star <= rev.rating" class="star-icon" />
+                      }
+                    </div>
+                  </div>
+                  <p class="review-text">{{ rev.comment }}</p>
+                </article>
+              }
+            </div>
+          }
         </div>
       </section>
 
@@ -492,6 +657,348 @@ import { Product } from '../core/catalog/catalog.models';
           grid-template-columns: 1fr;
         }
       }
+
+      .rating-link {
+        text-decoration: none;
+        cursor: pointer;
+        transition: opacity 150ms ease;
+      }
+      .rating-link:hover {
+        opacity: 0.8;
+      }
+      .reviews-section {
+        padding: 40px 32px 0;
+        border-top: 1px solid var(--color-border);
+        margin-top: 40px;
+      }
+      .reviews-section-header {
+        margin-bottom: 24px;
+      }
+      .reviews-section-header h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 4px;
+      }
+      .section-subtitle {
+        color: var(--color-muted);
+        font-size: 13.5px;
+        margin: 0;
+      }
+      .reviews-summary-grid {
+        display: grid;
+        grid-template-columns: 200px 1fr 280px;
+        gap: 20px;
+        align-items: stretch;
+        margin-bottom: 30px;
+      }
+      .summary-score-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+      }
+      .score-number {
+        font-size: 44px;
+        font-weight: 800;
+        color: var(--color-text);
+        line-height: 1;
+        margin-bottom: 8px;
+      }
+      .score-stars {
+        display: flex;
+        gap: 4px;
+        color: var(--color-gold);
+        margin-bottom: 8px;
+      }
+      .score-count {
+        font-size: 12px;
+        color: var(--color-muted);
+      }
+      .summary-breakdown-card {
+        padding: 20px 24px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .breakdown-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .breakdown-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+      }
+      .breakdown-star-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        width: 36px;
+        color: var(--color-text-secondary);
+        font-weight: 600;
+      }
+      .breakdown-bar-track {
+        flex: 1;
+        height: 8px;
+        background: var(--color-bg-alt);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+      }
+      .breakdown-bar-fill {
+        height: 100%;
+        background: var(--color-gold);
+        border-radius: var(--radius-full);
+        transition: width 300ms ease;
+      }
+      .breakdown-count {
+        width: 30px;
+        text-align: right;
+        color: var(--color-muted);
+        font-size: 12px;
+      }
+      .write-review-prompt {
+        padding: 20px 24px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 8px;
+      }
+      .write-review-prompt h3 {
+        font-size: 16px;
+        font-weight: 650;
+        margin: 0;
+      }
+      .write-review-prompt p {
+        font-size: 13px;
+        color: var(--color-muted);
+        margin: 0 0 8px;
+        line-height: 1.4;
+      }
+      .review-form-card {
+        padding: 24px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        margin-bottom: 30px;
+      }
+      .review-form-card h3 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .form-desc {
+        font-size: 13px;
+        color: var(--color-muted);
+        margin-bottom: 18px;
+      }
+      .review-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+      .star-picker {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .star-pick-btn {
+        background: none;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        color: var(--color-muted-2);
+        transition: color 150ms ease, transform 150ms ease;
+      }
+      .star-pick-btn.active {
+        color: var(--color-gold);
+      }
+      .star-pick-btn:hover {
+        transform: scale(1.15);
+      }
+      .rating-label-text {
+        margin-left: 10px;
+        font-size: 13px;
+        color: var(--color-muted);
+        font-weight: 500;
+      }
+      .review-textarea {
+        width: 100%;
+        border: 1.5px solid var(--color-border-strong);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        font-family: inherit;
+        font-size: 13.5px;
+        color: var(--color-text);
+        background: var(--color-surface);
+        resize: vertical;
+        min-height: 80px;
+        box-sizing: border-box;
+      }
+      .review-textarea:focus {
+        outline: none;
+        border-color: var(--color-accent);
+      }
+      .char-count {
+        font-size: 11.5px;
+        color: var(--color-muted);
+        text-align: right;
+      }
+      .alert-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        margin-bottom: 14px;
+      }
+      .alert-box.alert-success {
+        background: var(--color-success-soft);
+        color: var(--color-success);
+        border: 1px solid var(--color-success);
+      }
+      .alert-box.alert-danger {
+        background: var(--color-danger-soft);
+        color: var(--color-danger);
+        border: 1px solid var(--color-danger);
+      }
+      .reviews-feed {
+        margin-top: 24px;
+      }
+      .reviews-feed h3 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+      .reviews-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .review-item {
+        padding: 18px 20px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+      }
+      .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+      .reviewer-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .reviewer-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .reviewer-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .verified-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-success);
+        background: var(--color-success-soft);
+        padding: 2px 7px;
+        border-radius: var(--radius-full);
+      }
+      .review-time {
+        font-size: 11.5px;
+        color: var(--color-muted);
+      }
+      .review-stars-row {
+        display: flex;
+        gap: 3px;
+        color: var(--color-gold);
+      }
+      .review-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--color-text-secondary);
+        margin: 0;
+      }
+      .feed-state {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--color-muted);
+        padding: 24px 0;
+      }
+      .feed-empty {
+        text-align: center;
+        padding: 40px 20px;
+        background: var(--color-surface);
+        border: 1px dashed var(--color-border-strong);
+        border-radius: var(--radius-md);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .feed-empty h4 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 650;
+      }
+      .feed-empty p {
+        font-size: 13px;
+        color: var(--color-muted);
+        margin: 0;
+      }
+      .empty-star {
+        color: var(--color-muted-2);
+      }
+
+      @media (max-width: 860px) {
+        .reviews-summary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
     `,
   ],
 })
@@ -544,6 +1051,23 @@ export class ProductDetailComponent {
   private readonly flyToCart = inject(FlyToCartService);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly wishlist = inject(WishlistService);
+  protected readonly auth = inject(AuthService);
+  private readonly rentify = inject(RentifyMarketplaceService);
+  protected readonly Math = Math;
+
+  // Reviews state
+  protected readonly reviews = signal<ProductReview[]>([]);
+  protected readonly reviewSummary = signal<ProductReviewSummary | null>(null);
+  protected readonly reviewsLoading = signal(false);
+  protected readonly reviewsLoaded = signal(false);
+  protected readonly reviewsError = signal('');
+
+  // Review Form state
+  protected readonly newRating = signal(5);
+  protected readonly newComment = signal('');
+  protected readonly submittingReview = signal(false);
+  protected readonly reviewFeedback = signal('');
+  protected readonly reviewError = signal('');
 
   private readonly id = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('id') ?? '')),
@@ -551,6 +1075,18 @@ export class ProductDetailComponent {
   );
 
   protected readonly product = computed(() => this.catalog.productById(this.id()));
+
+  protected readonly effectiveRating = computed(() => {
+    const summary = this.reviewSummary();
+    if (summary && summary.total > 0) return summary.average;
+    return this.product()?.rating ?? 0;
+  });
+
+  protected readonly effectiveReviewCount = computed(() => {
+    const summary = this.reviewSummary();
+    if (summary) return summary.total;
+    return this.product()?.reviewCount ?? 0;
+  });
 
   /** A pinned photo belongs to one product; drop it when the route changes. */
   private readonly resetGalleryOnNavigate = effect(() => {
@@ -590,6 +1126,16 @@ export class ProductDetailComponent {
       const currentId = this.id();
       if (currentId && !this.catalog.productById(currentId)) {
         void this.catalog.loadProduct(currentId);
+      }
+    });
+    effect(() => {
+      const currentId = this.id();
+      if (currentId) {
+        this.reviewFeedback.set('');
+        this.reviewError.set('');
+        this.newComment.set('');
+        this.newRating.set(5);
+        void this.loadProductReviews(currentId);
       }
     });
   }
@@ -645,5 +1191,91 @@ export class ProductDetailComponent {
 
   protected toggleWishlist(): void {
     this.wishlist.toggle(this.id());
+  }
+
+  protected async loadProductReviews(productId: string): Promise<void> {
+    if (!productId) return;
+    this.reviewsLoading.set(true);
+    this.reviewsError.set('');
+    try {
+      const res = await firstValueFrom(this.rentify.reviews(productId));
+      this.reviews.set(res.reviews || []);
+      this.reviewSummary.set(res.summary || null);
+      this.reviewsLoaded.set(true);
+    } catch {
+      this.reviewsError.set('Could not load reviews.');
+    } finally {
+      this.reviewsLoading.set(false);
+    }
+  }
+
+  protected setNewRating(rating: number): void {
+    this.newRating.set(rating);
+  }
+
+  protected onCommentInput(event: Event): void {
+    const target = event.target as HTMLTextAreaElement | null;
+    this.newComment.set(target?.value ?? '');
+  }
+
+  protected async handleReviewSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+    const comment = this.newComment().trim();
+    if (comment.length < 2) {
+      this.reviewError.set('Please provide a comment with at least 2 characters.');
+      return;
+    }
+    const currentProduct = this.product();
+    if (!currentProduct) return;
+
+    this.submittingReview.set(true);
+    this.reviewFeedback.set('');
+    this.reviewError.set('');
+
+    try {
+      const res = await firstValueFrom(
+        this.rentify.submitReview(currentProduct.id, this.newRating(), comment),
+      );
+      this.reviewFeedback.set('Thank you! Your review has been submitted.');
+      this.newComment.set('');
+      this.newRating.set(5);
+      if (res?.summary) {
+        this.reviewSummary.set(res.summary);
+      }
+      if (res?.review) {
+        this.reviews.update((current) => [
+          res.review,
+          ...current.filter((r) => r.id !== res.review.id),
+        ]);
+      } else {
+        await this.loadProductReviews(currentProduct.id);
+      }
+    } catch (err: any) {
+      const msg = err?.error?.error || 'Failed to submit review. Please ensure you are signed in.';
+      this.reviewError.set(msg);
+    } finally {
+      this.submittingReview.set(false);
+    }
+  }
+
+  protected formatDate(dateStr: string): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  protected getDistributionCount(star: number): number {
+    return this.reviewSummary()?.distribution?.[star] ?? 0;
+  }
+
+  protected getDistributionPercent(star: number): number {
+    const total = this.reviewSummary()?.total ?? 0;
+    if (total === 0) return 0;
+    const count = this.getDistributionCount(star);
+    return Math.round((count / total) * 100);
   }
 }

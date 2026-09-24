@@ -20,6 +20,7 @@ const BillingStatement = require("./BillingStatement");
 const StoreAccess = require('./StoreAccess');
 const OrderEvent = require('./OrderEvent');
 const StoreDeliveryPolicy = require('./StoreDeliveryPolicy');
+const ProductReview = require('./ProductReview');
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -85,6 +86,8 @@ Product.hasMany(ProductVariant, { foreignKey: "productId", as: "ProductVariants"
 Product.hasMany(ProductOption, { foreignKey: "productId", as: "ProductOptions" });
 Product.belongsTo(Category, { foreignKey: "categoryId" });
 Category.hasMany(Product, { foreignKey: "categoryId" });
+Product.hasMany(ProductReview, { foreignKey: "productId", as: "Reviews" });
+ProductReview.belongsTo(Product, { foreignKey: "productId" });
 
 // Order associations
 Cart.hasOne(Order, { foreignKey: "cartId" });
@@ -147,5 +150,6 @@ module.exports = {
   BillingStatement,
   StoreAccess,
   OrderEvent,
-  StoreDeliveryPolicy
+  StoreDeliveryPolicy,
+  ProductReview,
 };
