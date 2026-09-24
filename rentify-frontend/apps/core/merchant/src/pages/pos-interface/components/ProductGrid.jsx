@@ -35,7 +35,7 @@ import {
 import { cn } from '@rentify/utils';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
-export function ProductGrid({ onAddToCart, isFullscreen = false }) {
+export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, storeId }) {
   const { t } = useTranslation();
   const { categories, loading: categoriesLoading } = useShopCategories();
   const containerRef = useRef(null);
@@ -49,14 +49,20 @@ export function ProductGrid({ onAddToCart, isFullscreen = false }) {
   const [isMobile, setIsMobile] = useState(false);
 
   // Data fetching
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
   const {
     data: productsData,
     isLoading,
     isError,
     refetch,
-  } = useGetAllProductsQuery({ websiteId, page: 1, limit: 100, status: 'active' });
+  } = useGetAllProductsQuery({ 
+    websiteId: websiteId || undefined, 
+    storeId: websiteId ? undefined : storeId, 
+    page: 1, 
+    limit: 100, 
+    status: 'active' 
+  }, {
+    skip: !websiteId && !storeId
+  });
 
   // Mobile detection
   useEffect(() => {
