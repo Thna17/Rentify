@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 4400,
     host: 'localhost',
+    watch: {
+      usePolling: true,
+    },
   },
   preview: {
     port: 4400,

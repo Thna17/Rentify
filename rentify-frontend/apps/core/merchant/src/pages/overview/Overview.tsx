@@ -101,7 +101,7 @@ export const Overview = () => {
   }
 
   return (
-    <div className="min-h-full bg-background">
+    <div className="min-h-full">
       <PageHeader
         title="Dashboard Overview"
         description="Monitor sales performance and operations across your sales channels"

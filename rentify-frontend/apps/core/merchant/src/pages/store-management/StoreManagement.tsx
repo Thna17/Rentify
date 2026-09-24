@@ -371,7 +371,7 @@ const handleFontChange = (field: string, value: string) => {
 
   if (!websiteData && !isFetching) {
     return (
-      <div className="min-h-full bg-background">
+      <div className="min-h-full">
         <PageHeader
           title={t('dashboard.store_management.title')}
           description="Custom branded storefront website customization"
@@ -427,7 +427,7 @@ const handleFontChange = (field: string, value: string) => {
   const isLoading = isUpdating || isThemeUpdating;
 
   return (
-    <div className="min-h-full bg-background">
+    <div className="min-h-full">
       <PageHeader
         title={t('dashboard.store_management.title')}
         description={t('dashboard.store_management.description')}

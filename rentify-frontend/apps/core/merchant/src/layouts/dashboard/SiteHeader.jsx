@@ -1,17 +1,8 @@
 import { useMediaQuery } from '@rentify/utils';
-import { HelpCircle, Menu, Search, X } from 'lucide-react';
+import { Menu, Search, X } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
 import { NotificationDropdown } from './NotificationDropdown';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@rentify/shared/ui/dropdown-menu';
 import React, { useState, useRef, useEffect } from 'react';
 
 export function SiteHeader({
@@ -83,7 +74,7 @@ export function SiteHeader({
 
         {/* Search Bar on the Left (over the former overview text area) */}
         <div className="relative w-full max-w-md sm:max-w-lg" ref={searchContainerRef}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
           <Input
             type="search"
             value={searchFilter}
@@ -94,7 +85,7 @@ export function SiteHeader({
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder="Search menu..."
-            className="w-full bg-muted/40 pl-9.5 pr-8 h-9.5 rounded-lg border-border text-sm focus-visible:bg-background shadow-none"
+            className="w-full bg-muted/40 pl-10 pr-9 h-10 rounded-xl border-border text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
           />
           {searchFilter && (
             <button
@@ -103,7 +94,7 @@ export function SiteHeader({
                 setSearchFilter?.('');
                 setIsSearchFocused(false);
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />
@@ -152,38 +143,8 @@ export function SiteHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 md:gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <NotificationDropdown onTabChange={onTabChange} />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0"
-          onClick={() => onTabChange?.('help')}
-          title="Help & Support"
-        >
-          <HelpCircle className="h-5 w-5" />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full shrink-0">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={userData?.avatar} alt={userData?.name || 'User'} />
-                <AvatarFallback>
-                  {userData?.name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </header>
   );

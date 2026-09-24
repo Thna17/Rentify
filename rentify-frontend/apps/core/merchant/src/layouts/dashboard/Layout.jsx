@@ -1,7 +1,7 @@
 // DashboardLayout.tsx
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, useTranslation, useMediaQuery } from '@rentify/utils';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import SiteHeader from './SiteHeader';
 import AppSidebar from './AppSidebar';
 import { ALL_TABS } from '../../config/dashboard-tabs';
@@ -132,12 +132,20 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
         />
         
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-background/50">
-          <div className="max-w-7xl mx-auto w-full">
+          <div className="max-w-7xl mx-auto w-full space-y-6">
             <StoreCategoryPrompt store={store} onStoreChange={setStore} />
-            {/* Consistent Page Container */}
-            <div className="bg-background rounded-2xl border border-border shadow-sm transition-all duration-300 min-h-[calc(100vh-200px)]">
-              <Outlet /> {/* Child routes render here */}
-            </div>
+            <Suspense
+              fallback={
+                <div className="flex h-64 w-full items-center justify-center rounded-2xl border border-border bg-background p-8 shadow-xs">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent dark:border-emerald-400" />
+                    <span className="text-xs text-muted-foreground font-medium">Loading feature...</span>
+                  </div>
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

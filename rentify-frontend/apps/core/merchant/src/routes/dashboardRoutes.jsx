@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Navigate } from 'react-router-dom';
 
 // Lazy load components
-const DashboardLayout = lazy(() => import('../layouts/dashboard/Layout'));
+import DashboardLayout from '../layouts/dashboard/Layout';
 const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));

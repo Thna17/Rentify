@@ -115,10 +115,7 @@ export const DashboardLayout = () => {
         
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto w-full">
-            {/* Consistent Page Container */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-lg transition-all duration-300 min-h-[calc(100vh-200px)]">
-              <Outlet /> {/* Child routes render here */}
-            </div>
+            <Outlet />
           </div>
         </main>
       </div>
