@@ -13,10 +13,15 @@ catalog alone.
   validates Core's `userAccessToken`/`userRefreshToken` and takes `buyerId`
   from that trusted response, never from the request body. The product owner
   confirmed buyer sign-in is required for hackathon COD checkout.
+  Marketplace buyer routes explicitly validate Core cookies even if the
+  browser also carries a legacy storefront Customer or staff cookie. An
+  invalid Core session cannot fall back to a legacy Customer identity.
 - Seller order operations use the Commerce Store access projection. Only the
   Store owner or a Website staff member with order permission can read or
   change that Store's marketplace orders. Buyer history is filtered by
   `buyerId`; seller views are filtered by `storeId`.
+  Store catalog and marketplace order routes now choose valid staff credentials
+  or a Core merchant account before considering any legacy Customer cookie.
 - Central buyer login on merchant custom domains is **not implemented**.
   ADR 0002 remains Proposed. The host-local callback, one-time code exchange,
   and verified legacy account linking must pass its release gate before
@@ -84,6 +89,8 @@ switch Angular buyers to the new checkout yet.
 Angular now has an isolated `/rentify-preview` route for staging the complete
 buyer path against Core identity and Commerce products, per-Store carts, COD
 checkout, and order history. `rentify-preview-config.js` disables it by default.
+The preview does not instantiate Angular's Mongo-backed guest-cart adoption
+effect.
 Enable it only in an isolated rehearsal environment after freezing legacy
 marketplace writes, using public Core, Commerce, and Auth URLs. Commerce also
 requires `MARKETPLACE_COD_CHECKOUT_ENABLED=true` for cart writes and order

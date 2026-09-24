@@ -241,7 +241,8 @@ server-side eligibility and price checks, merchant-posted flat delivery fees
 shown in cart quotes and snapshotted on orders, transactional row-locked stock
 deduction, idempotent checkout keys, seller-scoped delivery/COD/refund actions,
 buyer complaint/return events, a Rentify merchant order operations panel, and
-a COD reconciliation command. Existing
+a COD reconciliation command. Buyer routes now select Core identity explicitly
+when legacy Customer cookies coexist. Existing
 order strategies and stock restoration now use a shared stock operation.
 Marketplace cart writes and checkout are disabled by default at the Commerce
 HTTP boundary until the legacy writer is frozen for an isolated rehearsal or

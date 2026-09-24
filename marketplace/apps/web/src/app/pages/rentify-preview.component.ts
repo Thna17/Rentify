@@ -254,7 +254,10 @@ export class RentifyPreviewComponent {
 
   protected async placeOrder(cart: StoreCart) {
     if (!cart.totalAmount || !cart.checkoutReady || !this.name.trim() || !this.phone.trim() || !this.address.trim()) return;
-    const fingerprint = JSON.stringify([cart.storeId, cart.totalAmount, this.name.trim(), this.phone.trim(), this.address.trim()]);
+    const lines = cart.items.map((item) => [item.productId, item.quantity, item.currentPrice])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    const fingerprint = JSON.stringify([cart.storeId, lines, cart.deliveryFee, cart.totalAmount,
+      this.name.trim(), this.phone.trim(), this.address.trim()]);
     const storageKey = `rentify-marketplace-checkout:${cart.storeId}`;
     let saved: { fingerprint: string; key: string } | null = null;
     try { saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null'); } catch { /* New key below. */ }

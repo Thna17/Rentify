@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, Injector, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CartService } from './core/cart/cart.service';
 
@@ -20,5 +20,14 @@ export class App {
    * service had never been created, the effect had never registered, and the
    * basket was silently dropped at sign-in.
    */
-  private readonly cart = inject(CartService);
+  private readonly injector = inject(Injector);
+
+  constructor() {
+    // The Rentify buyer preview must not start the Mongo-backed cart's
+    // sign-in effect. That effect can push a guest basket into legacy Mongo.
+    if (!globalThis.window?.__RENTIFY_MARKETPLACE__?.enabled &&
+        !globalThis.location.pathname.startsWith('/rentify-preview')) {
+      this.injector.get(CartService);
+    }
+  }
 }
