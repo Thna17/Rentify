@@ -13,9 +13,11 @@ before changing cross-service behavior.
   checkout, orders, invoices, POS, payments, and usage billing.
 - `rentify-frontend/` contains the React/Vite merchant, auth, marketing, and
   storefront applications.
-- `marketplace/` contains the relocated KhmerCraft project. Its Angular web app
-  is the shared marketplace UI. Its Express/Mongoose API is reference code
-  only; do not run it or add MongoDB to the Rentify platform.
+- `marketplace-frontend/` is the active Angular web app for Rentify's shared
+  marketplace UI.
+- `docs/reference/legacy-khmercraft-api/` contains the archived KhmerCraft
+  Express/Mongoose API and legacy documentation as reference code only; do not
+  run it or add MongoDB to the Rentify platform.
 - `docs/current-rentify-architecture.md` records the present service map and
   migration constraints backed by the code.
 - `docs/platform-architecture.md` describes the product direction and labels
@@ -27,7 +29,7 @@ before changing cross-service behavior.
 
 1. Rentify is the backend authority. Move marketplace capabilities into the
    appropriate Rentify API; do not create a second authoritative product,
-   inventory, order, payment, or merchant database in `marketplace/apps/api`.
+   inventory, order, payment, or merchant database in `docs/reference/legacy-khmercraft-api`.
 2. A merchant/store exists independently of a website. Marketplace-only
    merchants must be able to list and sell without creating a storefront.
 3. A storefront is an optional channel linked to a store. Products belong to
@@ -55,7 +57,7 @@ before changing cross-service behavior.
 
 - Respect existing uncommitted work. Inspect `git status` before edits and do
   not overwrite unrelated changes.
-- The relocated `marketplace/apps/api/AGENTS.md` applies when reading or
+- The archived `docs/reference/legacy-khmercraft-api/AGENTS.md` applies when reading or
   changing that legacy API. Its local conventions describe the existing
   Express/Mongoose code and do not override the target architecture above.
 - Run the affected project's documented tests/builds for code changes. Root

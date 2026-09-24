@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "web": {
+    "marketplace-frontend": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -57,10 +57,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "web:build:production"
+              "buildTarget": "marketplace-frontend:build:production"
             },
             "development": {
-              "buildTarget": "web:build:development"
+              "buildTarget": "marketplace-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"

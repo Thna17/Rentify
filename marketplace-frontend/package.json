@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "marketplace-frontend",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,7 +7,8 @@
     "start:seller": "ng serve --port 4301",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test --no-watch",
+    "test:watch": "ng test"
   },
   "private": true,
   "packageManager": "npm@10.9.8",

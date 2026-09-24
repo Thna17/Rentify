@@ -80,11 +80,11 @@ were linked to new Stores by migration. Their category is deliberately null and
 foundation only: Commerce products and checkout remain website keyed, and no
 seller approval or marketplace sale is enabled by these Core endpoints.
 
-## Current marketplace project
+## Marketplace components
 
-The relocated project remains separate under `marketplace/`:
-[`apps/web`](../marketplace/apps/web) is an Angular buyer/seller/admin UI;
-[`apps/api`](../marketplace/apps/api) is an Express/Mongoose API with its own
-User, Store, Product, Cart, Order, and Review records. It is the source for
-feature and data mapping. Its MongoDB records need a repeatable migration;
-they must not become a second active commerce authority.
+The marketplace parts of the repository are organized as follows:
+[`marketplace-frontend/`](../marketplace-frontend) is the active Angular buyer/seller/admin UI;
+[`docs/reference/legacy-khmercraft-api/`](reference/legacy-khmercraft-api) is an archived Express/Mongoose API with its own
+User, Store, Product, Cart, Order, and Review records. It is reference code for
+feature and data mapping. Its MongoDB models are not part of the active platform
+and must not become a second commerce authority.

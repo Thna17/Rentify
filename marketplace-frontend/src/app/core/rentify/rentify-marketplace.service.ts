@@ -2,18 +2,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-declare global {
-  interface Window {
-    __RENTIFY_MARKETPLACE__?: {
-      enabled?: boolean;
-      cutoverEnabled?: boolean;
-      coreApiUrl?: string;
-      commerceApiUrl?: string;
-      authUrl?: string;
-      merchantDashboardUrl?: string;
-    };
-  }
-}
 
 const local = globalThis.location?.hostname === 'localhost' || globalThis.location?.hostname === '127.0.0.1';
 const runtime = globalThis.window?.__RENTIFY_MARKETPLACE__;

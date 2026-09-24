@@ -20,6 +20,8 @@ code so implementation work can proceed without relying on chat history.
   audits, staged release evidence, and retirement gates.
 - [Notes and open questions](notes.md) — verified observations, unresolved
   choices, and items requiring product decisions.
+- [Legacy KhmerCraft reference API](reference/legacy-khmercraft-api/README.md) —
+  archived Express/Mongoose API and legacy design notes for reference only.
 
 When a decision changes, update these documents in the same change as the
 implementation or record the decision in `notes.md` while work is pending.

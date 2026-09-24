@@ -7,7 +7,7 @@ Next.js instincts. There is no `app/` router, no server components, no
 
 ## Running
 
-Run every command from `apps/api` — `src/index.ts` loads `.env.local` relative
+Run every command from `docs/reference/legacy-khmercraft-api` — `src/index.ts` loads `.env.local` relative
 to the working directory, so starting the process from the repo root silently
 loads no environment and dies on the `JWT_SECRET` assertion.
 
