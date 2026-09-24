@@ -16,6 +16,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { CartService } from '../../../../core/cart/cart.service';
 import { FlyToCartService } from '../../../../core/cart/fly-to-cart.service';
 import { WishlistService } from '../../../../core/wishlist/wishlist.service';
+import { RentifyMarketplaceService } from '../../../../core/rentify/rentify-marketplace.service';
 import { IconComponent } from '../../ui/icon/icon.component';
 import { CategoryMenuComponent } from '../category-menu/category-menu.component';
 import { SearchOverlayComponent } from '../../../user/search/search-overlay/search-overlay.component';
@@ -40,12 +41,12 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
         }
         <div class="announce-links">
           @if (sellerArea()) {
-            <a routerLink="/seller/dashboard">Seller dashboard</a>
+            <a [href]="merchantDashboardUrl">Seller dashboard</a>
             <a routerLink="/help">Seller support</a>
           } @else {
             <a routerLink="/orders">Track order</a>
             <a routerLink="/help">Support</a>
-            <a href="/become-a-seller" target="_blank" rel="noopener">Seller portal</a>
+            <a [href]="merchantDashboardUrl" target="_blank" rel="noopener">Seller portal</a>
           }
         </div>
       </div>
@@ -179,10 +180,10 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
                        replacement, and the shopping links below stay. -->
                   @if (isSeller()) {
                     <p class="account-section">Your store</p>
-                    <a routerLink="/seller/dashboard" role="menuitem" (click)="accountOpen.set(false)">
+                    <a [href]="merchantDashboardUrl" role="menuitem" (click)="accountOpen.set(false)">
                       <ui-icon name="grid" [size]="16" /> Seller dashboard
                     </a>
-                    <a routerLink="/seller/orders" role="menuitem" (click)="accountOpen.set(false)">
+                    <a [href]="merchantOrdersUrl" role="menuitem" (click)="accountOpen.set(false)">
                       <ui-icon name="package" [size]="16" /> Incoming orders
                     </a>
                     @if (myStore(); as store) {
@@ -921,7 +922,16 @@ export class NavbarComponent implements AfterViewInit {
   private readonly wishlist = inject(WishlistService);
   private readonly auth = inject(AuthService);
   private readonly sellers = inject(SellerService);
+  private readonly rentify = inject(RentifyMarketplaceService);
   private readonly flyToCart = inject(FlyToCartService);
+
+  get merchantDashboardUrl(): string {
+    return this.rentify.merchantDashboard;
+  }
+
+  get merchantOrdersUrl(): string {
+    return `${this.rentify.merchantDashboard}/orders`;
+  }
 
   @ViewChild('cartBtn') private readonly cartBtn?: ElementRef<HTMLElement>;
 
