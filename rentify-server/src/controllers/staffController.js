@@ -90,12 +90,21 @@ exports.validateStaffToken = async (req, res) => {
 
   // Include permissions in the response
   const staff = await Staff.findByPk(result.entity.id, {
-    attributes: ["permissions"],
+    attributes: ["permissions", "merchantId", "websiteId", "isActive"],
     transaction,
   });
 
+  if (!staff || !staff.isActive) {
+    throw new ApiError(403, "Staff access is inactive");
+  }
+
   res.status(200).json({
     ...result,
+    entity: {
+      ...result.entity,
+      merchantId: staff.merchantId,
+      websiteId: staff.websiteId,
+    },
     permissions: staff.permissions,
   });
 };

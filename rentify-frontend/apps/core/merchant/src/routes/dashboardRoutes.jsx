@@ -7,8 +7,10 @@ const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
+const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
+const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
 const InvoiceManual = lazy(() => import('../pages/invoice-manual/InvoiceManual'));
 const POSInterface = lazy(() => import('../pages/pos-interface/POSInterface'));
@@ -33,10 +35,12 @@ export const dashboardRoutes = {
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
     { path: 'products', element: <ProductManagement /> },
+    { path: 'catalog', element: <StoreCatalogPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },
     { path: 'orders', element: <OrderManagement /> },
+    { path: 'marketplace-orders', element: <MarketplaceOrders /> },
     { path: 'orders/:id', element: <OrderDetailView /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'pos', element: <POSInterface /> },

@@ -116,6 +116,7 @@ async function seedCore() {
   const adminPassword = await bcrypt.hash('Admin@12345', 10);
   const merchantPassword = await bcrypt.hash('Merchant@12345', 10);
   const staffPassword = await bcrypt.hash('Staff@12345', 10);
+  const customerPassword = await bcrypt.hash('Customer@12345', 10);
 
   const usersData = [
     {
@@ -142,6 +143,24 @@ async function seedCore() {
       email: 'tech.merchant@rentify.local',
       phoneNumber: '+85512000004',
       password: merchantPassword,
+      role: 'user',
+      isVerified: true,
+    },
+    {
+      id: '99999999-9999-4999-8999-999999999999',
+      name: 'Emily Watson',
+      email: 'emily.customer@example.com',
+      phoneNumber: '+85512999888',
+      password: customerPassword,
+      role: 'user',
+      isVerified: true,
+    },
+    {
+      id: '88888888-8888-4888-8888-888888888888',
+      name: 'Michael Tech Customer',
+      email: 'tech.customer@example.com',
+      phoneNumber: '+85512999777',
+      password: customerPassword,
       role: 'user',
       isVerified: true,
     },

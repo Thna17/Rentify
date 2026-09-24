@@ -24,6 +24,7 @@ import {
   clearCartError,
 } from '@rentify/apis/slice/cartSlice';
 import { useSelector } from 'react-redux';
+import { hostedCheckoutUrl, hostedRequest, isHostedStorefrontBuyer } from '@rentify/storefront/hostedBuyer';
 
 // Enhanced cart item type
 export interface CartItemWithVariant {
@@ -120,8 +121,35 @@ const NICHE_CART_CONFIG = {
 
 export const useCart = () => {
   const { websiteData, websiteId, preview } = useWebsiteData();
+  const hosted = isHostedStorefrontBuyer() && !preview;
   const websiteNiche = websiteData?.niche || 'ecommerce';
   const dispatch = useAppDispatch();
+  const [hostedQuote, setHostedQuote] = useState<any>(null);
+  const [hostedLoading, setHostedLoading] = useState(hosted);
+  const [hostedError, setHostedError] = useState(false);
+
+  const loadHostedCart = useCallback(async () => {
+    if (!hosted || !websiteId) return;
+    setHostedLoading(true);
+    try {
+      const response = await hostedRequest(hostedCheckoutUrl(websiteId, '/cart'));
+      const quote = response.carts?.[0] || null;
+      setHostedQuote(quote);
+      dispatch(cartUpdated({ items: (quote?.items || []).map((line: any) => ({
+        id: line.productId, productId: line.productId, quantity: line.quantity,
+        unitPrice: Number(line.currentPrice || line.unitPrice),
+        selectedOptions: {}, customizations: {},
+        Product: { ...line.product, images: line.product?.images || [],
+          price: Number(line.currentPrice || line.product?.price || 0) },
+      })), version: 0 }));
+      setHostedError(false);
+    } catch (error: any) {
+      setHostedError(true);
+      dispatch(setError({ itemId: 'global', error: error.message }));
+    } finally { setHostedLoading(false); }
+  }, [hosted, websiteId, dispatch]);
+
+  useEffect(() => { if (hosted) void loadHostedCart(); }, [hosted, loadHostedCart]);
 
   // Select cart state from Redux
   const cartItems = useAppSelector(cartSelectors.selectAll) as CartItemWithVariant[];
@@ -136,12 +164,12 @@ export const useCart = () => {
 
   // API hooks
   const { data, error, isLoading, isSuccess, refetch } = useGetCartQuery(websiteId, {
-    skip: !websiteId,
+    skip: !websiteId || hosted,
     refetchOnMountOrArgChange: true,
   });
 
   const { data: cartSummary } = useGetCartSummaryQuery(websiteId, {
-    skip: !websiteId,
+    skip: !websiteId || hosted,
     pollingInterval: 30000, // Refresh every 30 seconds
   });
   
@@ -159,7 +187,7 @@ export const useCart = () => {
 
   // Update cart when data loads
   useEffect(() => {
-    if (isSuccess && data) {
+    if (!hosted && isSuccess && data) {
       dispatch(
         cartUpdated({
           items: data.items || data.CartItems || [],
@@ -169,7 +197,7 @@ export const useCart = () => {
         })
       );
     }
-  }, [data, isSuccess, dispatch]);
+  }, [data, isSuccess, dispatch, hosted]);
 
   // Memoized calculations
   const totalQuantity = useMemo(
@@ -182,6 +210,11 @@ export const useCart = () => {
     const handleUpdateVariant = useCallback(
     async (itemId: string, variantId: string, selectedOptions: Record<string, any>) => {
       dispatch(clearCartError());
+
+      if (hosted) {
+        dispatch(setError({ itemId, error: 'Variant checkout is not available yet' }));
+        return;
+      }
 
       if (preview) {
         // Handle preview mode variant updates
@@ -213,7 +246,7 @@ export const useCart = () => {
         }
       }
     },
-    [preview, updateCartItemVariantMutation, websiteId, cartItems, dispatch, refetch]
+    [preview, hosted, updateCartItemVariantMutation, websiteId, cartItems, dispatch, refetch]
   );
 
   // Enhanced add to cart with niche validation
@@ -266,6 +299,20 @@ export const useCart = () => {
         } as CartItemWithVariant;
 
         dispatch(cartItemsLoaded([...cartItems, staticItem]));
+      } else if (hosted) {
+        if (variantId || Object.keys(selectedOptions).length || Object.keys(customizations).length) {
+          throw new Error('Variant and customized products are not available for COD checkout yet');
+        }
+        const previous = cartItems.find((item) => item.productId === productId)?.quantity || 0;
+        try {
+          await hostedRequest(hostedCheckoutUrl(websiteId, `/cart/items/${productId}`), {
+            method: 'PUT', body: JSON.stringify({ quantity: previous + quantity }),
+          });
+          await loadHostedCart();
+        } catch (error: any) {
+          dispatch(setError({ itemId: 'global', error: error.message }));
+          throw error;
+        }
       } else {
         try {
           await addToCartMutation({
@@ -286,7 +333,7 @@ export const useCart = () => {
         }
       }
     },
-    [preview, addToCartMutation, websiteId, cartItems, dispatch, refetch, nicheConfig, websiteNiche]
+    [preview, hosted, addToCartMutation, websiteId, cartItems, dispatch, refetch, loadHostedCart, nicheConfig, websiteNiche]
   );
 
     const handleRemoveItem = useCallback(
@@ -295,6 +342,15 @@ export const useCart = () => {
 
       if (preview) {
         dispatch(cartItemRemoved(itemId));
+      } else if (hosted) {
+        try {
+          await hostedRequest(hostedCheckoutUrl(websiteId, `/cart/items/${itemId}`), {
+            method: 'PUT', body: JSON.stringify({ quantity: 0 }),
+          });
+          await loadHostedCart();
+        } catch (error: any) {
+          dispatch(setError({ itemId, error: error.message }));
+        }
       } else {
         try {
           await removeFromCartMutation({ itemId, websiteId }).unwrap();
@@ -306,7 +362,7 @@ export const useCart = () => {
         }
       }
     },
-    [preview, removeFromCartMutation, websiteId, dispatch, refetch]
+    [preview, hosted, removeFromCartMutation, websiteId, dispatch, refetch, loadHostedCart]
   );
   
   // Enhanced quantity change with niche validation
@@ -344,6 +400,15 @@ export const useCart = () => {
         dispatch(
           cartItemUpdated({ id: itemId, changes: { quantity: newQuantity } })
         );
+      } else if (hosted) {
+        try {
+          await hostedRequest(hostedCheckoutUrl(websiteId, `/cart/items/${item.productId}`), {
+            method: 'PUT', body: JSON.stringify({ quantity: newQuantity }),
+          });
+          await loadHostedCart();
+        } catch (error: any) {
+          dispatch(setError({ itemId, error: error.message }));
+        }
       } else {
         if (newQuantity < 1) {
           handleRemoveItem(itemId);
@@ -366,13 +431,16 @@ export const useCart = () => {
         }
       }
     },
-    [cartItems, preview, updateCartMutation, websiteId, dispatch, refetch, nicheConfig, handleRemoveItem]
+    [cartItems, preview, hosted, updateCartMutation, websiteId, dispatch, refetch, loadHostedCart, nicheConfig, handleRemoveItem]
   );
 
 
 
   // Enhanced summary calculation with niche considerations
   const calculateSummary = useCallback(() => {
+    if (hosted) return { subtotal: hostedQuote?.subtotal || '0.00',
+      shipping: hostedQuote?.deliveryFee || '0.00', tax: '0.00',
+      total: hostedQuote?.totalAmount || '0.00', itemCount: cartItems.length };
     const subtotal = cartItems.reduce(
       (acc, item) => acc + (item.unitPrice || item.Product.price) * item.quantity,
       0
@@ -420,7 +488,7 @@ export const useCart = () => {
       total,
       itemCount: cartItems.length,
     };
-  }, [cartItems, websiteNiche]);
+  }, [cartItems, websiteNiche, hosted, hostedQuote]);
 
   // Enhanced item helpers
   const isItemInStock = useCallback((item: CartItemWithVariant) => {
@@ -493,15 +561,16 @@ export const useCart = () => {
     items,
     summary: calculateSummary(),
     totalQuantity,
-    cartSummary,
+    cartSummary: hosted ? hostedQuote : cartSummary,
+    hostedQuote,
     
     // Niche information
     websiteNiche,
     nicheConfig,
     
     // Status
-    isLoading: isLoading || status === 'loading',
-    isError: !!error,
+    isLoading: hosted ? hostedLoading : isLoading || status === 'loading',
+    isError: hosted ? hostedError : !!error,
     updatingItems,
     removingItems,
     errors,
@@ -527,7 +596,7 @@ export const useCart = () => {
     getItemDiscountPercentage,
     
     // Refetch function
-    refetchCart: refetch,
+    refetchCart: hosted ? loadHostedCart : refetch,
   };
 };
 

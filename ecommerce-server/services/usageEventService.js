@@ -35,7 +35,7 @@ const recordUsageEvent = async ({
 
 const recordOrderPaidEvent = async (orderId, occurredAt = new Date()) => {
   const order = await Order.findByPk(orderId);
-  if (!order) return null;
+  if (!order || !order.websiteId) return null;
 
   const idempotencyKey = `${order.websiteId}|ORDER_PAID|${order.id}`;
   return recordUsageEvent({

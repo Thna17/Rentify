@@ -14,6 +14,7 @@ import {
   clearCredentials,
 } from '../api';
 import { useStorefrontWebsite } from '../website';
+import { isHostedStorefrontBuyer } from '../hostedBuyer';
 
 const getCookieValue = (name) => {
   if (typeof document === 'undefined') return null;
@@ -35,6 +36,7 @@ const resolveAuthRole = () => {
 };
 
 export const useStorefrontAuth = () => {
+  const hostedBuyer = isHostedStorefrontBuyer();
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth || {});
 
@@ -45,7 +47,7 @@ export const useStorefrontAuth = () => {
     website = null;
   }
 
-  const authRole = resolveAuthRole() || auth.role || null;
+  const authRole = hostedBuyer ? 'user' : resolveAuthRole() || auth.role || null;
 
   // Conditional RTK queries based on active session role
   const userQuery = useGetUserQuery(undefined, {
@@ -80,6 +82,7 @@ export const useStorefrontAuth = () => {
       id: data.id,
       name: data.name || data.email || 'User',
       email: data.email,
+      phoneNumber: data.phoneNumber,
       role,
     };
     if (role === 'user') {
@@ -166,9 +169,9 @@ export const useStorefrontAuth = () => {
     }
   }, [activeQuery.isError, activeQuery.error, dispatch]);
 
-  const activeProfile =
-    auth.profile ||
-    (activeQuery.data ? transformProfile(activeQuery.data, authRole) : null);
+  const activeProfile = hostedBuyer
+    ? (activeQuery.data ? transformProfile(activeQuery.data, authRole) : null)
+    : auth.profile || (activeQuery.data ? transformProfile(activeQuery.data, authRole) : null);
 
   // Store ownership verification
   const isOwner = useMemo(() => {
@@ -227,9 +230,7 @@ export const useStorefrontAuth = () => {
     }
   }, [authRole, dispatch, logoutUser, logoutStaff, logoutCustomer]);
 
-  const isAuthenticated = Boolean(
-    authRole && (Boolean(activeProfile) || activeQuery.isSuccess)
-  );
+  const isAuthenticated = Boolean(authRole && (Boolean(activeProfile) || activeQuery.isSuccess));
 
   return {
     profile: activeProfile,
@@ -237,9 +238,9 @@ export const useStorefrontAuth = () => {
     isLoading: activeQuery.isLoading,
     role: authRole || activeProfile?.role || null,
     isOwner,
-    isMerchant: authRole === 'user' || activeProfile?.role === 'user',
+    isMerchant: hostedBuyer ? isOwner : authRole === 'user' || activeProfile?.role === 'user',
     isStaff: authRole === 'staff' || activeProfile?.role === 'staff',
-    isCustomer: authRole === 'customer' || activeProfile?.role === 'customer',
+    isCustomer: hostedBuyer ? isAuthenticated && !isOwner : authRole === 'customer' || activeProfile?.role === 'customer',
     logout,
     refresh:
       authRole === 'user'

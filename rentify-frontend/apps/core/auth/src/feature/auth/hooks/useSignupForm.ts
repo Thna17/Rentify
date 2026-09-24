@@ -50,7 +50,7 @@ export const useSignupForm = () => {
   const location = useLocation();
   const { websiteId } = useWebsiteData();
 
-  const { redirectUrl, isWebsiteTemplate } = useAuthConfig();
+  const { redirectUrl, isWebsiteTemplate, isMarketplace } = useAuthConfig();
 
   useEffect(() => {
     const otpParam = new URLSearchParams(window.location.search).get('otp');
@@ -247,5 +247,6 @@ export const useSignupForm = () => {
     formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,
+    isMarketplace,
   };
 };

@@ -11,7 +11,7 @@ class OrderTypeStrategy {
   }
 
 async execute(orderData, existingTransaction = null) {
-  const transaction = existingTransaction || await this.models.sequelize.transaction();
+  const transaction = existingTransaction || await sequelize.transaction();
   let newTransaction = !existingTransaction; // flag to know if we should commit/rollback ourselves
 
   try {

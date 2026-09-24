@@ -18,6 +18,7 @@ const WebsiteData = sequelize.define('WebsiteData', {
     allowNull: false,
     unique: true,
   },
+  storeId: { type: DataTypes.UUID, allowNull: true },
   userId: {
     type: DataTypes.UUID,
     allowNull: false

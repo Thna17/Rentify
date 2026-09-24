@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLoginForm } from '../hooks/useLoginForm';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Form,
   FormControl,
@@ -40,6 +40,7 @@ interface LoginFormData {
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -71,7 +72,7 @@ function LoginPage() {
   };
 
   const handleSignUp = () => {
-    navigate('/signup');
+    navigate({ pathname: '/signup', search: location.search });
   };
 
   return (
@@ -376,6 +377,7 @@ function LoginPage() {
                   <p className="text-sm text-slate-600">
                     Don't have an account?{' '}
                     <Button
+                      type="button"
                       variant="link"
                       className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200"
                       onClick={handleSignUp}

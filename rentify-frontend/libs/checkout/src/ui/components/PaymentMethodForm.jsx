@@ -1,10 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, QrCode, Shield, Zap, Lock } from 'lucide-react';
+import { DollarSign, Shield, Lock } from 'lucide-react';
 import { Card, CardContent } from '@rentify/shared/ui/card';
-import { RadioGroup, RadioGroupItem } from '@rentify/shared/ui/radio-group';
-import { Badge } from '@rentify/shared/ui/badge';
-import { Label } from '@rentify/shared/ui/label';
+import { RadioGroup } from '@rentify/shared/ui/radio-group';
 import { PaymentMethodCard } from './PaymentMethodCard';
 
 export const PaymentMethodForm = ({ paymentMethod, setPaymentMethod, t }) => (
@@ -22,7 +20,7 @@ export const PaymentMethodForm = ({ paymentMethod, setPaymentMethod, t }) => (
     <RadioGroup
       value={paymentMethod}
       onValueChange={setPaymentMethod}
-      className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      className="grid grid-cols-1 gap-6"
     >
       <PaymentMethodCard
         value="COD"
@@ -30,10 +28,6 @@ export const PaymentMethodForm = ({ paymentMethod, setPaymentMethod, t }) => (
         title={t('checkout.cash_on_delivery')}
         subtitle={t('checkout.cash_on_delivery_subtitle')}
         badges={[
-          {
-            label: t('checkout.no_fees'),
-            color: 'bg-green-100 text-green-800',
-          },
           {
             label: t('checkout.secure'),
             color: 'bg-blue-100 text-blue-800',
@@ -45,27 +39,6 @@ export const PaymentMethodForm = ({ paymentMethod, setPaymentMethod, t }) => (
         onClick={() => setPaymentMethod('COD')}
       />
 
-      <PaymentMethodCard
-        value="KHQR"
-        icon={QrCode}
-        title={t('checkout.khqr_payment')}
-        subtitle={t('checkout.khqr_payment_subtitle')}
-        badges={[
-          {
-            label: t('checkout.instant'),
-            color: 'bg-purple-100 text-purple-800',
-            icon: Zap,
-          },
-          {
-            label: t('checkout.secure'),
-            color: 'bg-blue-100 text-blue-800',
-            icon: Shield,
-          },
-        ]}
-        gradient="bg-gradient-to-br from-purple-400 to-purple-600"
-        isSelected={paymentMethod === 'KHQR'}
-        onClick={() => setPaymentMethod('KHQR')}
-      />
     </RadioGroup>
 
     <div className="mt-6 p-4 bg-green-50/50 rounded-lg border border-green-200">

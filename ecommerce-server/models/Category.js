@@ -15,6 +15,7 @@ const Category = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
+    storeId: { type: DataTypes.UUID, allowNull: true },
     name: {
       type: DataTypes.STRING,
       allowNull: false,

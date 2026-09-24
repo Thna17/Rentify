@@ -15,6 +15,7 @@ const Payment = sequelize.define("Payment", {
       key: 'id'
     }
   },
+  storeId: { type: DataTypes.UUID, allowNull: true },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
@@ -48,10 +49,10 @@ const Payment = sequelize.define("Payment", {
     type: DataTypes.DATE,
     allowNull: true,
   },
-  currency: {
-    type: DataTypes.STRING(3),
-    defaultValue: "USD",
-  },
+  collectedAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 0 },
+  collectedAt: { type: DataTypes.DATE, allowNull: true },
+  collectorId: { type: DataTypes.UUID, allowNull: true },
+  refundedAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 0 },
   isRecovered: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,

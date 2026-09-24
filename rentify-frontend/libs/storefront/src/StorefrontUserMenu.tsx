@@ -36,7 +36,7 @@ export function StorefrontUserMenu() {
   } = useStorefrontAuth();
   const navigate = useNavigate();
 
-  const returnUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const returnUrl = typeof window !== 'undefined' ? window.location.href : '';
   const loginUrl = `${AUTH_URL}?returnUrl=${encodeURIComponent(returnUrl)}`;
 
   if (!isAuthenticated) {

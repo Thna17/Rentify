@@ -65,6 +65,13 @@ export const ALL_TABS = [
     permission: 'manage_products',
     features: ['product-management'],
   },
+  {
+    name: 'Store catalog',
+    icon: Package,
+    path: 'catalog',
+    roles: ['admin', 'user'],
+    permission: null,
+  },
     {
     name: 'create product',
     icon: Package,
@@ -81,6 +88,13 @@ export const ALL_TABS = [
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
     features: ['order-management'],
+  },
+  {
+    name: 'COD orders',
+    icon: ClipboardList,
+    path: 'marketplace-orders',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
   },
   {
     name: 'dashboard.invoices.title',

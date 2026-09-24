@@ -17,6 +17,62 @@ const WebsiteContent = require("./WebsiteContent");
 const UsageEvent = require("./UsageEvent");
 const PricingRule = require("./PricingRule");
 const BillingStatement = require("./BillingStatement");
+const StoreAccess = require('./StoreAccess');
+const OrderEvent = require('./OrderEvent');
+const StoreDeliveryPolicy = require('./StoreDeliveryPolicy');
+
+Product.belongsTo(StoreAccess, {
+  as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
+});
+StoreAccess.hasOne(StoreDeliveryPolicy, {
+  as: 'deliveryPolicy', foreignKey: 'storeId', sourceKey: 'storeId', constraints: false,
+});
+
+// During the compatibility period, website routes still create commerce rows.
+// Attach the canonical Store key from the trusted Website projection and reject
+// a client-supplied Store key that points at another tenant.
+for (const model of [Product, Category, Cart, Order, Invoice, UsageEvent, BillingStatement, PaymentGatewayConfig]) {
+  model.addHook('beforeValidate', 'assignCanonicalStore', async (row, options) => {
+    if (!row.websiteId) return;
+    const website = await WebsiteData.findOne({
+      where: { websiteId: row.websiteId },
+      attributes: ['storeId'],
+      transaction: options.transaction,
+    });
+    if (!website?.storeId) {
+      if (row.storeId) throw new Error('Store projection is not ready for this Website');
+      return;
+    }
+    if (row.storeId && row.storeId !== website.storeId) throw new Error('Store does not match Website');
+    row.storeId = website.storeId;
+  });
+}
+
+Payment.addHook('beforeValidate', 'assignCanonicalStore', async (payment, options) => {
+  if (!payment.orderId) return;
+  const order = await Order.findByPk(payment.orderId, {
+    attributes: ['storeId'], transaction: options.transaction,
+  });
+  if (!order?.storeId) {
+    if (payment.storeId) throw new Error('Order Store projection is not ready');
+    return;
+  }
+  if (payment.storeId && payment.storeId !== order.storeId) throw new Error('Payment Store does not match Order');
+  payment.storeId = order.storeId;
+});
+
+Customer.addHook('beforeValidate', 'assignCanonicalStore', async (customer, options) => {
+  if (!customer.storeId) return;
+  const website = await WebsiteData.findOne({
+    where: { websiteId: customer.storeId },
+    attributes: ['storeId'], transaction: options.transaction,
+  });
+  if (!website?.storeId) return;
+  if (customer.tenantStoreId && customer.tenantStoreId !== website.storeId) {
+    throw new Error('Customer Store does not match Website');
+  }
+  customer.tenantStoreId = website.storeId;
+});
 
 // Cart associations
 Cart.hasMany(CartItem, { foreignKey: "cartId", as: "CartItems" });
@@ -47,6 +103,8 @@ Invoice.belongsTo(Order, { foreignKey: "orderId" });
 
 Order.hasOne(ShippingDetail, { foreignKey: "orderId", as: "ShippingDetail" });
 ShippingDetail.belongsTo(Order, { foreignKey: "orderId" });
+Order.hasMany(OrderEvent, { foreignKey: 'orderId', as: 'OrderEvents' });
+OrderEvent.belongsTo(Order, { foreignKey: 'orderId' });
 
 // Website associations
 WebsiteData.hasMany(WebsiteContent, {
@@ -86,5 +144,8 @@ module.exports = {
   WebsiteContent,
   UsageEvent,
   PricingRule,
-  BillingStatement
+  BillingStatement,
+  StoreAccess,
+  OrderEvent,
+  StoreDeliveryPolicy
 };

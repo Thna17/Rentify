@@ -8,6 +8,7 @@ import Solutions from "./pages/solutions/Solutions";
 // import Contact from "./pages/Contact";
 import Pricing from "./pages/pricing/Pricing";
 import Onboarding from "./pages/Onboarding/AdvancedOnboarding";
+import StartSelling from "./pages/Onboarding/StartSelling";
 import LiveDemoPage from "./pages/live-demo/LiveDemo";
 // import NotFound from "./pages/NotFound";
 import BrowseTemplates from "./pages/template-browse";
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               {/* <Route path="/contact" element={<Contact />} /> */}
               <Route path="/onboarding/:packageId" element={<Onboarding />} />
+              <Route path="/start" element={<StartSelling />} />
               <Route path="/templates" element={<BrowseTemplates />} />
               <Route path="/templates/:id" element={<TemplateDetailPage />} />
 

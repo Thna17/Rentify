@@ -11,6 +11,51 @@ const { sequelize } = require("../config/db");
 const cookieConfig = require("../config/cookieConfig");
 const { RENTIFY_API_BASE } = require("../config/serviceUrls");
 
+// Marketplace buyers use Core identity even when a browser also carries a
+// legacy storefront Customer cookie on the same host (notably localhost).
+// Never fall back to a Customer or guest identity for these routes.
+const createVerifyCoreBuyer = ({ validate = (accessToken, refreshToken) => axios.post(
+  `${RENTIFY_API_BASE}/api/auth/validate-token`, { accessToken, refreshToken },
+), errorMessage = 'Rentify buyer sign-in required' } = {}) => async (req, res, next) => {
+  const accessToken = req.cookies?.userAccessToken;
+  const refreshToken = req.cookies?.userRefreshToken;
+  if (!accessToken && !refreshToken) {
+    return res.status(401).json({ error: errorMessage });
+  }
+  let validation;
+  try { validation = await validate(accessToken, refreshToken); }
+  catch (_error) {
+    return res.status(401).json({ error: errorMessage });
+  }
+  const entity = validation.data?.entity;
+  if (!validation.data?.valid || !entity?.id) {
+    return res.status(401).json({ error: errorMessage });
+  }
+  req.user = { ...entity, type: 'user' };
+  if (validation.data.newAccessToken) {
+    res.cookie('userAccessToken', validation.data.newAccessToken, {
+      ...cookieConfig, maxAge: 15 * 60 * 1000,
+    });
+  }
+  return next();
+};
+
+const verifyCoreBuyer = createVerifyCoreBuyer();
+const verifyCoreMerchant = createVerifyCoreBuyer({ errorMessage: 'Merchant authentication required' });
+const createVerifyStoreActor = ({ validateStaff = verifyStaffToken,
+  verifyMerchant = verifyCoreMerchant } = {}) => async (req, res, next) => {
+  if (req.cookies?.staffAccessToken || req.cookies?.staffRefreshToken) {
+    const result = await validateStaff(req.cookies.staffAccessToken,
+      req.cookies.staffRefreshToken);
+    if (result.valid) {
+      req.user = { ...result.entity, type: 'staff', permissions: result.permissions };
+      return next();
+    }
+  }
+  return verifyMerchant(req, res, next);
+};
+const verifyStoreActor = createVerifyStoreActor();
+
 // Customer cookies are deliberately host-only.  COOKIE_DOMAIN is reserved for
 // central Rentify identities on domains controlled by Rentify.
 const customerCookieConfig = () => {
@@ -212,5 +257,9 @@ const clearCookies = (res) => {
 
 module.exports = { 
   verifyToken, 
+  verifyCoreBuyer,
+  verifyStoreActor,
+  createVerifyStoreActor,
+  createVerifyCoreBuyer,
   clearCookies 
 };

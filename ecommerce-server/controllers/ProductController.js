@@ -4,6 +4,7 @@ const ProductService = require('../services/ProductService');
 const { ApiError } = require('../utils/ApiError');
 const { logger } = require('../utils/logger');
 const { Op } = require('sequelize'); 
+const { Product } = require('../models');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -37,7 +38,7 @@ class ProductController {
     try {
       const { websiteId } = req.params;
       const service = new ProductService(websiteId);
-      const result = await service.findAll(req.query);
+      const result = await service.findAll({ ...req.query, status: 'active', limit: Math.min(60, Number(req.query.limit) || 12) });
       res.json(result);
     } catch (error) {
     logger.error('Get all products error:', error);
@@ -51,11 +52,34 @@ class ProductController {
     }
   }
 
+  static async getManagedProducts(req, res) {
+    try {
+      const service = new ProductService(req.params.websiteId);
+      const result = await service.findAll({ ...req.query, status: req.query.status || 'all',
+        limit: Math.min(60, Number(req.query.limit) || 12) });
+      res.json(result);
+    } catch (error) {
+      logger.error('Get managed products error:', error);
+      res.status(error.statusCode || 500).json({ error: error.message || 'Server error' });
+    }
+  }
+
+  static async getManagedProductById(req, res) {
+    try {
+      const service = new ProductService(req.params.websiteId);
+      res.json(await service.findById(req.params.productId));
+    } catch (error) {
+      logger.error('Get managed product error:', error);
+      res.status(error.statusCode || 500).json({ error: error.message || 'Server error' });
+    }
+  }
+
   static async getProductBySlug(req, res) {
     try {
       const { websiteId, slug } = req.params;
       const service = new ProductService(websiteId);
       const product = await service.findBySlug(slug);
+      if (product.status !== 'active') return res.status(404).json({ error: 'Product not found' });
       res.json(product);
     } catch (error) {
       logger.error('Get product by slug error:', error);
@@ -70,6 +94,7 @@ class ProductController {
       const { websiteId, productId } = req.params;
       const service = new ProductService(websiteId);
       const product = await service.findById(productId);
+      if (product.status !== 'active') return res.status(404).json({ error: 'Product not found' });
       res.json(product);
     } catch (error) {
       logger.error('Get product by ID error:', error);
@@ -160,7 +185,8 @@ class ProductController {
       const service = new ProductService(websiteId);
       const result = await service.getProductsByCategory({
         categoryId,
-        ...queryParams
+        ...queryParams,
+        status: 'active',
       });
       
       res.json(result);
@@ -340,7 +366,7 @@ static parseCSVFile(filePath) {
       }
 
       const service = new ProductService(websiteId);
-      const where = { websiteId: websiteId };
+      const where = { websiteId: websiteId, status: 'active' };
 
       // Build search conditions based on field
       if (field === 'all' || field === 'name') {

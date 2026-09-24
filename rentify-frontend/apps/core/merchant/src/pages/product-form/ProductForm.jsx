@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -61,8 +61,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@rentify/shared/ui/collapsible';
-import { useGetProductQuery } from '@rentify/apis';
+import { useGetManagedProductQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
 
 export const ProductForm = ({ onClose, category }) => {
   const { websiteData } = useThemeService();
@@ -72,6 +73,19 @@ export const ProductForm = ({ onClose, category }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState([]);
+  const [marketplaceCategories, setMarketplaceCategories] = useState([]);
+  const [marketplaceCategoriesError, setMarketplaceCategoriesError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetch(`${ECOMMERCE_API_ROOT}/api/marketplace/categories`)
+      .then((response) => {
+        if (!response.ok) throw new Error('Could not load categories');
+        return response.json();
+      })
+      .then((result) => { if (active) setMarketplaceCategories(result.categories || []); })
+      .catch(() => { if (active) setMarketplaceCategoriesError(true); });
+    return () => { active = false; };
+  }, []);
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
     media: true,
@@ -87,7 +101,7 @@ export const ProductForm = ({ onClose, category }) => {
     data: product,
     isLoading: productLoading,
     isError: createError,
-  } = useGetProductQuery({ websiteId, productId: id }, { skip: !id });
+  } = useGetManagedProductQuery({ websiteId, productId: id }, { skip: !id });
 
   // Upload function remains the same
   const uploadImage = (websiteId, imageFile) => {
@@ -143,6 +157,7 @@ export const ProductForm = ({ onClose, category }) => {
       (value) => !isEditMode || (value && value.length > 0)
     ),
     categoryId: Yup.string().nullable(),
+    marketplaceCategory: Yup.string().required('Marketplace category is required'),
   });
 
   const getInitialCategoryId = () => {
@@ -165,6 +180,7 @@ export const ProductForm = ({ onClose, category }) => {
       status: product?.status || 'draft',
       images: product?.images || [],
       categoryId: getInitialCategoryId(),
+      marketplaceCategory: product?.marketplaceCategory || '',
       version: product?.version || 0,
       comparePrice: product?.comparePrice || '',
       sku: product?.sku || '',
@@ -431,6 +447,26 @@ export const ProductForm = ({ onClose, category }) => {
                 <CollapsibleContent>
                   <CardContent className="pt-6 space-y-6">
                     <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="marketplaceCategory" className="text-base font-medium mb-2 block">
+                          Marketplace category
+                        </Label>
+                        <Select value={formik.values.marketplaceCategory}
+                          onValueChange={(value) => formik.setFieldValue('marketplaceCategory', value)}>
+                          <SelectTrigger id="marketplaceCategory" className="h-11">
+                            <SelectValue placeholder="Choose a marketplace category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {marketplaceCategories.map((item) =>
+                              <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {formik.touched.marketplaceCategory && formik.errors.marketplaceCategory &&
+                          <p className="mt-1 text-sm text-red-600">{formik.errors.marketplaceCategory}</p>}
+                        {marketplaceCategoriesError &&
+                          <p className="mt-1 text-sm text-red-600">Could not load marketplace categories. Reload this page to try again.</p>}
+                      </div>
+
                       <div>
                         <Label
                           htmlFor="name"

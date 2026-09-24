@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Upload, Building, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 const BusinessDetailsStep = ({ data, onUpdate }) => {
   const { t, language } = useLanguage();
   const isKhmer = language === 'KH';
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/categories`)
+      .then((response) => response.json())
+      .then((result) => setCategories(result.data || []))
+      .catch(() => setCategories([]));
+  }, []);
 
   const handleInputChange = (field, value) => {
     onUpdate({ businessDetails: { ...data.businessDetails, [field]: value } });
@@ -33,6 +42,16 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input type="text" value={data.businessDetails?.name || ''} onChange={(e) => handleInputChange('name', e.target.value)} placeholder={t('business.name.placeholder')} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" required />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="primary-store-category" className="block text-sm font-medium text-gray-700 mb-2">Primary store category</label>
+          <select id="primary-store-category" required value={data.businessDetails?.primaryCategory || ''}
+            onChange={(event) => handleInputChange('primaryCategory', event.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3">
+            <option value="">Choose a category</option>
+            {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
         </div>
         
         <div>

@@ -13,6 +13,7 @@ const UsageEvent = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
+    storeId: { type: DataTypes.UUID, allowNull: true },
     eventType: {
       type: DataTypes.ENUM("ORDER_PAID", "INVOICE_PAID", "STORE_VIEW"),
       allowNull: false,

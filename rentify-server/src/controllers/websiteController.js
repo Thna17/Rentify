@@ -1,6 +1,7 @@
 // controllers/websiteController.js
 const websiteService = require("../services/websiteService");
 const ecommerceSyncService = require("../services/ecommerceSyncService");
+const storeSyncService = require('../services/storeSyncService');
 const { logger } = require("../utils/logger");
 const { asyncHandler } = require("../utils/helpers");
 const { ERROR_CODES } = require("../config/constants");
@@ -40,6 +41,7 @@ class WebsiteController {
         error: error.message,
       });
     });
+    if (website.storeId) storeSyncService.syncStore(website.storeId).catch(() => {});
 
     res.status(201).json({
       success: true,
@@ -195,6 +197,7 @@ class WebsiteController {
 
       const response = {
         websiteId: website.id,
+        storeId: website.storeId,
         userId: website.userId,
         templateId: website.templateId,
         userEmail: website.User?.email || null,
@@ -299,6 +302,7 @@ class WebsiteController {
         id: website.id,
         domain: website.domain,
         websiteId: website.id,
+        storeId: website.storeId,
         userId: website.userId,
         niche: website.niche || "ecommerce",
         status: website.status,

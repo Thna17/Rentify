@@ -11,6 +11,21 @@ const ProductBuilder = require("../core/product/builders/ProductBuilder");
 const StrategyFactory = require("../core/product/factories/StrategyFactory");
 const { logger } = require("../utils/logger");
 const { ApiError } = require("../utils/ApiError");
+const { canonicalCategory } = require('../config/marketplaceTaxonomy');
+
+function validMarketplaceCategory(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const category = canonicalCategory(value);
+  if (!category) throw new ApiError(400, 'Choose a valid marketplace category');
+  return category;
+}
+
+function validMarketplaceVisibility(value) {
+  if (value !== undefined && value !== null && typeof value !== 'boolean') {
+    throw new ApiError(400, 'Marketplace visibility must be true, false, or null');
+  }
+  return value;
+}
 
 class ProductService {
   constructor(websiteId) {
@@ -19,7 +34,7 @@ class ProductService {
 
   async getWebsiteNiche() {
     const website = await WebsiteData.findOne({
-      where: { id: this.websiteId },
+      where: { websiteId: this.websiteId },
       attributes: ["niche"],
     });
     return website ? website.niche : "ecommerce";
@@ -267,6 +282,8 @@ async create(productData, transaction = null) {
       .setInventoryInfo(productData)
       .setSeoInfo(productData)
       .setCategory(productData.categoryId)
+      .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+        validMarketplaceVisibility(productData.marketplaceVisibility))
       .setImages(productData.images)
       .setTags(productData.tags)
       .setNicheAttributes(productData.nicheAttributes || {});
@@ -290,11 +307,30 @@ async create(productData, transaction = null) {
 
   async update(productId, updates, transaction = null) {
     try {
-      const product = await this.findById(productId);
+      const product = await Product.findOne({
+        where: { id: productId, websiteId: this.websiteId },
+        transaction,
+        lock: transaction?.LOCK.UPDATE,
+      });
+      if (!product) throw new ApiError(404, 'Product not found');
+      if (!Number.isSafeInteger(updates.expectedVersion) ||
+          updates.expectedVersion !== product.version) {
+        throw new ApiError(409, 'Product version has changed; refresh and retry');
+      }
 
       const updateData = { ...updates };
+      for (const protectedField of ['id', 'websiteId', 'storeId', 'websiteNiche', 'version', 'expectedVersion', 'createdAt', 'updatedAt']) {
+        delete updateData[protectedField];
+      }
+      if (updates.marketplaceCategory !== undefined) {
+        updateData.marketplaceCategory = validMarketplaceCategory(updates.marketplaceCategory);
+      }
+      if (updates.marketplaceVisibility !== undefined) {
+        updateData.marketplaceVisibility = validMarketplaceVisibility(updates.marketplaceVisibility);
+      }
       delete updateData.variants;
       delete updateData.options;
+      updateData.version = product.version + 1;
 
       await product.update(updateData, { transaction });
 
@@ -334,7 +370,7 @@ async create(productData, transaction = null) {
         }
       }
 
-      return await this.findById(productId);
+      return await this.findById(productId, transaction);
     } catch (error) {
       if (error instanceof ApiError) throw error;
       logger.error("Error updating product:", error);
@@ -348,16 +384,18 @@ async create(productData, transaction = null) {
         where: {
           id: productId,
           websiteId: this.websiteId,
-          version: expectedVersion,
         },
         transaction,
+        lock: transaction?.LOCK.UPDATE,
       });
       if (!product) {
-        throw new ApiError(404, "Product not found or version mismatch");
+        throw new ApiError(404, "Product not found");
       }
-
-      await product.destroy({ transaction });
-      logger.info(`Product deleted: ${productId}`);
+      if (!Number.isSafeInteger(expectedVersion) || product.version !== expectedVersion) {
+        throw new ApiError(409, 'Product version has changed; refresh and retry');
+      }
+      await product.update({ status: 'archived', version: product.version + 1 }, { transaction });
+      logger.info(`Product archived: ${productId}`);
     } catch (error) {
       if (error instanceof ApiError) throw error;
       logger.error("Error deleting product:", error);
@@ -462,6 +500,8 @@ async create(productData, transaction = null) {
           .setInventoryInfo(productData)
           .setSeoInfo(productData)
           .setCategory(productData.categoryId)
+          .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+            validMarketplaceVisibility(productData.marketplaceVisibility))
           .setImages(productData.images || [])
           .setTags(productData.tags || [])
           .setNicheAttributes(productData.nicheAttributes || {});
@@ -482,16 +522,15 @@ async create(productData, transaction = null) {
   async updateInventory(productId, inventoryData, transaction = null) {
     const { quantity, note, expectedVersion } = inventoryData;
 
-    if (expectedVersion === undefined || typeof expectedVersion !== "number") {
+    if (!Number.isSafeInteger(expectedVersion)) {
       throw new ApiError(
         400,
         "expectedVersion is required and must be a number"
       );
     }
 
-    const quantityInt = parseInt(quantity, 10);
-    if (isNaN(quantityInt)) {
-      throw new ApiError(400, "Quantity must be a valid number");
+    if (!Number.isSafeInteger(quantity) || quantity === 0) {
+      throw new ApiError(400, "Quantity must be a nonzero whole number");
     }
 
     try {
@@ -501,6 +540,7 @@ async create(productData, transaction = null) {
           websiteId: this.websiteId,
         },
         transaction,
+        lock: transaction?.LOCK.UPDATE,
       });
 
       if (!product) {
@@ -516,39 +556,36 @@ async create(productData, transaction = null) {
       }
 
       // Calculate new quantity and status
-      const newQuantity = product.stockQuantity + quantityInt;
+      const newQuantity = product.stockQuantity + quantity;
+      if (newQuantity < 0) throw new ApiError(400, 'Insufficient stock');
       let newStatus = product.status;
 
-      if (product.trackInventory) {
-        if (newQuantity <= 0 && !product.allowBackorders) {
+      if (product.trackInventory && ['active', 'out_of_stock', 'low_stock'].includes(product.status)) {
+        if (newQuantity === 0 && !product.allowBackorders) {
           newStatus = "out_of_stock";
-        } else if (
-          newQuantity > 0 &&
-          newQuantity <= product.lowStockThreshold
-        ) {
-          newStatus = "low_stock";
-        } else if (newQuantity > product.lowStockThreshold) {
+        } else {
           newStatus = "active";
         }
       }
 
       // Update product
-      await Product.update(
+      const [updatedCount] = await Product.update(
         {
           stockQuantity: newQuantity,
           status: newStatus,
           version: expectedVersion + 1,
         },
         {
-          where: { id: productId },
+          where: { id: productId, websiteId: this.websiteId, version: expectedVersion },
           transaction,
         }
       );
+      if (updatedCount !== 1) throw new ApiError(409, 'Product version has changed; refresh and retry');
 
-      const updatedProduct = await this.findById(productId);
+      const updatedProduct = await this.findById(productId, transaction);
 
       logger.info(
-        `Inventory updated for product ${productId}: ${quantityInt} units`
+        `Inventory updated for product ${productId}: ${quantity} units`
       );
       return updatedProduct;
     } catch (error) {
@@ -567,7 +604,8 @@ async create(productData, transaction = null) {
 
     if (
       !Array.isArray(expectedVersions) ||
-      expectedVersions.length !== productIds.length
+      expectedVersions.length !== productIds.length ||
+      expectedVersions.some((version) => !Number.isSafeInteger(version))
     ) {
       throw new ApiError(
         400,
@@ -589,71 +627,31 @@ async create(productData, transaction = null) {
     }
 
     try {
-      let updateCount = 0;
-      const where = {
-        id: { [Op.in]: productIds },
-        websiteId: this.websiteId,
-      };
-
-      switch (operation) {
-        case "delete":
-          updateCount = await Product.destroy({ where, transaction });
-          break;
-
-        case "status-change":
-          if (!updateData.newStatus) {
-            throw new ApiError(
-              400,
-              "newStatus is required for status-change operation"
-            );
-          }
-          updateCount = await Product.update(
-            { status: updateData.newStatus },
-            { where, transaction }
-          );
-          break;
-
-        case "price-update":
-          if (updateData.newPrice === undefined) {
-            throw new ApiError(
-              400,
-              "newPrice is required for price-update operation"
-            );
-          }
-          updateCount = await Product.update(
-            { price: updateData.newPrice },
-            { where, transaction }
-          );
-          break;
-
-        case "inventory-update":
-          if (updateData.quantity === undefined) {
-            throw new ApiError(
-              400,
-              "quantity is required for inventory-update operation"
-            );
-          }
-          // For inventory updates, we need to handle each product individually
-          // due to version checking and status calculations
-          for (let i = 0; i < productIds.length; i++) {
-            const productId = productIds[i];
-            const expectedVersion = expectedVersions[i];
-
-            await this.updateInventory(
-              productId,
-              {
-                quantity: updateData.quantity,
-                expectedVersion,
-              },
-              transaction
-            );
-          }
-          updateCount = productIds.length;
-          break;
+      if (operation === 'status-change' &&
+          !['active', 'draft', 'archived'].includes(updateData.newStatus)) {
+        throw new ApiError(400, 'Invalid product status');
+      }
+      if (operation === 'price-update' &&
+          (!Number.isFinite(Number(updateData.newPrice)) ||
+           Number(updateData.newPrice) <= 0 || Number(updateData.newPrice) > 1_000_000)) {
+        throw new ApiError(400, 'Invalid product price');
+      }
+      for (let i = 0; i < productIds.length; i += 1) {
+        const productId = productIds[i];
+        const expectedVersion = expectedVersions[i];
+        if (operation === 'inventory-update') {
+          await this.updateInventory(productId, {
+            quantity: updateData.quantity, expectedVersion,
+          }, transaction);
+        } else {
+          const changes = operation === 'price-update' ? { price: Number(updateData.newPrice) }
+            : { status: operation === 'delete' ? 'archived' : updateData.newStatus };
+          await this.update(productId, { ...changes, expectedVersion }, transaction);
+        }
       }
 
-      logger.info(`Bulk ${operation} completed for ${updateCount} products`);
-      return { updatedCount: updateCount };
+      logger.info(`Bulk ${operation} completed for ${productIds.length} products`);
+      return { updatedCount: productIds.length };
     } catch (error) {
       if (error instanceof ApiError) throw error;
       logger.error("Bulk update error:", error);
@@ -684,6 +682,8 @@ async create(productData, transaction = null) {
             .setInventoryInfo(productData)
             .setSeoInfo(productData)
             .setCategory(productData.categoryId)
+            .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+              validMarketplaceVisibility(productData.marketplaceVisibility))
             .setImages(productData.images || [])
             .setTags(productData.tags || [])
             .setNicheAttributes(productData.nicheAttributes || {});
@@ -719,6 +719,9 @@ async create(productData, transaction = null) {
       trackInventory: row.trackInventory !== "false",
       allowBackorders: row.allowBackorders === "true",
       categoryId: row.categoryId,
+      marketplaceCategory: row.marketplaceCategory || null,
+      marketplaceVisibility: row.marketplaceVisibility === 'true' ? true
+        : row.marketplaceVisibility === 'false' ? false : undefined,
       seoTitle: row.seoTitle,
       seoDescription: row.seoDescription,
       slug: row.slug,

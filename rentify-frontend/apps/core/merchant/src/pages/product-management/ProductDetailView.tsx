@@ -68,7 +68,7 @@ import {
   TableRow,
 } from '@rentify/shared/ui/table';
 
-import { useGetProductQuery } from '@rentify/apis';
+import { useGetManagedProductQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
 // ===== TYPE DEFINITIONS =====
@@ -181,7 +181,7 @@ export function ProductDetailView({
     data: product,
     isLoading,
     isError,
-  } = useGetProductQuery({ websiteId, productId: id });
+  } = useGetManagedProductQuery({ websiteId, productId: id });
 
   // Local state management
   const [selectedImage, setSelectedImage] = React.useState<number>(0);
@@ -326,7 +326,7 @@ export function ProductDetailView({
     };
 
     return (
-      <Badge variant={config.variant} className={`ml-2 ${config.className}`}>
+      <Badge variant={config.variant as any} className={`ml-2 ${config.className}`}>
         {config.label}
       </Badge>
     );
@@ -551,7 +551,7 @@ export function ProductDetailView({
               </Card>
 
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {(editedProduct.images || product?.images || []).map((image, index) => (
+                {((editedProduct.images || product?.images || []) as any[]).map((image: any, index: number) => (
                   <div key={image.id} className="relative group flex-shrink-0">
                     <button
                       onClick={() => setSelectedImage(index)}
@@ -1336,7 +1336,7 @@ export function ProductDetailView({
             <CardContent>
               <div className="space-y-4">
                 {product?.activityLog && product.activityLog.length > 0 ? (
-                  product.activityLog.map((log, index) => (
+                  product.activityLog.map((log: any, index: number) => (
                     <div key={index} className="flex items-start gap-4">
                       <Avatar className="h-8 w-8 flex-shrink-0">
                         <AvatarFallback>

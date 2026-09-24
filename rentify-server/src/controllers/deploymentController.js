@@ -2,8 +2,7 @@ const deploymentService = require('../services/deploymentService');
 const Website = require('../models/Website');
 const { logger } = require('../utils/logger');
 const updateDeploymentUrls = require('../utils/updateDeploymentUrls')
-const axios = require("axios");
-const { ecommerceApiUrl } = require("../config/runtimeUrls");
+const ecommerceSyncService = require('../services/ecommerceSyncService');
 
 exports.publishWebsite = async (req, res) => {
   try {
@@ -19,13 +18,6 @@ exports.publishWebsite = async (req, res) => {
     
     updateDeploymentUrls(result.deploymentUrl);
   
-  await axios.put(`${ecommerceApiUrl}/api/website-data/${websiteId}`, {
-      domain: result.deploymentUrl,
-      status: 'active'
-    }, {
-      headers: { "x-rentify-service-token": process.env.SERVICE_TO_SERVICE_TOKEN }
-    });
-    
     res.json({
       success: true,
       deploymentUrl: result.deploymentUrl,
@@ -70,7 +62,8 @@ exports.updateWebsiteStatus = async (req, res) => {
     const website = await Website.findByPk(websiteId);
     if (!website) return res.status(404).json({ error: "Website not found" });
     
-    await website.update({ status, domain });
+    await website.update({ status, ...(domain && { domain }) });
+    await ecommerceSyncService.updateWebsiteStatus(websiteId, status, domain || website.domain);
     
     res.json({ success: true, status });
   } catch (error) {

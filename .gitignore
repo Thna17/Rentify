@@ -1,5 +1,6 @@
 .env
 .env.docker
+.env.local
 .env.*.local
 
 # Dependencies and generated output
@@ -7,6 +8,7 @@ node_modules/
 dist/
 coverage/
 .nx/
+.angular/
 .playwright-cli/
 output/
 

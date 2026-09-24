@@ -1,0 +1,52 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint",
+    "test": "vitest run",
+    "seed:auth": "ts-node scripts/seed-auth-test-users.ts",
+    "seed:catalog": "ts-node scripts/seed-catalog.ts",
+    "seed:sellers": "ts-node scripts/seed-sellers.ts",
+    "migrate:legacy-seller": "ts-node scripts/migrate-legacy-seller.ts",
+    "check:email": "ts-node scripts/check-email.ts",
+    "seed:demo": "ts-node scripts/seed-demo-stores.ts"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/nodemailer": "^8.0.1",
+    "@types/supertest": "^7.2.1",
+    "@types/swagger-ui-express": "^4.1.8",
+    "eslint": "^9",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2",
+    "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "helmet": "^8.3.0",
+    "jimp": "^1.6.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.8.1",
+    "nodemailer": "^10.0.1",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.4.3"
+  }
+}
