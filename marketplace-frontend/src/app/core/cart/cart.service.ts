@@ -12,14 +12,18 @@ const STORAGE_KEY = 'khmercraft.cart';
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FLAT_RATE = 3.5;
 
+export interface EnhancedCartItem extends CartItem {
+  product?: Product;
+}
+
 /**
  * Cart state, shared app-wide.
  *
  * Connected to Rentify Commerce API via RentifyMarketplaceService.
  *   Signed in  → Rentify Commerce API store-grouped cart (/api/marketplace/cart).
- *   Guest      → localStorage, priced from the catalog.
+ *   Guest      → Local memory & localStorage, synced with Rentify session cart.
  *
- * On sign-in the guest basket is pushed to Rentify and then cleared.
+ * On sign-in the guest basket is merged and pushed to Rentify.
  */
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -27,8 +31,11 @@ export class CartService {
   private readonly auth = inject(AuthService);
   private readonly catalog = inject(CatalogService);
 
-  /** Guest basket. Ignored entirely while signed in. */
-  private readonly guestItems = signal<CartItem[]>(this.restore());
+  /** In-memory product cache ensuring added products are never dropped from view. */
+  private readonly localProductCache = new Map<string, Product>();
+
+  /** Guest basket. */
+  private readonly guestItems = signal<EnhancedCartItem[]>(this.restore());
 
   /** Store carts from Rentify Commerce API. */
   private readonly storeCarts = signal<StoreCart[]>([]);
@@ -46,19 +53,24 @@ export class CartService {
         const store = this.catalog.storeById(cart.storeId);
         const sellerName = store?.name || 'Local Merchant';
         for (const item of cart.items) {
-          const known = this.catalog.productById(item.productId);
-          const price = item.currentPrice
+          const known =
+            this.catalog.productById(item.productId) ||
+            this.localProductCache.get(item.productId);
+          const backendProd = (item as any).product;
+          const img = backendProd?.images?.[0]?.url || backendProd?.images?.[0] || null;
+          const effectiveName = known?.name || backendProd?.name || 'Product';
+          const effectivePrice = item.currentPrice
             ? parseFloat(item.currentPrice) || 0
-            : known?.price || 0;
+            : known?.price || (backendProd?.price ? parseFloat(backendProd.price) : 0);
           const product: Product = known
-            ? { ...known, price, sellerName: store?.name || known.sellerName || 'Local Merchant' }
+            ? { ...known, price: effectivePrice, sellerName: store?.name || known.sellerName || 'Local Merchant' }
             : {
                 id: item.productId,
-                name: 'Product',
-                slug: item.productId,
-                image: null,
-                images: [],
-                price,
+                name: effectiveName,
+                slug: backendProd?.slug || item.productId,
+                image: img,
+                images: img ? [img] : [],
+                price: effectivePrice,
                 categorySlug: 'general',
                 categoryName: 'General',
                 subcategory: null,
@@ -67,35 +79,61 @@ export class CartService {
                 storeId: cart.storeId,
                 rating: 5,
                 reviewCount: 0,
-                stock: 99,
+                stock: backendProd?.stockQuantity ?? 99,
                 status: item.available ? 'in-stock' : 'out-of-stock',
                 description: '',
                 soldCount: 0,
                 createdAt: new Date().toISOString(),
                 collections: [],
               };
+          if (!known && backendProd) {
+            this.localProductCache.set(item.productId, product);
+          }
           allLines.push({
             product,
             quantity: item.quantity,
-            lineTotal: round(price * item.quantity),
+            lineTotal: round(effectivePrice * item.quantity),
           });
         }
       }
       return allLines;
     }
 
-    return this.guestItems()
-      .map((item) => {
-        const product = this.catalog.productById(item.productId);
-        return product
-          ? {
-              product,
-              quantity: item.quantity,
-              lineTotal: round(product.price * item.quantity),
-            }
-          : null;
-      })
-      .filter((line): line is CartLine => line !== null);
+    return this.guestItems().map((item) => {
+      const known =
+        this.catalog.productById(item.productId) ||
+        this.localProductCache.get(item.productId) ||
+        item.product;
+      const product: Product = known
+        ? known
+        : {
+            id: item.productId,
+            name: (item as any).name || 'Product',
+            slug: item.productId,
+            image: (item as any).image || null,
+            images: (item as any).image ? [(item as any).image] : [],
+            price: (item as any).price || 0,
+            categorySlug: 'general',
+            categoryName: 'General',
+            subcategory: null,
+            subcategorySlug: null,
+            sellerName: (item as any).sellerName || 'Local Merchant',
+            storeId: (item as any).storeId || '',
+            rating: 5,
+            reviewCount: 0,
+            stock: 99,
+            status: 'in-stock',
+            description: '',
+            soldCount: 0,
+            createdAt: new Date().toISOString(),
+            collections: [],
+          };
+      return {
+        product,
+        quantity: item.quantity,
+        lineTotal: round(product.price * item.quantity),
+      };
+    });
   });
 
   readonly count = computed(() => {
@@ -111,7 +149,9 @@ export class CartService {
   readonly subtotal = computed(() => {
     if (this.signedIn()) {
       return round(
-        this.storeCarts().reduce((sum, cart) => sum + (parseFloat(cart.subtotal) || 0), 0),
+        this.storeCarts()
+          .filter((cart) => cart.items && cart.items.length > 0)
+          .reduce((sum, cart) => sum + (parseFloat(cart.subtotal) || 0), 0),
       );
     }
     return round(this.lines().reduce((total, line) => total + line.lineTotal, 0));
@@ -120,10 +160,12 @@ export class CartService {
   readonly shipping = computed(() => {
     if (this.signedIn()) {
       return round(
-        this.storeCarts().reduce(
-          (sum, cart) => sum + (parseFloat(cart.deliveryFee || '0') || 0),
-          0,
-        ),
+        this.storeCarts()
+          .filter((cart) => cart.items && cart.items.length > 0)
+          .reduce(
+            (sum, cart) => sum + (parseFloat(cart.deliveryFee || '0') || 0),
+            0,
+          ),
       );
     }
     const subtotal = this.subtotal();
@@ -135,11 +177,13 @@ export class CartService {
   readonly total = computed(() => {
     if (this.signedIn()) {
       return round(
-        this.storeCarts().reduce(
-          (sum, cart) =>
-            sum + (parseFloat(cart.totalAmount || cart.subtotal) || 0),
-          0,
-        ),
+        this.storeCarts()
+          .filter((cart) => cart.items && cart.items.length > 0)
+          .reduce(
+            (sum, cart) =>
+              sum + (parseFloat(cart.totalAmount || cart.subtotal) || 0),
+            0,
+          ),
       );
     }
     return round(this.subtotal() + this.shipping());
@@ -156,7 +200,9 @@ export class CartService {
   constructor() {
     effect(() => {
       if (!this.signedIn()) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.guestItems()));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.guestItems()));
+        } catch {}
       }
     });
 
@@ -171,6 +217,8 @@ export class CartService {
         this.storeCarts.set([]);
       }
     });
+
+    void this.refresh();
   }
 
   getStoreCarts(): StoreCart[] {
@@ -180,17 +228,37 @@ export class CartService {
   private async adoptGuestCart(): Promise<void> {
     this.loading.set(true);
     try {
+      // First attempt server-side merge of session cart if available
+      const mergedProductIds = new Set<string>();
+      try {
+        const mergeRes = await firstValueFrom(this.rentify.mergeCart());
+        if (mergeRes?.carts) {
+          this.storeCarts.set(mergeRes.carts);
+          for (const c of mergeRes.carts) {
+            for (const it of c.items) {
+              mergedProductIds.add(it.productId);
+            }
+          }
+        }
+      } catch {}
+
       const pending = this.guestItems();
-      const remaining: CartItem[] = [];
+      const remaining: EnhancedCartItem[] = [];
       for (const item of pending) {
+        if (mergedProductIds.has(item.productId)) {
+          continue;
+        }
         try {
-          const product = this.catalog.productById(item.productId) || await this.catalog.loadProduct(item.productId);
-          if (product?.storeId) {
-            await firstValueFrom(
-              this.rentify.setQuantity(product.storeId, item.productId, item.quantity),
-            );
-          } else {
-            remaining.push(item);
+          const product =
+            this.catalog.productById(item.productId) ||
+            this.localProductCache.get(item.productId) ||
+            item.product ||
+            (await this.catalog.loadProduct(item.productId));
+          const res = await firstValueFrom(
+            this.rentify.addItem(item.productId, item.quantity, product?.storeId),
+          );
+          if (res?.carts) {
+            this.storeCarts.set(res.carts);
           }
         } catch {
           remaining.push(item);
@@ -198,9 +266,13 @@ export class CartService {
       }
       this.guestItems.set(remaining);
       if (remaining.length === 0) {
-        localStorage.removeItem(STORAGE_KEY);
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {}
       } else {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+        } catch {}
       }
       await this.refresh();
     } finally {
@@ -209,12 +281,55 @@ export class CartService {
   }
 
   async refresh(): Promise<void> {
-    if (!this.signedIn()) {
-      return;
-    }
     try {
       const res = await firstValueFrom(this.rentify.carts());
-      this.storeCarts.set(res.carts || []);
+      if (res?.carts) {
+        this.storeCarts.set(res.carts);
+        // Cache products returned by server
+        for (const c of res.carts) {
+          for (const it of c.items) {
+            const bp = (it as any).product;
+            if (bp && !this.localProductCache.has(it.productId)) {
+              const img = bp.images?.[0]?.url || bp.images?.[0] || null;
+              this.localProductCache.set(it.productId, {
+                id: it.productId,
+                name: bp.name,
+                slug: bp.slug || it.productId,
+                image: img,
+                images: img ? [img] : [],
+                price: parseFloat(it.currentPrice || bp.price) || 0,
+                categorySlug: 'general',
+                categoryName: 'General',
+                subcategory: null,
+                subcategorySlug: null,
+                sellerName: 'Local Merchant',
+                storeId: c.storeId,
+                rating: 5,
+                reviewCount: 0,
+                stock: bp.stockQuantity ?? 99,
+                status: it.available ? 'in-stock' : 'out-of-stock',
+                description: '',
+                soldCount: 0,
+                createdAt: new Date().toISOString(),
+                collections: [],
+              });
+            }
+          }
+        }
+        // If guest has no local items but server has session cart items, restore them into guestItems
+        if (!this.signedIn() && this.guestItems().length === 0) {
+          const restored: EnhancedCartItem[] = [];
+          for (const c of res.carts) {
+            for (const it of c.items) {
+              const cached = this.localProductCache.get(it.productId);
+              restored.push({ productId: it.productId, quantity: it.quantity, product: cached });
+            }
+          }
+          if (restored.length > 0) {
+            this.guestItems.set(restored);
+          }
+        }
+      }
     } catch {
       // Leave previous in place
     }
@@ -228,21 +343,34 @@ export class CartService {
       return false;
     }
 
+    // Always cache the product reference in memory
+    this.localProductCache.set(product.id, product);
+
     if (!this.signedIn()) {
       this.guestItems.update((items) => {
         const existing = items.find((item) => item.productId === product.id);
+        const newQty = clamp((existing?.quantity || 0) + quantity, product);
         if (!existing) {
           return [
             ...items,
-            { productId: product.id, quantity: clamp(quantity, product) },
+            { productId: product.id, quantity: newQty, product },
           ];
         }
         return items.map((item) =>
           item.productId === product.id
-            ? { ...item, quantity: clamp(item.quantity + quantity, product) }
+            ? { ...item, quantity: newQty, product }
             : item,
         );
       });
+
+      // Also persist to backend session cart asynchronously
+      const targetQty = this.quantityOf(product.id);
+      const persist$ = product.storeId
+        ? this.rentify.setQuantity(product.storeId, product.id, targetQty)
+        : this.rentify.addItem(product.id, quantity);
+      await firstValueFrom(persist$).then((res) => {
+        if (res?.carts) this.storeCarts.set(res.carts);
+      }).catch(() => {});
       return true;
     }
 
@@ -251,9 +379,10 @@ export class CartService {
       const existingCart = this.storeCarts().find((c) => c.storeId === product.storeId);
       const existingItem = existingCart?.items.find((it) => it.productId === product.id);
       const currentQty = existingItem?.quantity || 0;
-      const res = await firstValueFrom(
-        this.rentify.setQuantity(product.storeId, product.id, currentQty + quantity),
-      );
+      const mutation$ = product.storeId
+        ? this.rentify.setQuantity(product.storeId, product.id, currentQty + quantity)
+        : this.rentify.addItem(product.id, quantity);
+      const res = await firstValueFrom(mutation$);
       this.storeCarts.set(res.carts || []);
       return true;
     } catch (error: unknown) {
@@ -265,22 +394,35 @@ export class CartService {
   }
 
   async changeQuantity(productId: string, delta: number): Promise<void> {
+    const product =
+      this.catalog.productById(productId) || this.localProductCache.get(productId);
+
     if (!this.signedIn()) {
-      const product = this.catalog.productById(productId);
+      let targetStoreId: string | null = product?.storeId || null;
+      let nextQty = 0;
       this.guestItems.update((items) =>
         items
-          .map((item) =>
-            item.productId === productId
-              ? {
-                  ...item,
-                  quantity: product
-                    ? clamp(item.quantity + delta, product)
-                    : item.quantity + delta,
-                }
-              : item,
-          )
+          .map((item) => {
+            if (item.productId === productId) {
+              const q = product ? clamp(item.quantity + delta, product) : item.quantity + delta;
+              nextQty = Math.max(0, q);
+              if (!targetStoreId && (item as any).product?.storeId) {
+                targetStoreId = (item as any).product.storeId;
+              }
+              return { ...item, quantity: nextQty };
+            }
+            return item;
+          })
           .filter((item) => item.quantity > 0),
       );
+
+      if (targetStoreId) {
+        await firstValueFrom(
+          this.rentify.setQuantity(targetStoreId, productId, nextQty),
+        ).then((res) => {
+          if (res?.carts) this.storeCarts.set(res.carts);
+        }).catch(() => {});
+      }
       return;
     }
 
@@ -314,10 +456,26 @@ export class CartService {
   }
 
   async remove(productId: string): Promise<void> {
+    const product =
+      this.catalog.productById(productId) || this.localProductCache.get(productId);
+
     if (!this.signedIn()) {
+      let targetStoreId: string | null = product?.storeId || null;
+      for (const item of this.guestItems()) {
+        if (item.productId === productId && (item as any).product?.storeId) {
+          targetStoreId = (item as any).product.storeId;
+        }
+      }
       this.guestItems.update((items) =>
         items.filter((item) => item.productId !== productId),
       );
+      if (targetStoreId) {
+        await firstValueFrom(
+          this.rentify.setQuantity(targetStoreId, productId, 0),
+        ).then((res) => {
+          if (res?.carts) this.storeCarts.set(res.carts);
+        }).catch(() => {});
+      }
       return;
     }
 
@@ -347,18 +505,16 @@ export class CartService {
   }
 
   async clear(): Promise<void> {
-    if (!this.signedIn()) {
-      this.guestItems.set([]);
-      return;
+    this.guestItems.set([]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    try {
+      const res = await firstValueFrom(this.rentify.clearCart());
+      this.storeCarts.set(res?.carts || []);
+    } catch {
+      this.storeCarts.set([]);
     }
-    for (const cart of this.storeCarts()) {
-      for (const item of cart.items) {
-        try {
-          await firstValueFrom(this.rentify.setQuantity(cart.storeId, item.productId, 0));
-        } catch {}
-      }
-    }
-    await this.refresh();
   }
 
   quantityOf(productId: string): number {
@@ -369,10 +525,8 @@ export class CartService {
       }
       return 0;
     }
-    return (
-      this.guestItems().find((item) => item.productId === productId)?.quantity ??
-      0
-    );
+    const guestItem = this.guestItems().find((item) => item.productId === productId);
+    return guestItem?.quantity ?? 0;
   }
 
   contains(productId: string): boolean {
@@ -383,10 +537,12 @@ export class CartService {
   markEmptied(): void {
     this.storeCarts.set([]);
     this.guestItems.set([]);
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
   }
 
-  private restore(): CartItem[] {
+  private restore(): EnhancedCartItem[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
@@ -396,12 +552,20 @@ export class CartService {
       if (!Array.isArray(parsed)) {
         return [];
       }
-      return parsed.filter(
-        (item): item is CartItem =>
+      const items: EnhancedCartItem[] = [];
+      for (const item of parsed) {
+        if (
           typeof item?.productId === 'string' &&
           typeof item?.quantity === 'number' &&
-          item.quantity > 0,
-      );
+          item.quantity > 0
+        ) {
+          if (item.product && typeof item.product === 'object' && item.product.id) {
+            this.localProductCache.set(item.productId, item.product as Product);
+          }
+          items.push(item as EnhancedCartItem);
+        }
+      }
+      return items;
     } catch {
       return [];
     }

@@ -143,6 +143,33 @@ export class RentifyMarketplaceService {
     );
   }
 
+  addItem(productId: string, quantity = 1, storeId?: string, variantId?: string): Observable<{ carts: StoreCart[] }> {
+    return this.http.post<{ carts: StoreCart[] }>(
+      `${this.commerce}/api/marketplace/cart/items`,
+      { productId, quantity, storeId, variantId },
+    );
+  }
+
+  removeItem(storeId: string, productId: string): Observable<{ carts: StoreCart[] }> {
+    return this.http.delete<{ carts: StoreCart[] }>(
+      `${this.commerce}/api/marketplace/cart/${storeId}/items/${productId}`,
+    );
+  }
+
+  clearCart(storeId?: string): Observable<{ carts: StoreCart[] }> {
+    const url = storeId
+      ? `${this.commerce}/api/marketplace/cart/${storeId}`
+      : `${this.commerce}/api/marketplace/cart`;
+    return this.http.delete<{ carts: StoreCart[] }>(url);
+  }
+
+  mergeCart(): Observable<{ carts: StoreCart[] }> {
+    return this.http.post<{ carts: StoreCart[] }>(
+      `${this.commerce}/api/marketplace/cart/merge`,
+      {},
+    );
+  }
+
   checkout(
     storeId: string,
     expectedTotalAmount: string,
