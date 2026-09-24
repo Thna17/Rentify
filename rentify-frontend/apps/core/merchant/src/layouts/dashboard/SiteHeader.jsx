@@ -1,9 +1,9 @@
 import { useMediaQuery } from '@rentify/utils';
-import { HelpCircle, Bell, Menu, Search, X } from 'lucide-react';
-import DashboardBreadcrumb from './DashboardBreadcrumb';
+import { HelpCircle, Menu, Search, X } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
+import { NotificationDropdown } from './NotificationDropdown';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,6 @@ import {
 import React, { useState, useRef, useEffect } from 'react';
 
 export function SiteHeader({
-  currentTab,
   onSidebarToggle,
   userData,
   isSidebarOpen = true,
@@ -68,7 +67,7 @@ export function SiteHeader({
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background text-foreground border-border px-4 md:px-6">
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-3 flex-1 max-w-xl min-w-0">
         {(!isSidebarOpen || isMobile) && (
           <Button
             variant="ghost"
@@ -81,13 +80,10 @@ export function SiteHeader({
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        {!isMobile && <DashboardBreadcrumb currentTab={currentTab} />}
-      </div>
 
-      <div className="flex items-center gap-3 md:gap-4">
-        {/* Search Bar */}
-        <div className="relative w-44 sm:w-56 md:w-64" ref={searchContainerRef}>
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/70 pointer-events-none" />
+        {/* Search Bar on the Left (over the former overview text area) */}
+        <div className="relative w-full max-w-md sm:max-w-lg" ref={searchContainerRef}>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
           <Input
             type="search"
             value={searchFilter}
@@ -98,7 +94,7 @@ export function SiteHeader({
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder="Search menu..."
-            className="w-full bg-muted/40 pl-8 pr-7 h-8.5 rounded-md border-border text-xs focus-visible:bg-background"
+            className="w-full bg-muted/40 pl-9.5 pr-8 h-9.5 rounded-lg border-border text-sm focus-visible:bg-background shadow-none"
           />
           {searchFilter && (
             <button
@@ -107,16 +103,16 @@ export function SiteHeader({
                 setSearchFilter?.('');
                 setIsSearchFocused(false);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
               aria-label="Clear search"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           )}
 
           {/* Quick Menu Results Dropdown */}
           {isSearchFocused && searchFilter.trim() && (
-            <div className="absolute right-0 top-full mt-1.5 w-64 sm:w-72 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 top-full mt-1.5 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1 max-h-80 overflow-y-auto">
               {filteredTabs.length > 0 ? (
                 filteredTabs.map((item) => {
                   const Icon = item.icon;
@@ -124,7 +120,7 @@ export function SiteHeader({
                     <button
                       key={item.path}
                       type="button"
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs sm:text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         handleSelectTab(item.path);
@@ -138,7 +134,7 @@ export function SiteHeader({
                           {item.displayName || item.label || item.name}
                         </span>
                         {item.section && (
-                          <span className="text-[10px] text-muted-foreground ml-2 capitalize">
+                          <span className="text-[11px] text-muted-foreground ml-2 capitalize">
                             ({item.section})
                           </span>
                         )}
@@ -154,13 +150,10 @@ export function SiteHeader({
             </div>
           )}
         </div>
+      </div>
 
-        <Button variant="ghost" size="icon" className="relative shrink-0">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center">
-            3
-          </span>
-        </Button>
+      <div className="flex items-center gap-3 md:gap-4 shrink-0">
+        <NotificationDropdown onTabChange={onTabChange} />
         <Button
           variant="ghost"
           size="icon"
