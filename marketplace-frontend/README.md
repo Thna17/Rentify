@@ -56,7 +56,21 @@ This will compile your project and store the build artifacts in the `dist/` dire
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
 ```bash
-ng test
+npm test
+```
+
+To run tests in watch mode during development:
+
+```bash
+npm run test:watch
+```
+
+## Type checking
+
+To verify TypeScript types without emitting output:
+
+```bash
+npm run typecheck
 ```
 
 ## Running end-to-end tests

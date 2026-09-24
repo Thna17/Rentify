@@ -3,9 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 
-const local = globalThis.location?.hostname === 'localhost' || globalThis.location?.hostname === '127.0.0.1';
-const runtime = globalThis.window?.__RENTIFY_MARKETPLACE__;
-const base = (value: string | undefined, fallback: string) => (value || (local ? fallback : '')).replace(/\/+$/, '');
+const isLocal = () =>
+  globalThis.location?.hostname === 'localhost' || globalThis.location?.hostname === '127.0.0.1';
+const runtime = () => globalThis.window?.__RENTIFY_MARKETPLACE__;
+const base = (value: string | undefined, fallback: string) =>
+  (value || (isLocal() ? fallback : '')).replace(/\/+$/, '');
 
 export interface RentifyProduct {
   id: string;
@@ -60,13 +62,34 @@ export interface MarketplaceOrder {
 @Injectable({ providedIn: 'root' })
 export class RentifyMarketplaceService {
   private readonly http = inject(HttpClient);
-  readonly enabled = runtime?.enabled === true;
-  readonly cutoverEnabled = runtime?.cutoverEnabled === true;
-  readonly core = base(runtime?.coreApiUrl, 'http://localhost:3001');
-  readonly commerce = base(runtime?.commerceApiUrl, 'http://localhost:4001');
-  readonly auth = base(runtime?.authUrl, 'http://localhost:4300');
-  readonly merchantDashboard = base(runtime?.merchantDashboardUrl, 'http://localhost:4400');
-  readonly configured = Boolean(this.core && this.commerce && this.auth);
+
+  get enabled(): boolean {
+    return runtime()?.enabled === true;
+  }
+
+  get cutoverEnabled(): boolean {
+    return runtime()?.cutoverEnabled === true;
+  }
+
+  get core(): string {
+    return base(runtime()?.coreApiUrl, 'http://localhost:3001');
+  }
+
+  get commerce(): string {
+    return base(runtime()?.commerceApiUrl, 'http://localhost:4001');
+  }
+
+  get auth(): string {
+    return base(runtime()?.authUrl, 'http://localhost:4300');
+  }
+
+  get merchantDashboard(): string {
+    return base(runtime()?.merchantDashboardUrl, 'http://localhost:4400');
+  }
+
+  get configured(): boolean {
+    return Boolean(this.core && this.commerce && this.auth);
+  }
 
   session(): Observable<{ user: BuyerSession }> {
     return this.http.get<{ user: BuyerSession }>(`${this.core}/api/auth/session`);

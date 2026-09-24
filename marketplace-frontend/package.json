@@ -8,7 +8,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --no-watch",
-    "test:watch": "ng test"
+    "test:watch": "ng test",
+    "typecheck": "tsc --noEmit"
   },
   "private": true,
   "packageManager": "npm@10.9.8",
