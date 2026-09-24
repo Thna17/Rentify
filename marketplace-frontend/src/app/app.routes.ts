@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { buyerGuard } from './core/auth/auth.guard';
 import { adminGuard } from './core/auth/admin.guard';
 import { sellerGuard } from './core/auth/seller.guard';
@@ -12,17 +13,18 @@ import {
  * components eagerly, which put the whole site in the initial bundle.
  */
 export const routes: Routes = [
-  // ------------------------------------------------------------- admin port (4800)
-  {
-    path: '',
-    canMatch: [() => typeof window !== 'undefined' && window.location.port === '4800'],
-    redirectTo: 'admin',
-    pathMatch: 'full',
-  },
-
   // ---------------------------------------------------------------- storefront
   {
     path: '',
+    pathMatch: 'full',
+    canActivate: [
+      () => {
+        if (typeof window !== 'undefined' && window.location.port === '4800') {
+          return inject(Router).createUrlTree(['/admin']);
+        }
+        return true;
+      },
+    ],
     loadComponent: () =>
       import('./pages/home.component').then((m) => m.HomeComponent),
     title: 'Rentify Marketplace',
