@@ -129,7 +129,34 @@ async function run() {
     ]);
     assert.equal(crossChannel.filter((result) => result.status === 'fulfilled').length, 1);
     assert.equal((await Product.findByPk(sharedProduct.id)).stockQuantity, 0);
-    console.log('Marketplace COD checkout SQL smoke passed');
+    const directProduct = await catalog.create({ storeId, websiteId }, {
+      name: 'Storefront only smoke item', price: 10, stockQuantity: 1,
+      marketplaceCategory: 'Clothing', marketplaceVisibility: false, status: 'active',
+    });
+    await store.update({ marketplaceApprovalStatus: 'pending' });
+    await checkout.setCartItem({ buyerId: buyerB, storeId, productId: directProduct.id,
+      quantity: 1, channel: 'storefront' });
+    const directQuote = (await checkout.getCart(buyerB, storeId, 'storefront'))[0];
+    assert.equal(directQuote.checkoutReady, true);
+    assert.equal(directQuote.totalAmount, '14.00');
+    await assert.rejects(checkout.setCartItem({ buyerId: buyerA, storeId,
+      productId: directProduct.id, quantity: 1 }), { statusCode: 409 });
+    const directOrder = await checkout.checkout({ ...payload(buyerB, directQuote.totalAmount),
+      channel: 'storefront' });
+    assert.equal(directOrder.salesChannel, 'storefront');
+    assert.equal(directOrder.websiteId, websiteId);
+    assert.equal(directOrder.payment.status, 'pending');
+    assert.equal((await checkout.buyerOrders(buyerB)).some((order) => order.id === directOrder.id), false);
+    assert.equal((await checkout.buyerOrders(buyerB, { storeId, channel: 'storefront' }))[0].id,
+      directOrder.id);
+    assert.equal((await Product.findByPk(directProduct.id)).stockQuantity, 0);
+    await checkout.merchantAction({ storeId, orderId: directOrder.id,
+      actorId: ownerId, eventKey: randomUUID(), action: 'delivered' });
+    const directCollected = await checkout.merchantAction({ storeId, orderId: directOrder.id,
+      actorId: ownerId, eventKey: randomUUID(), action: 'collect_cod',
+      details: { amount: directQuote.totalAmount } });
+    assert.equal(directCollected.payment.status, 'paid');
+    console.log('Marketplace and hosted storefront COD checkout SQL smoke passed');
   } finally {
     const orders = await Order.findAll({ where: { storeId }, attributes: ['id'] });
     const orderIds = orders.map((order) => order.id);

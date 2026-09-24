@@ -1,7 +1,8 @@
 const { sequelize } = require('../config/db');
 const { createHash } = require('node:crypto');
+const { Op } = require('sequelize');
 const { Cart, CartItem, Product, ProductVariant, StoreAccess, StoreDeliveryPolicy,
-  Order, OrderItem, Payment, OrderEvent } = require('../models');
+  Order, OrderItem, Payment, OrderEvent, WebsiteData } = require('../models');
 const { changeStock } = require('./sharedStockService');
 
 function fail(message, statusCode = 400) {
@@ -76,34 +77,47 @@ function actionFingerprint(action, input) {
   return createHash('sha256').update(JSON.stringify([action, ...values])).digest('hex');
 }
 
-async function eligibleStore(storeId, transaction) {
+async function eligibleStore(storeId, transaction, channel = 'marketplace') {
   const store = await StoreAccess.findByPk(storeId, { transaction, lock: transaction.LOCK.UPDATE });
-  if (!store || store.status !== 'active' || store.marketplaceApprovalStatus !== 'approved' ||
+  if (!store || store.status !== 'active') fail('Store is not active', 409);
+  if (channel === 'storefront') {
+    const website = store.websiteId && await WebsiteData.findOne({
+      where: { websiteId: store.websiteId, storeId, status: 'active' }, transaction,
+    });
+    if (!website) fail('Storefront is not available for checkout', 409);
+    return store;
+  }
+  if (store.marketplaceApprovalStatus !== 'approved' ||
       store.marketplaceEntitlement !== 'pilot' || store.needsCategoryReview) {
     fail('This seller is not available for marketplace checkout', 409);
   }
   return store;
 }
 
-function eligibleProduct(product, store) {
+function eligibleProduct(product, store, channel = 'marketplace') {
+  if (channel === 'storefront') {
+    return product && product.storeId === store.storeId && product.websiteId === store.websiteId &&
+      product.status === 'active';
+  }
   return product && product.storeId === store.storeId && product.status === 'active' &&
     Boolean(product.marketplaceCategory) &&
     (product.marketplaceVisibility === true ||
       (product.marketplaceVisibility === null && store.marketplaceEnabled));
 }
 
-async function checkedProduct(productId, store, transaction) {
+async function checkedProduct(productId, store, transaction, channel = 'marketplace') {
   const product = await Product.findByPk(productId, { transaction, lock: transaction.LOCK.UPDATE });
-  if (!eligibleProduct(product, store)) fail('Product is not available on the marketplace', 409);
+  if (!eligibleProduct(product, store, channel)) fail('Product is not available on this sales channel', 409);
   if (await ProductVariant.count({ where: { productId }, transaction })) {
-    fail('Variant products are not supported by marketplace COD checkout yet', 409);
+    fail('Variant products are not supported by shared COD checkout yet', 409);
   }
   return product;
 }
 
-async function getCart(buyerId, storeId) {
+async function getCart(buyerId, storeId, channel = 'marketplace') {
   uuid(buyerId, 'buyer');
   if (storeId) uuid(storeId, 'Store');
+  if (channel === 'storefront' && !storeId) fail('Store is required');
   const carts = await Cart.findAll({
     where: { buyerId, websiteId: null, ...(storeId ? { storeId } : {}) },
     include: [{ model: CartItem, as: 'CartItems' }],
@@ -120,26 +134,32 @@ async function getCart(buyerId, storeId) {
     const byId = new Map(products.map((product) => [product.id, product]));
     const variantProductIds = new Set(variants.map((variant) => variant.productId));
     const issues = [];
-    if (!store || store.status !== 'active' || store.marketplaceApprovalStatus !== 'approved' ||
-        store.marketplaceEntitlement !== 'pilot' || store.needsCategoryReview) {
-      issues.push('Seller is not available for marketplace checkout');
-    }
+    const websiteReady = channel !== 'storefront' || (store?.websiteId && await WebsiteData.findOne({
+      where: { websiteId: store.websiteId, storeId: cart.storeId, status: 'active' },
+    }));
+    if (!store || store.status !== 'active' || !websiteReady || (channel === 'marketplace' &&
+        (store.marketplaceApprovalStatus !== 'approved' || store.marketplaceEntitlement !== 'pilot' ||
+         store.needsCategoryReview))) issues.push('Seller is not available for checkout');
     if (!policy) issues.push('Seller has not posted a delivery fee');
     let subtotal = 0;
     const items = cart.CartItems.map((item) => {
       const product = byId.get(item.productId);
-      const available = store && eligibleProduct(product, store) &&
+      const available = store && eligibleProduct(product, store, channel) &&
         !variantProductIds.has(item.productId) &&
         (!product.trackInventory || product.stockQuantity >= item.quantity);
       if (!available) issues.push(`Product ${item.productId} is unavailable or has insufficient stock`);
       const currentPrice = product ? dollars(cents(product.price)) : null;
       if (currentPrice) subtotal += cents(currentPrice) * item.quantity;
       return { productId: item.productId, quantity: item.quantity,
-        unitPrice: item.unitPrice, currentPrice, available: Boolean(available) };
+        unitPrice: item.unitPrice, currentPrice, available: Boolean(available),
+        product: product ? { id: product.id, name: product.name, slug: product.slug,
+          images: product.images || [], price: product.price,
+          trackInventory: product.trackInventory, allowBackorders: product.allowBackorders,
+          stockQuantity: product.stockQuantity, productType: product.productType } : null };
     });
     if (!items.length) issues.push('Cart is empty');
     const fee = policy ? cents(policy.flatFee) : null;
-    return { id: cart.id, storeId: cart.storeId, items,
+    return { id: cart.id, storeId: cart.storeId, websiteId: channel === 'storefront' ? store?.websiteId : null, items,
       subtotal: dollars(subtotal), deliveryFee: fee === null ? null : dollars(fee),
       totalAmount: fee === null || issues.length ? null : dollars(subtotal + fee),
       currency: 'USD', deliveryPolicyVersion: policy?.version ?? null,
@@ -147,12 +167,12 @@ async function getCart(buyerId, storeId) {
   }));
 }
 
-async function setCartItem({ buyerId, storeId, productId, quantity }) {
+async function setCartItem({ buyerId, storeId, productId, quantity, channel = 'marketplace' }) {
   uuid(buyerId, 'buyer'); uuid(storeId, 'Store'); uuid(productId, 'product');
   if (!Number.isSafeInteger(quantity) || quantity < 0 || quantity > 999) fail('Invalid quantity');
   await sequelize.transaction(async (transaction) => {
-    const store = await eligibleStore(storeId, transaction);
-    const product = quantity ? await checkedProduct(productId, store, transaction) : null;
+    const store = await eligibleStore(storeId, transaction, channel);
+    const product = quantity ? await checkedProduct(productId, store, transaction, channel) : null;
     if (product && product.trackInventory && quantity > product.stockQuantity) fail('Insufficient stock', 409);
     let cart = await Cart.findOne({
       where: { buyerId, storeId, websiteId: null }, transaction, lock: transaction.LOCK.UPDATE,
@@ -170,12 +190,12 @@ async function setCartItem({ buyerId, storeId, productId, quantity }) {
       await CartItem.create({ cartId: cart.id, productId, quantity, unitPrice: product.price }, { transaction });
     }
   });
-  return getCart(buyerId, storeId);
+  return getCart(buyerId, storeId, channel);
 }
 
 function orderView(order, items, payment) {
   return {
-    id: order.id, orderNumber: order.orderNumber, storeId: order.storeId,
+    id: order.id, orderNumber: order.orderNumber, storeId: order.storeId, websiteId: order.websiteId,
     buyerId: order.buyerId, status: order.status, deliveryStatus: order.deliveryStatus,
     salesChannel: order.salesChannel, subtotal: order.subtotal,
     deliveryFee: order.shippingFee, totalAmount: order.totalAmount, currency: order.currency,
@@ -203,14 +223,15 @@ async function findOrderByKey(checkoutKey, buyerId, transaction = null) {
   return orderView(order, items, payment);
 }
 
-async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, customerInfo, shippingInfo }) {
+async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, customerInfo, shippingInfo,
+  channel = 'marketplace' }) {
   uuid(buyerId, 'buyer'); uuid(storeId, 'Store'); uuid(checkoutKey, 'idempotency key');
   if (expectedTotalAmount === undefined || expectedTotalAmount === null) fail('Expected cart total is required');
   const expectedTotal = cents(expectedTotalAmount);
   const name = requiredText(customerInfo?.name, 'customer name', 120);
   const phone = requiredText(customerInfo?.phone, 'contact phone', 40);
   const address = requiredText(shippingInfo?.address, 'delivery address', 500);
-  const matchesRequest = (order) => order.storeId === storeId &&
+  const matchesRequest = (order) => order.storeId === storeId && order.salesChannel === channel &&
     order.customerInfo?.name === name && order.customerInfo?.phone === phone &&
     order.shippingInfo?.address === address && cents(order.totalAmount) === expectedTotal;
   const existing = await findOrderByKey(checkoutKey, buyerId);
@@ -220,7 +241,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
   }
   try {
     return await sequelize.transaction(async (transaction) => {
-      const store = await eligibleStore(storeId, transaction);
+      const store = await eligibleStore(storeId, transaction, channel);
       const committedReplay = await findOrderByKey(checkoutKey, buyerId, transaction);
       if (committedReplay) {
         if (!matchesRequest(committedReplay)) fail('Checkout key was already used for a different request', 409);
@@ -239,7 +260,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       let subtotal = 0;
       for (const item of cartItems) {
         if (!Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 999) fail('Invalid quantity');
-        const product = await checkedProduct(item.productId, store, transaction);
+        const product = await checkedProduct(item.productId, store, transaction, channel);
         if (product.trackInventory && product.stockQuantity < item.quantity) fail('Insufficient stock', 409);
         const price = cents(product.price);
         subtotal += price * item.quantity;
@@ -255,8 +276,8 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       if (total !== expectedTotal) fail('Cart price or delivery fee changed; refresh before checkout', 409);
       if (total > 100_000_000) fail('Order total is too large');
       const order = await Order.create({
-        storeId, websiteId: null, buyerId, checkoutKey,
-        salesChannel: 'marketplace', deliveryStatus: 'pending', orderType: 'delivery',
+        storeId, websiteId: channel === 'storefront' ? store.websiteId : null, buyerId, checkoutKey,
+        salesChannel: channel, deliveryStatus: 'pending', orderType: 'delivery',
         status: 'pending', subtotal: dollars(subtotal), totalAmount: dollars(total),
         taxTotal: '0.00', shippingFee: dollars(deliveryFee), discountTotal: '0.00', currency: 'USD',
         customerInfo: { name, phone }, shippingInfo: { address }, stockDeducted: true,
@@ -270,7 +291,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
           sku: product.slug, quantity: item.quantity, basePrice: dollars(price),
           price: dollars(price), total: dollars(price * item.quantity),
           baseCurrency: 'USD', currency: 'USD',
-          itemMetadata: { seller: { storeId }, category: product.marketplaceCategory,
+          itemMetadata: { seller: { storeId }, category: product.marketplaceCategory || product.categoryId,
             tax: '0.00', shipping: '0.00', commission: '0.00', productVersion: product.version },
         }, { transaction });
         items.push(line);
@@ -295,18 +316,22 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
   }
 }
 
-async function buyerOrders(buyerId) {
+async function buyerOrders(buyerId, { storeId, channel = 'marketplace' } = {}) {
   uuid(buyerId, 'buyer');
-  const orders = await Order.findAll({ where: { buyerId, salesChannel: 'marketplace' },
+  if (storeId) uuid(storeId, 'Store');
+  const orders = await Order.findAll({ where: { buyerId, salesChannel: channel,
+    ...(storeId ? { storeId } : {}) },
     order: [['createdAt', 'DESC']], limit: 50 });
   return Promise.all(orders.map(async (order) => orderView(order,
     await OrderItem.findAll({ where: { orderId: order.id } }),
     await Payment.findOne({ where: { orderId: order.id } }))));
 }
 
-async function buyerOrder(buyerId, orderId) {
+async function buyerOrder(buyerId, orderId, { storeId, channel = 'marketplace' } = {}) {
   uuid(buyerId, 'buyer'); uuid(orderId, 'order');
-  const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: 'marketplace' } });
+  if (storeId) uuid(storeId, 'Store');
+  const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: channel,
+    ...(storeId ? { storeId } : {}) } });
   if (!order) fail('Order not found', 404);
   return orderView(order, await OrderItem.findAll({ where: { orderId } }),
     await Payment.findOne({ where: { orderId } }));
@@ -328,7 +353,9 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
   }
   try {
     await sequelize.transaction(async (transaction) => {
-      const order = await Order.findOne({ where: { id: orderId, storeId, salesChannel: 'marketplace' },
+      const order = await Order.findOne({ where: { id: orderId, storeId,
+        buyerId: { [Op.ne]: null }, checkoutKey: { [Op.ne]: null },
+        salesChannel: { [Op.in]: ['marketplace', 'storefront'] } },
         transaction, lock: transaction.LOCK.UPDATE });
       if (!order) fail('Order not found', 404);
       const replay = await OrderEvent.findOne({ where: { eventKey }, transaction });
@@ -400,7 +427,9 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
 }
 
 async function buyerOrderForStore(storeId, orderId) {
-  const order = await Order.findOne({ where: { id: orderId, storeId, salesChannel: 'marketplace' } });
+  const order = await Order.findOne({ where: { id: orderId, storeId,
+    buyerId: { [Op.ne]: null }, checkoutKey: { [Op.ne]: null },
+    salesChannel: { [Op.in]: ['marketplace', 'storefront'] } } });
   if (!order) fail('Order not found', 404);
   return orderView(order, await OrderItem.findAll({ where: { orderId } }),
     await Payment.findOne({ where: { orderId } }));
@@ -408,7 +437,9 @@ async function buyerOrderForStore(storeId, orderId) {
 
 async function sellerOrders(storeId) {
   uuid(storeId, 'Store');
-  const orders = await Order.findAll({ where: { storeId, salesChannel: 'marketplace' },
+  const orders = await Order.findAll({ where: { storeId,
+    buyerId: { [Op.ne]: null }, checkoutKey: { [Op.ne]: null },
+    salesChannel: { [Op.in]: ['marketplace', 'storefront'] } },
     order: [['createdAt', 'DESC']], limit: 50 });
   return Promise.all(orders.map(async (order) => orderView(order,
     await OrderItem.findAll({ where: { orderId: order.id } }),
@@ -420,10 +451,12 @@ async function orderEvents(storeId, orderId) {
   return OrderEvent.findAll({ where: { storeId, orderId }, order: [['createdAt', 'ASC']] });
 }
 
-async function buyerReport({ buyerId, orderId, eventKey, type, details }) {
+async function buyerReport({ buyerId, orderId, eventKey, type, details,
+  storeId, channel = 'marketplace' }) {
   uuid(buyerId, 'buyer'); uuid(orderId, 'order'); uuid(eventKey, 'idempotency key');
   if (!['return_requested', 'complaint'].includes(type)) fail('Invalid report type');
-  const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: 'marketplace' } });
+  const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: channel,
+    ...(storeId ? { storeId } : {}) } });
   if (!order) fail('Order not found', 404);
   const reason = requiredText(details?.reason, 'reason', 1000);
   const prior = await OrderEvent.findOne({ where: { eventKey } });

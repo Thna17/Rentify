@@ -25,6 +25,10 @@ exports.createOrder = async (req, res) => {
   try {
     const { websiteId } = req.params;
     const { shippingDetails, paymentMethod, currency } = req.body;
+    if (paymentMethod !== 'COD' || (currency && currency !== 'USD')) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Storefront buyer checkout accepts COD in USD only' });
+    }
     const user = req.user;
 
     // Get website niche

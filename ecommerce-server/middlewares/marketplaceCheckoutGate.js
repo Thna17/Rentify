@@ -5,4 +5,11 @@ const requireMarketplaceCheckoutEnabled = (_req, res, next) => {
   return next();
 };
 
-module.exports = { requireMarketplaceCheckoutEnabled };
+const requireStorefrontCheckoutEnabled = (_req, res, next) => {
+  if (process.env.STOREFRONT_COD_CHECKOUT_ENABLED !== 'true') {
+    return res.status(503).json({ error: 'Storefront COD checkout is not enabled in this environment' });
+  }
+  return next();
+};
+
+module.exports = { requireMarketplaceCheckoutEnabled, requireStorefrontCheckoutEnabled };

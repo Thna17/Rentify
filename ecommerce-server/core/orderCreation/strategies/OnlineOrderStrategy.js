@@ -8,7 +8,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     const { Cart, CartItem, Customer, Product, ProductVariant } = this.models;
 
     // Validate payment method
-    const validPaymentMethods = ['KHQR', 'COD', 'card', 'bank_transfer', 'digital_wallet'];
+    const validPaymentMethods = ['COD'];
     if (!validPaymentMethods.includes(paymentMethod)) {
       throw new Error("Invalid payment method");
     }
