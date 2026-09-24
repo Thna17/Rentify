@@ -18,6 +18,7 @@
     "db:migrate:verify": "node src/migrations/runner.js verify",
     "db:seed": "node scripts/seed.js",
     "db:approve-development-stores": "node scripts/approveDevelopmentStores.js",
+    "db:seed-marketplace-mocks": "node scripts/seedMarketplaceMocks.js",
     "db:export-cutover-projection": "node scripts/exportCutoverProjection.js"
   },
   "keywords": [],

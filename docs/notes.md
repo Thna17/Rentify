@@ -224,6 +224,23 @@ into `platform-architecture.md` and remove stale notes.
   KhmerCraft API remains reference code only. Production domain, browser,
   and operational checks remain open.
 
+## Marketplace mock catalog (2026-09-24)
+
+- The two local seeded Stores are mock data. Aura Botanicals is classified as
+  `Beauty & Skincare`; NexTech Electronics as `Electronics`. Both owners have
+  verified contacts, so the development rule approved them after category
+  selection and projected the approvals to Commerce.
+- All six Aura products use marketplace `Skincare`. NexTech's smartwatch uses
+  `Phones & Devices`; its other five products use `Electronics Accessories`.
+  The demo merchant delivery fees are USD 2.50 for Aura and USD 3.00 for
+  NexTech. Merchant-set policies are left intact if already present.
+- The repeatable local commands are `docker compose exec -T core-api npm run
+  db:seed-marketplace-mocks` followed by `docker compose exec -T
+  ecommerce-api npm run db:seed-marketplace-mocks`. They require the existing
+  mock Stores, Websites, Products, and Core-to-Commerce projection. The public
+  Commerce marketplace endpoint returned 12 eligible products; projection
+  and Store mapping audits reported zero mismatches.
+
 ## Open product and architecture questions
 
 1. What products are restricted or prohibited in marketplace listings, and

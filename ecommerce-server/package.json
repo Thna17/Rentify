@@ -24,6 +24,7 @@
     "db:audit-marketplace-cod": "node scripts/auditMarketplaceCod.js",
     "db:audit-cod": "node scripts/auditMarketplaceCod.js",
     "db:export-cutover-projection": "node scripts/exportCutoverProjection.js",
+    "db:seed-marketplace-mocks": "node scripts/seedMarketplaceMocks.js",
     "db:seed": "node scripts/seed.js"
   },
   "keywords": [],

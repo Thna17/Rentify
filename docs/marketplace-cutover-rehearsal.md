@@ -24,6 +24,10 @@ not a production release.
    by missing category or unverified contact. Never guess a historical Store
    category. Marketplace-only merchants can select it in their Store dashboard;
    existing Website merchants see a category prompt above their dashboard.
+   For the repository's two named mock Stores only, run
+   `docker compose exec -T core-api npm run db:seed-marketplace-mocks`, then
+   `docker compose exec -T ecommerce-api npm run db:seed-marketplace-mocks`.
+   These commands classify the seeded Products and add demo delivery fees.
 4. Run `node scripts/cutover-projection-audit.mjs`, then
    `docker compose exec -T ecommerce-api npm run db:audit-stores` and
    `docker compose exec -T ecommerce-api npm run db:audit-cod` at the repository
