@@ -16,23 +16,31 @@ const { RENTIFY_API_BASE } = require("../config/serviceUrls");
 // Never fall back to a Customer or guest identity for these routes.
 const createVerifyCoreBuyer = ({ validate = (accessToken, refreshToken) => axios.post(
   `${RENTIFY_API_BASE}/api/auth/validate-token`, { accessToken, refreshToken },
-), errorMessage = 'Rentify buyer sign-in required' } = {}) => async (req, res, next) => {
-  const accessToken = req.cookies?.userAccessToken;
+), errorMessage = 'Rentify buyer sign-in required', optional = false } = {}) => async (req, res, next) => {
+  const authHeader = req.headers?.authorization;
+  const bearerToken = typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : null;
+  const headerToken = req.headers?.['x-access-token'] || req.headers?.['x-user-access-token'];
+  const accessToken = req.cookies?.userAccessToken || bearerToken || headerToken;
   const refreshToken = req.cookies?.userRefreshToken;
   if (!accessToken && !refreshToken) {
+    if (optional) return next();
     return res.status(401).json({ error: errorMessage });
   }
   let validation;
   try { validation = await validate(accessToken, refreshToken); }
   catch (_error) {
+    if (optional) return next();
     return res.status(401).json({ error: errorMessage });
   }
   const entity = validation.data?.entity;
   if (!validation.data?.valid || !entity?.id) {
+    if (optional) return next();
     return res.status(401).json({ error: errorMessage });
   }
   req.user = { ...entity, type: 'user' };
-  if (validation.data.newAccessToken) {
+  if (validation.data.newAccessToken && typeof res.cookie === 'function') {
     res.cookie('userAccessToken', validation.data.newAccessToken, {
       ...cookieConfig, maxAge: 15 * 60 * 1000,
     });
@@ -41,6 +49,7 @@ const createVerifyCoreBuyer = ({ validate = (accessToken, refreshToken) => axios
 };
 
 const verifyCoreBuyer = createVerifyCoreBuyer();
+const verifyOptionalCoreBuyer = createVerifyCoreBuyer({ optional: true });
 const verifyCoreMerchant = createVerifyCoreBuyer({ errorMessage: 'Merchant authentication required' });
 const createVerifyStoreActor = ({ validateStaff = verifyStaffToken,
   verifyMerchant = verifyCoreMerchant } = {}) => async (req, res, next) => {
@@ -69,7 +78,11 @@ const verifyToken = async (req, res, next) => {
   // Get tokens from cookies
   const customerAccessToken = req.cookies.customerAccessToken;
   const customerRefreshToken = req.cookies.customerRefreshToken;
-  const userAccessToken = req.cookies.userAccessToken;
+  const userAccessToken = req.cookies?.userAccessToken ||
+    (typeof req.headers?.authorization === 'string' && req.headers.authorization.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7).trim()
+      : null) ||
+    req.headers?.['x-access-token'] || req.headers?.['x-user-access-token'];
   const userRefreshToken = req.cookies.userRefreshToken;
   const staffAccessToken = req.cookies.staffAccessToken;
   const staffRefreshToken = req.cookies.staffRefreshToken;
@@ -258,6 +271,7 @@ const clearCookies = (res) => {
 module.exports = { 
   verifyToken, 
   verifyCoreBuyer,
+  verifyOptionalCoreBuyer,
   verifyStoreActor,
   createVerifyStoreActor,
   createVerifyCoreBuyer,

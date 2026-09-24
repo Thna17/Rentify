@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const helmetConfig = require('./config/helmetConfig');
 const corsOptions = require('./config/corsConfig');
 const sessionConfig = require('./config/sessionConfig');
+const sessionMiddleware = require('./middlewares/sessionMiddleware');
 // const TelegramService = require('./services/telegramService');
 
 const app = express();
@@ -18,6 +19,7 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET || 'default'));
 app.use(sessionConfig);
+app.use(sessionMiddleware);
 
 // Container and load-balancer health probe. It intentionally reveals no
 // tenant or payment-provider details.
