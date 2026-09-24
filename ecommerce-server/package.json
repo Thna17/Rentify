@@ -22,6 +22,8 @@
     "db:smoke-catalog": "node scripts/smokeStoreCatalog.js",
     "db:smoke-marketplace-checkout": "node scripts/smokeMarketplaceCheckout.js",
     "db:audit-marketplace-cod": "node scripts/auditMarketplaceCod.js",
+    "db:audit-cod": "node scripts/auditMarketplaceCod.js",
+    "db:export-cutover-projection": "node scripts/exportCutoverProjection.js",
     "db:seed": "node scripts/seed.js"
   },
   "keywords": [],

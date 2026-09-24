@@ -16,7 +16,8 @@
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run secrets:scan",
     "db:migrate": "node src/migrations/runner.js migrate",
     "db:migrate:verify": "node src/migrations/runner.js verify",
-    "db:seed": "node scripts/seed.js"
+    "db:seed": "node scripts/seed.js",
+    "db:export-cutover-projection": "node scripts/exportCutoverProjection.js"
   },
   "keywords": [],
   "author": "",

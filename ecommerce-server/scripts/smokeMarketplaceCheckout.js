@@ -6,6 +6,7 @@ const { StoreAccess, StoreDeliveryPolicy, WebsiteData, Product,
 const catalog = require('../services/storeCatalogService');
 const checkout = require('../services/marketplaceCheckoutService');
 const NicheStrategy = require('../core/orderCreation/strategies/NicheStrategy');
+const { audit: auditCodOrders } = require('./auditMarketplaceCod');
 
 async function run() {
   if (process.env.NODE_ENV !== 'test') throw new Error('Use an isolated test database');
@@ -156,6 +157,11 @@ async function run() {
       actorId: ownerId, eventKey: randomUUID(), action: 'collect_cod',
       details: { amount: directQuote.totalAmount } });
     assert.equal(directCollected.payment.status, 'paid');
+    const audit = await auditCodOrders({ storeId });
+    assert.deepEqual(audit.findings, []);
+    assert.equal(audit.channels.storefront.orderCount, 1);
+    assert.ok(audit.channels.marketplace.orderCount >= 2);
+    assert.equal(audit.channels.storefront.collected, '14.00');
     console.log('Marketplace and hosted storefront COD checkout SQL smoke passed');
   } finally {
     const orders = await Order.findAll({ where: { storeId }, attributes: ['id'] });

@@ -1,15 +1,23 @@
 const { sequelize } = require('../config/db');
+const { Op } = require('sequelize');
 const { Order, OrderItem, Payment, OrderEvent } = require('../models');
 
 const cents = (value) => Math.round(Number(value || 0) * 100);
 
-async function run() {
-  const orders = await Order.findAll({ where: { salesChannel: 'marketplace' },
-    attributes: ['id', 'storeId', 'buyerId', 'websiteId', 'status', 'deliveryStatus',
+async function audit({ storeId } = {}) {
+  const orders = await Order.findAll({ where: {
+    [Op.or]: [
+      { salesChannel: 'marketplace' },
+      { salesChannel: 'storefront', checkoutKey: { [Op.ne]: null } },
+    ],
+    ...(storeId ? { storeId } : {}),
+  }, attributes: ['id', 'storeId', 'buyerId', 'websiteId', 'salesChannel', 'status', 'deliveryStatus',
       'stockDeducted', 'subtotal', 'shippingFee', 'taxTotal', 'totalAmount'] });
   const findings = [];
-  let collected = 0;
-  let refunded = 0;
+  const channels = {
+    marketplace: { orderCount: 0, amountDueCents: 0, collectedCents: 0, refundedCents: 0 },
+    storefront: { orderCount: 0, amountDueCents: 0, collectedCents: 0, refundedCents: 0 },
+  };
   for (const order of orders) {
     const [payments, items, events] = await Promise.all([
       Payment.findAll({ where: { orderId: order.id } }),
@@ -17,7 +25,15 @@ async function run() {
       OrderEvent.findAll({ where: { orderId: order.id } }),
     ]);
     const problem = (message) => findings.push({ orderId: order.id, message });
-    if (order.websiteId || !order.storeId || !order.buyerId) problem('Marketplace identity/context is incomplete');
+    if (!order.storeId || !order.buyerId) problem('Buyer or Store identity is incomplete');
+    if (order.salesChannel === 'marketplace' && order.websiteId) {
+      problem('Marketplace order unexpectedly has a Website');
+    }
+    if (order.salesChannel === 'storefront' && !order.websiteId) {
+      problem('Storefront order has no Website');
+    }
+    const channel = channels[order.salesChannel];
+    channel.orderCount += 1;
     if (payments.length !== 1 || payments[0].paymentMethod !== 'COD') {
       problem('Expected exactly one COD payment');
       continue;
@@ -26,8 +42,9 @@ async function run() {
     const due = cents(payment.amount);
     const collectedAmount = cents(payment.collectedAmount);
     const refundedAmount = cents(payment.refundedAmount);
-    collected += collectedAmount;
-    refunded += refundedAmount;
+    channel.amountDueCents += due;
+    channel.collectedCents += collectedAmount;
+    channel.refundedCents += refundedAmount;
     if (due !== cents(order.totalAmount)) problem('Payment amount differs from order total');
     if (items.reduce((sum, item) => sum + cents(item.total), 0) !== cents(order.subtotal)) {
       problem('Order line totals differ from subtotal');
@@ -55,11 +72,21 @@ async function run() {
       problem('Refund events do not reconcile to payment');
     }
   }
-  console.log(JSON.stringify({ orderCount: orders.length,
-    collected: (collected / 100).toFixed(2), refunded: (refunded / 100).toFixed(2),
-    findings }, null, 2));
-  if (findings.length) process.exitCode = 1;
+  const money = (centsValue) => (centsValue / 100).toFixed(2);
+  return { orderCount: orders.length, channels: Object.fromEntries(
+    Object.entries(channels).map(([name, value]) => [name, {
+      orderCount: value.orderCount, amountDue: money(value.amountDueCents),
+      collected: money(value.collectedCents), refunded: money(value.refundedCents),
+    }])
+  ), findings };
 }
 
-run().catch((error) => { console.error(error); process.exitCode = 1; })
-  .finally(() => sequelize.close());
+if (require.main === module) {
+  audit().then((report) => {
+    console.log(JSON.stringify(report, null, 2));
+    if (report.findings.length) process.exitCode = 1;
+  }).catch((error) => { console.error(error); process.exitCode = 1; })
+    .finally(() => sequelize.close());
+}
+
+module.exports = { audit };

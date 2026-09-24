@@ -16,6 +16,8 @@ code so implementation work can proceed without relying on chat history.
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace cutover rehearsal](marketplace-cutover-rehearsal.md) — staging
   write freeze, buyer preview checks, and rollback boundary.
+- [Phase 5 release runbook](phase-5-release-runbook.md) — inventory, parity
+  audits, staged release evidence, and retirement gates.
 - [Notes and open questions](notes.md) — verified observations, unresolved
   choices, and items requiring product decisions.
 

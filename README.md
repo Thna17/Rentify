@@ -6,8 +6,9 @@ The platform is expanding into a shared marketplace. Merchants will be able to
 sell directly in the marketplace without a storefront, or create a storefront
 whose products also appear in the marketplace. The integration architecture is
 planned in [docs/](docs/README.md). Core now has an initial Store identity and
-Website linkage, while commerce and marketplace migration remain in progress.
-The relocated marketplace code is not yet running on Rentify's backend.
+Website linkage and Commerce has Store-keyed catalog and COD checkout APIs.
+The marketplace buyer UI has a disabled Rentify preview; normal Angular routes
+still use the legacy API. Migration and release gates remain in progress.
 
 ## Repository layout
 

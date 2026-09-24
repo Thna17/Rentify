@@ -1,10 +1,11 @@
 # Marketplace migration plan
 
-**Status:** In progress, 2026-09-23. Product direction is agreed:
+**Status:** In progress, 2026-09-24. Product direction is agreed:
 Rentify will become the backend for merchant storefronts and the shared
-marketplace. Core Store foundation has started; commerce and legacy marketplace
-data have not been migrated. Choices under
-**Decisions needed** remain open until the product owner answers them.
+marketplace. Store-keyed Commerce catalog and COD checkout paths exist behind
+release gates. Legacy marketplace data has not been imported; the owner reports
+there is none for this release. Choices under **Decisions needed** remain open
+until the product owner answers them.
 
 Read [current Rentify architecture](current-rentify-architecture.md) for the
 existing service map and [platform architecture](platform-architecture.md) for
@@ -351,6 +352,18 @@ orders. Online payment methods are absent from buyer checkout.
   before either online flow is enabled.
 
 ## Phase 5 — historical data, release, and retirement
+
+**Progress (2026-09-24):** Read-only Store/Website projection snapshots and a
+Core-to-Commerce parity command now report missing, mismatched, orphaned, or
+pending projections. The COD reconciliation command includes new hosted
+storefront orders alongside marketplace orders, with per-channel amounts. A
+staged [release and retirement runbook](phase-5-release-runbook.md) defines
+inventory, backup/restore, audit, traffic, and rollback evidence. The local
+development projection check passes with two Stores and two Websites in each
+database and no pending sync rows; this is not staging parity. No source data
+was supplied for a historical KhmerCraft import, and no import or live cutover
+was performed. Phase 3 and 4 gates, staging rehearsal, timed rollback and
+restore, release policy, and the retirement observation period remain open.
 
 **Work**
 
