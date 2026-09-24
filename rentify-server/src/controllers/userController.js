@@ -84,7 +84,7 @@ exports.changePassword = async (req, res) => {
 exports.getUser = async (req, res) => {
       try {
     const user = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'email', 'profileImage', 'role', 'isVerified'],
+      attributes: ['id', 'name', 'email', 'phoneNumber', 'profileImage', 'role', 'isVerified'],
       include: [
         {
           model: Website,

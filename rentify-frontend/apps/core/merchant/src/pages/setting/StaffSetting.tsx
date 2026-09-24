@@ -379,8 +379,8 @@ const StaffSetting: React.FC = () => {
               </DialogHeader>
               <StaffInviteForm 
                 onSuccess={handleCloseDialog}
-                merchantId={userId}
-                initialData={currentStaff}
+                merchantId={userId || ''}
+                initialData={currentStaff || undefined}
                 isEditing={!!currentStaff}
                 onError={(msg: string) => toast.error(msg)}
               />

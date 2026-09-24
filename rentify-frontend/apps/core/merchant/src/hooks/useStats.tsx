@@ -76,14 +76,14 @@ export function useStats() {
     },
   ] : [];
 
-  const revenueData = (statsQuery.data?.trends || []).map(t => ({
+  const revenueData = (statsQuery.data?.trends || []).map((t: any) => ({
     date: t.date,
     revenue: parseFloat(t.revenue) || 0,
     orders: t.orders || 0,
   }));
 
   const productSales = [...(statsQuery.data?.products || [])]
-    .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+    .sort((a: any, b: any) => (b.revenue || 0) - (a.revenue || 0))
     .slice(0, 5);
 
   return {

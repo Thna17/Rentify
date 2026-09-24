@@ -177,7 +177,7 @@ const handleSave = async (field: string, customValue?: string) => {
       console.log('Final theme to save:', JSON.stringify(finalTheme, null, 2));
 
       // Update local state optimistically
-      setStoreData((prev) => ({
+      setStoreData((prev: any) => ({
         ...prev,
         shop: {
           ...prev.shop,

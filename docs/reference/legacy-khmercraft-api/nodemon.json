@@ -1,0 +1,6 @@
+{
+  "watch": ["src", "models"],
+  "ext": "ts,json",
+  "ignore": ["**/*.spec.ts", "**/*.test.ts", "tests/**"],
+  "delay": "800"
+}

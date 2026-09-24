@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Upload, Mail, Phone, MapPin, Briefcase, Store } from 'lucide-react';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
@@ -12,6 +12,7 @@ import {
 } from '@rentify/shared/ui/select';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import StepHeader from './StepHeader';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 const LOCATIONS = ['phnom-penh', 'siem-reap', 'kampong-speu', 'other'];
 
@@ -22,7 +23,15 @@ const FieldIcon = ({ icon: Icon }) => (
 const BusinessDetailsStep = ({ data, onUpdate }) => {
   const { t } = useLanguage();
   const fileInputRef = useRef(null);
+  const [categories, setCategories] = useState([]);
   const details = data.businessDetails || {};
+
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/categories`)
+      .then((response) => response.json())
+      .then((result) => setCategories(result.data || []))
+      .catch(() => setCategories([]));
+  }, []);
 
   const handleInputChange = (field, value) => {
     onUpdate({ businessDetails: { ...data.businessDetails, [field]: value } });
@@ -63,6 +72,22 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="primary-store-category">Primary store category</Label>
+            <select
+              id="primary-store-category"
+              required
+              value={details.primaryCategory || ''}
+              onChange={(event) => handleInputChange('primaryCategory', event.target.value)}
+              className="h-11 w-full rounded-lg border border-input bg-background px-3"
+            >
+              <option value="">Choose a category</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">

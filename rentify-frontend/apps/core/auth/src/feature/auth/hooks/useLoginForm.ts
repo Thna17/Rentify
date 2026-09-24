@@ -16,6 +16,7 @@ import { useAuthConfig } from '../utils/authUtils';
 import {
   DASHBOARD_URL,
   MARKETING_URL,
+  MARKETPLACE_URL,
 } from '@rentify/shared/config/urls';
 
 export const useLoginForm = () => {
@@ -26,8 +27,9 @@ export const useLoginForm = () => {
 
   const { websiteId, userEmail, userPhoneNumber, staffs } = useWebsiteData();
 
-  const { returnDomain, redirectUrl, isWebsiteTemplate } = useAuthConfig();
+  const { returnDomain, redirectUrl, isWebsiteTemplate, isHostedStorefrontBuyer } = useAuthConfig();
   const marketingHost = new URL(MARKETING_URL).host;
+  const marketplaceHost = new URL(MARKETPLACE_URL).host;
 
   const [loginMutation] = useLoginMutation();
   const [loginCustomerMutation] = useLoginCustomerMutation();
@@ -73,7 +75,7 @@ export const useLoginForm = () => {
     }
 
     const loginStrategy = () => {
-      if (isSpecialCase || returnDomain === marketingHost) return loginMutation;
+      if (isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost) return loginMutation;
       if (isWebsiteTemplate && isStaff) return loginStaffMutation;
       if (isWebsiteTemplate) {
         payload.storeId = websiteId;
@@ -86,12 +88,13 @@ export const useLoginForm = () => {
       const selectedLogin = loginStrategy();
       const response = await selectedLogin(payload).unwrap();
       const isPlatformLogin =
-        isSpecialCase || returnDomain === marketingHost || !isWebsiteTemplate;
-      const destination = isPlatformLogin
-        ? response?.data?.hasStore
+        isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost || !isWebsiteTemplate;
+      let destination = redirectUrl;
+      if (isPlatformLogin && returnDomain !== marketplaceHost && !isHostedStorefrontBuyer) {
+        destination = response?.data?.hasStore
           ? `${DASHBOARD_URL}/overview`
-          : MARKETING_URL
-        : redirectUrl;
+          : `${MARKETING_URL}/start`;
+      }
       setSuccess('Login successful! Redirecting...');
       setTimeout(() => {
         window.location.href = destination;

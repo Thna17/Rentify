@@ -13,8 +13,10 @@ const Cart = sequelize.define(
     },
     websiteId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
+    storeId: { type: DataTypes.UUID, allowNull: true },
+    buyerId: { type: DataTypes.UUID, allowNull: true },
     userId: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -76,6 +78,7 @@ const Cart = sequelize.define(
     indexes: [
       { unique: true, fields: ["websiteId", "userId"] },
       { unique: true, fields: ["websiteId", "sessionId"] },
+      { unique: true, fields: ["storeId", "buyerId"] },
       { fields: ["abandoned"] },
       { fields: ["lastActiveAt"] },
       { fields: ["version"] },

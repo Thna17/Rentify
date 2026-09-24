@@ -20,6 +20,19 @@ export const productApi = createApi({
       providesTags: ['Product'],
     }),
 
+    getManagedProducts: builder.query({
+      query: ({ websiteId, ...query }) => ({
+        url: `/${websiteId}/manage/products`,
+        params: query,
+      }),
+      providesTags: ['Product'],
+    }),
+
+    getManagedProduct: builder.query({
+      query: ({ websiteId, productId }) => `/${websiteId}/manage/products/${productId}`,
+      providesTags: (result, error, arg) => [{ type: 'Product', id: arg.productId }],
+    }),
+
     getProduct: builder.query({
       query: ({ websiteId, productId }) => `/${websiteId}/${productId}`,
       providesTags: (result, error, arg) => [
@@ -175,6 +188,8 @@ export const productApi = createApi({
 /** ---------------------- AUTO-GENERATED HOOK EXPORTS ---------------------- **/
 export const {
   useGetAllProductsQuery,
+  useGetManagedProductsQuery,
+  useGetManagedProductQuery,
   useGetProductQuery,
   useGetAdvancedFilterProductsQuery,
   useSearchProductsQuery,

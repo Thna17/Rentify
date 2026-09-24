@@ -1,0 +1,1180 @@
+[
+ {
+  "email": "lyly.snack.store@sellers.khmercraft.test",
+  "password": "LylySnack2026",
+  "storeName": "LyLy Snack Store",
+  "phone": "069820333",
+  "category": "Food & Groceries",
+  "description": "A neighbourhood snack shop reselling LY LY Food Industry snacks - corn puffs, chips, wafers and chocolate - by the pack or the box.",
+  "tagline": "Snacks, wafers and chocolate from LY LY Food Industry",
+  "theme": "GOLD",
+  "assets": "lyly",
+  "logo": "18.webp",
+  "products": [
+   [
+    "01.webp",
+    "Snacks",
+    "MOMO Corn Puff Snack",
+    1.0,
+    60,
+    "Light, milky corn puffs in a sharing bag. A LY LY classic and an everyday favourite with kids."
+   ],
+   [
+    "02.webp",
+    "Snacks",
+    "Chip POP Prawn Crackers",
+    2.25,
+    45,
+    "Crispy prawn-flavoured crackers with a hint of chilli. Sold as the large sharing pack."
+   ],
+   [
+    "03.webp",
+    "Snacks",
+    "Crispy Corn Snack",
+    0.9,
+    50,
+    "Crunchy corn snack with a savoury coating, packed for snacking on the go."
+   ],
+   [
+    "04.webp",
+    "Snacks",
+    "Round Crackers - Back to School Pack",
+    0.75,
+    80,
+    "Bite-size round crackers in a school-lunch pack. No artificial colouring, no preservatives, no added MSG."
+   ],
+   [
+    "05.webp",
+    "Snacks",
+    "Corn Roll Wafer",
+    0.9,
+    55,
+    "Sweet corn-cream filled wafer rolls, individually wrapped inside the pack."
+   ],
+   [
+    "09.webp",
+    "Snacks",
+    "Round Chips - Spicy Crab",
+    0.85,
+    70,
+    "Ridged round chips in LY LY's spicy crab seasoning. 35g pack."
+   ],
+   [
+    "07.webp",
+    "Snacks",
+    "Rice Cracker Selection",
+    1.2,
+    40,
+    "An assortment of LY LY rice crackers - light, crisp and lightly salted."
+   ],
+   [
+    "08.webp",
+    "Snacks",
+    "Triangle Chips - Original",
+    0.85,
+    65,
+    "Triangular corn chips, crisp and lightly seasoned. 70g pack."
+   ],
+   [
+    "10.webp",
+    "Snacks",
+    "Turtle Snack",
+    0.8,
+    60,
+    "Turtle-shaped crunchy corn snack, a long-running favourite with younger customers."
+   ],
+   [
+    "15.webp",
+    "Snacks",
+    "Corn Hat - Tom Yum",
+    0.95,
+    50,
+    "New flavour: corn snack with tangy tom yum seasoning. 70g pack, ISO 22000 and HACCP certified."
+   ],
+   [
+    "12.webp",
+    "Snacks",
+    "Kiss Chocolate Sticks (Box of 24)",
+    3.5,
+    25,
+    "Chocolate-filled wafer sticks. Sold by the display box - good for resale or sharing."
+   ],
+   [
+    "13.webp",
+    "Snacks",
+    "Touch Chocolate Wafer (Box)",
+    3.5,
+    25,
+    "Chocolate wafer bars in a full display box."
+   ],
+   [
+    "14.webp",
+    "Snacks",
+    "Tic Tak Wafer Sticks (Box)",
+    3.2,
+    25,
+    "Crispy wafer sticks with chocolate cream, sold by the box."
+   ],
+   [
+    "16.webp",
+    "Snacks",
+    "Chocolate Mix Snack",
+    1.5,
+    45,
+    "Chocolate-coated cereal mix in a resealable pack."
+   ]
+  ]
+ },
+ {
+  "email": "cloth.store@sellers.khmercraft.test",
+  "password": "ClothStore2026",
+  "storeName": "Cloth Store",
+  "phone": "069820444",
+  "category": "Fashion & Accessories",
+  "description": "Streetwear and everyday basics - graphic tees, plain crewnecks, long sleeves and linen shirts. Each piece photographed as it comes, one or two of each.",
+  "tagline": "Graphic tees, basics and linen - one or two of each",
+  "theme": "MIDNIGHT",
+  "assets": "cloth",
+  "logo": "32.webp",
+  "products": [
+   [
+    "01.webp",
+    "T-Shirts",
+    "Ribbed Knit Tee - Black",
+    14.0,
+    2,
+    "Fine-ribbed knit crewneck with a close fit. Short sleeve, holds its shape."
+   ],
+   [
+    "02.webp",
+    "T-Shirts",
+    "Shark Graffiti Print Tee - Cream",
+    13.0,
+    2,
+    "Heavyweight cream tee with a hand-drawn shark graphic across the chest."
+   ],
+   [
+    "03.webp",
+    "T-Shirts",
+    "Crewneck Tee - Navy",
+    10.0,
+    3,
+    "Plain navy crewneck in a relaxed cut. An everyday basic."
+   ],
+   [
+    "04.webp",
+    "T-Shirts",
+    "Long-Sleeve Tee - White",
+    15.0,
+    2,
+    "Loose white long-sleeve with a dropped shoulder and ribbed cuffs."
+   ],
+   [
+    "05.webp",
+    "T-Shirts",
+    "Raglan Tee - Light Grey",
+    12.0,
+    2,
+    "Textured light grey raglan with a soft handfeel."
+   ],
+   [
+    "06.webp",
+    "T-Shirts",
+    "Varsity Print Tee - Cream",
+    14.0,
+    2,
+    "Cream tee with a large collegiate-style lettering print."
+   ],
+   [
+    "07.webp",
+    "T-Shirts",
+    "Character Print Tee - Cream",
+    13.0,
+    2,
+    "Cream tee with a small embroidered-look cartoon graphic."
+   ],
+   [
+    "08.webp",
+    "T-Shirts",
+    "Poster Print Tee - Cream",
+    15.0,
+    1,
+    "Vintage playbill-style print across the chest on heavy cream cotton."
+   ],
+   [
+    "09.webp",
+    "Shirts",
+    "Linen Henley Shirt - White",
+    18.0,
+    2,
+    "Half-placket linen shirt with a band collar and rolled three-quarter sleeve."
+   ],
+   [
+    "10.webp",
+    "T-Shirts",
+    "Bold Type Print Tee - Cream",
+    13.0,
+    2,
+    "Oversized type print in navy on a cream body."
+   ],
+   [
+    "11.webp",
+    "T-Shirts",
+    "Crewneck Tee - White",
+    10.0,
+    4,
+    "Plain white crewneck, mid-weight cotton, straight hem."
+   ],
+   [
+    "12.webp",
+    "T-Shirts",
+    "Line Art Tee - Charcoal",
+    13.0,
+    2,
+    "Charcoal tee with a minimal white line drawing on the front."
+   ],
+   [
+    "13.webp",
+    "T-Shirts",
+    "Floral Print Tee - Cream",
+    14.0,
+    2,
+    "Blue daisy print with script lettering beneath."
+   ],
+   [
+    "14.webp",
+    "T-Shirts",
+    "Washed Graphic Tee - Black",
+    16.0,
+    1,
+    "Acid-washed black tee with a grainy photographic print."
+   ],
+   [
+    "15.webp",
+    "T-Shirts",
+    "Frog Patch Tee - Cream",
+    12.0,
+    2,
+    "Small character graphic at the chest on a cream body."
+   ],
+   [
+    "16.webp",
+    "T-Shirts",
+    "Script Back-Print Tee - Cream",
+    14.0,
+    2,
+    "Flowing script print across the upper back."
+   ],
+   [
+    "17.webp",
+    "T-Shirts",
+    "Silhouette Print Tee - White",
+    13.0,
+    2,
+    "Two-figure silhouette graphic with a stamp detail."
+   ],
+   [
+    "18.webp",
+    "T-Shirts",
+    "Eye Print Tee - White",
+    14.0,
+    1,
+    "Large halftone eye print with newsprint texture."
+   ],
+   [
+    "19.webp",
+    "T-Shirts",
+    "Flower Shoulder Tee - White",
+    12.0,
+    2,
+    "Scattered blue flower print over one shoulder."
+   ],
+   [
+    "20.webp",
+    "T-Shirts",
+    "Spider Print Tee - White",
+    14.0,
+    2,
+    "Red spider graphic with trailing lines down the front."
+   ],
+   [
+    "21.webp",
+    "T-Shirts",
+    "Star Doodle Tee - White",
+    12.0,
+    2,
+    "Blue hand-drawn star and squiggle graphic."
+   ],
+   [
+    "22.webp",
+    "T-Shirts",
+    "Crowd Print Long-Sleeve - White",
+    17.0,
+    1,
+    "White long-sleeve with a silhouetted crowd print and small captions."
+   ],
+   [
+    "23.webp",
+    "T-Shirts",
+    "Portrait Print Tee - Black",
+    15.0,
+    2,
+    "Black tee with a halftone portrait and a red star overlay."
+   ],
+   [
+    "24.webp",
+    "T-Shirts",
+    "Anatomy Print Tee - Navy",
+    16.0,
+    1,
+    "Ribcage line print in white on a washed navy body."
+   ],
+   [
+    "25.webp",
+    "T-Shirts",
+    "Whale Chart Tee - White",
+    13.0,
+    2,
+    "Illustrated whale identification chart across the chest."
+   ],
+   [
+    "26.webp",
+    "T-Shirts",
+    "Zip Dog Print Tee - White",
+    13.0,
+    2,
+    "Trompe-l'oeil zip graphic with a dog peeking through."
+   ],
+   [
+    "27.webp",
+    "T-Shirts",
+    "Typography Tee - White",
+    12.0,
+    2,
+    "Scattered type and punctuation print, front and side."
+   ],
+   [
+    "28.webp",
+    "T-Shirts",
+    "Angel Print Tee - Navy",
+    16.0,
+    1,
+    "Fine-line winged figure print on a deep navy body."
+   ],
+   [
+    "29.webp",
+    "T-Shirts",
+    "Abstract Print Tee - Black",
+    15.0,
+    1,
+    "Red and white brushed abstract graphic on black."
+   ],
+   [
+    "30.webp",
+    "T-Shirts",
+    "Minimal Text Tee - Navy",
+    11.0,
+    3,
+    "Small line of text across the chest, otherwise plain navy."
+   ],
+   [
+    "31.webp",
+    "T-Shirts",
+    "Orb Print Tee - Black",
+    15.0,
+    1,
+    "Metallic-look orb graphic centred on a black body."
+   ]
+  ]
+ },
+ {
+  "email": "skincare.store@sellers.khmercraft.test",
+  "password": "SkincareStore2026",
+  "storeName": "Skincare Store",
+  "phone": "069820555",
+  "category": "Beauty & Wellness",
+  "description": "Sunscreen, face wash, shampoo and body wash from trusted skincare brands. Everyday routine essentials, stocked in small batches.",
+  "tagline": "Sunscreen, cleansers, shampoo and body wash",
+  "theme": "CLAY",
+  "assets": "skincare",
+  "logo": "logo.webp",
+  "products": [
+   [
+    "sunscreen-01.webp",
+    "Sunscreen",
+    "Sun Downer Sunscreen Gel SPF 50+ PA+++",
+    12.0,
+    6,
+    "Sun Downer Sunscreen Gel SPF 50+ PA+++. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-02.webp",
+    "Sunscreen",
+    "Tinted Sunscreen SPF 50+ PA++++",
+    11.0,
+    6,
+    "Tinted Sunscreen SPF 50+ PA++++. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-03.webp",
+    "Sunscreen",
+    "Leaves Tinted Fluid Sunscreen SPF 50",
+    14.0,
+    5,
+    "Leaves Tinted Fluid Sunscreen SPF 50. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-04.webp",
+    "Sunscreen",
+    "Plum Hybrid Sunscreen SPF 50 PA++++",
+    13.0,
+    6,
+    "Plum Hybrid Sunscreen SPF 50 PA++++. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-05.webp",
+    "Sunscreen",
+    "Conscious Chemist Peach The Sun Hybrid Gel SPF 50 PA+++",
+    16.0,
+    4,
+    "Conscious Chemist Peach The Sun Hybrid Gel SPF 50 PA+++. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-06.webp",
+    "Sunscreen",
+    "Cellcense Sunscreen SPF 50",
+    15.0,
+    5,
+    "Cellcense Sunscreen SPF 50. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-07.webp",
+    "Sunscreen",
+    "Sunslay Sunscreen SPF 50",
+    11.0,
+    6,
+    "Sunslay Sunscreen SPF 50. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-08.webp",
+    "Sunscreen",
+    "Vedic Line Natural Sun Screen Lotion SPF 15",
+    9.0,
+    7,
+    "Vedic Line Natural Sun Screen Lotion SPF 15. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-09.webp",
+    "Sunscreen",
+    "Sun Screen Face Cream SPF 50+ Dry Touch",
+    13.0,
+    5,
+    "Sun Screen Face Cream SPF 50+ Dry Touch. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-10.webp",
+    "Sunscreen",
+    "Sun & Fun Moisturising Sunscreen Lotion SPF 30",
+    10.0,
+    6,
+    "Sun & Fun Moisturising Sunscreen Lotion SPF 30. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-11.webp",
+    "Sunscreen",
+    "Sunscreen SPF 50 Water Resistant 100g",
+    9.0,
+    8,
+    "Sunscreen SPF 50 Water Resistant 100g. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-12.webp",
+    "Sunscreen",
+    "Yuthika Sunscreen Cream SPF 50 PA++++",
+    12.0,
+    5,
+    "Yuthika Sunscreen Cream SPF 50 PA++++. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-13.webp",
+    "Sunscreen",
+    "Laikou Japan Sakura Sunscreen SPF 50 PA++",
+    10.0,
+    6,
+    "Laikou Japan Sakura Sunscreen SPF 50 PA++. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-14.webp",
+    "Sunscreen",
+    "Odylique Natural Sun Screen SPF 30 Organic",
+    18.0,
+    3,
+    "Odylique Natural Sun Screen SPF 30 Organic. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-17.webp",
+    "Sunscreen",
+    "Sanfe Invisible Instant Glow Sunscreen SPF 50 PA+++",
+    13.0,
+    6,
+    "Sanfe Invisible Instant Glow Sunscreen SPF 50 PA+++. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-01.webp",
+    "Face Wash",
+    "Aqualogica Radiance+ Face Wash",
+    11.0,
+    6,
+    "Aqualogica Radiance+ Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-02.webp",
+    "Face Wash",
+    "Dot & Key Strawberry Bright Niacinamide Gel Face Wash",
+    13.0,
+    5,
+    "Dot & Key Strawberry Bright Niacinamide Gel Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-03.webp",
+    "Face Wash",
+    "Ghar Soaps Magic Face Wash",
+    10.0,
+    6,
+    "Ghar Soaps Magic Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-04.webp",
+    "Face Wash",
+    "Vince Acne & Oil Clear Face Wash",
+    9.0,
+    7,
+    "Vince Acne & Oil Clear Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-05.webp",
+    "Face Wash",
+    "Simple Refreshing Facial Wash",
+    8.0,
+    8,
+    "Simple Refreshing Facial Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-06.webp",
+    "Face Wash",
+    "The Man Company Charcoal Face Wash",
+    10.0,
+    6,
+    "The Man Company Charcoal Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-07.webp",
+    "Face Wash",
+    "Skin White Activated Charcoal Face Wash",
+    8.0,
+    7,
+    "Skin White Activated Charcoal Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-08.webp",
+    "Face Wash",
+    "Natio Clear Oil Control Foam Cleanser",
+    14.0,
+    4,
+    "Natio Clear Oil Control Foam Cleanser. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-09.webp",
+    "Face Wash",
+    "Nola Glycolic Cleansing Foam",
+    15.0,
+    4,
+    "Nola Glycolic Cleansing Foam. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-10.webp",
+    "Face Wash",
+    "Mamaearth Vitamin C Daily Glow Face Wash",
+    9.0,
+    7,
+    "Mamaearth Vitamin C Daily Glow Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-11.webp",
+    "Face Wash",
+    "Foxtale Super Glow Face Wash",
+    12.0,
+    5,
+    "Foxtale Super Glow Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-12.webp",
+    "Face Wash",
+    "Vibrant Beauty Lemon Purifying Face Wash",
+    8.0,
+    6,
+    "Vibrant Beauty Lemon Purifying Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "face-wash-14.webp",
+    "Face Wash",
+    "CoNatural Rose Face Wash",
+    11.0,
+    5,
+    "CoNatural Rose Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "sunscreen-15.webp",
+    "Face Wash",
+    "Revival Naturals Ultra Lightening Foaming Face Wash",
+    10.0,
+    6,
+    "Revival Naturals Ultra Lightening Foaming Face Wash. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-01.webp",
+    "Shampoo",
+    "Herbal Essences Full + Thick Sulfate Free Shampoo",
+    13.0,
+    5,
+    "Herbal Essences Full + Thick Sulfate Free Shampoo. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-03.webp",
+    "Shampoo",
+    "Bodia Amla & Shikakai Shampoo",
+    16.0,
+    4,
+    "Bodia Amla & Shikakai Shampoo. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-06.webp",
+    "Shampoo",
+    "Yellow Professional Smoothing Shampoo 1000ml",
+    22.0,
+    3,
+    "Yellow Professional Smoothing Shampoo 1000ml. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-07.webp",
+    "Shampoo",
+    "Nisha Smooth & Silky Shampoo",
+    8.0,
+    7,
+    "Nisha Smooth & Silky Shampoo. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-08.webp",
+    "Shampoo",
+    "Vibrant Beauty Hair Repair Therapy Anti-Frizz Shampoo",
+    12.0,
+    5,
+    "Vibrant Beauty Hair Repair Therapy Anti-Frizz Shampoo. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-09.webp",
+    "Shampoo",
+    "Juicy Chemistry Organic Anti-Dandruff Shampoo",
+    19.0,
+    3,
+    "Juicy Chemistry Organic Anti-Dandruff Shampoo. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-10.webp",
+    "Shampoo",
+    "Kumarika Shampoo Range",
+    11.0,
+    6,
+    "Kumarika Shampoo Range. Genuine stock, sold individually."
+   ],
+   [
+    "body-wash-01.webp",
+    "Body Wash",
+    "LUX Magical Orchid Body Wash",
+    7.0,
+    8,
+    "LUX Magical Orchid Body Wash. Genuine stock, sold individually."
+   ],
+   [
+    "body-wash-02.webp",
+    "Body Wash",
+    "LUX Botanicals Soft Skin Rose Body Wash",
+    7.0,
+    8,
+    "LUX Botanicals Soft Skin Rose Body Wash. Genuine stock, sold individually."
+   ],
+   [
+    "body-wash-03.webp",
+    "Body Wash",
+    "Plum BodyLovin' Body Wash Duo",
+    16.0,
+    4,
+    "Plum BodyLovin' Body Wash Duo. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-02.webp",
+    "Body Wash",
+    "Lily Whipped Shea Body Wash",
+    6.0,
+    8,
+    "Lily Whipped Shea Body Wash. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-04.webp",
+    "Body Wash",
+    "Aveeno Daily Moisturising Body Wash 500ml",
+    12.0,
+    5,
+    "Aveeno Daily Moisturising Body Wash 500ml. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-05.webp",
+    "Body Wash",
+    "Dr. Smith's Gulab & Glycolic Acid Body Wash",
+    14.0,
+    4,
+    "Dr. Smith's Gulab & Glycolic Acid Body Wash. Genuine stock, sold individually."
+   ],
+   [
+    "shampoo-11.webp",
+    "Body Wash",
+    "The Body Shop Lotus Shower Gel 250ml",
+    13.0,
+    5,
+    "The Body Shop Lotus Shower Gel 250ml. Genuine stock, sold individually."
+   ]
+  ]
+ },
+ {
+  "email": "phone.store@sellers.khmercraft.test",
+  "password": "PhoneStore2026",
+  "storeName": "Phone Store",
+  "phone": "069820666",
+  "category": "Electronics",
+  "description": "iPhones from the 11 through to the latest, in every colour we stock. Each handset checked, with battery health stated before you buy.",
+  "tagline": "iPhones, checked and colour-matched",
+  "theme": "MIDNIGHT",
+  "assets": "phone",
+  "logo": "logo.webp",
+  "products": [
+   [
+    "11-main.webp",
+    "Phones & Tablets",
+    "Apple iPhone 11",
+    180,
+    4,
+    "Apple iPhone 11. Checked handset, battery health stated at point of sale. Available in White, Black, Purple, (PRODUCT)RED, Yellow, Green.",
+    [
+     [
+      "White",
+      "11-white.webp"
+     ],
+     [
+      "Black",
+      "11-black.webp"
+     ],
+     [
+      "Purple",
+      "11-purple.webp"
+     ],
+     [
+      "(PRODUCT)RED",
+      "11-red.webp"
+     ],
+     [
+      "Yellow",
+      "11-yellow.webp"
+     ],
+     [
+      "Green",
+      "11-green.webp"
+     ]
+    ]
+   ],
+   [
+    "12-main.webp",
+    "Phones & Tablets",
+    "Apple iPhone 12",
+    250,
+    4,
+    "Apple iPhone 12. Checked handset, battery health stated at point of sale. Available in Purple, White, Black, (PRODUCT)RED, Blue, Green.",
+    [
+     [
+      "Purple",
+      "12-purple.webp"
+     ],
+     [
+      "White",
+      "12-white.webp"
+     ],
+     [
+      "Black",
+      "12-black.webp"
+     ],
+     [
+      "(PRODUCT)RED",
+      "12-red.webp"
+     ],
+     [
+      "Blue",
+      "12-blue.webp"
+     ],
+     [
+      "Green",
+      "12-green.webp"
+     ]
+    ]
+   ],
+   [
+    "14-main.webp",
+    "Phones & Tablets",
+    "Apple iPhone 14",
+    480,
+    3,
+    "Apple iPhone 14. Checked handset, battery health stated at point of sale. Available in Starlight, Blue, Purple.",
+    [
+     [
+      "Starlight",
+      "14-starlight.webp"
+     ],
+     [
+      "Blue",
+      "14-blue.webp"
+     ],
+     [
+      "Purple",
+      "14-purple.webp"
+     ]
+    ]
+   ],
+   [
+    "16-main.webp",
+    "Phones & Tablets",
+    "Apple iPhone 16",
+    780,
+    3,
+    "Apple iPhone 16. Checked handset, battery health stated at point of sale. Available in Lavender, Teal, Black, Pink.",
+    [
+     [
+      "Lavender",
+      "16-lavender.webp"
+     ],
+     [
+      "Teal",
+      "16-teal.webp"
+     ],
+     [
+      "Black",
+      "16-black.webp"
+     ],
+     [
+      "Pink",
+      "16-pink.webp"
+     ]
+    ]
+   ],
+   [
+    "12pro.webp",
+    "Phones & Tablets",
+    "Apple iPhone 12 Pro",
+    300,
+    2,
+    "Apple iPhone 12 Pro. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "12promax.webp",
+    "Phones & Tablets",
+    "Apple iPhone 12 Pro Max",
+    340,
+    2,
+    "Apple iPhone 12 Pro Max. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "13-blue.webp",
+    "Phones & Tablets",
+    "Apple iPhone 13",
+    380,
+    3,
+    "Apple iPhone 13. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "14promax.webp",
+    "Phones & Tablets",
+    "Apple iPhone 14 Pro Max",
+    700,
+    2,
+    "Apple iPhone 14 Pro Max. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "15-green.webp",
+    "Phones & Tablets",
+    "Apple iPhone 15",
+    620,
+    3,
+    "Apple iPhone 15. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "15promax.webp",
+    "Phones & Tablets",
+    "Apple iPhone 15 Pro Max",
+    900,
+    2,
+    "Apple iPhone 15 Pro Max. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "17-blue.webp",
+    "Phones & Tablets",
+    "Apple iPhone 17",
+    950,
+    2,
+    "Apple iPhone 17. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "17pro.webp",
+    "Phones & Tablets",
+    "Apple iPhone 17 Pro",
+    1150,
+    1,
+    "Apple iPhone 17 Pro. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ],
+   [
+    "air-blue.webp",
+    "Phones & Tablets",
+    "Apple iPhone Air",
+    1000,
+    2,
+    "Apple iPhone Air. Checked handset, battery health stated at point of sale. Single colour, as pictured."
+   ]
+  ]
+ },
+ {
+  "email": "bookstore@sellers.khmercraft.test",
+  "password": "Bookstore2026",
+  "storeName": "Bookstore",
+  "phone": "069820777",
+  "category": "Kids & Family",
+  "description": "A school bookstore: pens, markers, pencils, paper and backpacks. Everything for the start of term, stocked year round.",
+  "tagline": "Pens, pencils, paper and packs",
+  "theme": "FOREST",
+  "assets": "school",
+  "logo": "logo.webp",
+  "products": [
+   [
+    "pastel-gel-12.webp",
+    "Pens & Markers",
+    "Pastel Gel Pen Set - 12 Colours",
+    4.5,
+    20,
+    "Fine-tip gel pens in twelve pastel shades. Smooth ink, quick drying."
+   ],
+   [
+    "gel-pen-boxes.webp",
+    "Pens & Markers",
+    "Gel Pen Box - Black, Red or Blue (12 pcs)",
+    3.5,
+    24,
+    "A dozen 0.5mm gel pens in one box. Pick a colour at checkout."
+   ],
+   [
+    "mildliner-10.webp",
+    "Pens & Markers",
+    "Zebra Mildliner Creative Marker - 10 Pack",
+    12.0,
+    8,
+    "Double-ended soft mild-colour highlighters, chisel and bullet tip."
+   ],
+   [
+    "mildliner-single.webp",
+    "Pens & Markers",
+    "Zebra Mildliner Double-Ended Marker",
+    2.0,
+    30,
+    "Single Mildliner, sold loose. Chisel one end, bullet the other."
+   ],
+   [
+    "pastel-gel-6.webp",
+    "Pens & Markers",
+    "Pastel Gel Pens - Set of 6",
+    3.0,
+    22,
+    "Soft-barrel gel pens in muted pastels."
+   ],
+   [
+    "frixion-10.webp",
+    "Pens & Markers",
+    "Pilot FriXion Clicker Erasable Gel Pens - 10 Pack",
+    14.0,
+    7,
+    "Writes smooth, erases clean. Retractable, refillable, assorted inks."
+   ],
+   [
+    "mini-highlighters.webp",
+    "Pens & Markers",
+    "Mini Pastel Highlighters - Set of 6",
+    2.5,
+    26,
+    "Pocket-size highlighters in pastel shades."
+   ],
+   [
+    "sharpie-gel-5.webp",
+    "Pens & Markers",
+    "Sharpie Gel Highlighters - 5 Pack",
+    8.0,
+    10,
+    "Gel stick highlighters - no smearing, no dry-out."
+   ],
+   [
+    "sharpie-chisel-12.webp",
+    "Pens & Markers",
+    "Sharpie Chisel Highlighters - 12 Pack",
+    14.0,
+    6,
+    "Twelve chisel-tip highlighters for marking up textbooks."
+   ],
+   [
+    "patterned-gel-blue.webp",
+    "Pens & Markers",
+    "Patterned Gel Pens - Blue, Set of 5",
+    3.5,
+    18,
+    "Japanese-style gel pens with printed barrels."
+   ],
+   [
+    "pastel-click-pens.webp",
+    "Pens & Markers",
+    "Pastel Click Pens - Set of 8",
+    4.0,
+    16,
+    "Retractable ballpoints with a light touch and soft-colour barrels."
+   ],
+   [
+    "graphite-tin.webp",
+    "Pencils",
+    "Graphite Sketching Pencil Set - Tin",
+    16.0,
+    6,
+    "Artist-grade graphite grades from HB to 8B in a metal tin, with sharpener and eraser."
+   ],
+   [
+    "sketching-set.webp",
+    "Pencils",
+    "Professional Sketching Pencil Set",
+    9.0,
+    9,
+    "A full range of drawing pencils for shading and technical work."
+   ],
+   [
+    "stabilo-exam-pencil.webp",
+    "Pencils",
+    "Stabilo Exam Grade Pencil",
+    1.5,
+    40,
+    "The reliable pencil for exam papers. Sold singly."
+   ],
+   [
+    "mechanical-pencil.webp",
+    "Pencils",
+    "Mechanical Pencil 0.7mm with Built-in Eraser",
+    3.5,
+    20,
+    "0.7mm precision writing, built-in eraser and two spare leads."
+   ],
+   [
+    "stabilo-easy-colour.webp",
+    "Pencils",
+    "Stabilo EASY Colouring Pencils - 10 Pack",
+    7.0,
+    12,
+    "Ergonomic colouring pencils for younger hands."
+   ],
+   [
+    "craft-paper.webp",
+    "Paper",
+    "Coloured Craft Paper - 100 Sheets A4",
+    4.0,
+    15,
+    "A hundred medium-weight sheets across a full colour range. Origami, posters, classroom work."
+   ],
+   [
+    "grid-paper.webp",
+    "Paper",
+    "Grid Paper Pad",
+    3.0,
+    18,
+    "Grid-ruled loose sheets for maths and technical drawing."
+   ],
+   [
+    "essentials-backpack.webp",
+    "Backpacks",
+    "Essentials Backpack - Cream",
+    18.0,
+    5,
+    "Clean-lined daypack in cream canvas. Padded back, one main compartment."
+   ],
+   [
+    "black-bottle-backpack.webp",
+    "Backpacks",
+    "Backpack with Bottle Pocket - Black",
+    16.0,
+    6,
+    "Multi-pocket daypack with a side sleeve sized for a water bottle."
+   ],
+   [
+    "camo-backpack-blue.webp",
+    "Backpacks",
+    "Kids Camo Backpack - Blue",
+    14.0,
+    7,
+    "Lightweight camo pack for primary school, with a padded back panel."
+   ],
+   [
+    "kids-camo-set.webp",
+    "Backpacks",
+    "Kids Camo Backpack - School Set",
+    15.0,
+    6,
+    "Camo school pack with front organiser pocket."
+   ],
+   [
+    "kawaii-backpack.webp",
+    "Backpacks",
+    "Charm Backpack - Black",
+    17.0,
+    5,
+    "Black daypack with a clear front window and charm loops."
+   ],
+   [
+    "laptop-backpack-cream.webp",
+    "Backpacks",
+    "Laptop Backpack - Cream & Black",
+    26.0,
+    4,
+    "Padded laptop sleeve, buckle front and a detachable pouch."
+   ],
+   [
+    "galaxy-backpack.webp",
+    "Backpacks",
+    "Galaxy Print Backpack with Stationery Set",
+    22.0,
+    4,
+    "Galaxy-print pack that comes with a fitted stationery organiser."
+   ],
+   [
+    "navy-backpack.webp",
+    "Backpacks",
+    "Navy Laptop Backpack",
+    24.0,
+    4,
+    "Deep navy pack with a padded laptop compartment and cable pocket."
+   ],
+   [
+    "backbencher-backpack.webp",
+    "Backpacks",
+    "Backbencher Backpack - Black",
+    20.0,
+    5,
+    "Circuit-print black pack with a roomy main compartment."
+   ]
+  ]
+ }
+]

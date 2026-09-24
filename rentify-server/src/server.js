@@ -1,8 +1,10 @@
 const app = require('./app');
 const syncDB = require('./config/initDB');
+const { startWebsiteSyncJob } = require('./jobs/websiteSyncJob');
 
 const startServer = async () => {
   await syncDB();
+  startWebsiteSyncJob();
   const port = process.env.PORT || 3001;
   const server = app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);

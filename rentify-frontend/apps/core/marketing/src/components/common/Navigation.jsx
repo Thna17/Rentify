@@ -10,7 +10,6 @@ import {
 } from '@rentify/shared/ui/dropdown-menu';
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@rentify/shared/ui/sheet';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { AUTH_URL } from '@rentify/shared/config/urls';
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -145,7 +144,7 @@ const Navigation = () => {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Link to={AUTH_URL}>
+            <Link to="/start">
               <Button className="group h-10 rounded-lg bg-gradient-to-r from-fuchsia-500 to-pink-600 px-4 text-sm font-medium text-white shadow-lg shadow-fuchsia-500/20 transition-all duration-300 hover:from-fuchsia-600 hover:to-pink-700 hover:shadow-xl xl:h-12 xl:rounded-xl xl:px-7 xl:text-base">
                 {t('nav.getstarted')}
                 <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1 xl:ml-2 xl:h-5 xl:w-5" />
@@ -234,7 +233,7 @@ const Navigation = () => {
                   </div>
                   
                   <SheetClose asChild>
-                    <Link to={AUTH_URL} className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-600 font-medium text-white hover:from-fuchsia-600 hover:to-pink-700">
+                    <Link to="/start" className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-600 font-medium text-white hover:from-fuchsia-600 hover:to-pink-700">
                       {t('nav.getstarted')}
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Link>

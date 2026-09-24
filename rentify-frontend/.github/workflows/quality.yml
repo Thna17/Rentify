@@ -12,6 +12,7 @@ jobs:
       AUTH_URL: https://auth.rentify.test
       MERCHANT_DASHBOARD_URL: https://merchant.rentify.test
       MARKETING_URL: https://www.rentify.test
+      MARKETPLACE_URL: https://market.rentify.test
       STOREFRONT_ORIGIN: https://store.rentify.test
     steps:
       - uses: actions/checkout@v4

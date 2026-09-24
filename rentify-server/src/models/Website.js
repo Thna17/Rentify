@@ -19,6 +19,12 @@ const Website = sequelize.define(
         key: "id",
       },
     },
+    storeId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      unique: true,
+      references: { model: 'Stores', key: 'id' },
+    },
     templateId: {
       type: DataTypes.UUID,
       allowNull: false,

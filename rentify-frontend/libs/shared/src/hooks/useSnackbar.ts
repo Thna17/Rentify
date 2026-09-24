@@ -17,11 +17,15 @@ export function useSnackbar() {
    * @param severity - Severity type (info, success, warning, error)
    */
   const showSnackbar = useCallback((message: string, severity: SnackbarSeverity = 'info') => {
-    toast({
-      title: severity.charAt(0).toUpperCase() + severity.slice(1), // Capitalize first letter
-      description: message,
-      variant: severity === 'error' ? 'destructive' : 'default', // Map error to destructive variant
-    });
+    if (severity === 'error') {
+      toast.error(message);
+    } else if (severity === 'success') {
+      toast.success(message);
+    } else if (severity === 'warning') {
+      toast.warning(message);
+    } else {
+      toast.info(message);
+    }
   }, []);
 
   return showSnackbar;

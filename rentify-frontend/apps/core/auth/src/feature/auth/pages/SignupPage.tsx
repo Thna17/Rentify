@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSignupForm } from '../hooks/useSignupForm';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -48,6 +48,7 @@ interface SignupFormData {
 
 function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -70,6 +71,7 @@ function SignupPage() {
     formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,
+    isMarketplace,
   } = useSignupForm();
 
   const form = useForm<SignupFormData>({
@@ -157,12 +159,12 @@ function SignupPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-br bg-clip-text text-transparent from-slate-900 to-slate-700 mb-2">
             {isWebsiteTemplate
               ? 'Create Customer Account'
-              : 'Create Merchant Account'}
+              : isMarketplace ? 'Create Rentify Buyer Account' : 'Create Merchant Account'}
           </h1>
           <p className="text-slate-600">
             {isWebsiteTemplate
               ? 'Sign up for a seamless shopping experience'
-              : 'Set up your online store in minutes'}
+              : isMarketplace ? 'One account for the marketplace and Rentify stores' : 'Set up your online store in minutes'}
           </p>
         </div>
 
@@ -483,9 +485,10 @@ function SignupPage() {
                     <p className="text-sm text-slate-600">
                       Already have an account?{' '}
                       <Button
+                        type="button"
                         variant="link"
                         className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-700"
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate({ pathname: '/', search: location.search })}
                       >
                         Sign in
                       </Button>

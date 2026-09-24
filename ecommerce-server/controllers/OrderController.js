@@ -25,16 +25,21 @@ exports.createOrder = async (req, res) => {
   try {
     const { websiteId } = req.params;
     const { shippingDetails, paymentMethod, currency } = req.body;
+    if (paymentMethod !== 'COD' || (currency && currency !== 'USD')) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Storefront buyer checkout accepts COD in USD only' });
+    }
     const user = req.user;
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
-      where: { id: websiteId },
-      attributes: ['niche'],
+      where: { websiteId, status: 'active' },
+      attributes: ['niche', 'storeId'],
       transaction
     });
     
     if (!website) {
+      await transaction.rollback();
       return res.status(404).json({ error: "Website not found" });
     }
 
@@ -87,7 +92,7 @@ exports.createInvoice = async (req, res) => {
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
-      where: { id: websiteId },
+      where: { websiteId },
       attributes: ['niche']
     });
     
@@ -132,7 +137,7 @@ exports.createPOSOrder = async (req, res) => {
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
-      where: { id: websiteId },
+      where: { websiteId },
       attributes: ['niche']
     });
     

@@ -15,6 +15,7 @@ const Invoice = sequelize.define("Invoice", {
     type: DataTypes.UUID,
     allowNull: false,
   },
+  storeId: { type: DataTypes.UUID, allowNull: true },
   orderId: {
     type: DataTypes.UUID,
     allowNull: false,

@@ -1,5 +1,8 @@
 import { lazy } from 'react';
 import { ROUTES } from '@rentify/utils/config/routes';
+import { isHostedStorefrontBuyer } from '../hostedBuyer';
+import { HostedBuyerOrders } from './HostedBuyerOrders';
+import { HostedBuyerProfile } from './HostedBuyerProfile';
 
 const Cart = lazy(() => import('@rentify/cart/ui/Cart').then((m) => ({ default: m.Cart })));
 const Checkout = lazy(() => import('@rentify/checkout/ui/Checkout').then((m) => ({ default: m.Checkout })));
@@ -15,10 +18,10 @@ const CustomerPaymentInfo = lazy(() => import('@rentify/customer-order/ui/Custom
 export const storefrontRoutes = [
   { path: ROUTES.CART, element: <Cart /> },
   { path: ROUTES.CHECKOUT, element: <Checkout /> },
-  { path: ROUTES.ORDER_SUCCESS, element: <OrderConfirmation /> },
+  { path: ROUTES.ORDER_SUCCESS, element: isHostedStorefrontBuyer() ? <HostedBuyerOrders single /> : <OrderConfirmation /> },
   { path: ROUTES.NOT_FOUND, element: <NotFound /> },
-  { path: ROUTES.PROFILE, element: <Profile /> },
-  { path: ROUTES.CUSTOMER_ORDER, element: <CustomerOrder /> },
-  { path: ROUTES.CUSTOMER_ORDER_DETAIL, element: <CustomerOrderDetail /> },
-  { path: ROUTES.CUSTOMER_PAYMENT_DETAIL, element: <CustomerPaymentInfo /> },
+  { path: ROUTES.PROFILE, element: isHostedStorefrontBuyer() ? <HostedBuyerProfile /> : <Profile /> },
+  { path: ROUTES.CUSTOMER_ORDER, element: isHostedStorefrontBuyer() ? <HostedBuyerOrders /> : <CustomerOrder /> },
+  { path: ROUTES.CUSTOMER_ORDER_DETAIL, element: isHostedStorefrontBuyer() ? <HostedBuyerOrders single /> : <CustomerOrderDetail /> },
+  { path: ROUTES.CUSTOMER_PAYMENT_DETAIL, element: isHostedStorefrontBuyer() ? <HostedBuyerOrders single /> : <CustomerPaymentInfo /> },
 ];

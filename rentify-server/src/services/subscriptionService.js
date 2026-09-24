@@ -1,5 +1,6 @@
 // services/subscriptionService.js
-const { Package, Subscription, Payment } = require('../models');
+const { Package, Subscription, Payment, Website } = require('../models');
+const { Op } = require('sequelize');
 const { SUBSCRIPTION } = require('../config/constants');
 const { logger } = require('../utils/logger');
 
@@ -7,7 +8,10 @@ class SubscriptionService {
   /**
    * Create trial subscription
    */
-  async createTrialSubscription(userId, packageId, transaction = null) {
+  async createTrialSubscription(userId, packageId, websiteId, transaction = null) {
+    if (!websiteId) {
+      throw new Error('A website is required for a trial subscription');
+    }
     const pkg = await Package.findByPk(packageId, { transaction });
     
     if (!pkg) {
@@ -21,6 +25,7 @@ class SubscriptionService {
     const subscription = await Subscription.create({
       userId,
       packageId,
+      websiteId,
       paymentId: null,
       startDate,
       endDate,
@@ -44,13 +49,15 @@ class SubscriptionService {
    * Create paid subscription
    */
   async createPaidSubscription(userId, packageId, paymentId, transaction = null) {
-    const [pkg, paymentRecord] = await Promise.all([
+    const [pkg, paymentRecord, website] = await Promise.all([
       Package.findByPk(packageId, { transaction }),
-      Payment.findByPk(paymentId, { transaction })
+      Payment.findByPk(paymentId, { transaction }),
+      Website.findOne({ where: { userId }, transaction })
     ]);
 
     if (!pkg) throw new Error('Package not found');
     if (!paymentRecord) throw new Error('Payment not found');
+    if (!website) throw new Error('Website not found for paid subscription');
 
     // Validate payment ownership and status
     this.validatePayment(paymentRecord, userId);
@@ -62,6 +69,7 @@ class SubscriptionService {
     const subscription = await Subscription.create({
       userId,
       packageId,
+      websiteId: website.id,
       paymentId,
       startDate,
       endDate,
@@ -124,7 +132,7 @@ class SubscriptionService {
       where: { 
         userId,
         status: [SUBSCRIPTION.STATUS.ACTIVE, SUBSCRIPTION.STATUS.TRIAL],
-        endDate: { [Sequelize.Op.gt]: new Date() }
+        endDate: { [Op.gt]: new Date() }
       },
       include: [Package]
     });

@@ -13,6 +13,7 @@ const BillingStatement = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
+    storeId: { type: DataTypes.UUID, allowNull: true },
     month: {
       type: DataTypes.STRING,
       allowNull: false,

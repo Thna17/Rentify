@@ -1,8 +1,10 @@
 const runtimeUrls = require("../config/runtimeUrls");
+const { isHostedStorefrontOrigin } = require('./hostedStorefrontOrigin');
 
 const allowedOrigins = () => new Set([
   runtimeUrls.authUrl,
   runtimeUrls.marketingUrl,
+  runtimeUrls.marketplaceUrl,
   runtimeUrls.merchantDashboardUrl,
   runtimeUrls.storefrontOrigin,
   ...(process.env.AUTH_RETURN_URL_ALLOWLIST || "").split(","),
@@ -19,7 +21,7 @@ const resolveReturnUrl = (candidate, fallback = runtimeUrls.marketingUrl) => {
     throw error;
   }
 
-  if (!allowedOrigins().has(parsed.origin)) {
+  if (!allowedOrigins().has(parsed.origin) && !isHostedStorefrontOrigin(parsed.origin)) {
     const error = new Error("Return URL is not allowed");
     error.statusCode = 400;
     throw error;

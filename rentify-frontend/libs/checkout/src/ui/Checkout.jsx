@@ -96,7 +96,6 @@ export const Checkout = () => {
         return (
           <ReviewOrder
             formData={formData}
-            paymentMethod={paymentMethod}
             cart={cart}
             formatPrice={formatPrice}
             currency={currency}
@@ -181,7 +180,7 @@ export const Checkout = () => {
               itemCount={cart?.CartItems?.length || 0}
               currency={currency}
               setCurrency={setCurrency}
-              showCurrencySwitch={true}
+              showCurrencySwitch={false}
               showActionButtons={true}
               actionLabel={getActionLabel()}
               onAction={handleStepAction}
@@ -219,7 +218,8 @@ export const Checkout = () => {
             isLoading={loading}
             currency={currency}
             setCurrency={setCurrency}
-            isCheckout={true}
+              isCheckout={true}
+              showCurrencySwitch={false}
           />
         </>
       )}
