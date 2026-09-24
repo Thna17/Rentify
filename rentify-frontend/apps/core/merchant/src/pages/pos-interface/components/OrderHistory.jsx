@@ -14,11 +14,12 @@ import { useGetPOSOrdersQuery } from '@rentify/apis';
 import { useTranslation } from '@rentify/utils';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
-export const OrderHistory = ({ orders: sessionOrders = [] }) => {
+export const OrderHistory = ({ orders: sessionOrders = [], websiteId, storeId }) => {
   const { t } = useTranslation();
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
-  const { data: ordersData, isLoading, isError } = useGetPOSOrdersQuery(websiteId);
+  const { data: ordersData, isLoading, isError } = useGetPOSOrdersQuery(
+    { websiteId: websiteId || undefined, storeId: websiteId ? undefined : storeId },
+    { skip: !websiteId && !storeId }
+  );
   const [searchTerm, setSearchTerm] = useState('');
 
   const orders = useMemo(() => {
