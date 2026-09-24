@@ -16,7 +16,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@rentify/shared/ui/select";
-import { ScrollArea } from "@rentify/shared/ui/scroll-area";
 import { 
   Search,
   X,
@@ -36,7 +35,7 @@ import {
 import { cn } from '@rentify/utils';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
-export function ProductGrid({ onAddToCart }) {
+export function ProductGrid({ onAddToCart, isFullscreen = false }) {
   const { t } = useTranslation();
   const { categories, loading: categoriesLoading } = useShopCategories();
   const containerRef = useRef(null);
@@ -309,9 +308,12 @@ export function ProductGrid({ onAddToCart }) {
   const handleClearSearch = () => setSearchTerm('');
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="flex flex-col w-full bg-background">
       {/* Search & Control Header Section */}
-      <div className="p-4 sm:p-5 bg-background/95 backdrop-blur-xl border-b border-border/80 shadow-2xs space-y-3 shrink-0">
+      <div className={cn(
+        "p-4 sm:p-5 bg-background/95 backdrop-blur-xl border-b border-border/80 shadow-2xs space-y-3",
+        isFullscreen ? "sticky top-13 z-20" : "sticky top-0 z-20"
+      )}>
         {/* Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -459,7 +461,7 @@ export function ProductGrid({ onAddToCart }) {
       </div>
 
       {/* Products Display Area */}
-      <ScrollArea className="flex-1" ref={containerRef}>
+      <div className="w-full" ref={containerRef}>
         {isLoading ? (
           <div className="p-4 sm:p-5">
             <div 
@@ -527,7 +529,7 @@ export function ProductGrid({ onAddToCart }) {
             {searchTerm && <span className="font-medium text-foreground"> for "{searchTerm}"</span>}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }

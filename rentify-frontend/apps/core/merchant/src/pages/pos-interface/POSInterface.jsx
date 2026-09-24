@@ -138,14 +138,14 @@ export const POSInterface = () => {
       className={cn(
         "flex flex-col bg-background w-full",
         isFullscreen 
-          ? "fixed inset-0 z-50 h-screen max-h-screen overflow-hidden" 
-          : "h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] overflow-hidden"
+          ? "fixed inset-0 z-50 h-screen overflow-y-auto" 
+          : "min-h-full"
       )} 
       ref={posRef}
     >
       {/* Fullscreen Mode Top Bar */}
       {isFullscreen ? (
-        <div className="h-13 px-4 md:px-6 bg-card border-b border-border/80 flex items-center justify-between shrink-0 shadow-2xs select-none">
+        <div className="h-13 px-4 md:px-6 bg-card border-b border-border/80 flex items-center justify-between shrink-0 shadow-2xs select-none sticky top-0 z-30">
           {/* Left: Store identity & Status */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-2xs">
@@ -255,18 +255,22 @@ export const POSInterface = () => {
         </>
       )}
 
-      {/* Main Workspace Area - Fills remaining height with zero overflow */}
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      {/* Main Workspace Area */}
+      <div className="flex-1 flex flex-col w-full">
         {isDualScreen ? (
           /* Dual Screen Mode */
-          <div className="flex-1 min-h-0 flex flex-col md:flex-row h-full overflow-hidden">
+          <div className="flex-1 flex flex-col xl:flex-row items-start w-full">
             {/* Products Panel - Left */}
-            <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col border-r border-border/80">
-              <ProductGrid onAddToCart={addToCart} />
+            <div className="flex-1 min-w-0 w-full border-r border-border/80">
+              <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} />
             </div>
 
             {/* Cart Panel - Middle */}
-            <div className={`${isMobile ? 'w-full border-b' : 'w-[340px] border-r'} border-border/80 h-full shrink-0 flex flex-col bg-card/40 overflow-hidden`}>
+            <div className={cn(
+              "border-r border-border/80 shrink-0 flex flex-col bg-card/40",
+              isMobile ? "w-full border-b" : "w-[340px]",
+              !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
+            )}>
               <Cart
                 items={cart}
                 total={cartTotal}
@@ -280,7 +284,11 @@ export const POSInterface = () => {
             </div>
 
             {/* Customer Display - Right */}
-            <div className={`${isMobile ? 'w-full' : 'w-[360px] lg:w-[420px]'} h-full shrink-0 overflow-y-auto bg-muted/20 p-4`}>
+            <div className={cn(
+              "shrink-0 overflow-y-auto bg-muted/20 p-4",
+              isMobile ? "w-full" : "w-[360px] lg:w-[420px]",
+              !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
+            )}>
               <CustomerDisplay
                 cart={cart}
                 total={cartTotal}
@@ -297,16 +305,20 @@ export const POSInterface = () => {
           </div>
         ) : (
           /* Single Screen Mode */
-          <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden">
+          <div className="flex-1 flex flex-col w-full">
             {activeTab === 'pos' && (
-              <div className="flex-1 min-h-0 flex flex-col md:flex-row h-full overflow-hidden">
+              <div className="flex-1 flex flex-col lg:flex-row items-start w-full">
                 {/* Product Catalog Column */}
-                <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col">
-                  <ProductGrid onAddToCart={addToCart} />
+                <div className="flex-1 min-w-0 w-full">
+                  <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} />
                 </div>
 
                 {/* Cart Column */}
-                <div className={`${isMobile ? 'w-full border-t' : 'w-[360px] lg:w-[400px] border-l'} border-border/80 h-full shrink-0 flex flex-col bg-card/30 overflow-hidden`}>
+                <div className={cn(
+                  "border-border/80 shrink-0 flex flex-col bg-card/30",
+                  isMobile ? "w-full border-t" : "w-[360px] lg:w-[400px] border-l",
+                  !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
+                )}>
                   <Cart
                     items={cart}
                     total={cartTotal}
@@ -322,13 +334,13 @@ export const POSInterface = () => {
             )}
 
             {activeTab === 'orders' && (
-              <div className="flex-1 min-h-0 h-full overflow-auto p-4 md:p-6 bg-background">
+              <div className="flex-1 w-full p-4 md:p-6 bg-background">
                 <OrderHistory orders={orders} />
               </div>
             )}
 
             {activeTab === 'customer-display' && (
-              <div className="flex-1 min-h-0 h-full overflow-auto p-4 md:p-6 bg-background flex items-center justify-center">
+              <div className="flex-1 w-full p-4 md:p-6 bg-background flex items-center justify-center min-h-[500px]">
                 <div className="max-w-2xl w-full">
                   <CustomerDisplay
                     cart={cart}

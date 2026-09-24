@@ -68,6 +68,11 @@ export const usePOS = () => {
   const addToCart = (product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
+      const currentQty = existing ? existing.quantity : 0;
+      const maxStock = product.trackInventory !== false ? (product.stockQuantity ?? 999) : 999;
+      if (maxStock <= currentQty && !product.allowBackorders) {
+        return prev;
+      }
       if (existing) {
         return prev.map((item) =>
           item.id === product.id
@@ -92,11 +97,16 @@ export const usePOS = () => {
       return;
     }
     setCart((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, quantity, subtotal: quantity * Number(item.price) }
-          : item
-      )
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const maxStock = item.trackInventory !== false ? (item.stockQuantity ?? 999) : 999;
+        const safeQty = !item.allowBackorders ? Math.min(quantity, maxStock) : quantity;
+        return {
+          ...item,
+          quantity: safeQty,
+          subtotal: safeQty * Number(item.price),
+        };
+      })
     );
   };
 
