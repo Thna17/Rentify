@@ -147,12 +147,6 @@ export const ALL_TABS = [
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_analytics',
     section: 'billing',
-    hasSubmenu: true,
-    subItems: [
-      { name: 'Dashboard', path: 'usage/dashboard' },
-      { name: 'Breakdown', path: 'usage/breakdown' },
-      { name: 'Billing', path: 'usage/billing' },
-    ],
   },
 
   // --- Store Settings ---
@@ -164,15 +158,6 @@ export const ALL_TABS = [
     roles: ['admin', 'user', 'staff'],
     permission: 'settings',
     section: 'settings',
-    hasSubmenu: true,
-    subItems: [
-      { name: 'Account', path: 'settings/account' },
-      { name: 'Payments', path: 'settings/payments' },
-      { name: 'Staff & Roles', path: 'settings/staff' },
-      { name: 'Security', path: 'settings/security' },
-      { name: 'Billing Settings', path: 'settings/billing' },
-      { name: 'Preferences', path: 'settings/preferences' },
-    ],
   },
 
   // --- Issues & Support ---

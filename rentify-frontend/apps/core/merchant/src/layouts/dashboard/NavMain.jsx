@@ -1,8 +1,6 @@
 import { useTranslation } from '@rentify/utils';
 import React, { useState } from 'react';
 import {
-  ChevronDown,
-  ChevronRight,
   Headphones,
   Mail,
   Send,
@@ -42,24 +40,13 @@ const DEFAULT_SECTION_TITLES = {
 };
 
 export function NavMain({ items, currentTab, onTabChange }) {
-  const [expandedItems, setExpandedItems] = useState({ settings: false, usage: false });
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const { t } = useTranslation();
-
-  const toggleExpanded = (path) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [path]: !prev[path],
-    }));
-  };
 
   const handleItemClick = (item) => {
     if (item.path === 'help') {
       setSupportDialogOpen(true);
       return;
-    }
-    if (item.hasSubmenu) {
-      toggleExpanded(item.path);
     }
     onTabChange(item.path);
   };
@@ -121,11 +108,8 @@ export function NavMain({ items, currentTab, onTabChange }) {
                 {sectionItems.map((item) => {
                   const isCurrentActive =
                     currentTab?.path === item.path ||
-                    (item.path !== 'overview' && currentTab?.path?.startsWith(`${item.path}/`)) ||
-                    (item.hasSubmenu &&
-                      item.subItems?.some((sub) => currentTab?.path === sub.path));
+                    (item.path !== 'overview' && currentTab?.path?.startsWith(`${item.path}/`));
 
-                  const isExpanded = expandedItems[item.path] ?? false;
                   const label = getLabel(item);
 
                   return (
@@ -150,47 +134,7 @@ export function NavMain({ items, currentTab, onTabChange }) {
                         )}
 
                         <span className="flex-1 truncate">{label}</span>
-
-                        {item.hasSubmenu && (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleExpanded(item.path);
-                            }}
-                            className="ml-auto pl-2 p-0.5 rounded text-muted-foreground/60 hover:text-foreground transition-colors"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </span>
-                        )}
                       </button>
-
-                      {/* Submenu for nested settings or usage */}
-                      {item.hasSubmenu && isExpanded && item.subItems && (
-                        <ul className="ml-6 mt-1 space-y-0.5 border-l border-border/60 pl-3 py-1">
-                          {item.subItems.map((subItem) => {
-                            const isSubActive = currentTab?.path === subItem.path;
-                            return (
-                              <li key={subItem.path}>
-                                <button
-                                  type="button"
-                                  onClick={() => onTabChange(subItem.path)}
-                                  className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors ${
-                                    isSubActive
-                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                                  }`}
-                                >
-                                  <span className="truncate">{subItem.name}</span>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
                     </li>
                   );
                 })}

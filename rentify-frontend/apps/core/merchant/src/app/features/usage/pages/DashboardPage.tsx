@@ -4,6 +4,7 @@ import { KpiCard } from "../components/KpiCard";
 import { LoadingState } from "../components/LoadingState";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
+import { UsageTabs } from "../components/UsageTabs";
 import { useWebsiteId } from "../hooks/useWebsiteId";
 import { useGetUsageSummaryQuery } from "../../../../services/usageApi";
 
@@ -30,10 +31,13 @@ export const DashboardPage = () => {
   if (websiteLoading) return <LoadingState />;
   if (!websiteId) {
     return (
-      <EmptyState
-        title="No store selected"
-        description="Select or create a store to see usage data."
-      />
+      <div className="p-6">
+        <UsageTabs />
+        <EmptyState
+          title="No store selected"
+          description="Select or create a store to see usage data."
+        />
+      </div>
     );
   }
   if (isLoading) return <LoadingState />;
@@ -41,6 +45,7 @@ export const DashboardPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+      <UsageTabs />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-lg font-semibold">Usage Dashboard</div>
