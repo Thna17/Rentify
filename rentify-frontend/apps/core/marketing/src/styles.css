@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes trusted-business-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.trusted-business-marquee {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.trusted-business-track {
+  animation: trusted-business-scroll 24s linear infinite;
+  will-change: transform;
+}
+
+.trusted-business-marquee:hover .trusted-business-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trusted-business-track {
+    animation: none;
+  }
+}
+
 /* Modern E-Commerce Storefront Theme - Clean & Minimal */
 @layer base {
   :root {
@@ -151,7 +181,7 @@
 @layer components {
   /* Container - Responsive widths */
   .container {
-    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl; /* Wider for storefronts */
+    @apply mx-auto w-full max-w-[1680px] px-4 sm:px-6 lg:px-8 2xl:px-12;
   }
 
   /* Product grid - Flexible for categories */

@@ -13,6 +13,7 @@ module.exports = {
       '../../../../libs/ui/src/shadcn/components/**/*.{js,ts,jsx,tsx}'
     ),
     join(__dirname, '../../../../libs/ui-page/src/**/*.{js,ts,jsx,tsx}'),
+    join(__dirname, '../../../libs/shared/src/ui/**/*.{js,ts,jsx,tsx}'),
     join(
       __dirname,
       '../../../../libs/product-management/src/**/*.{js,ts,jsx,tsx}'
@@ -44,6 +45,17 @@ module.exports = {
       fontFamily: {
         primary: 'var(--font-primary, Inter, sans-serif)',
         secondary: 'var(--font-secondary, Inter, sans-serif)',
+        site: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Display"',
+          '"SF Pro Text"',
+          '"Helvetica Neue"',
+          '"Segoe UI"',
+          'Roboto',
+          'sans-serif',
+        ],
+        'site-kh': ['"Kantumruy Pro"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       fontSize: {
         xs: 'var(--text-xs, 0.75rem)',

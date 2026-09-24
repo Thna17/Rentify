@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@rentify/shared/ui/button";
 import { Card, CardContent } from "@rentify/shared/ui/card";
 import { Badge } from "@rentify/shared/ui/badge";
@@ -8,10 +7,8 @@ import {
   Zap, 
   Globe, 
   CreditCard, 
-  Package, 
   Store, 
   MessageSquare, 
-  BarChart3,
   Star,
   PlayCircle,
   Smartphone,
@@ -25,75 +22,70 @@ import {
 } from "lucide-react";
 
 // Import your existing navigation component
-import Navigation from "../../components/common/Navigation";
+import SiteHeader from "../../components/site/SiteHeader";
+import heroProductMockup from "../../assets/rentify-hero-product-mockup-v2.png";
 
-import Footer from "../../components/common/Footer";
+import SiteFooter from "../../components/site/SiteFooter";
 // --- Enhanced Hero Section ---
 const HeroSection = () => (
-  <section className="relative overflow-hidden pt-24 md:pt-32 bg-gradient-to-b from-white to-blue-50/30">
-    {/* Sophisticated background elements */}
-    <div className="absolute inset-0 -z-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-gradient-to-r from-blue-400/10 to-teal-400/10 rounded-full blur-3xl" />
-    </div>
-    
-    <div className="container text-center">
-      <Badge variant="secondary" className="mb-4 px-3 py-1 border-blue-200 bg-blue-50 text-blue-700">
-        <Globe className="w-3 h-3 mr-1" />
-        For Cambodian SMEs
-      </Badge>
-      
-      <h1 className="text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-        Run Your Entire Business <br/> 
-        From <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">One Place</span>
-      </h1>
-      
-      <p className="mt-5 mx-auto max-w-2xl text-lg text-muted-foreground">
-        Stop juggling between notebooks, Facebook messages, and cash boxes. Rentify brings everything together so you can focus on growing your business.
-      </p>
+  <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_55%,#eef6ff_100%)] pb-16 pt-14 sm:pt-16 lg:flex lg:min-h-[708px] lg:items-center lg:pb-20 lg:pt-12">
+    <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/70 to-transparent" />
 
-      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <Button size="lg" className="bg-blue-600 hover:bg-blue-700 px-8">
-          <Zap className="mr-2 h-4 w-4" /> Start Free Trial
-        </Button>
-        <Button variant="outline" size="lg" className="border-gray-300">
-          <PlayCircle className="mr-2 h-4 w-4" /> Watch Demo
-        </Button>
-      </div>
-      
-      <div className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-2">
-        <CheckCircle className="h-4 w-4 text-green-500" />
-        No credit card required • Free setup assistance • Cancel anytime
-      </div>
+    <div className="container relative">
+      <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-10 xl:gap-14">
+        <div className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
+          <Badge variant="secondary" className="mb-5 border-blue-100 bg-blue-50/90 px-3 py-1.5 text-blue-700 shadow-none">
+            <Globe className="mr-1.5 h-3.5 w-3.5" />
+            For Cambodian SMEs
+          </Badge>
 
-      {/* Enhanced hero image with floating devices */}
-      <div className="relative mt-16 mx-auto max-w-6xl">
-        <div className="relative">
-          {/* Main dashboard on tablet */}
-          <div className="relative z-10 mx-auto max-w-4xl">
-            <div className="rounded-2xl border-4 border-white shadow-2xl shadow-blue-500/10">
-              <img
-                src="https://i.ibb.co/39H6cPKw/Gemini-Generated-Image-t406dxt406dxt406.png"
-                alt="Rentify dashboard showing sales in Khmer language with Riel currency"
-                className="rounded-lg w-full"
-              />
-            </div>
+          <h1 className="text-4xl font-bold leading-[1.05] tracking-[-0.035em] text-slate-950 sm:text-5xl lg:text-[3.4rem] xl:text-[4.25rem]">
+            Run Your Entire Business From{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">One Place</span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-lg text-base leading-7 text-slate-600 sm:text-lg lg:mx-0 xl:text-xl xl:leading-8">
+            Sell online, manage orders, track sales, and grow your business with one simple platform built for Cambodian SMEs.
+          </p>
+
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <Button size="lg" className="h-12 rounded-xl bg-blue-600 px-7 shadow-[0_10px_24px_rgba(37,99,235,0.18)] hover:bg-blue-700">
+              Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="lg" className="h-12 rounded-xl border-slate-300 bg-white/70 px-7 text-slate-800 hover:bg-white">
+              <PlayCircle className="mr-2 h-5 w-5 text-blue-600" /> Watch Demo
+            </Button>
           </div>
-          
-          {/* Floating phone mockup */}
-          <div className="absolute -bottom-8 -right-8 z-20 w-64 hidden lg:block">
-            <div className="rounded-2xl border-2 border-white shadow-xl">
-              <img
-                src="https://i.ibb.co/LzhtJfYc/localhost-4500-dashboard-invoices-1.png"
-                alt="Rentify mobile POS interface"
-                className="rounded-lg"
-              />
-            </div>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-slate-500 lg:justify-start xl:text-sm">
+            {['No credit card required', 'Free setup assistance', 'Cancel anytime'].map((item) => (
+              <span key={item} className="flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4 fill-blue-600 text-white" />
+                {item}
+              </span>
+            ))}
           </div>
         </div>
+
+        <figure className="relative mx-auto flex w-full max-w-[760px] items-center justify-center lg:min-h-[500px]">
+          <img
+            src={heroProductMockup}
+            alt="Rentify dashboard on a laptop with a KhmerCraft marketplace phone and jasmine rice product card"
+            className="h-auto w-full object-contain drop-shadow-[0_28px_30px_rgba(30,64,175,0.10)]"
+          />
+        </figure>
       </div>
     </div>
   </section>
 );
+
+const trustedBusinesses = [
+  "BKK Cafe",
+  "Toul Tom Poung Threads",
+  "Riverside Books",
+  "Orussey Electronics",
+  "Central Market Goods",
+];
 
 // --- Enhanced Social Proof Section ---
 const SocialProof = () => (
@@ -103,13 +95,29 @@ const SocialProof = () => (
         Trusted by Growing Businesses Across Cambodia
       </h2>
       
-      {/* Business logos */}
-      <div className="flex justify-center gap-8 flex-wrap items-center grayscale opacity-60 mb-16">
-        {["BKK Cafe", "Toul Tom Poung Threads", "Riverside Books", "Orussey Electronics", "Central Market Goods"].map((business, index) => (
-          <div key={index} className="px-4 py-2 bg-gray-50 rounded-lg">
-            <p className="font-semibold text-gray-700">{business}</p>
-          </div>
-        ))}
+      {/* Continuously moving business names */}
+      <div
+        className="trusted-business-marquee mb-16 overflow-hidden"
+        aria-label="Businesses using Rentify"
+      >
+        <div className="trusted-business-track flex w-max items-center">
+          {[false, true].map((duplicate) => (
+            <div
+              key={String(duplicate)}
+              className="flex shrink-0 items-center gap-6 pr-6 md:gap-8 md:pr-8"
+              aria-hidden={duplicate || undefined}
+            >
+              {trustedBusinesses.map((business) => (
+                <div
+                  key={`${duplicate ? 'duplicate-' : ''}${business}`}
+                  className="whitespace-nowrap rounded-xl border border-slate-100 bg-slate-50/80 px-6 py-3 shadow-sm"
+                >
+                  <p className="font-semibold text-slate-600">{business}</p>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       
       {/* Enhanced testimonial */}
@@ -399,7 +407,7 @@ const Homepage = () => {
       {/* <SeoJsonLd /> */}
       
       {/* Navigation */}
-      <Navigation />
+      <SiteHeader />
       
       {/* Enhanced Hero Section */}
       <HeroSection />
@@ -423,7 +431,7 @@ const Homepage = () => {
       <FinalCTASection />
       
       {/* Footer */}
-      <Footer />
+      <SiteFooter />
     </main>
   );
 };

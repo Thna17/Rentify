@@ -1,130 +1,214 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent } from '@rentify/shared/ui/card';
-import { Skeleton } from '@rentify/shared/ui/skeleton';
-import HeroSection from './components/HeroSection';
-import CTASection from './components/CTASection';
-import { TemplateCard } from '../../components/common/TemplateCard';
+import React, { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Languages,
+  Palette,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Smartphone,
+} from 'lucide-react';
+import { cn } from '@rentify/utils';
 import { useGetTemplatesQuery } from '@rentify/apis';
-import Navigation from '../../components/common/Navigation';
-import Footer from '../../components/common/Footer';
+import { useLanguage } from '../../contexts/LanguageContext';
+import useStartTrial from '../../hooks/useStartTrial';
+import SiteLayout from '../../components/site/SiteLayout';
+import CtaBand from '../../components/site/CtaBand';
+import TemplateTile, { categoryLabel } from '../../components/site/TemplateTile';
+import { EASE, Reveal, Stagger, StaggerItem } from '../../components/site/motion';
+import { EditorMock } from '../../components/site/mockups/StudioMocks';
+import {
+  ButtonLink,
+  Container,
+  Eyebrow,
+  Heading,
+  Lead,
+  Section,
+} from '../../components/site/ui';
+import TemplatesHeroVisual from './components/TemplatesHeroVisual';
 
-const BrowseTemplates = () => {
-  const [category, setCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredTemplates, setFilteredTemplates] = useState([]);
-  const { data: templatesData = [], isLoading: templatesLoading } =
-    useGetTemplatesQuery();
+const INCLUDED = [
+  { id: 'responsive', icon: Smartphone },
+  { id: 'bilingual', icon: Languages },
+  { id: 'checkout', icon: ShoppingBag },
+  { id: 'seo', icon: Search },
+  { id: 'brand', icon: Palette },
+  { id: 'secure', icon: ShieldCheck },
+];
 
-  useEffect(() => {
-    filterTemplates();
-  }, [templatesData, category, searchQuery]);
-
-  const handleCategoryChange = (newValue) => {
-    setCategory(newValue);
-  };
-
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-  };
-
-  const filterTemplates = () => {
-    let filtered = templatesData || [];
-
-    if (category !== 'all') {
-      filtered = filtered.filter((template) => template.category === category);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (template) =>
-          template.name.toLowerCase().includes(query) ||
-          template.description.toLowerCase().includes(query)
-      );
-    }
-
-    setFilteredTemplates(filtered);
-  };
-
-  const handleCategorySelect = (newValue) => {
-    setCategory(newValue);
-  };
+const CategoryFilter = ({ categories, value, onChange }) => {
+  const { t } = useLanguage();
+  const options = [{ id: 'all', label: t('site.templates.gallery.all') }].concat(
+    categories.map((category) => ({ id: category, label: categoryLabel(category, t) }))
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <HeroSection
-        variant="browse"
-        title="Find Your Perfect Template"
-        description="Explore our collection of professional templates tailored for every need"
-        onSearch={handleSearch}
-        selectedCategory={category}
-        onCategoryChange={handleCategorySelect}
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-8">
-          {templatesLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array(8)
-                .fill()
-                .map((_, index) => (
-                  <Card key={index} className="overflow-hidden">
-                    <CardContent className="p-0">
-                      <Skeleton className="h-48 w-full" />
-                      <div className="p-4 space-y-3">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                        <div className="flex gap-2">
-                          <Skeleton className="h-6 w-16 rounded-full" />
-                          <Skeleton className="h-6 w-20 rounded-full" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredTemplates.length > 0 ? (
-                filteredTemplates.map((template) => (
-                  <Link
-                    to={`/templates/${template.id}`}
-                    key={template.id}
-                    className="block transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    <TemplateCard
-                      name={template.name}
-                      baseUrl={template.baseUrl}
-                      colorPalettes={template.colorPalettes}
-                      price={template.price}
-                      discount={'Free'}
-                      rating={template.rating}
-                      description={template.description}
-                      category={template.category}
-                      usersCount={template.usersCount}
-                      pages={template.pages}
-                      features={template.features}
-                    />
-                  </Link>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-12 text-muted-foreground">
-                  <div className="text-lg font-medium">No templates found</div>
-                  <p className="mt-2 text-sm">
-                    Try adjusting your search or filter criteria
-                  </p>
-                </div>
-              )}
-            </div>
+    <div className="inline-flex flex-wrap justify-center gap-1 rounded-full bg-[#f5f5f7] p-1">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          onClick={() => onChange(option.id)}
+          className={cn(
+            'relative rounded-full px-5 py-2 text-[14px] transition-colors',
+            value === option.id ? 'text-[#1d1d1f]' : 'text-[#6e6e73] hover:text-[#1d1d1f]'
           )}
-        </div>
-      </div>
-      
-      <CTASection />
-      <Footer />
+        >
+          {value === option.id && (
+            <motion.span
+              layoutId="template-filter"
+              className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+              transition={{ duration: 0.45, ease: EASE }}
+            />
+          )}
+          <span className="relative">{option.label}</span>
+        </button>
+      ))}
     </div>
+  );
+};
+
+const TileSkeleton = () => (
+  <div>
+    <div className="aspect-[16/11] animate-pulse rounded-[28px] bg-[#f5f5f7]" />
+    <div className="mt-6 h-6 w-1/2 animate-pulse rounded-full bg-[#f5f5f7]" />
+    <div className="mt-3 h-4 w-1/3 animate-pulse rounded-full bg-[#f5f5f7]" />
+  </div>
+);
+
+const BrowseTemplates = () => {
+  const { t } = useLanguage();
+  const { trialPath } = useStartTrial();
+  const { data: templates = [], isLoading, isError } = useGetTemplatesQuery();
+  const [category, setCategory] = useState('all');
+
+  const categories = useMemo(
+    () => [...new Set(templates.map((template) => template.category).filter(Boolean))],
+    [templates]
+  );
+  const visible = useMemo(
+    () =>
+      category === 'all'
+        ? templates
+        : templates.filter((template) => template.category === category),
+    [templates, category]
+  );
+
+  return (
+    <SiteLayout title={t('site.templates.title')}>
+      <section className="relative overflow-hidden bg-white pb-20 pt-16 md:pb-32 md:pt-24">
+        <Container className="text-center">
+          <Reveal y={16}>
+            <Eyebrow>{t('site.templates.hero.eyebrow')}</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <Heading as="h1" size="display" className="mt-3">
+              {t('site.templates.hero.title')}
+            </Heading>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <Lead className="mx-auto mt-6 max-w-2xl">{t('site.templates.hero.lead')}</Lead>
+          </Reveal>
+          <Reveal delay={0.24} className="mt-9 flex justify-center">
+            <ButtonLink to={trialPath} size="lg">
+              {t('site.common.startTrial')}
+            </ButtonLink>
+          </Reveal>
+        </Container>
+        <TemplatesHeroVisual />
+      </section>
+
+      <Section id="gallery" tone="white" className="pt-8 md:pt-12">
+        <Container>
+          <div className="flex flex-col items-center gap-8 text-center">
+            <Reveal>
+              <Heading size="xl">{t('site.templates.gallery.title')}</Heading>
+            </Reveal>
+            {categories.length > 1 && (
+              <Reveal delay={0.1}>
+                <CategoryFilter categories={categories} value={category} onChange={setCategory} />
+              </Reveal>
+            )}
+          </div>
+
+          <div className="mt-14 md:mt-20">
+            {isLoading ? (
+              <div className="grid gap-x-8 gap-y-16 md:grid-cols-2">
+                <TileSkeleton />
+                <TileSkeleton />
+              </div>
+            ) : isError ? (
+              <p className="text-center text-[17px] text-[#6e6e73]">{t('site.templates.gallery.error')}</p>
+            ) : visible.length === 0 ? (
+              <p className="text-center text-[17px] text-[#6e6e73]">{t('site.templates.gallery.empty')}</p>
+            ) : (
+              <motion.div layout className="grid gap-x-8 gap-y-16 md:grid-cols-2 md:gap-y-20">
+                <AnimatePresence mode="popLayout">
+                  {visible.map((template, index) => (
+                    <motion.div
+                      key={template.id}
+                      layout
+                      initial={{ opacity: 0, y: 40 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.8, ease: EASE, delay: index * 0.08 }}
+                    >
+                      <TemplateTile template={template} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </div>
+        </Container>
+      </Section>
+
+      <Section id="included" tone="gray">
+        <Container>
+          <Reveal>
+            <Heading size="xl" className="text-center">
+              {t('site.templates.included.title')}
+            </Heading>
+          </Reveal>
+          <Stagger className="mx-auto mt-16 grid max-w-6xl grid-cols-2 gap-x-8 gap-y-14 md:mt-20 md:grid-cols-3">
+            {INCLUDED.map(({ id, icon: Icon }) => (
+              <StaggerItem key={id} className="text-center">
+                <Icon className="mx-auto h-9 w-9 text-[#1d1d1f]" strokeWidth={1.3} />
+                <p className="mt-5 text-[19px] font-semibold text-[#1d1d1f]">
+                  {t(`site.templates.included.${id}.title`)}
+                </p>
+                <p className="mx-auto mt-1.5 max-w-[240px] text-[15px] leading-snug text-[#6e6e73]">
+                  {t(`site.templates.included.${id}.body`)}
+                </p>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </Container>
+      </Section>
+
+      <Section id="customize" tone="white">
+        <Container className="grid items-center gap-14 lg:grid-cols-[0.9fr_1.3fr] lg:gap-16">
+          <div>
+            <Reveal>
+              <Eyebrow>{t('site.templates.customize.eyebrow')}</Eyebrow>
+            </Reveal>
+            <Reveal delay={0.08}>
+              <Heading size="lg" className="mt-3">
+                {t('site.templates.customize.title')}
+              </Heading>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <Lead className="mt-6 max-w-md">{t('site.templates.customize.lead')}</Lead>
+            </Reveal>
+          </div>
+          <Reveal delay={0.1}>
+            <EditorMock />
+          </Reveal>
+        </Container>
+      </Section>
+
+      <CtaBand />
+    </SiteLayout>
   );
 };
 

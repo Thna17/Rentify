@@ -7,36 +7,55 @@ import {
   CardTitle,
 } from '@rentify/shared/ui/card';
 import { Badge } from '@rentify/shared/ui/badge';
-import { Check, Gift, Crown, Zap } from 'lucide-react';
+import { Input } from '@rentify/shared/ui/input';
+import { Separator } from '@rentify/shared/ui/separator';
+import { Check, CreditCard, Crown, Gift, Zap } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import StepHeader from './StepHeader';
 
-const PricingStep = ({ data, onUpdate, onNext }) => {
+// Available promo codes for future use
+const PROMO_CODES = {
+  WELCOME10: {
+    discount: 10,
+    type: 'percentage',
+    description: '10% off after trial',
+  },
+};
+
+// Static add-ons data
+const ADD_ONS = [
+  { id: 'seo', name: 'SEO Optimization', description: 'Improve your site visibility', price: 49 },
+  { id: 'support', name: 'Priority Support', description: '24/7 priority support', price: 99 },
+  { id: 'analytics', name: 'Advanced Analytics', description: 'Detailed analytics report', price: 79 },
+];
+
+const BENEFIT_KEYS = ['noPayment', 'noCard', 'cancel', 'fullAccess'];
+
+const formatFeature = (feature) =>
+  feature
+    .replace(/-/g, ' ')
+    .replace(/^\w/, (char) => char.toUpperCase());
+
+const formatPrice = (value) => `$${Number(value || 0).toFixed(2)}`;
+
+const PricingStep = ({ data, onUpdate }) => {
   const [promoCode, setPromoCode] = useState('');
-  const [appliedPromo, setAppliedPromo] = useState(null);
-  const { language, t } = useLanguage();
-  console.log(data);
-  
-
-  const isLanguageKh = language === 'KH';
-
-  // Available promo codes for future use
-  const promoCodes = {
-    WELCOME10: {
-      discount: 10,
-      type: 'percentage',
-      description: '10% off after trial',
-    },
-  };
+  const [appliedPromo, setAppliedPromo] = useState(
+    data.pricing?.appliedPromo || null
+  );
+  const [promoError, setPromoError] = useState(false);
+  const { t } = useLanguage();
+  const perMonth = t('onboarding.pricingStep.perMonth');
 
   // Free trial pricing calculation
   const calculatePricing = () => {
     const basePrice = data.package?.price || 0;
-    
+
     // Calculate add-ons price
     let addOnsPrice = 0;
     if (data.services && data.services.length > 0) {
       addOnsPrice = data.services.reduce((total, serviceId) => {
-        const addOn = addOns.find((a) => a.id === serviceId);
+        const addOn = ADD_ONS.find((a) => a.id === serviceId);
         const quantity = data.quantities?.[serviceId] || 1;
         return total + (addOn ? addOn.price * quantity : 0);
       }, 0);
@@ -46,30 +65,18 @@ const PricingStep = ({ data, onUpdate, onNext }) => {
 
     // For free trial, everything is $0
     return {
-      basePrice: 0, // Free during trial
-      addOnsPrice: 0, // Free during trial
-      monthlyTotal: 0, // Free during trial
-      annualTotal: 0, // Free during trial
+      basePrice,
+      addOnsPrice,
       savings: monthlyTotal, // Show what they're saving
-      promoDiscount: 0,
       totalPrice: 0, // Always 0 for trial
-      displayPrice: 0,
       originalPrice: monthlyTotal, // Original price for comparison
     };
   };
 
   const applyPromoCode = () => {
-    const promo = promoCodes[promoCode.toUpperCase()];
-    if (promo) {
-      setAppliedPromo(promo);
-      // Show message that promo will apply after trial
-      alert(isLanguageKh 
-        ? 'កូដបញ្ចុះតម្លៃនឹងត្រូវបានអនុវត្តបន្ទាប់ពីការសាកល្បងឥតគិតថ្លៃ!'
-        : 'Promo code will be applied after your free trial!'
-      );
-    } else {
-      alert(isLanguageKh ? 'លេខកូដមិនត្រឹមត្រូវ' : 'Invalid promo code');
-    }
+    const promo = PROMO_CODES[promoCode.trim().toUpperCase()];
+    setAppliedPromo(promo || null);
+    setPromoError(!promo);
   };
 
   const pricing = calculatePricing();
@@ -90,318 +97,207 @@ const PricingStep = ({ data, onUpdate, onNext }) => {
     });
   }, [appliedPromo]);
 
-  // Static add-ons data
-  const addOns = [
-    { 
-      id: 'seo', 
-      name: 'SEO Optimization', 
-      nameKh: 'SEO Optimization', 
-      description: 'Improve your site visibility', 
-      descriptionKh: 'Improve your site visibility', 
-      price: 49 
-    },
-    { 
-      id: 'support', 
-      name: 'Priority Support', 
-      nameKh: 'Priority Support', 
-      description: '24/7 priority support', 
-      descriptionKh: '24/7 priority support', 
-      price: 99 
-    },
-    { 
-      id: 'analytics', 
-      name: 'Advanced Analytics', 
-      nameKh: 'Advanced Analytics', 
-      description: 'Detailed analytics report', 
-      descriptionKh: 'Detailed analytics report', 
-      price: 79 
-    },
-  ];
+  const selectedAddOns = (data.services || [])
+    .map((service) => {
+      const serviceId = typeof service === 'string' ? service : service.id;
+      const addOn = ADD_ONS.find((a) => a.id === serviceId);
+      return addOn
+        ? { ...addOn, quantity: data.quantities?.[serviceId] || 1 }
+        : null;
+    })
+    .filter(Boolean);
 
   return (
     <div className="space-y-8">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full mb-4">
-          <Zap className="w-4 h-4 mr-2" />
-          <span className={isLanguageKh ? 'font-khmer' : ''}>
-            {isLanguageKh ? '១ខែ试用ឥតគិតថ្លៃ' : '1 Month Free Trial'}
-          </span>
-        </div>
-        <h2 className={`text-3xl font-bold text-gray-900 mb-4 ${isLanguageKh ? 'font-khmer' : ''}`}>
-          {isLanguageKh ? 'ការសង្ខេបតម្លៃ试用' : 'Pricing Summary'}
-        </h2>
-        <p className={`text-lg text-gray-600 max-w-3xl mx-auto ${isLanguageKh ? 'font-khmer' : ''}`}>
-          {isLanguageKh 
-            ? 'សាកល្បងសេវាកម្មរបស់យើងដោយឥតគិតថ្លៃរយៈពេល ១ខែ។ គ្មានការទូទាត់ទេ!'
-            : 'Try our services free for 1 month. No payment required!'
-          }
-        </p>
-      </div>
+      <StepHeader
+        icon={CreditCard}
+        title={t('onboarding.pricingStep.title')}
+        description={t('onboarding.pricingStep.description')}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Package & Services Summary */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Free Trial Banner */}
-          <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className={`text-xl font-bold text-gray-900 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                    {isLanguageKh ? '试用ឥតគិតថ្លៃ ១ខែ' : '1 Month Free Trial'}
-                  </h3>
-                  <p className={`text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                    {isLanguageKh 
-                      ? 'គ្មានការទូទាត់ គ្មានការបង់ប្រាក់។ ចាប់ផ្ដើមដំឡើងឥឡូវនេះ!'
-                      : 'No payment, no credit card required. Start deploying now!'
-                    }
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
           {/* Selected Package */}
-          <Card>
-            <CardHeader>
-              <CardTitle className={`flex items-center space-x-2 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                <Crown className="w-5 h-5 text-blue-600" />
-                <span>{isLanguageKh ? 'កញ្ចប់ដែលបានជ្រើសរើស' : 'Selected Package'}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data.package ? (
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className={`text-xl font-bold text-gray-900 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                      {isLanguageKh ? data.package.nameKh : data.package.name}
-                    </h3>
-                    <p className={`text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                      {isLanguageKh ? data.package.descriptionKh : data.package.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {data.package.features?.map((feature) => (
-                        <Badge key={feature} variant="secondary" className="text-xs">
-                          {feature.charAt(0).toUpperCase() + feature.slice(1)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900 line-through text-gray-400">
-                      ${data.package.price}
-                    </div>
-                    <div className="text-2xl font-bold text-green-600">
-                      $0
-                    </div>
-                    <div className={`text-sm text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                      /{isLanguageKh ? 'ខែ试用' : 'month trial'}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className={`text-gray-500 italic ${isLanguageKh ? 'font-khmer' : ''}`}>
-                  {isLanguageKh ? 'មិនបានជ្រើសរើសកញ្ចប់' : 'No package selected'}
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-teal-500 p-6 text-white">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
+                <Crown className="h-6 w-6" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-white/80">
+                  {t('onboarding.pricingStep.selectedPackage')}
                 </p>
-              )}
-            </CardContent>
+                <p className="truncate text-xl font-bold">
+                  {data.package?.name || t('onboarding.pricingStep.noPackage')}
+                </p>
+              </div>
+              <Badge className="shrink-0 border-0 bg-white/20 text-white hover:bg-white/20">
+                <Zap className="mr-1 h-3 w-3" />
+                {t('onboarding.ui.freeTrial')}
+                {data.package?.duration && ` · ${data.package.duration}`}
+              </Badge>
+            </div>
+
+            {data.package?.features?.length > 0 && (
+              <CardContent className="space-y-3 p-6">
+                <p className="text-sm font-semibold text-foreground">
+                  {t('onboarding.pricingStep.included')}
+                </p>
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {data.package.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Check className="h-4 w-4 shrink-0 text-green-600" />
+                      {formatFeature(feature)}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            )}
           </Card>
 
           {/* Selected Services */}
-          {data.services && data.services.length > 0 && (
+          {selectedAddOns.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className={`flex items-center space-x-2 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span>{isLanguageKh ? 'សេវាកម្មបន្ថែម' : 'Additional Services'}</span>
+                <CardTitle className="text-base">
+                  {t('onboarding.pricingStep.addons')}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {data.services.map((service) => {
-                    const serviceId = typeof service === 'string' ? service : service.id;
-                    const addOn = addOns.find((a) => a.id === serviceId);
-                    const quantity = data.quantities?.[serviceId] || 1;
-                    if (!addOn) return null;
-                    return (
-                      <div key={serviceId} className="flex justify-between items-center">
-                        <div>
-                          <span className={`text-gray-700 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                            {isLanguageKh ? addOn.nameKh : addOn.name}
-                            {quantity > 1 && ` (x${quantity})`}
-                          </span>
-                          <p className={`text-xs text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                            {isLanguageKh ? addOn.descriptionKh : addOn.description}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-gray-400 line-through text-sm">
-                            ${(addOn.price * quantity).toFixed(2)}
-                          </div>
-                          <span className="font-medium text-green-600">
-                            $0/{isLanguageKh ? 'ខែ' : 'mo'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <CardContent className="space-y-3">
+                {selectedAddOns.map((addOn) => (
+                  <div
+                    key={addOn.id}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {addOn.name}
+                        {addOn.quantity > 1 && ` (x${addOn.quantity})`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {addOn.description}
+                      </p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p className="text-muted-foreground line-through">
+                        {formatPrice(addOn.price * addOn.quantity)}
+                      </p>
+                      <p className="font-medium text-green-600">
+                        $0{perMonth}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}
 
           {/* Promo Code for Future Use */}
           <Card>
-            <CardHeader>
-              <CardTitle className={`flex items-center space-x-2 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                <Gift className="w-5 h-5 text-pink-600" />
-                <span>{isLanguageKh ? 'លេខកូដបញ្ចុះតម្លៃ' : 'Promo Code'}</span>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Gift className="h-4 w-4 text-pink-600" />
+                {t('onboarding.pricingStep.promoTitle')}
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {t('onboarding.pricingStep.promoHint')}
+              </p>
             </CardHeader>
-            <CardContent>
-              <div className="flex space-x-3">
-                <input
-                  type="text"
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input
                   value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder={isLanguageKh ? 'បញ្ចូលលេខកូដ' : 'Enter promo code'}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => {
+                    setPromoCode(e.target.value);
+                    setPromoError(false);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && applyPromoCode()}
+                  placeholder={t('onboarding.pricingStep.promoPlaceholder')}
+                  aria-invalid={promoError || undefined}
+                  className="h-10"
                 />
                 <Button
                   variant="outline"
                   onClick={applyPromoCode}
-                  className={isLanguageKh ? 'font-khmer' : ''}
+                  disabled={!promoCode.trim()}
                 >
-                  {isLanguageKh ? 'រក្សាទុក' : 'Save'}
+                  {t('onboarding.pricingStep.promoSave')}
                 </Button>
               </div>
+              {promoError && (
+                <p className="text-sm text-destructive">
+                  {t('onboarding.pricingStep.promoInvalid')}
+                </p>
+              )}
               {appliedPromo && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className={`text-green-800 text-sm ${isLanguageKh ? 'font-khmer' : ''}`}>
-                    ✅ {isLanguageKh ? 'កូដត្រូវបានរក្សាទុក:' : 'Promo saved:'} {appliedPromo.description}
-                  </p>
-                </div>
+                <p className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                  <Check className="h-4 w-4" />
+                  {t('onboarding.pricingStep.promoSaved')}{' '}
+                  {appliedPromo.description}
+                </p>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* Pricing Summary */}
-        <div className="space-y-6">
-          <Card className="sticky top-6 border-green-200">
-            <CardHeader className="bg-green-50">
-              <CardTitle className={`text-center ${isLanguageKh ? 'font-khmer' : ''}`}>
-                {isLanguageKh ? 'សេចក្តីសង្ខេប试用' : 'Trial Summary'}
+        <div className="lg:col-span-2">
+          <Card className="lg:sticky lg:top-8">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base">
+                {t('onboarding.pricingStep.summaryTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pt-6">
+            <CardContent className="space-y-4">
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className={`text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                    {isLanguageKh ? 'កញ្ចប់មូលដ្ឋាន:' : 'Base package:'}
-                  </span>
-                  <div className="text-right">
-                    <div className="line-through text-gray-400">${pricing.originalPrice}/mo</div>
-                    <div className="text-green-600 font-bold">$0/mo</div>
-                  </div>
-                </div>
-                
-                {data.services && data.services.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className={`text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                        {isLanguageKh ? 'សេវាបន្ថែម:' : 'Add-ons:'}
-                      </span>
-                      <div className="text-right">
-                        <div className="line-through text-gray-400">${pricing.addOnsPrice}/mo</div>
-                        <div className="text-green-600 font-bold">$0/mo</div>
-                      </div>
-                    </div>
-                  </div>
+                <SummaryRow
+                  label={t('onboarding.pricingStep.basePackage')}
+                  original={formatPrice(pricing.basePrice)}
+                  perMonth={perMonth}
+                />
+                {selectedAddOns.length > 0 && (
+                  <SummaryRow
+                    label={t('onboarding.pricingStep.addonsLabel')}
+                    original={formatPrice(pricing.addOnsPrice)}
+                    perMonth={perMonth}
+                  />
                 )}
-
-                <div className="border-t pt-3">
-                  <div className="flex justify-between font-medium">
-                    <span className={isLanguageKh ? 'font-khmer' : ''}>
-                      {isLanguageKh ? 'សរុបប្រចាំខែ:' : 'Monthly value:'}
-                    </span>
-                    <div className="text-right">
-                      <div className="line-through text-gray-400">${pricing.originalPrice}/mo</div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Savings during trial */}
-              <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                <div className="flex justify-between text-sm">
-                  <span className={`text-green-700 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                    {isLanguageKh ? 'ការសន្សំក្នុងខែ试用:' : 'Trial month savings:'}
-                  </span>
-                  <span className="text-green-700 font-medium">
-                    ${pricing.savings.toFixed(2)}
+              {pricing.savings > 0 && (
+                <div className="flex justify-between rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                  <span>{t('onboarding.pricingStep.savings')}</span>
+                  <span className="font-semibold">
+                    {formatPrice(pricing.savings)}
                   </span>
                 </div>
+              )}
+
+              <Separator />
+
+              <div className="flex items-end justify-between">
+                <span className="font-semibold text-foreground">
+                  {t('onboarding.pricingStep.dueToday')}
+                </span>
+                <span className="text-3xl font-bold text-foreground">$0</span>
               </div>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className={`text-lg font-bold text-gray-900 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                    {isLanguageKh ? 'តម្លៃ试用:' : 'Trial Price:'}
-                  </span>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-green-600">
-                      $0
-                    </div>
-                    <div className={`text-sm text-gray-600 ${isLanguageKh ? 'font-khmer' : ''}`}>
-                      /{isLanguageKh ? 'ខែ试用' : 'month trial'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="text-xs text-gray-500 text-center pt-2 border-t">
-                <p className={isLanguageKh ? 'font-khmer' : ''}>
-                  {isLanguageKh 
-                    ? 'គ្មានការទូទាត់ គ្មានការបង់ប្រាក់'
-                    : 'No payment, no credit card required'
-                  }
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              <Separator />
 
-          {/* Benefits Card */}
-          <Card className="bg-gray-50 border-gray-200">
-            <CardContent className="p-4">
-              <div className="space-y-3 text-xs text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className={isLanguageKh ? 'font-khmer' : ''}>
-                    {isLanguageKh ? '១ខែ试用ឥតគិតថ្លៃ' : '1 month free trial'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className={isLanguageKh ? 'font-khmer' : ''}>
-                    {isLanguageKh ? 'គ្មានការទូទាត់' : 'No payment required'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className={isLanguageKh ? 'font-khmer' : ''}>
-                    {isLanguageKh ? 'គ្មានកាតឥណទាន' : 'No credit card needed'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className={isLanguageKh ? 'font-khmer' : ''}>
-                    {isLanguageKh ? 'បោះបង់គ្រប់ពេល' : 'Cancel anytime'}
-                  </span>
-                </div>
-              </div>
+              <ul className="space-y-2">
+                {BENEFIT_KEYS.map((key) => (
+                  <li
+                    key={key}
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Check className="h-4 w-4 shrink-0 text-green-600" />
+                    {t(`onboarding.pricingStep.${key}`)}
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         </div>
@@ -409,5 +305,20 @@ const PricingStep = ({ data, onUpdate, onNext }) => {
     </div>
   );
 };
+
+const SummaryRow = ({ label, original, perMonth }) => (
+  <div className="flex items-center justify-between">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="flex items-baseline gap-2">
+      <span className="text-xs text-muted-foreground line-through">
+        {original}
+        {perMonth}
+      </span>
+      <span className="font-semibold text-green-600">
+        $0{perMonth}
+      </span>
+    </span>
+  </div>
+);
 
 export default PricingStep;

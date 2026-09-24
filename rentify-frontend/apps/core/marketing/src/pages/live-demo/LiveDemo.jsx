@@ -27,17 +27,17 @@ import {
   Clock
 } from "lucide-react";
 
-import Navigation from "../../components/common/Navigation";
-import Footer from "../../components/common/Footer";
+import SiteHeader from "../../components/site/SiteHeader";
+import SiteFooter from "../../components/site/SiteFooter";
 
 
 const LiveDemoPage = () => {
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <Navigation />
+      <SiteHeader />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-blue-50/30 to-white">
+      <section className="pt-12 pb-16 md:pt-20 md:pb-24 bg-gradient-to-br from-blue-50/30 to-white">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <Badge variant="secondary" className="mb-4 px-4 py-2 bg-blue-100 text-blue-700 border-blue-200">
@@ -153,7 +153,7 @@ const LiveDemoPage = () => {
           </div>
         </div>
       </section>
-            <Footer />
+      <SiteFooter />
     </main>
   );
 };
