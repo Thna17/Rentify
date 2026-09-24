@@ -28,7 +28,7 @@ import {
 import { Switch } from '@rentify/shared/ui/switch';
 import { useState } from 'react';
 import { pdf, PDFDownloadLink } from '@react-pdf/renderer';
-import { InvoicePDF } from '@rentify/shared/ui/components/InvoicePDF';
+import { InvoicePDF } from './components/InvoicePDF';
 import { InvoicePreview } from './components/InvoicePreview';
 import { InvoiceForm } from './components/InvoiceForm';
 import { ShareButton } from './components/ShareButton';
@@ -200,22 +200,22 @@ export const InvoiceManual = () => {
   };
 
    const HeaderActions = () => (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       {!isSaved ? (
         <Button 
           onClick={handleSaveInvoice}
           disabled={isSaving}
-          className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md"
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs rounded-lg px-4 h-9.5 transition-colors"
         >
           {isSaving ? (
             <>
               <Save className="w-4 h-4 animate-spin" />
-              Saving...
+              <span>Saving...</span>
             </>
           ) : (
             <>
               <Save className="w-4 h-4" />
-              Save Invoice
+              <span>Save Invoice</span>
             </>
           )}
         </Button>
@@ -238,17 +238,17 @@ export const InvoiceManual = () => {
             {({ loading }) => (
               <Button
                 disabled={loading}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs rounded-lg px-4 h-9.5 transition-colors"
               >
                 {loading ? (
                   <>
                     <Download className="w-4 h-4 animate-spin" />
-                    Generating...
+                    <span>Generating...</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    Download PDF
+                    <span>Download PDF</span>
                   </>
                 )}
               </Button>
@@ -266,17 +266,17 @@ export const InvoiceManual = () => {
       <Button 
         variant="outline" 
         onClick={() => setMobilePreviewOpen(true)}
-        className="flex items-center gap-2 shadow-sm lg:hidden"
+        className="flex items-center gap-2 shadow-xs lg:hidden rounded-lg h-9.5"
       >
         <Eye className="w-4 h-4" />
-        Preview
+        <span>Preview</span>
       </Button>
     </div>
   );
   return (
    <div className="min-h-full">
-        {/* Notification */}
-              <PageHeader
+      {/* Notification */}
+      <PageHeader
         title="Invoice Generator"
         description="Create professional invoices with ease"
         icon={FileText}
@@ -287,81 +287,99 @@ export const InvoiceManual = () => {
           { label: 'Create Invoice' }
         ]}
       />
-        {showNotification && (
-          <div className="fixed top-4 right-4 z-50 max-w-md">
-            <Alert variant={notificationType === 'success' ? 'default' : 'destructive'}>
-              <Bell className="h-4 w-4" />
-              <AlertTitle>{notificationType === 'success' ? 'Success' : 'Error'}</AlertTitle>
-              <AlertDescription>{notificationMessage}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-         <div className="p-6 md:p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Form Section */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Alert variant={notificationType === 'success' ? 'default' : 'destructive'}>
+            <Bell className="h-4 w-4" />
+            <AlertTitle>{notificationType === 'success' ? 'Success' : 'Error'}</AlertTitle>
+            <AlertDescription>{notificationMessage}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+      <div className="p-6 md:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Form Section */}
+          <div className="lg:col-span-6 xl:col-span-7 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
+                  <FileText className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-base font-semibold text-foreground">
                     Invoice Details
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Fill in the invoice information
+                  <p className="text-xs text-muted-foreground">
+                    Configure invoice data, recipient, and line items
                   </p>
                 </div>
               </div>
-              
-              <InvoiceForm
-                invoiceData={invoiceData}
-                updateField={updateField}
-                addItem={addItem}
-                updateItem={updateItem}
-                removeItem={removeItem}
-                handleCustomerSelect={handleCustomerSelect}
-              />
-            </motion.div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium border border-border/50">
+                {invoiceData.items.length} {invoiceData.items.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+            
+            <InvoiceForm
+              invoiceData={invoiceData}
+              updateField={updateField}
+              addItem={addItem}
+              updateItem={updateItem}
+              removeItem={removeItem}
+              handleCustomerSelect={handleCustomerSelect}
+            />
+          </div>
 
-            {/* Preview Section - Hidden on Mobile */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="hidden lg:block"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
-                    <Eye className="w-5 h-5 text-green-600 dark:text-green-300" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Live Preview
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Real-time invoice preview
-                    </p>
-                  </div>
+          {/* Preview Section - Sticky on Desktop */}
+          <div className="hidden lg:block lg:col-span-6 xl:col-span-5 sticky top-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                  <Eye className="w-4.5 h-4.5" />
                 </div>
-
-                {/* Options Button */}
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" />
-                  Options
-                </Button>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-foreground">
+                      Document Preview
+                    </h3>
+                    <span className="text-2xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+                      Live A4
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Real-time document preview and layout options
+                  </p>
+                </div>
               </div>
-              
+
+              {/* Options Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 text-xs h-9 rounded-lg shadow-xs hover:bg-muted/80">
+                    <Settings className="w-4 h-4 text-muted-foreground" />
+                    <span>Options</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 p-4 space-y-3">
+                  <div className="border-b border-border pb-2">
+                    <h4 className="font-semibold text-sm">Preview Options</h4>
+                    <p className="text-xs text-muted-foreground">Customize invoice appearance</p>
+                  </div>
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="toggle-watermark" className="text-xs font-medium cursor-pointer">Watermark</Label>
+                      <Switch id="toggle-watermark" checked={showWatermark} onCheckedChange={setShowWatermark} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="toggle-signatures" className="text-xs font-medium cursor-pointer">Signatures</Label>
+                      <Switch id="toggle-signatures" checked={showSignatures} onCheckedChange={setShowSignatures} />
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            {/* Ambient Preview Canvas */}
+            <div className="p-4 md:p-6 rounded-2xl bg-muted/40 border border-border/70 flex justify-center items-center shadow-inner">
               <InvoicePreview
                 invoiceData={invoiceData}
                 websiteName={websiteName}
@@ -371,25 +389,27 @@ export const InvoiceManual = () => {
                 pageNumber={1}
                 totalPages={1}
               />
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-       <Sheet open={mobilePreviewOpen} onOpenChange={setMobilePreviewOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+      <Sheet open={mobilePreviewOpen} onOpenChange={setMobilePreviewOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-muted/30">
           <SheetHeader className="mb-6">
             <SheetTitle>Invoice Preview</SheetTitle>
           </SheetHeader>
-          <InvoicePreview
-            invoiceData={invoiceData}
-            websiteName={websiteName}
-            companyInfo={companyInfo}
-            showSignatures={showSignatures}
-            showWatermark={showWatermark}
-            pageNumber={1}
-            totalPages={1}
-          />
+          <div className="flex justify-center p-2">
+            <InvoicePreview
+              invoiceData={invoiceData}
+              websiteName={websiteName}
+              companyInfo={companyInfo}
+              showSignatures={showSignatures}
+              showWatermark={showWatermark}
+              pageNumber={1}
+              totalPages={1}
+            />
+          </div>
         </SheetContent>
       </Sheet>
     </div>
