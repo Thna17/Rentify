@@ -1,12 +1,11 @@
 import { useMediaQuery } from '@rentify/utils';
-import { Search, X, Store } from 'lucide-react';
+import { Menu, Store } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Sheet, SheetContent } from '@rentify/shared/ui/sheet';
-import { Input } from '@rentify/shared/ui/input';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
-import React, { useState } from 'react';
+import React from 'react';
 
 export function AppSidebar({
   tabs,
@@ -17,9 +16,9 @@ export function AppSidebar({
   isOpen,
   setOpen,
   hasStorefront = true,
+  searchFilter = '',
 }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
-  const [searchFilter, setSearchFilter] = useState('');
 
   const filteredTabs = searchFilter.trim()
     ? tabs.filter((t) => {
@@ -43,30 +42,16 @@ export function AppSidebar({
             <span className="text-[11px] text-muted-foreground leading-none block">Merchant Hub</span>
           </div>
         </div>
-        {!isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setOpen(false)}
-            className="h-7 w-7 rounded-md opacity-70 hover:opacity-100"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Search Bar */}
-      <div className="p-2.5 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground/70" />
-          <Input
-            type="search"
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Search menu..."
-            className="w-full bg-muted/40 pl-8 h-8 rounded-md border-border text-xs focus-visible:bg-background"
-          />
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setOpen(false)}
+          className="h-8 w-8 rounded-md opacity-70 hover:opacity-100"
+          aria-label="Collapse sidebar"
+          title="Collapse sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
       </div>
 
       {/* Navigation Content */}

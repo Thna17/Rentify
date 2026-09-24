@@ -26,6 +26,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   const { profile, role, handleLogout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [searchFilter, setSearchFilter] = useState('');
 
   // POS channel enabled state, persisted in localStorage
   const [posEnabled] = useState(() => {
@@ -98,6 +99,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           isOpen={sidebarOpen}
           setOpen={setSidebarOpen}
           hasStorefront={channels.hasStorefront}
+          searchFilter={searchFilter}
         />
       )}
 
@@ -112,6 +114,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           isOpen={sidebarOpen}
           setOpen={setSidebarOpen}
           hasStorefront={channels.hasStorefront}
+          searchFilter={searchFilter}
         />
       )}
 
@@ -120,7 +123,12 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
         <SiteHeader
           currentTab={currentTabData}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+          isSidebarOpen={sidebarOpen}
           userData={profile}
+          tabs={sidebarTabs}
+          onTabChange={handleTabChange}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
         />
         
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-background/50">

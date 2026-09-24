@@ -25,6 +25,7 @@ const PreferencesSetting = lazy(() => import('../pages/setting/PreferencesSettin
 const UsageDashboard = lazy(() => import('../app/features/usage/pages/DashboardPage'));
 const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownPage'));
 const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
+const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 
 export const dashboardRoutes = {
   path: '/',
@@ -44,6 +45,8 @@ export const dashboardRoutes = {
     { path: 'orders/:id', element: <OrderDetailView /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'pos', element: <POSInterface /> },
+    { path: 'help', element: <SupportPage /> },
+    { path: 'support', element: <Navigate to="/help" replace /> },
     { path: 'settings', element: <Navigate to="/settings/account" replace /> },
     { path: 'usage', element: <Navigate to="/usage/dashboard" replace /> },
     { path: 'settings/account', element: <AccountSettings /> },
