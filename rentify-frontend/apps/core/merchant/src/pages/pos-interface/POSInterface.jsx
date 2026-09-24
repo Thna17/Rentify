@@ -22,10 +22,12 @@ import {
   Store
 } from 'lucide-react';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+import { useChannelContext } from '../../context/ChannelContext';
 
 export const POSInterface = () => {
   const { t } = useTranslation();
-  const websiteName = "brathna";
+  const channelCtx = useChannelContext();
+  const websiteName = channelCtx?.store?.name || "Store";
   
   const {
     websiteId,

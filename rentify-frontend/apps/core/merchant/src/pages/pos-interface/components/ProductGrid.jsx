@@ -43,12 +43,13 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
   // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState('grid');
   const [cardSize, setCardSize] = useState('medium');
   const [isMobile, setIsMobile] = useState(false);
 
-  // Data fetching
+  // Data fetching — must be declared before availableCategories useMemo
   const {
     data: productsData,
     isLoading,
@@ -63,6 +64,20 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
   }, {
     skip: !websiteId && !storeId
   });
+
+  const availableCategories = useMemo(() => {
+    if (categories && categories.length > 0) return categories;
+    const catMap = new Map();
+    productsData?.products?.forEach(p => {
+      const cat = p.Category || p.category;
+      if (cat && typeof cat === 'object' && cat.id && cat.name) {
+        catMap.set(String(cat.id), { id: String(cat.id), name: cat.name });
+      } else if (typeof cat === 'string' && cat.trim()) {
+        catMap.set(cat, { id: cat, name: cat });
+      }
+    });
+    return Array.from(catMap.values());
+  }, [categories, productsData?.products]);
 
   // Mobile detection
   useEffect(() => {
@@ -362,7 +377,7 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
                     All Categories
                   </div>
                 </SelectItem>
-                {categories?.map((category) => (
+                {availableCategories?.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
                       <Tag className="h-3.5 w-3.5" />

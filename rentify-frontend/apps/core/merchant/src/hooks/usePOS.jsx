@@ -5,15 +5,19 @@ import {
 import usePaymentPolling from '@rentify/shared/hooks/usePaymentPolling';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { useChannelContext } from '../context/ChannelContext';
 
 export const usePOS = () => {
   const { websiteData, isLoading } = useThemeService();
-  const websiteId = websiteData?.websiteId || null;
-  const [storeId, setStoreId] = useState(null);
+  const channelCtx = useChannelContext();
+  const websiteId = websiteData?.websiteId || channelCtx?.websiteId || null;
+  const [storeId, setStoreId] = useState(channelCtx?.store?.id || null);
   const [createPOSOrder] = useCreatePOSOrderMutation();
 
   useEffect(() => {
-    if (!websiteId) {
+    if (channelCtx?.store?.id) {
+      setStoreId(channelCtx.store.id);
+    } else if (!websiteId) {
       fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
@@ -23,7 +27,7 @@ export const usePOS = () => {
         })
         .catch(console.error);
     }
-  }, [websiteId]);
+  }, [websiteId, channelCtx?.store?.id]);
 
   const [activeTab, setActiveTab] = useState('pos');
   const [cart, setCart] = useState([]);

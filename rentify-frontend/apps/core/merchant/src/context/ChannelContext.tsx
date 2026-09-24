@@ -141,4 +141,7 @@ export const useChannels = (): ChannelContextType => {
   return context;
 };
 
+// Alias for components that import useChannelContext
+export const useChannelContext = useChannels;
+
 export default ChannelContext;
