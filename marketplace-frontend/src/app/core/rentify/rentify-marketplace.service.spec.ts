@@ -29,6 +29,7 @@ describe('RentifyMarketplaceService', () => {
     expect(service.commerce).toBe('http://localhost:4001');
     expect(service.auth).toBe('http://localhost:4300');
     expect(service.merchantDashboard).toBe('http://localhost:4400');
+    expect(service.adminDashboard).toBe('http://localhost:4800');
     expect(service.configured).toBe(true);
   });
 
@@ -38,12 +39,14 @@ describe('RentifyMarketplaceService', () => {
       commerceApiUrl: 'https://commerce.rentify.local/',
       authUrl: 'https://auth.rentify.local/',
       merchantDashboardUrl: 'https://merchant.rentify.local/',
+      adminDashboardUrl: 'https://admin.rentify.local/',
     };
 
     expect(service.core).toBe('https://core.rentify.local');
     expect(service.commerce).toBe('https://commerce.rentify.local');
     expect(service.auth).toBe('https://auth.rentify.local');
     expect(service.merchantDashboard).toBe('https://merchant.rentify.local');
+    expect(service.adminDashboard).toBe('https://admin.rentify.local');
     expect(service.configured).toBe(true);
   });
 

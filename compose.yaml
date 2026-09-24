@@ -258,6 +258,23 @@ services:
       ecommerce-api:
         condition: service_healthy
 
+  admin:
+    build:
+      context: ./admin-frontend
+      target: development
+    command: npm start -- --host 0.0.0.0
+    environment: *frontend-environment
+    ports:
+      - '4800:4800'
+    volumes:
+      - ./admin-frontend:/app
+      - admin-node-modules:/app/node_modules
+    depends_on:
+      core-api:
+        condition: service_healthy
+      ecommerce-api:
+        condition: service_healthy
+
 volumes:
   mysql-data:
   redis-data:
@@ -267,3 +284,4 @@ volumes:
   merchant-node-modules:
   template-1-node-modules:
   template-2-node-modules:
+  admin-node-modules:

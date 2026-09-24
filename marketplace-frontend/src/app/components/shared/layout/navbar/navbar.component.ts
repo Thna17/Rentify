@@ -196,7 +196,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
 
                   @if (isAdmin()) {
                     <p class="account-section">Administration</p>
-                    <a routerLink="/admin" role="menuitem" (click)="accountOpen.set(false)">
+                    <a [href]="adminDashboardUrl" role="menuitem" (click)="accountOpen.set(false)">
                       <ui-icon name="shield" [size]="16" /> Marketplace overview
                     </a>
                   }
@@ -931,6 +931,10 @@ export class NavbarComponent implements AfterViewInit {
 
   get merchantOrdersUrl(): string {
     return `${this.rentify.merchantDashboard}/orders`;
+  }
+
+  get adminDashboardUrl(): string {
+    return this.rentify.adminDashboard;
   }
 
   @ViewChild('cartBtn') private readonly cartBtn?: ElementRef<HTMLElement>;

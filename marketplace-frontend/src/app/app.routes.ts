@@ -1,9 +1,8 @@
-import { inject } from '@angular/core';
-import { Router, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { buyerGuard } from './core/auth/auth.guard';
-import { adminGuard } from './core/auth/admin.guard';
 import { sellerGuard } from './core/auth/seller.guard';
 import {
+  externalAdminRedirectGuard,
   externalAuthRedirectGuard,
   externalMerchantRedirectGuard,
 } from './pages/auth-redirect.component';
@@ -17,14 +16,6 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    canActivate: [
-      () => {
-        if (typeof window !== 'undefined' && window.location.port === '4800') {
-          return inject(Router).createUrlTree(['/admin']);
-        }
-        return true;
-      },
-    ],
     loadComponent: () =>
       import('./pages/home.component').then((m) => m.HomeComponent),
     title: 'Rentify Marketplace',
@@ -253,17 +244,18 @@ export const routes: Routes = [
   { path: 'account/change-password', pathMatch: 'full', redirectTo: 'forgot-password' },
   {
     path: 'admin',
-    canActivate: [adminGuard],
-    loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES),
-    title: 'Administration | Rentify Marketplace',
-  },
-  {
-    path: 'admin/login',
-    canActivate: [externalAuthRedirectGuard('login', '/admin')],
+    canActivate: [externalAdminRedirectGuard()],
+    children: [
+      {
+        path: '**',
+        canActivate: [externalAdminRedirectGuard()],
+        loadComponent: () =>
+          import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+      },
+    ],
     loadComponent: () =>
       import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
-    data: { mode: 'login', defaultReturn: '/admin' },
-    title: 'Admin sign in | Rentify Marketplace',
+    title: 'Administration | Rentify Admin',
   },
 
   // ------------------------------------------------------------- support pages

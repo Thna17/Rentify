@@ -15,6 +15,8 @@ before changing cross-service behavior.
   storefront applications.
 - `marketplace-frontend/` is the active Angular web app for Rentify's shared
   marketplace UI.
+- `admin-frontend/` is the dedicated Angular application for Rentify's unified
+  platform and marketplace administration.
 - `docs/reference/legacy-khmercraft-api/` contains the archived KhmerCraft
   Express/Mongoose API and legacy documentation as reference code only; do not
   run it or add MongoDB to the Rentify platform.
