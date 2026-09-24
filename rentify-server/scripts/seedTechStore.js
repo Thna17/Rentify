@@ -55,6 +55,7 @@ async function seedTechStore() {
         'manage_pos',
         'manage_settings',
         'manage_analytics',
+        'manage_staff',
       ],
       isActive: true,
       isVerified: true,
