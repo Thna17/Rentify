@@ -103,7 +103,7 @@ export function SiteHeader({
 
           {/* Quick Menu Results Dropdown */}
           {isSearchFocused && searchFilter.trim() && (
-            <div className="absolute left-0 top-full mt-1.5 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 top-full mt-1.5 w-full rounded-xl border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1.5 max-h-80 overflow-y-auto">
               {filteredTabs.length > 0 ? (
                 filteredTabs.map((item) => {
                   const Icon = item.icon;
