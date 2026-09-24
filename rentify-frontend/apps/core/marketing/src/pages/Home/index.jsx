@@ -1,4 +1,5 @@
 import React from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@rentify/shared/ui/button";
 import { Card, CardContent } from "@rentify/shared/ui/card";
 import { Badge } from "@rentify/shared/ui/badge";
@@ -28,27 +29,27 @@ import heroProductMockup from "../../assets/rentify-hero-product-mockup-v2.png";
 import SiteFooter from "../../components/site/SiteFooter";
 // --- Enhanced Hero Section ---
 const HeroSection = () => (
-  <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_55%,#eef6ff_100%)] pb-16 pt-14 sm:pt-16 lg:flex lg:min-h-[708px] lg:items-center lg:pb-20 lg:pt-12">
+  <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_55%,#eef6ff_100%)] pb-12 pt-8 sm:pt-10 lg:flex lg:min-h-[580px] lg:items-center lg:py-14">
     <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/70 to-transparent" />
 
     <div className="container relative">
-      <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-10 xl:gap-14">
+      <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-8 xl:gap-10">
         <div className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
-          <Badge variant="secondary" className="mb-5 border-blue-100 bg-blue-50/90 px-3 py-1.5 text-blue-700 shadow-none">
+          <Badge variant="secondary" className="mb-3.5 border-blue-100 bg-blue-50/90 px-3 py-1.5 text-blue-700 shadow-none">
             <Globe className="mr-1.5 h-3.5 w-3.5" />
             For Cambodian SMEs
           </Badge>
 
-          <h1 className="text-4xl font-bold leading-[1.05] tracking-[-0.035em] text-slate-950 sm:text-5xl lg:text-[3.4rem] xl:text-[4.25rem]">
+          <h1 className="text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl lg:text-[3.25rem] xl:text-[3.85rem]">
             Run Your Entire Business From{' '}
             <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">One Place</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-lg text-base leading-7 text-slate-600 sm:text-lg lg:mx-0 xl:text-xl xl:leading-8">
+          <p className="mx-auto mt-3.5 max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg lg:mx-0 xl:text-lg xl:leading-7">
             Sell online, manage orders, track sales, and grow your business with one simple platform built for Cambodian SMEs.
           </p>
 
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
             <Button size="lg" className="h-12 rounded-xl bg-blue-600 px-7 shadow-[0_10px_24px_rgba(37,99,235,0.18)] hover:bg-blue-700">
               Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -57,7 +58,7 @@ const HeroSection = () => (
             </Button>
           </div>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-slate-500 lg:justify-start xl:text-sm">
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-slate-500 lg:justify-start xl:text-sm">
             {['No credit card required', 'Free setup assistance', 'Cancel anytime'].map((item) => (
               <span key={item} className="flex items-center gap-1.5">
                 <CheckCircle className="h-4 w-4 fill-blue-600 text-white" />
@@ -67,7 +68,7 @@ const HeroSection = () => (
           </div>
         </div>
 
-        <figure className="relative mx-auto flex w-full max-w-[760px] items-center justify-center lg:min-h-[500px]">
+        <figure className="relative mx-auto flex w-full max-w-[650px] items-center justify-center lg:justify-end">
           <img
             src={heroProductMockup}
             alt="Rentify dashboard on a laptop with a KhmerCraft marketplace phone and jasmine rice product card"
@@ -89,9 +90,9 @@ const trustedBusinesses = [
 
 // --- Enhanced Social Proof Section ---
 const SocialProof = () => (
-  <section className="py-16 md:py-24 bg-white">
+  <section className="py-12 md:py-16 bg-white">
     <div className="container">
-      <h2 className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-12">
+      <h2 className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8">
         Trusted by Growing Businesses Across Cambodia
       </h2>
       
@@ -191,6 +192,7 @@ const HowItWorks = () => (
 
 // --- Feature Showcase Section ---
 const FeatureShowcase = () => {
+  const reduceMotion = useReducedMotion();
   const features = [
     {
       icon: Store,
@@ -216,33 +218,81 @@ const FeatureShowcase = () => {
   ];
 
   return (
-    <section id="features" className="py-16 md:py-24 bg-white">
+    <section id="features" className="overflow-hidden bg-white py-20 md:py-28">
       <div className="container">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto mb-16 max-w-2xl text-center md:mb-20"
+        >
           <h2 className="text-3xl font-bold md:text-4xl">One Platform, Endless Possibilities</h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Rentify is more than a website builder. It's a complete toolkit designed for the way you work.
           </p>
-        </div>
-        <div className="grid gap-12">
-          {features.map((feature, index) => (
-            <div key={index} className={`grid items-center gap-10 md:grid-cols-2 ${index % 2 !== 0 ? 'md:grid-flow-row-dense md:[&>*:last-child]:col-start-1' : ''}`}>
-              <div>
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+        </motion.div>
+
+        <div className="space-y-20 md:space-y-28">
+          {features.map((feature, index) => {
+            const imageOnRight = index % 2 === 0;
+
+            return (
+            <div
+              key={feature.title}
+              className="grid min-h-[520px] items-center gap-12 rounded-[32px] bg-gradient-to-br from-[#f8fbff] to-[#eef6ff] px-6 py-12 sm:px-10 md:grid-cols-2 md:px-12 lg:gap-20 lg:px-16"
+            >
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, x: imageOnRight ? -56 : 56 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.78, ease: [0.22, 1, 0.36, 1] }}
+                className={
+                  imageOnRight
+                    ? 'md:col-start-1 md:row-start-1'
+                    : 'md:col-start-2 md:row-start-1'
+                }
+              >
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100">
                   <feature.icon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-semibold tracking-[0.14em] text-blue-600">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                 </div>
-                <h3 className="text-2xl font-bold">{feature.title}</h3>
-                <p className="mt-3 text-lg font-semibold text-muted-foreground italic">{feature.problem}</p>
-                <p className="mt-2 text-foreground">{feature.solution}</p>
-                <Button variant="link" className="mt-4 p-0 text-blue-600">
+                <h3 className="max-w-lg text-3xl font-bold tracking-[-0.025em] text-slate-950 md:text-4xl">
+                  {feature.title}
+                </h3>
+                <p className="mt-5 max-w-lg text-lg font-medium leading-7 text-slate-500">
+                  {feature.problem}
+                </p>
+                <p className="mt-3 max-w-lg leading-7 text-slate-700">{feature.solution}</p>
+                <Button variant="link" className="mt-5 p-0 text-blue-600 hover:text-blue-700">
                   Learn more <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
-              </div>
-              <div className="overflow-hidden rounded-lg border shadow-lg">
-                <img src={feature.image} alt={`${feature.title} preview`} className="w-full" />
-              </div>
+              </motion.div>
+
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, x: imageOnRight ? 110 : -110, scale: 0.96 }}
+                whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+                className={`overflow-hidden rounded-[26px] border border-blue-100 bg-white shadow-[0_28px_70px_rgba(30,100,190,0.14)] ${
+                  imageOnRight
+                    ? 'md:col-start-2 md:row-start-1'
+                    : 'md:col-start-1 md:row-start-1'
+                }`}
+              >
+                <img
+                  src={feature.image}
+                  alt={`${feature.title} preview`}
+                  className="aspect-[4/3] w-full object-cover object-top"
+                />
+              </motion.div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

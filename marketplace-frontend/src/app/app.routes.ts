@@ -322,4 +322,4 @@ const legacyRoutes: Routes = [
   },
 ];
 
-export const routes: Routes = legacyRoutes;
+export const routes: Routes = rentifyCutoverRoutes;

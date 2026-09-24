@@ -179,9 +179,9 @@
 }
 
 @layer components {
-  /* Container - Responsive widths */
+  /* Container - Responsive widths with safe area margins */
   .container {
-    @apply mx-auto w-full max-w-[1680px] px-4 sm:px-6 lg:px-8 2xl:px-12;
+    @apply mx-auto w-full max-w-[1440px] px-6 sm:px-8 lg:px-12 2xl:px-16;
   }
 
   /* Product grid - Flexible for categories */
