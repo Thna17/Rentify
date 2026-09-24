@@ -502,8 +502,16 @@ export class CheckoutComponent {
     const fullAddress = [address, city, province, note.trim()].filter(Boolean).join(', ');
 
     try {
+      const placedOrders: Array<{
+        orderNumber: string;
+        storeId: string;
+        sellerName: string;
+        total: string;
+        itemCount: number;
+        items: Array<{ name: string; quantity: number; price: number }>;
+      }> = [];
+
       const storeCarts = this.cart.getStoreCarts().filter((c) => c.items.length > 0);
-      let orderNumber = '';
 
       if (storeCarts.length > 0) {
         for (const cart of storeCarts) {
@@ -519,7 +527,20 @@ export class CheckoutComponent {
               idempotencyKey,
             ),
           );
-          orderNumber = res.order.orderNumber;
+          const storeName = this.shipmentGroups().find((g) => g.storeId === cart.storeId)?.sellerName || 'Local Merchant';
+          const items = (res.order?.items || []).map((it: any) => ({
+            name: it.name || 'Item',
+            quantity: it.quantity,
+            price: it.quantity ? Math.round((parseFloat(it.total) / it.quantity) * 100) / 100 : 0,
+          }));
+          placedOrders.push({
+            orderNumber: res.order?.orderNumber || 'confirmed',
+            storeId: cart.storeId,
+            sellerName: storeName,
+            total: res.order?.totalAmount || expectedTotal,
+            itemCount: items.reduce((sum: number, it: any) => sum + it.quantity, 0) || cart.items.length,
+            items,
+          });
         }
       } else {
         const groups = this.shipmentGroups();
@@ -536,14 +557,33 @@ export class CheckoutComponent {
               idempotencyKey,
             ),
           );
-          orderNumber = res.order.orderNumber;
+          const items = g.lines.map((l) => ({
+            name: l.product.name,
+            quantity: l.quantity,
+            price: l.product.price,
+          }));
+          placedOrders.push({
+            orderNumber: res.order?.orderNumber || 'confirmed',
+            storeId: g.storeId,
+            sellerName: g.sellerName,
+            total: res.order?.totalAmount || groupTotal,
+            itemCount: items.reduce((sum, it) => sum + it.quantity, 0),
+            items,
+          });
         }
+      }
+
+      if (typeof sessionStorage !== 'undefined') {
+        try {
+          sessionStorage.setItem('rentify_placed_orders', JSON.stringify(placedOrders));
+        } catch {}
       }
 
       this.cart.markEmptied();
 
+      const orderNums = placedOrders.map((o) => o.orderNumber).join(',');
       await this.router.navigate(['/order-success'], {
-        queryParams: { order: orderNumber || 'confirmed' },
+        queryParams: { orders: orderNums, order: placedOrders[0]?.orderNumber || 'confirmed' },
       });
     } catch (error: unknown) {
       this.error.set(cartErrorMessage(error));
