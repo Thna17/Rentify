@@ -11,7 +11,7 @@ const PaymentGatewayConfig = sequelize.define(
     },
     websiteId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     storeId: { type: DataTypes.UUID, allowNull: true },
     gateway: {
@@ -28,7 +28,10 @@ const PaymentGatewayConfig = sequelize.define(
     },
   },
   {
-    indexes: [{ fields: ["websiteId", "gateway"], unique: true }],
+    indexes: [
+      { fields: ["websiteId", "gateway"] },
+      { fields: ["storeId", "gateway"] },
+    ],
     timestamps: true,
   }
 );

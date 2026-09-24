@@ -28,16 +28,62 @@ function validMarketplaceVisibility(value) {
 }
 
 class ProductService {
-  constructor(websiteId) {
-    this.websiteId = websiteId;
+  constructor(websiteId, options = {}) {
+    if (typeof options === 'object' && options !== null) {
+      this.websiteId = options.websiteId !== undefined ? options.websiteId : websiteId;
+      this.storeId = options.storeId !== undefined ? options.storeId : null;
+    } else {
+      this.websiteId = websiteId;
+      this.storeId = null;
+    }
+    this.identifier = websiteId;
+  }
+
+  async resolveStoreWhere(transaction = null) {
+    let resolvedWebsiteId = this.websiteId;
+    let resolvedStoreId = this.storeId;
+
+    if (this.websiteId) {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: this.websiteId },
+        attributes: ['storeId', 'websiteId'],
+        transaction,
+      });
+      if (website) {
+        resolvedWebsiteId = website.websiteId;
+        resolvedStoreId = resolvedStoreId || website.storeId;
+      }
+    }
+
+    if (!resolvedStoreId && this.identifier) {
+      const { StoreAccess } = require('../models');
+      const store = await StoreAccess.findByPk(this.identifier, { transaction });
+      if (store) {
+        resolvedStoreId = store.storeId;
+        if (store.websiteId) {
+          resolvedWebsiteId = resolvedWebsiteId || store.websiteId;
+        }
+      }
+    }
+
+    if (resolvedWebsiteId && resolvedStoreId) {
+      return { [Op.or]: [{ websiteId: resolvedWebsiteId }, { storeId: resolvedStoreId }] };
+    }
+    if (resolvedStoreId) {
+      return { storeId: resolvedStoreId };
+    }
+    return { websiteId: resolvedWebsiteId || this.identifier };
   }
 
   async getWebsiteNiche() {
-    const website = await WebsiteData.findOne({
-      where: { websiteId: this.websiteId },
-      attributes: ["niche"],
-    });
-    return website ? website.niche : "ecommerce";
+    if (this.websiteId) {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: this.websiteId },
+        attributes: ["niche"],
+      });
+      if (website?.niche) return website.niche;
+    }
+    return "ecommerce";
   }
 
   async findAll(options = {}) {
@@ -54,13 +100,7 @@ class ProductService {
       inStock,
     } = options;
 
-    const website = await WebsiteData.findOne({
-      where: { websiteId: this.websiteId },
-      attributes: ['storeId'],
-    });
-    const where = website?.storeId
-      ? { [Op.or]: [{ websiteId: this.websiteId }, { storeId: website.storeId }] }
-      : { websiteId: this.websiteId };
+    const where = await this.resolveStoreWhere();
     const include = [
       {
         model: Category,
@@ -188,17 +228,11 @@ class ProductService {
 
   async findById(productId, transaction = null) {
     try {
-      const website = await WebsiteData.findOne({
-        where: { websiteId: this.websiteId },
-        attributes: ['storeId'],
-        transaction,
-      });
+      const storeCondition = await this.resolveStoreWhere(transaction);
       const queryOptions = {
         where: {
           id: productId,
-          ...(website?.storeId
-            ? { [Op.or]: [{ websiteId: this.websiteId }, { storeId: website.storeId }] }
-            : { websiteId: this.websiteId }),
+          ...storeCondition,
         },
       include: [
         {
@@ -242,9 +276,10 @@ class ProductService {
 
   async findBySlug(slug) {
     try {
+      const storeCondition = await this.resolveStoreWhere();
       const product = await Product.findOne({
         where: {
-          websiteId: this.websiteId,
+          ...storeCondition,
           slug,
           status: { [Op.in]: ["active", "draft"] },
         },
@@ -320,8 +355,9 @@ async create(productData, transaction = null) {
 
   async update(productId, updates, transaction = null) {
     try {
+      const storeCondition = await this.resolveStoreWhere(transaction);
       const product = await Product.findOne({
-        where: { id: productId, websiteId: this.websiteId },
+        where: { id: productId, ...storeCondition },
         transaction,
         lock: transaction?.LOCK.UPDATE,
       });
@@ -401,10 +437,11 @@ async create(productData, transaction = null) {
 
   async delete(productId, expectedVersion, transaction = null) {
     try {
+      const storeCondition = await this.resolveStoreWhere(transaction);
       const product = await Product.findOne({
         where: {
           id: productId,
-          websiteId: this.websiteId,
+          ...storeCondition,
         },
         transaction,
         lock: transaction?.LOCK.UPDATE,
@@ -444,8 +481,9 @@ async create(productData, transaction = null) {
       throw new ApiError(400, "Category ID is required");
     }
 
+    const storeCondition = await this.resolveStoreWhere();
     const where = {
-      websiteId: this.websiteId,
+      ...storeCondition,
       categoryId,
     };
 
@@ -555,10 +593,11 @@ async create(productData, transaction = null) {
     }
 
     try {
+      const storeCondition = await this.resolveStoreWhere(transaction);
       const product = await Product.findOne({
         where: {
           id: productId,
-          websiteId: this.websiteId,
+          ...storeCondition,
         },
         transaction,
         lock: transaction?.LOCK.UPDATE,
@@ -597,7 +636,7 @@ async create(productData, transaction = null) {
           version: expectedVersion + 1,
         },
         {
-          where: { id: productId, websiteId: this.websiteId, version: expectedVersion },
+          where: { id: productId, ...storeCondition, version: expectedVersion },
           transaction,
         }
       );

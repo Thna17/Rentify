@@ -13,7 +13,7 @@ const Invoice = sequelize.define("Invoice", {
   },
   websiteId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true,
   },
   storeId: { type: DataTypes.UUID, allowNull: true },
   orderId: {

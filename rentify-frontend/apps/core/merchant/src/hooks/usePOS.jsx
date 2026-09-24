@@ -4,11 +4,27 @@ import {
 } from '@rentify/apis';
 import usePaymentPolling from '@rentify/shared/hooks/usePaymentPolling';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 export const usePOS = () => {
   const { websiteData, isLoading } = useThemeService();
-  const websiteId = websiteData.websiteId;
+  const websiteId = websiteData?.websiteId || null;
+  const [storeId, setStoreId] = useState(null);
   const [createPOSOrder] = useCreatePOSOrderMutation();
+
+  useEffect(() => {
+    if (!websiteId) {
+      fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (data?.data?.id) {
+            setStoreId(data.data.id);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [websiteId]);
+
   const [activeTab, setActiveTab] = useState('pos');
   const [cart, setCart] = useState([]);
   const [showPayment, setShowPayment] = useState(false);
@@ -132,7 +148,11 @@ export const usePOS = () => {
       };
 
       try {
-        const result = await createPOSOrder({ websiteId, orderData }).unwrap();
+        const result = await createPOSOrder({ 
+          websiteId: websiteId || undefined, 
+          storeId: websiteId ? undefined : storeId,
+          orderData 
+        }).unwrap();
         setKhqrData({
           rawQR: result?.khqr?.rawQR || `00020101021229300012bakong@abaa0108${Date.now()}5204581253038405405${amount.toFixed(2)}5802KH5912Brathna Store6010Phnom Penh6304`,
           md5: result?.khqr?.md5Hash || 'khqr_hash_mock',
@@ -200,7 +220,11 @@ export const usePOS = () => {
 
       let orderId = `ORD-${Date.now()}`;
       try {
-        const result = await createPOSOrder({ websiteId, orderData }).unwrap();
+        const result = await createPOSOrder({ 
+          websiteId: websiteId || undefined, 
+          storeId: websiteId ? undefined : storeId,
+          orderData 
+        }).unwrap();
         if (result?.order?.id) {
           orderId = result.order.id;
         }
