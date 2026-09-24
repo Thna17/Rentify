@@ -36,19 +36,23 @@ const upload = multer({
 class ProductController {
   static async getAllProducts(req, res) {
     try {
-      const { websiteId } = req.params;
-      const service = new ProductService(websiteId);
-      const result = await service.findAll({ ...req.query, status: 'active', limit: Math.min(60, Number(req.query.limit) || 12) });
+      const identifier = req.params.storeId || req.params.websiteId || req.query.storeId || req.query.websiteId;
+      const service = new ProductService(identifier, {
+        storeId: req.params.storeId || req.query.storeId,
+        websiteId: req.params.websiteId || req.query.websiteId,
+      });
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 12));
+      const result = await service.findAll({ ...req.query, status: 'active', limit });
       res.json(result);
     } catch (error) {
-    logger.error('Get all products error:', error);
-    const statusCode = error.statusCode || 500;
-    const message = error instanceof ApiError ? error.message : 'Server error';
-    
-    res.status(statusCode).json({ 
-      error: message,
-      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
-    });
+      logger.error('Get all products error:', error);
+      const statusCode = error.statusCode || 500;
+      const message = error instanceof ApiError ? error.message : 'Server error';
+      
+      res.status(statusCode).json({ 
+        error: message,
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+      });
     }
   }
 
@@ -358,19 +362,27 @@ static parseCSVFile(filePath) {
 
   static async searchProducts(req, res) {
     try {
-      const { websiteId } = req.params;
-      const { q, field = 'all', limit = 10 } = req.query;
+      const identifier = req.params.storeId || req.params.websiteId || req.query.storeId || req.query.websiteId;
+      const { q, field = 'all', limit = 20 } = req.query;
 
       if (!q) {
         return res.status(400).json({ error: 'Search query is required' });
       }
 
-      const service = new ProductService(websiteId);
-      const where = { websiteId: websiteId, status: 'active' };
+      const service = new ProductService(identifier, {
+        storeId: req.params.storeId || req.query.storeId,
+        websiteId: req.params.websiteId || req.query.websiteId,
+      });
+      const whereCondition = await service.resolveStoreWhere();
+      const where = { ...whereCondition, status: 'active' };
 
       // Build search conditions based on field
       if (field === 'all' || field === 'name') {
-        where.name = { [Op.like]: `%${q}%` };
+        where[Op.or] = [
+          { name: { [Op.like]: `%${q}%` } },
+          { sku: { [Op.like]: `%${q}%` } },
+          { description: { [Op.like]: `%${q}%` } }
+        ];
       } else if (field === 'sku') {
         where.sku = { [Op.like]: `%${q}%` };
       } else if (field === 'tags') {
@@ -379,8 +391,8 @@ static parseCSVFile(filePath) {
 
       const products = await Product.findAll({
         where,
-        limit: parseInt(limit),
-        attributes: ['id', 'name', 'sku', 'price', 'status', 'images'],
+        limit: Math.min(100, parseInt(limit)),
+        attributes: ['id', 'name', 'sku', 'price', 'status', 'images', 'stockQuantity', 'trackInventory', 'allowBackorders', 'marketplaceCategory', 'categoryId'],
         order: [['name', 'ASC']]
       });
 

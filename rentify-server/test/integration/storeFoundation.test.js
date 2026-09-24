@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Store, User, Website } = require('../../src/models');
+const { Store, User, Website, Staff } = require('../../src/models');
 const storeService = require('../../src/services/storeService');
 const storeSyncService = require('../../src/services/storeSyncService');
 
@@ -30,6 +30,7 @@ test('marketplace-only Store defaults to marketplace enabled and needs approval'
   const transaction = {};
   const created = [];
   t.mock.method(Store, 'findOne', async () => null);
+  t.mock.method(Staff, 'findByPk', async () => null);
   t.mock.method(Store.sequelize, 'transaction', async (callback) => callback(transaction));
   t.mock.method(User, 'findByPk', async () => ({ id: 'owner-1' }));
   t.mock.method(Store, 'create', async (data, options) => {

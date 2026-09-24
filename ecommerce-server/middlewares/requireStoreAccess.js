@@ -5,7 +5,7 @@ const createRequireStoreAccess = ({ findStore = (id) => StoreAccess.findByPk(id)
     if (!req.user || req.user.type === 'guest' || req.user.type === 'customer') {
       return res.status(401).json({ error: 'Merchant authentication required' });
     }
-    const storeId = req.params.storeId || req.body?.storeId;
+    const storeId = req.params.storeId || req.body?.storeId || req.query?.storeId;
     if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
     const store = await findStore(storeId);
     if (!store) return res.status(404).json({ error: 'Store not found' });
@@ -15,9 +15,11 @@ const createRequireStoreAccess = ({ findStore = (id) => StoreAccess.findByPk(id)
       return next();
     }
     const staffPermissions = new Set(req.user.permissions || []);
+    if (staffPermissions.has('manage_pos')) staffPermissions.add('pos');
+    if (staffPermissions.has('pos')) staffPermissions.add('manage_pos');
     if (req.user.type === 'staff' && req.user.merchantId === store.ownerUserId &&
-        store.websiteId && req.user.websiteId === store.websiteId &&
-        permissions.some((permission) => staffPermissions.has(permission))) {
+        (!store.websiteId || !req.user.websiteId || req.user.websiteId === store.websiteId) &&
+        (!permissions.length || permissions.some((permission) => staffPermissions.has(permission)))) {
       req.store = store;
       return next();
     }

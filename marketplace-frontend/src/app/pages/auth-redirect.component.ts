@@ -25,6 +25,16 @@ export const externalAuthRedirectGuard = (
   return false;
 };
 
+export const externalMerchantRedirectGuard = (
+  path = '',
+): CanActivateFn => () => {
+  if (typeof window !== 'undefined') {
+    const merchantBase = 'http://localhost:4400';
+    window.location.href = `${merchantBase}${path ? `/${path.replace(/^\/+/, '')}` : ''}`;
+  }
+  return false;
+};
+
 @Component({
   selector: 'app-auth-redirect',
   standalone: true,

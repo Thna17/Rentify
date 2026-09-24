@@ -5,6 +5,7 @@ const allowedOrigins = [...new Set([
   runtimeUrls.merchantDashboardUrl,
   runtimeUrls.marketingUrl,
   runtimeUrls.marketplaceUrl,
+  runtimeUrls.adminDashboardUrl,
   runtimeUrls.storefrontOrigin,
   ...(process.env.CORS_ALLOWED_ORIGINS || '').split(','),
 ].filter(Boolean).map((url) => url.trim().replace(/\/+$/, '')))];
@@ -20,7 +21,7 @@ module.exports = {
     }
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-session-id', 'X-Session-Id'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   exposedHeaders: ['Set-Cookie'],
 };

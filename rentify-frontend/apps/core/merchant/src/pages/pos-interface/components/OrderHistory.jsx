@@ -14,28 +14,37 @@ import { useGetPOSOrdersQuery } from '@rentify/apis';
 import { useTranslation } from '@rentify/utils';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
-export const OrderHistory = () => {
+export const OrderHistory = ({ orders: sessionOrders = [], websiteId, storeId }) => {
   const { t } = useTranslation();
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
-  const { data: ordersData, isLoading, isError } = useGetPOSOrdersQuery(websiteId);
+  const { data: ordersData, isLoading, isError } = useGetPOSOrdersQuery(
+    { websiteId: websiteId || undefined, storeId: websiteId ? undefined : storeId },
+    { skip: !websiteId && !storeId }
+  );
   const [searchTerm, setSearchTerm] = useState('');
 
   const orders = useMemo(() => {
-    if (!ordersData?.orders) return [];
-    
-    return ordersData.orders.map(order => ({
+    const fetched = ordersData?.orders ? ordersData.orders.map(order => ({
       id: order.id,
-      items: order.items.map(item => ({
+      items: order.items?.map(item => ({
         ...item,
-        product: item.product || { name: "Unknown Product" }
-      })),
-      total: order.totalAmount,
+        product: item.product || { name: item.name || "Product" }
+      })) || [],
+      total: order.totalAmount || order.total,
       paymentMethod: order.paymentMethod,
-      timestamp: new Date(order.orderDate),
-      status: order.status
-    }));
-  }, [ordersData]);
+      timestamp: new Date(order.orderDate || order.createdAt),
+      status: order.status || 'completed'
+    })) : [];
+
+    // Combine session orders with backend orders without duplicate IDs
+    const combined = [...sessionOrders];
+    fetched.forEach((item) => {
+      if (!combined.some((o) => o.id === item.id)) {
+        combined.push(item);
+      }
+    });
+
+    return combined;
+  }, [ordersData, sessionOrders]);
 
   const filteredOrders = orders.filter(
     (order) =>

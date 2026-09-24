@@ -85,6 +85,11 @@ export class AuthService {
       )
       .pipe(
         map((res) => {
+          if (res?.data?.accessToken && typeof localStorage !== 'undefined') {
+            try {
+              localStorage.setItem('rentify_token', res.data.accessToken);
+            } catch {}
+          }
           const u = res?.data?.user;
           const authUser: AuthUser = {
             id: u?.id || '',
@@ -109,6 +114,11 @@ export class AuthService {
   logout() {
     return this.rentify.logout().pipe(
       finalize(() => {
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('rentify_token');
+          }
+        } catch {}
         this.userState.set(null);
         this.checkedState.set(true);
       }),

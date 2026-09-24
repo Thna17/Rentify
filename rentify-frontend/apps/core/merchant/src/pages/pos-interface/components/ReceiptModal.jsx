@@ -186,7 +186,7 @@ export const ReceiptModal = ({
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
           <Button
             onClick={handlePrint}
             disabled={isPrinting}
@@ -200,14 +200,12 @@ export const ReceiptModal = ({
             {t('dashboard.pos.print_receipt')}
           </Button>
           
-          <Button variant="outline" disabled={isDownloading} className="border-border">
-            <Download className="h-4 w-4 mr-2" />
-            {t('dashboard.pos.download_receipt')}
-          </Button>
-          
-          <Button variant="outline" disabled={isCopying} className="border-border">
-            <Copy className="h-4 w-4 mr-2" />
-            {isCopying ? t('dashboard.pos.copying') : t('dashboard.pos.copy_receipt')}
+          <Button 
+            onClick={onClose}
+            variant="secondary"
+            className="px-6 font-medium"
+          >
+            Done
           </Button>
         </div>
       </DialogContent>

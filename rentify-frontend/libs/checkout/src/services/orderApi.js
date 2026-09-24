@@ -19,8 +19,8 @@ export const orderApi = createApi({
       invalidatesTags: ['Order'],
     }),
       createPOSOrder: builder.mutation({
-      query: ({ websiteId, orderData }) => ({
-        url: `/websites/${websiteId}/orders/pos`,
+      query: ({ websiteId, storeId, orderData }) => ({
+        url: websiteId ? `/websites/${websiteId}/orders/pos` : `/stores/${storeId}/orders/pos`,
         method: 'POST',
         body: orderData,
       }),
@@ -72,7 +72,7 @@ export const orderApi = createApi({
     }),
 
         getPOSOrders: builder.query({
-      query: (websiteId) => `/websites/${websiteId}/orders/pos`,
+      query: ({ websiteId, storeId }) => websiteId ? `/websites/${websiteId}/orders/pos` : `/stores/${storeId}/orders/pos`,
       providesTags: ['Order'],
     }),
   }),

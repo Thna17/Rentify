@@ -51,6 +51,14 @@ exports.websiteData = async (req, res) => {
 
     const [data] = await WebsiteData.upsert(upsertData);
 
+    if (storeId) {
+      const { Product } = require("../models");
+      await Product.update(
+        { websiteId },
+        { where: { storeId, websiteId: null } }
+      );
+    }
+
     await Promise.all(
       content.map(async (item) => {
         return WebsiteContent.findOrCreate({

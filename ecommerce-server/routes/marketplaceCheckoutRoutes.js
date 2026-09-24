@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyCoreBuyer, verifyStoreActor } = require('../middlewares/authMiddleware');
+const { verifyCoreBuyer, verifyOptionalCoreBuyer, verifyStoreActor } = require('../middlewares/authMiddleware');
 const { createRequireStoreAccess } = require('../middlewares/requireStoreAccess');
 const controller = require('../controllers/marketplaceCheckoutController');
 const { requireMarketplaceCheckoutEnabled } = require('../middlewares/marketplaceCheckoutGate');
@@ -11,9 +11,20 @@ const requireBuyer = (req, res, next) => {
   next();
 };
 
-router.get('/marketplace/cart', verifyCoreBuyer, requireBuyer, controller.getCart);
-router.put('/marketplace/cart/:storeId/items/:productId', verifyCoreBuyer, requireBuyer,
-  requireMarketplaceCheckoutEnabled, controller.setCartItem);
+// Cart routes (guest session or authenticated buyer)
+router.get('/marketplace/cart', verifyOptionalCoreBuyer, controller.getCart);
+router.post('/marketplace/cart/items', verifyOptionalCoreBuyer, controller.addToCart);
+router.put('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, controller.setCartItem);
+router.patch('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, controller.setCartItem);
+router.patch('/marketplace/cart/items/:itemId', verifyOptionalCoreBuyer, controller.updateCartItem);
+router.put('/marketplace/cart/items/:itemId', verifyOptionalCoreBuyer, controller.updateCartItem);
+router.delete('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, controller.removeCartItem);
+router.delete('/marketplace/cart/items/:id', verifyOptionalCoreBuyer, controller.removeCartItem);
+router.delete('/marketplace/cart/:storeId', verifyOptionalCoreBuyer, controller.clearCart);
+router.delete('/marketplace/cart', verifyOptionalCoreBuyer, controller.clearCart);
+router.post('/marketplace/cart/merge', verifyCoreBuyer, requireBuyer, controller.mergeCarts);
+
+// Checkout & orders (require verified buyer)
 router.post('/marketplace/checkout', verifyCoreBuyer, requireBuyer, requireMarketplaceCheckoutEnabled, controller.checkout);
 router.get('/marketplace/my-orders', verifyCoreBuyer, requireBuyer, controller.buyerOrders);
 router.get('/marketplace/my-orders/:orderId', verifyCoreBuyer, requireBuyer, controller.buyerOrder);

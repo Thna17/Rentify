@@ -15,9 +15,28 @@ import {
 import { useAuthConfig } from '../utils/authUtils';
 import {
   DASHBOARD_URL,
+  ADMIN_DASHBOARD_URL,
   MARKETING_URL,
   MARKETPLACE_URL,
 } from '@rentify/shared/config/urls';
+
+const parseJwtPayload = (token?: string) => {
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
 
 export const useLoginForm = () => {
   const [error, setError] = useState('');
@@ -27,7 +46,14 @@ export const useLoginForm = () => {
 
   const { websiteId, userEmail, userPhoneNumber, staffs } = useWebsiteData();
 
-  const { returnDomain, redirectUrl, isWebsiteTemplate, isHostedStorefrontBuyer } = useAuthConfig();
+  const {
+    returnDomain,
+    redirectUrl,
+    hasExplicitReturnUrl,
+    adminDashboardHost,
+    isWebsiteTemplate,
+    isHostedStorefrontBuyer,
+  } = useAuthConfig();
   const marketingHost = new URL(MARKETING_URL).host;
   const marketplaceHost = new URL(MARKETPLACE_URL).host;
 
@@ -75,7 +101,14 @@ export const useLoginForm = () => {
     }
 
     const loginStrategy = () => {
-      if (isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost) return loginMutation;
+      if (
+        isSpecialCase ||
+        returnDomain === marketingHost ||
+        returnDomain === marketplaceHost ||
+        returnDomain === adminDashboardHost
+      ) {
+        return loginMutation;
+      }
       if (isStaff) return loginStaffMutation;
       if (isWebsiteTemplate && websiteId) {
         payload.storeId = websiteId;
@@ -107,15 +140,36 @@ export const useLoginForm = () => {
         }
       }
 
-      const isStaffSuccess = selectedLogin === loginStaffMutation || response?.data?.user?.role === "staff";
-      const isPlatformLogin =
-        isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost || !isWebsiteTemplate || isStaffSuccess;
+      const userRole = response?.data?.user?.role || parseJwtPayload(response?.data?.accessToken)?.role;
+      const isAdmin = userRole === 'admin';
+      const isStaffSuccess = selectedLogin === loginStaffMutation || userRole === 'staff';
+
       let destination = redirectUrl;
-      if (isPlatformLogin && returnDomain !== marketplaceHost && !isHostedStorefrontBuyer) {
-        destination = response?.data?.hasStore || isStaffSuccess
-          ? `${DASHBOARD_URL}/overview`
-          : `${MARKETING_URL}/start`;
+
+      if (isAdmin) {
+        if (hasExplicitReturnUrl && redirectUrl !== `${MARKETING_URL}/start` && redirectUrl !== MARKETING_URL) {
+          destination = redirectUrl;
+        } else {
+          destination = `${ADMIN_DASHBOARD_URL}/admin/dashboard`;
+        }
+      } else if (hasExplicitReturnUrl) {
+        if (returnDomain === adminDashboardHost) {
+          destination = response?.data?.hasStore || isStaffSuccess
+            ? `${DASHBOARD_URL}/overview`
+            : `${MARKETING_URL}/start`;
+        } else {
+          destination = redirectUrl;
+        }
+      } else {
+        if (isStaffSuccess || response?.data?.hasStore) {
+          destination = `${DASHBOARD_URL}/overview`;
+        } else if (isWebsiteTemplate) {
+          destination = redirectUrl;
+        } else {
+          destination = `${MARKETING_URL}/start`;
+        }
       }
+
       setSuccess("Login successful! Redirecting...");
       setTimeout(() => {
         window.location.href = destination;

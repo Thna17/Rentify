@@ -20,10 +20,11 @@ x-core-environment: &core-environment
   MERCHANT_DASHBOARD_URL: http://localhost:4400
   MARKETING_URL: http://localhost:4200
   MARKETPLACE_URL: http://localhost:4500
+  ADMIN_DASHBOARD_URL: http://localhost:4800
   STOREFRONT_ORIGIN: http://localhost:4700
   HOSTED_STOREFRONT_DOMAIN: ${HOSTED_STOREFRONT_DOMAIN:-}
-  CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4700,http://localhost:4600
-  AUTH_RETURN_URL_ALLOWLIST: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4700,http://localhost:4600
+  CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4700,http://localhost:4600,http://localhost:4800
+  AUTH_RETURN_URL_ALLOWLIST: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4700,http://localhost:4600,http://localhost:4800
   SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN}
   DEV_MARKETPLACE_AUTO_APPROVAL: 'true'
 
@@ -47,9 +48,10 @@ x-commerce-environment: &commerce-environment
   MERCHANT_DASHBOARD_URL: http://localhost:4400
   MARKETING_URL: http://localhost:4200
   MARKETPLACE_URL: http://localhost:4500
+  ADMIN_DASHBOARD_URL: http://localhost:4800
   STOREFRONT_ORIGIN: http://localhost:4700
   HOSTED_STOREFRONT_DOMAIN: ${HOSTED_STOREFRONT_DOMAIN:-}
-  CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4700,http://localhost:4600
+  CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4700,http://localhost:4600,http://localhost:4800
   SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN}
   PAYMENT_CONFIG_ENCRYPTION_KEY: ${PAYMENT_CONFIG_ENCRYPTION_KEY}
   MARKETPLACE_COD_CHECKOUT_ENABLED: 'true'
@@ -62,6 +64,7 @@ x-frontend-environment: &frontend-environment
   VITE_MERCHANT_DASHBOARD_URL: http://localhost:4400
   VITE_MARKETING_URL: http://localhost:4200
   VITE_MARKETPLACE_URL: http://localhost:4500
+  VITE_ADMIN_DASHBOARD_URL: http://localhost:4800
   VITE_STOREFRONT_ORIGIN: http://localhost:4700
   VITE_HOSTED_STOREFRONT_DOMAIN: ${VITE_HOSTED_STOREFRONT_DOMAIN:-rentifystore.shop}
   VITE_HOSTED_STOREFRONT_BUYER_ENABLED: ${VITE_HOSTED_STOREFRONT_BUYER_ENABLED:-false}

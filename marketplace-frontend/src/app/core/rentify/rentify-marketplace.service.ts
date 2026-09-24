@@ -68,6 +68,29 @@ export interface ProductQueryOptions {
   storeId?: string;
 }
 
+export interface ProductReview {
+  id: string;
+  productId: string;
+  storeId: string;
+  buyerUserId: string;
+  buyerName: string;
+  rating: number;
+  comment: string;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
+}
+
+export interface ProductReviewSummary {
+  total: number;
+  average: number;
+  distribution: { [stars: number]: number };
+}
+
+export interface ProductReviewsResponse {
+  reviews: ProductReview[];
+  summary: ProductReviewSummary;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RentifyMarketplaceService {
   private readonly http = inject(HttpClient);
@@ -143,6 +166,33 @@ export class RentifyMarketplaceService {
     );
   }
 
+  addItem(productId: string, quantity = 1, storeId?: string, variantId?: string): Observable<{ carts: StoreCart[] }> {
+    return this.http.post<{ carts: StoreCart[] }>(
+      `${this.commerce}/api/marketplace/cart/items`,
+      { productId, quantity, storeId, variantId },
+    );
+  }
+
+  removeItem(storeId: string, productId: string): Observable<{ carts: StoreCart[] }> {
+    return this.http.delete<{ carts: StoreCart[] }>(
+      `${this.commerce}/api/marketplace/cart/${storeId}/items/${productId}`,
+    );
+  }
+
+  clearCart(storeId?: string): Observable<{ carts: StoreCart[] }> {
+    const url = storeId
+      ? `${this.commerce}/api/marketplace/cart/${storeId}`
+      : `${this.commerce}/api/marketplace/cart`;
+    return this.http.delete<{ carts: StoreCart[] }>(url);
+  }
+
+  mergeCart(): Observable<{ carts: StoreCart[] }> {
+    return this.http.post<{ carts: StoreCart[] }>(
+      `${this.commerce}/api/marketplace/cart/merge`,
+      {},
+    );
+  }
+
   checkout(
     storeId: string,
     expectedTotalAmount: string,
@@ -165,6 +215,23 @@ export class RentifyMarketplaceService {
 
   orders(): Observable<{ orders: MarketplaceOrder[] }> {
     return this.http.get<{ orders: MarketplaceOrder[] }>(`${this.commerce}/api/marketplace/my-orders`);
+  }
+
+  reviews(productId: string): Observable<ProductReviewsResponse> {
+    return this.http.get<ProductReviewsResponse>(
+      `${this.commerce}/api/marketplace/products/${productId}/reviews`,
+    );
+  }
+
+  submitReview(
+    productId: string,
+    rating: number,
+    comment: string,
+  ): Observable<{ review: ProductReview; summary: ProductReviewSummary }> {
+    return this.http.post<{ review: ProductReview; summary: ProductReviewSummary }>(
+      `${this.commerce}/api/marketplace/products/${productId}/reviews`,
+      { rating, comment },
+    );
   }
 
   report(orderId: string, type: 'complaint' | 'return_requested', reason: string, key: string) {

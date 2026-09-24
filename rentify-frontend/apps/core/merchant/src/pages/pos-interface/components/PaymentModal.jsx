@@ -229,6 +229,31 @@ export const PaymentModal = ({
                       className="h-12 text-base pl-10 pr-4 border-border focus:border-input"
                     />
                   </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCashReceived(totalWithTax.toFixed(2))}
+                      className="text-xs h-7 px-2 border-dashed"
+                    >
+                      Exact (${totalWithTax.toFixed(2)})
+                    </Button>
+                    {[10, 20, 50, 100].map((preset) => (
+                      preset >= Math.floor(totalWithTax) && (
+                        <Button
+                          key={preset}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCashReceived(preset.toString())}
+                          className="text-xs h-7 px-2"
+                        >
+                          ${preset}
+                        </Button>
+                      )
+                    ))}
+                  </div>
                   {change > 0 && (
                     <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
                       <div className="flex justify-between items-center">
@@ -444,6 +469,31 @@ export const PaymentModal = ({
                     placeholder="0.00"
                     className="h-12 text-lg pl-10 pr-4 border-border focus:border-input"
                   />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCashReceived(totalWithTax.toFixed(2))}
+                    className="text-xs h-8 border-dashed"
+                  >
+                    Exact (${totalWithTax.toFixed(2)})
+                  </Button>
+                  {[10, 20, 50, 100].map((preset) => (
+                    preset >= Math.floor(totalWithTax) && (
+                      <Button
+                        key={preset}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCashReceived(preset.toString())}
+                        className="text-xs h-8"
+                      >
+                        ${preset}
+                      </Button>
+                    )
+                  ))}
                 </div>
                 {change > 0 && (
                   <div className="p-3 bg-success/10 border border-success/20 rounded-lg">

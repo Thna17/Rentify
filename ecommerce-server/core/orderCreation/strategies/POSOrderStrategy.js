@@ -3,7 +3,7 @@ const OrderTypeStrategy = require('./OrderTypeStrategy');
 
 class POSOrderStrategy extends OrderTypeStrategy {
   async processOrder(orderData, transaction) {
-    const { websiteId, items, paymentMethod, cashierId, customerInfo, currency = 'USD' } = orderData;
+    const { websiteId, storeId, items, paymentMethod, cashierId, customerInfo, currency = 'USD' } = orderData;
 
     // Validate products using niche strategy
     await this.validateOrderItems(items, transaction);
@@ -16,20 +16,24 @@ class POSOrderStrategy extends OrderTypeStrategy {
       currency
     );
 
+    const normalizedMethod = String(paymentMethod || '').toLowerCase();
+    const isImmediatePayment = ['cash', 'card', 'credit_card', 'debit_card'].includes(normalizedMethod);
+
     // Create customer record for POS if provided
     let customer = null;
     if (customerInfo?.email) {
-      customer = await this.findOrCreateCustomer(customerInfo, websiteId, transaction);
+      customer = await this.findOrCreateCustomer(customerInfo, websiteId, storeId, transaction);
     }
 
     // Create order
     const order = await this.createOrderRecord({
-      websiteId,
+      websiteId: websiteId || null,
+      storeId: storeId || null,
       orderType: "pos",
       customerId: customer?.id,
-      status: paymentMethod === 'cash' ? 'completed' : 'pending',
+      status: isImmediatePayment ? 'completed' : 'pending',
       cashierId,
-      stockDeducted: paymentMethod === 'cash',
+      stockDeducted: isImmediatePayment,
       customerInfo,
       currency,
       ...totals
@@ -39,7 +43,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
     const orderItems = await this.createOrderItems(order.id, items, transaction);
 
     // Update inventory for immediate payments
-    if (paymentMethod === 'cash') {
+    if (isImmediatePayment) {
       await this.nicheStrategy.updateInventory(items, transaction);
     }
 
@@ -64,7 +68,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
     );
 
     // Update order status for instant payments
-    if (paymentMethod === 'cash') {
+    if (isImmediatePayment) {
       await order.update({ 
         status: 'completed',
         stockDeducted: true 
@@ -75,21 +79,38 @@ class POSOrderStrategy extends OrderTypeStrategy {
       order: order.toJSON(),
       payment: payment.toJSON(),
       invoice: invoice.toJSON(),
-      orderItems: orderItems.map(item => item.toJSON())
+      orderItems: orderItems.map(item => item.toJSON()),
+      khqrData: payment.transactionData?.rawQR ? {
+        rawQR: payment.transactionData.rawQR,
+        md5Hash: payment.transactionData.md5Hash,
+        deeplink: payment.transactionData.qrCodeUrl,
+      } : null,
     };
   }
 
-  async findOrCreateCustomer(customerInfo, websiteId, transaction) {
+  async findOrCreateCustomer(customerInfo, websiteId, storeId, transaction) {
     const { Customer } = this.models;
-    
-    let customer = await Customer.findOne({
-      where: { email: customerInfo.email, storeId: websiteId },
-      transaction
-    });
+    const { Op } = require('sequelize');
+
+    const targetStoreId = websiteId || storeId;
+    let customer = null;
+    if (targetStoreId) {
+      const conditions = [];
+      if (websiteId) conditions.push({ storeId: websiteId });
+      if (storeId) {
+        conditions.push({ storeId });
+        conditions.push({ tenantStoreId: storeId });
+      }
+      customer = await Customer.findOne({
+        where: { email: customerInfo.email, [Op.or]: conditions },
+        transaction
+      });
+    }
 
     if (!customer) {
       customer = await Customer.create({
-        storeId: websiteId,
+        storeId: websiteId || storeId,
+        tenantStoreId: storeId || null,
         email: customerInfo.email,
         name: customerInfo.name || 'POS Customer',
         phoneNumber: customerInfo.phone,
@@ -104,7 +125,8 @@ class POSOrderStrategy extends OrderTypeStrategy {
     const invoiceNumber = this.generateInvoiceNumber();
     
     return await this.models.Invoice.create({
-      websiteId: order.websiteId,
+      websiteId: order.websiteId || null,
+      storeId: order.storeId || null,
       orderId: order.id,
       paymentId: payment.id,
       invoiceNumber,

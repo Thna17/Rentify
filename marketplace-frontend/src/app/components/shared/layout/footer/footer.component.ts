@@ -98,7 +98,5 @@ export class FooterComponent {
   private readonly auth = inject(AuthService);
   protected readonly signInUrl = this.auth.getLoginUrl();
   protected readonly registerUrl = this.auth.getRegisterUrl();
-  protected readonly sellerLoginUrl = this.auth.getLoginUrl(
-    typeof window !== 'undefined' ? `${window.location.origin}/seller/dashboard` : '/seller/dashboard',
-  );
+  protected readonly sellerLoginUrl = this.auth.getLoginUrl('http://localhost:4400');
 }

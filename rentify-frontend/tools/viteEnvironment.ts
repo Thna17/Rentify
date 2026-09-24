@@ -7,6 +7,7 @@ export type PublicRuntimeConfig = {
   merchantDashboardUrl: string;
   marketingUrl: string;
   marketplaceUrl: string;
+  adminDashboardUrl: string;
   storefrontOrigin: string;
   hostedStorefrontDomain: string;
   hostedStorefrontBuyerEnabled: string;
@@ -24,6 +25,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     merchantDashboardUrl: 'http://localhost:4400',
     marketingUrl: 'http://localhost:4200',
     marketplaceUrl: 'http://localhost:4500',
+    adminDashboardUrl: 'http://localhost:4800',
     storefrontOrigin: 'http://localhost:4700',
   };
   const config = {
@@ -33,6 +35,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     merchantDashboardUrl: env.VITE_MERCHANT_DASHBOARD_URL || env.MERCHANT_DASHBOARD_URL || (development ? local.merchantDashboardUrl : ''),
     marketingUrl: env.VITE_MARKETING_URL || env.MARKETING_URL || (development ? local.marketingUrl : ''),
     marketplaceUrl: env.VITE_MARKETPLACE_URL || env.MARKETPLACE_URL || (development ? local.marketplaceUrl : ''),
+    adminDashboardUrl: env.VITE_ADMIN_DASHBOARD_URL || env.ADMIN_DASHBOARD_URL || (development ? local.adminDashboardUrl : ''),
     storefrontOrigin: env.VITE_STOREFRONT_ORIGIN || env.STOREFRONT_ORIGIN || (development ? local.storefrontOrigin : ''),
     hostedStorefrontDomain: env.VITE_HOSTED_STOREFRONT_DOMAIN || 'rentifystore.shop',
     hostedStorefrontBuyerEnabled: env.VITE_HOSTED_STOREFRONT_BUYER_ENABLED || 'false',
@@ -57,6 +60,7 @@ export function vitePublicDefines(mode: string) {
     __DASHBOARD__URL__: JSON.stringify(config.merchantDashboardUrl),
     __MARKETING_URL__: JSON.stringify(config.marketingUrl),
     __MARKETPLACE_URL__: JSON.stringify(config.marketplaceUrl),
+    __ADMIN_DASHBOARD_URL__: JSON.stringify(config.adminDashboardUrl),
     __STOREFRONT_ORIGIN__: JSON.stringify(config.storefrontOrigin),
     __HOSTED_STOREFRONT_DOMAIN__: JSON.stringify(config.hostedStorefrontDomain),
     __HOSTED_STOREFRONT_BUYER_ENABLED__: JSON.stringify(config.hostedStorefrontBuyerEnabled === 'true'),
