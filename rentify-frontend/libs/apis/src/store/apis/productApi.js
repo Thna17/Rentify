@@ -13,8 +13,8 @@ export const productApi = createApi({
 
     // Get all products (supports advanced filtering via query)
     getAllProducts: builder.query({
-      query: ({ websiteId, ...query }) => ({
-        url: `/${websiteId}`,
+      query: ({ websiteId, storeId, ...query }) => ({
+        url: storeId ? `/stores/${storeId}` : `/${websiteId}`,
         params: query,
       }),
       providesTags: ['Product'],
