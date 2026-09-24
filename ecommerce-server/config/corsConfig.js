@@ -6,12 +6,14 @@ const local = [
   'http://localhost:4200',
   'http://localhost:4500',
   'http://localhost:4700',
+  'http://localhost:4800',
 ];
 const allowedOrigins = [...new Set([
   process.env.AUTH_URL,
   process.env.MERCHANT_DASHBOARD_URL,
   process.env.MARKETING_URL,
   process.env.MARKETPLACE_URL,
+  process.env.ADMIN_DASHBOARD_URL,
   process.env.STOREFRONT_ORIGIN,
   ...local,
   ...(process.env.CORS_ALLOWED_ORIGINS || '').split(','),

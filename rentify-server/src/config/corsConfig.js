@@ -5,6 +5,7 @@ const allowedOrigins = [...new Set([
   runtimeUrls.merchantDashboardUrl,
   runtimeUrls.marketingUrl,
   runtimeUrls.marketplaceUrl,
+  runtimeUrls.adminDashboardUrl,
   runtimeUrls.storefrontOrigin,
   ...(process.env.CORS_ALLOWED_ORIGINS || '').split(','),
 ].filter(Boolean).map((url) => url.trim().replace(/\/+$/, '')))];
