@@ -82,6 +82,7 @@ class AuthService {
       name: entity.name,
       email: entity.email,
       phoneNumber: entity.phoneNumber,
+      ...(entity.role && { role: entity.role }),
       ...(entity.permissions && { permissions: entity.permissions }),
       ...(entity.storeId && { storeId: entity.storeId }),
     };

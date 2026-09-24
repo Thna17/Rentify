@@ -28,7 +28,7 @@ import {
   TerminalSquare,
 } from 'lucide-react';
 import { useAuth } from '@rentify/utils/hooks/useAuth';
-import { AUTH_URL, DASHBOARD_URL } from '@rentify/shared/config/urls';
+import { AUTH_URL, DASHBOARD_URL, ADMIN_DASHBOARD_URL } from '@rentify/shared/config/urls';
 
 /* -------------------- helpers -------------------- */
 
@@ -233,7 +233,7 @@ export const UserMenu = ({
                 <MenuItem
                   icon={LayoutDashboard}
                   onClick={() =>
-                    (window.location.href = `${DASHBOARD_URL}/overview`)
+                    (window.location.href = `${ADMIN_DASHBOARD_URL || DASHBOARD_URL}/admin/dashboard`)
                   }
                 >
                   Dashboard

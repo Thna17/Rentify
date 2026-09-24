@@ -1,6 +1,7 @@
 import {
   AUTH_URL,
   DASHBOARD_URL,
+  ADMIN_DASHBOARD_URL,
   MARKETING_URL,
   MARKETPLACE_URL,
   STOREFRONT_ORIGIN,
@@ -10,9 +11,9 @@ import {
 
 const allowedOrigins = () =>
   new Set(
-    [AUTH_URL, MARKETING_URL, MARKETPLACE_URL, DASHBOARD_URL, STOREFRONT_ORIGIN].map(
-      (url) => new URL(url).origin
-    )
+    [AUTH_URL, MARKETING_URL, MARKETPLACE_URL, DASHBOARD_URL, ADMIN_DASHBOARD_URL, STOREFRONT_ORIGIN]
+      .filter(Boolean)
+      .map((url) => new URL(url).origin)
   );
 
 export const getSafeReturnUrl = (

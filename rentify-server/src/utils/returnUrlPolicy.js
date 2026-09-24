@@ -6,6 +6,7 @@ const allowedOrigins = () => new Set([
   runtimeUrls.marketingUrl,
   runtimeUrls.marketplaceUrl,
   runtimeUrls.merchantDashboardUrl,
+  runtimeUrls.adminDashboardUrl,
   runtimeUrls.storefrontOrigin,
   ...(process.env.AUTH_RETURN_URL_ALLOWLIST || "").split(","),
 ].filter(Boolean).map((url) => new URL(url).origin));
