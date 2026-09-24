@@ -3,82 +3,65 @@ import { format } from 'date-fns';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { Typography } from '@rentify/shared/ui/typography';
 
-// Define Tailwind CSS classes to match InvoiceDocument's react-pdf styles
 const styles = {
-  page: "p-5 md:p-10 font-sans text-[10px] leading-[1.4] text-gray-900 bg-white relative",
-  watermark: "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 text-4xl md:text-8xl text-gray-100 font-bold opacity-10 -z-10 font-sans",
-  header: "flex flex-col md:flex-row justify-between items-start mb-8 pb-5 border-b border-gray-300 flex-wrap",
-  leftHeader: "flex flex-row items-start gap-2.5 w-full md:w-3/5",
-  logo: "w-11 h-11 rounded-md object-contain",
+  page: "p-6 md:p-8 font-sans text-xs leading-normal text-slate-800 bg-white relative min-h-[640px] flex flex-col justify-between select-none",
+  watermark: "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 text-5xl md:text-8xl text-slate-900 font-extrabold opacity-[0.04] select-none pointer-events-none -z-0 font-sans tracking-widest uppercase",
+  header: "flex flex-col sm:flex-row justify-between items-start mb-6 pb-6 border-b border-slate-200/90 gap-4",
+  leftHeader: "flex items-start gap-3 w-full sm:w-3/5",
+  logo: "w-11 h-11 rounded-lg object-contain border border-slate-100 p-0.5 shadow-2xs shrink-0",
   companyDetails: "flex flex-col gap-0.5 max-w-full",
-  companyName: "text-sm font-bold text-gray-900 mb-0.5 tracking-wider font-sans",
-  companyText: "text-[8px] text-gray-600 leading-[1.4]",
-  rightHeader: "w-full md:w-[38%] items-start md:items-end justify-start gap-1.25 mt-4 md:mt-0",
-  invoiceTitle: "text-base md:text-lg font-bold tracking-wider text-gray-900",
-  invoiceNumberBox: "text-[9px] px-2.5 py-1.25 border border-gray-900 rounded bg-gray-50 font-bold text-gray-900 text-center mt-1",
-  detailsSection: "flex flex-col md:flex-row justify-between mb-6 mt-1.25",
-  billToSection: "w-full md:w-[48%] mb-4 md:mb-0",
-  sectionTitle: "text-[10px] font-bold text-gray-900 mb-2 uppercase tracking-wider pb-1 border-b border-gray-300 font-sans",
-  customerName: "text-xs font-bold text-gray-900 mb-1.5 font-sans",
-  customerDetails: "text-[9px] text-gray-600 leading-6",
-  invoiceMetaSection: "w-full md:w-[48%]",
-  metaTable: "border border-gray-300 bg-white",
-  metaRow: "flex flex-row border-b border-gray-300",
-  metaRowLast: "border-b-0",
-  metaLabelCell: "w-[55%] p-2 border-r border-gray-300 bg-gray-50",
-  metaValueCell: "w-[45%] p-2",
-  metaLabel: "text-[8px] text-gray-900 font-bold uppercase tracking-wider font-sans",
-  metaValue: "text-[9px] text-gray-900",
-  table: "mb-5 border border-gray-300 overflow-x-auto",
-  tableHeader: "flex flex-row bg-gray-50 border-b border-gray-300",
-  tableHeaderCell: "p-2.5 border-r border-gray-300",
-  tableHeaderCellLast: "border-r-0",
-  tableHeaderText: "text-[9px] font-bold text-gray-900 uppercase tracking-wider font-sans",
-  tableRow: "flex flex-row border-b border-gray-300",
-  tableRowLast: "border-b-0",
-  tableRowAlternate: "bg-gray-50",
-  tableCell: "p-2.5 border-r border-gray-300",
-  tableCellLast: "border-r-0",
-  colDescription: "w-[45%]",
-  colQty: "w-[12%] text-center",
-  colRate: "w-[18%] text-right",
-  colAmount: "w-[25%] text-right",
-  itemName: "text-[10px] text-gray-900 font-bold mb-0.5 font-sans",
-  itemDescription: "text-[8px] text-gray-600 leading-[1.3]",
-  itemValue: "text-[9px] text-gray-900",
-  itemAmount: "text-[10px] text-gray-900 font-bold font-sans",
-  noItems: "p-7.5 text-center text-gray-600 text-[11px] italic",
+  companyName: "text-base font-bold text-slate-900 tracking-tight font-sans",
+  companyText: "text-[11px] text-slate-500 leading-snug",
+  rightHeader: "w-full sm:w-2/5 flex flex-col items-start sm:items-end justify-start gap-1.5",
+  invoiceTitle: "text-2xl font-black tracking-wider text-slate-900 uppercase font-sans",
+  invoiceNumberBox: "text-xs px-2.5 py-1 rounded-md bg-slate-100 font-mono font-semibold text-slate-800 border border-slate-200/80 shadow-2xs",
+  detailsSection: "flex flex-col sm:flex-row justify-between gap-6 mb-6",
+  billToSection: "w-full sm:w-1/2 space-y-1",
+  sectionTitle: "text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans",
+  customerName: "text-sm font-bold text-slate-900 font-sans",
+  customerDetails: "text-xs text-slate-500 leading-relaxed",
+  invoiceMetaSection: "w-full sm:w-1/2 flex justify-start sm:justify-end",
+  metaCard: "bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 w-full sm:max-w-[220px] space-y-2 shadow-2xs",
+  metaRow: "flex justify-between items-center text-xs",
+  metaLabel: "text-[10px] font-semibold text-slate-500 uppercase tracking-wider font-sans",
+  metaValue: "text-xs font-semibold text-slate-800 font-mono",
+  table: "mb-6 border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs",
+  tableHeader: "flex flex-row bg-slate-50/90 border-b border-slate-200/80 px-3.5 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans",
+  tableRow: "flex flex-row items-center border-b border-slate-100 last:border-b-0 px-3.5 py-2.5 text-xs text-slate-700 transition-colors",
+  tableRowAlternate: "bg-slate-50/40",
+  colDescription: "flex-1 pr-2",
+  colQty: "w-14 text-center",
+  colRate: "w-20 text-right",
+  colAmount: "w-24 text-right font-semibold text-slate-900",
+  itemName: "font-semibold text-slate-900 text-xs",
+  itemDescription: "text-[10px] text-slate-500 mt-0.5",
+  noItems: "py-8 text-center text-slate-400 text-xs italic",
   totalsSection: "flex justify-end mb-6",
-  totalsContainer: "w-full md:w-1/2 border border-gray-300",
-  totalRow: "flex flex-row border-b border-gray-300",
-  totalRowLast: "border-b-0",
-  totalLabelCell: "w-[65%] p-2.5 border-r border-gray-300",
-  totalValueCell: "w-[35%] p-2.5",
-  totalLabel: "text-[9px] text-gray-900 font-bold font-sans",
-  totalValue: "text-[10px] text-gray-900 text-right",
-  finalTotalRow: "bg-gray-50 border-t border-gray-300",
-  finalTotalLabel: "text-[11px] font-bold text-gray-900 font-sans",
-  finalTotalValue: "text-xs font-bold text-gray-900 text-right font-sans",
-  notesSection: "mb-6 p-3.75 border border-gray-300 bg-gray-50",
-  notesTitle: "text-[10px] font-bold text-gray-900 mb-2 uppercase tracking-wider font-sans",
-  notesText: "text-[9px] text-gray-900 leading-[1.4]",
-  signatureSection: "flex flex-col md:flex-row justify-between mb-6 pt-5 gap-2.5",
-  signatureBox: "w-full md:w-[45%] p-3.75 border border-gray-300 bg-white",
-  signatureTitle: "text-[9px] font-bold text-gray-900 mb-6.25 uppercase tracking-wider font-sans",
-  signatureLine: "border-b border-gray-600 mb-1.25 h-7.5",
-  signatureLabel: "text-[8px] text-gray-600 text-center",
-  qrSection: "items-center mb-6 p-5 border border-gray-300 bg-gray-50 text-center",
-  qrTitle: "text-[11px] font-bold text-gray-900 mb-3 uppercase tracking-wider font-sans",
-  qrDescription: "text-[8px] text-gray-600 text-center max-w-[200px] mx-auto",
-  footer: "mt-auto",
-  footerInfo: "flex flex-col md:flex-row justify-between items-center pt-3.75 border-t border-gray-300",
-  footerLeft: "flex-1",
-  footerRight: "flex-1 items-start md:items-end",
-  pageNumber: "text-[8px] text-gray-600",
-  printTimestamp: "text-[8px] text-gray-600",
-  barcode: "text-[8px] text-gray-600 font-mono tracking-widest",
-  thanksSection: "text-center p-5 mt-3.75 bg-gray-50 border-t border-b border-gray-300",
-  thanksText: "text-sm font-bold text-gray-900 uppercase tracking-widest font-sans",
+  totalsContainer: "w-full sm:w-64 space-y-1.5 text-xs",
+  totalRow: "flex justify-between text-slate-600",
+  totalLabel: "text-slate-500",
+  totalValue: "font-medium text-slate-800 font-mono",
+  finalTotalRow: "flex justify-between items-baseline pt-2 mt-2 border-t-2 border-slate-900 text-slate-900",
+  finalTotalLabel: "text-xs font-bold uppercase tracking-wider",
+  finalTotalValue: "text-base font-extrabold text-slate-900 font-mono",
+  notesSection: "mb-6 p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/60 text-xs",
+  notesTitle: "text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans mb-1",
+  notesText: "text-xs text-slate-600 leading-relaxed",
+  signatureSection: "flex flex-col sm:flex-row justify-between mb-6 pt-4 gap-6",
+  signatureBox: "w-full sm:w-[45%] text-center",
+  signatureTitle: "text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans mb-8",
+  signatureLine: "border-b border-slate-300 mb-1.5",
+  signatureLabel: "text-[10px] text-slate-400",
+  qrSection: "flex flex-col items-center mb-6 p-4 rounded-xl border border-slate-200/80 bg-slate-50/60 text-center shadow-2xs",
+  qrTitle: "text-xs font-bold text-slate-900 mb-2 uppercase tracking-wider font-sans",
+  qrDescription: "text-[10px] text-slate-500 text-center max-w-[220px] mx-auto",
+  footer: "mt-auto pt-4 border-t border-slate-200/80",
+  footerInfo: "flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-400 gap-1",
+  footerLeft: "flex items-center gap-3",
+  footerRight: "",
+  barcode: "font-mono tracking-wider",
+  thanksSection: "text-center pt-3 mt-3 border-t border-slate-100",
+  thanksText: "text-xs font-bold text-slate-700 uppercase tracking-widest font-sans",
 };
 
 export const InvoicePreview = ({
@@ -123,7 +106,7 @@ export const InvoicePreview = ({
   };
 
   return (
-    <Card className="bg-white shadow-md border border-gray-300 overflow-hidden w-full max-w-full md:max-w-[600px] mx-auto font-sans">
+    <Card className="bg-white shadow-xl shadow-slate-200/70 dark:shadow-none border border-slate-200 rounded-2xl overflow-hidden w-full font-sans transition-all ring-1 ring-black/5">
       <CardContent className={styles.page}>
         {/* Watermark */}
         {showWatermark && companyInfo?.watermark && (
@@ -146,18 +129,26 @@ export const InvoicePreview = ({
               <Typography variant="h3" className={styles.companyName}>
                 {companyInfo?.name || safeWebsiteName}
               </Typography>
-              <Typography variant="p" className={styles.companyText}>
-                {companyInfo?.address}
-              </Typography>
-              <Typography variant="p" className={styles.companyText}>
-                Phone: {companyInfo?.phone}
-              </Typography>
-              <Typography variant="p" className={styles.companyText}>
-                Email: {companyInfo?.email}
-              </Typography>
-              <Typography variant="p" className={styles.companyText}>
-                Website: {companyInfo?.website}
-              </Typography>
+              {companyInfo?.address && (
+                <Typography variant="p" className={styles.companyText}>
+                  {companyInfo.address}
+                </Typography>
+              )}
+              {companyInfo?.phone && (
+                <Typography variant="p" className={styles.companyText}>
+                  Tel: {companyInfo.phone}
+                </Typography>
+              )}
+              {companyInfo?.email && (
+                <Typography variant="p" className={styles.companyText}>
+                  Email: {companyInfo.email}
+                </Typography>
+              )}
+              {companyInfo?.website && (
+                <Typography variant="p" className={styles.companyText}>
+                  Web: {companyInfo.website}
+                </Typography>
+              )}
             </div>
           </div>
           <div className={styles.rightHeader}>
@@ -174,55 +165,39 @@ export const InvoicePreview = ({
         <div className={styles.detailsSection}>
           <div className={styles.billToSection}>
             <Typography variant="h4" className={styles.sectionTitle}>
-              Bill To
+              Billed To
             </Typography>
             <Typography variant="h3" className={styles.customerName}>
               {invoiceData.customerName || 'Customer Name'}
             </Typography>
-            <Typography variant="p" className={styles.customerDetails}>
-              {invoiceData.address}
-            </Typography>
-            <Typography variant="p" className={styles.customerDetails}>
-              {invoiceData.customerPhone}
-            </Typography>
+            {invoiceData.address ? (
+              <Typography variant="p" className={styles.customerDetails}>
+                {invoiceData.address}
+              </Typography>
+            ) : (
+              <Typography variant="p" className={`${styles.customerDetails} italic text-slate-400`}>
+                No billing address specified
+              </Typography>
+            )}
+            {invoiceData.customerPhone && (
+              <Typography variant="p" className={styles.customerDetails}>
+                {invoiceData.customerPhone}
+              </Typography>
+            )}
           </div>
           <div className={styles.invoiceMetaSection}>
-            <div className={styles.metaTable}>
+            <div className={styles.metaCard}>
               <div className={styles.metaRow}>
-                <div className={styles.metaLabelCell}>
-                  <Typography variant="p" className={styles.metaLabel}>
-                    Invoice Number
-                  </Typography>
-                </div>
-                <div className={styles.metaValueCell}>
-                  <Typography variant="p" className={styles.metaValue}>
-                    {invoiceData.invoiceNumber}
-                  </Typography>
-                </div>
+                <span className={styles.metaLabel}>Invoice No</span>
+                <span className={styles.metaValue}>{invoiceData.invoiceNumber}</span>
               </div>
               <div className={styles.metaRow}>
-                <div className={styles.metaLabelCell}>
-                  <Typography variant="p" className={styles.metaLabel}>
-                    Date of Issue
-                  </Typography>
-                </div>
-                <div className={styles.metaValueCell}>
-                  <Typography variant="p" className={styles.metaValue}>
-                    {formatDate(invoiceData.createdAt)}
-                  </Typography>
-                </div>
+                <span className={styles.metaLabel}>Issue Date</span>
+                <span className={styles.metaValue}>{formatDate(invoiceData.createdAt)}</span>
               </div>
-              <div className={`${styles.metaRow} ${styles.metaRowLast}`}>
-                <div className={styles.metaLabelCell}>
-                  <Typography variant="p" className={styles.metaLabel}>
-                    Due Date
-                  </Typography>
-                </div>
-                <div className={styles.metaValueCell}>
-                  <Typography variant="p" className={styles.metaValue}>
-                    {formatDate(invoiceData.dueDate)}
-                  </Typography>
-                </div>
+              <div className={styles.metaRow}>
+                <span className={styles.metaLabel}>Due Date</span>
+                <span className={styles.metaValue}>{formatDate(invoiceData.dueDate)}</span>
               </div>
             </div>
           </div>
@@ -231,65 +206,39 @@ export const InvoicePreview = ({
         {/* Items Table */}
         <div className={styles.table}>
           <div className={styles.tableHeader}>
-            <div className={`${styles.tableHeaderCell} ${styles.colDescription}`}>
-              <Typography variant="p" className={styles.tableHeaderText}>
-                Description
-              </Typography>
-            </div>
-            <div className={`${styles.tableHeaderCell} ${styles.colQty}`}>
-              <Typography variant="p" className={styles.tableHeaderText}>
-                Qty
-              </Typography>
-            </div>
-            <div className={`${styles.tableHeaderCell} ${styles.colRate}`}>
-              <Typography variant="p" className={styles.tableHeaderText}>
-                Rate
-              </Typography>
-            </div>
-            <div className={`${styles.tableHeaderCell} ${styles.colAmount} ${styles.tableHeaderCellLast}`}>
-              <Typography variant="p" className={styles.tableHeaderText}>
-                Amount
-              </Typography>
-            </div>
+            <div className={styles.colDescription}>Item Description</div>
+            <div className={styles.colQty}>Qty</div>
+            <div className={styles.colRate}>Rate</div>
+            <div className={styles.colAmount}>Amount</div>
           </div>
           {invoiceData.items.length === 0 ? (
-            <Typography variant="p" className={styles.noItems}>
-              No items added
-            </Typography>
+            <div className={styles.noItems}>
+              No items added to invoice
+            </div>
           ) : (
             invoiceData.items.map((item, index) => (
               <div
                 key={item.id || index}
                 className={`${styles.tableRow} ${
                   index % 2 === 1 ? styles.tableRowAlternate : ''
-                } ${
-                  index === invoiceData.items.length - 1 ? styles.tableRowLast : ''
                 }`}
               >
-                <div className={`${styles.tableCell} ${styles.colDescription}`}>
-                  <Typography variant="p" className={styles.itemName}>
-                    {item.name || 'Item Description'}
-                  </Typography>
+                <div className={styles.colDescription}>
+                  <div className={styles.itemName}>
+                    {item.name || 'Untitled Item'}
+                  </div>
                   {item.description && (
-                    <Typography variant="p" className={styles.itemDescription}>
+                    <div className={styles.itemDescription}>
                       {item.description}
-                    </Typography>
+                    </div>
                   )}
                 </div>
-                <div className={`${styles.tableCell} ${styles.colQty}`}>
-                  <Typography variant="p" className={styles.itemValue}>
-                    {item.quantity}
-                  </Typography>
+                <div className={styles.colQty}>{item.quantity}</div>
+                <div className={styles.colRate}>
+                  {formatCurrency(item.price)}
                 </div>
-                <div className={`${styles.tableCell} ${styles.colRate}`}>
-                  <Typography variant="p" className={styles.itemValue}>
-                    {formatCurrency(item.price)}
-                  </Typography>
-                </div>
-                <div className={`${styles.tableCell} ${styles.colAmount} ${styles.tableCellLast}`}>
-                  <Typography variant="p" className={styles.itemAmount}>
-                    {formatCurrency(item.quantity * item.price)}
-                  </Typography>
+                <div className={styles.colAmount}>
+                  {formatCurrency(item.quantity * item.price)}
                 </div>
               </div>
             ))
@@ -300,56 +249,28 @@ export const InvoicePreview = ({
         <div className={styles.totalsSection}>
           <div className={styles.totalsContainer}>
             <div className={styles.totalRow}>
-              <div className={styles.totalLabelCell}>
-                <Typography variant="p" className={styles.totalLabel}>
-                  Subtotal
-                </Typography>
-              </div>
-              <div className={styles.totalValueCell}>
-                <Typography variant="p" className={styles.totalValue}>
-                  {invoiceData.subtotal}
-                </Typography>
-              </div>
+              <span className={styles.totalLabel}>Subtotal</span>
+              <span className={styles.totalValue}>{invoiceData.subtotal}</span>
             </div>
             {invoiceData.discountAmount !== '$0.00' && (
               <div className={styles.totalRow}>
-                <div className={styles.totalLabelCell}>
-                  <Typography variant="p" className={styles.totalLabel}>
-                    Discount
-                  </Typography>
-                </div>
-                <div className={styles.totalValueCell}>
-                  <Typography variant="p" className={styles.totalValue}>
-                    {invoiceData.discountAmount}
-                  </Typography>
-                </div>
+                <span className={styles.totalLabel}>Discount ({invoiceData.discount}%)</span>
+                <span className={`${styles.totalValue} text-emerald-600`}>
+                  -{invoiceData.discountAmount}
+                </span>
               </div>
             )}
             {invoiceData.taxAmount !== '$0.00' && (
               <div className={styles.totalRow}>
-                <div className={styles.totalLabelCell}>
-                  <Typography variant="p" className={styles.totalLabel}>
-                    Tax
-                  </Typography>
-                </div>
-                <div className={styles.totalValueCell}>
-                  <Typography variant="p" className={styles.totalValue}>
-                    {invoiceData.taxAmount}
-                  </Typography>
-                </div>
+                <span className={styles.totalLabel}>
+                  Tax ({invoiceData.taxType === 'vat' ? 'VAT 10%' : 'Tax'})
+                </span>
+                <span className={styles.totalValue}>+{invoiceData.taxAmount}</span>
               </div>
             )}
-            <div className={`${styles.totalRow} ${styles.finalTotalRow}`}>
-              <div className={styles.totalLabelCell}>
-                <Typography variant="p" className={styles.finalTotalLabel}>
-                  Total
-                </Typography>
-              </div>
-              <div className={styles.totalValueCell}>
-                <Typography variant="p" className={styles.finalTotalValue}>
-                  {invoiceData.total}
-                </Typography>
-              </div>
+            <div className={styles.finalTotalRow}>
+              <span className={styles.finalTotalLabel}>Total Due</span>
+              <span className={styles.finalTotalValue}>{invoiceData.total}</span>
             </div>
           </div>
         </div>
@@ -358,7 +279,7 @@ export const InvoicePreview = ({
         {invoiceData.notes && (
           <div className={styles.notesSection}>
             <Typography variant="h4" className={styles.notesTitle}>
-              Notes
+              Notes & Terms
             </Typography>
             <Typography variant="p" className={styles.notesText}>
               {invoiceData.notes}
@@ -375,7 +296,7 @@ export const InvoicePreview = ({
               </Typography>
               <div className={styles.signatureLine} />
               <Typography variant="p" className={styles.signatureLabel}>
-                Signature
+                Seller Representative
               </Typography>
             </div>
             <div className={styles.signatureBox}>
@@ -384,7 +305,7 @@ export const InvoicePreview = ({
               </Typography>
               <div className={styles.signatureLine} />
               <Typography variant="p" className={styles.signatureLabel}>
-                Signature
+                Client Acceptance
               </Typography>
             </div>
           </div>
@@ -396,7 +317,7 @@ export const InvoicePreview = ({
             <Typography variant="h3" className={styles.qrTitle}>
               Pay with KHQR
             </Typography>
-            <div className="w-20 h-20 mb-2 mx-auto">
+            <div className="w-20 h-20 mb-2 mx-auto p-1 bg-white rounded-lg border border-slate-200">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
                   invoiceData.transactionData.rawQR
@@ -415,19 +336,15 @@ export const InvoicePreview = ({
         <div className={styles.footer}>
           <div className={styles.footerInfo}>
             <div className={styles.footerLeft}>
-              <Typography variant="p" className={styles.pageNumber}>
-                Page {pageNumber} of {totalPages}
-              </Typography>
+              <span>Page {pageNumber} of {totalPages}</span>
               {invoiceData.referenceId && (
-                <Typography variant="p" className={styles.barcode}>
+                <span className={styles.barcode}>
                   REF: {generateBarcode(invoiceData.referenceId)}
-                </Typography>
+                </span>
               )}
             </div>
             <div className={styles.footerRight}>
-              <Typography variant="p" className={styles.printTimestamp}>
-                Generated: {format(new Date(), 'MMM dd, yyyy HH:mm')}
-              </Typography>
+              <span>Generated: {format(new Date(), 'MMM dd, yyyy HH:mm')}</span>
             </div>
           </div>
           <div className={styles.thanksSection}>
@@ -440,3 +357,5 @@ export const InvoicePreview = ({
     </Card>
   );
 };
+
+export default InvoicePreview;

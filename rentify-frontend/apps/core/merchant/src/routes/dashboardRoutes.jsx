@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Navigate } from 'react-router-dom';
 
 // Lazy load components
-const DashboardLayout = lazy(() => import('../layouts/dashboard/Layout'));
+import DashboardLayout from '../layouts/dashboard/Layout';
 const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
@@ -25,6 +25,7 @@ const PreferencesSetting = lazy(() => import('../pages/setting/PreferencesSettin
 const UsageDashboard = lazy(() => import('../app/features/usage/pages/DashboardPage'));
 const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownPage'));
 const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
+const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 
 export const dashboardRoutes = {
   path: '/',
@@ -34,6 +35,8 @@ export const dashboardRoutes = {
     { path: 'overview', element: <Overview /> },
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
+    { path: 'customization', element: <Navigate to="/store-management" replace /> },
+    { path: 'customization/:id', element: <Navigate to="/store-management" replace /> },
     { path: 'products', element: <ProductManagement /> },
     { path: 'catalog', element: <StoreCatalogPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
@@ -44,7 +47,10 @@ export const dashboardRoutes = {
     { path: 'orders/:id', element: <OrderDetailView /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'pos', element: <POSInterface /> },
-    // // { path: 'settings', element: <Setting /> },
+    { path: 'help', element: <SupportPage /> },
+    { path: 'support', element: <Navigate to="/help" replace /> },
+    { path: 'settings', element: <Navigate to="/settings/account" replace /> },
+    { path: 'usage', element: <Navigate to="/usage/dashboard" replace /> },
     { path: 'settings/account', element: <AccountSettings /> },
     { path: 'settings/security', element: <SecuritySetting /> },
     { path: 'settings/staff', element: <StaffSetting /> },
@@ -58,6 +64,7 @@ export const dashboardRoutes = {
     { path: 'ops/at-risk', element: <Navigate to="/usage/breakdown" replace /> },
     { path: 'ops/reminders', element: <Navigate to="/usage/breakdown" replace /> },
     { path: 'ops/contract', element: <Navigate to="/usage/billing" replace /> },
+    { path: 'search', element: <Navigate to="/overview" replace /> },
 
 
     { path: '*', element: <Navigate to="overview" replace /> },

@@ -118,16 +118,15 @@ request idempotency key, and the central buyer cookie. It is not yet proven on
 the provisional domain. `STOREFRONT_COD_CHECKOUT_ENABLED=true` is required for
 new storefront cart writes and checkout; it defaults off.
 
-Angular's normal development routes and `/rentify-preview` serve the Rentify
-buyer shell against Core identity and Commerce products, per-Store carts, COD
-checkout, and order history. The old Mongo-backed guest-cart effect is not
-instantiated on these routes. The committed public config enables the Rentify
-route tree; blank origins use localhost fallbacks. Supply real public Core,
+Angular's designed development routes use Rentify Core identity and Commerce
+products, per-Store carts, COD checkout, and order history. The obsolete
+product-only preview route has been removed. The committed public config
+provides API origins; blank origins use localhost fallbacks. Supply real public Core,
 Commerce, Auth, and merchant dashboard URLs outside localhost. Local Compose
 sets `MARKETPLACE_COD_CHECKOUT_ENABLED=true`. This does not satisfy the
 hosted-domain or production release gate. Core exposes
 only approved public Store profile fields through `GET /api/stores/public?ids=...`
-and a safe `GET /api/auth/session` for the buyer shell.
+and a safe `GET /api/auth/session` for the buyer UI.
 The local checks are in
 [the development rehearsal](marketplace-cutover-rehearsal.md).
 

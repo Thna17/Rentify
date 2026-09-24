@@ -76,8 +76,8 @@ export const useLoginForm = () => {
 
     const loginStrategy = () => {
       if (isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost) return loginMutation;
-      if (isWebsiteTemplate && isStaff) return loginStaffMutation;
-      if (isWebsiteTemplate) {
+      if (isStaff) return loginStaffMutation;
+      if (isWebsiteTemplate && websiteId) {
         payload.storeId = websiteId;
         return loginCustomerMutation;
       }
@@ -85,23 +85,44 @@ export const useLoginForm = () => {
     };
 
     try {
-      const selectedLogin = loginStrategy();
-      const response = await selectedLogin(payload).unwrap();
+      let selectedLogin = loginStrategy();
+      let response: any;
+      try {
+        response = await selectedLogin(payload).unwrap();
+      } catch (firstErr: any) {
+        if (selectedLogin === loginCustomerMutation) {
+          try {
+            response = await loginStaffMutation(payload).unwrap();
+            selectedLogin = loginStaffMutation;
+          } catch {
+            try {
+              response = await loginMutation(payload).unwrap();
+              selectedLogin = loginMutation;
+            } catch {
+              throw firstErr;
+            }
+          }
+        } else {
+          throw firstErr;
+        }
+      }
+
+      const isStaffSuccess = selectedLogin === loginStaffMutation || response?.data?.user?.role === "staff";
       const isPlatformLogin =
-        isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost || !isWebsiteTemplate;
+        isSpecialCase || returnDomain === marketingHost || returnDomain === marketplaceHost || !isWebsiteTemplate || isStaffSuccess;
       let destination = redirectUrl;
       if (isPlatformLogin && returnDomain !== marketplaceHost && !isHostedStorefrontBuyer) {
-        destination = response?.data?.hasStore
+        destination = response?.data?.hasStore || isStaffSuccess
           ? `${DASHBOARD_URL}/overview`
           : `${MARKETING_URL}/start`;
       }
-      setSuccess('Login successful! Redirecting...');
+      setSuccess("Login successful! Redirecting...");
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
     } catch (err: any) {
       setError(
-        err?.data?.error || 'Login failed. Please check your credentials'
+        err?.data?.error || "Login failed. Please check your credentials"
       );
     } finally {
       setLoading(false);

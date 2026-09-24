@@ -243,39 +243,55 @@ class WebsiteController {
   getWebsiteForMerchant = asyncHandler(async (req, res) => {
     try {
       const userId = req.user.id;
+      const isStaff = req.user.role === 'staff';
 
       // ✅ Clean key design
-      const cacheKey = `website:dashboard:user:${userId}`;
+      const cacheKey = isStaff
+        ? `website:dashboard:staff:${userId}`
+        : `website:dashboard:user:${userId}`;
       const cachedData = await cache.get(cacheKey);
 
       if (cachedData) {
         return res.json(cachedData);
       }
 
+      const includeOptions = [
+        {
+          model: User,
+          as: "User",
+          attributes: ["id", "name", "email", "phoneNumber"],
+        },
+        {
+          model: WebsiteTemplate,
+        },
+        {
+          model: WebsiteContent,
+          as: "WebsiteContents",
+          attributes: ["id", "category", "label", "type", "value"],
+        },
+        {
+          model: Staff,
+          as: "staffs",
+          attributes: ["id", "name", "email", "phoneNumber", "permissions"],
+        },
+      ];
 
-      const website = await Website.findOne({
-        where: { userId },
-        include: [
-          {
-            model: User,
-            as: "User",
-            attributes: ["id", "name", "email", "phoneNumber"],
-          },
-          {
-            model: WebsiteTemplate,
-          },
-          {
-            model: WebsiteContent,
-            as: "WebsiteContents",
-            attributes: ["id", "category", "label", "type", "value"],
-          },
-          {
-            model: Staff,
-            as: "staffs",
-            attributes: ["id", "name", "email", "phoneNumber", "permissions"],
-          },
-        ],
-      });
+      let website;
+      if (isStaff) {
+        if (req.user.websiteId) {
+          website = await Website.findByPk(req.user.websiteId, { include: includeOptions });
+        } else {
+          const staff = await Staff.findByPk(userId);
+          if (staff?.websiteId) {
+            website = await Website.findByPk(staff.websiteId, { include: includeOptions });
+          }
+        }
+      } else {
+        website = await Website.findOne({
+          where: { userId },
+          include: includeOptions,
+        });
+      }
 
       if (!website) {
         return res.status(404).json({ error: "Website not found" });

@@ -18,7 +18,7 @@ router.post('/marketplace/checkout', verifyCoreBuyer, requireBuyer, requireMarke
 router.get('/marketplace/my-orders', verifyCoreBuyer, requireBuyer, controller.buyerOrders);
 router.get('/marketplace/my-orders/:orderId', verifyCoreBuyer, requireBuyer, controller.buyerOrder);
 router.post('/marketplace/my-orders/:orderId/reports/:type', verifyCoreBuyer, requireBuyer, controller.buyerReport);
-router.use(verifyStoreActor);
+router.use('/stores', verifyStoreActor);
 router.get('/stores/:storeId/marketplace-delivery',
   createRequireStoreAccess({ permissions: ['orders', 'manage_settings'] }), controller.getDeliveryPolicy);
 router.put('/stores/:storeId/marketplace-delivery',

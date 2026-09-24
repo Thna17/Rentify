@@ -348,8 +348,8 @@
     "analytics": "Analytics",
 
     "store_management": {
-      "title": "Store Management",
-      "description": "Manage your store settings and content",
+      "title": "Storefront Customization",
+      "description": "Customize your storefront theme, branding, fonts, and store content",
       "failed_to_load": "Failed to load store data",
       "error_updating_content": "Error updating content",
       "store_information": "Store Information",
@@ -716,7 +716,7 @@
     },
     "pos": {
       "pos_system": "POS System",
-      "title": "POS",
+      "title": "Point of Sale",
       "orders": "Orders",
       "customer_display": "Customer Display",
       "single_screen": "Single Screen",
@@ -1048,13 +1048,28 @@
     "sign_out": "Sign Out",
     "sign_in": "Sign In",
     "create_account": "Create Account",
-    "app_version": "Rentify App v2.1.3"
-  },
-  "dashboard": {
+    "app_version": "Rentify App v2.1.3",
+    "order": {
+      "title": "Orders",
+      "detail": "Order Detail"
+    },
+    "usage": {
+      "title": "Plan & Billing"
+    },
     "auth_required": {
       "title": "Authentication Required",
       "description": "Please sign in to access your merchant dashboard.",
       "login": "Sign In to Dashboard"
+    },
+    "sections": {
+      "overview": "Overview",
+      "inventory": "Catalog & Products",
+      "orders": "Sales & Orders",
+      "channels": "Sales Channels",
+      "analytics": "Analytics",
+      "billing": "Store Plan & Billing",
+      "settings": "Store Settings",
+      "support": "Issues & Support"
     }
   }
 }

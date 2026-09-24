@@ -11,7 +11,7 @@ const { resolveReturnUrl } = require("../../src/utils/returnUrlPolicy");
 
 test("allows a configured Rentify return URL", () => {
   assert.equal(resolveReturnUrl("https://merchant.rentify.test/dashboard"), "https://merchant.rentify.test/dashboard");
-  assert.equal(resolveReturnUrl("https://market.rentify.test/rentify-preview"), "https://market.rentify.test/rentify-preview");
+  assert.equal(resolveReturnUrl("https://market.rentify.test/cart"), "https://market.rentify.test/cart");
 });
 
 test("rejects an arbitrary return URL", () => {

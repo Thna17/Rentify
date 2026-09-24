@@ -21,5 +21,19 @@ export const getCurrentTabData = (pathname, tabs) => {
     }
   }
 
+  // Fallback: match base tab if currentPath starts with tab.path (e.g. settings/account -> settings)
+  if (!matchedTab) {
+    for (const tab of tabs) {
+      if (
+        tab.path &&
+        tab.path !== 'overview' &&
+        (currentPath.startsWith(`${tab.path}/`) || currentPath === tab.path)
+      ) {
+        matchedTab = tab;
+        break;
+      }
+    }
+  }
+
   return { matchedTab, params };
 };

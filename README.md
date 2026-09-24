@@ -11,7 +11,7 @@ Existing Rentify Stores and Products are the marketplace data source; there is
 no independent KhmerCraft catalog to import. Store listings default on;
 development seller approval requires a verified contact and primary category,
 while public products still need valid categories and publication. Normal
-Angular routes use the Rentify buyer shell in development. The KhmerCraft
+Angular routes use the designed Rentify Marketplace UI in development. The KhmerCraft
 Express/Mongoose API is archived reference code in `docs/reference/legacy-khmercraft-api/`
 and MongoDB is not part of the platform. Migration and release gates remain in progress.
 

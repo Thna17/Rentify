@@ -72,14 +72,6 @@ export interface ProductQueryOptions {
 export class RentifyMarketplaceService {
   private readonly http = inject(HttpClient);
 
-  get enabled(): boolean {
-    return runtime()?.enabled === true;
-  }
-
-  get cutoverEnabled(): boolean {
-    return runtime()?.cutoverEnabled === true;
-  }
-
   get core(): string {
     return base(runtime()?.coreApiUrl, 'http://localhost:3001');
   }

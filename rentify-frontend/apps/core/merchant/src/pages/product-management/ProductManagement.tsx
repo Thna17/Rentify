@@ -53,6 +53,8 @@ import { Card } from '@rentify/shared/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@rentify/shared/ui/alert';
 import { Download, Package, Plus, Upload } from 'lucide-react';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+// @ts-ignore
+import StoreCatalogPage from './StoreCatalogPage';
 
 // Type definitions for product data
 interface ProductImage {
@@ -149,13 +151,11 @@ const SORT_OPTIONS: SortOption[] = [
 ];
 
 /**
- * Main product management component
+ * Storefront product management content component
  * Handles product listing, filtering, sorting, and bulk operations
  */
-export function ProductManagement(): JSX.Element {
+function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Element {
   const { t } = useTranslation();
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
   const showSnackbar = useSnackbar();
@@ -967,6 +967,17 @@ export function ProductManagement(): JSX.Element {
       )}
     </div>
   );
+}
+
+export function ProductManagement(): JSX.Element {
+  const { websiteData } = useThemeService();
+  const websiteId = websiteData?.websiteId;
+
+  if (!websiteId) {
+    return <StoreCatalogPage />;
+  }
+
+  return <ProductManagementContent websiteId={websiteId} />;
 }
 
 export default ProductManagement;

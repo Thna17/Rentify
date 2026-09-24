@@ -21,7 +21,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border-b border-gray-100/60 bg-gradient-to-r from-white to-gray-50/30 backdrop-blur-sm rounded-t-2xl p-6 md:p-8"
+      className="w-full border-b border-border/40 bg-gradient-to-r from-white to-gray-50/30 dark:from-card dark:to-card/50 backdrop-blur-sm p-6 md:p-8"
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1">

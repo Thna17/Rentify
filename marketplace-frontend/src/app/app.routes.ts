@@ -4,27 +4,11 @@ import { adminGuard } from './core/auth/admin.guard';
 import { sellerGuard } from './core/auth/seller.guard';
 import { externalAuthRedirectGuard } from './pages/auth-redirect.component';
 
-const rentifyBuyer = () => import('./pages/rentify-preview.component')
-  .then((m) => m.RentifyPreviewComponent);
-
-// The development default serves the Rentify shell on normal routes. Old deep
-// links cannot load components tied to KhmerCraft's retired API.
-const rentifyCutoverRoutes: Routes = [
-  { path: 'rentify-preview', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
-  { path: '', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
-  { path: '**', loadComponent: rentifyBuyer, title: 'Rentify marketplace' },
-];
-
 /**
  * Everything is lazy-loaded. The storefront branch imported all 19 page
  * components eagerly, which put the whole site in the initial bundle.
  */
-const legacyRoutes: Routes = [
-  {
-    path: 'rentify-preview',
-    loadComponent: () => import('./pages/rentify-preview.component').then((m) => m.RentifyPreviewComponent),
-    title: 'Rentify marketplace pilot',
-  },
+export const routes: Routes = [
   // ---------------------------------------------------------------- storefront
   {
     path: '',
@@ -321,5 +305,3 @@ const legacyRoutes: Routes = [
     title: 'Page not found | Rentify Marketplace',
   },
 ];
-
-export const routes: Routes = rentifyCutoverRoutes;

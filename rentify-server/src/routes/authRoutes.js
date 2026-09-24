@@ -1,10 +1,11 @@
 const express = require("express");
 const sequelize = require("../config/db");
-const { User, Store } = require("../models");
+const { User, Store, Staff } = require("../models");
 const AuthService = require("../services/authService");
 const { ApiError } = require("../utils/errors");
 const router = express.Router();
 const userAuthService = new AuthService(User, "User");
+const staffAuthService = new AuthService(Staff, "Staff");
 const { verifyAccessToken } = require("../utils/jwtUtils");
 const transactionHandler = require("../utils/transactionHandler");
 const responseHandler = require("../utils/responseHandler");
@@ -32,6 +33,25 @@ const asyncHandler = (fn) => async (req, res, next) => {
 
 router.get('/session', verifyToken, async (req, res) => {
   try {
+    if (req.user?.role === 'staff') {
+      const staff = await Staff.findByPk(req.user.id, {
+        attributes: ['id', 'name', 'email', 'phoneNumber', 'permissions', 'websiteId', 'merchantId', 'isActive'],
+      });
+      if (!staff || !staff.isActive) return res.status(401).json({ error: 'Session is no longer valid' });
+      return res.json({
+        user: {
+          id: staff.id,
+          name: staff.name,
+          email: staff.email,
+          phoneNumber: staff.phoneNumber,
+          role: 'staff',
+          isVerified: true,
+          websiteId: staff.websiteId,
+          merchantId: staff.merchantId,
+          permissions: staff.permissions,
+        },
+      });
+    }
     const user = await User.findByPk(req.user.id, {
       attributes: ['id', 'name', 'email', 'phoneNumber', 'role', 'isVerified'],
     });
@@ -92,7 +112,47 @@ router.post(
   "/login",
   transactionHandler(async (req, res, transaction) => {
     validateReturnUrl(req.body);
-    const result = await userAuthService.login(req.body, transaction);
+    let result;
+    let isStaff = false;
+    try {
+      result = await userAuthService.login(req.body, transaction);
+    } catch (err) {
+      if (err.statusCode === 404 || err.message?.toLowerCase().includes("not found")) {
+        const staff = await Staff.findOne({
+          where: req.body.email ? { email: req.body.email } : { phoneNumber: req.body.phoneNumber },
+          transaction,
+        });
+        if (staff && staff.isActive) {
+          result = await staffAuthService.login(req.body, transaction);
+          isStaff = true;
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
+
+    if (isStaff) {
+      staffAuthService.setAuthCookies(res, {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      });
+      return responseHandler.success(
+        res,
+        200,
+        {
+          user: {
+            ...result.entity,
+            role: "staff",
+          },
+          accessToken: result.accessToken,
+          hasStore: true,
+        },
+        "Staff login successful"
+      );
+    }
+
     // The Auth app needs this single, non-sensitive fact to choose a post-login
     // destination. It avoids a client-side follow-up request that can race the
     // cross-origin session cookie being set.

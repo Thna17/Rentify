@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 4400,
     host: 'localhost',
+    watch: {
+      usePolling: true,
+    },
   },
   preview: {
     port: 4400,
@@ -51,6 +54,14 @@ export default defineConfig(({ mode }) => ({
       'use-sync-external-store/shim',
       'use-sync-external-store/shim/index.js',
       'use-sync-external-store/with-selector',
+      '@tabler/icons-react',
+      'recharts',
+      'date-fns',
+      'yup',
+      'formik',
+      'sonner',
+      'react-qr-code',
+      'axios',
     ],
   },
   // Uncomment this if you are using workers.
