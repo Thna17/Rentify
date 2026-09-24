@@ -546,6 +546,9 @@ async function seedCore() {
     });
   }
 
+  const seedTechStore = require('./seedTechStore');
+  await seedTechStore();
+
   console.log('✅ Rentify Core Database Seeding completed successfully!');
 }
 

@@ -1,6 +1,6 @@
 const express = require("express");
 const sequelize = require("../config/db");
-const { User, Store } = require("../models");
+const { User, Store, Staff } = require("../models");
 const AuthService = require("../services/authService");
 const { ApiError } = require("../utils/errors");
 const router = express.Router();
@@ -32,6 +32,25 @@ const asyncHandler = (fn) => async (req, res, next) => {
 
 router.get('/session', verifyToken, async (req, res) => {
   try {
+    if (req.user?.role === 'staff') {
+      const staff = await Staff.findByPk(req.user.id, {
+        attributes: ['id', 'name', 'email', 'phoneNumber', 'permissions', 'websiteId', 'merchantId', 'isActive'],
+      });
+      if (!staff || !staff.isActive) return res.status(401).json({ error: 'Session is no longer valid' });
+      return res.json({
+        user: {
+          id: staff.id,
+          name: staff.name,
+          email: staff.email,
+          phoneNumber: staff.phoneNumber,
+          role: 'staff',
+          isVerified: true,
+          websiteId: staff.websiteId,
+          merchantId: staff.merchantId,
+          permissions: staff.permissions,
+        },
+      });
+    }
     const user = await User.findByPk(req.user.id, {
       attributes: ['id', 'name', 'email', 'phoneNumber', 'role', 'isVerified'],
     });

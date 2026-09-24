@@ -1,6 +1,6 @@
 const { randomUUID } = require('node:crypto');
 const { Op } = require('sequelize');
-const { Store, User } = require('../models');
+const { Store, User, Staff, Website } = require('../models');
 const storeSyncService = require('./storeSyncService');
 const { normalizeStoreCategory } = require('../config/storeCategories');
 
@@ -50,8 +50,26 @@ class StoreService {
       attributes: this.publicStoreAttributes });
   }
 
-  async getOwnStore(ownerUserId) {
-    return Store.findOne({ where: { ownerUserId } });
+  async getOwnStore(userId) {
+    const store = await Store.findOne({ where: { ownerUserId: userId } });
+    if (store) return store;
+
+    // Check if user is staff belonging to a website or merchant
+    const staff = await Staff.findByPk(userId);
+    if (staff) {
+      if (staff.websiteId) {
+        const website = await Website.findByPk(staff.websiteId);
+        if (website?.storeId) {
+          const websiteStore = await Store.findByPk(website.storeId);
+          if (websiteStore) return websiteStore;
+        }
+      }
+      if (staff.merchantId) {
+        const merchantStore = await Store.findOne({ where: { ownerUserId: staff.merchantId } });
+        if (merchantStore) return merchantStore;
+      }
+    }
+    return null;
   }
 
   async createMarketplaceStore({ ownerUserId, name, primaryCategory, marketplaceEnabled = true }) {
