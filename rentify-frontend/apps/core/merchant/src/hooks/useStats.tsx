@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  useGetWebsiteStatsQuery 
+  useGetWebsiteStatsQuery,
+  useGetOrderHistoryQuery,
 } from '@rentify/apis';
 
 import { 
@@ -37,6 +38,12 @@ export function useStats() {
     }
   );
 
+  // A handful of the newest orders for the dashboard's Recent Orders table.
+  const recentOrdersQuery = useGetOrderHistoryQuery(
+    { websiteId, page: 1, limit: 6 },
+    { skip: !websiteId },
+  );
+
   // If no websiteId, fetch marketplace orders for the store
   useEffect(() => {
     if (websiteId || !store?.id) return;
@@ -51,7 +58,7 @@ export function useStats() {
           setStoreOrders(data.orders);
         }
       })
-      .catch(() => {})
+      .catch(() => undefined)
       .finally(() => {
         if (active) setStoreOrdersLoading(false);
       });
@@ -80,44 +87,46 @@ export function useStats() {
   const storeAvgOrderValue =
     storeTotalOrders > 0 ? storeTotalRevenue / storeTotalOrders : 0;
 
+  // Plain, non-technical labels — a merchant reads these directly, no
+  // translation key or jargon should ever surface here.
   const defaultMetrics = [
     {
       icon: <ShoppingCart className="w-5 h-5" />,
-      title: 'platform.total_orders',
+      title: 'Total Orders',
       value: (websiteId
         ? statsQuery.data?.overview?.totalOrders?.toLocaleString()
         : storeTotalOrders.toLocaleString()) || '0',
       trend: statsQuery.data?.overview?.growthRate?.orders || 0,
       color: 'primary',
-      tooltip: 'platform.total_orders_tooltip',
+      tooltip: 'All orders placed in the selected period',
     },
     {
       icon: <BarChart3 className="w-5 h-5" />,
-      title: 'platform.total_revenue',
+      title: 'Total Revenue',
       value: `$${(
         (websiteId ? statsQuery.data?.overview?.totalRevenue : storeTotalRevenue) || 0
       ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       trend: statsQuery.data?.overview?.growthRate?.revenue?.toFixed(2) || '0.00',
       color: 'success',
-      tooltip: 'platform.total_revenue_tooltip',
+      tooltip: 'Money earned in the selected period',
     },
     {
       icon: <CreditCard className="w-5 h-5" />,
-      title: 'platform.avg_order_value',
+      title: 'Average Order',
       value: `$${parseFloat(
         String(
           (websiteId ? statsQuery.data?.overview?.avgOrderValue : storeAvgOrderValue) || 0
         )
       ).toFixed(2)}`,
       color: 'warning',
-      tooltip: 'platform.avg_order_value_tooltip',
+      tooltip: 'Average amount spent per order',
     },
     {
       icon: <TrendingUp className="w-5 h-5" />,
-      title: 'platform.revenue_growth',
+      title: 'Revenue Growth',
       value: `${statsQuery.data?.overview?.growthRate?.revenue?.toFixed(2) || '0.00'}%`,
       color: 'info',
-      tooltip: 'platform.revenue_growth_tooltip',
+      tooltip: 'Change in revenue versus the previous period',
     },
   ];
 
@@ -133,6 +142,18 @@ export function useStats() {
     .sort((a: any, b: any) => (b.revenue || 0) - (a.revenue || 0))
     .slice(0, 5);
 
+  // A short, most-recent-first list for the dashboard's Recent Orders table.
+  // The marketplace-only fallback already has full order objects; the
+  // website-backed path reuses whatever the stats endpoint returned.
+  const recentOrders = (
+    websiteId ? (recentOrdersQuery.data?.orders || []) : storeOrders
+  )
+    .slice()
+    .sort((a: any, b: any) =>
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
+    )
+    .slice(0, 6);
+
   return {
     loading: websiteId ? statsQuery.isLoading : storeOrdersLoading,
     error: Boolean(statsQuery.isError && !storeOrders.length),
@@ -140,6 +161,7 @@ export function useStats() {
     metrics,
     revenueData,
     productSales,
+    recentOrders,
     dateRange: statsQuery.data?.dateRange,
     selectedPeriod,
     orderType,

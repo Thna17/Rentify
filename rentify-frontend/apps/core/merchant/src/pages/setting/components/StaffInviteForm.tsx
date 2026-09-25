@@ -3,7 +3,7 @@ import { Mail, MessageSquare, Plus } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { Checkbox } from '@rentify/shared/ui/Checkbox';
+import { Checkbox } from '@rentify/shared/ui/checkbox';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { useInviteStaffMutation, useUpdateStaffMutation } from '@rentify/apis';
 import { useTranslation } from '@rentify/utils';

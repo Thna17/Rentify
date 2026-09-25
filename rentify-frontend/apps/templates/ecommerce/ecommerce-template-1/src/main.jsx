@@ -1,24 +1,13 @@
-// apps/website-template-1/src/main.tsx
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './app';
 import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from '@rentify/storefront/api';
-import { StorefrontWebsiteProvider as WebsiteProvider } from '@rentify/storefront';
-import './styles.css'
+import { store } from '@rentify/storefront/api';
+import App from './entry';
 
-const container = document.getElementById('root');
-const root = createRoot(container);
-
-root.render(
+createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <WebsiteProvider>
-          <App />
-        </WebsiteProvider>
-      </PersistGate>
+      <App />
     </Provider>
   </React.StrictMode>
 );

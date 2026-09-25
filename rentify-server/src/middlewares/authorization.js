@@ -33,6 +33,33 @@ const createRequireWebsiteOwner = ({ findWebsite = (id) => require("../models").
 
 const requireWebsiteOwner = createRequireWebsiteOwner();
 
+const createRequireStoreAccess = ({ findStore = (id) => require('../models').Store.findByPk(id) } = {}) =>
+  async (req, res, next) => {
+    if (!req.user?.id) return deny(res, 401, 'Unauthorized');
+    const storeId = req.params.storeId || req.body?.storeId;
+    if (!storeId) return deny(res, 400, 'Store ID is required');
+
+    const store = await findStore(storeId);
+    if (!store) return deny(res, 404, 'Store not found');
+    if (store.status !== 'active') return deny(res, 403, 'Store is not active');
+
+    const isOwner = store.ownerUserId === req.user.id;
+    const permissions = new Set(req.user.permissions || []);
+    const isPermittedStaff = req.user.role === 'staff' &&
+      req.user.merchantId === store.ownerUserId &&
+      (permissions.has('products') || permissions.has('manage_products'));
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isPermittedStaff && !isAdmin) {
+      return deny(res, 403, 'You do not have access to this store');
+    }
+
+    req.store = store;
+    return next();
+  };
+
+const requireStoreAccess = createRequireStoreAccess();
+
 const createRequireContentOwner = ({ findContent = (id) => require("../models").WebsiteContent.findByPk(id) } = {}) =>
   async (req, res, next) => {
     if (!req.user?.id) return deny(res, 401, "Unauthorized");
@@ -53,23 +80,12 @@ const createRequireContentOwner = ({ findContent = (id) => require("../models").
 
 const requireContentOwner = createRequireContentOwner();
 
-const requireDeploymentOwner = async (req, res, next) => {
-  if (!req.user?.id) return deny(res, 401, "Unauthorized");
-  const { Website } = require("../models");
-  const website = await Website.findOne({ where: { vercelDeploymentId: req.params.deploymentId } });
-  if (!website) return deny(res, 404, "Deployment not found");
-  if (req.user.role !== "admin" && website.userId !== req.user.id) {
-    return deny(res, 403, "You do not have access to this deployment");
-  }
-  req.website = website;
-  return next();
-};
-
 module.exports = {
   requireAdmin,
   requireWebsiteOwner,
   requireContentOwner,
-  requireDeploymentOwner,
   createRequireAdmin,
   createRequireWebsiteOwner,
+  createRequireStoreAccess,
+  requireStoreAccess,
 };

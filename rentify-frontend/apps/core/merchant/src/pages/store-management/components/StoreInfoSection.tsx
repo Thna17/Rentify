@@ -65,11 +65,24 @@ export const StoreInfoSection: React.FC<StoreInfoSectionProps> = ({
               <Globe className="h-4 w-4" />
               {t('dashboard.store_management.store_domain')}
             </label>
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <span className="font-medium">{storeData.shop.domain}</span>
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                Active
-              </span>
+            <div className="flex items-center justify-between gap-3 p-3 bg-muted rounded-lg">
+              {storeData.shop.domain ? (
+                <a
+                  href={/^https?:\/\//.test(storeData.shop.domain) ? storeData.shop.domain : `https://${storeData.shop.domain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 truncate font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  {storeData.shop.domain.replace(/^https?:\/\//, '')}
+                </a>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+              {storeData.shop.status === 'active' ? (
+                <span className="shrink-0 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">{t('dashboard.store_management.store_live')}</span>
+              ) : (
+                <span className="shrink-0 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">{t('dashboard.store_management.store_not_published')}</span>
+              )}
             </div>
           </div>
 

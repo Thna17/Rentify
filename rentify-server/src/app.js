@@ -25,6 +25,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const packageRoutes = require('./routes/packageRoutes');
 const opsRoutes = require('./routes/opsRoutes');
+const internalRoutes = require('./routes/internalRoutes');
 dotenv.config();
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/packages', packageRoutes)
 app.use('/ops', opsRoutes);
+app.use('/api/internal', internalRoutes);
 
 // Add at startup
 async function initializeRedis() {

@@ -33,6 +33,13 @@ export const productApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'Product', id: arg.productId }],
     }),
 
+    getProductFormConfig: builder.query({
+      query: ({ websiteId, productType }) => ({
+        url: `/${websiteId}/manage/config`,
+        params: productType ? { productType } : undefined,
+      }),
+    }),
+
     getProduct: builder.query({
       query: ({ websiteId, productId }) => `/${websiteId}/${productId}`,
       providesTags: (result, error, arg) => [
@@ -190,6 +197,7 @@ export const {
   useGetAllProductsQuery,
   useGetManagedProductsQuery,
   useGetManagedProductQuery,
+  useGetProductFormConfigQuery,
   useGetProductQuery,
   useGetAdvancedFilterProductsQuery,
   useSearchProductsQuery,

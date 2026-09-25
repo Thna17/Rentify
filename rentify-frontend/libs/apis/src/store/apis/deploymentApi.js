@@ -7,9 +7,10 @@ export const deploymentApi = createApi({
     credentials: 'include',
   }),
   endpoints: (builder) => ({
+    // Publishes on the website's Rentify subdomain; answers { deploymentUrl, subdomain, status: 'READY' }.
     deployProject: builder.mutation({
       query: (websiteId) => ({
-        url: `${websiteId}/publish`, // Updated endpoint
+        url: `${encodeURIComponent(websiteId)}/publish`,
         method: 'POST',
       }),
     }),
@@ -22,7 +23,7 @@ export const deploymentApi = createApi({
     }),
 
     checkDeploymentStatus: builder.query({
-      query: ({ deploymentId }) => `${deploymentId}/status`,
+      query: ({ websiteId }) => `${encodeURIComponent(websiteId)}/status`,
     }),
   }),
 });

@@ -1,173 +1,53 @@
 // services/deploymentService.js
 const { Website, WebsiteTemplate } = require('../models');
 const { logger } = require('../utils/logger');
-const VercelClient = require('../utils/vercelClient');
-const runtimeUrls = require('../config/runtimeUrls');
+const { getMerchantCache } = require('../utils/cache');
+const { hostedStorefrontDomain, hostedStorefrontUrl } = require('../utils/hostedStorefrontOrigin');
+const { assignSubdomain } = require('./hostedSubdomainService');
+const ecommerceSyncService = require('./ecommerceSyncService');
 
-const TEMPLATE_DEPLOYMENT_MAP = {
-  1: {
-    project: 'ecommerce-template-1',
-    config: 'apps/templates/ecommerce/ecommerce-template-1/vite.config.ts',
-    output: 'dist/apps/templates/ecommerce/ecommerce-template-1',
-  },
-  2: {
-    project: 'ecommerce-template-2',
-    config: 'apps/templates/ecommerce/ecommerce-template-2/vite.config.ts',
-    output: 'dist/apps/templates/ecommerce/ecommerce-template-2',
-  },
-};
+/**
+ * Templates served by the single storefront app
+ * (rentify-frontend/apps/storefront). It is deployed once; it reads the host,
+ * finds the Website and loads that Website's template.
+ */
+const SUPPORTED_TEMPLATES = new Set([1, 2]);
 
 class DeploymentService {
-  constructor() {
-    this.vercel = new VercelClient();
-  }
-
   /**
-   * Initiate website deployment
+   * Publishes a Website on its Rentify subdomain. Nothing is built: the shared
+   * storefront already serves every template, so publishing reserves the
+   * address, marks the Website live and refreshes what the storefront reads.
+   * Safe to repeat; a Website keeps its first subdomain.
    */
-  async initiateDeployment(websiteId) {
-    try {
-      const website = await this.getWebsiteWithTemplate(websiteId);
-      const websiteName = this.generateDeploymentName(website);
-      
-      logger.info('Initiating deployment', { websiteId, websiteName });
-
-      const deployment = await this.vercel.createDeployment(
-        websiteName,
-        this.buildDeploymentConfig(website)
-      );
-
-      await this.vercel.updateProjectSettings(deployment.projectId);
-
-      logger.info('Deployment initiated successfully', {
-        websiteId,
-        deploymentId: deployment.id,
-        url: deployment.url
-      });
-
-      return {
-        deploymentUrl: deployment.url,
-        vercelDeploymentId: deployment.id
-      };
-
-    } catch (error) {
-      logger.error('Deployment initiation failed', {
-        websiteId,
-        error: error.message,
-        stack: error.stack
-      });
-      throw new Error(`Deployment failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get website with template
-   */
-  async getWebsiteWithTemplate(websiteId) {
+  async publishWebsite(websiteId) {
     const website = await Website.findByPk(websiteId, {
-      include: [{
-        model: WebsiteTemplate,
-        attributes: ['framework', 'websiteTemplateId', 'name']
-      }]
+      include: [{ model: WebsiteTemplate, attributes: ['websiteTemplateId', 'name'] }],
     });
-
-    if (!website) {
-      throw new Error('Website not found');
+    if (!website) throw new Error('Website not found');
+    const templateNumber = Number(website.WebsiteTemplate?.websiteTemplateId);
+    if (!SUPPORTED_TEMPLATES.has(templateNumber)) {
+      throw new Error(`Template ${website.WebsiteTemplate?.websiteTemplateId ?? '(none)'} cannot be published yet`);
+    }
+    if (!hostedStorefrontDomain()) {
+      throw new Error('Storefront hosting is not configured (HOSTED_STOREFRONT_DOMAIN)');
     }
 
-    if (!website.WebsiteTemplate) {
-      throw new Error('Website template not found');
-    }
+    const subdomain = await assignSubdomain(website);
+    const url = hostedStorefrontUrl(subdomain);
+    const publishedAt = new Date();
+    const history = Array.isArray(website.deploymentHistory) ? website.deploymentHistory : [];
 
-    return website;
-  }
+    await website.update({
+      status: 'active',
+      lastDeployment: publishedAt,
+      deploymentHistory: [...history, { type: 'hosted-subdomain', url, at: publishedAt.toISOString() }].slice(-20),
+    });
+    await ecommerceSyncService.updateWebsiteStatus(website.id, 'active', new URL(url).host);
+    await getMerchantCache().invalidateWebsiteCache(website.id);
 
-  /**
-   * Generate deployment name
-   */
-  generateDeploymentName(website) {
-    const baseName = website.name 
-      ? website.name.toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '')
-          .substring(0, 40)
-      : `website-${website.id.slice(0, 8)}`;
-    
-    return `${baseName}-${Date.now().toString(36)}`;
-  }
-
-  /**
-   * Build deployment configuration
-   */
-  buildDeploymentConfig(website) {
-    const template = website.WebsiteTemplate;
-    const templateConfig = TEMPLATE_DEPLOYMENT_MAP[Number(template.websiteTemplateId)];
-    if (!templateConfig) throw new Error(`Unsupported storefront template: ${template.websiteTemplateId}`);
-    if (!process.env.VERCEL_GIT_REPOSITORY_ID) {
-      throw new Error('VERCEL_GIT_REPOSITORY_ID must identify the rentify-client repository');
-    }
-    
-    return {
-      name: this.generateDeploymentName(website),
-      gitSource: {
-        type: 'github',
-        repo: process.env.VERCEL_GIT_REPOSITORY || 'Thna17/rentify-client',
-        repoId: process.env.VERCEL_GIT_REPOSITORY_ID,
-        ref: 'main',
-      },
-      projectSettings: {
-        framework: template.framework,
-        installCommand: 'npm ci --ignore-scripts',
-        buildCommand: `npx vite build --config ${templateConfig.config}`,
-        outputDirectory: templateConfig.output,
-        nodeVersion: '18.x',
-      },
-      env: {
-        NX_DAEMON: 'false',
-        NODE_OPTIONS: '--openssl-legacy-provider',
-        WEBSITE_ID: website.id,
-        TEMPLATE_ID: template.websiteTemplateId.toString(),
-        VITE_RENTIFY_API_URL: runtimeUrls.rentifyApiUrl,
-        VITE_ECOMMERCE_API_URL: runtimeUrls.ecommerceApiUrl,
-        VITE_AUTH_URL: runtimeUrls.authUrl,
-        VITE_MERCHANT_DASHBOARD_URL: runtimeUrls.merchantDashboardUrl,
-        VITE_MARKETING_URL: runtimeUrls.marketingUrl,
-        VITE_MARKETPLACE_URL: runtimeUrls.marketplaceUrl,
-        VITE_STOREFRONT_ORIGIN: runtimeUrls.storefrontOrigin,
-      },
-      target: 'production',
-      public: true,
-    };
-  }
-
-  /**
-   * Get build command for template
-   */
-  getBuildCommand(template) {
-    return `nx build ecommerce-template-${template.websiteTemplateId}`;
-  }
-
-  /**
-   * Get output directory for template
-   */
-  getOutputDirectory(template) {
-    const isNextJS = template.framework === 'nextjs';
-    const basePath = `dist/apps/templates/ecommerce/ecommerce-template-${template.websiteTemplateId}`;
-    return isNextJS ? `${basePath}/.next` : basePath;
-  }
-
-  /**
-   * Check deployment status
-   */
-  async getDeploymentStatus(deploymentId) {
-    try {
-      const status = await this.vercel.getDeploymentStatus(deploymentId);
-      logger.debug('Deployment status checked', { deploymentId, status });
-      return status;
-    } catch (error) {
-      logger.error('Deployment status check failed', { deploymentId, error: error.message });
-      throw new Error(`Status check failed: ${error.message}`);
-    }
+    logger.info('Website published on hosted subdomain', { websiteId: website.id, subdomain });
+    return { deploymentUrl: url, subdomain, status: 'READY' };
   }
 }
 

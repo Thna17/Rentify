@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check, Globe } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
 import { AUTH_URL } from '@rentify/shared/config/urls';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useStartTrial from '../../hooks/useStartTrial';
+import rentifyLogo from '../../assets/Logo.webp';
 import { ButtonLink, Container } from './ui';
 import { EASE } from './motion';
 
@@ -22,28 +24,109 @@ export const Wordmark = ({ className }) => (
     to="/"
     aria-label="Rentify"
     className={cn(
-      'text-[19px] font-semibold tracking-[-0.02em] text-[#1d1d1f]',
+      'group flex items-center gap-2.5 text-[19px] font-semibold tracking-[-0.02em] text-[#1d1d1f]',
       className
     )}
   >
-    Rentify
+    <img
+      src={rentifyLogo}
+      alt=""
+      aria-hidden="true"
+      className="h-8 w-8 rounded-[9px] object-cover shadow-sm ring-1 ring-blue-950/10 transition-transform duration-200 group-hover:scale-[1.04]"
+    />
+    <span>Rentify</span>
   </Link>
 );
 
-const LanguageToggle = ({ className }) => {
-  const { language, toggleLanguage } = useLanguage();
+const LANGUAGES = [
+  { code: 'EN', label: 'English' },
+  { code: 'KH', label: 'ខ្មែរ' },
+];
+
+// Globe button that opens a small menu of languages
+const LanguageToggle = ({ className, inline = false }) => {
+  const { language, setLanguage } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false);
+    };
+    const onKey = (event) => event.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  // In the phone menu both options are shown side by side
+  if (inline) {
+    return (
+      <div className={cn('flex items-center gap-2', className)}>
+        <Globe className="h-4 w-4 text-[#6e6e73]" />
+        {LANGUAGES.map((item) => (
+          <button
+            key={item.code}
+            type="button"
+            onClick={() => setLanguage(item.code)}
+            className={cn(
+              'rounded-full px-3 py-1 text-[15px] transition-colors',
+              language === item.code ? 'bg-[#1d1d1f] text-white' : 'text-[#1d1d1f]/70 hover:text-[#1d1d1f]'
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <button
-      type="button"
-      onClick={toggleLanguage}
-      className={cn(
-        'text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]',
-        className
-      )}
-    >
-      {language === 'KH' ? 'English' : 'ខ្មែរ'}
-    </button>
+    <div ref={ref} className={cn('relative', className)}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="Language"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex h-8 w-8 items-center justify-center rounded-full text-[#1d1d1f]/80 transition-colors hover:bg-black/[0.05] hover:text-[#1d1d1f]"
+      >
+        <Globe className="h-[18px] w-[18px]" strokeWidth={1.7} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: EASE }}
+            className="absolute right-0 top-10 w-40 origin-top-right rounded-2xl bg-white/95 p-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.06] backdrop-blur-xl"
+          >
+            {LANGUAGES.map((item) => (
+              <button
+                key={item.code}
+                type="button"
+                role="menuitemradio"
+                aria-checked={language === item.code}
+                onClick={() => {
+                  setLanguage(item.code);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[14px] text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7]"
+              >
+                {item.label}
+                {language === item.code && <Check className="h-4 w-4 text-[#0071e3]" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -95,7 +178,7 @@ const SiteHeader = () => {
         <Container className="flex h-12 items-center justify-between md:h-[52px]">
           <Wordmark />
 
-          <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
+          <nav className="hidden items-center gap-8 lg:flex" aria-label="Main">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.to}
@@ -113,7 +196,7 @@ const SiteHeader = () => {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-5 md:flex">
+          <div className="hidden items-center gap-5 lg:flex">
             <LanguageToggle />
             <a
               href={AUTH_URL}
@@ -128,7 +211,7 @@ const SiteHeader = () => {
 
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center md:hidden"
+            className="flex h-10 w-10 items-center justify-center lg:hidden"
             onClick={() => setOpen(true)}
             aria-label={t('site.nav.menu')}
             aria-expanded={open}
@@ -196,7 +279,7 @@ const SiteHeader = () => {
                   <a href={AUTH_URL} className="text-[#0066cc]">
                     {t('site.nav.signIn')}
                   </a>
-                  <LanguageToggle className="text-[15px]" />
+                  <LanguageToggle inline />
                 </div>
               </div>
             </Container>

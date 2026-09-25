@@ -1,7 +1,6 @@
-import { Card, CardContent } from "@rentify/shared/ui/card";
-import { Badge } from "@rentify/shared/ui/badge";
+import { Card } from "@rentify/shared/ui/card";
 import { Skeleton } from "@rentify/shared/ui/skeleton";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { cn } from "@rentify/utils";
 
 interface MetricCardProps {
@@ -14,91 +13,64 @@ interface MetricCardProps {
   loading?: boolean;
 }
 
-export const MetricCard = ({ 
-  icon, 
-  title, 
-  value, 
-  trend, 
-  color, 
-  tooltip, 
-  loading 
-}: MetricCardProps) => {
-  const getColorClasses = (colorVariant: string) => {
-    const colorMap = {
-      primary: 'bg-primary text-primary-foreground',
-      secondary: 'bg-secondary text-secondary-foreground',
-      success: 'bg-success text-success-foreground',
-      warning: 'bg-warning text-warning-foreground',
-      destructive: 'bg-destructive text-destructive-foreground',
-      info: 'bg-info text-info-foreground',
-    };
-    return colorMap[colorVariant as keyof typeof colorMap] || colorMap.primary;
-  };
+// Soft tinted icon chips; colour is a hint, not a block.
+const ICON_TINT: Record<string, string> = {
+  primary: 'bg-primary/10 text-primary',
+  secondary: 'bg-violet-500/10 text-violet-600',
+  success: 'bg-emerald-500/10 text-emerald-600',
+  warning: 'bg-amber-500/10 text-amber-600',
+  destructive: 'bg-rose-500/10 text-rose-600',
+  info: 'bg-sky-500/10 text-sky-600',
+};
 
-  const getTrendColor = (trendValue?: number) => {
-    if (trendValue === undefined) return '';
-    return trendValue >= 0 
-      ? 'text-success bg-success/10 border border-success/20' 
-      : 'text-destructive bg-destructive/10 border border-destructive/20';
-  };
-
+export const MetricCard = ({ icon, title, value, trend, color, tooltip, loading }: MetricCardProps) => {
   if (loading) {
     return (
-      <Card className="p-4 md:p-6 border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-background">
-        <CardContent className="p-0">
-          <div className="flex items-center space-x-4">
-            <Skeleton className="w-12 h-12 rounded-xl" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Skeleton className="h-6 w-12 rounded-full" />
-          </div>
-        </CardContent>
+      <Card className="gap-0 p-5 bg-card">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-9 w-9 rounded-xl" />
+        </div>
+        <Skeleton className="mt-5 h-8 w-28" />
+        <Skeleton className="mt-2 h-4 w-16" />
       </Card>
     );
   }
 
+  const up = (trend ?? 0) >= 0;
+
   return (
-    <Card 
-      className="p-4 md:p-6 border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer group bg-background" 
-      title={tooltip}
-    >
-      <CardContent className="p-0">
-        <div className="flex items-center space-x-4">
-          <div className={cn(
-            "flex items-center justify-center w-12 h-12 rounded-xl transition-colors group-hover:opacity-90",
-            getColorClasses(color)
-          )}>
-            {icon}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="text-2xl font-bold text-foreground mb-1 truncate">
-              {value}
-            </div>
-            <div className="text-sm text-muted-foreground truncate">
-              {title}
-            </div>
-          </div>
-          
-          {trend !== undefined && (
-            <Badge 
-              className={cn(
-                "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-                getTrendColor(trend)
-              )}
-            >
-              {trend >= 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {Math.abs(trend)}%
-            </Badge>
+    <Card className="lift gap-0 p-5 bg-card" title={tooltip}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-muted-foreground truncate">{title}</span>
+        <span
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl [&_svg]:h-[18px] [&_svg]:w-[18px]',
+            ICON_TINT[color] || ICON_TINT.primary
           )}
+        >
+          {icon}
+        </span>
+      </div>
+      <div className="mt-4 text-[28px] leading-none font-semibold tracking-tight text-foreground tabular-nums truncate">
+        {value}
+      </div>
+      {trend !== undefined ? (
+        <div className="mt-2.5 flex items-center gap-1.5 text-xs">
+          <span
+            className={cn(
+              'inline-flex items-center gap-0.5 font-semibold',
+              up ? 'text-emerald-600' : 'text-rose-600'
+            )}
+          >
+            {up ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+            {Math.abs(trend)}%
+          </span>
+          <span className="text-muted-foreground">vs previous period</span>
         </div>
-      </CardContent>
+      ) : (
+        <div className="mt-2.5 h-4" />
+      )}
     </Card>
   );
 };

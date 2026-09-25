@@ -1,6 +1,7 @@
 // strategies/OrderTypeStrategy.js
 const { sequelize } = require("../../../config/db");
 const { ApiError } = require("../../../utils/ApiError");
+const { getWebsiteOwnerContact } = require("../../../services/merchantContactService");
 
 class OrderTypeStrategy {
   constructor(models, paymentProcessor, notificationService, nicheStrategy) {
@@ -133,22 +134,25 @@ async execute(orderData, existingTransaction = null) {
     throw new Error("getOrderType must be implemented by subclass");
   }
 
-  // Common notification methods
+  // Common notification methods. Never lets a notification failure fail the
+  // order itself — the order is already committed by the time this runs.
   async sendNotifications(result, user, websiteId) {
     try {
-      if (result.order.customerEmail) {
+      const buyerEmail = result.order.customerEmail || result.order.customerInfo?.email;
+      if (buyerEmail) {
         await this.notificationService.sendOrderConfirmation(
-          result.order.customerEmail,
+          buyerEmail,
           result.order,
           result.orderItems
         );
       }
 
+      const merchantContact = await getWebsiteOwnerContact(websiteId);
       await this.notificationService.sendNewOrderNotification(
-        websiteId,
-        result.order
+        merchantContact,
+        result.order,
+        result.orderItems
       );
-
     } catch (error) {
       console.error('Notification sending failed:', error);
     }

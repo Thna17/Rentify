@@ -13,44 +13,36 @@ export default defineConfig(({ mode }) => ({
     port: 4600,
     host: 'localhost',
   },
-  preview: {
-    port: 4600,
-    host: 'localhost',
-  },
-  plugins: [react()],
-  resolve: { alias: viteWorkspaceAliases },
-  // This template intentionally avoids a workspace-wide scan, but every
-  // CommonJS dependency used by the shared storefront must still be optimized.
-  // In particular, react-redux imports use-sync-external-store/with-selector
-  // as a default CommonJS export.
+  // Avoid an expensive workspace-wide dependency scan that can stall Vite on
+  // this project. Dependencies are transformed only when the browser requests
+  // them instead.
   optimizeDeps: {
     noDiscovery: true,
     include: [
-      '@n8tb1t/use-scroll-position',
-      '@react-pdf/renderer',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
       '@reduxjs/toolkit',
       '@reduxjs/toolkit/query/react',
-      'base64-js',
-      'buffer',
-      'class-variance-authority',
-      'clsx',
-      'framer-motion',
       'lucide-react',
+      'qrcode.react',
       'react',
       'react-dom',
       'react-dom/client',
       'react-redux',
       'react-router-dom',
       'redux-persist',
-      'redux-persist/integration/react',
       'redux-persist/lib/storage',
-      'tailwind-merge',
-      'unicode-trie',
       'use-sync-external-store/shim',
       'use-sync-external-store/shim/index.js',
       'use-sync-external-store/with-selector',
     ],
   },
+  preview: {
+    port: 4600,
+    host: 'localhost',
+  },
+  plugins: [react()],
+  resolve: { alias: viteWorkspaceAliases },
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],

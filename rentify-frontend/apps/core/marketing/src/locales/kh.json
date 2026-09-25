@@ -579,11 +579,13 @@
     },
     "contact": {
       "label": "លេខទូរស័ព្ទ *",
-      "placeholder": "+855 12 345 678"
+      "placeholder": "+855 12 345 678",
+      "invalid": "សូមបញ្ចូលលេខទូរស័ព្ទចន្លោះ ៨ ដល់ ១៥ ខ្ទង់"
     },
     "email": {
       "label": "អ៊ីមែលអាជីវកម្ម *",
-      "placeholder": "business@example.com"
+      "placeholder": "business@example.com",
+      "invalid": "សូមបញ្ចូលអ៊ីមែលត្រឹមត្រូវ ឧ. name@example.com"
     },
     "continue": "Continue to Templates",
     "sections": {
@@ -636,25 +638,25 @@
       "deploying": "Deploying Your Business...",
       "completed": "🎉 Congratulations!",
       "building": "Building Your Business...",
-      "idle": "ដាក់ហាងរបស់អ្នកឱ្យដំណើរការ",
-      "initializing": "កំពុងរៀបចំ…",
-      "creating_website": "កំពុងបង្កើតគេហទំព័ររបស់អ្នក…",
-      "finalizing": "កំពុងបញ្ចប់…",
-      "failed": "ការដាក់ឱ្យដំណើរការបានបរាជ័យ"
+      "idle": "ត្រៀមបើកហាងរបស់អ្នក",
+      "initializing": "កំពុងចាប់ផ្តើម…",
+      "creating_website": "កំពុងបង្កើតហាងរបស់អ្នក…",
+      "finalizing": "ជិតរួចរាល់ហើយ…",
+      "failed": "យើងមិនអាចបើកហាងរបស់អ្នកបានទេ"
     },
     "description": {
       "deploying": "We're setting up your store, POS system, and all selected features...",
       "completed": "Your business is now live and ready to serve customers!",
       "building": "We are constructing your store and setting up the necessary components...",
-      "idle": "ពិនិត្យការរៀបចំរបស់អ្នក រួចដាក់ហាងឱ្យដំណើរការ។",
-      "initializing": "កំពុងរៀបចំការដាក់ឱ្យដំណើរការរបស់អ្នក។",
-      "creating_website": "កំពុងរក្សាទុកព័ត៌មានអាជីវកម្ម និងគំរូរបស់អ្នក។",
-      "finalizing": "កំពុងភ្ជាប់ហាង និងផ្ទាំងគ្រប់គ្រងរបស់អ្នក។",
-      "failed": "មានបញ្ហាពេលដាក់ហាងរបស់អ្នកឱ្យដំណើរការ។ សូមព្យាយាមម្តងទៀត។"
+      "idle": "សូមពិនិត្យព័ត៌មាន រួចបើកហាង។ ហាងរបស់អ្នកនឹងដំណើរការភ្លាមៗលើអាសយដ្ឋានផ្ទាល់ខ្លួន។",
+      "initializing": "កំពុងពិនិត្យព័ត៌មានរបស់អ្នក។",
+      "creating_website": "កំពុងរៀបចំហាង និងគំរូរបស់វា។",
+      "finalizing": "កំពុងផ្សាយហាងលើអាសយដ្ឋានរបស់វា។",
+      "failed": "មិនមានការគិតប្រាក់ទេ។ សូមកែបញ្ហាខាងក្រោម រួចព្យាយាមម្តងទៀត។"
     },
     "progress": {
       "title": "Deployment Progress",
-      "subtitle": "ជាធម្មតាចំណាយពេលពីរបីនាទី។"
+      "subtitle": "ជាធម្មតាចំណាយពេលតែប៉ុន្មានវិនាទី។"
     },
     "stages": {
       "template": "Setting up Template",
@@ -663,7 +665,12 @@
       "build": "Building Application",
       "deploy": "Deploying to Servers",
       "dns": "Configuring DNS",
-      "finalize": "Finalizing Deployment"
+      "finalize": "Finalizing Deployment",
+      "initializing": "ចាប់ផ្តើម",
+      "creating_website": "បង្កើតហាង",
+      "deploying": "ផ្សាយ",
+      "building": "រៀបចំ",
+      "finalizing": "ដំណើរការ"
     },
     "store": {
       "title": "Your Live Store",
@@ -717,18 +724,18 @@
       "description": "Your website is now live and ready to use."
     },
     "confirm": {
-      "title": "មុនពេលដាក់ឱ្យដំណើរការ",
-      "description": "អ្នកអាចកែប្រែព័ត៌មានហាង ការរចនា និងផលិតផលបានគ្រប់ពេលពីផ្ទាំងគ្រប់គ្រង។",
-      "button": "ដាក់ហាងរបស់ខ្ញុំឱ្យដំណើរការ"
+      "title": "បើកហាងរបស់អ្នក?",
+      "description": "ហាងរបស់អ្នកនឹងត្រូវផ្សាយជាមួយព័ត៌មាន និងគំរូដែលអ្នកបានជ្រើស។ អ្នកអាចកែប្រែនៅពេលក្រោយ។",
+      "button": "បើកហាង"
     },
     "completed": {
       "title": "ហាងរបស់អ្នកដំណើរការហើយ!",
-      "description": "គេហទំព័ររបស់អ្នកត្រូវបានដាក់ឱ្យដំណើរការ ហើយរួចរាល់សម្រាប់អតិថិជន។",
-      "websiteTitle": "ហាងអនឡាញរបស់អ្នក",
-      "websiteDesc": "ចែករំលែកតំណនេះជាមួយអតិថិជនរបស់អ្នក។",
-      "visitSite": "ចូលមើលគេហទំព័រ",
+      "description": "ចែករំលែកអាសយដ្ឋានហាងជាមួយអតិថិជន ហើយចាប់ផ្តើមបន្ថែមទំនិញ។",
+      "websiteTitle": "ហាងរបស់អ្នក",
+      "websiteDesc": "មើលអ្វីដែលអតិថិជនរបស់អ្នកឃើញ។",
+      "visitSite": "ចូលមើលហាង",
       "dashboardTitle": "ផ្ទាំងគ្រប់គ្រងអ្នកលក់",
-      "dashboardDesc": "គ្រប់គ្រងផលិតផល ការបញ្ជាទិញ និងការកំណត់។",
+      "dashboardDesc": "បន្ថែមទំនិញ គ្រប់គ្រងការកម្ម៉ង់ និងកែសម្រួលហាងរបស់អ្នក។",
       "nextSteps": "ជំហានបន្ទាប់"
     }
   },
@@ -1004,6 +1011,7 @@
       "account": "គណនី",
       "dashboard": "ផ្ទាំងគ្រប់គ្រងអ្នកលក់",
       "stayUpdated": "តាមដានព័ត៌មានថ្មីៗ",
+      "companyTagline": "ថ្នាលពាណិជ្ជកម្មរួមបញ្ចូលគ្នាមួយ សម្រាប់អាជីវកម្មខ្នាតតូចនិងមធ្យមនៅកម្ពុជា។ គ្រប់គ្រងហាងអនឡាញ ផ្សាររួម ឃ្លាំងទំនិញ និងការលក់តាម POS បានយ៉ាងរហ័ស។",
       "newsletterHint": "ព័ត៌មាន និងគន្លឹះសម្រាប់ពង្រីកហាងរបស់អ្នក ម្ដងម្កាល។",
       "emailPlaceholder": "អាសយដ្ឋានអ៊ីមែល",
       "subscribe": "ជាវ",

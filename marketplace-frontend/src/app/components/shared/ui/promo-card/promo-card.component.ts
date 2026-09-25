@@ -22,12 +22,20 @@ import { IconComponent } from '../icon/icon.component';
     >
       <img [src]="p.image" [alt]="p.alt ?? ''" loading="lazy" />
       <span class="copy">
-        @if (p.eyebrow) {
-          <small class="eyebrow" [attr.lang]="p.eyebrowLang ?? null">{{ p.eyebrow }}</small>
+        @if (format() === 'card') {
+          @if (p.eyebrow) {
+            <small class="eyebrow" [attr.lang]="p.eyebrowLang ?? null">{{ p.eyebrow }}</small>
+          }
+          <strong>{{ p.title }}</strong>
+          @if (p.text) { <span class="text">{{ p.text }}</span> }
+          <em class="cta">{{ p.cta }} <ui-icon name="arrow-right" [size]="14" /></em>
+        } @else {
+          <!-- Compact: the photo does the talking — just a title, no eyebrow
+               or description line, so the card reads as an image, not a
+               paragraph with a picture attached. -->
+          <strong>{{ p.title }}</strong>
+          <em class="cta"><ui-icon name="arrow-right" [size]="13" /></em>
         }
-        <strong>{{ p.title }}</strong>
-        @if (p.text) { <span class="text">{{ p.text }}</span> }
-        <em class="cta">{{ p.cta }} <ui-icon name="arrow-right" [size]="14" /></em>
       </span>
     </a>
   `,
@@ -64,15 +72,20 @@ import { IconComponent } from '../icon/icon.component';
       background: #fff; color: var(--color-text); font-size: 13px;
     }
 
-    /* compact: text on the left over a side shade, text link */
+    /* compact: the image fills the whole card; text is a small bottom-left
+       label over a short shade, not a paragraph block down the side. */
     :host(.compact) .copy {
-      justify-content: center; gap: 4px; padding: 16px 18px; padding-right: 38%;
-      background: linear-gradient(90deg, rgba(15, 23, 42, .78) 0%, rgba(15, 23, 42, .4) 55%, transparent 85%);
+      flex-direction: row; align-items: center; justify-content: space-between;
+      gap: 8px; padding: 12px 14px;
+      background: linear-gradient(0deg, rgba(15, 23, 42, .68) 0%, transparent 65%);
     }
-    :host(.compact) .illustration .copy { background: linear-gradient(90deg, rgba(74, 35, 8, .5), transparent 70%); }
-    :host(.compact) strong { font-size: 16px; }
-    :host(.compact) .text { font-size: 12px; line-height: 1.35; }
-    :host(.compact) .cta { font-size: 12.5px; margin-top: 2px; }
+    :host(.compact) .illustration .copy { background: linear-gradient(0deg, rgba(74, 35, 8, .55) 0%, transparent 65%); }
+    :host(.compact) strong { font-size: 14.5px; }
+    :host(.compact) .cta {
+      flex-shrink: 0; display: grid; place-items: center; width: 26px; height: 26px;
+      border-radius: 999px; background: rgba(255, 255, 255, .22); backdrop-filter: blur(2px);
+    }
+    :host(.compact) .illustration img { padding: 8px; object-position: center; }
 
     @media (max-width: 720px) { :host(.card) { height: 260px; } }
     @media (prefers-reduced-motion: reduce) { img, .cta { transition: none; } }

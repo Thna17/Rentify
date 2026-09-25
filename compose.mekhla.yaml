@@ -1,0 +1,21 @@
+# Demo: publish stores on https://<store>.mekhla.digital from this machine.
+#
+#   docker compose -f compose.yaml -f compose.mekhla.yaml up -d
+#
+# The storefront app is served by the Cloudflare Worker in
+# rentify-frontend/apps/storefront/cloudflare; the Core and Commerce APIs are
+# reached through the Cloudflare Tunnel in deploy/mekhla-demo/cloudflared.yml,
+# which only exposes the public storefront endpoints. See deploy/mekhla-demo/README.md.
+
+x-mekhla-hosting: &mekhla-hosting
+  HOSTED_STOREFRONT_DOMAIN: mekhla.digital
+  # Empty: stores use https://<store>.mekhla.digital, not a local dev port.
+  HOSTED_STOREFRONT_DEV_PORT: ''
+  # Existing mekhla.digital sites and the demo API hostnames are never stores.
+  HOSTED_STOREFRONT_RESERVED: admin,api,colis,staging,www,send,rsend,rentify,rentify-api,rentify-commerce,rentify-auth,rentify-seller,rentify-market,rentify-admin
+
+services:
+  core-api:
+    environment: *mekhla-hosting
+  ecommerce-api:
+    environment: *mekhla-hosting

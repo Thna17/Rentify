@@ -1,7 +1,35 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
-const { Product, StoreAccess, StoreDeliveryPolicy, WebsiteData } = require('../models');
+const { Product, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview } = require('../models');
 const { canonicalCategory } = require('../config/marketplaceTaxonomy');
+
+/**
+ * Real average rating + review count per product, one query for the whole
+ * page. Product cards used to show a hardcoded 4.8/12 on every single
+ * listing regardless of actual reviews — this replaces that with the truth,
+ * and a product with no reviews correctly shows none rather than a fake one.
+ */
+async function ratingSummariesFor(productIds) {
+  if (!productIds.length) return new Map();
+  const rows = await ProductReview.findAll({
+    where: { productId: { [Op.in]: productIds }, status: 'published' },
+    attributes: [
+      'productId',
+      [sequelize.fn('AVG', sequelize.col('rating')), 'average'],
+      [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+    ],
+    group: ['productId'],
+    raw: true,
+  });
+  const map = new Map();
+  for (const row of rows) {
+    map.set(row.productId, {
+      rating: Math.round(Number(row.average) * 10) / 10,
+      reviewCount: Number(row.count),
+    });
+  }
+  return map;
+}
 
 function fail(message, statusCode = 400) {
   const error = new Error(message);
@@ -179,7 +207,7 @@ const eligibleStore = {
   include: [{ model: StoreDeliveryPolicy, as: 'deliveryPolicy', required: true, attributes: [] }],
 };
 
-function publicProduct(product) {
+function publicProduct(product, ratingSummary) {
   return {
     id: product.id, storeId: product.storeId, name: product.name,
     slug: product.slug, description: product.description,
@@ -190,6 +218,10 @@ function publicProduct(product) {
     // Colour/finish variants, e.g. { variants: [{ label, url }] }, set by
     // sellers who list photos per colour. Optional — most products have none.
     variants: Array.isArray(product.nicheAttributes?.variants) ? product.nicheAttributes.variants : [],
+    // Real average + count from ProductReview. No reviews yet → 0/0, not a
+    // made-up number — the frontend shows "No reviews" in that case.
+    rating: ratingSummary?.rating ?? 0,
+    reviewCount: ratingSummary?.reviewCount ?? 0,
   };
 }
 
@@ -201,7 +233,8 @@ async function listPublic(query = {}) {
     where, include: [eligibleStore], distinct: true, subQuery: false,
     order: [['createdAt', 'DESC']], offset: (page - 1) * limit, limit,
   });
-  const products = rows.map(publicProduct);
+  const ratings = await ratingSummariesFor(rows.map((row) => row.id));
+  const products = rows.map((row) => publicProduct(row, ratings.get(row.id)));
   return { products, total: count, page, limit };
 }
 
@@ -210,7 +243,8 @@ async function getPublic(productId) {
     where: { id: productId, ...eligibleProductWhere() }, include: [eligibleStore],
   });
   if (!product) fail('Product not found', 404);
-  return publicProduct(product);
+  const ratings = await ratingSummariesFor([product.id]);
+  return publicProduct(product, ratings.get(product.id));
 }
 
 module.exports = { create, listOwn, update, listPublic, getPublic, eligibleProductWhere, publicProduct };

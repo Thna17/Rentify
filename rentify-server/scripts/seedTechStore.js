@@ -5,18 +5,25 @@ const { Store, Website, User, Staff, SellerApplication } = require('../src/model
 const TECH_MERCHANT_ID = '55555555-5555-4555-8555-555555555555';
 const TECH_STAFF_ID = '66666666-6666-4666-8666-666666666666';
 const TECH_WEBSITE_ID = '8c90a1b2-3b4c-5d6e-9f0a-1b2c3d4e5f60';
-const TECH_STORE_ID = '719d9c55-b338-4ded-9c1a-231a0b1863b9';
+// Used only when the merchant has no Store yet (a fresh database). Core assigns
+// Store ids, so an existing database keeps the Store it already has.
+const DEFAULT_TECH_STORE_ID = '719d9c55-b338-4ded-9c1a-231a0b1863b9';
 
 async function seedTechStore() {
   console.log('⚡ Ensuring NexTech Electronics store setup in Core API...');
   await sequelize.authenticate();
 
-  // 1. Ensure Store exists and is approved for Marketplace
-  let store = await Store.findOne({ where: { ownerUserId: TECH_MERCHANT_ID } }) || await Store.findByPk(TECH_STORE_ID);
+  // 1. Ensure Store exists and is approved for Marketplace. A merchant owns at
+  // most one Store (uq_stores_owner), so reuse the one linked to the website or
+  // owned by the merchant before creating one.
+  const website = await Website.findByPk(TECH_WEBSITE_ID);
+  let store =
+    (website?.storeId && (await Store.findByPk(website.storeId))) ||
+    (await Store.findOne({ where: { ownerUserId: TECH_MERCHANT_ID } }));
+  const TECH_STORE_ID = store?.id || DEFAULT_TECH_STORE_ID;
   const storePayload = {
     ownerUserId: TECH_MERCHANT_ID,
     name: 'NexTech Electronics',
-    slug: 'store-9c9030e1-476f-4ef4-92f8-c9f4a96d52a8',
     primaryCategory: 'Electronics',
     needsCategoryReview: false,
     marketplaceEnabled: true,
@@ -27,7 +34,7 @@ async function seedTechStore() {
   };
 
   if (!store) {
-    store = await Store.create({ id: TECH_STORE_ID, ...storePayload });
+    store = await Store.create({ ...storePayload, id: TECH_STORE_ID, slug: `store-${TECH_STORE_ID}` });
     console.log('✅ Created NexTech Store in Core');
   } else {
     await store.update(storePayload);
@@ -35,8 +42,7 @@ async function seedTechStore() {
   }
 
   // 2. Link Website to Store
-  const website = await Website.findByPk(TECH_WEBSITE_ID);
-  if (website) {
+  if (website && website.storeId !== TECH_STORE_ID) {
     await website.update({ storeId: TECH_STORE_ID });
     console.log('✅ Linked NexTech Website to Store');
   }
@@ -88,6 +94,7 @@ async function seedTechStore() {
   }
 
   console.log('🚀 NexTech Electronics Core setup complete!');
+  return TECH_STORE_ID;
 }
 
 if (require.main === module) {

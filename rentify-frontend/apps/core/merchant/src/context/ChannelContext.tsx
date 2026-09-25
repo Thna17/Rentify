@@ -24,13 +24,13 @@ export interface ChannelContextType {
 const defaultContext: ChannelContextType = {
   channels: { hasStorefront: false, hasMarketplace: true, hasPos: true },
   store: null,
-  setStore: () => {},
+  setStore: () => undefined,
   websiteId: null,
   hasStorefront: false,
   hasMarketplace: true,
   hasPos: true,
-  togglePos: () => {},
-  toggleMarketplace: async () => {},
+  togglePos: () => undefined,
+  toggleMarketplace: async () => undefined,
 };
 
 const ChannelContext = createContext<ChannelContextType>(defaultContext);

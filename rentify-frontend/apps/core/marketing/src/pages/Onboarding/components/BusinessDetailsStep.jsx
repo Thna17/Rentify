@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '../../../contexts/LanguageContext';
 import StepHeader from './StepHeader';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { businessDetailErrors } from '../businessDetails';
 
 const LOCATIONS = ['phnom-penh', 'siem-reap', 'kampong-speu', 'other'];
 
@@ -25,6 +26,17 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
   const fileInputRef = useRef(null);
   const [categories, setCategories] = useState([]);
   const details = data.businessDetails || {};
+  // Show a field's error only after the merchant has left it, not while typing.
+  const [touched, setTouched] = useState({});
+  const errors = businessDetailErrors(details);
+  const visibleError = (field) => (touched[field] ? errors[field] : null);
+  const markTouched = (field) => () => setTouched((current) => ({ ...current, [field]: true }));
+  const fieldError = (field) =>
+    visibleError(field) && (
+      <p id={`business-${field}-error`} className="text-sm text-destructive">
+        {t(visibleError(field))}
+      </p>
+    );
 
   useEffect(() => {
     fetch(`${RENTIFY_API_BASE}/api/stores/categories`)
@@ -174,11 +186,17 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
                   type="tel"
                   value={details.contact || ''}
                   onChange={(e) => handleInputChange('contact', e.target.value)}
+                  onBlur={markTouched('contact')}
                   placeholder={t('business.contact.placeholder')}
+                  inputMode="tel"
+                  autoComplete="tel"
+                  aria-invalid={Boolean(visibleError('contact'))}
+                  aria-describedby={visibleError('contact') ? 'business-contact-error' : undefined}
                   className="h-11 pl-10"
                   required
                 />
               </div>
+              {fieldError('contact')}
             </div>
           </div>
 
@@ -191,11 +209,17 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
                 type="email"
                 value={details.email || ''}
                 onChange={(e) => handleInputChange('email', e.target.value)}
+                onBlur={markTouched('email')}
                 placeholder={t('business.email.placeholder')}
+                inputMode="email"
+                autoComplete="email"
+                aria-invalid={Boolean(visibleError('email'))}
+                aria-describedby={visibleError('email') ? 'business-email-error' : undefined}
                 className="h-11 pl-10"
                 required
               />
             </div>
+            {fieldError('email')}
           </div>
         </CardContent>
       </Card>

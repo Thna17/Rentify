@@ -230,6 +230,7 @@ export {
   useGetAllProductsQuery,
   useGetManagedProductsQuery,
   useGetManagedProductQuery,
+  useGetProductFormConfigQuery,
   useGetProductQuery,
   useGetAdvancedFilterProductsQuery,
   useSearchProductsQuery,

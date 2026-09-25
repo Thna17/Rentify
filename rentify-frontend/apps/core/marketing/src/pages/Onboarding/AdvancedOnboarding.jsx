@@ -22,7 +22,9 @@ import {
   Save,
   Sparkles,
 } from 'lucide-react';
-import { useGetPackageByIdQuery } from '@rentify/apis';
+import { useGetPackagesQuery } from '@rentify/apis';
+import { isBusinessDetailsComplete } from './businessDetails';
+import { resolvePackage } from './resolvePackage';
 
 const BrandMark = ({ tagline }) => (
   <Link to="/" className="flex items-center gap-3">
@@ -47,7 +49,11 @@ const Onboarding = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const isKhmer = language === 'KH';
 
-  const { data: packageData } = useGetPackageByIdQuery(packageId);
+  const { data: packageList } = useGetPackagesQuery();
+  const packageData = useMemo(
+    () => resolvePackage(Array.isArray(packageList) ? packageList : packageList?.data, packageId),
+    [packageList, packageId]
+  );
 
   const [formData, setFormData] = useState(() => {
     const savedData = localStorage.getItem('rentify-onboarding');
@@ -75,9 +81,10 @@ const Onboarding = () => {
         };
   });
 
-  // Update form data when package data is loaded
+  // Use the package Core has for this link. Progress saved in the browser may
+  // hold a package from an older database, so replace it when it differs.
   useEffect(() => {
-    if (packageData && !formData.package) {
+    if (packageData && formData.package?.id !== packageData.id) {
       setFormData((prev) => ({
         ...prev,
         package: packageData,
@@ -88,7 +95,7 @@ const Onboarding = () => {
         },
       }));
     }
-  }, [packageData, formData.package]);
+  }, [packageData, formData.package?.id]);
 
   const steps = useMemo(
     () => [
@@ -163,11 +170,8 @@ const Onboarding = () => {
 
   const isStepComplete = useCallback(() => {
     switch (currentStep) {
-      case 1: {
-        const { name, location, contact, email, primaryCategory } =
-          formData.businessDetails || {};
-        return name && location && contact && email && primaryCategory;
-      }
+      case 1:
+        return isBusinessDetailsComplete(formData.businessDetails);
       case 2:
         return !!formData.template;
       case 3:

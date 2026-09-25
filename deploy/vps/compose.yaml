@@ -1,0 +1,196 @@
+# Rentify production stack for a shared VPS (see deploy/vps/README.md).
+#
+#   docker compose -f deploy/vps/compose.yaml --env-file deploy/vps/.env up -d --build
+#
+# Nothing is published on the host: other applications on the machine keep
+# their ports, and the public reaches Rentify only through the Cloudflare
+# Tunnel container. MySQL and Redis are private to this stack's network.
+name: rentify
+
+x-public-urls: &public-urls
+  RENTIFY_API_URL: https://rentify-api.${PUBLIC_DOMAIN}
+  AUTH_URL: https://rentify-auth.${PUBLIC_DOMAIN}
+  MERCHANT_DASHBOARD_URL: https://rentify-seller.${PUBLIC_DOMAIN}
+  MARKETING_URL: https://rentify.${PUBLIC_DOMAIN}
+  MARKETPLACE_URL: https://rentify-market.${PUBLIC_DOMAIN}
+  ADMIN_DASHBOARD_URL: https://rentify-admin.${PUBLIC_DOMAIN}
+  STOREFRONT_ORIGIN: https://rentify.${PUBLIC_DOMAIN}
+
+x-app-origins: &app-origins https://rentify.${PUBLIC_DOMAIN},https://rentify-auth.${PUBLIC_DOMAIN},https://rentify-seller.${PUBLIC_DOMAIN},https://rentify-market.${PUBLIC_DOMAIN},https://rentify-admin.${PUBLIC_DOMAIN}
+
+x-hosting: &hosting
+  HOSTED_STOREFRONT_DOMAIN: ${PUBLIC_DOMAIN}
+  HOSTED_STOREFRONT_DEV_PORT: ''
+  HOSTED_STOREFRONT_RESERVED: ${RESERVED_SUBDOMAINS}
+  # Sign-in is shared by the apps, the APIs and the hosted stores.
+  COOKIE_DOMAIN: .${PUBLIC_DOMAIN}
+
+x-core-environment: &core-environment
+  <<: [*public-urls, *hosting]
+  NODE_ENV: production
+  PORT: 3001
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_NAME: rentify_core
+  DB_USER: rentify
+  DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+  COOKIE_SECRET: ${COOKIE_SECRET}
+  SESSION_SECRET: ${SESSION_SECRET}
+  SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN}
+  # Core talks to Commerce inside the stack.
+  ECOMMERCE_API_URL: http://ecommerce-api:4001
+  CORS_ALLOWED_ORIGINS: *app-origins
+  AUTH_RETURN_URL_ALLOWLIST: *app-origins
+  DEV_MARKETPLACE_AUTO_APPROVAL: ${AUTO_APPROVE_SELLERS:-false}
+  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+  SEED_MERCHANT_PASSWORD: ${SEED_MERCHANT_PASSWORD}
+  SEED_STAFF_PASSWORD: ${SEED_STAFF_PASSWORD}
+  SEED_CUSTOMER_PASSWORD: ${SEED_CUSTOMER_PASSWORD}
+  SEED_STORE_PASSWORD: ${SEED_STORE_PASSWORD}
+  SEED_DEMO_STORES: 'true'
+
+x-commerce-environment: &commerce-environment
+  <<: [*public-urls, *hosting]
+  NODE_ENV: production
+  PORT: 4001
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_NAME: rentify_ecommerce
+  DB_USER: rentify
+  DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+  COOKIE_SECRET: ${COOKIE_SECRET}
+  SESSION_SECRET: ${SESSION_SECRET}
+  SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN}
+  PAYMENT_CONFIG_ENCRYPTION_KEY: ${PAYMENT_CONFIG_ENCRYPTION_KEY}
+  # Commerce talks to Core inside the stack.
+  RENTIFY_API_URL: http://core-api:3001
+  ECOMMERCE_API_URL: https://rentify-commerce.${PUBLIC_DOMAIN}
+  CORS_ALLOWED_ORIGINS: *app-origins
+  MARKETPLACE_COD_CHECKOUT_ENABLED: 'true'
+  STOREFRONT_COD_CHECKOUT_ENABLED: 'true'
+  SEED_CUSTOMER_PASSWORD: ${SEED_CUSTOMER_PASSWORD}
+
+x-api-healthcheck: &api-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 20s
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: rentify
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD}
+      MYSQL_DATABASE: rentify_core
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../../docker/mysql/init.sql:/docker-entrypoint-initdb.d/10-create-commerce-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  core-migrate:
+    build: { context: ../../rentify-server, target: production }
+    image: rentify-core:production
+    command: sh -c "npm run db:migrate && npm run db:seed"
+    env_file: [./secrets.env]
+    environment: *core-environment
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  commerce-migrate:
+    build: { context: ../../ecommerce-server, target: production }
+    image: rentify-commerce:production
+    command: sh -c "npm run db:migrate && npm run db:seed"
+    env_file: [./secrets.env]
+    environment: *commerce-environment
+    depends_on:
+      mysql: { condition: service_healthy }
+      core-migrate: { condition: service_completed_successfully }
+
+  ecommerce-api:
+    image: rentify-commerce:production
+    restart: unless-stopped
+    env_file: [./secrets.env]
+    environment: *commerce-environment
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      commerce-migrate: { condition: service_completed_successfully }
+    healthcheck:
+      <<: *api-healthcheck
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://localhost:4001/health\").then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"']
+
+  core-api:
+    image: rentify-core:production
+    restart: unless-stopped
+    env_file: [./secrets.env]
+    environment: *core-environment
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      core-migrate: { condition: service_completed_successfully }
+      ecommerce-api: { condition: service_healthy }
+    healthcheck:
+      <<: *api-healthcheck
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://localhost:3001/health\").then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"']
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/vps/web/Dockerfile
+      args:
+        VITE_RENTIFY_API_URL: https://rentify-api.${PUBLIC_DOMAIN}
+        VITE_ECOMMERCE_API_URL: https://rentify-commerce.${PUBLIC_DOMAIN}
+        VITE_AUTH_URL: https://rentify-auth.${PUBLIC_DOMAIN}
+        VITE_MERCHANT_DASHBOARD_URL: https://rentify-seller.${PUBLIC_DOMAIN}
+        VITE_MARKETING_URL: https://rentify.${PUBLIC_DOMAIN}
+        VITE_MARKETPLACE_URL: https://rentify-market.${PUBLIC_DOMAIN}
+        VITE_ADMIN_DASHBOARD_URL: https://rentify-admin.${PUBLIC_DOMAIN}
+        VITE_STOREFRONT_ORIGIN: https://rentify.${PUBLIC_DOMAIN}
+        VITE_HOSTED_STOREFRONT_DOMAIN: ${PUBLIC_DOMAIN}
+        VITE_HOSTED_STOREFRONT_BUYER_ENABLED: 'true'
+    image: rentify-web:production
+    restart: unless-stopped
+    environment:
+      <<: *public-urls
+      ECOMMERCE_API_URL: https://rentify-commerce.${PUBLIC_DOMAIN}
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    depends_on:
+      core-api: { condition: service_healthy }
+      web: { condition: service_started }
+
+volumes:
+  mysql-data:
+  redis-data:

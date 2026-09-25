@@ -1,273 +1,406 @@
-// src/components/VerifyOtpForm.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@rentify/shared/ui/card';
-import { Input } from '@rentify/shared/ui/input';
+import {
+  ShieldCheck,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
+  ArrowLeft,
+  Send,
+  Edit2,
+} from 'lucide-react';
+import {
+  useVerifyOtpMutation,
+  useResendOtpMutation,
+  useVerifyCustomerOtpMutation,
+  useResendOtpCustomerMutation,
+} from '@rentify/apis';
+import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
+import { useAuthConfig } from '../utils/authUtils';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
+import { getSafeReturnUrl } from '../utils/returnUrl';
+import { sanitizePhoneNumber, maskContact } from '../utils/phoneUtils';
 import { Button } from '@rentify/shared/ui/button';
 import { Alert, AlertDescription } from '@rentify/shared/ui/alert';
-import { 
-  Mail, 
-  ShieldCheck, 
-  ArrowLeft,
-  RotateCcw,
-  CheckCircle,
-  Loader2
-} from 'lucide-react';
-import { useVerifyOtpMutation, useResendOtpMutation } from '@rentify/apis';
 import { cn } from '@rentify/utils';
-import { getSafeReturnUrl } from '../utils/returnUrl';
 
 export default function VerifyOtpForm() {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get('email') || '';
-  const redirect = getSafeReturnUrl(searchParams.get('redirectUrl'));
   const navigate = useNavigate();
+  const { t, isKhmer } = useAuthLanguage();
+  const { websiteId } = useWebsiteData();
+  const { isWebsiteTemplate, isHostedStorefrontBuyer } = useAuthConfig();
 
-  const [otp, setOtp] = useState<string>('');
+  const isCustomerFlow = isWebsiteTemplate || isHostedStorefrontBuyer;
+
+  const emailParam = searchParams.get('email') || '';
+  const phoneParam = searchParams.get('phone') || searchParams.get('phoneNumber') || '';
+  const rawContact = phoneParam || emailParam || '';
+  const isPhone = Boolean(phoneParam || (rawContact && !rawContact.includes('@')));
+  const redirect = getSafeReturnUrl(searchParams.get('redirectUrl'));
+
+  const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [resendTime, setResendTime] = useState<number>(60);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
-  
-  const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
-  const [resendOtp, { isLoading: isResending }] = useResendOtpMutation();
+  const [shouldShake, setShouldShake] = useState<boolean>(false);
 
-  // Countdown timer for resend OTP
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const [verifyOtp, { isLoading: isVerifyingCore }] = useVerifyOtpMutation();
+  const [verifyCustomerOtp, { isLoading: isVerifyingCustomer }] = useVerifyCustomerOtpMutation();
+  const [resendOtp, { isLoading: isResendingCore }] = useResendOtpMutation();
+  const [resendCustomerOtp, { isLoading: isResendingCustomer }] = useResendOtpCustomerMutation();
+
+  const isVerifying = isVerifyingCore || isVerifyingCustomer;
+  const isResending = isResendingCore || isResendingCustomer;
+
+  // 60-second countdown timer for resend
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (resendTime > 0) {
-      timer = setTimeout(() => setResendTime(resendTime - 1), 1000);
+      timer = setTimeout(() => setResendTime((prev) => prev - 1), 1000);
     }
     return () => clearTimeout(timer);
   }, [resendTime]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  // Shake animation trigger on error
+  useEffect(() => {
+    if (error) {
+      setShouldShake(true);
+      const timer = setTimeout(() => setShouldShake(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
-    if (otp.length !== 6) {
-      setError('Please enter a 6-digit verification code');
+  const otpCode = digits.join('');
+
+  // Auto-focus first input on mount
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
+
+  // Handle cell input and auto-advance / auto-submit
+  const handleChange = (index: number, value: string) => {
+    const cleanDigit = value.replace(/\D/g, '').slice(-1);
+    const newDigits = [...digits];
+    newDigits[index] = cleanDigit;
+    setDigits(newDigits);
+
+    if (cleanDigit) {
+      if (index < 5) {
+        inputRefs.current[index + 1]?.focus();
+      } else {
+        // 6th digit entered
+        const completeCode = newDigits.join('');
+        if (completeCode.length === 6) {
+          submitVerification(completeCode);
+        }
+      }
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (!digits[index] && index > 0) {
+        const newDigits = [...digits];
+        newDigits[index - 1] = '';
+        setDigits(newDigits);
+        inputRefs.current[index - 1]?.focus();
+      } else {
+        const newDigits = [...digits];
+        newDigits[index] = '';
+        setDigits(newDigits);
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pastedData) return;
+
+    const newDigits = [...digits];
+    for (let i = 0; i < 6; i++) {
+      newDigits[i] = pastedData[i] || '';
+    }
+    setDigits(newDigits);
+
+    const nextIndex = Math.min(pastedData.length, 5);
+    inputRefs.current[nextIndex]?.focus();
+
+    if (pastedData.length === 6) {
+      submitVerification(pastedData);
+    }
+  };
+
+  const submitVerification = async (codeToVerify: string) => {
+    if (codeToVerify.length !== 6) {
+      setError(t('error.otpRequired'));
       return;
     }
 
+    setError('');
+    setSuccess('');
+
     try {
-      await verifyOtp({ email, otp }).unwrap();
-      setSuccess('Email verified successfully! Redirecting...');
-      
-      // Redirect after success
+      const sanitizedPhone = phoneParam ? sanitizePhoneNumber(phoneParam) : undefined;
+      const payload: any = {
+        otp: codeToVerify,
+        verificationMethod: isPhone ? 'telegram' : 'email',
+      };
+      if (emailParam) payload.email = emailParam;
+      if (sanitizedPhone) payload.phoneNumber = sanitizedPhone;
+
+      if (isCustomerFlow && websiteId) {
+        payload.storeId = websiteId;
+        try {
+          await verifyCustomerOtp(payload).unwrap();
+        } catch {
+          await verifyOtp(payload).unwrap();
+        }
+      } else {
+        await verifyOtp(payload).unwrap();
+      }
+
+      setSuccess(
+        isKhmer
+          ? 'ការផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
+          : 'Account verified successfully! Redirecting…'
+      );
+
       setTimeout(() => {
         window.location.href = redirect;
-      }, 2000);
+      }, 1500);
     } catch (err: any) {
-      setError(err.data?.error || 'Invalid or expired verification code');
+      setError(
+        err?.data?.error ||
+          (isKhmer
+            ? 'លេខកូដសម្ងាត់ OTP មិនត្រឹមត្រូវ ឬផុតកំណត់'
+            : 'Invalid or expired OTP')
+      );
     }
   };
 
-  const handleResendOtp = async () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitVerification(otpCode);
+  };
+
+  const handleResend = async () => {
+    if (resendTime > 0 || isResending) return;
+
     setError('');
+    setSuccess('');
     try {
-      await resendOtp({ email }).unwrap();
+      const sanitizedPhone = phoneParam ? sanitizePhoneNumber(phoneParam) : undefined;
+      const payload: any = {
+        verificationMethod: isPhone ? 'telegram' : 'email',
+      };
+      if (emailParam) payload.email = emailParam;
+      if (sanitizedPhone) payload.phoneNumber = sanitizedPhone;
+
+      if (isCustomerFlow && websiteId) {
+        payload.storeId = websiteId;
+        await resendCustomerOtp(payload).unwrap();
+      } else {
+        await resendOtp(payload).unwrap();
+      }
+
       setResendTime(60);
-      setSuccess('A new verification code has been sent to your email');
+      setSuccess(
+        isKhmer
+          ? 'លេខកូដថ្មីត្រូវបានផ្ញើជូនហើយ'
+          : 'A new verification code has been sent'
+      );
     } catch (err: any) {
-      setError(err.data?.error || 'Failed to resend verification code');
+      setError(
+        err?.data?.error ||
+          (isKhmer ? 'មិនអាចផ្ញើលេខកូដឡើងវិញបានទេ' : 'Failed to resend code')
+      );
     }
   };
 
-  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-    setOtp(value);
+  const handleChangeContact = () => {
+    navigate({ pathname: '/signup', search: window.location.search });
   };
 
-  // Auto-submit when OTP is complete
-  useEffect(() => {
-    if (otp.length === 6) {
-      handleSubmit(new Event('submit') as any);
-    }
-  }, [otp]);
+  const maskedDestination = rawContact ? maskContact(rawContact) : '';
 
   return (
-    <div className="w-full">
-      {/* Back Button */}
+    <form
+      onSubmit={handleSubmit}
+      className={cn('space-y-6 transition-transform duration-200', shouldShake && 'animate-shake')}
+      noValidate
+    >
+      {/* Visual Destination Badge */}
+      {maskedDestination && (
+        <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 shadow-sm animate-in fade-in-50">
+          <span className={cn('text-xs text-slate-500 font-medium text-center', isKhmer && 'font-khmer')}>
+            {isKhmer
+              ? 'យើងបានផ្ញើលេខកូដសម្ងាត់ ៦ ខ្ទង់ទៅកាន់'
+              : 'We sent a 6-digit verification code to'}
+          </span>
+          <span className="font-mono text-sm font-bold text-slate-800 mt-1 tracking-wide">
+            {maskedDestination}
+          </span>
+          <button
+            type="button"
+            onClick={handleChangeContact}
+            className={cn(
+              'mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors',
+              isKhmer && 'font-khmer text-sm'
+            )}
+          >
+            <Edit2 className="h-3 w-3" />
+            <span>{t('verify.changeContact')}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          variant="destructive"
+          className="flex items-start gap-3 rounded-2xl border-rose-200 bg-rose-50/90 text-rose-900 shadow-sm animate-in fade-in-50"
+        >
+          <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-600 mt-0.5" />
+          <AlertDescription className={cn('text-sm font-medium leading-relaxed', isKhmer && 'font-khmer')}>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success Alert */}
+      {success && (
+        <Alert className="flex items-start gap-3 rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm animate-in fade-in-50 zoom-in-95">
+          <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-600 mt-0.5 animate-bounce" />
+          <AlertDescription className={cn('text-sm font-bold leading-relaxed text-emerald-900', isKhmer && 'font-khmer')}>
+            {success}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* 6 Individual PIN Digit Boxes */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center gap-2 sm:gap-3" onPaste={handlePaste}>
+          {digits.map((digit, idx) => (
+            <input
+              key={idx}
+              ref={(el) => (inputRefs.current[idx] = el)}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={1}
+              autoFocus={idx === 0}
+              value={digit}
+              onChange={(e) => handleChange(idx, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(idx, e)}
+              className={cn(
+                'h-14 w-11 sm:h-15 sm:w-14 rounded-2xl border-2 text-center font-mono text-2xl font-bold transition-all focus:outline-none',
+                digit
+                  ? 'border-blue-600 bg-blue-50/40 text-blue-900 shadow-sm'
+                  : 'border-slate-300 bg-white text-slate-800 hover:border-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10'
+              )}
+            />
+          ))}
+        </div>
+
+        <p className={cn('text-center text-xs text-slate-400', isKhmer && 'font-khmer')}>
+          {isKhmer
+            ? 'អ្នកអាចចម្លង ឬវាយបញ្ចូលលេខកូដ ៦ ខ្ទង់ដោយផ្ទាល់'
+            : 'Type or paste the 6-digit code directly'}
+        </p>
+      </div>
+
+      {/* Primary Submit Button */}
       <Button
-        variant="ghost"
-        onClick={() => navigate('/signup')}
-        className="mb-6 flex items-center gap-2 text-slate-600 hover:text-slate-800"
+        type="submit"
+        disabled={isVerifying || otpCode.length !== 6}
+        className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Sign Up
+        {isVerifying ? (
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className={isKhmer ? 'font-khmer' : ''}>{t('action.verifying')}</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            <span className={cn('font-semibold', isKhmer ? 'font-khmer text-base' : 'text-sm')}>
+              {t('action.verify')}
+            </span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </div>
+        )}
       </Button>
 
-      {/* Header Section */}
-      <div className="text-center mb-8">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-400 shadow-xl mx-auto mb-6 flex items-center justify-center transition-all duration-300 hover:scale-105">
-          <ShieldCheck className="w-8 h-8 text-white" />
-        </div>
-        <h1 className="text-3xl font-bold bg-gradient-to-br bg-clip-text text-transparent from-slate-900 to-slate-700 mb-3">
-          Verify Your Email
-        </h1>
-        <p className="text-slate-600 text-lg">
-          Enter the 6-digit code sent to your email
+      {/* Resend Code Section with Cooldown */}
+      <div className="pt-2 text-center border-t border-slate-100">
+        <p className={cn('text-xs text-slate-500 mb-1.5', isKhmer && 'font-khmer')}>
+          {t('verify.didNotReceive')}
         </p>
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={resendTime > 0 || isResending}
+          className={cn(
+            'inline-flex items-center gap-1.5 text-xs font-semibold transition-colors',
+            resendTime > 0
+              ? 'text-slate-400 cursor-not-allowed'
+              : 'text-blue-600 hover:text-blue-700 hover:underline',
+            isKhmer && 'font-khmer text-sm'
+          )}
+        >
+          <RotateCcw className={cn('h-3.5 w-3.5', isResending && 'animate-spin')} />
+          {resendTime > 0
+            ? t('verify.resendIn', { seconds: resendTime })
+            : t('action.resendCode')}
+        </button>
       </div>
 
-      {/* Verification Card */}
-      <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-lg rounded-3xl overflow-hidden">
-        <CardHeader className="text-center pb-6 pt-8">
-          <CardTitle className="text-xl font-bold text-slate-800">Email Verification</CardTitle>
-          <CardDescription className="text-slate-600">
-            We sent a code to <span className="font-semibold text-slate-800">{email}</span>
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="pb-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* OTP Input */}
-            <div className="space-y-3">
-              <label htmlFor="otp" className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Verification Code
-              </label>
-              
-              <div className="relative">
-                <Input
-                  id="otp"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  placeholder="000000"
-                  className="h-14 text-center text-2xl font-bold tracking-widest placeholder:tracking-normal placeholder:text-slate-400 border-slate-300 focus:border-purple-500 transition-colors duration-200 rounded-xl"
-                  maxLength={6}
-                  autoComplete="one-time-code"
-                  autoFocus
-                />
-                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <ShieldCheck className="w-5 h-5 text-slate-400" />
-                </div>
-              </div>
-              
-              <p className="text-sm text-slate-500 text-center">
-                Enter the 6-digit code from your email
-              </p>
-            </div>
-
-            {/* Error Alert */}
-            {error && (
-              <Alert variant="destructive" className="animate-in fade-in-80 rounded-xl border-red-200 bg-red-50">
-                <AlertDescription className="text-red-800">{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Success Alert */}
-            {success && (
-              <Alert className="animate-in slide-in-from-top-5 bg-emerald-50 border-emerald-200 rounded-xl">
-                <CheckCircle className="h-4 w-4 text-emerald-600" />
-                <AlertDescription className="text-emerald-800">
-                  {success}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Verify Button */}
-            <Button 
-              type="submit" 
-              disabled={isVerifying || otp.length !== 6}
-              className="w-full h-12  from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-semibold shadow-lg shadow-purple-500/25 transition-all duration-200 rounded-xl group"
-            >
-              {isVerifying ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  Verify Email
-                  <CheckCircle className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform duration-200" />
-                </>
-              )}
-            </Button>
-
-            {/* Resend Code Section */}
-            <div className="text-center pt-4 border-t border-slate-200">
-              <p className="text-sm text-slate-600 mb-3">
-                Didn't receive the code?
-              </p>
-              
-              <Button
-                variant="outline"
-                onClick={handleResendOtp}
-                disabled={resendTime > 0 || isResending}
-                className="w-full h-11 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 rounded-xl"
-              >
-                {isResending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Sending...
-                  </>
-                ) : resendTime > 0 ? (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Resend in {resendTime}s
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Resend Code
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* OTP Input Visualization */}
-            <div className="flex justify-center space-x-3">
-              {[...Array(6)].map((_, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "w-12 h-12 rounded-lg border-2 flex items-center justify-center text-lg font-bold transition-all duration-200",
-                    index < otp.length
-                      ? "border-purple-500 bg-purple-50 text-purple-700 shadow-sm"
-                      : "border-slate-300 bg-slate-50 text-slate-400",
-                    index === otp.length ? "ring-2 ring-purple-300 border-purple-500" : ""
-                  )}
-                >
-                  {otp[index] || ""}
-                </div>
-              ))}
-            </div>
-
-            {/* Manual OTP Entry Hint */}
-            <div className="text-center">
-              <p className="text-xs text-slate-500">
-                Tip: You can also paste the code or type it directly
-              </p>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Additional Help */}
-      <div className="text-center mt-6">
-        <p className="text-sm text-slate-600">
-          Having trouble? Check your spam folder or{' '}
+      {/* Cambodian Telegram Fallback Option */}
+      {isPhone && (
+        <div className="pt-2 border-t border-slate-100 animate-in fade-in-50">
+          <p className={cn('text-xs text-slate-500 mb-2 text-center', isKhmer && 'font-khmer')}>
+            {isKhmer
+              ? 'មិនទាន់ទទួលបានសារ SMS ឬយឺតយ៉ាវ?'
+              : 'SMS delayed or not received?'}
+          </p>
           <Button
-            variant="link"
-            className="p-0 h-auto font-semibold text-purple-600 hover:text-purple-700"
-            onClick={handleResendOtp}
-            disabled={resendTime > 0}
+            type="button"
+            variant="outline"
+            onClick={() => window.open('https://t.me/rentify_customer_bot', '_blank')}
+            className="w-full h-11 rounded-xl border-sky-200 bg-sky-50/70 hover:bg-sky-100 text-sky-800 font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
           >
-            try again
+            <Send className="h-4 w-4 text-[#229ED9]" />
+            <span className={isKhmer ? 'font-khmer' : ''}>
+              {t('verify.telegramVerify')}
+            </span>
           </Button>
-        </p>
+        </div>
+      )}
+
+      {/* Back to sign in */}
+      <div className="text-center pt-1">
+        <button
+          type="button"
+          onClick={() => navigate({ pathname: '/login', search: window.location.search })}
+          className={cn(
+            'inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors',
+            isKhmer && 'font-khmer text-sm'
+          )}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {t('nav.backToLogin')}
+        </button>
       </div>
-    </div>
+    </form>
   );
 }

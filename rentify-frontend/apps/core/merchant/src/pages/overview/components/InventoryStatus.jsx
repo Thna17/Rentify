@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@rentify/shared/ui/card";
 import { Badge } from "@rentify/shared/ui/badge";
-import { Progress } from "@rentify/shared/ui/Progress";
+import { Progress } from "@rentify/shared/ui/progress";
 import { Package, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@rentify/utils";
 

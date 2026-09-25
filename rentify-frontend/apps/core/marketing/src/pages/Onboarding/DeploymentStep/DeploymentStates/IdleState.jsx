@@ -53,8 +53,8 @@ export default function IdleState({
             }`}
           >
             {language === 'KH'
-              ? 'Rentify នឹងបង្កើតគេហទំព័រ និងស្នើ Vercel ដើម្បី build និង deploy template ដែលអ្នកបានជ្រើសរើស។'
-              : 'Rentify will create your website, then ask Vercel to build and deploy the template you selected.'}
+              ? 'Rentify នឹងបង្កើតគេហទំព័ររបស់អ្នក ហើយផ្សាយវាភ្លាមៗនៅលើអាសយដ្ឋានផ្ទាល់ខ្លួនរបស់ហាង។'
+              : 'Rentify will create your website and publish it right away on your store’s own web address.'}
           </p>
         </div>
 

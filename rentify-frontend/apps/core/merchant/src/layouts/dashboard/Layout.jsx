@@ -144,7 +144,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           setSearchFilter={setSearchFilter}
         />
         
-        <main className="flex-1 overflow-auto bg-background/50 scrollbar-subtle">
+        <main className="flex-1 overflow-auto bg-background scrollbar-subtle">
           {store?.needsCategoryReview && (
             <div className="p-4 md:p-6 max-w-7xl mx-auto">
               <StoreCategoryPrompt store={store} onStoreChange={setStore} />
@@ -160,7 +160,9 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
               </div>
             }
           >
-            <Outlet />
+            <div key={location.pathname} className="ds-page min-h-full">
+              <Outlet />
+            </div>
           </Suspense>
         </main>
       </div>

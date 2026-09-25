@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { SHOWCASE } from '../../../data/templateMedia';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
@@ -8,23 +7,55 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-const MARKETPLACE_TEXTURE = '/rentify/marketplace.webp';
-const DASHBOARD_TEXTURE = '/rentify/dashboard.webp';
+const HOME_STOREFRONT_TEXTURE = '/rentify/laptop-home-storefront.png';
+const PHONE_STOREFRONT_TEXTURE = '/rentify/laptop-phone-storefront.png';
+const DASHBOARD_TEXTURE = '/rentify/laptop-dashboard.png';
+const POS_TEXTURE = '/rentify/laptop-pos.png';
 // MacBook model from pmndrs/examples (MIT), Draco-compressed
 const MACBOOK_MODEL = '/rentify/mac-draco.glb';
 const DRACO_DECODER_PATH = '/rentify/draco/';
 
+const makeScreenMaterial = (dashboardTexture, marketplaceTexture) => new THREE.ShaderMaterial({
+  uniforms: {
+    currentMap: { value: dashboardTexture },
+    nextMap: { value: marketplaceTexture },
+    progress: { value: 0 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D currentMap;
+    uniform sampler2D nextMap;
+    uniform float progress;
+    varying vec2 vUv;
+    void main() {
+      float boundary = progress * 1.05 - 0.025;
+      float edge = smoothstep(boundary - 0.01, boundary + 0.01, vUv.x);
+      gl_FragColor = mix(texture2D(nextMap, vUv), texture2D(currentMap, vUv), edge);
+      #include <colorspace_fragment>
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  toneMapped: false,
+});
+
 // The storefront story shown after the camera dives into the laptop screen
 const STORE_CAPTIONS = [
   {
-    eyebrow: 'Rentify Marketplace',
-    title: 'Your shop, in front of more of Cambodia.',
-    body: 'Shoppers browse many local stores in one place. Your products can appear there too, with the prices you set.',
+    eyebrow: 'Home storefront',
+    title: 'A store with your own brand.',
+    body: 'Show your products in a storefront made for your business.',
   },
   {
-    eyebrow: 'Your storefront',
-    title: 'A store with your own brand.',
-    body: 'Pick a template, add your logo and colors, and share one link for your whole shop.',
+    eyebrow: 'Phone storefront',
+    title: 'Sell what your customers love.',
+    body: 'Create a storefront for every kind of product you sell.',
   },
   {
     eyebrow: 'Checkout',
@@ -202,7 +233,7 @@ const D = 2.5; // body depth
 const T = 0.1; // base thickness
 const H = 2.42; // lid height
 
-const makeMacBook = (marketplaceTexture, dashboardTexture, posTexture, storefrontTexture, checkoutTexture) => {
+const makeMacBook = (screenMaterial) => {
   const root = new THREE.Group();
 
   const aluminum = new THREE.MeshPhysicalMaterial({
@@ -305,33 +336,17 @@ const makeMacBook = (marketplaceTexture, dashboardTexture, posTexture, storefron
   panel.position.set(0, H / 2, 0.001);
   lid.add(panel);
 
-  // Screen with thin side bezels and a slightly deeper chin
-  const screenW = W - 0.16;
-  const screenH = H - 0.07 - 0.13;
-  const screenY = 0.13 + screenH / 2;
-  const marketplaceMaterial = new THREE.MeshBasicMaterial({ map: marketplaceTexture, transparent: true, toneMapped: false });
-  const dashboardMaterial = new THREE.MeshBasicMaterial({ map: dashboardTexture, transparent: true, opacity: 0, toneMapped: false });
-  const marketplaceScreen = new THREE.Mesh(new THREE.PlaneGeometry(screenW, screenH), marketplaceMaterial);
-  const dashboardScreen = new THREE.Mesh(new THREE.PlaneGeometry(screenW, screenH), dashboardMaterial);
-  marketplaceScreen.position.set(0, screenY, 0.0045);
-  dashboardScreen.position.set(0, screenY, 0.005);
-  const posMaterial = new THREE.MeshBasicMaterial({ map: posTexture, transparent: true, opacity: 0, toneMapped: false });
-  const posScreen = new THREE.Mesh(new THREE.PlaneGeometry(screenW, screenH), posMaterial);
-  posScreen.position.set(0, screenY, 0.0055);
-  const addScreen = (texture, z) => {
-    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0, toneMapped: false });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(screenW, screenH), material);
-    mesh.position.set(0, screenY, z);
-    lid.add(mesh);
-    return material;
-  };
-  const storefrontMaterial = addScreen(storefrontTexture, 0.006);
-  const checkoutMaterial = addScreen(checkoutTexture, 0.0065);
-  lid.add(marketplaceScreen, dashboardScreen, posScreen);
+  // Keep a narrow rim around the display, with a slightly deeper chin.
+  const screenW = W - 0.14;
+  const screenH = H - 0.06 - 0.11;
+  const screenY = 0.11 + screenH / 2;
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(screenW, screenH), screenMaterial);
+  screen.position.set(0, screenY, 0.005);
+  lid.add(screen);
 
   // Camera notch
   const notch = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.075, 0.004, 2, 0.002), glass);
-  notch.position.set(0, screenY + screenH / 2 - 0.02, 0.006);
+  notch.position.set(0, screenY + screenH / 2 - 0.02, 0.008);
   lid.add(notch);
 
   const glow = new THREE.PointLight(0x3b82f6, 0.5, 6);
@@ -341,11 +356,6 @@ const makeMacBook = (marketplaceTexture, dashboardTexture, posTexture, storefron
   return {
     root,
     lid,
-    marketplaceMaterial,
-    dashboardMaterial,
-    posMaterial,
-    storefrontMaterial,
-    checkoutMaterial,
     baseScale: 1,
     basePositionY: -0.05,
     lidClosed: 1.52,
@@ -357,12 +367,11 @@ const makeMacBook = (marketplaceTexture, dashboardTexture, posTexture, storefron
 // "screen.001" material is the display, which gets the Rentify screens.
 // Anodized aluminium finishes: matte, soft reflections, no glossy highlights
 const FINISHES = {
-  silver: { label: 'Silver', color: 0xc3c6ca, metalness: 0.45, roughness: 0.7 },
-  spaceBlack: { label: 'Space Black', color: 0x2e2f33, metalness: 0.65, roughness: 0.58 },
+  silver: { label: 'Silver', color: 0xd4d5d7, metalness: 0.88, roughness: 0.26, envMapIntensity: 1.45 },
+  spaceBlack: { label: 'Space Black', color: 0x2e2f33, metalness: 0.65, roughness: 0.58, envMapIntensity: 1.0 },
 };
 
-const prepareRealMacBook = (gltf, textures, finish) => {
-  const { marketplaceTexture, dashboardTexture, posTexture, storefrontTexture, checkoutTexture } = textures;
+const prepareRealMacBook = (gltf, screenMaterial, finish) => {
   const root = gltf.scene;
   const lid = root.getObjectByName('screenflip');
   let display = null;
@@ -372,9 +381,13 @@ const prepareRealMacBook = (gltf, textures, finish) => {
     child.receiveShadow = true;
     if (child.material?.name === 'screen.001') display = child;
     if (child.material?.name === 'aluminium') {
+      // Tune the material in place — colour/metalness/roughness/envMapIntensity
+      // only, so any texture map already on it (grain, AO, etc.) is kept.
       child.material.color.set(finish.color);
       child.material.metalness = finish.metalness;
       child.material.roughness = finish.roughness;
+      child.material.envMapIntensity = finish.envMapIntensity ?? 1.25;
+      child.material.needsUpdate = true;
     }
     if (child.material?.name === 'matte.001' || child.material?.name === 'screen.001') {
       child.material.color.set(0x050506);
@@ -392,22 +405,22 @@ const prepareRealMacBook = (gltf, textures, finish) => {
   const size = box.getSize(new THREE.Vector3());
   const center = lid.worldToLocal(box.getCenter(new THREE.Vector3()));
   const front = lid.worldToLocal(new THREE.Vector3(0, 0, box.max.z)).z;
+  const lidBox = new THREE.Box3().setFromObject(lid);
+  const lidMin = lid.worldToLocal(lidBox.min.clone());
+  const lidMax = lid.worldToLocal(lidBox.max.clone());
+  const lidWidth = lidMax.x - lidMin.x;
+  const lidHeight = lidMax.y - lidMin.y;
+  const screenWidth = Math.min(size.x * 1.045, lidWidth * 0.95);
+  const screenHeight = Math.min(size.y * 1.025, lidHeight * 0.925);
+  const screenX = THREE.MathUtils.clamp(center.x, lidMin.x + lidWidth * 0.02 + screenWidth / 2, lidMax.x - lidWidth * 0.02 - screenWidth / 2);
+  const screenY = THREE.MathUtils.clamp(center.y, lidMin.y + lidHeight * 0.02 + screenHeight / 2, lidMax.y - lidHeight * 0.02 - screenHeight / 2);
   lid.rotation.x = restingAngle;
 
-  const makeScreen = (texture, opacity, offset) => {
-    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity, toneMapped: false });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size.x * 0.975, size.y * 0.955), material);
-    mesh.position.set(center.x, center.y + size.y * 0.012, front + offset);
-    lid.add(mesh);
-    return material;
-  };
-  const marketplaceMaterial = makeScreen(marketplaceTexture, 0, 0.004);
-  const dashboardMaterial = makeScreen(dashboardTexture, 1, 0.005);
-  const posMaterial = makeScreen(posTexture, 0, 0.006);
-  const storefrontMaterial = makeScreen(storefrontTexture, 0, 0.007);
-  const checkoutMaterial = makeScreen(checkoutTexture, 0, 0.008);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(screenWidth, screenHeight), screenMaterial);
+  screen.position.set(screenX, screenY, front + 0.005);
+  lid.add(screen);
 
-  return { root, lid, marketplaceMaterial, dashboardMaterial, posMaterial, storefrontMaterial, checkoutMaterial, lidClosed: 1.575, lidOpen: -0.22 };
+  return { root, lid, lidClosed: 1.575, lidOpen: -0.22 };
 };
 
 const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
@@ -434,15 +447,15 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0xf1f7ff, 0.055);
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-    camera.position.set(0, 1.5, 6.2);
-    camera.lookAt(0, 0.65, 0);
+    camera.position.set(0, 1.28, 5.7);
+    camera.lookAt(0, 0.82, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
     renderer.setSize(host.clientWidth, host.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.88;
     renderer.domElement.setAttribute('aria-label', 'Scroll-controlled 3D Rentify laptop');
@@ -451,18 +464,34 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environment;
-    scene.environmentIntensity = 0.25;
+    scene.environmentIntensity = 0.9;
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa2ad, 1.9));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa2ad, 0.6));
+
+    // Warm key light — the main modelling light, slightly amber like a studio softbox.
+    const keyLight = new THREE.DirectionalLight(0xfff1dc, 1.25);
     keyLight.position.set(-3.5, 6, 5);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.radius = 4;
+    keyLight.shadow.bias = -0.0005;
     scene.add(keyLight);
 
+    // Soft fill light — cool and dim, just lifts the shadow side without flattening it.
+    const fillLight = new THREE.DirectionalLight(0xcfe0ff, 0.35);
+    fillLight.position.set(4, 2.5, 3);
+    scene.add(fillLight);
+
+    // Rim light — from behind, traces a bright edge along the aluminium so it
+    // doesn't read as flat gray plastic.
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    rimLight.position.set(0, 4, -6);
+    scene.add(rimLight);
+
+    // Contact shadow — neutral, not blue-tinted, so it doesn't colour the silver.
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(15, 15),
-      new THREE.ShadowMaterial({ color: 0x35618c, opacity: 0.16 })
+      new THREE.ShadowMaterial({ color: 0x1a1a1a, opacity: 0.26 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.08;
@@ -470,14 +499,19 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     scene.add(ground);
 
     const textureLoader = new THREE.TextureLoader();
-    const marketplaceTexture = textureLoader.load(MARKETPLACE_TEXTURE);
+    const marketplaceTexture = textureLoader.load(HOME_STOREFRONT_TEXTURE);
     const dashboardTexture = textureLoader.load(DASHBOARD_TEXTURE);
-    const posTexture = makePosTexture();
+    const posTexture = textureLoader.load(POS_TEXTURE, undefined, undefined, () => {
+      const fallback = makePosTexture();
+      posTexture.image = fallback.image;
+      posTexture.needsUpdate = true;
+      fallback.dispose();
+    });
     const checkoutTexture = makeCheckoutTexture();
-    const storefrontTexture = textureLoader.load(SHOWCASE.tech.desktop);
-    storefrontTexture.colorSpace = THREE.SRGBColorSpace;
-    const textures = { marketplaceTexture, dashboardTexture, posTexture, storefrontTexture, checkoutTexture };
-    [marketplaceTexture, dashboardTexture].forEach((texture) => {
+    const storefrontTexture = textureLoader.load(PHONE_STOREFRONT_TEXTURE);
+    const screenMaterial = makeScreenMaterial(dashboardTexture, marketplaceTexture);
+    const screenSequence = [dashboardTexture, marketplaceTexture, storefrontTexture, checkoutTexture, dashboardTexture, posTexture];
+    [marketplaceTexture, dashboardTexture, posTexture, storefrontTexture].forEach((texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     });
@@ -486,13 +520,9 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     const motion = {
       open: 0,
       spin: -0.55,
-      dashboard: 1,
-      marketplace: 0,
-      pos: 0,
-      storefront: 0,
-      checkout: 0,
+      screen: 0,
       slide: 0,
-      cameraTargetY: 0.65,
+      cameraTargetY: 0.82,
       modelLift: 0,
     };
     let activeModel = null;
@@ -507,11 +537,11 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     dracoLoader.setDecoderPath(DRACO_DECODER_PATH);
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
-    const showCodedLaptop = () => showModel(makeMacBook(marketplaceTexture, dashboardTexture, posTexture, storefrontTexture, checkoutTexture));
+    const showCodedLaptop = () => showModel(makeMacBook(screenMaterial));
     gltfLoader.load(
       MACBOOK_MODEL,
       (gltf) => {
-        const prepared = prepareRealMacBook(gltf, textures, finish);
+        const prepared = prepareRealMacBook(gltf, screenMaterial, finish);
         if (!prepared) {
           showCodedLaptop();
           return;
@@ -520,7 +550,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
         const bounds = new THREE.Box3().setFromObject(prepared.root);
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
-        const baseScale = 3.3 / Math.max(size.x, size.z);
+        const baseScale = 3.55 / Math.max(size.x, size.z);
         const basePositionY = -bounds.min.y * baseScale - 0.08;
         const basePositionX = -center.x * baseScale;
         prepared.root.position.set(basePositionX, basePositionY, -center.z * baseScale);
@@ -537,7 +567,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
       if (!activeModel) return;
-      const scale = window.innerWidth < 640 ? 0.7 : window.innerWidth < 1024 ? 0.88 : 1;
+      const scale = window.innerWidth < 640 ? 0.44 : window.innerWidth < 1024 ? 0.88 : 1;
       activeModel.root.scale.setScalar(activeModel.baseScale * scale);
     };
     const observer = new ResizeObserver(resize);
@@ -550,14 +580,14 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
         const { lidClosed, lidOpen } = activeModel;
         activeModel.lid.rotation.x = lidClosed + (lidOpen - lidClosed) * motion.open;
         activeModel.root.rotation.y = motion.spin;
-        activeModel.dashboardMaterial.opacity = motion.dashboard;
-        activeModel.marketplaceMaterial.opacity = motion.marketplace;
-        activeModel.posMaterial.opacity = motion.pos;
-        activeModel.storefrontMaterial.opacity = motion.storefront;
-        activeModel.checkoutMaterial.opacity = motion.checkout;
+        const screen = THREE.MathUtils.clamp(motion.screen, 0, 5);
+        const stage = Math.min(Math.floor(screen), 4);
+        screenMaterial.uniforms.currentMap.value = screenSequence[stage];
+        screenMaterial.uniforms.nextMap.value = screenSequence[stage + 1];
+        screenMaterial.uniforms.progress.value = screen - stage;
         // On wide screens the laptop moves right to make room for the feature text
         const slideDistance = window.innerWidth >= 1024 ? 1.35 : 0;
-        activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance;
+        activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance + (window.innerWidth < 640 ? 0.2 : 0);
         activeModel.root.position.y = activeModel.basePositionY + motion.modelLift;
       }
       camera.lookAt(0, motion.cameraTargetY, 0);
@@ -591,8 +621,8 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       .to(motion, { open: 1, spin: 0, duration: 1, ease: 'power3.inOut' }, 0.05)
       .to(dashboardLabelRef.current, { autoAlpha: 1, y: 0, duration: 0.3 }, 0.75)
       .to(dashboardLabelRef.current, { autoAlpha: 0, y: -16, duration: 0.25 }, 1.35)
-      // 2. The screen switches to the marketplace, then the camera dives into it
-      .to(motion, { dashboard: 0, marketplace: 1, duration: 0.4 }, 1.4)
+      // 2. Show the home storefront, then the phone storefront and KHQR checkout
+      .to(motion, { screen: 1, duration: 0.55 }, 1.4)
       .to(marketplaceLabelRef.current, { autoAlpha: 1, y: 0, duration: 0.3 }, 1.55)
       .to(marketplaceLabelRef.current, { autoAlpha: 0, y: -16, duration: 0.25 }, 2.1)
       // The camera moves in until the laptop screen fills most of the view
@@ -601,24 +631,23 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       .to(motion, { cameraTargetY: 1.1, duration: 0.8 }, 2.1)
       .to(captions[0], { autoAlpha: 1, y: 0, duration: 0.25 }, 2.7)
       .to(captions[0], { autoAlpha: 0, y: -12, duration: 0.15 }, 3.35)
-      .to(motion, { marketplace: 0, storefront: 1, duration: 0.3 }, 3.4)
+      .to(motion, { screen: 2, duration: 0.55 }, 3.4)
       .to(captions[1], { autoAlpha: 1, y: 0, duration: 0.2 }, 3.5)
       .to(captions[1], { autoAlpha: 0, y: -12, duration: 0.15 }, 4.15)
-      .to(motion, { storefront: 0, checkout: 1, duration: 0.3 }, 4.2)
+      .to(motion, { screen: 3, duration: 0.55 }, 4.2)
       .to(captions[2], { autoAlpha: 1, y: 0, duration: 0.2 }, 4.3)
       .to(captions[2], { autoAlpha: 0, y: -12, duration: 0.15 }, 5)
       // 3. Back to the dashboard and the whole laptop
-      .to(motion, { checkout: 0, dashboard: 1, duration: 0.3 }, 5.05)
-      .to(camera.position, { z: 6.2, y: 1.5, duration: 0.9 }, 5.2)
-      .to(motion, { cameraTargetY: 0.65, duration: 0.9 }, 5.2)
+      .to(motion, { screen: 4, duration: 0.55 }, 5.05)
+      .to(camera.position, { z: 5.7, y: 1.28, duration: 0.9 }, 5.2)
+      .to(motion, { cameraTargetY: 0.82, duration: 0.9 }, 5.2)
       // 4. The laptop moves right, dashboard features appear on the left, led by POS
       .to(motion, { slide: 1, duration: 0.6 }, 6.1)
       .fromTo(featurePanel, { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.4 }, 6.3)
-      .to(motion, { dashboard: 0, pos: 1, duration: 0.4 }, 6.4)
+      .to(motion, { screen: 5, duration: 0.55 }, 6.4)
       .to(featureItems[0], { opacity: 1, duration: 0.2 }, 6.45)
       .to(featureItems[1], { opacity: 1, duration: 0.2 }, 6.75)
       .to(featureItems[2], { opacity: 1, duration: 0.2 }, 7.05)
-      .to(motion, { pos: 0, dashboard: 1, duration: 0.3 }, 7.3)
       .to(featureItems[3], { opacity: 1, duration: 0.2 }, 7.35)
       .to({}, { duration: 0.35 }, 7.6);
 
@@ -651,13 +680,13 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     <section
       ref={sectionRef}
       aria-label="Rentify product experience"
-      className="relative h-[960vh] bg-[#f5f5f7]"
+      className="relative h-[960vh] bg-[#f8f6f2]"
     >
       <div className="sticky top-0 h-screen overflow-hidden">
         <div ref={canvasLayerRef} className="absolute inset-0 z-10">
           <div ref={canvasHostRef} className="absolute inset-0" />
 
-          <div ref={introRef} className="pointer-events-none absolute inset-x-5 top-[10vh] text-center sm:top-[12vh]">
+          <div ref={introRef} className="pointer-events-none absolute inset-x-5 top-[6vh] text-center sm:top-[7vh]">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">One connected platform</p>
             <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-5xl lg:text-6xl">
               Your whole business, on one screen.
@@ -671,8 +700,8 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
           </div>
 
           <div ref={marketplaceLabelRef} className="pointer-events-none absolute inset-x-5 top-[8vh] text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">Rentify Marketplace</p>
-            <h3 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 sm:text-5xl">Reach more buyers.</h3>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">Your storefront</p>
+            <h3 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 sm:text-5xl">Make it yours.</h3>
           </div>
 
           <div

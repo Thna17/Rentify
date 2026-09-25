@@ -48,9 +48,10 @@ export const PaymentModal = ({
   onKHQRPayment,
   container,
   isFullscreen = false,
+  initialMethod = 'cash',
 }) => {
   const { t } = useTranslation();
-  const [selectedMethod, setSelectedMethod] = useState('cash');
+  const [selectedMethod, setSelectedMethod] = useState(initialMethod);
   const [cashReceived, setCashReceived] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

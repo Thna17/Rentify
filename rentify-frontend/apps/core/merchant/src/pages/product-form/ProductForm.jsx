@@ -1,12 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Save,
   Image as ImageIcon,
   X,
-  Trash,
-  Upload,
   Plus,
   Loader2,
   DollarSign,
@@ -15,13 +13,14 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import axios from 'axios';
 import {
   useCreateProductMutation,
   useUpdateProductMutation,
+  useGetProductFormConfigQuery,
 } from '@rentify/apis';
 import { useShopCategories } from '../../hooks/useShopCategories';
 // Shadcn Components
@@ -30,13 +29,12 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
   CardDescription,
 } from '@rentify/shared/ui/card';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { Textarea } from '@rentify/shared/ui/Textarea';
+import { Textarea } from '@rentify/shared/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -47,32 +45,60 @@ import {
 import { Switch } from '@rentify/shared/ui/switch';
 import { Badge } from '@rentify/shared/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@rentify/shared/ui/alert';
-import { Progress } from '@rentify/shared/ui/Progress';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@rentify/shared/ui/Tooltip';
+} from '@rentify/shared/ui/tooltip';
 import { Separator } from '@rentify/shared/ui/separator';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from '@rentify/shared/ui/collapsible';
 import { useGetManagedProductQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
+import { ImageUploader as ProductImageUploader } from './components/ImageUploader';
+import { uploadProductImages } from '../../services/productImages';
+
+const SKIN_TYPES = [
+  { value: 'all', label: 'All skin types' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'dry', label: 'Dry' },
+  { value: 'oily', label: 'Oily' },
+  { value: 'combination', label: 'Combination' },
+  { value: 'sensitive', label: 'Sensitive' },
+];
+
+const toStringList = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split(/[,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
 
 export const ProductForm = ({ onClose, category }) => {
+  const navigate = useNavigate();
   const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
+  const websiteId = websiteData?.websiteId;
+  const closeForm = () => {
+    if (onClose) onClose();
+    else navigate('/products');
+  };
 
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState([]);
+  const [submitError, setSubmitError] = useState('');
   const [marketplaceCategories, setMarketplaceCategories] = useState([]);
   const [marketplaceCategoriesError, setMarketplaceCategoriesError] = useState(false);
   useEffect(() => {
@@ -88,6 +114,7 @@ export const ProductForm = ({ onClose, category }) => {
   }, []);
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
+    niche: true,
     media: true,
     pricing: true,
     organization: true,
@@ -103,26 +130,19 @@ export const ProductForm = ({ onClose, category }) => {
     isError: createError,
   } = useGetManagedProductQuery({ websiteId, productId: id }, { skip: !id });
 
-  // Upload function remains the same
-  const uploadImage = (websiteId, imageFile) => {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    return axios.post(
-      `${__API_URL__}/api/websites/uploadImage/${websiteId}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          const progress = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(progress);
-        },
-      }
-    );
-  };
+  const {
+    data: productFormConfig,
+    isLoading: productFormConfigLoading,
+    isError: productFormConfigError,
+  } = useGetProductFormConfigQuery({ websiteId }, { skip: !websiteId });
+
+  const websiteNiche = String(
+    productFormConfig?.niche ||
+      product?.websiteNiche ||
+      websiteData?.niche ||
+      'ecommerce'
+  ).toLowerCase();
+  const isSkincare = websiteNiche === 'skincare';
 
   const [createProduct, { isLoading: createLoading }] =
     useCreateProductMutation();
@@ -131,7 +151,6 @@ export const ProductForm = ({ onClose, category }) => {
     { isLoading: updateLoading, isError: updateError, error, isSuccess },
   ] = useUpdateProductMutation();
 
-  // Validation schema remains the same
   const validationSchema = Yup.object({
     name: Yup.string().required('Product name is required').max(255),
     description: Yup.string().required('Description is required').max(1000),
@@ -158,6 +177,23 @@ export const ProductForm = ({ onClose, category }) => {
     ),
     categoryId: Yup.string().nullable(),
     marketplaceCategory: Yup.string().required('Marketplace category is required'),
+    nicheAttributes: Yup.object({
+      skinType: isSkincare
+        ? Yup.array()
+            .of(Yup.string())
+            .min(1, 'Select at least one suitable skin type')
+        : Yup.array().of(Yup.string()),
+    }),
+    ingredientsText: isSkincare
+      ? Yup.string()
+          .trim()
+          .required('Add at least one ingredient')
+          .test(
+            'has-ingredients',
+            'Add at least one ingredient',
+            (value) => toStringList(value).length > 0
+          )
+      : Yup.string(),
   });
 
   const getInitialCategoryId = () => {
@@ -177,7 +213,7 @@ export const ProductForm = ({ onClose, category }) => {
       description: product?.description || '',
       price: product?.price || '',
       stockQuantity: product?.stockQuantity || '',
-      status: product?.status || 'draft',
+      status: product?.status || 'active',
       images: product?.images || [],
       categoryId: getInitialCategoryId(),
       marketplaceCategory: product?.marketplaceCategory || '',
@@ -185,39 +221,54 @@ export const ProductForm = ({ onClose, category }) => {
       comparePrice: product?.comparePrice || '',
       sku: product?.sku || '',
       tags: product?.tags || '',
+      nicheAttributes: {
+        ...(product?.nicheAttributes || {}),
+        skinType: toStringList(product?.nicheAttributes?.skinType),
+        usageInstructions: product?.nicheAttributes?.usageInstructions || '',
+        volume: product?.nicheAttributes?.volume || '',
+        spf: product?.nicheAttributes?.spf || '',
+        crueltyFree: Boolean(product?.nicheAttributes?.crueltyFree),
+        vegan: Boolean(product?.nicheAttributes?.vegan),
+      },
+      ingredientsText: toStringList(
+        product?.nicheAttributes?.ingredients
+      ).join(', '),
     },
     validationSchema,
+    validateOnMount: true,
     onSubmit: async (values) => {
-      setIsUploading(true);
-
-      const uploadedImagesData = [];
-      if (uploadedImages.length > 0) {
-        const uploadPromises = uploadedImages.map((file) =>
-          uploadImage(websiteId, file)
-            .then((res) => res.data)
-            .catch((err) => {
-              console.error('Image upload failed:', err);
-              throw err;
-            })
-        );
-        uploadedImagesData.push(...(await Promise.all(uploadPromises)));
+      if (!websiteId) {
+        setSubmitError('Your website is not ready yet. Refresh the page or finish store setup first.');
+        return;
       }
-
-      const productData = {
-        ...values,
-        price: parseFloat(values.price),
-        stockQuantity: parseInt(values.stockQuantity),
-        images: [
-          ...(isEditMode && product?.images ? product.images : []),
-          ...uploadedImagesData.map((img) => ({
-            url: img.url,
-            publicId: img.publicId,
-          })),
-        ],
-        expectedVersion: values.version,
-      };
-
+      if (!productFormConfig?.niche) {
+        setSubmitError(
+          'Could not verify your store product requirements. Refresh the page and try again.'
+        );
+        return;
+      }
+      setIsUploading(true);
+      setSubmitError('');
+      setUploadErrors([]);
       try {
+        const uploadedImagesData = await uploadProductImages({
+          files: uploadedImages,
+          websiteId,
+          onProgress: setUploadProgress,
+        });
+        const { ingredientsText, ...productValues } = values;
+        const productData = {
+          ...productValues,
+          price: parseFloat(values.price),
+          stockQuantity: parseInt(values.stockQuantity, 10),
+          images: [...(values.images || []), ...uploadedImagesData],
+          expectedVersion: values.version,
+          nicheAttributes: {
+            ...values.nicheAttributes,
+            ingredients: toStringList(ingredientsText),
+          },
+        };
+
         if (isEditMode) {
           await updateProduct({
             websiteId,
@@ -231,11 +282,16 @@ export const ProductForm = ({ onClose, category }) => {
           }).unwrap();
         }
 
-        onClose();
+        setUploadedImages([]);
+        closeForm();
       } catch (error) {
-        console.error('Submission failed:', error);
+        setSubmitError(
+          error?.data?.error || error?.message ||
+          `Could not ${isEditMode ? 'update' : 'create'} the product. Please try again.`
+        );
       } finally {
         setIsUploading(false);
+        setUploadProgress(0);
       }
     },
   });
@@ -257,16 +313,35 @@ export const ProductForm = ({ onClose, category }) => {
 
   const allImages = [...(formik.values.images || []), ...uploadedImages];
 
-  // Calculate completion percentage
+  const completionItems = [
+    { condition: Boolean(formik.values.marketplaceCategory), label: 'Marketplace category' },
+    { condition: Boolean(formik.values.name.trim()), label: 'Product name' },
+    { condition: Boolean(formik.values.description.trim()), label: 'Description' },
+    { condition: Number(formik.values.price) > 0, label: 'Price' },
+    {
+      condition:
+        formik.values.stockQuantity !== '' &&
+        Number(formik.values.stockQuantity) >= 0,
+      label: 'Inventory quantity',
+    },
+    { condition: allImages.length > 0, label: 'Product images' },
+    ...(isSkincare
+      ? [
+          {
+            condition: formik.values.nicheAttributes.skinType.length > 0,
+            label: 'Suitable skin type',
+          },
+          {
+            condition: toStringList(formik.values.ingredientsText).length > 0,
+            label: 'Ingredients',
+          },
+        ]
+      : []),
+  ];
+
   const completionPercentage = Math.round(
-    ([
-      formik.values.name,
-      formik.values.description,
-      formik.values.price,
-      formik.values.stockQuantity,
-      allImages.length,
-    ].filter(Boolean).length /
-      5) *
+    (completionItems.filter((item) => item.condition).length /
+      completionItems.length) *
       100
   );
 
@@ -284,7 +359,8 @@ export const ProductForm = ({ onClose, category }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={onClose}
+                onClick={closeForm}
+                aria-label="Back to products"
                 className="rounded-full hover:bg-gray-100 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -306,7 +382,9 @@ export const ProductForm = ({ onClose, category }) => {
               <div className="hidden md:flex items-center space-x-3">
                 <div className="text-right">
                   <div className="text-sm font-medium text-gray-700">
-                    {completionPercentage}% Complete
+                    {productFormConfigLoading
+                      ? 'Checking requirements…'
+                      : `${completionPercentage}% Complete`}
                   </div>
                   <div className="w-24 bg-gray-200 rounded-full h-2">
                     <div
@@ -330,7 +408,7 @@ export const ProductForm = ({ onClose, category }) => {
               <div className="flex space-x-2">
                 <Button
                   variant="outline"
-                  onClick={onClose}
+                  onClick={closeForm}
                   disabled={createLoading || updateLoading || isUploading}
                 >
                   Cancel
@@ -341,6 +419,8 @@ export const ProductForm = ({ onClose, category }) => {
                     createLoading ||
                     updateLoading ||
                     isUploading ||
+                    productFormConfigLoading ||
+                    productFormConfigError ||
                     !formik.isValid
                   }
                   className="min-w-[120px] shadow-sm"
@@ -386,6 +466,23 @@ export const ProductForm = ({ onClose, category }) => {
                   `Failed to ${
                     isEditMode ? 'update' : 'create'
                   } product. Please try again.`}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {submitError && (
+            <Alert variant="destructive" className="border-l-4 border-l-red-500">
+              <AlertTitle>Product was not saved</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
+
+          {productFormConfigError && (
+            <Alert variant="destructive" className="border-l-4 border-l-red-500">
+              <AlertTitle>Store requirements could not be loaded</AlertTitle>
+              <AlertDescription>
+                Refresh the page before creating a product. This prevents the
+                product from being submitted without required store-specific details.
               </AlertDescription>
             </Alert>
           )}
@@ -627,6 +724,230 @@ export const ProductForm = ({ onClose, category }) => {
               </Collapsible>
             </Card>
 
+            {isSkincare && (
+              <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="pb-4 border-b bg-gradient-to-r from-rose-50 to-white rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-semibold flex items-center gap-3">
+                        <div className="p-2 bg-rose-100 rounded-lg">
+                          <Sparkles className="h-5 w-5 text-rose-600" />
+                        </div>
+                        Skincare Details
+                      </CardTitle>
+                      <CardDescription className="mt-2">
+                        Help customers choose a product that suits their skin
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setExpandedSections((prev) => ({
+                          ...prev,
+                          niche: !prev.niche,
+                        }))
+                      }
+                      aria-label={`${expandedSections.niche ? 'Collapse' : 'Expand'} skincare details`}
+                    >
+                      {expandedSections.niche ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+
+                <Collapsible open={expandedSections.niche}>
+                  <CollapsibleContent>
+                    <CardContent className="pt-6 space-y-6">
+                      <div>
+                        <Label className="text-base font-medium">
+                          Suitable Skin Types <span className="text-red-500">*</span>
+                        </Label>
+                        <p className="text-sm text-muted-foreground mt-1 mb-3">
+                          Select every skin type this product is designed for.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {SKIN_TYPES.map((skinType) => {
+                            const selected = formik.values.nicheAttributes.skinType.includes(
+                              skinType.value
+                            );
+
+                            return (
+                              <Button
+                                key={skinType.value}
+                                type="button"
+                                variant={selected ? 'default' : 'outline'}
+                                size="sm"
+                                aria-pressed={selected}
+                                onClick={() => {
+                                  const current = formik.values.nicheAttributes.skinType;
+                                  const next = selected
+                                    ? current.filter((item) => item !== skinType.value)
+                                    : [...current, skinType.value];
+                                  formik.setFieldValue('nicheAttributes.skinType', next);
+                                  formik.setFieldTouched('nicheAttributes.skinType', true, false);
+                                  setSubmitError('');
+                                }}
+                                className="rounded-full"
+                              >
+                                {skinType.label}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        {formik.touched.nicheAttributes?.skinType &&
+                          formik.errors.nicheAttributes?.skinType && (
+                            <p className="text-red-600 text-sm mt-2 flex items-center">
+                              <X className="h-3 w-3 mr-1" />
+                              {formik.errors.nicheAttributes.skinType}
+                            </p>
+                          )}
+                      </div>
+
+                      <div>
+                        <Label
+                          htmlFor="ingredientsText"
+                          className="text-base font-medium"
+                        >
+                          Ingredients <span className="text-red-500">*</span>
+                        </Label>
+                        <Textarea
+                          id="ingredientsText"
+                          name="ingredientsText"
+                          value={formik.values.ingredientsText}
+                          onChange={(event) => {
+                            formik.handleChange(event);
+                            setSubmitError('');
+                          }}
+                          onBlur={formik.handleBlur}
+                          rows={3}
+                          placeholder="e.g., Water, glycerin, hyaluronic acid"
+                          className={`mt-2 resize-none ${
+                            formik.touched.ingredientsText &&
+                            formik.errors.ingredientsText
+                              ? 'border-red-500 focus:border-red-500'
+                              : ''
+                          }`}
+                        />
+                        {formik.touched.ingredientsText &&
+                        formik.errors.ingredientsText ? (
+                          <p className="text-red-600 text-sm mt-1 flex items-center">
+                            <X className="h-3 w-3 mr-1" />
+                            {formik.errors.ingredientsText}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Separate ingredients with commas or new lines.
+                          </p>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                          <Label htmlFor="usageInstructions" className="text-base font-medium">
+                            Usage Instructions
+                          </Label>
+                          <Textarea
+                            id="usageInstructions"
+                            value={formik.values.nicheAttributes.usageInstructions}
+                            onChange={(event) =>
+                              formik.setFieldValue(
+                                'nicheAttributes.usageInstructions',
+                                event.target.value
+                              )
+                            }
+                            rows={3}
+                            placeholder="Explain how and when customers should use this product"
+                            className="mt-2 resize-none"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="volume" className="text-base font-medium">
+                            Volume (ml)
+                          </Label>
+                          <Input
+                            id="volume"
+                            type="number"
+                            min="0"
+                            value={formik.values.nicheAttributes.volume}
+                            onChange={(event) =>
+                              formik.setFieldValue(
+                                'nicheAttributes.volume',
+                                event.target.value
+                              )
+                            }
+                            placeholder="e.g., 100"
+                            className="mt-2 h-11"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="spf" className="text-base font-medium">
+                            SPF
+                          </Label>
+                          <Input
+                            id="spf"
+                            type="number"
+                            min="0"
+                            value={formik.values.nicheAttributes.spf}
+                            onChange={(event) =>
+                              formik.setFieldValue(
+                                'nicheAttributes.spf',
+                                event.target.value
+                              )
+                            }
+                            placeholder="e.g., 50"
+                            className="mt-2 h-11"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div>
+                            <p className="font-medium">Cruelty-free</p>
+                            <p className="text-xs text-muted-foreground">
+                              Not tested on animals
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formik.values.nicheAttributes.crueltyFree}
+                            onCheckedChange={(checked) =>
+                              formik.setFieldValue(
+                                'nicheAttributes.crueltyFree',
+                                checked
+                              )
+                            }
+                            aria-label="Cruelty-free product"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div>
+                            <p className="font-medium">Vegan</p>
+                            <p className="text-xs text-muted-foreground">
+                              Contains no animal-derived ingredients
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formik.values.nicheAttributes.vegan}
+                            onCheckedChange={(checked) =>
+                              formik.setFieldValue('nicheAttributes.vegan', checked)
+                            }
+                            aria-label="Vegan product"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
+              </Card>
+            )}
+
             {/* Images Section */}
             <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
               <CardHeader className="pb-4 border-b bg-gradient-to-r from-gray-50 to-white rounded-t-lg">
@@ -669,12 +990,13 @@ export const ProductForm = ({ onClose, category }) => {
               <Collapsible open={expandedSections.media}>
                 <CollapsibleContent>
                   <CardContent className="pt-6">
-                    <ImageUploader
+                    <ProductImageUploader
                       images={allImages}
                       onImagesChange={handleImageUpload}
                       maxImages={10}
                       isUploading={isUploading}
                       uploadProgress={uploadProgress}
+                      onValidationError={setUploadErrors}
                       onRemoveImage={(index) => {
                         if (index < formik.values.images.length) {
                           handleRemoveExistingImage(index);
@@ -683,6 +1005,16 @@ export const ProductForm = ({ onClose, category }) => {
                         }
                       }}
                     />
+                    {uploadErrors.length > 0 && (
+                      <Alert variant="destructive" className="mt-4">
+                        <AlertTitle>Some images were not added</AlertTitle>
+                        <AlertDescription>
+                          <ul className="list-disc pl-5">
+                            {uploadErrors.map((message) => <li key={message}>{message}</li>)}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     {formik.touched.images && formik.errors.images && (
                       <Alert variant="destructive" className="mt-4">
                         <AlertTitle>Image Required</AlertTitle>
@@ -881,7 +1213,7 @@ export const ProductForm = ({ onClose, category }) => {
                         Quick Save
                       </p>
                       <p className="text-xs text-blue-700 mt-1">
-                        Your progress is saved automatically as you work.
+                        Images upload when you create or update the product.
                       </p>
                     </div>
                   </div>
@@ -903,39 +1235,13 @@ export const ProductForm = ({ onClose, category }) => {
                       Overall Progress
                     </span>
                     <span className="text-lg font-bold text-green-600">
-                      {completionPercentage}%
+                      {productFormConfigLoading ? '—' : `${completionPercentage}%`}
                     </span>
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      {
-                        condition: !!formik.values.name,
-                        label: 'Product name',
-                        required: true,
-                      },
-                      {
-                        condition: !!formik.values.description,
-                        label: 'Description',
-                        required: true,
-                      },
-                      {
-                        condition: !!formik.values.price,
-                        label: 'Price',
-                        required: true,
-                      },
-                      {
-                        condition: !!formik.values.stockQuantity,
-                        label: 'Inventory quantity',
-                        required: true,
-                      },
-                      {
-                        condition: allImages.length > 0,
-                        label: 'Product images',
-                        required: true,
-                      },
-                    ].map((item, index) => (
-                      <div key={index} className="flex items-center space-x-3">
+                    {completionItems.map((item) => (
+                      <div key={item.label} className="flex items-center space-x-3">
                         <div
                           className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
                             item.condition
@@ -955,9 +1261,7 @@ export const ProductForm = ({ onClose, category }) => {
                           }`}
                         >
                           {item.label}
-                          {item.required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
+                          <span className="text-red-500 ml-1">*</span>
                         </span>
                       </div>
                     ))}
@@ -980,6 +1284,7 @@ export const ProductForm = ({ onClose, category }) => {
                   onClick={() =>
                     setExpandedSections({
                       basic: true,
+                      niche: true,
                       media: true,
                       pricing: true,
                       organization: true,
@@ -994,6 +1299,7 @@ export const ProductForm = ({ onClose, category }) => {
                   onClick={() =>
                     setExpandedSections({
                       basic: false,
+                      niche: false,
                       media: false,
                       pricing: false,
                       organization: false,
@@ -1005,223 +1311,22 @@ export const ProductForm = ({ onClose, category }) => {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={onClose}
+                  onClick={async () => {
+                    await formik.setFieldValue('status', 'draft');
+                    await formik.submitForm();
+                  }}
+                  disabled={
+                    createLoading ||
+                    updateLoading ||
+                    isUploading ||
+                    productFormConfigLoading ||
+                    productFormConfigError
+                  }
                 >
                   Save as Draft
                 </Button>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Enhanced ImageUploader Component (same as before)
-export const ImageUploader = ({
-  images = [],
-  onImagesChange,
-  maxImages = 10,
-  isUploading,
-  uploadProgress,
-  onRemoveImage,
-}) => {
-  const fileInputRef = useRef(null);
-  const [dragActive, setDragActive] = useState(false);
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-
-  const handleFileInput = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
-      e.target.value = '';
-    }
-  };
-
-  const handleFiles = (files) => {
-    const fileList = Array.from(files);
-    const imageFiles = fileList
-      .filter((file) => file.type.startsWith('image/'))
-      .filter((file) => file.size <= 10 * 1024 * 1024); // 10MB limit
-
-    const remainingSlots = maxImages - images.length;
-    const filesToProcess = imageFiles.slice(0, remainingSlots);
-
-    if (filesToProcess.length > 0) {
-      onImagesChange(filesToProcess);
-    }
-  };
-
-  const canAddMore = images.length < maxImages;
-
-  return (
-    <div className="space-y-4">
-      {/* Image Grid */}
-      {images.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <Label className="text-base">
-              Uploaded Images ({images.length}/{maxImages})
-            </Label>
-            <Badge
-              variant={images.length >= maxImages ? 'destructive' : 'outline'}
-            >
-              {images.length >= maxImages
-                ? 'Maximum reached'
-                : `${maxImages - images.length} slots left`}
-            </Badge>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {images.map((image, index) => (
-              <div
-                key={index}
-                className="relative group rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md"
-              >
-                <div className="aspect-square bg-gray-100">
-                  {typeof image === 'string' || image?.url ? (
-                    <img
-                      src={typeof image === 'string' ? image : image.url}
-                      alt={`Product preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : image instanceof File ? (
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Upload preview ${index + 1}`}
-                      className={`w-full h-full object-cover ${
-                        isUploading ? 'opacity-50' : ''
-                      }`}
-                    />
-                  ) : null}
-                </div>
-
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-2">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={() => onRemoveImage(index)}
-                    >
-                      <Trash className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Badges */}
-                {index === 0 && (
-                  <Badge className="absolute top-2 left-2 bg-blue-600 text-white text-xs">
-                    Cover
-                  </Badge>
-                )}
-
-                {/* Upload Progress */}
-                {isUploading && uploadProgress > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-black bg-opacity-50">
-                    <Progress
-                      value={uploadProgress}
-                      className="h-1 bg-white/20"
-                    />
-                    <p className="text-white text-xs text-center mt-1">
-                      {uploadProgress}%
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Upload Area */}
-      {canAddMore && (
-        <div
-          className={`border-2 border-dashed rounded-xl transition-all duration-200 ${
-            dragActive
-              ? 'border-blue-500 bg-blue-50 border-blue-500'
-              : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'
-          }`}
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileInput}
-            className="hidden"
-          />
-
-          <div
-            className="p-8 text-center cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="max-w-md mx-auto">
-              <div
-                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-                  dragActive
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'bg-gray-100 text-gray-400'
-                }`}
-              >
-                <Upload className="h-8 w-8" />
-              </div>
-
-              <h4 className="font-semibold text-lg mb-2">
-                {dragActive ? 'Drop to upload' : 'Upload images'}
-              </h4>
-
-              <p className="text-muted-foreground mb-4">
-                Drag & drop your images here or click to browse
-              </p>
-
-              <Button variant="outline" className="gap-2">
-                <Upload className="h-4 w-4" />
-                Choose Files
-              </Button>
-
-              <p className="text-xs text-muted-foreground mt-4">
-                Supports JPG, PNG, GIF • Max 10MB per file •{' '}
-                {maxImages - images.length} remaining
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tips */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <Info className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-medium text-amber-900 text-sm">Image Tips</p>
-            <ul className="text-amber-800 text-sm mt-1 space-y-1">
-              <li>• Use high-quality images with at least 1024×1024 pixels</li>
-              <li>• The first image will be used as the product cover</li>
-              <li>• Supported formats: JPG, PNG, GIF</li>
-            </ul>
           </div>
         </div>
       </div>

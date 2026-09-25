@@ -9,7 +9,7 @@ Docker Compose starts the complete local Rentify stack with isolated MySQL and R
 - Merchant dashboard: `http://localhost:4400`
 - Storefront Template 1: `http://localhost:4700`
 - Storefront Template 2: `http://localhost:4600`
-- Marketplace UI: `http://localhost:4500` (run locally via `cd marketplace-frontend && npm start`)
+- Marketplace UI: `http://localhost:4500`
 - MySQL (Host): `localhost:3307` (mapped to internal `3306`)
 - Redis (Host): `localhost:6379`
 
@@ -85,6 +85,12 @@ docker compose exec ecommerce-api npm run db:seed
 ## Secrets and external integrations
 
 `.env.docker` / `.env` are local-only and contain generated development secrets. They do not contain production Cloudinary, Vercel, Google, SMTP, Telegram, ABA, or Bakong credentials. Add those only when you need to test that specific integration; never commit `.env` or `.env.docker`.
+
+Product image uploads read `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and
+`CLOUDINARY_API_SECRET` from `rentify-server/.env`. Docker passes that file only
+to the Core API container; these values are never injected into frontend builds.
+After changing them, recreate Core API with
+`docker compose up -d --force-recreate core-api`.
 
 ## Troubleshooting
 

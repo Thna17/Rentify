@@ -28,12 +28,12 @@ import { ProductRowDetail } from './components/ProductRowDetail';
 import { ReusableTable } from '@rentify/shared/ui/components/ReusableTable';
 import { StatusTabs } from '@rentify/shared/ui/components/StatusTabs';
 
-// @ts-ignore
+// @ts-expect-error Legacy JavaScript component has no declaration file yet.
 import { BulkPriceUpdateModal } from './components/BulkPriceUpdateModal';
-// @ts-ignore
+// @ts-expect-error Legacy JavaScript component has no declaration file yet.
 import { BulkStatusChangeModal } from './components/BulkStatusChangeModal';
 
-// @ts-ignore
+// @ts-expect-error Legacy JavaScript component has no declaration file yet.
 import { BulkCreateProductsModal } from './components/BulkCreateProductsModal';
 
 import { ConfirmDeleteDialog } from '@rentify/shared/ui/components/ConfirmDeleteDialog';
@@ -53,7 +53,12 @@ import { Card } from '@rentify/shared/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@rentify/shared/ui/alert';
 import { Download, Package, Plus, Upload } from 'lucide-react';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
-// @ts-ignore
+import { useCreateBulkProductsMutation } from '@rentify/apis';
+// @ts-expect-error JavaScript helper has no declaration file yet.
+import { uploadProductImages } from '../../services/productImages';
+// @ts-expect-error Legacy JavaScript hook has no declaration file yet.
+import { useShopCategories } from '../../hooks/useShopCategories';
+// @ts-expect-error Legacy JavaScript page has no declaration file yet.
 import StoreCatalogPage from './StoreCatalogPage';
 
 // Type definitions for product data
@@ -159,6 +164,8 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
   const showSnackbar = useSnackbar();
+  const [createBulkProducts, { isLoading: isBulkCreating }] = useCreateBulkProductsMutation();
+  const { categories: shopCategories } = useShopCategories();
 
   // State management hooks
   const state = useProductManagementState();
@@ -899,18 +906,31 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         open={state.isBulkCreateOpen}
         onOpenChange={state.setIsBulkCreateOpen}
         onSubmit={async (products: Product[]) => {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const preparedProducts = [];
+          for (const rawProduct of products as any[]) {
+            const files = (rawProduct.images || [])
+              .map((image: any) => image.file)
+              .filter(Boolean);
+            const images = await uploadProductImages({ files, websiteId });
+            const product = { ...rawProduct };
+            delete product.id;
+            delete product.images;
+            preparedProducts.push({
+              ...product,
+              price: Number(product.price),
+              stockQuantity: Number(product.stockQuantity || 0),
+              images,
+            });
+          }
+          await createBulkProducts({ websiteId, products: preparedProducts }).unwrap();
+          await refetch();
           showSnackbar(
             `Successfully created ${products.length} products`,
             'success'
           );
         }}
-        categories={[
-          { id: '1', name: 'Electronics' },
-          { id: '2', name: 'Clothing' },
-          { id: '3', name: 'Lifestyle' },
-        ]}
-        isLoading={isLoading}
+        categories={shopCategories}
+        isLoading={isBulkCreating}
       />
 
       <ConfirmDeleteDialog

@@ -1,18 +1,20 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  useGetUserQuery,
   useGetCustomerQuery,
-  useGetStaffQuery,
-  useLogoutMutation,
   useLogoutCustomerMutation,
-  useLogoutStaffMutation,
-  useRefreshMutation,
   useRefreshCustomerMutation,
-  useRefreshStaffMutation,
   setCredentials,
   clearCredentials,
 } from '../api';
+import {
+  useGetUserQuery,
+  useGetStaffQuery,
+  useLogoutMutation,
+  useLogoutStaffMutation,
+  useRefreshMutation,
+  useRefreshStaffMutation,
+} from '../ownerSessionApi';
 import { useStorefrontWebsite } from '../website';
 import { isHostedStorefrontBuyer } from '../hostedBuyer';
 

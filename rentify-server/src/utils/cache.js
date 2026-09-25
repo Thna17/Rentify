@@ -147,7 +147,9 @@ class CacheService {
       
       // Add to website's index (SET data structure)
       const indexKey = `website:keys:${websiteId}`;
-      await client.sAdd(indexKey, `${this.prefix}:${key}`);
+      // ioredis uses lower-case command method names. `sAdd` belongs to the
+      // node-redis client and fails at runtime with the client configured here.
+      await client.sadd(indexKey, `${this.prefix}:${key}`);
       
       // Set TTL on index (slightly longer than cache TTLs)
       await client.expire(indexKey, ttl + 60);
@@ -184,4 +186,3 @@ module.exports = {
   getMerchantCache,
   getCustomerCache,
 };
-

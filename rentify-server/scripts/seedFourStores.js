@@ -7,7 +7,8 @@ const bcrypt = require('bcrypt');
 const sequelize = require('../src/config/db');
 const { User, Store } = require('../src/models');
 
-const PASSWORD = 'Rentify@1234';
+// Deployed environments set SEED_STORE_PASSWORD; this default is public in the repository.
+const PASSWORD = process.env.SEED_STORE_PASSWORD || 'Rentify@1234';
 
 const STORES = [
   {
@@ -45,7 +46,8 @@ const STORES = [
 ];
 
 async function seedFourStores() {
-  if (process.env.NODE_ENV !== 'development') {
+  // Deployed demos opt in with SEED_DEMO_STORES=true (and SEED_STORE_PASSWORD).
+  if (process.env.NODE_ENV !== 'development' && process.env.SEED_DEMO_STORES !== 'true') {
     console.log('⏭  seedFourStores: skipped (not development)');
     return;
   }
@@ -112,7 +114,8 @@ async function seedFourStores() {
   }
 
   console.log('✅ 4 marketplace stores seeded in Core API');
-  console.log('   Login password for all: ' + PASSWORD);
+  // Deployed environments set SEED_STORE_PASSWORD; never print it.
+  if (!process.env.SEED_STORE_PASSWORD) console.log('   Login password for all: ' + PASSWORD);
 }
 
 // Allow running standalone

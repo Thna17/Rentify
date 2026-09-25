@@ -356,7 +356,9 @@
       "error_updating_content": "Error updating content",
       "store_information": "Store Information",
       "store_name": "Store Name",
-      "store_domain": "Store Domain",
+      "store_domain": "Store address",
+      "store_live": "Live",
+      "store_not_published": "Not published",
       "contact_email": "Contact Email",
       "phone_number": "Phone Number",
       "quick_actions": "Quick Actions",
@@ -403,7 +405,7 @@
       "border_radius_full": "Full Radius"
     },
     "product": {
-      "title": "Product Management",
+      "title": "Products",
       "all_products": "All Products",
       "active": "Active",
       "inactive": "Inactive",
@@ -496,7 +498,7 @@
       "update_inventory": "Update Inventory"
     },
     "order": {
-      "title": "Order Management",
+      "title": "Orders",
       "all_orders": "All Orders",
       "pending": "Pending",
       "confirmed": "Confirmed",

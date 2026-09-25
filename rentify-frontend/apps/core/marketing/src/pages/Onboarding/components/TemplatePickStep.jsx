@@ -6,6 +6,7 @@ import { Skeleton } from '@rentify/shared/ui/skeleton';
 import { cn } from '@rentify/utils';
 import {
   Check,
+  ExternalLink,
   Eye,
   LayoutTemplate,
   Monitor,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useGetTemplatesByCategoryQuery } from '@rentify/apis';
+import { getTemplateMedia } from '../../../data/templateMedia';
 import StepHeader from './StepHeader';
 
 const industries = [
@@ -29,7 +31,6 @@ const previewPages = [
   { key: 'homepage', route: '/' },
   { key: 'products', route: '/products' },
   { key: 'cart', route: '/cart' },
-  { key: 'dashboard', route: '/dashboard' },
 ];
 
 const devices = [
@@ -50,26 +51,41 @@ const toFeatureList = (features) => {
   return [];
 };
 
-const TemplateThumbnail = ({ template }) => (
-  <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-    {template.image ? (
-      <img
-        src={template.image}
-        alt={template.name}
-        className="h-full w-full object-cover object-top"
-      />
-    ) : (
-      // Render the live demo at 4x size and scale it down to a thumbnail
-      <iframe
-        src={template.liveDemo}
-        title={`Preview of ${template.name}`}
-        sandbox="allow-same-origin allow-scripts"
-        tabIndex={-1}
-        className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-[0.25] border-0"
-      />
-    )}
-  </div>
-);
+const TemplateThumbnail = ({ template }) => {
+  const [imageError, setImageError] = useState(false);
+  const media = template.media || getTemplateMedia(template);
+  const imgSrc = !imageError && (template.image || media?.desktop);
+  const hasLiveWebDemo =
+    template.liveDemo &&
+    !template.liveDemo.includes('localhost') &&
+    !template.liveDemo.includes('127.0.0.1');
+
+  return (
+    <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+      {imgSrc ? (
+        <img
+          src={imgSrc}
+          alt={template.name}
+          onError={() => setImageError(true)}
+          className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : hasLiveWebDemo ? (
+        <iframe
+          src={template.liveDemo}
+          title={`Preview of ${template.name}`}
+          sandbox="allow-same-origin allow-scripts"
+          tabIndex={-1}
+          className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-[0.25] border-0"
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-50 to-slate-200 text-slate-400">
+          <LayoutTemplate className="h-10 w-10 text-slate-300" />
+          <span className="text-xs font-medium text-slate-500">{template.name}</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TemplatePickStep = ({ data, onUpdate }) => {
   const { t } = useLanguage();
@@ -83,16 +99,21 @@ const TemplatePickStep = ({ data, onUpdate }) => {
 
   const templates = useMemo(
     () =>
-      apiTemplates.map((template) => ({
-        id: template.id,
-        name: template.name,
-        category: template.category,
-        image: template.thumbnailUrl || null,
-        description: template.description,
-        features: toFeatureList(template.features),
-        liveDemo: template.baseUrl,
-        colorPalette: template.colorPalette,
-      })),
+      apiTemplates.map((template) => {
+        const media = getTemplateMedia(template);
+        return {
+          id: template.id,
+          name: template.name,
+          category: template.category,
+          websiteTemplateId: template.websiteTemplateId,
+          image: template.thumbnailUrl || media?.desktop || null,
+          media,
+          description: template.description,
+          features: toFeatureList(template.features),
+          liveDemo: media?.previewUrl || template.baseUrl,
+          colorPalette: template.colorPalette,
+        };
+      }),
     [apiTemplates]
   );
 
@@ -177,6 +198,11 @@ const TemplatePickStep = ({ data, onUpdate }) => {
                       {t('onboarding.templates.selected')}
                     </Badge>
                   )}
+                  {template.media?.domain && (
+                    <span className="absolute bottom-2.5 left-2.5 z-10 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-mono text-white/90 backdrop-blur-sm shadow-sm pointer-events-none">
+                      {template.media.domain}
+                    </span>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center bg-foreground/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                     <Button
                       variant="secondary"
@@ -260,7 +286,20 @@ const TemplatePickStep = ({ data, onUpdate }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 animate-in fade-in-0 sm:p-4">
           <div className="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-background">
             <div className="flex shrink-0 items-center justify-between border-b px-4 py-3 sm:px-6">
-              <h3 className="text-lg font-semibold">{previewTemplate.name}</h3>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h3 className="text-lg font-semibold">{previewTemplate.name}</h3>
+                {previewTemplate.liveDemo && (
+                  <a
+                    href={previewTemplate.liveDemo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/60 px-2.5 py-0.5 text-xs font-mono text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  >
+                    <span>{previewTemplate.media?.domain || previewTemplate.liveDemo.replace(/^https?:\/\//, '')}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
@@ -300,14 +339,36 @@ const TemplatePickStep = ({ data, onUpdate }) => {
               </div>
             </div>
 
-            <div className="flex flex-1 items-center justify-center overflow-auto bg-muted">
-              <div className={cn('border bg-white shadow-lg', activeDevice.className)}>
-                <iframe
-                  src={`${previewTemplate.liveDemo}${currentPreviewPage}`}
-                  className="h-full w-full border-0"
-                  title={`Preview of ${previewTemplate.name}`}
-                  sandbox="allow-same-origin allow-scripts"
-                />
+            <div className="flex flex-1 items-center justify-center overflow-auto bg-muted p-4">
+              <div
+                className={cn(
+                  'relative overflow-hidden rounded-xl border bg-white shadow-xl transition-all',
+                  activeDevice.className
+                )}
+              >
+                {previewTemplate.liveDemo &&
+                !previewTemplate.liveDemo.includes('localhost') &&
+                !previewTemplate.liveDemo.includes('127.0.0.1') ? (
+                  <iframe
+                    key={`${previewTemplate.liveDemo}${currentPreviewPage}`}
+                    src={`${previewTemplate.liveDemo}${currentPreviewPage}`}
+                    className="h-full w-full border-0"
+                    title={`Preview of ${previewTemplate.name}`}
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                  />
+                ) : (
+                  <div className="h-full w-full overflow-y-auto bg-slate-50">
+                    <img
+                      src={
+                        (deviceMode === 'mobile' && previewTemplate.media?.mobile) ||
+                        previewTemplate.media?.desktop ||
+                        previewTemplate.image
+                      }
+                      alt={`${previewTemplate.name} preview`}
+                      className="w-full h-auto object-cover object-top"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

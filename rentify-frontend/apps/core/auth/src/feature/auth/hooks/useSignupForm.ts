@@ -1,7 +1,7 @@
-// hooks/useSignupForm.ts
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
 import {
   useSignupMutation,
   useVerifyOtpMutation,
@@ -20,6 +20,7 @@ import {
 import { useAuthConfig } from '../utils/authUtils';
 
 export const useSignupForm = () => {
+  const { t, isKhmer } = useAuthLanguage();
   const [step, setStep] = useState<'signup' | 'link' | 'verify'>('signup');
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [otp, setOtp] = useState('');
@@ -105,14 +106,18 @@ export const useSignupForm = () => {
     setSuccess('');
 
     const { name, contact, password, inputMode } = data;
-    const formattedContact = contact;
+    const cleanName = (name || '').trim();
+    const formattedContact = (contact || '').trim();
 
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
-    const isPhone = validateCambodianPhone(formattedContact);
+    const isEmail = inputMode === 'email' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formattedContact);
+    const isPhone = inputMode === 'phone' && validateCambodianPhone(formattedContact);
 
-    if (!name.trim()) return setError('Please enter your full name');
-    if (!isEmail && !isPhone)
-      return setError('Please enter a valid email or phone number');
+    if (!cleanName) return setError(isKhmer ? 'សូមបញ្ចូលឈ្មោះពេញរបស់អ្នក' : 'Please enter your full name');
+    if (!isEmail && !isPhone) {
+      return setError(
+        inputMode === 'phone' ? t('error.invalidPhone') : t('error.invalidEmail')
+      );
+    }
 
     // Store data for later use
     setSignupData({
@@ -145,11 +150,32 @@ export const useSignupForm = () => {
       setStep(method === 'telegram' ? 'link' : 'verify');
       setSuccess(
         method === 'telegram'
-          ? 'Please link your Telegram account to receive OTP'
-          : 'OTP sent. Please check your email.'
+          ? (isKhmer
+              ? 'សូមភ្ជាប់គណនី Telegram របស់អ្នកដើម្បីទទួលលេខកូដ OTP'
+              : 'Please link your Telegram account to receive OTP')
+          : (isKhmer
+              ? 'លេខកូដ OTP ត្រូវបានផ្ញើ។ សូមពិនិត្យអ៊ីមែលរបស់អ្នក។'
+              : 'OTP sent. Please check your email.')
       );
     } catch (err: any) {
-      setError(err?.data?.error || 'Signup failed');
+      const rawMsg = err?.data?.error || err?.data?.message || err?.message || '';
+      let mappedError = rawMsg || (isKhmer ? 'ការចុះឈ្មោះមិនជោគជ័យ' : 'Signup failed');
+      const lower = String(rawMsg).toLowerCase();
+      if (
+        lower.includes('already exists') ||
+        lower.includes('in use') ||
+        lower.includes('duplicate')
+      ) {
+        mappedError =
+          inputMode === 'phone'
+            ? (isKhmer
+                ? 'លេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលគណនី ឬប្រើលេខផ្សេង។'
+                : 'This phone number is already registered. Please sign in or use another number.')
+            : (isKhmer
+                ? 'អ៊ីមែលនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលគណនី ឬប្រើអ៊ីមែលផ្សេង។'
+                : 'This email address is already registered. Please sign in or use another email.');
+      }
+      setError(mappedError);
     }
   };
 
@@ -191,10 +217,10 @@ export const useSignupForm = () => {
 
   const handleVerifyOtp = async () => {
     if (!otp || otp.length !== 6)
-      return setError('Please enter a valid 6-digit OTP');
+      return setError(t('error.otpRequired'));
 
     if (!signupData) {
-      setError('No signup data found');
+      setError(isKhmer ? 'រកមិនឃើញទិន្នន័យចុះឈ្មោះទេ' : 'No signup data found');
       return;
     }
 
@@ -216,12 +242,19 @@ export const useSignupForm = () => {
         await verifyOtpMutation(payload).unwrap();
       }
 
-      setSuccess('Verification successful! Redirecting...');
+      setSuccess(
+        isKhmer
+          ? 'ការផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
+          : 'Verification successful! Redirecting...'
+      );
       setTimeout(() => {
         window.location.href = redirectUrl;
       }, 1500);
     } catch (err: any) {
-      setError(err?.data?.error || 'Invalid or expired OTP');
+      setError(
+        err?.data?.error ||
+          (isKhmer ? 'លេខកូដសម្ងាត់ OTP មិនត្រឹមត្រូវ ឬផុតកំណត់' : 'Invalid or expired OTP')
+      );
     }
   };
 

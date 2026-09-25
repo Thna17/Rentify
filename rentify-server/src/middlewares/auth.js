@@ -7,6 +7,7 @@ const {
 const { User, Staff } = require("../models");
 const { hashRefreshToken, compareRefreshToken } = require("../utils/refreshTokenHash");
 const cookieConfig = require("../config/cookieConfig");
+const { rememberRotatedToken, wasJustRotated } = require("../utils/refreshTokenGrace");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers?.authorization || '';
@@ -123,6 +124,16 @@ const refreshAccessToken = async (req, res, next) => {
     }
 
     const isMatch = await compareRefreshToken(userRefreshToken, user.refreshToken);
+    if (!isMatch && user.refreshTokenExpires >= Date.now() && (await wasJustRotated("user", userRefreshToken, user.id))) {
+      // A parallel request already rotated this token; answer this one with an
+      // access token only. The browser keeps the new refresh cookie it received.
+      res.cookie("userAccessToken", generateAccessToken({ id: user.id, role: user.role }), {
+        ...cookieConfig,
+        maxAge: 15 * 60 * 1000,
+      });
+      req.user = { id: user.id, role: user.role };
+      return next();
+    }
     if (!isMatch || user.refreshTokenExpires < Date.now()) {
       clearCookies(res);
       return res
@@ -135,6 +146,7 @@ const refreshAccessToken = async (req, res, next) => {
     user.refreshToken = await hashRefreshToken(newRefreshToken);
     user.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await user.save();
+    await rememberRotatedToken("user", userRefreshToken, user.id);
     res.cookie("userAccessToken", newAccessToken, {
       ...cookieConfig,
       maxAge: 15 * 60 * 1000,

@@ -4,6 +4,8 @@ const { Op } = require('sequelize');
 const { Cart, CartItem, Product, ProductVariant, StoreAccess, StoreDeliveryPolicy,
   Order, OrderItem, Payment, OrderEvent, WebsiteData } = require('../models');
 const { changeStock } = require('./sharedStockService');
+const { getStoreOwnerContact } = require('./merchantContactService');
+const NotificationService = require('./notificationService');
 
 function fail(message, statusCode = 400) {
   const error = new Error(message);
@@ -556,8 +558,9 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
     if (!matchesRequest(existing)) fail('Checkout key was already used for a different request', 409);
     return existing;
   }
+  let justCreated = false;
   try {
-    return await sequelize.transaction(async (transaction) => {
+    const result = await sequelize.transaction(async (transaction) => {
       const store = await eligibleStore(storeId, transaction, channel);
       const committedReplay = await findOrderByKey(checkoutKey, buyerId, transaction);
       if (committedReplay) {
@@ -627,8 +630,11 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       }, { transaction });
       await CartItem.destroy({ where: { cartId: cart.id }, transaction });
       await Cart.destroy({ where: { id: cart.id }, transaction });
+      justCreated = true;
       return orderView(order, items, payment);
     });
+    if (justCreated) notifyStoreOfNewOrder(result);
+    return result;
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
       const replay = await findOrderByKey(checkoutKey, buyerId);
@@ -638,6 +644,21 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       }
     }
     throw error;
+  }
+}
+
+/**
+ * Marketplace orders had no merchant notification at all — the seller only
+ * found out when they happened to check Marketplace Orders. Fired after
+ * checkout() commits, never lets a notification failure affect the buyer's
+ * response (the order already exists either way).
+ */
+async function notifyStoreOfNewOrder(order) {
+  try {
+    const contact = await getStoreOwnerContact(order.storeId);
+    await NotificationService.sendNewOrderNotification(contact, order, order.items);
+  } catch (error) {
+    console.error(`Marketplace order notification failed (order ${order.id}):`, error.message);
   }
 }
 

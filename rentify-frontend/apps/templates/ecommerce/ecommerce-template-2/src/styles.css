@@ -1,99 +1,169 @@
-/* styles.css (Remove var definitions, keep structure) */
+/* Each template compiles with its own Tailwind config, including inside the shared storefront app. */
+@config "../tailwind.config.js";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Modern E-Commerce Storefront Theme - Clean & Minimal */
+/*
+ * First-paint defaults. The storefront theme service replaces these with the
+ * merchant's sanitized theme (layered over Template 2 defaults) once the
+ * website loads. Values are OKLCH triplets.
+ */
 @layer base {
-  * {
-    @apply border-border;
+  :root {
+    --background: 0.982 0.006 95;
+    --foreground: 0.235 0.006 230;
+    --card: 1 0 0;
+    --card-foreground: 0.235 0.006 230;
+    --popover: 1 0 0;
+    --popover-foreground: 0.235 0.006 230;
+    --primary: 0.43 0.06 158;
+    --primary-foreground: 0.99 0 0;
+    --secondary: 0.27 0.015 230;
+    --secondary-foreground: 0.99 0 0;
+    --muted: 0.955 0.004 106;
+    --muted-foreground: 0.5 0.01 230;
+    --accent: 0.95 0.012 120;
+    --accent-foreground: 0.235 0.006 230;
+    --border: 0.91 0.006 106;
+    --input: 0.91 0.006 106;
+    --ring: 0.43 0.06 158;
+    --success: 0.5 0.12 150;
+    --warning: 0.55 0.13 65;
+    --error: 0.5 0.18 27;
+    --font-primary: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans Khmer',
+      'Kantumruy Pro', 'Khmer Sangam MN', system-ui, sans-serif;
+    --font-secondary: 'Playfair Display', 'Noto Serif Khmer', Georgia, 'Times New Roman', serif;
+    --header-height: 3.5rem;
+    --leading-xs: 1rem;
+    --leading-sm: 1.25rem;
+    --leading-base: 1.5rem;
+    --leading-lg: 1.75rem;
+    --leading-xl: 1.75rem;
+    --leading-2xl: 2rem;
+    --leading-3xl: 2.25rem;
+    --leading-4xl: 2.5rem;
+    --leading-5xl: 1.1;
+  }
+
+  :root:lang(km) {
+    --leading-xs: 1.35rem;
+    --leading-sm: 1.6rem;
+    --leading-base: 1.85rem;
+    --leading-lg: 2.05rem;
+    --leading-xl: 2.2rem;
+    --leading-2xl: 2.5rem;
+    --leading-3xl: 2.9rem;
+    --leading-4xl: 3.3rem;
+    --leading-5xl: 4rem;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --header-height: 4rem;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-height) + 1rem);
   }
 
   body {
-    @apply bg-background text-foreground font-primary antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Storefront container */
-  .store-container {
-    @apply bg-[oklch(var(--store-bg))] min-h-screen;
+  /* Khmer script needs extra vertical room for stacked subscripts and vowels. */
+  :lang(km) body,
+  :lang(km) input,
+  :lang(km) button,
+  :lang(km) select,
+  :lang(km) textarea {
+    line-height: 1.75;
+    letter-spacing: 0;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  img {
+    @apply select-none;
   }
 }
 
 @layer components {
-  /* Container - Responsive widths */
-  .container {
-    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl; /* Wider for storefronts */
+  .store-container {
+    @apply mx-auto w-full max-w-store px-4 sm:px-6 lg:px-8;
   }
 
-  /* Product grid - Flexible for categories */
-  .product-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6;
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  /* Hero banner - For promotions */
-  .hero-banner {
-    @apply relative bg-[oklch(var(--hero-bg))] bg-gradient-to-br from-[oklch(var(--gradient-hero))] py-16 px-4 sm:px-6 lg:py-24 lg:px-8 text-center rounded-xl shadow-md;
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
-  /* Product card - Clean, hoverable */
-  .product-card {
-    @apply bg-[oklch(var(--product-bg))] border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300;
+  .btn-outline {
+    @apply btn border border-border bg-card text-foreground hover:bg-muted;
   }
 
-  .product-image {
-    @apply w-full h-48 object-cover; /* Fixed height for uniformity */
+  .btn-ghost {
+    @apply btn text-foreground hover:bg-muted;
   }
 
-  .product-details {
-    @apply p-4;
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-foreground;
   }
 
-  .product-title {
-    @apply text-lg font-semibold text-foreground mb-2;
+  .field-input {
+    @apply block min-h-11 w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/30 aria-[invalid=true]:border-error sm:text-sm;
   }
 
-  .product-price {
-    @apply text-primary font-bold;
+  .field-error {
+    @apply mt-1.5 text-sm text-error;
   }
 
-  .category-preview {
-    @apply flex flex-col items-center p-4 bg-card rounded-lg shadow-sm hover:bg-muted transition-colors;
-  }
-
-  .add-to-cart-btn {
-    @apply bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-[oklch(var(--primary-dark))] transition-colors;
-  }
-
-  /* Gradients as utilities */
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-
-  .gradient-secondary {
-    background: var(--gradient-secondary);
-  }
-
-  .gradient-success {
-    background: var(--gradient-success);
-  }
-
-  .gradient-hero {
-    background: var(--gradient-hero);
+  .field-hint {
+    @apply mt-1.5 text-xs text-muted-foreground;
   }
 }
 
-/* Dialog adjustments - Keep for modals like cart previews */
-[data-radix-dialog-content] {
-  z-index: 1000 !important;
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 }
 
-.fullscreen-dialog {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: 90vw !important;
-  height: 90vh !important;
-  max-width: none !important;
-  border-radius: 0 !important;
+/* Outside layers so it outranks the tight leading/tracking utilities used on English headings. */
+:lang(km) .leading-tight,
+:lang(km) .leading-snug {
+  line-height: 1.5;
+}
+
+:lang(km) .tracking-tight,
+:lang(km) .tracking-wide {
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

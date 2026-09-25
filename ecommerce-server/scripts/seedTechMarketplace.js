@@ -1,6 +1,7 @@
 // ecommerce-server/scripts/seedTechMarketplace.js
 const { sequelize } = require('../config/db');
 const {
+  WebsiteData,
   StoreAccess,
   StoreDeliveryPolicy,
   Product,
@@ -13,7 +14,9 @@ const {
 
 const TECH_MERCHANT_ID = '55555555-5555-4555-8555-555555555555';
 const TECH_WEBSITE_ID = '8c90a1b2-3b4c-5d6e-9f0a-1b2c3d4e5f60';
-const TECH_STORE_ID = '719d9c55-b338-4ded-9c1a-231a0b1863b9';
+// Core assigns Store ids. Used only when Core has not projected the NexTech
+// Store to Commerce yet (a fresh database); it matches the id Core's seed uses then.
+const DEFAULT_TECH_STORE_ID = '719d9c55-b338-4ded-9c1a-231a0b1863b9';
 
 const BUYER_EMILY_ID = '99999999-9999-4999-8999-999999999999';
 const BUYER_MICHAEL_ID = '88888888-8888-4888-8888-888888888888';
@@ -35,11 +38,15 @@ async function seedTechMarketplace() {
   console.log('⚡ Injecting NexTech Electronics Marketplace setup in Commerce API...');
   await sequelize.authenticate();
 
-  // 1. Ensure StoreAccess
-  let storeAccess = await StoreAccess.findOne({ where: { ownerUserId: TECH_MERCHANT_ID } }) || await StoreAccess.findByPk(TECH_STORE_ID);
-  const resolvedStoreId = storeAccess?.storeId || TECH_STORE_ID;
+  // 1. Ensure StoreAccess. Reuse the Store Core already linked to the website
+  // (StoreAccess.websiteId is unique) instead of creating a second one.
+  let storeAccess =
+    (await StoreAccess.findOne({ where: { websiteId: TECH_WEBSITE_ID } })) ||
+    (await StoreAccess.findOne({ where: { ownerUserId: TECH_MERCHANT_ID } }));
+  const TECH_STORE_ID = storeAccess?.storeId || DEFAULT_TECH_STORE_ID;
+  if (!storeAccess) storeAccess = await StoreAccess.findByPk(TECH_STORE_ID);
   const storePayload = {
-    storeId: resolvedStoreId,
+    storeId: TECH_STORE_ID,
     ownerUserId: TECH_MERCHANT_ID,
     websiteId: TECH_WEBSITE_ID,
     primaryCategory: 'Electronics',
@@ -59,11 +66,20 @@ async function seedTechMarketplace() {
     console.log('✅ Updated StoreAccess for NexTech');
   }
 
+  // On a fresh database Core's Website projection (which carries storeId) has
+  // not reached Commerce yet, and products cannot join the Store without it.
+  // Write the same link the projection will write; existing links are kept.
+  const websiteData = await WebsiteData.findOne({ where: { websiteId: TECH_WEBSITE_ID } });
+  if (websiteData && !websiteData.storeId) {
+    await websiteData.update({ storeId: TECH_STORE_ID });
+    console.log('✅ Linked NexTech WebsiteData to its Store');
+  }
+
   // 2. Ensure StoreDeliveryPolicy
-  let policy = await StoreDeliveryPolicy.findByPk(resolvedStoreId);
+  let policy = await StoreDeliveryPolicy.findByPk(TECH_STORE_ID);
   if (!policy) {
     policy = await StoreDeliveryPolicy.create({
-      storeId: resolvedStoreId,
+      storeId: TECH_STORE_ID,
       flatFee: '3.00',
       currency: 'USD',
       version: 1,
@@ -88,7 +104,7 @@ async function seedTechMarketplace() {
     const prod = await Product.findByPk(item.id);
     if (prod) {
       await prod.update({
-        storeId: resolvedStoreId,
+        storeId: TECH_STORE_ID,
         marketplaceCategory: item.category,
         status: 'active',
       });
@@ -109,7 +125,7 @@ async function seedTechMarketplace() {
     order1 = await Order.create({
       id: MKT_ORDER_1_ID,
       orderNumber: 'ORD-MKT-TECH-001',
-      storeId: resolvedStoreId,
+      storeId: TECH_STORE_ID,
       websiteId: null, // Central marketplace order
       buyerId: BUYER_EMILY_ID,
       checkoutKey: 'key-mkt-tech-001-chk',

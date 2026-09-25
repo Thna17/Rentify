@@ -4,6 +4,7 @@ import {
   useCreateWebsiteMutation,
   useDeployProjectMutation,
   useUpdateWebsiteStatusMutation,
+  useUploadImageMutation,
 } from '@rentify/apis';
 import { DASHBOARD_URL } from '@rentify/shared/config/urls';
 
@@ -21,8 +22,8 @@ export const DEPLOYMENT_STATES = {
 const STATUS_POLL_INTERVAL = 3000;
 const PROGRESS_UPDATE_INTERVAL = 800;
 const MAX_RETRY_ATTEMPTS = 3;
-const getDeploymentId = (deployment) =>
-  deployment?.vercelDeploymentId || deployment?.id;
+// Publishing assigns the store's Rentify subdomain and answers READY at once;
+// the status endpoint (keyed by website) is only consulted if it does not.
 const getDeploymentUrl = (deployment) =>
   deployment?.deploymentUrl || deployment?.url || '';
 
@@ -40,7 +41,7 @@ export default function useDeployment(data) {
   const [details, setDetails] = useState([]);
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
-  const [deploymentId, setDeploymentId] = useState(null);
+  const [pendingWebsiteId, setPendingWebsiteId] = useState(null);
   const progressIntervalRef = useRef(null);
   const websiteIdRef = useRef(null);
   const completedRef = useRef(false);
@@ -50,13 +51,14 @@ export default function useDeployment(data) {
     useCreateWebsiteMutation();
   const [deployProject, { isLoading: deploying }] = useDeployProjectMutation();
   const [updateWebsiteStatus] = useUpdateWebsiteStatusMutation();
+  const [uploadImage] = useUploadImageMutation();
   const {
     data: deploymentStatus,
     error: deploymentStatusError,
     isError: isDeploymentStatusError,
   } = useCheckDeploymentStatusQuery(
-    { deploymentId },
-    { pollingInterval: STATUS_POLL_INTERVAL, skip: !deploymentId }
+    { websiteId: pendingWebsiteId },
+    { pollingInterval: STATUS_POLL_INTERVAL, skip: !pendingWebsiteId }
   );
 
   const clearProgressSimulation = useCallback(() => {
@@ -112,7 +114,7 @@ export default function useDeployment(data) {
       setProgress(0);
       setDetails([]);
       setError('');
-      setDeploymentId(null);
+      setPendingWebsiteId(null);
       if (!preserveWebsite) {
         websiteIdRef.current = null;
         setSiteUrl('');
@@ -128,7 +130,7 @@ export default function useDeployment(data) {
       setError(getSafeErrorMessage(caughtError));
       setState(DEPLOYMENT_STATES.FAILED);
       setProgress(0);
-      setDeploymentId(null);
+      setPendingWebsiteId(null);
       addDetail(`Deployment stopped during ${step}.`, 'error');
       if (websiteIdRef.current) {
         try {
@@ -159,7 +161,22 @@ export default function useDeployment(data) {
     if (!website?.id)
       throw new Error('The website could not be created. Please try again.');
     websiteIdRef.current = website.id;
-    addDetail('Storefront created. Preparing Vercel deployment.', 'success');
+
+    if (data.businessDetails?.file) {
+      try {
+        addDetail('Uploading store logo…');
+        await uploadImage({
+          websiteId: website.id,
+          file: data.businessDetails.file,
+          isLogo: true,
+        }).unwrap();
+        addDetail('Store logo uploaded.', 'success');
+      } catch (uploadErr) {
+        console.warn('Logo upload during deployment could not complete:', uploadErr);
+      }
+    }
+
+    addDetail('Storefront created. Publishing it on its own web address.', 'success');
     updateProgress(30, true);
     return website;
   }, [
@@ -170,48 +187,39 @@ export default function useDeployment(data) {
     data.template?.id,
     startProgressSimulation,
     updateProgress,
+    uploadImage,
   ]);
+
+  const completeDeployment = useCallback(async () => {
+    // Core marks the website live as part of publishing; nothing to confirm here.
+    clearProgressSimulation();
+    setPendingWebsiteId(null);
+    updateProgress(100, true);
+    addDetail('Your storefront is live.', 'success');
+    setState(DEPLOYMENT_STATES.COMPLETED);
+  }, [addDetail, clearProgressSimulation, updateProgress]);
 
   const deployWebsite = useCallback(
     async (websiteId) => {
       setState(DEPLOYMENT_STATES.DEPLOYING);
-      addDetail('Sending your selected template to Vercel…');
+      addDetail('Publishing your storefront…');
       startProgressSimulation(DEPLOYMENT_STATES.DEPLOYING);
       const deployment = await deployProject(websiteId).unwrap();
-      const nextDeploymentId = getDeploymentId(deployment);
-      if (!nextDeploymentId)
-        throw new Error(
-          'Vercel did not return a deployment ID. Please try again.'
-        );
-      setDeploymentId(nextDeploymentId);
-      setSiteUrl(getDeploymentUrl(deployment));
-      setState(DEPLOYMENT_STATES.BUILDING);
-      addDetail('Vercel is building your storefront…');
-      startProgressSimulation(DEPLOYMENT_STATES.BUILDING);
+      const url = getDeploymentUrl(deployment);
+      if (!url) throw new Error('Your store address could not be reserved. Please try again.');
+      setSiteUrl(url);
+      addDetail(`Your address is ${url.replace(/^https?:\/\//, '')}.`, 'success');
+      if (deployment?.status === 'READY') {
+        completedRef.current = true;
+        await completeDeployment();
+        return;
+      }
+      setPendingWebsiteId(websiteId);
+      setState(DEPLOYMENT_STATES.FINALIZING);
+      startProgressSimulation(DEPLOYMENT_STATES.FINALIZING);
     },
-    [addDetail, deployProject, startProgressSimulation]
+    [addDetail, completeDeployment, deployProject, startProgressSimulation]
   );
-
-  const completeDeployment = useCallback(async () => {
-    setState(DEPLOYMENT_STATES.FINALIZING);
-    addDetail('Finalizing your live storefront…');
-    startProgressSimulation(DEPLOYMENT_STATES.FINALIZING);
-    await updateWebsiteStatus({
-      websiteId: websiteIdRef.current,
-      status: 'active',
-    }).unwrap();
-    clearProgressSimulation();
-    setDeploymentId(null);
-    updateProgress(100, true);
-    addDetail('Your storefront is live.', 'success');
-    setState(DEPLOYMENT_STATES.COMPLETED);
-  }, [
-    addDetail,
-    clearProgressSimulation,
-    startProgressSimulation,
-    updateProgress,
-    updateWebsiteStatus,
-  ]);
 
   useEffect(() => {
     const status = deploymentStatus?.status;
@@ -230,11 +238,11 @@ export default function useDeployment(data) {
       void completeDeployment().catch((caughtError) =>
         handleDeploymentError(caughtError, 'finalization')
       );
-    } else if (status === 'ERROR') {
+    } else if (['FAILED', 'SUSPENDED', 'EXPIRED', 'ARCHIVED', 'DELETED'].includes(status)) {
       completedRef.current = true;
       void handleDeploymentError(
-        new Error('Vercel was unable to build this storefront.'),
-        'build'
+        new Error('Your storefront could not be published.'),
+        'publishing'
       );
     }
   }, [

@@ -111,7 +111,7 @@ const SLIDE_MS = 6000;
       </div>
 
       <div class="promos">
-        @for (p of promos; track p.id) {
+        @for (p of visiblePromos(); track p.id) {
           <app-promo-card [promo]="p" format="compact" />
         }
       </div>
@@ -337,6 +337,18 @@ export class HomeHeroComponent {
   protected readonly promos = PROMO_SLOTS.heroSide;
 
   protected readonly slide = signal(0);
+
+  /**
+   * The three side cards rotate to their second set on the same clock as the
+   * main banner (the `slide` signal both drive), instead of sitting fixed
+   * forever — so they read as alive, not three static ads.
+   */
+  protected readonly visiblePromos = computed(() => {
+    const setCount = Math.floor(this.promos.length / 3) || 1;
+    const set = this.slide() % setCount;
+    return this.promos.slice(set * 3, set * 3 + 3);
+  });
+
   private rotation = setInterval(() => this.next(), SLIDE_MS);
 
   constructor() {

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowUp,
-  ChevronDown,
   Facebook,
   Instagram,
   Languages,
@@ -9,88 +9,16 @@ import {
   MapPin,
   Phone,
   Send,
-  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
 import { AUTH_URL, DASHBOARD_URL } from '@rentify/shared/config/urls';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useStartTrial from '../../hooks/useStartTrial';
 import { CONTACT, SOCIAL } from '../../data/contact';
+import rentifyLogo from '../../assets/Logo.webp';
 import { Container, SmartLink } from './ui';
 
 const SOCIAL_ICONS = { telegram: Send, facebook: Facebook, instagram: Instagram };
-
-// A link column; on phones it folds into a tap-to-open row like Apple's footer
-const FooterColumn = ({ title, links }) => {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="border-b border-black/10 md:border-0">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between py-3 text-left md:pointer-events-none md:py-0"
-      >
-        <h3 className="text-[12px] font-semibold text-[#1d1d1f]">{title}</h3>
-        <ChevronDown
-          className={cn(
-            'h-4 w-4 text-[#86868b] transition-transform duration-300 md:hidden',
-            open && 'rotate-180'
-          )}
-        />
-      </button>
-      <ul className={cn('space-y-2 pb-4 md:mt-2.5 md:block md:pb-0', !open && 'hidden')}>
-        {links.map((link) => (
-          <li key={link.label}>
-            <SmartLink
-              to={link.to}
-              className="text-[12px] text-[#424245] transition-colors hover:text-[#1d1d1f] hover:underline"
-            >
-              {link.label}
-            </SmartLink>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-// Opens the visitor's email app with a subscribe request addressed to the team
-const NewsletterForm = () => {
-  const { t } = useLanguage();
-  const [email, setEmail] = useState('');
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const subject = encodeURIComponent(t('site.footer.subscribeSubject'));
-    const body = encodeURIComponent(`${t('site.footer.subscribeSubject')}: ${email}`);
-    window.location.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-2.5">
-      <div className="flex rounded-full bg-white p-1 ring-1 ring-black/10 focus-within:ring-[#0071e3]">
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder={t('site.footer.emailPlaceholder')}
-          aria-label={t('site.footer.emailPlaceholder')}
-          className="min-w-0 flex-1 bg-transparent px-3 text-[12px] text-[#1d1d1f] outline-none placeholder:text-[#86868b]"
-        />
-        <button
-          type="submit"
-          className="rounded-full bg-[#1d1d1f] px-4 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-black"
-        >
-          {t('site.footer.subscribe')}
-        </button>
-      </div>
-      <p className="mt-1.5 text-[11px] text-[#86868b]">{t('site.footer.subscribeNote')}</p>
-    </form>
-  );
-};
 
 const SiteFooter = () => {
   const { t, language, toggleLanguage } = useLanguage();
@@ -137,89 +65,81 @@ const SiteFooter = () => {
     },
   ];
 
-  const contacts = [
-    { icon: Phone, label: CONTACT.phone, to: CONTACT.phoneHref },
-    { icon: Mail, label: CONTACT.email, to: `mailto:${CONTACT.email}` },
-    { icon: MapPin, label: t('site.footer.location') },
-  ];
+  // Flattened into one compact row; the column grouping is no longer shown.
+  const links = columns.flatMap((column) => column.links).filter(
+    (link, index, all) => all.findIndex((other) => other.label === link.label) === index
+  );
 
   return (
     <footer
       className={cn(
-        'bg-[#f5f5f7] text-[#6e6e73] antialiased',
+        'bg-[#f5f5f7] text-[12px] text-[#6e6e73] antialiased',
         language === 'KH' ? 'font-site-kh' : 'font-site'
       )}
     >
-      <Container className="py-8 md:py-10">
-        <div className="grid md:grid-cols-4 md:gap-8 lg:grid-cols-[repeat(4,1fr)_1.5fr]">
-          {columns.map((column) => (
-            <FooterColumn key={column.title} {...column} />
-          ))}
+      <Container className="py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+          <Link to="/" className="inline-flex shrink-0 items-center gap-2">
+            <img src={rentifyLogo} alt="Rentify" className="h-6 w-6 rounded-[6px] object-cover ring-1 ring-black/10" />
+            <span className="text-[14px] font-bold tracking-tight text-[#1d1d1f]">Rentify</span>
+          </Link>
 
-          <div className="pt-6 md:col-span-4 md:pt-0 lg:col-span-1">
-            <h3 className="text-[12px] font-semibold text-[#1d1d1f]">{t('site.footer.stayUpdated')}</h3>
-            <ul className="mt-2.5 space-y-2">
-              {contacts.map(({ icon: Icon, label, to }) => (
-                <li key={label} className="flex items-center gap-2 text-[12px] text-[#424245]">
-                  <Icon className="h-3.5 w-3.5 shrink-0 text-[#86868b]" strokeWidth={1.8} />
-                  {to ? (
-                    <SmartLink to={to} className="hover:text-[#1d1d1f] hover:underline">
-                      {label}
-                    </SmartLink>
-                  ) : (
-                    label
-                  )}
-                </li>
-              ))}
-            </ul>
-            {socials.length > 0 && (
-              <div className="mt-3 flex items-center gap-2" aria-label={t('site.footer.social')}>
-                {socials.map((item) => {
-                  const Icon = SOCIAL_ICONS[item.id];
-                  return (
-                    <SmartLink
-                      key={item.id}
-                      to={item.url}
-                      aria-label={item.label}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#1d1d1f] ring-1 ring-black/[0.06] transition-colors hover:bg-[#e8e8ed]"
-                    >
-                      <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
-                    </SmartLink>
-                  );
-                })}
-              </div>
-            )}
-            <p className="mt-4 text-[12px]">{t('site.footer.newsletterHint')}</p>
-            <NewsletterForm />
-          </div>
+          <nav aria-label="Footer" className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5">
+            {links.map((link) => (
+              <SmartLink
+                key={link.label}
+                to={link.to}
+                className="text-[#424245] transition-colors hover:text-[#1d1d1f] hover:underline"
+              >
+                {link.label}
+              </SmartLink>
+            ))}
+          </nav>
+
+          {socials.length > 0 && (
+            <div className="flex shrink-0 items-center gap-1.5" aria-label={t('site.footer.social')}>
+              {socials.map((item) => {
+                const Icon = SOCIAL_ICONS[item.id];
+                return (
+                  <SmartLink
+                    key={item.id}
+                    to={item.url}
+                    aria-label={item.label}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1d1d1f] ring-1 ring-black/[0.06] transition-colors hover:bg-[#e8e8ed]"
+                  >
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
+                  </SmartLink>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        <div className="mt-7 flex flex-col gap-3 border-t border-black/10 pt-5 text-[12px] md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span>
-              © {new Date().getFullYear()} Rentify. {t('site.footer.rights')}
-            </span>
-            <span className="hidden h-3 w-px bg-black/15 sm:block" aria-hidden />
+        <div className="mt-3 flex flex-col gap-2 border-t border-black/10 pt-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <span>© {new Date().getFullYear()} Rentify. {t('site.footer.rights')}</span>
+            <SmartLink to={CONTACT.phoneHref} className="flex items-center gap-1.5 hover:text-[#1d1d1f]">
+              <Phone className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {CONTACT.phone}
+            </SmartLink>
+            <SmartLink to={`mailto:${CONTACT.email}`} className="flex items-center gap-1.5 hover:text-[#1d1d1f]">
+              <Mail className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {CONTACT.email}
+            </SmartLink>
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.8} />
-              {t('site.footer.secure')}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Languages className="h-3.5 w-3.5" strokeWidth={1.8} />
-              {t('site.footer.localSupport')}
+              <MapPin className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {t('site.footer.location')}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span>{t('site.footer.madeIn')}</span>
-            <span className="h-3 w-px bg-black/15" aria-hidden />
+          <div className="flex items-center gap-x-4">
             <button
               type="button"
               onClick={toggleLanguage}
-              className="text-[#424245] hover:text-[#1d1d1f] hover:underline"
+              className="flex items-center gap-1 text-[#424245] hover:text-[#1d1d1f] hover:underline"
             >
+              <Languages className="h-3.5 w-3.5" strokeWidth={1.8} />
               {language === 'KH' ? 'English' : 'ខ្មែរ'}
             </button>
-            <span className="h-3 w-px bg-black/15" aria-hidden />
             <button
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

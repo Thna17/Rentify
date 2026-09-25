@@ -1,29 +1,45 @@
-import { useState } from 'react';
-import { useTranslation } from '@rentify/utils';
+import { useMemo } from 'react';
+import { useAuth } from '@rentify/utils';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Calendar, Filter, Store, ShoppingBag, TerminalSquare, PlusCircle } from 'lucide-react';
+import { Calendar, Store, ShoppingBag, TerminalSquare, PlusCircle, Package, Rocket } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useStats from '../../hooks/useStats';
 import { MetricCard } from './components/MetricCard';
-// @ts-ignore
+// @ts-expect-error Legacy JSX component has no declaration file yet.
 import { TopProducts } from './components/TopProducts';
-// @ts-ignore
+// @ts-expect-error Legacy JSX component has no declaration file yet.
 import { RevenueChart } from './components/RevenueChart';
-import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+// @ts-expect-error Legacy JSX component has no declaration file yet.
+import { RecentOrders } from './components/RecentOrders';
 import { useChannels } from '../../context/ChannelContext';
-import { Badge } from '@rentify/shared/ui/badge';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@rentify/shared/ui/select";
 
+const PERIOD_LABEL: Record<string, string> = {
+  '24h': 'Today',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  '90d': 'Last 90 days',
+};
+
+/** "Good morning" / "Good afternoon" / "Good evening", based on local time. */
+const greetingForHour = (hour: number) => {
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
 export const Overview = () => {
-  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { profile } = useAuth() as { profile?: { name?: string } };
   const { store, hasStorefront, hasMarketplace, hasPos } = useChannels();
   const {
     loading,
@@ -32,58 +48,21 @@ export const Overview = () => {
     metrics,
     revenueData,
     productSales,
+    recentOrders,
     dateRange,
     selectedPeriod,
-    orderType,
     handlePeriodChange,
-    handleOrderTypeChange
   } = useStats();
 
-  const handleOrderChange = (value: string) => {
-    handleOrderTypeChange(value);
-  };
-
-  const handlePeriodSelect = (value: string) => {
-    handlePeriodChange(value);
-  };
-
-  const FilterActions = () => (
-    <div className="flex flex-col sm:flex-row gap-3">
-      <Select value={selectedPeriod} onValueChange={handlePeriodSelect}>
-        <SelectTrigger className="w-[140px] bg-background border-border">
-          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-          <SelectValue placeholder="Select period" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="24h">Last 24 Hours</SelectItem>
-          <SelectItem value="7d">Last 7 Days</SelectItem>
-          <SelectItem value="30d">Last 30 Days</SelectItem>
-          <SelectItem value="90d">Last 90 Days</SelectItem>
-        </SelectContent>
-      </Select>
-      
-      <Select value={orderType} onValueChange={handleOrderChange}>
-        <SelectTrigger className="w-[150px] bg-background border-border">
-          <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-          <SelectValue placeholder="Order channel" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Channels</SelectItem>
-          {hasStorefront && <SelectItem value="online">Storefront</SelectItem>}
-          {hasMarketplace && <SelectItem value="marketplace">Marketplace</SelectItem>}
-          {hasPos && <SelectItem value="pos">POS</SelectItem>}
-          <SelectItem value="manual">Manual Invoice</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
+  const firstName = useMemo(() => profile?.name?.split(' ')?.[0] || 'there', [profile?.name]);
+  const greeting = useMemo(() => `${greetingForHour(new Date().getHours())}, ${firstName}`, [firstName]);
 
   if (ownershipError) {
     return (
-      <div className="flex items-center justify-center h-64 bg-background">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-destructive">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have permission to view this dashboard</p>
+          <h2 className="text-lg font-semibold text-destructive">Access denied</h2>
+          <p className="text-sm text-muted-foreground">You don't have permission to view this dashboard.</p>
         </div>
       </div>
     );
@@ -91,10 +70,10 @@ export const Overview = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64 bg-background">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-destructive">Error Loading Data</h2>
-          <p className="text-muted-foreground">Please try again later</p>
+          <h2 className="text-lg font-semibold text-destructive">Couldn't load your dashboard</h2>
+          <p className="text-sm text-muted-foreground">Please try again in a moment.</p>
         </div>
       </div>
     );
@@ -102,119 +81,157 @@ export const Overview = () => {
 
   return (
     <div className="min-h-full">
-      <PageHeader
-        title="Dashboard Overview"
-        description="Monitor sales performance and operations across your sales channels"
-        icon={LayoutDashboard}
-        actions={<FilterActions />}
-        breadcrumb={[
-          { label: 'Dashboard', href: '/overview' },
-          { label: 'Overview' }
-        ]}
-      />
+      <div className="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 space-y-6 md:space-y-8">
+        {/* Greeting + date filter + quick actions */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-[28px] font-semibold tracking-tight text-foreground">{greeting}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Here's how {store?.name || 'your store'} is doing.
+            </p>
+          </div>
 
-      <div className="p-6 md:p-8 space-y-6 md:space-y-8">
-        {/* Sales Channels Status Bar */}
-        <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-border bg-card text-card-foreground">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-2">
-            Active Channels:
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
+              <SelectTrigger className="w-[160px] h-10 bg-card border-transparent shadow-[var(--shadow-soft)]">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue>{PERIOD_LABEL[selectedPeriod] || 'Last 7 days'}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24h">Today</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {/* Marketplace Channel Badge */}
+            <button
+              type="button"
+              onClick={() => navigate('/products/create')}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-card shadow-[var(--shadow-soft)] text-sm font-medium text-foreground hover:bg-muted/60"
+            >
+              <Package className="h-4 w-4" />
+              Add Product
+            </button>
+
+            {hasPos && (
+              <button
+                type="button"
+                onClick={() => navigate('/pos')}
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 shadow-sm"
+              >
+                <TerminalSquare className="h-4 w-4" />
+                Open POS
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Sales channel status — compact pills, not boxes */}
+        <div className="flex flex-wrap items-center gap-2">
           {hasMarketplace && (
-            <Badge variant="outline" className="flex items-center gap-1.5 py-1 px-3 border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700">
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Marketplace: <span className="capitalize">{store?.marketplaceApprovalStatus || 'Active'}</span></span>
-            </Badge>
+              Marketplace · <span className="capitalize">{store?.marketplaceApprovalStatus || 'Active'}</span>
+            </span>
           )}
 
-          {/* Storefront Channel Badge */}
           {hasStorefront ? (
-            <Badge variant="outline" className="flex items-center gap-1.5 py-1 px-3 border-blue-500/30 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary">
               <Store className="w-3.5 h-3.5" />
-              <span>Storefront: Active</span>
-            </Badge>
+              Storefront · Live
+            </span>
           ) : (
             <a
               href={`${MARKETING_URL}/start`}
-              className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-medium border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card shadow-[var(--shadow-soft)] text-primary hover:bg-primary/5 transition-colors"
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              <span>Add Storefront Website</span>
+              Add a storefront
             </a>
           )}
 
-          {/* POS Channel Badge */}
-          <Badge
-            variant="outline"
-            className={`flex items-center gap-1.5 py-1 px-3 ${
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${
               hasPos
-                ? 'border-purple-500/30 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400'
-                : 'text-muted-foreground border-border'
+                ? 'bg-violet-500/10 text-violet-700'
+                : 'bg-muted text-muted-foreground'
             }`}
           >
             <TerminalSquare className="w-3.5 h-3.5" />
-            <span>POS: {hasPos ? 'Enabled' : 'Disabled'}</span>
-          </Badge>
+            POS · {hasPos ? 'Enabled' : 'Off'}
+          </span>
         </div>
 
-        {/* Metric Cards */}
+        {/* KPI cards */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+          transition={{ delay: 0.05 }}
+          className="grid gap-4 md:gap-5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
         >
           {metrics.map((metric: any, index: number) => (
             <MetricCard key={index} {...(metric as any)} loading={loading} />
           ))}
         </motion.div>
 
-        {/* Charts & Analytics */}
+        {/* Revenue chart + Top products */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid gap-4 md:gap-6 grid-cols-1 xl:grid-cols-3"
+          transition={{ delay: 0.1 }}
+          className="grid gap-4 md:gap-5 grid-cols-1 xl:grid-cols-3"
         >
           <div className="xl:col-span-2">
-            <RevenueChart 
-              data={revenueData} 
+            <RevenueChart
+              data={revenueData}
               dateRange={dateRange}
-              isLoading={loading} 
+              isLoading={loading}
             />
           </div>
-          
+
           <div>
-            <TopProducts 
-              products={productSales} 
-              isLoading={loading} 
+            <TopProducts
+              products={productSales}
+              isLoading={loading}
             />
           </div>
         </motion.div>
 
-        {/* Storefront Promotion Card for Marketplace-Only Merchants */}
+        {/* Recent orders */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <RecentOrders orders={recentOrders} isLoading={loading} />
+        </motion.div>
+
+        {/* Storefront upsell, marketplace-only merchants */}
         {!hasStorefront && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
           >
-            <Card className="border border-blue-200 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 dark:border-blue-900">
+            <Card className="bg-primary/[0.04] shadow-none">
               <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="space-y-1 text-center md:text-left">
-                  <h3 className="text-lg font-semibold text-blue-950 dark:text-blue-200">
-                    Ready to launch your own branded storefront?
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xl">
-                    Expand beyond the marketplace with a custom domain, curated themes, and direct checkout. Your products and inventory are already synced and ready.
-                  </p>
+                <div className="flex items-start gap-3 text-center md:text-left">
+                  <Rocket className="hidden md:block h-8 w-8 text-primary shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold text-foreground">
+                      Ready for your own branded storefront?
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-xl">
+                      Your products and stock are already set up — add a custom-domain website in minutes.
+                    </p>
+                  </div>
                 </div>
                 <a
                   href={`${MARKETING_URL}/start`}
-                  className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors whitespace-nowrap shadow-sm"
+                  className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-colors whitespace-nowrap shadow-sm shrink-0"
                 >
-                  Create Storefront Website
+                  Create Storefront
                 </a>
               </CardContent>
             </Card>

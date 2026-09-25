@@ -9,7 +9,7 @@ import { ReceiptModal } from './components/ReceiptModal';
 import usePOS from '../../hooks/usePOS';
 import { Badge } from "@rentify/shared/ui/badge";
 import { Button } from "@rentify/shared/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@rentify/shared/ui/Tabs";
+import { Tabs, TabsList, TabsTrigger } from "@rentify/shared/ui/tabs";
 import { 
   ShoppingCart, 
   Clock, 
@@ -62,6 +62,11 @@ export const POSInterface = () => {
   } = usePOS();
   
   const [isMobile, setIsMobile] = useState(false);
+  const [checkoutMethod, setCheckoutMethod] = useState('cash');
+  const startCheckout = (method = 'cash') => {
+    setCheckoutMethod(method);
+    setShowPayment(true);
+  };
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
   useEffect(() => {
@@ -234,7 +239,7 @@ export const POSInterface = () => {
           />
 
           {!isDualScreen && (
-            <div className="border-b border-border/80 bg-background/95 backdrop-blur-sm px-4 md:px-6 shrink-0">
+            <div className="border-b border-border/60 bg-background/95 backdrop-blur-sm px-4 md:px-6 shrink-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="bg-transparent border-0 h-11 p-0 flex gap-6 md:gap-8 justify-start">
                   {tabs.map((tab) => (
@@ -266,7 +271,7 @@ export const POSInterface = () => {
           <div className="flex-1 flex flex-col xl:flex-row items-start w-full">
             {/* Products Panel - Left */}
             <div className="flex-1 min-w-0 w-full border-r border-border/80">
-              <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} />
+              <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} storeName={websiteName} />
             </div>
 
             {/* Cart Panel - Middle */}
@@ -281,7 +286,7 @@ export const POSInterface = () => {
                 onUpdateItem={updateCartItem}
                 onRemoveItem={removeFromCart}
                 onClearCart={clearCart}
-                onCheckout={() => setShowPayment(true)}
+                onCheckout={startCheckout}
                 isMobile={isMobile}
                 isFullscreen={isFullscreen}
               />
@@ -314,12 +319,12 @@ export const POSInterface = () => {
               <div className="flex-1 flex flex-col lg:flex-row items-start w-full">
                 {/* Product Catalog Column */}
                 <div className="flex-1 min-w-0 w-full">
-                  <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} />
+                  <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} storeName={websiteName} />
                 </div>
 
                 {/* Cart Column */}
                 <div className={cn(
-                  "border-border/80 shrink-0 flex flex-col bg-card/30",
+                  "border-border/60 shrink-0 flex flex-col bg-card shadow-[var(--shadow-soft)]",
                   isMobile ? "w-full border-t" : "w-[360px] lg:w-[400px] border-l",
                   !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
                 )}>
@@ -329,7 +334,7 @@ export const POSInterface = () => {
                     onUpdateItem={updateCartItem}
                     onRemoveItem={removeFromCart}
                     onClearCart={clearCart}
-                    onCheckout={() => setShowPayment(true)}
+                    onCheckout={startCheckout}
                     isMobile={isMobile}
                     isFullscreen={isFullscreen}
                   />
@@ -394,6 +399,7 @@ export const POSInterface = () => {
           onKHQRPayment={handleKHQRPayment}
           container={posRef.current}
           isFullscreen={isFullscreen}
+          initialMethod={checkoutMethod}
         />
       )}
 

@@ -96,48 +96,56 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 sm:px-6">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_#2563eb_0,_transparent_36%),radial-gradient(circle_at_bottom_right,_#7c3aed_0,_transparent_34%)] opacity-70" />
-      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-[2rem] lg:min-h-[720px] bg-white shadow-2xl shadow-slate-950/40 lg:grid-cols-[0.9fr_1.1fr]">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6">
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-xl shadow-slate-200/60 lg:min-h-[680px] lg:grid-cols-[0.9fr_1.1fr]">
         <aside
           className={cn(
-            'relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between',
+            'relative hidden overflow-hidden p-12 lg:flex lg:flex-col lg:justify-between',
             isWebsiteTemplate
-              ? 'bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-800'
-              : 'bg-gradient-to-br from-violet-600 via-indigo-700 to-slate-950'
+              ? 'bg-gradient-to-br from-sky-50 via-blue-50/60 to-white'
+              : 'bg-gradient-to-br from-violet-50 via-indigo-50/60 to-white'
           )}
         >
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
           <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+            <div
+              className={cn(
+                'flex h-12 w-12 items-center justify-center rounded-2xl',
+                isWebsiteTemplate ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'
+              )}
+            >
               {isWebsiteTemplate ? (
                 <ShoppingBag className="h-6 w-6" />
               ) : (
                 <Store className="h-6 w-6" />
               )}
             </div>
-            <p className="mt-10 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
+            <p
+              className={cn(
+                'mt-10 text-sm font-semibold uppercase tracking-[0.2em]',
+                isWebsiteTemplate ? 'text-blue-600/70' : 'text-violet-600/70'
+              )}
+            >
               Rentify
             </p>
-            <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight">
+            <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight tracking-tight text-slate-900">
               Everything your business needs, in one place.
             </h1>
-            <p className="mt-5 max-w-sm text-base leading-7 text-white/75">
+            <p className="mt-5 max-w-sm text-base leading-7 text-slate-500">
               Return to your workspace to manage products, orders, and customers
               with clarity.
             </p>
           </div>
-          <div className="relative space-y-4 text-sm text-white/85">
+          <div className="relative space-y-4 text-sm text-slate-600">
             <div className="flex items-center gap-3">
-              <PackageCheck className="h-5 w-5" /> Keep products and orders in
+              <PackageCheck className="h-5 w-5 text-slate-400" /> Keep products and orders in
               sync
             </div>
             <div className="flex items-center gap-3">
-              <UsersRound className="h-5 w-5" /> Stay connected with your
+              <UsersRound className="h-5 w-5 text-slate-400" /> Stay connected with your
               customers
             </div>
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5" /> Secure access to your
+              <ShieldCheck className="h-5 w-5 text-slate-400" /> Secure access to your
               workspace
             </div>
           </div>
@@ -148,10 +156,8 @@ function LoginPage() {
             <div className="mb-8">
               <div
                 className={cn(
-                  'mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg lg:hidden',
-                  isWebsiteTemplate
-                    ? 'from-sky-500 to-blue-600 shadow-blue-500/30'
-                    : 'from-violet-500 to-indigo-600 shadow-violet-500/30'
+                  'mb-6 flex h-12 w-12 items-center justify-center rounded-2xl lg:hidden',
+                  isWebsiteTemplate ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'
                 )}
               >
                 {isWebsiteTemplate ? (
@@ -175,7 +181,7 @@ function LoginPage() {
               onClick={handleGoogleLogin}
               disabled={loading}
               variant="outline"
-              className="inline-flex w-full h-12 mb-6 items-center justify-center border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 rounded-xl"
+              className="mb-6 inline-flex h-12 w-full items-center justify-center rounded-xl !border-slate-300 !bg-white !text-slate-700 transition-all duration-200 hover:!border-slate-400 hover:!bg-slate-50 hover:!text-slate-900 dark:!border-slate-300 dark:!bg-white dark:!text-slate-700 dark:hover:!bg-slate-50 dark:hover:!text-slate-900"
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path
@@ -203,7 +209,7 @@ function LoginPage() {
                 onClick={handleTelegramLogin}
                 disabled={loading}
                 variant="outline"
-                className="inline-flex w-full h-12 -mt-3 mb-6 items-center justify-center border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 rounded-xl"
+                className="-mt-3 mb-6 inline-flex h-12 w-full items-center justify-center rounded-xl !border-slate-300 !bg-white !text-slate-700 transition-all duration-200 hover:!border-slate-400 hover:!bg-slate-50 hover:!text-slate-900 dark:!border-slate-300 dark:!bg-white dark:!text-slate-700 dark:hover:!bg-slate-50 dark:hover:!text-slate-900"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" aria-hidden>
                   <circle cx="12" cy="12" r="12" fill="#229ED9" />

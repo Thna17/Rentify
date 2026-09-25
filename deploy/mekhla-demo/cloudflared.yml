@@ -1,0 +1,35 @@
+# Cloudflare Tunnel for the mekhla.digital storefront demo.
+#
+#   cloudflared tunnel --config deploy/mekhla-demo/cloudflared.yml run rentify-demo
+#
+# Publishes the local Core (:3001) and Commerce (:4001) APIs ONLY for the
+# requests a public storefront makes: the store lookup, the catalog and the
+# guest cart. Sign-in, merchant, staff, admin, orders and payments answer 404
+# here, because this machine runs demo accounts whose passwords are in the
+# repository seed. Rules are matched top to bottom; the first match wins.
+
+tunnel: rentify-demo
+
+ingress:
+  # Core: resolve <store>.mekhla.digital to its website and template.
+  - hostname: rentify-api.mekhla.digital
+    path: ^/api/websites/getWebsiteByDomain$
+    service: http://localhost:3001
+  - hostname: rentify-api.mekhla.digital
+    path: ^/health$
+    service: http://localhost:3001
+  - hostname: rentify-api.mekhla.digital
+    service: http_status:404
+
+  # Commerce: never the merchant product management routes.
+  - hostname: rentify-commerce.mekhla.digital
+    path: ^/api/product/[^/]+/manage(/|$)
+    service: http_status:404
+  # Public catalog (products, search, filters, categories) and the guest cart.
+  - hostname: rentify-commerce.mekhla.digital
+    path: ^/(health$|api/(product|categories|cart)/)
+    service: http://localhost:4001
+  - hostname: rentify-commerce.mekhla.digital
+    service: http_status:404
+
+  - service: http_status:404

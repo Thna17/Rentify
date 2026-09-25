@@ -26,6 +26,7 @@ const UsageDashboard = lazy(() => import('../app/features/usage/pages/DashboardP
 const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownPage'));
 const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
 const SupportPage = lazy(() => import('../pages/support/SupportPage'));
+const Customers = lazy(() => import('../pages/customers/Customers'));
 
 export const dashboardRoutes = {
   path: '/',
@@ -45,6 +46,7 @@ export const dashboardRoutes = {
     { path: 'orders', element: <OrderManagement /> },
     { path: 'marketplace-orders', element: <MarketplaceOrders /> },
     { path: 'orders/:id', element: <OrderDetailView /> },
+    { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'pos', element: <POSInterface /> },
     { path: 'help', element: <SupportPage /> },

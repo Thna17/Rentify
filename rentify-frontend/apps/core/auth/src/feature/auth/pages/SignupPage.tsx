@@ -158,33 +158,41 @@ function SignupPage() {
   }[step];
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 sm:px-6">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_#2563eb_0,_transparent_36%),radial-gradient(circle_at_bottom_right,_#7c3aed_0,_transparent_34%)] opacity-70" />
-      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-[2rem] lg:min-h-[720px] bg-white shadow-2xl shadow-slate-950/40 lg:grid-cols-[0.9fr_1.1fr]">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6">
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-xl shadow-slate-200/60 lg:min-h-[680px] lg:grid-cols-[0.9fr_1.1fr]">
         <aside
           className={cn(
-            'relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between',
+            'relative hidden overflow-hidden p-12 lg:flex lg:flex-col lg:justify-between',
             isWebsiteTemplate
-              ? 'bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-800'
-              : 'bg-gradient-to-br from-violet-600 via-indigo-700 to-slate-950'
+              ? 'bg-gradient-to-br from-sky-50 via-blue-50/60 to-white'
+              : 'bg-gradient-to-br from-violet-50 via-indigo-50/60 to-white'
           )}
         >
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
           <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+            <div
+              className={cn(
+                'flex h-12 w-12 items-center justify-center rounded-2xl',
+                isWebsiteTemplate ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'
+              )}
+            >
               {isWebsiteTemplate ? (
                 <ShoppingBag className="h-6 w-6" />
               ) : (
                 <Store className="h-6 w-6" />
               )}
             </div>
-            <p className="mt-10 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
+            <p
+              className={cn(
+                'mt-10 text-sm font-semibold uppercase tracking-[0.2em]',
+                isWebsiteTemplate ? 'text-blue-600/70' : 'text-violet-600/70'
+              )}
+            >
               Rentify
             </p>
-            <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight">
+            <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight tracking-tight text-slate-900">
               Start selling and shopping in minutes.
             </h1>
-            <p className="mt-5 max-w-sm text-base leading-7 text-white/75">
+            <p className="mt-5 max-w-sm text-base leading-7 text-slate-500">
               Create one account to manage your store, reach the marketplace,
               and serve your customers.
             </p>
@@ -195,16 +203,21 @@ function SignupPage() {
             {steps.map((s, index) => {
               const done = index < activeStepIndex;
               const active = index === activeStepIndex;
+              const accent = isWebsiteTemplate ? 'blue' : 'violet';
               return (
                 <li key={s.value} className="flex items-center gap-3">
                   <span
                     className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-full ring-1 transition-colors',
                       done
-                        ? 'bg-white text-indigo-700 ring-white'
+                        ? accent === 'blue'
+                          ? 'bg-blue-600 text-white ring-blue-600'
+                          : 'bg-violet-600 text-white ring-violet-600'
                         : active
-                        ? 'bg-white/20 text-white ring-white/60'
-                        : 'text-white/50 ring-white/25'
+                        ? accent === 'blue'
+                          ? 'bg-blue-100 text-blue-700 ring-blue-300'
+                          : 'bg-violet-100 text-violet-700 ring-violet-300'
+                        : 'text-slate-400 ring-slate-200'
                     )}
                   >
                     {done ? (
@@ -213,7 +226,7 @@ function SignupPage() {
                       <s.icon className="h-4 w-4" />
                     )}
                   </span>
-                  <span className={active || done ? 'text-white' : 'text-white/55'}>
+                  <span className={active || done ? 'text-slate-900' : 'text-slate-400'}>
                     {s.label}
                   </span>
                 </li>
@@ -227,10 +240,8 @@ function SignupPage() {
             <div className="mb-8">
               <div
                 className={cn(
-                  'mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg lg:hidden',
-                  isWebsiteTemplate
-                    ? 'from-sky-500 to-blue-600 shadow-blue-500/30'
-                    : 'from-violet-500 to-indigo-600 shadow-violet-500/30'
+                  'mb-6 flex h-12 w-12 items-center justify-center rounded-2xl lg:hidden',
+                  isWebsiteTemplate ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'
                 )}
               >
                 {isWebsiteTemplate ? (
@@ -680,7 +691,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
           variant="outline"
           onClick={onCheckLink}
           disabled={loading}
-          className="w-full h-12 rounded-xl"
+          className="w-full h-12 rounded-xl bg-white text-slate-700"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin mr-2" />

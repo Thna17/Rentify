@@ -1,285 +1,145 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Heart, Eye, ShoppingCart, Check, Edit, Trash } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-// Shadcn Components
-import { Card, CardContent } from '@rentify/shared/ui/card';
-import { Button } from '@rentify/shared/ui/button';
-import { Badge } from '@rentify/shared/ui/badge';
+import { Link } from 'react-router-dom';
+import { Check, Loader2, ShoppingBag } from 'lucide-react';
+import { getProductImages, getStockState, toAmount } from '@rentify/storefront/commerce';
+import { useI18n } from '../i18n';
+import { productPath } from '../paths';
+import { ProductImage } from './ProductImage';
+import { Price } from './Price';
+import { StockLabel } from './StockLabel';
 
-export const ProductCard = ({
-  product,
-  preview,
-  owner,
-  userId,
-  onAddToCart,
-  onEdit,
-  onDelete,
-  viewMode,
-}) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [isAddedToCart, setIsAddedToCart] = useState(false);
-  const navigate = useNavigate();
+const activeVariants = (product) =>
+  Array.isArray(product?.ProductVariants)
+    ? product.ProductVariants.filter((variant) => variant?.status !== 'disabled')
+    : [];
 
-  const discount =
-    product.originalPrice && product.price < product.originalPrice
-      ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100
-        )
-      : 0;
+/** Availability for the card: a product with variants is available if any variant is. */
+export const getCardStock = (product) => {
+  const variants = activeVariants(product);
+  if (!variants.length) return getStockState(product);
+  const states = variants.map((variant) => getStockState(variant, product));
+  const purchasable = states.some((state) => state.purchasable);
+  return { purchasable, maxQuantity: purchasable ? 1 : 0, lowStock: false, available: null };
+};
 
-  if (viewMode === 'list') {
-    return (
-      <Card
-        onClick={() => navigate(`/product/${product.id}`)}
-        className="transition-all hover:shadow-md hover:-translate-y-0.5 overflow-hidden cursor-pointer"
-      >
-        <CardContent className="p-0">
-          <div className="flex items-center gap-4 p-4">
-            {(preview || owner) && (
-              <div className="flex gap-2 ml-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-white shadow-sm z-20"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                  }}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                 <Button
-              variant="outline"
-              size="icon"
-              className="bg-white shadow-sm text-red-600 hover:text-red-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-              </div>
-            )}
-            <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-              {product.images?.[0]?.url ? (
-                <img
-                  src={product.images[0].url}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ShoppingCart className="h-8 w-8 text-gray-400" />
-                </div>
-              )}
+export const NEW_PRODUCT_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-              <div className="absolute top-2 left-2 flex gap-1">
-                {product.isNew && (
-                  <Badge variant="success" className="text-xs px-2 py-0.5">
-                    NEW
-                  </Badge>
-                )}
-                {product.onSale && (
-                  <Badge variant="destructive" className="text-xs px-2 py-0.5">
-                    SALE
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate">{product.name}</h3>
-              <p className="text-sm text-gray-600 line-clamp-2 mt-1">
-                {product.description || 'No description available'}
-              </p>
-            </div>
-
-            <div className="flex flex-col items-end gap-2 min-w-[120px]">
-              <div className="text-right">
-                <p className="font-bold text-lg">${product.price}</p>
-                {product.originalPrice && (
-                  <p className="text-sm text-gray-500 line-through">
-                    ${product.originalPrice}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                variant={isAddedToCart ? 'outline' : 'default'}
-                size="sm"
-                className="w-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToCart();
-                  setIsAddedToCart(true);
-                  setTimeout(() => setIsAddedToCart(false), 2000);
-                }}
-              >
-                {isAddedToCart ? (
-                  <span className="flex items-center">
-                    <Check className="h-4 w-4 mr-1" /> Added
-                  </span>
-                ) : (
-                  'Add to Cart'
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+/**
+ * One badge from the product's own data: the discount when the merchant set a
+ * higher compare-at price, otherwise "New" for products added recently.
+ */
+export const getProductBadge = (product, now = Date.now()) => {
+  const price = toAmount(product?.price);
+  const compareAt = toAmount(product?.compareAtPrice);
+  if (compareAt > price && price > 0) {
+    const percent = Math.round((1 - price / compareAt) * 100);
+    if (percent >= 1) return { kind: 'sale', percent };
   }
+  const created = Date.parse(product?.createdAt);
+  if (Number.isFinite(created) && created <= now && now - created < NEW_PRODUCT_DAYS * DAY_MS) return { kind: 'new' };
+  return null;
+};
+
+/**
+ * Product tile: image, category, name, price, availability and a direct
+ * add-to-cart action. Products with variants link to the detail page instead,
+ * because the shopper has to choose options first.
+ */
+export function ProductCard({ product, onAdd, priority = false, showCategory = true }) {
+  const { t } = useI18n();
+  const [state, setState] = useState('idle');
+
+  const name = product?.name || '';
+  const href = productPath(product.id);
+  const image = getProductImages(product, name)[0];
+  const stock = getCardStock(product);
+  const needsOptions = activeVariants(product).length > 0;
+  const badge = getProductBadge(product);
+
+  const handleAdd = async () => {
+    if (!onAdd || state === 'adding' || !stock.purchasable) return;
+    setState('adding');
+    try {
+      await onAdd(product);
+      setState('added');
+      window.setTimeout(() => setState('idle'), 1600);
+    } catch {
+      setState('idle');
+    }
+  };
 
   return (
-    <Card
-      onClick={() => navigate(`/product/${product.id}`)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="h-full overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer relative"
-    >
-      <div className="relative aspect-square overflow-hidden bg-gray-100">
-        {product.images?.[0]?.url ? (
-          <img
-            src={product.images[0].url}
-            alt={product.name}
-            className={`w-full h-full object-cover transition-transform duration-500 ${
-              isHovered ? 'scale-105' : 'scale-100'
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-[0_18px_40px_-26px_oklch(var(--foreground)/0.45)]">
+      {/* The name link below stretches over the whole card, so the image needs no link of its own. */}
+      <div className="relative m-2 aspect-square overflow-hidden rounded-xl bg-accent">
+        {badge && (
+          <span
+            className={`absolute left-2 top-2 z-[1] rounded-full px-2.5 py-0.5 text-[0.6875rem] font-semibold ${
+              badge.kind === 'sale' ? 'bg-error/10 text-error' : 'bg-primary/15 text-primary'
             }`}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ShoppingCart className="h-12 w-12 text-gray-400" />
-          </div>
+          >
+            {badge.kind === 'sale' ? `-${badge.percent}%` : t('home.newBadge')}
+          </span>
         )}
-
-        <div className="absolute top-3 left-3 flex gap-2">
-          {product.isNew && (
-            <Badge variant="success" className="text-xs">
-              NEW
-            </Badge>
-          )}
-          {product.onSale && (
-            <Badge variant="destructive" className="text-xs">
-              SALE
-            </Badge>
-          )}
-          {discount > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              -{discount}%
-            </Badge>
-          )}
-        </div>
-
-        {(preview || owner) && (
-          <div className="absolute top-3 right-3 flex gap-2 z-20">
-            <Button
-              variant="outline"
-              size="icon"
-              className="bg-white shadow-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="bg-white shadow-sm text-red-600 hover:text-red-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isHovered ? { opacity: 1 } : { opacity: 0 }}
-          className="absolute inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center"
-        >
-          <div className="bg-white/90 rounded-full p-1 flex gap-1 shadow">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsFavorited(!isFavorited);
-              }}
-            >
-              <Heart
-                className={`h-5 w-5 ${
-                  isFavorited ? 'text-red-500 fill-current' : 'text-gray-700'
-                }`}
-              />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Eye className="h-5 w-5 text-gray-700" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCart();
-                setIsAddedToCart(true);
-                setTimeout(() => setIsAddedToCart(false), 2000);
-              }}
-            >
-              {isAddedToCart ? (
-                <Check className="h-5 w-5 text-green-500" />
-              ) : (
-                <ShoppingCart className="h-5 w-5 text-gray-700" />
-              )}
-            </Button>
-          </div>
-        </motion.div>
+        <ProductImage
+          src={image?.url}
+          alt=""
+          priority={priority}
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+          className={`h-full w-full transition-transform duration-300 group-hover:scale-[1.03] ${stock.purchasable ? '' : 'opacity-60'}`}
+        />
       </div>
 
-      <CardContent className="p-4">
-        <h3 className="font-medium line-clamp-2 h-12 mb-1">{product.name}</h3>
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-          {product.description || 'No description available'}
-        </p>
-
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="font-bold text-lg">${product.price}</p>
-            {product.originalPrice && (
-              <p className="text-sm text-gray-500 line-through">
-                ${product.originalPrice}
-              </p>
-            )}
-          </div>
-
-          <Button
-            variant={isAddedToCart ? 'outline' : 'default'}
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToCart();
-              setIsAddedToCart(true);
-              setTimeout(() => setIsAddedToCart(false), 2000);
-            }}
-          >
-            {isAddedToCart ? (
-              <span className="flex items-center">
-                <Check className="h-4 w-4 mr-1" /> Added
-              </span>
-            ) : (
-              'Add to Cart'
-            )}
-          </Button>
+      <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-1 sm:px-4 sm:pb-4">
+        {showCategory && product?.Category?.name && (
+          <p className="truncate text-xs text-muted-foreground">{product.Category.name}</p>
+        )}
+        <h3 className="line-clamp-2 font-display text-[0.9375rem] font-medium leading-snug text-foreground sm:text-base">
+          <Link to={href} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
+            {name}
+          </Link>
+        </h3>
+        <div className="mt-auto pt-2">
+          <Price amount={product?.price} compareAt={product?.compareAtPrice} size="sm" />
+          <StockLabel stock={stock} quiet className="mt-1" />
         </div>
-      </CardContent>
-    </Card>
+
+        {needsOptions ? (
+          <Link
+            to={href}
+            className="btn-outline relative z-10 mt-3 min-h-10 w-full rounded-lg px-3 text-xs sm:text-sm"
+            aria-label={`${t('product.selectOptions')}: ${name}`}
+          >
+            {t('product.selectOptions')}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!stock.purchasable || state === 'adding'}
+            aria-label={t('product.addNamed', { name })}
+            className="btn-primary relative z-10 mt-3 min-h-10 w-full px-3 text-xs sm:text-sm"
+          >
+            {state === 'adding' ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : state === 'added' ? (
+              <Check className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+            )}
+            <span>
+              {!stock.purchasable
+                ? t('product.outOfStock')
+                : state === 'added'
+                  ? t('product.added')
+                  : state === 'adding'
+                    ? t('product.adding')
+                    : t('product.add')}
+            </span>
+          </button>
+        )}
+      </div>
+    </article>
   );
-};
+}
