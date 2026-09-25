@@ -78,6 +78,7 @@ The implementation sequence and release gates are in the
 | Templates, themes, domain, subscription, deployment | `rentify-server` | Existing core API and React storefronts |
 | Catalog, categories, price, stock, carts, orders, payments, POS, invoices | `ecommerce-server` | Existing commerce API and shared marketplace routes |
 | Marketplace buyer UI | `marketplace-frontend/` | Angular KhmerCraft app |
+| Platform and marketplace admin UI | `admin-frontend/` | Standalone Angular admin service |
 | Merchant dashboard and storefront UI | `rentify-frontend` | Existing React/Vite apps |
 | KhmerCraft API | Inactive reference code only | `docs/reference/legacy-khmercraft-api/` Express/Mongoose; never run as a platform service |
 

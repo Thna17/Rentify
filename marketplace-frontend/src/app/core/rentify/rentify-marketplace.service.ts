@@ -111,6 +111,11 @@ export class RentifyMarketplaceService {
     return base(runtime()?.merchantDashboardUrl, 'http://localhost:4400');
   }
 
+  get adminDashboard(): string {
+    return base(runtime()?.adminDashboardUrl, 'http://localhost:4800');
+  }
+
+
   get configured(): boolean {
     return Boolean(this.core && this.commerce && this.auth);
   }
