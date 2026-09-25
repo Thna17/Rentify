@@ -21,6 +21,7 @@ and MongoDB is not part of the platform. Migration and release gates remain in p
 - `rentify-server` — Core API for identity, merchants, websites, packages, subscriptions, and deployment orchestration.
 - `ecommerce-server` — Commerce API for catalog, carts, checkout, orders, inventory, invoices, POS, and payments.
 - `marketplace-frontend` — Angular web application for Rentify's shared marketplace buyer experience.
+- `admin-frontend` — Angular platform operations console for live Core and Commerce administration.
 - `docs` — architecture decisions, migration plan, shared implementation notes, and archived legacy reference API (`docs/reference/legacy-khmercraft-api`).
 - `compose.yaml` — local Docker development stack.
 

@@ -79,6 +79,7 @@ const ICONS: Record<string, string> = {
   key: '<circle cx="8" cy="15" r="4.2"/><path d="m11 12 8.5-8.5"/><path d="m16 6 2.5 2.5"/><path d="m18.5 3.5 2 2"/>',
   send: '<path d="m3 11 18-8-8 18-2.5-7.5L3 11Z"/>',
   loader: '<path d="M12 3v3.5"/><path d="M12 17.5V21"/><path d="m5.6 5.6 2.4 2.4"/><path d="m16 16 2.4 2.4"/><path d="M3 12h3.5"/><path d="M17.5 12H21"/><path d="m5.6 18.4 2.4-2.4"/><path d="m16 8 2.4-2.4"/>',
+  'qr-code': '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
 };
 
 @Component({

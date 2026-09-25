@@ -40,6 +40,31 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Accepted Payment Methods Strip */}
+        <div className="flex flex-col sm:flex-row items-center justify-between py-6 border-t gap-4">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Accepted & Supported Payments
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              Cash on Delivery (Available)
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50/80 text-amber-700 border border-amber-200">
+              Bakong KHQR
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-800">Soon</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50/80 text-amber-700 border border-amber-200">
+              ABA PayWay
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-800">Soon</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50/80 text-amber-700 border border-amber-200">
+              Visa / Mastercard
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-800">Soon</span>
+            </span>
+          </div>
+        </div>
+
         {/* Bottom Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t gap-4">
           <p className="text-sm text-muted-foreground">

@@ -24,14 +24,14 @@ describe('authInterceptor', () => {
     localStorage.clear();
   });
 
-  it('attaches Authorization bearer header and enables withCredentials when token is present in localStorage', () => {
+  it('uses the session cookie even when a stale token is present in localStorage', () => {
     localStorage.setItem('rentify_token', 'mock-admin-token-xyz');
 
     httpClient.get('/api/test').subscribe();
 
     const req = httpTesting.expectOne('/api/test');
     expect(req.request.withCredentials).toBe(true);
-    expect(req.request.headers.get('Authorization')).toBe('Bearer mock-admin-token-xyz');
+    expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
   });
 

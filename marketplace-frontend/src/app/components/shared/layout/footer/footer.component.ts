@@ -47,6 +47,28 @@ import { AuthService } from '../../../../core/auth/auth.service';
         <a routerLink="/terms">Terms of service</a>
       </div>
     </div>
+    <div class="footer-payment-strip container">
+      <div class="payment-strip-title">Accepted & Supported Payments</div>
+      <div class="payment-badges">
+        <div class="pay-badge active" title="Pay with cash on delivery">
+          <span class="pay-dot"></span>
+          <span class="pay-name">Cash on Delivery</span>
+          <span class="pay-pill available">Available</span>
+        </div>
+        <div class="pay-badge soon" title="Bakong KHQR instant scan payment">
+          <span class="pay-name">Bakong KHQR</span>
+          <span class="pay-pill soon">Coming Soon</span>
+        </div>
+        <div class="pay-badge soon" title="ABA Mobile & PayWay">
+          <span class="pay-name">ABA PayWay</span>
+          <span class="pay-pill soon">Coming Soon</span>
+        </div>
+        <div class="pay-badge soon" title="Visa and Mastercard cards">
+          <span class="pay-name">Visa / Mastercard</span>
+          <span class="pay-pill soon">Coming Soon</span>
+        </div>
+      </div>
+    </div>
     <div class="footer-bottom container">
       <span>&copy; 2026 Rentify Marketplace. All rights reserved.</span>
       <span class="made-in">Cambodian stores, one marketplace.</span>
@@ -67,6 +89,65 @@ import { AuthService } from '../../../../core/auth/auth.service';
     .footer-col h4 { font-family: var(--font-body); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; color: #d9bd8b; }
     .footer-col a { display: block; font-size: 13px; color: rgba(255,250,240,.65); margin-bottom: 8px; }
     .footer-col a:hover { color: #fff; }
+    .footer-payment-strip {
+      border-top: 1px solid rgba(255,255,255,.12);
+      padding-top: 18px;
+      padding-bottom: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .payment-strip-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #d9bd8b;
+    }
+    .payment-badges {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .pay-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.13);
+      color: #fffaf0;
+    }
+    .pay-badge.active .pay-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+    }
+    .pay-pill {
+      font-size: 9.5px;
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .pay-pill.available {
+      background: rgba(52, 211, 153, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.35);
+    }
+    .pay-pill.soon {
+      background: rgba(217, 189, 139, 0.2);
+      color: #d9bd8b;
+      border: 1px solid rgba(217, 189, 139, 0.35);
+    }
     .footer-bottom {
       border-top: 1px solid rgba(255,255,255,.12);
       padding-top: 14px;
