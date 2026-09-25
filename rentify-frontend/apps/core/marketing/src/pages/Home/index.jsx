@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@rentify/shared/ui/button";
 import { Card, CardContent } from "@rentify/shared/ui/card";
 import { Badge } from "@rentify/shared/ui/badge";
@@ -8,10 +8,8 @@ import {
   Zap, 
   Globe, 
   CreditCard, 
-  Package, 
   Store, 
   MessageSquare, 
-  BarChart3,
   Star,
   PlayCircle,
   Smartphone,
@@ -25,91 +23,104 @@ import {
 } from "lucide-react";
 
 // Import your existing navigation component
-import Navigation from "../../components/common/Navigation";
+import SiteHeader from "../../components/site/SiteHeader";
+import heroProductMockup from "../../assets/rentify-hero-product-mockup-v2.png";
 
-import Footer from "../../components/common/Footer";
+import SiteFooter from "../../components/site/SiteFooter";
+
+const RentifyLaptopShowcase = React.lazy(() => import('./components/RentifyLaptopShowcase'));
 // --- Enhanced Hero Section ---
 const HeroSection = () => (
-  <section className="relative overflow-hidden pt-24 md:pt-32 bg-gradient-to-b from-white to-blue-50/30">
-    {/* Sophisticated background elements */}
-    <div className="absolute inset-0 -z-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-gradient-to-r from-blue-400/10 to-teal-400/10 rounded-full blur-3xl" />
-    </div>
-    
-    <div className="container text-center">
-      <Badge variant="secondary" className="mb-4 px-3 py-1 border-blue-200 bg-blue-50 text-blue-700">
-        <Globe className="w-3 h-3 mr-1" />
-        For Cambodian SMEs
-      </Badge>
-      
-      <h1 className="text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-        Run Your Entire Business <br/> 
-        From <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">One Place</span>
-      </h1>
-      
-      <p className="mt-5 mx-auto max-w-2xl text-lg text-muted-foreground">
-        Stop juggling between notebooks, Facebook messages, and cash boxes. Rentify brings everything together so you can focus on growing your business.
-      </p>
+  <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_55%,#eef6ff_100%)] pb-12 pt-8 sm:pt-10 lg:flex lg:min-h-[580px] lg:items-center lg:py-14">
+    <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/70 to-transparent" />
 
-      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <Button size="lg" className="bg-blue-600 hover:bg-blue-700 px-8">
-          <Zap className="mr-2 h-4 w-4" /> Start Free Trial
-        </Button>
-        <Button variant="outline" size="lg" className="border-gray-300">
-          <PlayCircle className="mr-2 h-4 w-4" /> Watch Demo
-        </Button>
-      </div>
-      
-      <div className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-2">
-        <CheckCircle className="h-4 w-4 text-green-500" />
-        No credit card required • Free setup assistance • Cancel anytime
-      </div>
+    <div className="container relative">
+      <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-14">
+        <div className="mx-auto w-full max-w-[610px] text-center lg:mx-0 lg:text-left">
+          <Badge variant="secondary" className="mb-3.5 border-blue-100 bg-blue-50/90 px-3 py-1.5 text-blue-700 shadow-none">
+            <Globe className="mr-1.5 h-3.5 w-3.5" />
+            For Cambodian SMEs
+          </Badge>
 
-      {/* Enhanced hero image with floating devices */}
-      <div className="relative mt-16 mx-auto max-w-6xl">
-        <div className="relative">
-          {/* Main dashboard on tablet */}
-          <div className="relative z-10 mx-auto max-w-4xl">
-            <div className="rounded-2xl border-4 border-white shadow-2xl shadow-blue-500/10">
-              <img
-                src="https://i.ibb.co/39H6cPKw/Gemini-Generated-Image-t406dxt406dxt406.png"
-                alt="Rentify dashboard showing sales in Khmer language with Riel currency"
-                className="rounded-lg w-full"
-              />
-            </div>
+          <h1 className="text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl lg:text-[3.25rem] xl:text-[3.85rem]">
+            Run Your Entire Business From{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">One Place</span>
+          </h1>
+
+          <p className="mx-auto mt-3.5 max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg lg:mx-0 xl:text-lg xl:leading-7">
+            Sell online, manage orders, track sales, and grow your business with one simple platform built for Cambodian SMEs.
+          </p>
+
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <Button size="lg" className="h-12 rounded-xl bg-blue-600 px-7 shadow-[0_10px_24px_rgba(37,99,235,0.18)] hover:bg-blue-700">
+              Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="lg" className="h-12 rounded-xl border-slate-300 bg-white/70 px-7 text-slate-800 hover:bg-white">
+              <PlayCircle className="mr-2 h-5 w-5 text-blue-600" /> Watch Demo
+            </Button>
           </div>
-          
-          {/* Floating phone mockup */}
-          <div className="absolute -bottom-8 -right-8 z-20 w-64 hidden lg:block">
-            <div className="rounded-2xl border-2 border-white shadow-xl">
-              <img
-                src="https://i.ibb.co/LzhtJfYc/localhost-4500-dashboard-invoices-1.png"
-                alt="Rentify mobile POS interface"
-                className="rounded-lg"
-              />
-            </div>
+
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-slate-500 lg:justify-start xl:text-sm">
+            {['No credit card required', 'Free setup assistance', 'Cancel anytime'].map((item) => (
+              <span key={item} className="flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4 fill-blue-600 text-white" />
+                {item}
+              </span>
+            ))}
           </div>
         </div>
+
+        <figure className="relative mx-auto flex w-full max-w-[700px] items-center justify-center lg:justify-end">
+          <img
+            src={heroProductMockup}
+            alt="Rentify dashboard on a laptop with a KhmerCraft marketplace phone and jasmine rice product card"
+            className="h-auto w-full object-contain drop-shadow-[0_28px_30px_rgba(30,64,175,0.10)]"
+          />
+        </figure>
       </div>
     </div>
   </section>
 );
 
+const trustedBusinesses = [
+  "BKK Cafe",
+  "Toul Tom Poung Threads",
+  "Riverside Books",
+  "Orussey Electronics",
+  "Central Market Goods",
+];
+
 // --- Enhanced Social Proof Section ---
 const SocialProof = () => (
-  <section className="py-16 md:py-24 bg-white">
+  <section className="py-12 md:py-16 bg-white">
     <div className="container">
-      <h2 className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-12">
+      <h2 className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8">
         Trusted by Growing Businesses Across Cambodia
       </h2>
       
-      {/* Business logos */}
-      <div className="flex justify-center gap-8 flex-wrap items-center grayscale opacity-60 mb-16">
-        {["BKK Cafe", "Toul Tom Poung Threads", "Riverside Books", "Orussey Electronics", "Central Market Goods"].map((business, index) => (
-          <div key={index} className="px-4 py-2 bg-gray-50 rounded-lg">
-            <p className="font-semibold text-gray-700">{business}</p>
-          </div>
-        ))}
+      {/* Continuously moving business names */}
+      <div
+        className="trusted-business-marquee mb-16 overflow-hidden"
+        aria-label="Businesses using Rentify"
+      >
+        <div className="trusted-business-track flex w-max items-center">
+          {[false, true].map((duplicate) => (
+            <div
+              key={String(duplicate)}
+              className="flex shrink-0 items-center gap-6 pr-6 md:gap-8 md:pr-8"
+              aria-hidden={duplicate || undefined}
+            >
+              {trustedBusinesses.map((business) => (
+                <div
+                  key={`${duplicate ? 'duplicate-' : ''}${business}`}
+                  className="whitespace-nowrap rounded-xl border border-slate-100 bg-slate-50/80 px-6 py-3 shadow-sm"
+                >
+                  <p className="font-semibold text-slate-600">{business}</p>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       
       {/* Enhanced testimonial */}
@@ -183,6 +194,7 @@ const HowItWorks = () => (
 
 // --- Feature Showcase Section ---
 const FeatureShowcase = () => {
+  const reduceMotion = useReducedMotion();
   const features = [
     {
       icon: Store,
@@ -208,33 +220,81 @@ const FeatureShowcase = () => {
   ];
 
   return (
-    <section id="features" className="py-16 md:py-24 bg-white">
+    <section id="features" className="overflow-hidden bg-white py-20 md:py-28">
       <div className="container">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto mb-16 max-w-2xl text-center md:mb-20"
+        >
           <h2 className="text-3xl font-bold md:text-4xl">One Platform, Endless Possibilities</h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Rentify is more than a website builder. It's a complete toolkit designed for the way you work.
           </p>
-        </div>
-        <div className="grid gap-12">
-          {features.map((feature, index) => (
-            <div key={index} className={`grid items-center gap-10 md:grid-cols-2 ${index % 2 !== 0 ? 'md:grid-flow-row-dense md:[&>*:last-child]:col-start-1' : ''}`}>
-              <div>
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+        </motion.div>
+
+        <div className="space-y-20 md:space-y-28">
+          {features.map((feature, index) => {
+            const imageOnRight = index % 2 === 0;
+
+            return (
+            <div
+              key={feature.title}
+              className="grid min-h-[520px] items-center gap-12 rounded-[32px] bg-gradient-to-br from-[#f8fbff] to-[#eef6ff] px-6 py-12 sm:px-10 md:grid-cols-2 md:px-12 lg:gap-20 lg:px-16"
+            >
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, x: imageOnRight ? -56 : 56 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.78, ease: [0.22, 1, 0.36, 1] }}
+                className={
+                  imageOnRight
+                    ? 'md:col-start-1 md:row-start-1'
+                    : 'md:col-start-2 md:row-start-1'
+                }
+              >
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100">
                   <feature.icon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-semibold tracking-[0.14em] text-blue-600">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                 </div>
-                <h3 className="text-2xl font-bold">{feature.title}</h3>
-                <p className="mt-3 text-lg font-semibold text-muted-foreground italic">{feature.problem}</p>
-                <p className="mt-2 text-foreground">{feature.solution}</p>
-                <Button variant="link" className="mt-4 p-0 text-blue-600">
+                <h3 className="max-w-lg text-3xl font-bold tracking-[-0.025em] text-slate-950 md:text-4xl">
+                  {feature.title}
+                </h3>
+                <p className="mt-5 max-w-lg text-lg font-medium leading-7 text-slate-500">
+                  {feature.problem}
+                </p>
+                <p className="mt-3 max-w-lg leading-7 text-slate-700">{feature.solution}</p>
+                <Button variant="link" className="mt-5 p-0 text-blue-600 hover:text-blue-700">
                   Learn more <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
-              </div>
-              <div className="overflow-hidden rounded-lg border shadow-lg">
-                <img src={feature.image} alt={`${feature.title} preview`} className="w-full" />
-              </div>
+              </motion.div>
+
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, x: imageOnRight ? 110 : -110, scale: 0.96 }}
+                whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+                className={`overflow-hidden rounded-[26px] border border-blue-100 bg-white shadow-[0_28px_70px_rgba(30,100,190,0.14)] ${
+                  imageOnRight
+                    ? 'md:col-start-2 md:row-start-1'
+                    : 'md:col-start-1 md:row-start-1'
+                }`}
+              >
+                <img
+                  src={feature.image}
+                  alt={`${feature.title} preview`}
+                  className="aspect-[4/3] w-full object-cover object-top"
+                />
+              </motion.div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -399,7 +459,7 @@ const Homepage = () => {
       {/* <SeoJsonLd /> */}
       
       {/* Navigation */}
-      <Navigation />
+      <SiteHeader />
       
       {/* Enhanced Hero Section */}
       <HeroSection />
@@ -409,6 +469,13 @@ const Homepage = () => {
       
       {/* How It Works */}
       <HowItWorks />
+
+      {/* Scroll-driven product story */}
+      <React.Suspense
+        fallback={<section className="h-screen bg-gradient-to-b from-white to-blue-50" aria-label="Loading product showcase" />}
+      >
+        <RentifyLaptopShowcase />
+      </React.Suspense>
       
       {/* Feature Showcase */}
       <FeatureShowcase />
@@ -423,7 +490,7 @@ const Homepage = () => {
       <FinalCTASection />
       
       {/* Footer */}
-      <Footer />
+      <SiteFooter />
     </main>
   );
 };

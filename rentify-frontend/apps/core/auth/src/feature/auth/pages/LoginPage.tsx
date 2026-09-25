@@ -14,7 +14,7 @@ import {
 import { Input } from '@rentify/shared/ui/input';
 import { Button } from '@rentify/shared/ui/button';
 import { Alert, AlertDescription } from '@rentify/shared/ui/alert';
-import { Tabs, TabsList, TabsTrigger } from '@rentify/shared/ui/tabs';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Eye,
   EyeOff,
@@ -51,6 +51,8 @@ function LoginPage() {
     setInputMode,
     handleLogin,
     handleGoogleLogin,
+    handleTelegramLogin,
+    telegramEnabled,
     formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,
@@ -71,6 +73,24 @@ function LoginPage() {
     navigate('/forgot-password');
   };
 
+  // Switching between email and phone clears the old value and its errors
+  const switchMode = (mode: 'email' | 'phone') => {
+    if (mode === inputMode) return;
+    setInputMode(mode);
+    form.resetField('contact');
+    form.clearErrors();
+  };
+
+  const needsVerification = /not verified/i.test(error || '');
+
+  const handleVerify = () => {
+    const contact = form.getValues('contact');
+    navigate({
+      pathname: '/verify-email',
+      search: `?email=${encodeURIComponent(contact)}`,
+    });
+  };
+
   const handleSignUp = () => {
     navigate({ pathname: '/signup', search: location.search });
   };
@@ -78,7 +98,7 @@ function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 sm:px-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_#2563eb_0,_transparent_36%),radial-gradient(circle_at_bottom_right,_#7c3aed_0,_transparent_34%)] opacity-70" />
-      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/40 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-[2rem] lg:min-h-[720px] bg-white shadow-2xl shadow-slate-950/40 lg:grid-cols-[0.9fr_1.1fr]">
         <aside
           className={cn(
             'relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between',
@@ -123,8 +143,8 @@ function LoginPage() {
           </div>
         </aside>
 
-        <main className="px-6 py-8 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
-          <div className="mx-auto max-w-md">
+        <main className="flex items-center px-6 py-10 sm:px-12 sm:py-12 lg:px-16 lg:py-16">
+          <div className="mx-auto w-full max-w-[460px]">
             <div className="mb-8">
               <div
                 className={cn(
@@ -155,7 +175,7 @@ function LoginPage() {
               onClick={handleGoogleLogin}
               disabled={loading}
               variant="outline"
-              className="w-full h-12 mb-6 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 rounded-xl"
+              className="inline-flex w-full h-12 mb-6 items-center justify-center border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 rounded-xl"
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path
@@ -178,6 +198,24 @@ function LoginPage() {
               Continue with Google
             </Button>
 
+            {telegramEnabled && (
+              <Button
+                onClick={handleTelegramLogin}
+                disabled={loading}
+                variant="outline"
+                className="inline-flex w-full h-12 -mt-3 mb-6 items-center justify-center border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 rounded-xl"
+              >
+                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" aria-hidden>
+                  <circle cx="12" cy="12" r="12" fill="#229ED9" />
+                  <path
+                    fill="#fff"
+                    d="M5.4 11.8l11.6-4.5c.54-.2 1 .13.83.94l-2 9.3c-.14.66-.54.82-1.1.51l-3-2.2-1.45 1.4c-.16.16-.3.3-.6.3l.21-3.05 5.56-5.02c.24-.21-.05-.33-.38-.12l-6.87 4.33-2.96-.92c-.64-.2-.66-.64.14-.95z"
+                  />
+                </svg>
+                Continue with Telegram
+              </Button>
+            )}
+
             {/* Divider */}
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
@@ -195,34 +233,44 @@ function LoginPage() {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-5"
               >
-                {/* Contact Method Tabs */}
-                <Tabs
-                  value={inputMode}
-                  onValueChange={(value) => {
-                    if (value === 'email' || value === 'phone')
-                      setInputMode(value);
-                  }}
-                  className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-2 bg-slate-100/80 p-1 rounded-xl">
-                    <TabsTrigger
-                      value="email"
-                      className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+                {/* Contact method switch: the white pill slides to the active option */}
+                <div className="grid grid-cols-2 rounded-xl bg-slate-100/80 p-1">
+                  {(['email', 'phone'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => switchMode(mode)}
+                      className={cn(
+                        'relative flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors duration-200',
+                        inputMode === mode ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
+                      )}
                     >
-                      <Mail className="w-4 h-4" />
-                      Email
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="phone"
-                      className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
-                    >
-                      <Phone className="w-4 h-4" />
-                      Phone
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                      {inputMode === mode && (
+                        <motion.span
+                          layoutId="login-mode-pill"
+                          className="absolute inset-0 rounded-lg bg-white shadow-sm"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                        />
+                      )}
+                      <span className="relative flex items-center gap-2">
+                        {mode === 'email' ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                        {mode === 'email' ? 'Email' : 'Phone'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
-                {/* Contact Field */}
+                {/* Contact Field: flips over when switching email/phone */}
+                <div style={{ perspective: 800 }}>
+                <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={inputMode}
+                  initial={{ opacity: 0, rotateX: -80, y: -6 }}
+                  animate={{ opacity: 1, rotateX: 0, y: 0 }}
+                  exit={{ opacity: 0, rotateX: 80, y: 6 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ transformOrigin: 'center' }}
+                >
                 <FormField
                   control={form.control}
                   name="contact"
@@ -277,6 +325,9 @@ function LoginPage() {
                     </FormItem>
                   )}
                 />
+                </motion.div>
+                </AnimatePresence>
+                </div>
 
                 {/* Password Field */}
                 <FormField
@@ -337,8 +388,17 @@ function LoginPage() {
                     variant="destructive"
                     className="animate-in fade-in-80 rounded-xl border-red-200 bg-red-50"
                   >
-                    <AlertDescription className="text-red-800">
-                      {error}
+                    <AlertDescription className="flex flex-wrap items-center justify-between gap-2 text-red-800">
+                      <span>{error}</span>
+                      {needsVerification && (
+                        <button
+                          type="button"
+                          onClick={handleVerify}
+                          className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-900"
+                        >
+                          Verify now
+                        </button>
+                      )}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -347,7 +407,7 @@ function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 rounded-xl group"
+                  className="inline-flex w-full h-12 items-center justify-center bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 rounded-xl group"
                 >
                   {loading ? (
                     <>

@@ -8,6 +8,7 @@ module.exports = {
       __dirname,
       '{src,pages/*,pages/home/components/*,components/*,app}/**/*!(*.stories|*.spec).{ts,tsx,html,jsx}'
     ),
+    join(__dirname, '../../../libs/shared/src/ui/**/*.{js,ts,jsx,tsx}'),
   ],
   theme: {
     screens: {

@@ -5,16 +5,15 @@ const { Store, Website, User, Staff, SellerApplication } = require('../src/model
 const TECH_MERCHANT_ID = '55555555-5555-4555-8555-555555555555';
 const TECH_STAFF_ID = '66666666-6666-4666-8666-666666666666';
 const TECH_WEBSITE_ID = '8c90a1b2-3b4c-5d6e-9f0a-1b2c3d4e5f60';
-const TECH_STORE_ID = '9c9030e1-476f-4ef4-92f8-c9f4a96d52a8';
+const TECH_STORE_ID = '719d9c55-b338-4ded-9c1a-231a0b1863b9';
 
 async function seedTechStore() {
   console.log('⚡ Ensuring NexTech Electronics store setup in Core API...');
   await sequelize.authenticate();
 
   // 1. Ensure Store exists and is approved for Marketplace
-  let store = await Store.findByPk(TECH_STORE_ID);
+  let store = await Store.findOne({ where: { ownerUserId: TECH_MERCHANT_ID } }) || await Store.findByPk(TECH_STORE_ID);
   const storePayload = {
-    id: TECH_STORE_ID,
     ownerUserId: TECH_MERCHANT_ID,
     name: 'NexTech Electronics',
     slug: 'store-9c9030e1-476f-4ef4-92f8-c9f4a96d52a8',
@@ -28,7 +27,7 @@ async function seedTechStore() {
   };
 
   if (!store) {
-    store = await Store.create(storePayload);
+    store = await Store.create({ id: TECH_STORE_ID, ...storePayload });
     console.log('✅ Created NexTech Store in Core');
   } else {
     await store.update(storePayload);

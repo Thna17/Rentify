@@ -7,30 +7,30 @@
 
 :root {
   /* Neutral surface scale (Notion-like warm grays) */
-  --color-bg: #fffdf8;
-  --color-bg-alt: #f6f1e7;
-  --color-bg-hover: #eee7da;
-  --color-surface: #fffefa;
+  --color-bg: #ffffff;
+  --color-bg-alt: #f1f3f8;
+  --color-bg-hover: #e8ebf3;
+  --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
 
   /* Ink scale */
-  --color-text: #241f19;
-  --color-text-secondary: #514a41;
-  --color-muted: #81786d;
-  --color-muted-2: #aaa095;
-  --color-border: #e8dfd1;
-  --color-border-strong: #d8cdbd;
+  --color-text: #0f172a;
+  --color-text-secondary: #475069;
+  --color-muted: #7a8299;
+  --color-muted-2: #a7aec0;
+  --color-border: #e6e9f0;
+  --color-border-strong: #d3d8e3;
 
   /* Brand accent — restrained, used sparingly like a highlight not a wash */
-  --color-accent: #8e3021;
-  --color-accent-hover: #6e2419;
-  --color-accent-soft: rgba(142, 48, 33, 0.08);
-  --color-accent-soft-strong: rgba(142, 48, 33, 0.16);
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-soft: rgba(79, 70, 229, 0.08);
+  --color-accent-soft-strong: rgba(79, 70, 229, 0.16);
   --color-gold: #a87522;
   --color-forest: #263c31;
   --color-sand: #d9bd8b;
 
-  --color-danger: #d1453b;
+  --color-danger: #ef4444;
   --color-danger-soft: rgba(209, 69, 59, 0.08);
   --color-success: #2f7a4f;
   --color-success-soft: rgba(47, 122, 79, 0.08);
@@ -45,14 +45,14 @@
 
   /* Elevation */
   --shadow-xs: 0 1px 2px rgba(15, 15, 15, 0.04);
-  --shadow-sm: 0 3px 12px rgba(51, 38, 24, 0.07);
-  --shadow-md: 0 14px 36px rgba(51, 38, 24, 0.10);
-  --shadow-lg: 0 28px 70px rgba(51, 38, 24, 0.14);
+  --shadow-sm: 0 3px 12px rgba(15, 23, 42, 0.07);
+  --shadow-md: 0 14px 36px rgba(15, 23, 42, 0.10);
+  --shadow-lg: 0 28px 70px rgba(15, 23, 42, 0.14);
   --shadow-focus: 0 0 0 4px var(--color-accent-soft-strong);
 
   /* Typography */
   --font-body: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
-  --font-heading: Georgia, 'Times New Roman', serif;
+  --font-heading: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
 
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -825,3 +825,100 @@ app-store-detail .product-grid app-product-card:nth-child(3n + 3) .product-photo
    ============================================================ */
 .kc-reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); will-change: opacity, transform; }
 .kc-reveal-visible { opacity: 1; transform: none; }
+
+/* ============================================================
+   Homepage — one consistent system (last in the file on purpose,
+   so it settles the older per-section overrides above).
+   Every section: same vertical rhythm, same heading, same link,
+   same card surface.
+   ============================================================ */
+app-home .section {
+  padding-top: 36px !important;
+  padding-bottom: 0 !important;
+}
+app-home app-footer { display: block; margin-top: 64px; }
+
+/* Headings */
+app-home .section-head,
+app-home .discover-head,
+app-home .marketplace-heading {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 16px;
+  max-width: none !important;
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+app-home .discover-head { display: block !important; }
+app-home .section h2,
+app-home .rail-head h2,
+app-home .rail-title {
+  font-family: var(--font-body) !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.2 !important;
+  color: var(--color-text) !important;
+}
+app-home .discover-head p,
+app-home .collections-subtitle {
+  margin: 4px 0 0 !important;
+  font-size: 13.5px !important;
+  color: var(--color-muted) !important;
+}
+
+/* "View all" links */
+app-home .see-all,
+app-home .rail-link {
+  color: var(--color-accent) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+}
+
+/* Card surfaces: one radius, one border, one hover */
+app-home .category-poster .cat-visual,
+app-home .store-chip,
+app-home .collection-tile,
+app-home .flash-promo,
+app-home app-product-card > * {
+  border-radius: 16px !important;
+}
+app-home .store-chip,
+app-home .category-poster .cat-visual {
+  border: 1px solid var(--color-border) !important;
+  box-shadow: none !important;
+}
+app-home .store-chip:hover,
+app-home .category-poster:hover .cat-visual {
+  border-color: var(--color-border-strong) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Flash deals sits on the page like every other section, not in a box */
+app-home .flash-main {
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* Filter chips */
+app-home .discover-filters .chip {
+  border-radius: 999px !important;
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 13px !important;
+}
+app-home .discover-filters .chip.active {
+  background: var(--color-text) !important;
+  border-color: var(--color-text) !important;
+  color: #fff !important;
+}
+
+@media (max-width: 640px) {
+  app-home .section { padding-top: 28px !important; }
+  app-home .section h2 { font-size: 19px !important; }
+}

@@ -288,6 +288,16 @@ quoted total and rejects a changed price or fee. The fee and policy version
 are snapshotted on the order. Merchants deliver and collect the entire COD
 amount directly. Zone/weight rates and tax treatment remain later decisions.
 
+## Telegram sign-in (2026-09-24)
+
+- Core exposes `GET /api/auth/telegram-login-config` (public bot id from
+  `TELEGRAM_BOT_TOKEN`) and `POST /api/auth/login/telegram`, which verifies the
+  Telegram Login Widget hash and signs in an existing verified `User` matched by
+  `telegramUserId` (set when the user shares their phone with the bot).
+- Platform accounts only; storefront customer and staff Telegram sign-in are not
+  implemented. The bot's domain must be set with BotFather `/setdomain` for the
+  widget popup to work.
+
 ## 2026-09-24 POS store-level tenant migration decision
 
 Point of Sale (POS) is established as an in-person physical sales channel of the Store, operating independently of whether a merchant maintains an online storefront Website.

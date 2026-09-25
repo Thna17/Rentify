@@ -423,7 +423,9 @@ const toProductFromRentify = (
     slug: (api as any).slug || api.id,
     image,
     images,
-    variants: [],
+    variants: ((api as any).variants ?? []).map(
+      (v: { label: string; url: string }) => ({ label: v.label, image: v.url }),
+    ),
     price,
     compareAtPrice,
     ...classification,

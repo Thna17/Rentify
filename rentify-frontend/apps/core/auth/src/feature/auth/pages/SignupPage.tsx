@@ -4,13 +4,6 @@ import { useForm } from 'react-hook-form';
 import { useSignupForm } from '../hooks/useSignupForm';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@rentify/shared/ui/card';
-import {
   Form,
   FormControl,
   FormField,
@@ -21,8 +14,7 @@ import {
 import { Input } from '@rentify/shared/ui/input';
 import { Button } from '@rentify/shared/ui/button';
 import { Alert, AlertDescription } from '@rentify/shared/ui/alert';
-import { Tabs, TabsList, TabsTrigger } from '@rentify/shared/ui/tabs';
-import { Progress } from '@rentify/shared/ui/progress';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Eye,
   EyeOff,
@@ -35,6 +27,8 @@ import {
   User,
   Shield,
   ArrowLeft,
+  ArrowRight,
+  KeyRound,
   Bot,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
@@ -46,12 +40,23 @@ interface SignupFormData {
   confirmPassword: string;
 }
 
+// Local Cambodian number without the country code, e.g. "12 345 678"
+const formatLocalPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 9);
+  return [digits.slice(0, 2), digits.slice(2, 5), digits.slice(5)]
+    .filter(Boolean)
+    .join(' ');
+};
+
+const inputClass =
+  'h-12 rounded-xl border-slate-300 focus:border-blue-500 transition-colors duration-200';
+
 function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [inputMode, setInputMode] = useState<'email' | 'phone'>('email');
 
   const {
     step,
@@ -68,7 +73,6 @@ function SignupPage() {
     handleResendOtp,
     handleVerifyOtp,
     checkTelegramLink,
-    formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,
     isMarketplace,
@@ -84,169 +88,182 @@ function SignupPage() {
   });
 
   const password = form.watch('password');
-  const contact = form.watch('contact');
 
-  const calculatePasswordStrength = (pwd: string) => {
+  const passwordStrength = (() => {
     let strength = 0;
-    if (pwd.length >= 8) strength += 25;
-    if (/[A-Z]/.test(pwd)) strength += 25;
-    if (/[a-z]/.test(pwd)) strength += 25;
-    if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) strength += 25;
+    if (password.length >= 8) strength += 25;
+    if (/[A-Z]/.test(password)) strength += 25;
+    if (/[a-z]/.test(password)) strength += 25;
+    if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) strength += 25;
     return strength;
+  })();
+
+  const strengthLabel =
+    passwordStrength < 25
+      ? { text: 'Weak', color: 'text-red-600', bar: 'bg-red-500' }
+      : passwordStrength < 50
+      ? { text: 'Fair', color: 'text-orange-600', bar: 'bg-orange-500' }
+      : passwordStrength < 75
+      ? { text: 'Good', color: 'text-yellow-600', bar: 'bg-yellow-500' }
+      : { text: 'Strong', color: 'text-green-600', bar: 'bg-green-500' };
+
+  const switchMode = (mode: 'email' | 'phone') => {
+    if (mode === inputMode) return;
+    setInputMode(mode);
+    form.resetField('contact');
+    form.clearErrors('contact');
   };
 
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength < 25) return 'bg-red-500';
-    if (passwordStrength < 50) return 'bg-orange-500';
-    if (passwordStrength < 75) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getPasswordStrengthText = () => {
-    if (passwordStrength < 25) return 'Weak';
-    if (passwordStrength < 50) return 'Fair';
-    if (passwordStrength < 75) return 'Good';
-    return 'Strong';
-  };
-
-  useEffect(() => {
-    setPasswordStrength(calculatePasswordStrength(password));
-  }, [password]);
-
-  const handleInputModeChange = (mode: 'email' | 'phone') => {
-    form.setValue('contact', '');
-    form.trigger('contact');
-  };
+  const toFullPhone = (local: string) => '855' + local.replace(/\D/g, '');
 
   const onSubmit = (data: SignupFormData) => {
-    const formattedContact = data.contact;
     handleSignup({
       name: data.name,
-      contact: formattedContact,
+      contact: inputMode === 'phone' ? toFullPhone(data.contact) : data.contact,
       password: data.password,
-      inputMode: form.getValues('contact').includes('@') ? 'email' : 'phone',
+      inputMode,
     });
   };
 
   const steps = [
-    { label: 'Account Details', value: 'signup', icon: User },
+    { label: 'Details', value: 'signup', icon: User },
     ...(verificationMethod === 'telegram'
-      ? [{ label: 'Link Telegram', value: 'link', icon: Bot }]
+      ? [{ label: 'Telegram', value: 'link', icon: Bot }]
       : []),
-    { label: 'Verify Account', value: 'verify', icon: Shield },
+    { label: 'Verify', value: 'verify', icon: Shield },
   ];
-
   const activeStepIndex = steps.findIndex((s) => s.value === step);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/20 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div
-            className={cn(
-              'w-16 h-16 rounded-2xl bg-gradient-to-br shadow-lg mx-auto mb-4 flex items-center justify-center',
-              isWebsiteTemplate
-                ? 'from-blue-500 to-cyan-400'
-                : 'from-violet-600 to-purple-500'
-            )}
-          >
-            {isWebsiteTemplate ? (
-              <ShoppingBag className="w-8 h-8 text-white" />
-            ) : (
-              <Store className="w-8 h-8 text-white" />
-            )}
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-br bg-clip-text text-transparent from-slate-900 to-slate-700 mb-2">
-            {isWebsiteTemplate
-              ? 'Create Customer Account'
-              : isMarketplace ? 'Create Rentify Buyer Account' : 'Create Merchant Account'}
-          </h1>
-          <p className="text-slate-600">
-            {isWebsiteTemplate
-              ? 'Sign up for a seamless shopping experience'
-              : isMarketplace ? 'One account for the marketplace and Rentify stores' : 'Set up your online store in minutes'}
-          </p>
-        </div>
+  const title = isWebsiteTemplate
+    ? 'Create customer account'
+    : isMarketplace
+    ? 'Create your Rentify account'
+    : 'Create merchant account';
+  const subtitle = isWebsiteTemplate
+    ? 'Sign up for a seamless shopping experience.'
+    : isMarketplace
+    ? 'One account for the marketplace and Rentify stores.'
+    : 'Set up your online store in minutes.';
 
-        {/* Stepper */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            {steps.map((stepItem, index) => (
-              <React.Fragment key={stepItem.value}>
-                <div className="flex items-center">
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300',
-                      index < activeStepIndex
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : index === activeStepIndex
-                        ? 'border-blue-500 bg-blue-500 text-white'
-                        : 'border-slate-300 bg-white text-slate-400'
-                    )}
-                  >
-                    {index < activeStepIndex ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      <stepItem.icon className="w-5 h-5" />
-                    )}
-                  </div>
+  const stepHeading = {
+    signup: { title, subtitle },
+    link: {
+      title: 'Link Telegram',
+      subtitle: 'Connect Telegram to receive your verification code.',
+    },
+    verify: {
+      title: 'Verify your account',
+      subtitle: 'Enter the 6-digit code we sent you.',
+    },
+  }[step];
+
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8 sm:px-6">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_#2563eb_0,_transparent_36%),radial-gradient(circle_at_bottom_right,_#7c3aed_0,_transparent_34%)] opacity-70" />
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-[2rem] lg:min-h-[720px] bg-white shadow-2xl shadow-slate-950/40 lg:grid-cols-[0.9fr_1.1fr]">
+        <aside
+          className={cn(
+            'relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between',
+            isWebsiteTemplate
+              ? 'bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-800'
+              : 'bg-gradient-to-br from-violet-600 via-indigo-700 to-slate-950'
+          )}
+        >
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+              {isWebsiteTemplate ? (
+                <ShoppingBag className="h-6 w-6" />
+              ) : (
+                <Store className="h-6 w-6" />
+              )}
+            </div>
+            <p className="mt-10 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
+              Rentify
+            </p>
+            <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight">
+              Start selling and shopping in minutes.
+            </h1>
+            <p className="mt-5 max-w-sm text-base leading-7 text-white/75">
+              Create one account to manage your store, reach the marketplace,
+              and serve your customers.
+            </p>
+          </div>
+
+          {/* Progress through the signup steps */}
+          <ol className="relative space-y-4 text-sm">
+            {steps.map((s, index) => {
+              const done = index < activeStepIndex;
+              const active = index === activeStepIndex;
+              return (
+                <li key={s.value} className="flex items-center gap-3">
                   <span
                     className={cn(
-                      'ml-2 text-sm font-medium hidden sm:block',
-                      index <= activeStepIndex
-                        ? 'text-slate-900'
-                        : 'text-slate-500'
+                      'flex h-8 w-8 items-center justify-center rounded-full ring-1 transition-colors',
+                      done
+                        ? 'bg-white text-indigo-700 ring-white'
+                        : active
+                        ? 'bg-white/20 text-white ring-white/60'
+                        : 'text-white/50 ring-white/25'
                     )}
                   >
-                    {stepItem.label}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      'flex-1 h-0.5 mx-2 transition-colors duration-300',
-                      index < activeStepIndex ? 'bg-green-500' : 'bg-slate-300'
+                    {done ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <s.icon className="h-4 w-4" />
                     )}
-                  />
+                  </span>
+                  <span className={active || done ? 'text-white' : 'text-white/55'}>
+                    {s.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </aside>
+
+        <main className="flex items-center px-6 py-10 sm:px-12 sm:py-12 lg:px-16 lg:py-16">
+          <div className="mx-auto w-full max-w-[460px]">
+            <div className="mb-8">
+              <div
+                className={cn(
+                  'mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg lg:hidden',
+                  isWebsiteTemplate
+                    ? 'from-sky-500 to-blue-600 shadow-blue-500/30'
+                    : 'from-violet-500 to-indigo-600 shadow-violet-500/30'
                 )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+              >
+                {isWebsiteTemplate ? (
+                  <ShoppingBag className="h-6 w-6" />
+                ) : (
+                  <Store className="h-6 w-6" />
+                )}
+              </div>
+              <p className="text-sm font-semibold text-blue-600 lg:hidden">
+                RENTIFY · Step {activeStepIndex + 1} of {steps.length}
+              </p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+                {stepHeading.title}
+              </h2>
+              <p className="mt-2 text-base text-slate-600">
+                {stepHeading.subtitle}
+              </p>
+            </div>
 
-        {/* Domain Validation Alert */}
-        {!domainValid && (
-          <Alert variant="destructive" className="mb-4 animate-in fade-in-80">
-            <AlertDescription>
-              The domain is not valid. Please check your website URL.
-            </AlertDescription>
-          </Alert>
-        )}
+            {!domainValid && (
+              <Alert variant="destructive" className="mb-5 rounded-xl">
+                <AlertDescription>
+                  The domain is not valid. Please check your website URL.
+                </AlertDescription>
+              </Alert>
+            )}
 
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-semibold">
-              {step === 'signup' && 'Create your account'}
-              {step === 'link' && 'Link Telegram Account'}
-              {step === 'verify' && 'Verify your account'}
-            </CardTitle>
-            <CardDescription>
-              {step === 'signup' && 'Enter your details to get started'}
-              {step === 'link' &&
-                'Connect your Telegram for secure authentication'}
-              {step === 'verify' && 'Enter the verification code sent to you'}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {/* Signup Form */}
             {step === 'signup' && (
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-4"
+                  className="space-y-5"
                 >
-                  {/* Name Field */}
                   <FormField
                     control={form.control}
                     name="name"
@@ -259,15 +276,18 @@ function SignupPage() {
                     }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel className="text-slate-700 font-medium">
+                          Full name
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <User className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
                             <Input
                               {...field}
                               placeholder="John Doe"
-                              className="pl-10 h-11"
+                              autoComplete="name"
+                              className={cn(inputClass, 'pl-10')}
                             />
+                            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -275,75 +295,110 @@ function SignupPage() {
                     )}
                   />
 
-                  {/* Contact Method Tabs */}
-                  <Tabs
-                    defaultValue="email"
-                    className="w-full"
-                    onValueChange={(value) => {
-                      if (value === 'email' || value === 'phone')
-                        handleInputModeChange(value);
-                    }}
-                  >
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger
-                        value="email"
-                        className="flex items-center gap-2"
+                  {/* Contact method switch */}
+                  <div className="grid grid-cols-2 rounded-xl bg-slate-100/80 p-1">
+                    {(['email', 'phone'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => switchMode(mode)}
+                        className={cn(
+                          'relative flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors duration-200',
+                          inputMode === mode
+                            ? 'text-slate-900'
+                            : 'text-slate-500 hover:text-slate-700'
+                        )}
                       >
-                        <Mail className="w-4 h-4" />
-                        Email
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="phone"
-                        className="flex items-center gap-2"
-                      >
-                        <Phone className="w-4 h-4" />
-                        Phone
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                        {inputMode === mode && (
+                          <motion.span
+                            layoutId="signup-mode-pill"
+                            className="absolute inset-0 rounded-lg bg-white shadow-sm"
+                            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                          />
+                        )}
+                        <span className="relative flex items-center gap-2">
+                          {mode === 'email' ? (
+                            <Mail className="h-4 w-4" />
+                          ) : (
+                            <Phone className="h-4 w-4" />
+                          )}
+                          {mode === 'email' ? 'Email' : 'Phone'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
 
-                  {/* Contact Field */}
+                  {/* Contact field flips over when switching email/phone, like login */}
+                  <div style={{ perspective: 800 }}>
+                  <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={inputMode}
+                    initial={{ opacity: 0, rotateX: -80, y: -6 }}
+                    animate={{ opacity: 1, rotateX: 0, y: 0 }}
+                    exit={{ opacity: 0, rotateX: 80, y: 6 }}
+                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ transformOrigin: 'center' }}
+                  >
                   <FormField
                     control={form.control}
                     name="contact"
                     rules={{
-                      required: 'Email or phone number is required',
-                      validate: (value) => {
-                        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-                          value
-                        );
-                        const isPhone = validateCambodianPhone(value);
-                        return (
-                          isEmail ||
-                          isPhone ||
-                          'Please enter a valid email or phone number'
-                        );
-                      },
+                      required:
+                        inputMode === 'email'
+                          ? 'Email is required'
+                          : 'Phone number is required',
+                      validate: (value) =>
+                        inputMode === 'email'
+                          ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+                            'Please enter a valid email address'
+                          : validateCambodianPhone(toFullPhone(value)) ||
+                            'Please enter a valid Cambodian phone number',
                     }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email or Phone Number</FormLabel>
+                        <FormLabel className="text-slate-700 font-medium">
+                          {inputMode === 'email' ? 'Email address' : 'Phone number'}
+                        </FormLabel>
                         <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="your.email@example.com or phone number"
-                            className="h-11"
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value.includes('@')) {
-                                field.onChange(value);
-                              } else {
-                                field.onChange(formatCambodianPhone(value));
-                              }
-                            }}
-                          />
+                          {inputMode === 'email' ? (
+                            <div className="relative">
+                              <Input
+                                {...field}
+                                type="email"
+                                autoComplete="email"
+                                placeholder="your.email@example.com"
+                                className={cn(inputClass, 'pl-10')}
+                              />
+                              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            </div>
+                          ) : (
+                            <div className="flex h-12 overflow-hidden rounded-xl border border-slate-300 bg-white transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+                              <span className="flex select-none items-center gap-2 border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700">
+                                <span aria-hidden>🇰🇭</span>
+                                +855
+                              </span>
+                              <input
+                                {...field}
+                                type="tel"
+                                inputMode="numeric"
+                                autoComplete="tel-national"
+                                placeholder="12 345 678"
+                                onChange={(e) =>
+                                  field.onChange(formatLocalPhone(e.target.value))
+                                }
+                                className="h-full w-full bg-transparent px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                              />
+                            </div>
+                          )}
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  </motion.div>
+                  </AnimatePresence>
+                  </div>
 
-                  {/* Password Field */}
                   <FormField
                     control={form.control}
                     name="password"
@@ -356,20 +411,25 @@ function SignupPage() {
                     }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel className="text-slate-700 font-medium">
+                          Password
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
                               {...field}
                               type={showPassword ? 'text' : 'password'}
-                              placeholder="Create a strong password"
-                              className="h-11 pr-10"
+                              autoComplete="new-password"
+                              placeholder="At least 8 characters"
+                              className={cn(inputClass, 'pl-10 pr-10')}
                             />
+                            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-xl"
                               onClick={() => setShowPassword(!showPassword)}
                             >
                               {showPassword ? (
@@ -381,30 +441,23 @@ function SignupPage() {
                           </div>
                         </FormControl>
                         {password && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-slate-600">
-                                Password strength
-                              </span>
-                              <span
-                                className={cn(
-                                  'font-medium',
-                                  passwordStrength < 25
-                                    ? 'text-red-600'
-                                    : passwordStrength < 50
-                                    ? 'text-orange-600'
-                                    : passwordStrength < 75
-                                    ? 'text-yellow-600'
-                                    : 'text-green-600'
-                                )}
-                              >
-                                {getPasswordStrengthText()}
-                              </span>
+                          <div className="flex items-center gap-3 pt-1">
+                            <div className="grid flex-1 grid-cols-4 gap-1.5">
+                              {[25, 50, 75, 100].map((level) => (
+                                <span
+                                  key={level}
+                                  className={cn(
+                                    'h-1.5 rounded-full transition-colors',
+                                    passwordStrength >= level
+                                      ? strengthLabel.bar
+                                      : 'bg-slate-200'
+                                  )}
+                                />
+                              ))}
                             </div>
-                            <Progress
-                              value={passwordStrength}
-                              className={getPasswordStrengthColor()}
-                            />
+                            <span className={cn('text-xs font-medium', strengthLabel.color)}>
+                              {strengthLabel.text}
+                            </span>
                           </div>
                         )}
                         <FormMessage />
@@ -412,7 +465,6 @@ function SignupPage() {
                     )}
                   />
 
-                  {/* Confirm Password Field */}
                   <FormField
                     control={form.control}
                     name="confirmPassword"
@@ -423,23 +475,26 @@ function SignupPage() {
                     }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
+                        <FormLabel className="text-slate-700 font-medium">
+                          Confirm password
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
                               {...field}
                               type={showConfirmPassword ? 'text' : 'password'}
-                              placeholder="Confirm your password"
-                              className="h-11 pr-10"
+                              autoComplete="new-password"
+                              placeholder="Re-enter your password"
+                              className={cn(inputClass, 'pl-10 pr-10')}
                             />
+                            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() =>
-                                setShowConfirmPassword(!showConfirmPassword)
-                              }
+                              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-xl"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             >
                               {showConfirmPassword ? (
                                 <EyeOff className="h-4 w-4 text-slate-500" />
@@ -454,21 +509,19 @@ function SignupPage() {
                     )}
                   />
 
-                  {/* Error Alert */}
                   {error && (
                     <Alert
                       variant="destructive"
-                      className="animate-in fade-in-80"
+                      className="animate-in fade-in-80 rounded-xl border-red-200 bg-red-50"
                     >
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription className="text-red-800">{error}</AlertDescription>
                     </Alert>
                   )}
 
-                  {/* Submit Button */}
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium shadow-lg shadow-blue-500/25 transition-all duration-200"
+                    className="inline-flex w-full h-12 items-center justify-center bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold shadow-lg shadow-blue-500/25 transition-all duration-200 rounded-xl group"
                   >
                     {loading ? (
                       <>
@@ -476,11 +529,13 @@ function SignupPage() {
                         Creating account...
                       </>
                     ) : (
-                      'Create Account'
+                      <>
+                        Create account
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                      </>
                     )}
                   </Button>
 
-                  {/* Sign in link */}
                   <div className="text-center pt-4 border-t border-slate-200">
                     <p className="text-sm text-slate-600">
                       Already have an account?{' '}
@@ -498,7 +553,6 @@ function SignupPage() {
               </Form>
             )}
 
-            {/* Telegram Link Step */}
             {step === 'link' && (
               <TelegramLinkStep
                 onBack={() => setStep('signup')}
@@ -508,7 +562,6 @@ function SignupPage() {
               />
             )}
 
-            {/* Verification Step */}
             {step === 'verify' && (
               <VerificationStep
                 email={email}
@@ -525,17 +578,16 @@ function SignupPage() {
               />
             )}
 
-            {/* Success Message */}
             {success && (
-              <Alert className="animate-in slide-in-from-top-5 bg-emerald-50 border-emerald-200 mt-4">
+              <Alert className="animate-in slide-in-from-top-5 bg-emerald-50 border-emerald-200 rounded-xl mt-5">
                 <CheckCircle className="h-4 w-4 text-emerald-600" />
                 <AlertDescription className="text-emerald-800">
                   {success}
                 </AlertDescription>
               </Alert>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -566,7 +618,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
         Back
       </Button>
 
-      <Alert className="bg-blue-50 border-blue-200">
+      <Alert className="rounded-xl bg-blue-50 border-blue-200">
         <Bot className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
           Telegram verification required for secure authentication
@@ -618,7 +670,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
       <div className="space-y-3">
         <Button
           onClick={() => window.open(botLink, '_blank')}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+          className="w-full h-12 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold"
         >
           <Bot className="w-4 h-4 mr-2" />
           Open Telegram Bot
@@ -628,7 +680,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
           variant="outline"
           onClick={onCheckLink}
           disabled={loading}
-          className="w-full"
+          className="w-full h-12 rounded-xl"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -692,7 +744,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
         Back
       </Button>
 
-      <Alert className="bg-blue-50 border-blue-200">
+      <Alert className="rounded-xl bg-blue-50 border-blue-200">
         {verificationMethod === 'email' ? (
           <Mail className="h-4 w-4 text-blue-600" />
         ) : (
@@ -717,7 +769,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
             }
             placeholder="••••••"
             maxLength={6}
-            className="h-12 text-center text-xl tracking-widest font-mono"
+            className="h-14 rounded-xl text-center text-2xl tracking-[0.5em] font-mono"
           />
         </div>
 
@@ -730,7 +782,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
         <Button
           onClick={onVerify}
           disabled={loading || otp.length !== 6}
-          className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white"
+          className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold shadow-lg shadow-blue-500/25"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin mr-2" />

@@ -209,6 +209,8 @@ export {
 
 export {
   useLoginMutation,
+  useLoginWithTelegramMutation,
+  useGetTelegramLoginConfigQuery,
   useSignupMutation,
   useRefreshMutation,
   useLogoutMutation,

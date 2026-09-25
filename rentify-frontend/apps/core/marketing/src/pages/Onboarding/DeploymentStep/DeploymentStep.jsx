@@ -5,6 +5,7 @@ import IdleState from './DeploymentStates/IdleState';
 import ProgressState from './DeploymentStates/ProgressState';
 import FailedState from './DeploymentStates/FailedState';
 import CompletedState from './DeploymentStates/CompletedState';
+import StepHeader from '../components/StepHeader';
 import { Rocket, RefreshCw } from 'lucide-react';
 
 const DeploymentStep = ({ data }) => {
@@ -131,30 +132,16 @@ const DeploymentStep = ({ data }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-          <stateConfig.icon className="w-8 h-8 text-white" />
-        </div>
-        <h2
-          className={`text-2xl font-bold text-gray-900 mb-2 ${
-            language === 'KH' ? 'font-khmer' : ''
-          }`}
-        >
-          {stateConfig.title}
-        </h2>
-        <p className={`text-gray-600 ${language === 'KH' ? 'font-khmer' : ''}`}>
-          {stateConfig.description}
-        </p>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <StepHeader
+          icon={stateConfig.icon}
+          title={stateConfig.title}
+          description={stateConfig.description}
+        />
         {retryCount > 0 && (
-          <p
-            className={`text-sm text-orange-600 mt-2 ${
-              language === 'KH' ? 'font-khmer' : ''
-            }`}
-          >
-            {language === 'KH'
-              ? `ការព្យាយាមម្តងទៀត ${retryCount}/${maxRetries}`
-              : `Retry attempt ${retryCount}/${maxRetries}`}
+          <p className="text-sm text-orange-600 md:pl-16">
+            {t('onboarding.ui.retryAttempt')} {retryCount}/{maxRetries}
           </p>
         )}
       </div>

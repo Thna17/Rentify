@@ -13,7 +13,7 @@ export const teamMembers = [
     },
     {
       name: 'Toeung Veasna',
-      position: 'Precident & Co-founder',
+      position: 'President & Co-founder',
       role: 'Operation Lead',
       image: 'https://i.ibb.co/203d9Ltf/2025-03-28-22-11-35.jpg',
       socials: [

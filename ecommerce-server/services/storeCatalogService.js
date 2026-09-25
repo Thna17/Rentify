@@ -187,6 +187,9 @@ function publicProduct(product) {
     category: product.marketplaceCategory,
     images: product.images, stockQuantity: product.stockQuantity,
     status: product.status,
+    // Colour/finish variants, e.g. { variants: [{ label, url }] }, set by
+    // sellers who list photos per colour. Optional — most products have none.
+    variants: Array.isArray(product.nicheAttributes?.variants) ? product.nicheAttributes.variants : [],
   };
 }
 

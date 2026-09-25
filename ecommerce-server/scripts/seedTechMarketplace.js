@@ -13,7 +13,7 @@ const {
 
 const TECH_MERCHANT_ID = '55555555-5555-4555-8555-555555555555';
 const TECH_WEBSITE_ID = '8c90a1b2-3b4c-5d6e-9f0a-1b2c3d4e5f60';
-const TECH_STORE_ID = '9c9030e1-476f-4ef4-92f8-c9f4a96d52a8';
+const TECH_STORE_ID = '719d9c55-b338-4ded-9c1a-231a0b1863b9';
 
 const BUYER_EMILY_ID = '99999999-9999-4999-8999-999999999999';
 const BUYER_MICHAEL_ID = '88888888-8888-4888-8888-888888888888';
@@ -36,9 +36,10 @@ async function seedTechMarketplace() {
   await sequelize.authenticate();
 
   // 1. Ensure StoreAccess
-  let storeAccess = await StoreAccess.findByPk(TECH_STORE_ID);
+  let storeAccess = await StoreAccess.findOne({ where: { ownerUserId: TECH_MERCHANT_ID } }) || await StoreAccess.findByPk(TECH_STORE_ID);
+  const resolvedStoreId = storeAccess?.storeId || TECH_STORE_ID;
   const storePayload = {
-    storeId: TECH_STORE_ID,
+    storeId: resolvedStoreId,
     ownerUserId: TECH_MERCHANT_ID,
     websiteId: TECH_WEBSITE_ID,
     primaryCategory: 'Electronics',
@@ -59,10 +60,10 @@ async function seedTechMarketplace() {
   }
 
   // 2. Ensure StoreDeliveryPolicy
-  let policy = await StoreDeliveryPolicy.findByPk(TECH_STORE_ID);
+  let policy = await StoreDeliveryPolicy.findByPk(resolvedStoreId);
   if (!policy) {
     policy = await StoreDeliveryPolicy.create({
-      storeId: TECH_STORE_ID,
+      storeId: resolvedStoreId,
       flatFee: '3.00',
       currency: 'USD',
       version: 1,
@@ -87,7 +88,7 @@ async function seedTechMarketplace() {
     const prod = await Product.findByPk(item.id);
     if (prod) {
       await prod.update({
-        storeId: TECH_STORE_ID,
+        storeId: resolvedStoreId,
         marketplaceCategory: item.category,
         status: 'active',
       });
@@ -108,7 +109,7 @@ async function seedTechMarketplace() {
     order1 = await Order.create({
       id: MKT_ORDER_1_ID,
       orderNumber: 'ORD-MKT-TECH-001',
-      storeId: TECH_STORE_ID,
+      storeId: resolvedStoreId,
       websiteId: null, // Central marketplace order
       buyerId: BUYER_EMILY_ID,
       checkoutKey: 'key-mkt-tech-001-chk',

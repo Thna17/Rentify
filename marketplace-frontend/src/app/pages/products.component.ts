@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CatalogService } from '../core/catalog/catalog.service';
@@ -18,6 +18,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
 
 @Component({
   selector: 'app-products',
+  host: { '(document:keydown.escape)': 'filtersOpen.set(false)' },
   imports: [
     RouterLink,
     NavbarComponent,
@@ -28,103 +29,133 @@ const SORTS: { value: ProductSort; label: string }[] = [
   template: `
     <app-navbar />
 
-    <header class="products-intro">
-      <div class="container products-intro-inner">
-        <nav class="crumbs">
-          <a routerLink="/">Home</a> <span>›</span> <span>Products</span>
-        </nav>
-
-        <div class="intro-row">
-          <div>
-            <span class="products-label">Shop products</span>
-            <h1>{{ heading() }}</h1>
-          </div>
-          <span class="products-total">
-            {{ results().length }}
-            {{ results().length === 1 ? 'product' : 'products' }}
-            @if (search()) {
-              <span>for “{{ search() }}”</span>
-            }
-          </span>
-        </div>
+    <header class="container products-head">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a routerLink="/">Home</a>
+        <ui-icon name="chevron-right" [size]="12" />
+        @if (categoryName(); as name) {
+          <a routerLink="/products">Products</a>
+          <ui-icon name="chevron-right" [size]="12" />
+          <span aria-current="page">{{ name }}</span>
+        } @else {
+          <span aria-current="page">Products</span>
+        }
+      </nav>
+      <div class="title-row">
+        <h1>{{ heading() }}</h1>
+        <span class="total">
+          {{ results().length }} {{ results().length === 1 ? 'product' : 'products' }}
+          @if (search()) { for “{{ search() }}” }
+        </span>
       </div>
     </header>
 
-    <section class="container filters-bar">
-      <!-- Category chips: the spec's primary filter affordance. The fade
-           wrapper hints there's more to scroll on narrow screens, where the
-           scrollbar itself is hidden. -->
-      <div class="scroll-fade">
-        <div class="chips">
-          <button
-            class="chip"
-            [class.active]="!category()"
-            (click)="setCategory(null)"
-          >
-            All
-          </button>
-          @for (cat of categories; track cat.slug) {
-            <button
-              class="chip"
-              [class.active]="category() === cat.slug"
-              (click)="setCategory(cat.slug)"
-            >
-              {{ cat.name }}
-            </button>
+    <div class="container toolbar" aria-label="Product filters">
+      <button type="button" class="tool filters-btn" [class.active]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">
+        <ui-icon name="filter" [size]="15" /> Filters
+        @if (sidebarCount()) { <span class="count">{{ sidebarCount() }}</span> }
+      </button>
+      <label class="tool select">
+        <select [value]="priceBand()" (change)="setPriceBand($event)" aria-label="Price">
+          <option value="">Price</option>
+          <option value="under-5">Under $5</option>
+          <option value="5-10">$5–$10</option>
+          <option value="10-20">$10–$20</option>
+          <option value="over-20">Over $20</option>
+        </select>
+        <ui-icon name="chevron-down" [size]="14" />
+      </label>
+      <label class="tool select">
+        <select [value]="minRating() ?? ''" (change)="setRating($event)" aria-label="Rating">
+          <option value="">Rating</option>
+          <option value="4.5">4.5 & up</option>
+          <option value="4">4.0 & up</option>
+        </select>
+        <ui-icon name="chevron-down" [size]="14" />
+      </label>
+      <button type="button" class="tool" [class.active]="inStockOnly()" (click)="toggleInStock()">In stock</button>
+      <button type="button" class="tool" [class.active]="onSaleOnly()" (click)="toggleSale()">On sale</button>
+      @if (hasFilters()) {
+        <button type="button" class="clear" (click)="clearAll()">Clear all</button>
+      }
+      <label class="tool select sort">
+        <span>Sort:</span>
+        <select [value]="sort()" (change)="setSort($event)" aria-label="Sort">
+          @for (option of sorts; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
           }
-        </div>
-      </div>
+        </select>
+        <ui-icon name="chevron-down" [size]="14" />
+      </label>
+    </div>
 
-      <div class="filters-row">
-        <div class="scroll-fade">
-          <div class="quick-filters" aria-label="Product filters">
-            <label>
-              <span>Price</span>
-              <select [value]="priceBand()" (change)="setPriceBand($event)">
-                <option value="">Any price</option>
-                <option value="under-5">Under $5</option>
-                <option value="5-10">$5–$10</option>
-                <option value="10-20">$10–$20</option>
-                <option value="over-20">Over $20</option>
-              </select>
-            </label>
-            <label>
-              <span>Rating</span>
-              <select [value]="minRating() ?? ''" (change)="setRating($event)">
-                <option value="">Any rating</option>
-                <option value="4.5">4.5 & up</option>
-                <option value="4">4.0 & up</option>
-              </select>
-            </label>
-            <button type="button" class="toggle-filter" [class.active]="inStockOnly()" (click)="toggleInStock()">
-              <ui-icon name="check" [size]="12" /> In stock
+
+    <div class="container shop-layout" [class.with-side]="filtersOpen()">
+      @if (filtersOpen()) {
+        <aside class="side" aria-label="Filters" animate.enter="side-in">
+          <div class="side-head"><ui-icon name="filter" [size]="16" /> Filters</div>
+
+          <div class="group">
+            <h3>Category</h3>
+            <button type="button" class="row" [class.on]="!category()" (click)="setCategory(null)">
+              All <span>{{ countFor({ category: undefined }) }}</span>
             </button>
-            <button type="button" class="toggle-filter" [class.active]="onSaleOnly()" (click)="toggleSale()">
-              <ui-icon name="percent" [size]="12" /> On sale
-            </button>
-          </div>
-        </div>
-
-        <!-- Deliberately outside the scrollable row above — it must never be
-             something a user has to discover by scrolling sideways. -->
-        @if (hasFilters()) {
-          <button class="clear" (click)="clearAll()">
-            <ui-icon name="x" [size]="13" /> Clear filters
-          </button>
-        }
-
-        <label class="sort">
-          <span>Sort</span>
-          <select [value]="sort()" (change)="setSort($event)">
-            @for (option of sorts; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
+            @for (cat of categories; track cat.slug) {
+              <button type="button" class="row" [class.on]="category() === cat.slug" (click)="setCategory(cat.slug)">
+                {{ cat.name }} <span>{{ countFor({ category: cat.slug }) }}</span>
+              </button>
             }
-          </select>
-        </label>
-      </div>
-    </section>
+          </div>
 
-    <section class="container grid-section">
+          @if (subcategories().length) {
+            <div class="group">
+              <h3>Sub-category</h3>
+              <button type="button" class="row" [class.on]="!subcategory()" (click)="setSub(null)">All</button>
+              @for (sub of subcategories(); track sub.slug) {
+                <button type="button" class="row" [class.on]="subcategory() === sub.slug" (click)="setSub(sub.slug)">{{ sub.name }}</button>
+              }
+            </div>
+          }
+
+          <div class="group">
+            <h3>Price</h3>
+            @for (b of priceBands; track b.value) {
+              <label class="check">
+                <input type="checkbox" [checked]="priceBand() === b.value" (change)="togglePrice(b.value)" />
+                {{ b.label }}
+              </label>
+            }
+            <div class="range">
+              <input #min type="number" min="0" placeholder="Min" [value]="minPrice() ?? ''" aria-label="Minimum price" />
+              <span>–</span>
+              <input #max type="number" min="0" placeholder="Max" [value]="maxPrice() ?? ''" aria-label="Maximum price" />
+              <button type="button" class="go" (click)="applyRange(min.value, max.value)" aria-label="Apply price"><ui-icon name="arrow-right" [size]="14" /></button>
+            </div>
+          </div>
+
+          <div class="group">
+            <h3>Rating</h3>
+            @for (r of ratings; track r) {
+              <label class="check">
+                <input type="checkbox" [checked]="minRating() === r" (change)="toggleRating(r)" />
+                <ui-icon name="star" [size]="13" [filled]="true" color="var(--color-gold)" /> {{ r }} & up
+              </label>
+            }
+          </div>
+
+          <div class="group">
+            <h3>Availability</h3>
+            <label class="check"><input type="checkbox" [checked]="inStockOnly()" (change)="toggleInStock()" /> In stock only</label>
+            <label class="check"><input type="checkbox" [checked]="onSaleOnly()" (change)="toggleSale()" /> On sale</label>
+          </div>
+
+          @if (hasFilters()) {
+            <button type="button" class="side-clear" (click)="clearAll()">Clear all filters</button>
+          }
+        </aside>
+      }
+
+    <section class="grid-section">
       @if (!catalog.loaded()) {
         <div class="catalog-state" aria-live="polite">
           <ui-icon class="spin" name="loader" [size]="28" />
@@ -162,6 +193,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
         </div>
       }
     </section>
+    </div>
 
     <app-footer />
   `,
@@ -376,6 +408,93 @@ const SORTS: { value: ProductSort; label: string }[] = [
       @media (max-width: 370px) {
         .product-grid { grid-template-columns: 1fr; }
       }
+
+      /* ---------- redesigned header, toolbar and filter drawer */
+      .products-head { padding-top: 22px; }
+      .crumbs { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--color-muted); margin-bottom: 10px; }
+      .crumbs a { color: var(--color-muted); }
+      .crumbs a:hover { color: var(--color-accent); }
+      .crumbs span[aria-current] { color: var(--color-text); font-weight: 500; }
+      .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+      .title-row h1 { font-family: var(--font-body); font-size: clamp(24px, 2.4vw, 30px); font-weight: 700; letter-spacing: -.02em; }
+      .total { font-size: 13.5px; color: var(--color-muted); }
+
+      .toolbar {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin-top: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--color-border);
+      }
+      .tool {
+        position: relative; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px;
+        border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface);
+        color: var(--color-text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
+        transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+      }
+      .tool:hover { border-color: var(--color-text); }
+      .tool.active { background: var(--color-text); border-color: var(--color-text); color: #fff; }
+      .filters-btn .count {
+        display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+        background: var(--color-accent); color: #fff; font-size: 11px; font-weight: 700;
+      }
+      .select { padding-right: 34px; }
+      .select select {
+        appearance: none; -webkit-appearance: none; border: 0; background: transparent; font: inherit; color: inherit;
+        cursor: pointer; outline: none; padding: 0;
+      }
+      .select ui-icon { position: absolute; right: 12px; pointer-events: none; color: var(--color-muted); }
+      .sort { margin-left: auto; }
+      .sort span { color: var(--color-muted); }
+      .clear { border: 0; background: none; color: var(--color-accent); font-size: 13.5px; font-weight: 600; cursor: pointer; padding: 0 6px; }
+
+      .grid-section { padding-top: 24px; }
+      .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 28px 20px !important; }
+
+      .shop-layout { display: block; }
+      .shop-layout.with-side { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; align-items: start; }
+      .with-side .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+      .shop-layout > .grid-section { padding-inline: 0; }
+      .side {
+        position: sticky; top: calc(var(--header-h, 64px) + 60px); margin-top: 24px;
+        max-height: calc(100vh - 150px); overflow-y: auto; scrollbar-width: thin;
+        padding: 16px; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface-raised);
+      }
+      .side-in { animation: sideIn 200ms var(--ease-out); }
+      @keyframes sideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+      .side-head { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
+      .group { padding: 14px 0; border-bottom: 1px solid var(--color-border); }
+      .group:last-of-type { border-bottom: 0; }
+      .group h3 { margin: 0 0 8px; font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--color-muted); }
+      .row {
+        display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 8px 10px;
+        border: 0; border-radius: 10px; background: none; font: inherit; font-size: 14px; text-align: left;
+        color: var(--color-text-secondary); cursor: pointer;
+      }
+      .row span { font-size: 12.5px; color: var(--color-muted); }
+      .row:hover { background: var(--color-bg-alt); }
+      .row.on { background: var(--color-accent-soft); color: var(--color-accent); font-weight: 600; }
+      .check { display: flex; align-items: center; gap: 10px; padding: 7px 2px; font-size: 14px; color: var(--color-text-secondary); cursor: pointer; }
+      .check input { width: 16px; height: 16px; accent-color: var(--color-accent); }
+      .range { display: flex; align-items: center; gap: 6px; margin-top: 8px; color: var(--color-muted); }
+      .range input {
+        width: 100%; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--color-border);
+        border-radius: 10px; font: inherit; font-size: 13.5px; background: var(--color-surface); color: var(--color-text);
+      }
+      .range input:focus { outline: none; border-color: var(--color-accent); }
+      .go { flex-shrink: 0; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--color-text); color: #fff; cursor: pointer; }
+      .side-clear { margin-top: 12px; width: 100%; height: 40px; border: 1px solid var(--color-border-strong); border-radius: 999px; background: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--color-text); cursor: pointer; }
+      @media (max-width: 900px) {
+        .shop-layout.with-side { grid-template-columns: 1fr; }
+        .side { position: static; max-height: none; }
+        .with-side .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      }
+
+      @media (max-width: 1100px) { .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+      @media (max-width: 820px) {
+        .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 22px 14px !important; }
+        .toolbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+        .toolbar::-webkit-scrollbar { display: none; }
+        .sort { margin-left: 0; }
+      }
+      @media (max-width: 370px) { .product-grid { grid-template-columns: 1fr !important; } }
     `,
   ],
 })
@@ -408,7 +527,14 @@ export class ProductsComponent {
     return Number.isFinite(value) && value > 0 ? value : null;
   });
   protected readonly priceBand = computed(() => this.params().get('price') ?? '');
+  protected readonly minPrice = computed(() => this.num(this.params().get('min')));
+  protected readonly maxPrice = computed(() => this.num(this.params().get('max')));
   protected readonly priceRange = computed(() => {
+    const min = this.minPrice();
+    const max = this.maxPrice();
+    if (min !== null || max !== null) {
+      return { ...(min !== null ? { priceMin: min } : {}), ...(max !== null ? { priceMax: max } : {}) };
+    }
     switch (this.priceBand()) {
       case 'under-5': return { priceMax: 5 };
       case '5-10': return { priceMin: 5, priceMax: 10 };
@@ -418,14 +544,62 @@ export class ProductsComponent {
     }
   });
   protected readonly hasFilters = computed(() => Boolean(
-    this.search() || this.category() || this.collection() || this.onSaleOnly() ||
-    this.inStockOnly() || this.minRating() || this.priceBand(),
+    this.search() || this.category() || this.subcategory() || this.collection() || this.onSaleOnly() ||
+    this.inStockOnly() || this.minRating() || this.priceBand() ||
+    this.minPrice() !== null || this.maxPrice() !== null,
   ));
+
+  protected readonly filtersOpen = signal(false);
+  protected readonly subcategory = computed(() => this.params().get('subcategory'));
+  protected readonly subcategories = computed(() => {
+    const slug = this.category();
+    return slug ? this.catalog.category(slug)?.subcategories ?? [] : [];
+  });
+  protected readonly priceBands = [
+    { value: 'under-5', label: 'Under $5' },
+    { value: '5-10', label: '$5 – $10' },
+    { value: '10-20', label: '$10 – $20' },
+    { value: 'over-20', label: 'Over $20' },
+  ];
+  protected readonly ratings = [4.5, 4, 3.5];
+
+  /** How many products a category option would show with the other filters kept. */
+  protected countFor(override: { category?: string }): number {
+    return this.catalog.search({
+      search: this.search(),
+      category: override.category,
+      onSaleOnly: this.onSaleOnly() || undefined,
+      inStockOnly: this.inStockOnly() || undefined,
+      minRating: this.minRating() ?? undefined,
+      ...this.priceRange(),
+    }).length;
+  }
+
+  protected setSub(slug: string | null): void {
+    this.merge({ subcategory: slug });
+  }
+
+  protected togglePrice(value: string): void {
+    this.merge({ price: this.priceBand() === value ? null : value, min: null, max: null });
+  }
+
+  protected toggleRating(value: number): void {
+    this.merge({ rating: this.minRating() === value ? null : String(value) });
+  }
+  /** Filters set inside the sidebar (category, custom price range). */
+  protected readonly sidebarCount = computed(() =>
+    (this.category() ? 1 : 0) + (this.minPrice() !== null || this.maxPrice() !== null ? 1 : 0),
+  );
+  protected readonly categoryName = computed(() => {
+    const slug = this.category();
+    return slug ? this.catalog.category(slug)?.name ?? null : null;
+  });
 
   protected readonly results = computed(() =>
     this.catalog.search({
       search: this.search(),
       category: this.category() ?? undefined,
+      subcategory: this.subcategory() ?? undefined,
       collection: this.collection() ?? undefined,
       sort: this.sort(),
       onSaleOnly: this.onSaleOnly() || undefined,
@@ -454,7 +628,18 @@ export class ProductsComponent {
   });
 
   protected setCategory(slug: string | null): void {
-    this.merge({ category: slug });
+    this.merge({ category: slug, subcategory: null });
+  }
+
+  protected applyRange(min: string, max: string): void {
+    // A custom range replaces the quick price band.
+    this.merge({ min: min.trim() || null, max: max.trim() || null, price: null });
+  }
+
+  private num(value: string | null): number | null {
+    if (value === null || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
   }
 
   protected setSort(event: Event): void {
@@ -462,7 +647,7 @@ export class ProductsComponent {
   }
 
   protected setPriceBand(event: Event): void {
-    this.merge({ price: (event.target as HTMLSelectElement).value || null });
+    this.merge({ price: (event.target as HTMLSelectElement).value || null, min: null, max: null });
   }
 
   protected setRating(event: Event): void {

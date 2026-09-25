@@ -2,92 +2,99 @@ import React, { useMemo, useState } from 'react';
 import { Badge } from '@rentify/shared/ui/badge';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { Button } from '@rentify/shared/ui/button';
-import { Check, Eye, Sparkles, X } from 'lucide-react';
+import { Skeleton } from '@rentify/shared/ui/skeleton';
+import { cn } from '@rentify/utils';
+import {
+  Check,
+  Eye,
+  LayoutTemplate,
+  Monitor,
+  Palette,
+  Smartphone,
+  Tablet,
+  X,
+} from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useGetTemplatesByCategoryQuery } from '@rentify/apis';
+import StepHeader from './StepHeader';
 
 const industries = [
-  {
-    value: 'ecommerce',
-    label: 'E-commerce',
-    labelKh: 'ពាណិជ្ជកម្មអេឡិចត្រូនិក',
-  },
-  {
-    value: 'Food & Beverage',
-    label: 'Food & Beverage',
-    labelKh: 'អាហារ និង ភេសជ្ជៈ',
-  },
-  {
-    value: 'Beauty & Wellness',
-    label: 'Beauty & Wellness',
-    labelKh: 'សម្រស់ និង សុខភាព',
-  },
-  { value: 'Custom', label: 'Custom', labelKh: 'តាមតម្រូវការ' },
+  { value: 'ecommerce', labelKey: 'onboarding.templates.industries.ecommerce' },
+  { value: 'Food & Beverage', labelKey: 'onboarding.templates.industries.food' },
+  { value: 'Beauty & Wellness', labelKey: 'onboarding.templates.industries.beauty' },
+  { value: 'Custom', labelKey: 'onboarding.templates.industries.custom' },
 ];
 
+const previewPages = [
+  { key: 'homepage', route: '/' },
+  { key: 'products', route: '/products' },
+  { key: 'cart', route: '/cart' },
+  { key: 'dashboard', route: '/dashboard' },
+];
+
+const devices = [
+  { key: 'mobile', icon: Smartphone, className: 'h-[667px] w-[375px]' },
+  { key: 'tablet', icon: Tablet, className: 'h-[1024px] w-[768px]' },
+  { key: 'desktop', icon: Monitor, className: 'h-full w-full' },
+];
+
+// The API returns features as a list of labels; older records used an object
+// of boolean flags. Support both so the feature chips always render labels.
+const toFeatureList = (features) => {
+  if (Array.isArray(features)) return features;
+  if (features && typeof features === 'object') {
+    return Object.entries(features)
+      .filter(([, enabled]) => enabled)
+      .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
+  }
+  return [];
+};
+
+const TemplateThumbnail = ({ template }) => (
+  <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+    {template.image ? (
+      <img
+        src={template.image}
+        alt={template.name}
+        className="h-full w-full object-cover object-top"
+      />
+    ) : (
+      // Render the live demo at 4x size and scale it down to a thumbnail
+      <iframe
+        src={template.liveDemo}
+        title={`Preview of ${template.name}`}
+        sandbox="allow-same-origin allow-scripts"
+        tabIndex={-1}
+        className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-[0.25] border-0"
+      />
+    )}
+  </div>
+);
+
 const TemplatePickStep = ({ data, onUpdate }) => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const [selectedTemplate, setSelectedTemplate] = useState(data.template);
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [filter, setFilter] = useState('ecommerce');
-    const [currentPreviewPage, setCurrentPreviewPage] = useState('/');
+  const [currentPreviewPage, setCurrentPreviewPage] = useState('/');
+  const [deviceMode, setDeviceMode] = useState('desktop');
   const { data: apiTemplates = [], isLoading } =
     useGetTemplatesByCategoryQuery(filter);
-      const [deviceMode, setDeviceMode] = useState("desktop"); 
 
   const templates = useMemo(
     () =>
       apiTemplates.map((template) => ({
         id: template.id,
         name: template.name,
-        nameKh: template.name, // Use same as English if no translation
         category: template.category,
-        categoryKh: template.category, // Use same as English
-        image:
-          template.thumbnailUrl || 'https://placehold.co/600x450/e2e8f0/e2e8f0',
+        image: template.thumbnailUrl || null,
         description: template.description,
-        descriptionKh: template.description, // Use same as English
-        features: [
-          ...Object.entries(template.features)
-            .filter(([key, value]) => value)
-            .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1)),
-          ...template.pages.map((page) => page.page),
-        ],
-        featuresKh: [], // Leave empty if no translations
-        bestFor: [template.category],
-        bestForKh: [template.category],
-        popular: true, // Set based on your criteria
-        recommended: false, // Set based on your criteria
-        languages: template.features.multiLanguage
-          ? ['English', 'Khmer']
-          : ['English'],
-        responsive: template.features.responsive,
+        features: toFeatureList(template.features),
         liveDemo: template.baseUrl,
-        tags: [
-          ...Object.entries(template.features)
-            .filter(([key, value]) => value)
-            .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1)),
-        ],
-             pageRoutes: {
-          homepage: '/',
-          product: '/products',
-          cart: '/cart',
-          dashboard: '/dashboard'
-        }
+        colorPalette: template.colorPalette,
       })),
     [apiTemplates]
   );
-
-
-  // Function to handle page navigation in preview
-  const navigatePreview = (route) => {
-    setCurrentPreviewPage(route);
-  };
-
-  const filteredTemplates =
-    filter === 'All'
-      ? templates
-      : templates.filter((t) => t.category === filter);
 
   const handleTemplateSelect = (template) => {
     setSelectedTemplate(template);
@@ -95,296 +102,224 @@ const TemplatePickStep = ({ data, onUpdate }) => {
     setPreviewTemplate(null);
   };
 
-    const handlePreview = (template) => {
+  const handlePreview = (template) => {
     setPreviewTemplate(template);
-    // Reset to homepage when opening preview
-    setCurrentPreviewPage(template.pageRoutes.homepage);
+    setCurrentPreviewPage('/');
   };
 
+  const activeDevice = devices.find((device) => device.key === deviceMode);
 
-  const closePreview = () => {
-    setPreviewTemplate(null);
-  };
+  return (
+    <div className="space-y-8">
+      <StepHeader
+        icon={Palette}
+        title={t('onboarding.templates.title')}
+        description={t('onboarding.templates.description')}
+      />
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary px-6 py-3 rounded-full text-sm mb-6">
-            <Sparkles className="w-5 h-5" />
-            <span>Loading templates...</span>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-0">
-                <div className="aspect-[4/3] bg-gray-200 animate-pulse" />
-                <div className="p-6 space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse" />
-                  <div className="h-4 bg-gray-200 rounded w-full animate-pulse" />
-                  <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse" />
-                </div>
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2">
+        {industries.map((industry) => (
+          <Button
+            key={industry.value}
+            size="sm"
+            variant={filter === industry.value ? 'default' : 'outline'}
+            onClick={() => setFilter(industry.value)}
+            className="rounded-full"
+          >
+            {t(industry.labelKey)}
+          </Button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="gap-0 overflow-hidden py-0">
+              <Skeleton className="aspect-[16/10] rounded-none" />
+              <CardContent className="space-y-3 p-5">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
-    );
-  }
+      ) : templates.length === 0 ? (
+        <Card className="border-dashed py-0">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <LayoutTemplate className="h-10 w-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              {t('onboarding.templates.empty')}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {templates.map((template) => {
+            const isSelected = selectedTemplate?.id === template.id;
 
-  return (
-    <div className="space-y-8">
-      {/* Header with guidance */}
-      <div className="text-center mb-12">
-        <h1
-          className={`text-3xl font-bold text-gray-900 mb-4 ${
-            language === 'KH' ? 'font-khmer' : ''
-          }`}
-        >
-          {language === 'KH'
-            ? 'ជ្រើសរើសការរចនាដំបូងរបស់អ្នក'
-            : 'Choose Your Starting Design'}
-        </h1>
-        <p
-          className={`text-lg text-gray-600 max-w-2xl mx-auto ${
-            language === 'KH' ? 'font-khmer' : ''
-          }`}
-        >
-          {language === 'KH'
-            ? 'ជ្រើសរើសគំរូដែលសមរម្យជាមួយម៉ាករបស់អ្នក។ អ្នកអាចកែប្រែអ្វីៗគ្រប់យ៉ាងនៅពេលក្រោយ។'
-            : 'Select a template that best fits your brand. You can customize everything later.'}
-        </p>
-      </div>
+            return (
+              <Card
+                key={template.id}
+                className={cn(
+                  'group gap-0 overflow-hidden py-0 transition-all duration-300',
+                  isSelected
+                    ? 'ring-2 ring-primary shadow-lg'
+                    : 'hover:-translate-y-0.5 hover:shadow-lg'
+                )}
+              >
+                <div className="relative">
+                  <TemplateThumbnail template={template} />
+                  {isSelected && (
+                    <Badge className="absolute right-3 top-3 gap-1 bg-primary shadow-md">
+                      <Check className="h-3 w-3" />
+                      {t('onboarding.templates.selected')}
+                    </Badge>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-foreground/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <Button
+                      variant="secondary"
+                      onClick={() => handlePreview(template)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      {t('onboarding.templates.preview')}
+                    </Button>
+                  </div>
+                </div>
 
-      {/* Filter Section */}
-      <div className="flex flex-wrap justify-center gap-3 mb-12">
-        {industries.map((industry) => (
-          <Button
-            key={industry.value}
-            variant={filter === industry.value ? 'default' : 'outline'}
-            onClick={() => setFilter(industry.value)}
-            className={`${language === 'KH' ? 'font-khmer' : ''}`}
-          >
-            {language === 'KH' ? industry.labelKh : industry.label}
-          </Button>
-        ))}
-      </div>
+                <CardContent className="space-y-4 p-5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {template.name}
+                      </h3>
+                      {template.colorPalette && (
+                        <div className="flex -space-x-1">
+                          {['primary', 'secondary', 'accent']
+                            .map((key) => template.colorPalette[key])
+                            .filter(Boolean)
+                            .map((color) => (
+                              <span
+                                key={color}
+                                className="h-4 w-4 rounded-full border-2 border-background"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                      {template.description}
+                    </p>
+                  </div>
 
-      {/* All Templates */}
-      <div className="space-y-16">
-        {filteredTemplates.map((template) => (
-          <Card
-            key={template.id}
-            className={`group cursor-pointer transition-all duration-300 hover:shadow-2xl overflow-hidden ${
-              selectedTemplate?.id === template.id
-                ? 'ring-2 ring-primary shadow-xl'
-                : 'hover:shadow-lg'
-            }`}
-          >
-            <CardContent className="p-0">
-              <div className="grid lg:grid-cols-2 gap-0">
-                <div className="relative h-full bg-gray-100 overflow-hidden">
-                  {selectedTemplate?.id === template.id && (
-                    <div className="absolute top-4 right-4 z-20 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                      <Check className="w-5 h-5 text-white" />
+                  {template.features.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {template.features.slice(0, 3).map((feature) => (
+                        <Badge
+                          key={feature}
+                          variant="outline"
+                          className="font-normal text-muted-foreground"
+                        >
+                          {feature}
+                        </Badge>
+                      ))}
                     </div>
                   )}
-                  <div className="absolute inset-0 h-full">
-                    <iframe
-                      src={template.liveDemo}
-                      className="w-full h-full border-0"
-                      title={`Preview of ${template.name}`}
-                      sandbox="allow-same-origin allow-scripts"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center space-x-4">
+
+                  <div className="flex gap-2">
                     <Button
-                      size="lg"
-                      variant="secondary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePreview(template);
-                      }}
-                      className="bg-white/95 text-gray-900 hover:bg-white"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handlePreview(template)}
                     >
-                      <Eye className="w-5 h-5 mr-2" />
-                      {language === 'KH' ? 'មើល' : 'Preview'}
+                      <Eye className="mr-2 h-4 w-4" />
+                      {t('onboarding.templates.preview')}
                     </Button>
                     <Button
-                      size="lg"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTemplateSelect(template);
-                      }}
+                      className="flex-1"
+                      variant={isSelected ? 'secondary' : 'default'}
+                      onClick={() => handleTemplateSelect(template)}
                     >
-                      <Check className="w-5 h-5 mr-2" />
-                      {language === 'KH' ? 'ជ្រើសរើស' : 'Choose'}
+                      <Check className="mr-2 h-4 w-4" />
+                      {isSelected
+                        ? t('onboarding.templates.selected')
+                        : t('onboarding.templates.choose')}
                     </Button>
                   </div>
-                </div>
-                <div className="p-8 lg:p-12 flex flex-col justify-center">
-                  <div className="space-y-6">
-                    <div>
-                      <Badge className="bg-primary/10 text-primary px-3 py-1 text-sm mb-4">
-                        {language === 'KH'
-                          ? template.categoryKh
-                          : template.category}
-                      </Badge>
-                      <h4
-                        className={`text-3xl font-bold text-gray-900 mb-4 ${
-                          language === 'KH' ? 'font-khmer' : ''
-                        }`}
-                      >
-                        {language === 'KH' ? template.nameKh : template.name}
-                      </h4>
-                      <p
-                        className={`text-lg text-gray-600 mb-6 ${
-                          language === 'KH' ? 'font-khmer' : ''
-                        }`}
-                      >
-                        {language === 'KH'
-                          ? template.descriptionKh
-                          : template.description}
-                      </p>
-                    </div>
-                    <div className="pt-4">
-                      <Button
-                        size="lg"
-                        onClick={() => handleTemplateSelect(template)}
-                      >
-                        <Check className="w-5 h-5 mr-2" />
-                        <span className={language === 'KH' ? 'font-khmer' : ''}>
-                          {language === 'KH'
-                            ? 'ជ្រើសរើសគំរូនេះ'
-                            : 'Choose This Template'}
-                        </span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Preview Modal */}
-{previewTemplate && (
-  <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 sm:p-4 animate-in fade-in-0">
-    <div className="bg-white rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
-      
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 sm:p-6 border-b shrink-0">
-        <h3
-          className={`text-lg sm:text-xl font-semibold ${
-            language === 'KH' ? 'font-khmer' : ''
-          }`}
-        >
-          {language === 'KH'
-            ? previewTemplate.nameKh
-            : previewTemplate.name}
-        </h3>
-        <Button variant="ghost" size="icon" onClick={closePreview}>
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
+      {previewTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 animate-in fade-in-0 sm:p-4">
+          <div className="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-background">
+            <div className="flex shrink-0 items-center justify-between border-b px-4 py-3 sm:px-6">
+              <h3 className="text-lg font-semibold">{previewTemplate.name}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setPreviewTemplate(null)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
 
-      {/* Navigation (Pages + Device Switcher) */}
-      <div className="flex flex-wrap gap-2 p-3 sm:p-4 border-b bg-gray-50 shrink-0">
-        {/* Page buttons */}
-        <div className="flex flex-wrap gap-2 flex-1">
-          <Button
-            variant={currentPreviewPage === previewTemplate.pageRoutes.homepage ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => navigatePreview(previewTemplate.pageRoutes.homepage)}
-          >
-            {language === 'KH' ? 'ទំព័រដើម' : 'Homepage'}
-          </Button>
-          <Button
-            variant={currentPreviewPage === previewTemplate.pageRoutes.product ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => navigatePreview(previewTemplate.pageRoutes.product)}
-          >
-            {language === 'KH' ? 'ផលិតផល' : 'Products'}
-          </Button>
-          <Button
-            variant={currentPreviewPage === previewTemplate.pageRoutes.cart ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => navigatePreview(previewTemplate.pageRoutes.cart)}
-          >
-            {language === 'KH' ? 'រទេះ' : 'Cart'}
-          </Button>
-          <Button
-            variant={currentPreviewPage === previewTemplate.pageRoutes.dashboard ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => navigatePreview(previewTemplate.pageRoutes.dashboard)}
-          >
-            {language === 'KH' ? 'ផ្ទាំងគ្រប់គ្រង' : 'Dashboard'}
-          </Button>
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-muted/50 px-4 py-3 sm:px-6">
+              <div className="flex flex-1 flex-wrap gap-2">
+                {previewPages.map((page) => (
+                  <Button
+                    key={page.key}
+                    size="sm"
+                    variant={
+                      currentPreviewPage === page.route ? 'default' : 'outline'
+                    }
+                    onClick={() => setCurrentPreviewPage(page.route)}
+                  >
+                    {t(`onboarding.templates.pages.${page.key}`)}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-1 rounded-lg border bg-background p-1">
+                {devices.map((device) => (
+                  <Button
+                    key={device.key}
+                    size="sm"
+                    variant={deviceMode === device.key ? 'secondary' : 'ghost'}
+                    onClick={() => setDeviceMode(device.key)}
+                    aria-label={t(`onboarding.templates.devices.${device.key}`)}
+                  >
+                    <device.icon className="h-4 w-4" />
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-1 items-center justify-center overflow-auto bg-muted">
+              <div className={cn('border bg-white shadow-lg', activeDevice.className)}>
+                <iframe
+                  src={`${previewTemplate.liveDemo}${currentPreviewPage}`}
+                  className="h-full w-full border-0"
+                  title={`Preview of ${previewTemplate.name}`}
+                  sandbox="allow-same-origin allow-scripts"
+                />
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center justify-end border-t bg-muted/50 px-4 py-3 sm:px-6">
+              <Button onClick={() => handleTemplateSelect(previewTemplate)}>
+                <Check className="mr-2 h-4 w-4" />
+                {t('onboarding.templates.chooseThis')}
+              </Button>
+            </div>
+          </div>
         </div>
-
-        {/* Device buttons */}
-        <div className="flex gap-2">
-          <Button
-            variant={deviceMode === 'mobile' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDeviceMode('mobile')}
-          >
-            📱 Mobile
-          </Button>
-          <Button
-            variant={deviceMode === 'tablet' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDeviceMode('tablet')}
-          >
-            📲 Tablet
-          </Button>
-          <Button
-            variant={deviceMode === 'desktop' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDeviceMode('desktop')}
-          >
-            💻 Desktop
-          </Button>
-        </div>
-      </div>
-
-      {/* Iframe preview */}
-      <div className="flex-1 flex items-center justify-center overflow-auto bg-gray-100">
-        <div
-          className={`
-            border shadow-lg bg-white 
-            ${deviceMode === 'mobile' ? 'w-[375px] h-[667px]' : ''} 
-            ${deviceMode === 'tablet' ? 'w-[768px] h-[1024px]' : ''} 
-            ${deviceMode === 'desktop' ? 'w-full h-full' : ''}
-          `}
-        >
-          <iframe
-            src={`${previewTemplate.liveDemo}${currentPreviewPage}`}
-            className="w-full h-full border-0"
-            title={`Preview of ${previewTemplate.name}`}
-            sandbox="allow-same-origin allow-scripts"
-          />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end items-center p-4 sm:p-6 border-t bg-gray-50 shrink-0">
-        <Button onClick={() => handleTemplateSelect(previewTemplate)}>
-          <Check className="w-4 h-4 mr-2" />
-          <span className={language === 'KH' ? 'font-khmer' : ''}>
-            {language === 'KH' ? 'ជ្រើសរើសគំរូនេះ' : 'Choose This Template'}
-          </span>
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
+      )}
     </div>
   );
 };

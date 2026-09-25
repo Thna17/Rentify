@@ -14,6 +14,16 @@ export const userAuthApi = createApi({
         body: credentials,
       }),
     }),
+    loginWithTelegram: builder.mutation({
+      query: (authData) => ({
+        url: '/login/telegram',
+        method: 'POST',
+        body: { authData },
+      }),
+    }),
+    getTelegramLoginConfig: builder.query({
+      query: () => '/telegram-login-config',
+    }),
     signup: builder.mutation({
       query: (userData) => ({
         url: '/signup',
@@ -72,6 +82,8 @@ export const userAuthApi = createApi({
 
 export const {
   useLoginMutation,
+  useLoginWithTelegramMutation,
+  useGetTelegramLoginConfigQuery,
   useSignupMutation,
   useRefreshMutation,
   useLogoutMutation,
