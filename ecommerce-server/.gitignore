@@ -20,6 +20,7 @@ redis-data/
 
 # Directory for temporary files
 tmp/
+seed-images/
 
 # Dependency directories
 node_modules/

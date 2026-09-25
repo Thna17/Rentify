@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { to: '/feature', key: 'site.nav.features' },
   { to: '/templates', key: 'site.nav.templates' },
   { to: '/pricing', key: 'site.nav.pricing' },
+  { to: '/live-demo', key: 'site.nav.liveDemo' },
   { to: '/about', key: 'site.nav.about' },
 ];
 

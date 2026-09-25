@@ -1,8 +1,9 @@
-// routes/cart.js - UPDATED WITH ALL ENDPOINTS
+// routes/cartRoutes.js - Central and Storefront Cart Routes
 const express = require("express");
-const { verifyToken } = require('../middlewares/authMiddleware');
+const { verifyToken, verifyOptionalCoreBuyer } = require('../middlewares/authMiddleware');
 const sessionMiddleware = require('../middlewares/sessionMiddleware');
 const CartController = require("../controllers/cartController");
+const marketplaceController = require("../controllers/marketplaceCheckoutController");
 const { requireWebsitePermission } = require("../middlewares/requireWebsiteAccess");
 
 const router = express.Router();
@@ -11,7 +12,16 @@ const router = express.Router();
 router.use(sessionMiddleware);
 router.use(verifyToken);
 
-// Cart routes
+// Central marketplace cart routes (no websiteId required)
+router.get("/", verifyOptionalCoreBuyer, marketplaceController.getCart);
+router.post("/items", verifyOptionalCoreBuyer, marketplaceController.addToCart);
+router.patch("/items/:itemId", verifyOptionalCoreBuyer, marketplaceController.updateCartItem);
+router.put("/items/:itemId", verifyOptionalCoreBuyer, marketplaceController.updateCartItem);
+router.delete("/items/:itemId", verifyOptionalCoreBuyer, marketplaceController.removeCartItem);
+router.delete("/clear", verifyOptionalCoreBuyer, marketplaceController.clearCart);
+router.delete("/", verifyOptionalCoreBuyer, marketplaceController.clearCart);
+
+// Storefront website-scoped routes
 router.get("/:websiteId", CartController.getCart);
 router.get("/:websiteId/summary", CartController.getCartSummary);
 router.get("/:websiteId/analytics", requireWebsitePermission(["analytics", "manage_analytics"]), CartController.getCartAnalytics);

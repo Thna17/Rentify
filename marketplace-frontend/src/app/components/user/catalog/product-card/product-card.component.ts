@@ -49,8 +49,6 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
           <span class="stock-badge badge badge-low-stock"
             >Only {{ product().stock }} left</span
           >
-        } @else {
-          <span class="stock-badge badge badge-in-stock">In stock</span>
         }
 
         @if (discount(); as off) {
@@ -77,15 +75,12 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
 
       <div class="product-body">
         <div class="product-kicker">
-          <span class="tag">{{ product().categoryName }}</span>
           @if (product().reviewCount > 0) {
             <div class="rating-row" [attr.aria-label]="product().rating + ' out of 5 stars, ' + product().reviewCount + ' reviews'">
               <ui-icon name="star" [size]="12" [filled]="true" class="stars" />
               <span>{{ product().rating }}</span>
               <span class="count">({{ product().reviewCount }})</span>
             </div>
-          } @else {
-            <span class="no-reviews">No reviews</span>
           }
         </div>
         <h3 class="name">{{ product().name }}</h3>
@@ -697,6 +692,44 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         :host-context(.product-grid) .price { font-size: 14px; }
         :host-context(.product-grid) .cart-add { height: 31px; width: 31px; }
       }
+
+      /* ---------- minimal card */
+      .product-card {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+      }
+      .thumb-wrap {
+        border-radius: 16px;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        background: var(--color-bg-alt);
+      }
+      .product-body { padding: 12px 2px 0 !important; gap: 2px !important; }
+      .product-kicker { order: 3; min-height: 0 !important; margin: 0 !important; }
+      .product-kicker:empty { display: none; }
+      .name {
+        font-size: 14px !important; font-weight: 500 !important; line-height: 1.35 !important;
+        font-family: var(--font-body) !important; color: var(--color-text) !important;
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+      }
+      .seller { font-size: 12.5px !important; color: var(--color-muted) !important; }
+      .price-row { margin-top: 8px !important; align-items: center !important; }
+      .price { font-size: 15px !important; font-weight: 700 !important; color: var(--color-text) !important; }
+      .was { font-size: 12.5px !important; }
+      .discount-badge {
+        background: #ef4444 !important; color: #fff !important; border: 0 !important;
+        border-radius: 999px !important; font-size: 11px !important; padding: 2px 8px !important;
+      }
+      .cart-add {
+        width: 34px !important; height: 34px !important; min-width: 0 !important; padding: 0 !important;
+        border-radius: 999px !important; background: var(--color-text) !important; justify-content: center;
+      }
+      .cart-add:hover:not(:disabled) { background: var(--color-accent) !important; }
+      .cart-label { display: none !important; }
+      .wish-btn { opacity: 0; transition: opacity 180ms ease; }
+      .product-card:hover .wish-btn, .wish-btn.saved, .wish-btn:focus-visible { opacity: 1; }
+      @media (hover: none) { .wish-btn { opacity: 1; } }
     `,
   ],
 })

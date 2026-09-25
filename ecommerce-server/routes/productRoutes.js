@@ -7,6 +7,8 @@ const ProductController = require("../controllers/productController");
 const router = express.Router();
 
 // Public routes
+router.get("/stores/:storeId", ProductController.getAllProducts);
+router.get("/stores/:storeId/search", ProductController.searchProducts);
 router.get("/:websiteId/analytics/overview", verifyToken, requireWebsitePermission(["products", "manage_products", "analytics"]), ProductController.getProductAnalytics);
 router.get("/:websiteId/manage/products", verifyToken, requireWebsitePermission(["products", "manage_products"]), ProductController.getManagedProducts);
 router.get("/:websiteId/manage/products/:productId", verifyToken, requireWebsitePermission(["products", "manage_products"]), ProductController.getManagedProductById);

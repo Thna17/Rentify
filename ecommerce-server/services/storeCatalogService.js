@@ -125,15 +125,22 @@ async function update(storeId, productId, input) {
       changes.description = input.description.trim();
     }
     if (input.price !== undefined) changes.price = money(input.price, 'price');
-    if (input.stockQuantity !== undefined) changes.stockQuantity = stock(input.stockQuantity);
+    if (input.stockQuantity !== undefined) {
+      changes.stockQuantity = stock(input.stockQuantity);
+      if (changes.stockQuantity > 0 && product.status === 'out_of_stock' && input.status === undefined) {
+        changes.status = 'active';
+      } else if (changes.stockQuantity === 0 && product.status === 'active' && input.status === undefined) {
+        changes.status = 'out_of_stock';
+      }
+    }
     if (input.marketplaceCategory !== undefined) changes.marketplaceCategory = category(input.marketplaceCategory);
     if (input.marketplaceVisibility !== undefined) changes.marketplaceVisibility = visibility(input.marketplaceVisibility);
     if (input.images !== undefined) changes.images = validateImages(input.images);
     if (input.status !== undefined) {
-      if (!['active', 'draft', 'archived'].includes(input.status)) fail('Invalid product status');
+      if (!['active', 'draft', 'archived', 'out_of_stock'].includes(input.status)) fail('Invalid product status');
       changes.status = input.status;
     }
-    if ((changes.status || product.status) === 'active' &&
+    if (changes.status === 'active' &&
         (changes.stockQuantity ?? product.stockQuantity) === 0) {
       fail('Add stock before publishing the product');
     }

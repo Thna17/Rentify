@@ -20,6 +20,7 @@ import { IconComponent } from '../../ui/icon/icon.component';
 import { CategoryMenuComponent } from '../category-menu/category-menu.component';
 import { SearchOverlayComponent } from '../../../user/search/search-overlay/search-overlay.component';
 import { CartDrawerComponent } from '../../cart/cart-drawer.component';
+import { CatalogService } from '../../../../core/catalog/catalog.service';
 
 @Component({
   selector: 'app-navbar',
@@ -51,7 +52,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
       </div>
     </div>
 
-    <header class="navbar" [class.scrolled]="scrolled()" [class.nav-hidden]="hidden()">
+    <header class="navbar" [class.scrolled]="scrolled()" [class.nav-hidden]="hidden()" [class.home]="is('home')" [class.home-top]="is('home') && homeTop()">
       <div class="navbar-inner container">
         <a routerLink="/" class="logo">
           <img
@@ -114,6 +115,10 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
 
         <div class="nav-actions">
           @if (!sellerArea()) {
+          <span class="deliver-to" title="Delivery area">
+            <ui-icon name="map-pin" [size]="18" />
+            <span><small>Deliver to</small><strong>Phnom Penh</strong></span>
+          </span>
           <a class="icon-btn wishlist-btn" routerLink="/wishlist" aria-label="Wishlist">
             <ui-icon
               name="heart"
@@ -236,11 +241,16 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
       <!-- Shopper navigation. A seller has no use for the category tree, so
            the row is replaced with their own links. -->
       @if (!sellerArea()) {
-        <app-category-menu>
-          <div nav-lead class="menu-slot row-menu-slot">
-            <ng-container [ngTemplateOutlet]="menuBlock" />
-          </div>
-        </app-category-menu>
+        <!-- On the home page the hero's vertical sidebar is the category nav
+             while at the top; this row slides in (overlaid, so nothing below
+             shifts) once the shopper scrolls past it. -->
+        <div class="cat-wrap">
+          <app-category-menu>
+            <div nav-lead class="menu-slot row-menu-slot">
+              <ng-container [ngTemplateOutlet]="menuBlock" />
+            </div>
+          </app-category-menu>
+        </div>
       } @else {
         <nav class="seller-row">
           <div class="seller-row-inner container">
@@ -309,6 +319,13 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
                 <a routerLink="/products" (click)="menuOpen.set(false)">All products</a>
                 <a routerLink="/categories" (click)="menuOpen.set(false)">Categories</a>
                 <a routerLink="/stores" (click)="menuOpen.set(false)">All stores</a>
+                <p class="menu-section">Shop by category</p>
+                @for (c of categories; track c.slug) {
+                  <a class="menu-cat" [routerLink]="['/categories', c.slug]" (click)="menuOpen.set(false)">
+                    <ui-icon [name]="c.icon" [size]="16" /> {{ c.name }}
+                  </a>
+                }
+                <p class="menu-section">Collections</p>
                 <!-- Same shortcuts the category bar shows on wide screens —
                      the bar hides them below 1400px since there isn't room
                      to fit them without clipping off-screen. -->
@@ -324,7 +341,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
   styles: [
     `
       .navbar {
-        background: rgba(255, 253, 248, 0.72);
+        background: rgba(255, 255, 255, 0.82);
         backdrop-filter: blur(22px) saturate(1.25);
         -webkit-backdrop-filter: blur(22px) saturate(1.25);
         border-bottom: 1px solid transparent;
@@ -338,10 +355,42 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
           transform 550ms ease;
       }
       .navbar.scrolled {
-        background: rgba(255, 253, 248, 0.84);
-        border-bottom-color: rgba(111, 91, 67, .14);
-        box-shadow: 0 5px 18px rgba(62, 46, 31, .055);
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom-color: var(--color-border);
+        box-shadow: 0 6px 20px rgba(15, 23, 42, .05);
       }
+      .navbar-inner { transition: height 220ms var(--ease-standard); }
+      .navbar.scrolled .navbar-inner { height: calc(var(--header-h) - 8px); }
+
+      /* Home: category row is overlaid under the header so showing/hiding
+         it never moves the page content. */
+      .navbar.home .cat-wrap {
+        position: absolute; left: 0; right: 0; top: 100%;
+        background: rgba(255, 255, 255, .94);
+        backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+        border-bottom: 1px solid var(--color-border);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, .05);
+        transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard), visibility 0s;
+      }
+      @media (min-width: 1024px) {
+        .navbar.home-top .cat-wrap {
+          opacity: 0; visibility: hidden; transform: translateY(-8px); pointer-events: none;
+          transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard), visibility 0s 220ms;
+        }
+      }
+      .deliver-to {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin-right: 10px; color: var(--color-text); white-space: nowrap;
+      }
+      .deliver-to span { display: flex; flex-direction: column; line-height: 1.15; }
+      .deliver-to small { font-size: 11px; color: var(--color-muted); }
+      .deliver-to strong { font-size: 13px; font-weight: 600; }
+      @media (max-width: 1180px) { .deliver-to { display: none; } }
+      .menu-section {
+        margin: 8px 0 2px; padding: 6px 12px 0; border-top: 1px solid var(--color-border);
+        font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-muted);
+      }
+      .mobile-menu a.menu-cat { display: flex; align-items: center; gap: 10px; }
       /* Hidden while scrolling down, revealed the instant the user scrolls
          back up — see NavbarComponent.onScroll(). Always visible near the
          top regardless of direction. */
@@ -403,7 +452,7 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
       }
 
       .announce {
-        background: rgba(75, 48, 38, .9);
+        background: #0f172a;
         color: rgba(255, 255, 255, 0.86);
         font-size: 10.5px;
       }
@@ -475,12 +524,12 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
         display: inline-flex;
         align-items: center;
         gap: 9px;
-        width: clamp(320px, 34vw, 560px);
-        height: 40px;
+        width: clamp(320px, 40vw, 640px);
+        height: 44px;
         padding: 0 16px;
-        border: 1px solid rgba(115, 93, 69, .15);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-full);
-        background: rgba(255,255,255,.46);
+        background: var(--color-bg-alt);
         color: var(--color-muted);
         font-size: 13.5px;
         font-weight: 400;
@@ -791,7 +840,9 @@ import { CartDrawerComponent } from '../../cart/cart-drawer.component';
         z-index: 60;
         display: flex;
         flex-direction: column;
-        min-width: 180px;
+        min-width: 220px;
+        max-height: min(70vh, 560px);
+        overflow-y: auto;
         padding: 6px;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
@@ -930,6 +981,9 @@ export class NavbarComponent implements AfterViewInit {
   protected readonly cartOpen = signal(false);
   protected readonly scrolled = signal(false);
   protected readonly hidden = signal(false);
+  /** Home page, scrolled less than ~120px: the hero sidebar is the category nav. */
+  protected readonly homeTop = signal(true);
+  protected readonly categories = inject(CatalogService).categories;
   protected readonly langMenuOpen = signal(false);
   protected readonly accountOpen = signal(false);
   protected readonly language = signal<'en' | 'km'>('en');
@@ -1102,6 +1156,14 @@ export class NavbarComponent implements AfterViewInit {
   onScroll() {
     const y = window.scrollY || 0;
     this.scrolled.set(y > 4);
+    this.homeTop.set(y < 120);
+
+    // Home keeps its header pinned so the category row stays reachable.
+    if (this.is('home')) {
+      this.hidden.set(false);
+      this.lastScrollY = y;
+      return;
+    }
 
     if (y < 80) {
       this.hidden.set(false);

@@ -9,7 +9,9 @@ const { hashRefreshToken, compareRefreshToken } = require("../utils/refreshToken
 const cookieConfig = require("../config/cookieConfig");
 
 const verifyToken = async (req, res, next) => {
-  const userAccessToken = req.cookies?.userAccessToken;
+  const authHeader = req.headers?.authorization || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  const userAccessToken = req.cookies?.userAccessToken || bearerToken;
   const userRefreshToken = req.cookies?.userRefreshToken;
   const staffAccessToken = req.cookies?.staffAccessToken;
   const staffRefreshToken = req.cookies?.staffRefreshToken;

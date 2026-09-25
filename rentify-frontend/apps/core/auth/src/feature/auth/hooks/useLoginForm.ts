@@ -5,6 +5,8 @@ import {
   useLoginMutation,
   useLoginCustomerMutation,
   useLoginStaffMutation,
+  useLoginWithTelegramMutation,
+  useGetTelegramLoginConfigQuery,
   // useLoginWithGoogleMutation,
 } from '@rentify/apis';
 import {
@@ -35,6 +37,12 @@ export const useLoginForm = () => {
   const [loginCustomerMutation] = useLoginCustomerMutation();
   const [loginStaffMutation] = useLoginStaffMutation();
   // const [loginWithGoogleMutation] = useLoginWithGoogleMutation();
+  const [loginWithTelegramMutation] = useLoginWithTelegramMutation();
+  // Telegram sign-in covers platform accounts only, not storefront customers.
+  const { data: telegramConfig } = useGetTelegramLoginConfigQuery(undefined, {
+    skip: isWebsiteTemplate,
+  });
+  const telegramEnabled = !isWebsiteTemplate && Boolean(telegramConfig?.enabled);
 
   const handleLogin = async (data: { contact: string; password: string }) => {
     setError('');
@@ -129,6 +137,36 @@ export const useLoginForm = () => {
     }
   };
 
+  const handleTelegramLogin = async () => {
+    if (!telegramConfig?.botId) return;
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const authData = await requestTelegramAuth(telegramConfig.botId);
+      if (!authData) {
+        setLoading(false);
+        return;
+      }
+      const response: any = await loginWithTelegramMutation(authData).unwrap();
+      const destination =
+        returnDomain === marketplaceHost || isHostedStorefrontBuyer
+          ? redirectUrl
+          : response?.data?.hasStore
+          ? `${DASHBOARD_URL}/overview`
+          : `${MARKETING_URL}/start`;
+      setSuccess('Login successful! Redirecting...');
+      setTimeout(() => {
+        window.location.href = destination;
+      }, 1500);
+    } catch (err: any) {
+      setError(err?.data?.error || 'Telegram login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setError('');
     setSuccess('');
@@ -173,8 +211,35 @@ export const useLoginForm = () => {
     setInputMode,
     handleLogin,
     handleGoogleLogin,
+    handleTelegramLogin,
+    telegramEnabled,
     formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,
   };
+};
+
+// Opens Telegram's login popup and resolves with the signed user payload,
+// or null when the user closes it.
+const TELEGRAM_WIDGET_SRC = 'https://telegram.org/js/telegram-widget.js?22';
+
+const loadTelegramWidget = () =>
+  new Promise<void>((resolve, reject) => {
+    if ((window as any).Telegram?.Login) return resolve();
+    const script = document.createElement('script');
+    script.src = TELEGRAM_WIDGET_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Telegram login'));
+    document.head.appendChild(script);
+  });
+
+const requestTelegramAuth = async (botId: string) => {
+  await loadTelegramWidget();
+  return new Promise<Record<string, unknown> | null>((resolve) => {
+    (window as any).Telegram.Login.auth(
+      { bot_id: botId, request_access: 'write' },
+      (data: Record<string, unknown> | false) => resolve(data || null)
+    );
+  });
 };

@@ -34,6 +34,16 @@ class NicheStrategy {
       this.validateVariantOptions(itemData.selectedOptions, variant.optionValues);
     }
 
+    // Validate stock
+    const qty = Number(itemData.quantity) || 1;
+    if (itemData.variantId && variant) {
+      if (variant.trackInventory && variant.stockQuantity < qty) {
+        throw new Error(`Insufficient stock for ${product.name}: only ${variant.stockQuantity} available`);
+      }
+    } else if (product.trackInventory && product.stockQuantity < qty) {
+      throw new Error(`Insufficient stock for ${product.name}: only ${product.stockQuantity} available`);
+    }
+
     // Validate customizations
     this.validateCustomizations(itemData.customizations);
 

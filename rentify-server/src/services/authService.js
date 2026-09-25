@@ -82,6 +82,7 @@ class AuthService {
       name: entity.name,
       email: entity.email,
       phoneNumber: entity.phoneNumber,
+      ...(entity.role && { role: entity.role }),
       ...(entity.permissions && { permissions: entity.permissions }),
       ...(entity.storeId && { storeId: entity.storeId }),
     };
@@ -416,6 +417,63 @@ class AuthService {
     entity.failedAttempts = 0;
     entity.lockUntil = null;
 
+    await entity.save({ transaction });
+
+    return {
+      ...tokens,
+      entity: this.#formatEntityResponse(entity),
+    };
+  }
+
+  // Signs in an existing, verified account whose Telegram was linked through
+  // the bot. `authData` is the payload from Telegram's login widget; its hash
+  // is verified with the bot token as described in Telegram's Login Widget docs.
+  async loginWithTelegram({ authData, transaction }) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) throw new ApiError(503, "Telegram login is not configured");
+
+    const { hash, ...fields } = authData || {};
+    if (!hash || !fields.id || !fields.auth_date) {
+      throw new ApiError(400, "Invalid Telegram login data");
+    }
+
+    const checkString = Object.keys(fields)
+      .filter((key) => fields[key] !== undefined && fields[key] !== null)
+      .sort()
+      .map((key) => `${key}=${fields[key]}`)
+      .join("\n");
+    const secret = crypto.createHash("sha256").update(botToken).digest();
+    const expected = crypto.createHmac("sha256", secret).update(checkString).digest("hex");
+    const valid =
+      expected.length === String(hash).length &&
+      crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(String(hash)));
+    if (!valid) throw new ApiError(401, "Telegram login could not be verified");
+
+    const ageSeconds = Math.floor(Date.now() / 1000) - Number(fields.auth_date);
+    if (!(ageSeconds >= 0 && ageSeconds < 24 * 60 * 60)) {
+      throw new ApiError(401, "Telegram login has expired. Please try again.");
+    }
+
+    const entity = await this.entityModel.findOne({
+      where: { telegramUserId: String(fields.id) },
+      transaction,
+    });
+    if (!entity) {
+      throw new ApiError(
+        404,
+        "No account is linked to this Telegram. Sign up with your phone number first."
+      );
+    }
+    if (entity.lockUntil && entity.lockUntil > Date.now()) {
+      throw new ApiError(429, "Account locked. Try again later.");
+    }
+    if (!entity.isVerified) {
+      throw new ApiError(400, "Account not verified. Please verify with OTP first.");
+    }
+
+    const tokens = this.generateTokens(entity);
+    entity.refreshToken = await hashRefreshToken(tokens.refreshToken);
+    entity.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await entity.save({ transaction });
 
     return {

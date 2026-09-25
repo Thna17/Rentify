@@ -54,25 +54,25 @@ import { AuthService } from '../../../../core/auth/auth.service';
   </footer>
   `,
   styles: [`
-    .footer { background: #1f3028; color: #f7f0e5; margin-top: 0; padding-top: clamp(30px, 3.5vw, 44px); border-top: 0; }
+    .footer { background: var(--color-bg-alt); color: var(--color-text); margin-top: 0; padding-top: clamp(40px, 4.5vw, 64px); border-top: 1px solid var(--color-border); }
     .footer-grid {
       display: grid;
       grid-template-columns: 1.6fr repeat(4, minmax(110px, 1fr));
       gap: clamp(20px, 2.5vw, 40px);
-      padding-bottom: 30px;
+      padding-bottom: 40px;
     }
-    .footer-brand .logo { font-family: var(--font-heading); font-weight: 600; font-size: 22px; color: #fffaf0; margin-bottom: 10px; display: flex; align-items: center; gap: 9px; }
+    .footer-brand .logo { font-family: var(--font-body); font-weight: 700; font-size: 19px; letter-spacing: -.01em; color: var(--color-text); margin-bottom: 10px; display: flex; align-items: center; gap: 9px; }
     .logo-mark { width: 31px; height: 31px; border-radius: 8px; object-fit: contain; display: block; flex-shrink: 0; }
-    .footer-brand p { font-size: 13px; color: rgba(255,250,240,.65); line-height: 1.55; max-width: 300px; }
-    .footer-col h4 { font-family: var(--font-body); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; color: #d9bd8b; }
-    .footer-col a { display: block; font-size: 13px; color: rgba(255,250,240,.65); margin-bottom: 8px; }
-    .footer-col a:hover { color: #fff; }
+    .footer-brand p { font-size: 13px; color: var(--color-muted); line-height: 1.6; max-width: 300px; }
+    .footer-col h4 { font-family: var(--font-body); font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--color-text); }
+    .footer-col a { display: block; font-size: 13.5px; color: var(--color-muted); margin-bottom: 10px; transition: color 150ms ease; }
+    .footer-col a:hover { color: var(--color-accent); }
     .footer-bottom {
-      border-top: 1px solid rgba(255,255,255,.12);
-      padding-top: 14px;
-      padding-bottom: 16px;
+      border-top: 1px solid var(--color-border);
+      padding-top: 18px;
+      padding-bottom: 22px;
       font-size: 12.5px;
-      color: rgba(255,250,240,.5);
+      color: var(--color-muted);
       display: flex;
       justify-content: space-between;
     }

@@ -15,7 +15,9 @@ import { NavbarComponent } from '../components/shared/layout/navbar/navbar.compo
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductRailComponent } from '../components/user/catalog/product-rail/product-rail.component';
-import { HeroSliderComponent } from '../components/user/home/hero-slider/hero-slider.component';
+import { PromoCardComponent } from '../components/shared/ui/promo-card/promo-card.component';
+import { PROMO_SLOTS } from '../core/promos/promos.data';
+import { HomeHeroComponent } from '../components/user/home/home-hero/home-hero.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
 import { Category, Product } from '../core/catalog/catalog.models';
 
@@ -30,28 +32,15 @@ interface CategoryShelf {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductRailComponent, ProductCardComponent, HeroSliderComponent],
+  imports: [CommonModule, RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductRailComponent, ProductCardComponent, HomeHeroComponent, PromoCardComponent],
   template: `
   <app-navbar></app-navbar>
 
-  <app-hero-slider />
-
-  @if (catalog.productError()) {
-    <section class="container catalog-notice" role="alert">
-      <ui-icon name="alert-circle" [size]="18" />
-      <div>
-        <strong>Products are temporarily unavailable</strong>
-        <span>{{ catalog.productError() }}</span>
-      </div>
-      <button type="button" class="btn btn-outline btn-sm" (click)="catalog.load()">
-        Try again
-      </button>
-    </section>
-  }
+  <app-home-hero />
 
   <section class="container section category-section">
     <div class="section-head">
-      <h2>Browse by category</h2>
+      <h2>Popular categories</h2>
       <a routerLink="/categories" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
     </div>
     <div
@@ -86,7 +75,60 @@ interface CategoryShelf {
     </div>
   </section>
 
+
+
+
+  @if (catalog.productError()) {
+    <section class="container catalog-notice" role="alert">
+      <ui-icon name="alert-circle" [size]="18" />
+      <div>
+        <strong>Products are temporarily unavailable</strong>
+        <span>{{ catalog.productError() }}</span>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" (click)="catalog.load()">
+        Try again
+      </button>
+    </section>
+  }
+
   <section class="container section" aria-label="Seller offers">
+    @if (flashDeals().length) {
+      <div class="flash">
+        <div class="flash-main">
+          <div class="section-head flash-head">
+            <div class="flash-title">
+              <span class="flash-bolt"><ui-icon name="tag" [size]="18" /></span>
+              <h2>Flash deals</h2>
+              <span class="flash-timer" aria-label="Deals refresh at midnight">
+                Ends in <b>{{ countdown().h }}</b>:<b>{{ countdown().m }}</b>:<b>{{ countdown().s }}</b>
+              </span>
+            </div>
+            <a routerLink="/products" [queryParams]="{ sale: '1' }" class="see-all">View all deals <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+          </div>
+          <div class="flash-grid">
+            @for (product of flashDeals(); track product.id) {
+              <a class="deal-card" [routerLink]="['/product', product.id]">
+                <span class="deal-img">
+                  @if (product.image) {
+                    <img [src]="product.image" [alt]="product.name" loading="lazy" />
+                  }
+                  <span class="deal-off">-{{ discount(product) }}%</span>
+                </span>
+                <span class="deal-name">{{ product.name }}</span>
+                <span class="deal-price">
+                  <strong>\${{ product.price.toFixed(2) }}</strong>
+                  <s>\${{ product.compareAtPrice!.toFixed(2) }}</s>
+                </span>
+                <span class="deal-bar"><i [style.width.%]="stockLeft(product)"></i></span>
+                <small class="deal-left">{{ product.stock }} left</small>
+              </a>
+            }
+          </div>
+        </div>
+        <div class="flash-promo"><app-promo-card [promo]="promoSlots.flashDeals" /></div>
+      </div>
+    } @else {
+
     @if (dealCategories().length) {
       <div class="section-head">
         <h2>Best deals</h2>
@@ -129,11 +171,91 @@ interface CategoryShelf {
         <a class="see-all" routerLink="/products" [queryParams]="{ sale: '1' }">Shop deals <ui-icon name="arrow-right" [size]="14" /></a>
       </div>
     }
+    }
+  </section>
+
+
+
+  <section class="container section" aria-label="Smartphones">
+    <div class="section-head">
+      <h2>Smartphones</h2>
+      <a routerLink="/products" [queryParams]="promoSlots.smartphones.params" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+    </div>
+    <div class="phones" [class.solo]="!phones().length">
+      <app-promo-card [promo]="promoSlots.smartphones" />
+      @if (phones().length) {
+        <div class="phone-grid">
+          @for (product of phones(); track product.id) {
+            <app-product-card [product]="product" />
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  @if (trending().length) {
+    <section class="container section">
+      <app-product-rail
+        title="Trending products"
+        [products]="trending()"
+        linkRoute="/products"
+        [linkParams]="{ sort: 'featured' }"
+        linkLabel="View all"
+      />
+    </section>
+  }
+
+  <section class="container section collections-section">
+    <div class="section-head collections-head">
+      <div>
+        <h2>Featured collections</h2>
+        <p class="collections-subtitle">Handpicked selections to help you discover the best of Cambodia.</p>
+      </div>
+      <a routerLink="/categories" class="see-all">View all collections <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+    </div>
+
+    <div class="fc-grid">
+      @for (c of promoSlots.collections; track c.id) {
+        <app-promo-card [promo]="c" />
+      }
+    </div>
+  </section>
+
+  <section class="container section">
+    <div class="section-head"><h2>Popular stores</h2><a routerLink="/stores" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a></div>
+    <div class="stores-marquee" role="region" aria-label="Popular stores">
+      <div class="stores-track">
+        @for (group of [0, 1]; track group) {
+          <div class="stores-row" [attr.aria-hidden]="group === 1 ? 'true' : null">
+            @for (s of stores(); track s.id) {
+              <a class="store-chip" [routerLink]="['/stores', s.id]" [attr.tabindex]="group === 1 ? -1 : null">
+                @if (s.logoUrl) {
+                  <img class="store-logo" [src]="s.logoUrl" [alt]="s.name + ' logo'" loading="lazy" />
+                } @else {
+                  <div class="store-logo img-placeholder">{{ initials(s.name) }}</div>
+                }
+                <div class="store-info">
+                  <strong>{{ s.name }}</strong>
+                  <div class="rating-row">
+                    @if (s.reviewCount > 0) {
+                      <ui-icon name="star" [size]="12" [filled]="true" color="var(--color-gold)"></ui-icon> {{ s.rating }} ·
+                    } @else {
+                      New store ·
+                    }
+                    {{ s.location }}
+                  </div>
+                </div>
+              </a>
+            }
+          </div>
+        }
+      </div>
+    </div>
   </section>
 
   <section class="container section discover">
     <header class="discover-head">
-      <h2>The whole marketplace</h2>
+      <h2>Recommended for you</h2>
       <p>{{ catalog.allProducts().length }} products from {{ discoverStoreCount() }} Cambodian sellers</p>
     </header>
 
@@ -195,151 +317,117 @@ interface CategoryShelf {
   </section>
 
   <section class="container section">
-    <div class="section-head"><h2>Popular stores</h2><a routerLink="/stores" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a></div>
-    <div class="stores-marquee" role="region" aria-label="Popular stores">
-      <div class="stores-track">
-        @for (group of [0, 1]; track group) {
-          <div class="stores-row" [attr.aria-hidden]="group === 1 ? 'true' : null">
-            @for (s of stores(); track s.id) {
-              <a class="store-chip" [routerLink]="['/stores', s.id]" [attr.tabindex]="group === 1 ? -1 : null">
-                @if (s.logoUrl) {
-                  <img class="store-logo" [src]="s.logoUrl" [alt]="s.name + ' logo'" loading="lazy" />
-                } @else {
-                  <div class="store-logo img-placeholder">{{ initials(s.name) }}</div>
-                }
-                <div class="store-info">
-                  <strong>{{ s.name }}</strong>
-                  <div class="rating-row">
-                    @if (s.reviewCount > 0) {
-                      <ui-icon name="star" [size]="12" [filled]="true" color="var(--color-gold)"></ui-icon> {{ s.rating }} ·
-                    } @else {
-                      New store ·
-                    }
-                    {{ s.location }}
-                  </div>
-                </div>
-              </a>
-            }
-          </div>
-        }
+    <div class="newsletter">
+      <div class="newsletter-copy">
+        <h2>Get the best deals first</h2>
+        <p>New arrivals, seller offers and flash sales — once a week, no spam.</p>
       </div>
-    </div>
-  </section>
-
-  @if (fashionEdit().length) {
-    <section class="container section fashion-edit">
-      <app-product-rail
-        title="Fashion & Accessories"
-        [products]="fashionEdit()"
-        variant="editorial"
-        linkRoute="/products"
-        linkLabel="Explore products"
-      />
-    </section>
-  }
-
-  @if (categoryShelves().length) {
-    <section class="container section marketplace-explorer">
-      <div class="marketplace-heading">
-        <span class="marketplace-eyebrow">More ways to shop</span>
-        <h2>Explore the marketplace</h2>
-      </div>
-
-      @for (shelf of categoryShelves(); track shelf.slug) {
-        <div class="category-shelf">
-          <div class="shelf-context">
-            @if (shelf.subcategories.length) {
-              <nav class="subcategory-links" [attr.aria-label]="shelf.name + ' subcategories'">
-                @for (subcategory of shelf.subcategories; track subcategory.slug) {
-                  <a
-                    routerLink="/products"
-                    [queryParams]="{ category: shelf.slug, subcategory: subcategory.slug }"
-                  >
-                    {{ subcategory.name }} <small>{{ subcategory.count }}</small>
-                  </a>
-                }
-              </nav>
-            }
-          </div>
-          @if (shelf.products.length) {
-          <app-product-rail
-            [title]="shelf.name"
-            [products]="shelf.products"
-            linkRoute="/products"
-            [linkParams]="{ category: shelf.slug }"
-            linkLabel="Shop department"
-          />
-          } @else {
-            <a class="department-preview" [routerLink]="['/categories', shelf.slug]">
-              <div class="department-preview-copy">
-                <h3>{{ shelf.name }}</h3>
-                <p>{{ shelf.description }}</p>
-                <span class="department-preview-cta">Explore department <ui-icon name="arrow-right" [size]="16" /></span>
-              </div>
-              @if (categoryPosterImage(shelf.slug); as image) {
-                <img [src]="image" alt="" loading="lazy" (error)="categoryPosterFailed(shelf.slug)" />
-              }
-            </a>
-          }
-        </div>
+      @if (subscribed()) {
+        <p class="newsletter-done"><ui-icon name="check-circle" [size]="18" /> You're on the list. Thanks for subscribing!</p>
+      } @else {
+        <form class="newsletter-form" (submit)="subscribe($event, email.value)">
+          <label class="sr-only" for="newsletter-email">Email address</label>
+          <input #email id="newsletter-email" type="email" required placeholder="Enter your email" autocomplete="email" />
+          <button type="submit">Subscribe</button>
+        </form>
       }
-    </section>
-  }
-
-  <section class="container section collections-section">
-    <div class="section-head collections-head">
-      <div>
-        <h2>Shop curated collections</h2>
-        <p class="collections-subtitle">Handpicked selections to help you discover the best of Cambodia.</p>
-      </div>
-      <a routerLink="/categories" class="see-all">View all collections <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
-    </div>
-
-    <div class="collections-grid">
-      <a class="collection-tile hero-tile" routerLink="/products" [queryParams]="heroCollection.params">
-        <img class="tile-image" [src]="heroCollection.image" [alt]="heroCollection.alt" loading="lazy" />
-        <div class="tile-scrim"></div>
-        <div class="tile-content">
-          <span class="tile-badge forest"><ui-icon [name]="heroCollection.icon" [size]="12"></ui-icon> {{ heroCollection.eyebrow }}</span>
-          <h3>{{ heroCollection.title }}</h3>
-          <p>{{ heroCollection.description }}</p>
-          <span class="tile-cta on-image">{{ heroCollection.cta }} <ui-icon name="arrow-right" [size]="14"></ui-icon></span>
-        </div>
-      </a>
-
-      @for (c of sideCollections; track c.title) {
-        <a class="collection-tile split-tile" [class]="c.tint" routerLink="/products" [queryParams]="c.params">
-          <div class="split-copy">
-            <span class="tile-badge" [class]="c.tint"><ui-icon [name]="c.icon" [size]="12"></ui-icon> {{ c.eyebrow }}</span>
-            <h3>{{ c.title }}</h3>
-            <p>{{ c.description }}</p>
-            <span class="tile-cta" [class]="c.tint">{{ c.cta }} <ui-icon name="arrow-right" [size]="14"></ui-icon></span>
-          </div>
-          <div class="split-image">
-            <img [src]="c.image" [alt]="c.alt" loading="lazy" />
-          </div>
-        </a>
-      }
-    </div>
-  </section>
-
-  <section class="container section purchase-confidence">
-    <div class="purchase-copy">
-      <span class="purchase-eyebrow">Shopping made simple</span>
-      <h2>Why shop with Rentify Marketplace?</h2>
-      <p>Local products, trusted checkout and delivery updates in one place.</p>
-    </div>
-    <div class="confidence-grid">
-      <div class="confidence-item" *ngFor="let reason of purchaseReasons">
-        <div class="confidence-icon"><ui-icon [name]="reason.icon" [size]="19" [strokeWidth]="1.7"></ui-icon></div>
-        <div><strong>{{ reason.title }}</strong><small>{{ reason.desc }}</small></div>
-      </div>
     </div>
   </section>
 
   <app-footer></app-footer>
   `,
   styles: [`
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* ---------- featured collections: three equal cards */
+    .fc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    @media (max-width: 900px) {
+      .fc-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; }
+      .fc-grid app-promo-card { scroll-snap-align: start; }
+    }
+
+    /* ---------- smartphones */
+    .phones { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .phones.solo { grid-template-columns: 1fr; }
+    .phone-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    @media (max-width: 1180px) { .phone-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .phone-grid > :nth-child(n + 4) { display: none; } }
+    @media (max-width: 900px) {
+      .phones { grid-template-columns: 1fr; }
+      .phone-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .phone-grid > :nth-child(n + 3) { display: none; }
+    }
+
+    /* ---------- flash deals */
+    .flash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+    .flash-main {
+      background: var(--color-surface-raised); border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg); padding: 18px 20px 20px;
+    }
+
+    .flash-head { margin-bottom: 14px; }
+    .flash-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .flash-bolt { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #fff1ec; color: #f0562b; }
+    .flash-timer {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 10px; border-radius: 999px; background: #fff1ec; color: #e0492a;
+      font-size: 12.5px; font-variant-numeric: tabular-nums;
+    }
+    .flash-timer b { color: var(--color-text); font-weight: 700; }
+    .flash-grid { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 5 * 12px) / 6); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .flash-grid::-webkit-scrollbar { display: none; }
+    .deal-card { scroll-snap-align: start; }
+    .deal-card {
+      display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 8px 12px;
+      border-radius: 14px; text-decoration: none; color: var(--color-text);
+      transition: background 180ms var(--ease-standard);
+    }
+    .deal-card:hover { background: var(--color-bg-alt); }
+    .deal-img {
+      position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
+      background: var(--color-bg-alt); margin-bottom: 4px;
+    }
+    .deal-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 400ms var(--ease-out); }
+    .deal-card:hover .deal-img img { transform: scale(1.05); }
+    .deal-off {
+      position: absolute; top: 8px; left: 8px; padding: 2px 8px; border-radius: 999px;
+      background: #ef4444; color: #fff; font-size: 11px; font-weight: 700;
+    }
+    .deal-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .deal-price { display: flex; align-items: baseline; gap: 6px; }
+    .deal-price strong { font-size: 16px; color: #e0492a; }
+    .deal-price s { font-size: 12px; color: var(--color-muted); }
+    .deal-bar { height: 4px; border-radius: 999px; background: #fde4dc; overflow: hidden; }
+    .deal-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f97316, #ef4444); }
+    .deal-left { font-size: 11px; color: var(--color-muted); }
+    @media (max-width: 1400px) { .flash-grid { grid-auto-columns: calc((100% - 3 * 12px) / 4); } }
+    @media (max-width: 1180px) {
+      .flash { grid-template-columns: 1fr; }
+      .flash-promo { display: none; }
+    }
+    @media (max-width: 900px) { .flash-grid { grid-auto-columns: 42%; } }
+
+    /* ---------- newsletter */
+    .newsletter {
+      display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+      padding: clamp(24px, 4vw, 44px); border-radius: var(--radius-xl);
+      background: linear-gradient(120deg, #eef0ff 0%, #f4f1ff 55%, #eaf3ff 100%);
+      border: 1px solid var(--color-border);
+    }
+    .newsletter h2 { font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.01em; }
+    .newsletter p { margin: 6px 0 0; color: var(--color-text-secondary); font-size: 14.5px; }
+    .newsletter-form { display: flex; gap: 8px; flex: 1 1 360px; max-width: 480px; }
+    .newsletter-form input {
+      flex: 1; min-width: 0; height: 48px; padding: 0 18px; font: inherit; font-size: 14px;
+      border: 1px solid var(--color-border-strong); border-radius: 999px; background: #fff; color: var(--color-text);
+    }
+    .newsletter-form input:focus { outline: none; border-color: var(--color-accent); box-shadow: var(--shadow-focus); }
+    .newsletter-form button {
+      height: 48px; padding: 0 24px; border: 0; border-radius: 999px; cursor: pointer;
+      background: var(--color-text); color: #fff; font-weight: 600; font-size: 14px;
+      transition: background 180ms var(--ease-standard);
+    }
+    .newsletter-form button:hover { background: var(--color-accent); }
+    .newsletter-done { display: inline-flex; align-items: center; gap: 8px; color: var(--color-success) !important; font-weight: 600; }
     /* The hero band now holds only the trust strip; the slider above owns the
        headline space, so the old 56px top padding just left a gap. */
     .hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
@@ -869,8 +957,68 @@ export class HomeComponent {
       this.narrowTiles.set(this.narrowQuery?.matches ?? false);
     };
     window.addEventListener('resize', onResize, { passive: true });
-    inject(DestroyRef).onDestroy(() => window.removeEventListener('resize', onResize));
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('resize', onResize);
+      clearInterval(this.clock);
+    });
   }
+
+
+
+  /** Products genuinely on sale (compareAtPrice above price), biggest discount first. */
+  readonly flashDeals = computed(() =>
+    this.catalog
+      .allProducts()
+      .filter((p) => p.status !== 'out-of-stock' && !!p.compareAtPrice && p.compareAtPrice > p.price)
+      .sort((a, b) => b.compareAtPrice! / b.price - a.compareAtPrice! / a.price)
+      .slice(0, 16),
+  );
+
+  protected discount(p: Product): number {
+    return Math.round((1 - p.price / p.compareAtPrice!) * 100);
+  }
+
+  /** Stock bar: fuller when more is left, capped at 50 units. */
+  protected stockLeft(p: Product): number {
+    return Math.max(8, Math.min(100, (p.stock / 50) * 100));
+  }
+
+  /** Phones & Tablets in stock, best-ranked first. */
+  readonly phones = computed(() =>
+    this.catalog
+      .allProducts()
+      .filter((p) => p.subcategorySlug === 'phones-tablets' && p.status !== 'out-of-stock')
+      .sort((a, b) => this.discoveryScore(b) - this.discoveryScore(a))
+      .slice(0, 4),
+  );
+
+  readonly trending = computed(() =>
+    [...this.catalog.allProducts()]
+      .filter((p) => p.status !== 'out-of-stock')
+      .sort((a, b) => this.discoveryScore(b) - this.discoveryScore(a))
+      .slice(0, 12),
+  );
+
+  /** Deals refresh daily; count down to local midnight. */
+  private readonly now = signal(Date.now());
+  readonly countdown = computed(() => {
+    const now = new Date(this.now());
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const left = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return { h: pad(Math.floor(left / 3600)), m: pad(Math.floor((left % 3600) / 60)), s: pad(left % 60) };
+  });
+  private readonly clock = setInterval(() => this.now.set(Date.now()), 1000);
+
+  /** UI only for now — there is no newsletter endpoint in the Rentify APIs yet. */
+  readonly subscribed = signal(false);
+  protected subscribe(event: Event, email: string): void {
+    event.preventDefault();
+    if (email.trim()) this.subscribed.set(true);
+  }
+
+
 
   // Keep the home tiles in the same canonical order as the navigation menu.
   readonly categories = computed(() => this.catalog.categories);
@@ -1207,6 +1355,8 @@ export class HomeComponent {
       params: { sort: 'newest' },
     },
   ];
+
+  readonly promoSlots = PROMO_SLOTS;
 
   initials(name: string): string {
     return name

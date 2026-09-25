@@ -1,21 +1,18 @@
 const crypto = require("crypto");
+const cookieConfig = require("../config/cookieConfig");
 
 const generateSessionId = () => crypto.randomBytes(16).toString("hex");
 
 const sessionMiddleware = (req, res, next) => {
-  // Always set req.sessionId from cookie or generate new
-  req.sessionId = req.cookies.sessionId || generateSessionId();
-  
-  // Set cookie if not already set
-  if (!req.cookies.sessionId) {
+  req.sessionId = req.cookies?.sessionId || req.headers?.['x-session-id'] || generateSessionId();
+
+  if (!req.cookies?.sessionId && typeof res.cookie === 'function') {
     res.cookie("sessionId", req.sessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      ...cookieConfig,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
   }
-  
+
   next();
 };
 

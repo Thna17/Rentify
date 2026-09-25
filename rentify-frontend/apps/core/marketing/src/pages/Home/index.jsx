@@ -27,14 +27,16 @@ import SiteHeader from "../../components/site/SiteHeader";
 import heroProductMockup from "../../assets/rentify-hero-product-mockup-v2.png";
 
 import SiteFooter from "../../components/site/SiteFooter";
+
+const RentifyLaptopShowcase = React.lazy(() => import('./components/RentifyLaptopShowcase'));
 // --- Enhanced Hero Section ---
 const HeroSection = () => (
   <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_55%,#eef6ff_100%)] pb-12 pt-8 sm:pt-10 lg:flex lg:min-h-[580px] lg:items-center lg:py-14">
     <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/70 to-transparent" />
 
     <div className="container relative">
-      <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-8 xl:gap-10">
-        <div className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
+      <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-14">
+        <div className="mx-auto w-full max-w-[610px] text-center lg:mx-0 lg:text-left">
           <Badge variant="secondary" className="mb-3.5 border-blue-100 bg-blue-50/90 px-3 py-1.5 text-blue-700 shadow-none">
             <Globe className="mr-1.5 h-3.5 w-3.5" />
             For Cambodian SMEs
@@ -68,7 +70,7 @@ const HeroSection = () => (
           </div>
         </div>
 
-        <figure className="relative mx-auto flex w-full max-w-[650px] items-center justify-center lg:justify-end">
+        <figure className="relative mx-auto flex w-full max-w-[700px] items-center justify-center lg:justify-end">
           <img
             src={heroProductMockup}
             alt="Rentify dashboard on a laptop with a KhmerCraft marketplace phone and jasmine rice product card"
@@ -467,6 +469,13 @@ const Homepage = () => {
       
       {/* How It Works */}
       <HowItWorks />
+
+      {/* Scroll-driven product story */}
+      <React.Suspense
+        fallback={<section className="h-screen bg-gradient-to-b from-white to-blue-50" aria-label="Loading product showcase" />}
+      >
+        <RentifyLaptopShowcase />
+      </React.Suspense>
       
       {/* Feature Showcase */}
       <FeatureShowcase />

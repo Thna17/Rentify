@@ -4,7 +4,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs';
 import { CatalogService } from '../../../../core/catalog/catalog.service';
 import { Category } from '../../../../core/catalog/catalog.models';
 import { IconComponent } from '../../ui/icon/icon.component';
@@ -50,6 +52,7 @@ const CLOSE_DELAY_MS = 220;
           <a
             class="cat-item"
             [class.open]="openSlug() === category.slug"
+            [class.current]="queryCategory() === category.slug"
             [routerLink]="['/categories', category.slug]"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: false }"
@@ -169,10 +172,12 @@ const CLOSE_DELAY_MS = 220;
       }
       .cat-item:hover,
       .cat-item.open,
+      .cat-item.current,
       .cat-item.active {
         color: var(--color-text);
         border-bottom-color: var(--color-accent);
       }
+      .cat-item.current,
       .cat-item.active {
         font-weight: 700;
       }
@@ -471,6 +476,17 @@ export class CategoryMenuComponent {
   protected readonly catalog = inject(CatalogService);
 
   protected readonly categories = this.catalog.categories;
+
+  /** `/products?category=x` also highlights that category, not only `/categories/x`. */
+  private readonly router = inject(Router);
+  protected readonly queryCategory = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.router.parseUrl(this.router.url).queryParamMap.get('category')),
+    ),
+    { initialValue: null },
+  );
   protected readonly shopBy = SHOP_BY;
 
   /**

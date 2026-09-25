@@ -1,5 +1,5 @@
 const express = require("express");
-const { verifyToken } = require("../middlewares/authMiddleware");
+const { verifyToken, verifyStoreActor } = require("../middlewares/authMiddleware");
 const sessionMiddleware = require("../middlewares/sessionMiddleware");
 const {
   getOrderHistory,
@@ -17,9 +17,23 @@ const router = express.Router();
 
 const checkPermissions = require("../middlewares/checkPermissions");
 const { requireWebsiteAccess, requireWebsitePermission, requireOrderAccess } = require("../middlewares/requireWebsiteAccess");
+const { createRequireStoreAccess } = require("../middlewares/requireStoreAccess");
+
 // Apply middlewares
 router.use(sessionMiddleware);
 router.use(verifyToken);
+
+// Store-scoped POS routes
+router.post(
+  "/stores/:storeId/orders/pos",
+  createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
+  createPOSOrder
+);
+router.get(
+  "/stores/:storeId/orders/pos",
+  createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
+  getPOSOrders
+);
 
 // Order routes
 router.post("/websites/:websiteId/orders", OrderController.createOrder);

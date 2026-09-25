@@ -1,0 +1,8 @@
+Asset: Open 16 inch laptop (Computers and Desk Gadgets)
+Source: https://3dassets.dev/assets/computers-and-desk-gadgets-laptop-open-16-683c7073
+Model: https://cdn.3dassets.dev/assets/38822/v1/model.glb
+License: CC0 1.0 Universal
+License text: https://creativecommons.org/publicdomain/zero/1.0/
+
+The source model has been adapted at runtime for Rentify's animated lid, materials,
+and screen content.

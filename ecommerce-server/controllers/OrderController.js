@@ -132,22 +132,56 @@ exports.createInvoice = async (req, res) => {
 
 exports.createPOSOrder = async (req, res) => {
   try {
-    const { websiteId } = req.params;
-    const { items, paymentMethod, cashierId, customerInfo } = req.body;
+    const rawWebsiteId = req.params.websiteId || req.body?.websiteId || req.store?.websiteId;
+    const rawStoreId = req.params.storeId || req.body?.storeId || req.store?.storeId;
+    const { items, paymentMethod, cashierId, customerInfo, currency = 'USD' } = req.body || {};
 
-    // Get website niche
-    const website = await WebsiteData.findOne({ 
-      where: { websiteId },
-      attributes: ['niche']
-    });
-    
-    if (!website) {
-      return res.status(404).json({ error: "Website not found" });
+    let effectiveWebsiteId = null;
+    let effectiveStoreId = rawStoreId || null;
+    let effectiveNiche = 'ecommerce';
+
+    if (rawWebsiteId) {
+      const website = await WebsiteData.findOne({ 
+        where: { websiteId: rawWebsiteId },
+        attributes: ['niche', 'storeId', 'websiteId'],
+      });
+      if (website) {
+        effectiveWebsiteId = website.websiteId;
+        effectiveStoreId = effectiveStoreId || website.storeId;
+        effectiveNiche = website.niche || 'ecommerce';
+      } else {
+        const { StoreAccess } = require('../models');
+        const store = await StoreAccess.findByPk(rawWebsiteId);
+        if (store) {
+          effectiveStoreId = store.storeId;
+          effectiveWebsiteId = store.websiteId || null;
+        }
+      }
+    }
+
+    if (!effectiveStoreId && rawStoreId) {
+      const { StoreAccess } = require('../models');
+      const store = await StoreAccess.findByPk(rawStoreId);
+      if (store) {
+        effectiveStoreId = store.storeId;
+        effectiveWebsiteId = store.websiteId || null;
+      }
+    }
+
+    if (!effectiveWebsiteId && !effectiveStoreId) {
+      return res.status(404).json({ error: "Store or Website not found" });
     }
 
     // Fetch payment config
+    const { Op } = require('sequelize');
+    const paymentConfigConditions = [];
+    if (effectiveWebsiteId) paymentConfigConditions.push({ websiteId: effectiveWebsiteId });
+    if (effectiveStoreId) paymentConfigConditions.push({ storeId: effectiveStoreId });
+
     const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
-      where: { websiteId } 
+      where: paymentConfigConditions.length > 1
+        ? { [Op.or]: paymentConfigConditions }
+        : paymentConfigConditions[0] || {},
     });
     
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
@@ -160,16 +194,18 @@ exports.createPOSOrder = async (req, res) => {
       models,
       paymentProcessor,
       NotificationService,
-      website.niche
+      effectiveNiche
     );
 
     const result = await strategy.execute({
-      websiteId,
+      websiteId: effectiveWebsiteId,
+      storeId: effectiveStoreId,
       items,
       paymentMethod,
       cashierId,
       customerInfo,
       merchantConfig,
+      currency,
     });
 
     res.status(201).json({

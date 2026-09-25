@@ -179,6 +179,38 @@ router.post(
   })
 );
 
+// The bot id is the public prefix of the bot token; the widget needs it.
+router.get("/telegram-login-config", (req, res) => {
+  const botId = (process.env.TELEGRAM_BOT_TOKEN || "").split(":")[0];
+  res.status(200).json({ enabled: Boolean(botId), botId: botId || null });
+});
+
+router.post(
+  "/login/telegram",
+  transactionHandler(async (req, res, transaction) => {
+    const result = await userAuthService.loginWithTelegram({
+      authData: req.body?.authData,
+      transaction,
+    });
+    const hasStore = Boolean(
+      await Store.count({
+        where: { ownerUserId: result.entity.id },
+        transaction,
+      })
+    );
+    userAuthService.setAuthCookies(res, {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+    responseHandler.success(
+      res,
+      200,
+      { user: result.entity, accessToken: result.accessToken, hasStore },
+      "Login successful"
+    );
+  })
+);
+
 router.post(
   "/forgot-password",
   asyncHandler(async (req, res, transaction) => {

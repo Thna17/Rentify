@@ -124,7 +124,7 @@ const SiteFooter = () => {
       links: [
         { label: t('site.nav.about'), to: '/about' },
         { label: t('site.footer.team'), to: '/about#team' },
-        { label: t('site.footer.contact'), to: '/about#contact' },
+        { label: t('site.footer.contact'), to: '/contact' },
       ],
     },
     {
