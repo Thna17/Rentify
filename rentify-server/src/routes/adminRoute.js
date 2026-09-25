@@ -4,8 +4,12 @@ const { createTemplate, updateTemplate, deleteTemplate, getAllTemplates, getTemp
 const { verifyToken } = require("../middlewares/auth");
 const { requireAdmin } = require("../middlewares/authorization");
 const sellerReviewController = require('../controllers/sellerReviewController');
+const operations = require('../controllers/platformOperationsController');
+const safe = (handler) => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 
 router.use(verifyToken, requireAdmin);
+router.get('/operations/overview', safe(operations.overview));
+router.get('/operations/:resource', safe(operations.list));
 router.post("/template", createTemplate);
 router.put("/template/:id", updateTemplate);
 router.delete("/template/:id", deleteTemplate);

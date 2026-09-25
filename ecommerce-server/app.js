@@ -34,6 +34,7 @@ app.use('/api/store-access', require('./routes/storeAccessRoutes'));
 app.use('/api', require('./routes/storeCatalogRoutes'));
 app.use('/api', require('./routes/marketplaceCheckoutRoutes'));
 app.use('/api', require('./routes/storefrontCheckoutRoutes'));
+app.use('/api/admin/operations', require('./routes/platformOperationsRoutes'));
 app.use('/ecommerce/stats', require('./routes/ecommerceStatsRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
