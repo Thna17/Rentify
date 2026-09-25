@@ -7,6 +7,7 @@ declare global {
       commerceApiUrl?: string;
       authUrl?: string;
       merchantDashboardUrl?: string;
+      adminDashboardUrl?: string;
     };
   }
 }

@@ -1,7 +1,5 @@
 import React from 'react';
 import { Button } from "@rentify/shared/ui/button";
-import { Badge } from "@rentify/shared/ui/badge";
-import { Card, CardContent, CardHeader } from "@rentify/shared/ui/card";
 import { ShoppingCart, Plus, Minus, X, Trash2 } from 'lucide-react';
 
 export function Cart({
@@ -18,16 +16,18 @@ export function Cart({
   const totalWithTax = total + tax;
 
   return (
-    <Card className="h-full flex flex-col border-border bg-background shadow-sm">
-      {/* Enhanced Header */}
-      <CardHeader className="flex flex-row items-center justify-between  border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <ShoppingCart className="h-5 w-5 text-primary-foreground" />
+    <div className="h-full flex flex-col bg-background/50">
+      {/* Header */}
+      <div className="p-4 border-b border-border/80 flex items-center justify-between bg-card/40 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <ShoppingCart className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Order Summary</h3>
-            <p className="text-sm text-muted-foreground">{items.length} items</p>
+            <h3 className="font-semibold text-sm text-foreground">Order Summary</h3>
+            <p className="text-xs text-muted-foreground">
+              {items.length} {items.length === 1 ? 'item' : 'items'}
+            </p>
           </div>
         </div>
         {items.length > 0 && !isMobile && (
@@ -35,136 +35,133 @@ export function Cart({
             variant="ghost" 
             size="sm" 
             onClick={onClearCart}
-            className="text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="h-8 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Clear All
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Clear
           </Button>
         )}
-      </CardHeader>
+      </div>
 
-      {/* Enhanced Cart Content */}
-      <CardContent className="flex-1 overflow-auto p-0">
+      {/* Cart Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
         {items.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-              <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+          <div className="h-full min-h-[240px] flex flex-col items-center justify-center text-center p-6">
+            <div className="w-14 h-14 bg-muted/60 rounded-full flex items-center justify-center mb-3 text-muted-foreground">
+              <ShoppingCart className="h-6 w-6" />
             </div>
-            <p className="font-medium text-foreground mb-1">Your cart is empty</p>
-            <p className="text-sm text-muted-foreground">Add products to start ordering</p>
+            <p className="font-semibold text-foreground text-sm mb-1">Your cart is empty</p>
+            <p className="text-xs text-muted-foreground max-w-[200px]">
+              Tap any product in the catalog to add it to the order
+            </p>
           </div>
         ) : (
-          <div className="space-y-4 p-6">
-            {items.map((item, index) => (
-              <div key={item.id} className="bg-muted rounded-lg p-4 border border-border hover:border-input transition-colors">
-                {/* Item Header */}
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
-                      <span className="text-sm font-medium text-muted-foreground">{index + 1}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm leading-tight mb-1">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">${item.price} each</p>
-                    </div>
-                  </div>
+          items.map((item, index) => (
+            <div 
+              key={item.id} 
+              className="bg-card hover:bg-muted/20 transition-colors rounded-xl p-3 border border-border/70 shadow-2xs space-y-2"
+            >
+              {/* Item Header */}
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-xs leading-snug truncate">{item.name}</p>
+                  <p className="text-2xs text-muted-foreground mt-0.5">${parseFloat(item.price).toFixed(2)} each</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemoveItem(item.id)}
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* Quantity Controls & Line Total */}
+              <div className="flex justify-between items-center pt-1">
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5 border border-border/50">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onRemoveItem(item.id)}
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted-foreground/20"
+                    onClick={() => onUpdateItem(item.id, Math.max(1, item.quantity - 1))}
+                    disabled={item.quantity <= 1}
+                    className="h-6 w-6 rounded hover:bg-background disabled:opacity-40"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-6 text-center font-semibold text-foreground text-xs font-mono">
+                    {item.quantity}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onUpdateItem(item.id, item.quantity + 1)}
+                    className="h-6 w-6 rounded hover:bg-background"
+                  >
+                    <Plus className="h-3 w-3" />
                   </Button>
                 </div>
 
-                {/* Quantity Controls */}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onUpdateItem(item.id, Math.max(1, item.quantity - 1))}
-                      disabled={item.quantity <= 1}
-                      className="h-8 w-8 border-border hover:border-input disabled:opacity-50"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-10 text-center font-semibold text-foreground text-sm">
-                      {item.quantity}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onUpdateItem(item.id, item.quantity + 1)}
-                      className="h-8 w-8 border-border hover:border-input"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <Badge variant="secondary" className="bg-primary text-primary-foreground font-semibold px-3 py-1">
-                    ${item.subtotal.toFixed(2)}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-
-      {/* Enhanced Footer */}
-      {items.length > 0 && !isMobile && (
-        <div className="p-6 border-t border-border bg-muted/50">
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium text-foreground">${total.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Tax (8%)</span>
-              <span className="font-medium text-foreground">${tax.toFixed(2)}</span>
-            </div>
-            <div className="border-t border-border pt-3">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-foreground text-base">Total</span>
-                <span className="font-bold text-foreground text-lg">
-                  ${totalWithTax.toFixed(2)}
+                <span className="font-bold text-xs text-foreground font-mono">
+                  ${item.subtotal.toFixed(2)}
                 </span>
               </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Footer / Summary */}
+      {items.length > 0 && !isMobile && (
+        <div className="p-4 border-t border-border/80 bg-card/80 space-y-3 shrink-0">
+          <div className="space-y-1.5 text-xs">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Subtotal</span>
+              <span className="font-medium text-foreground font-mono">${total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Tax (8%)</span>
+              <span className="font-medium text-foreground font-mono">${tax.toFixed(2)}</span>
+            </div>
+            <div className="pt-2 border-t border-border/60 flex justify-between items-baseline">
+              <span className="font-bold text-foreground text-sm">Total Due</span>
+              <span className="font-extrabold text-foreground text-lg font-mono">
+                ${totalWithTax.toFixed(2)}
+              </span>
             </div>
           </div>
 
           <Button
             onClick={onCheckout}
-            className="w-full h-12 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
-            size="lg"
+            className="w-full h-11 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
           >
-            Proceed to Checkout
+            <span>Proceed to Checkout</span>
+            <span>•</span>
+            <span className="font-mono">${totalWithTax.toFixed(2)}</span>
           </Button>
         </div>
       )}
 
       {/* Mobile Checkout Bar */}
       {items.length > 0 && isMobile && (
-        <div className="p-4 border-t border-border bg-background">
-          <div className="flex justify-between items-center mb-3">
+        <div className="p-3 border-t border-border bg-card shrink-0">
+          <div className="flex justify-between items-center mb-2">
             <div>
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="font-bold text-lg text-foreground">${totalWithTax.toFixed(2)}</p>
+              <p className="text-2xs text-muted-foreground">Total Due</p>
+              <p className="font-bold text-base text-foreground font-mono">${totalWithTax.toFixed(2)}</p>
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={onClearCart}
-                className="border-border text-foreground"
+                className="h-9 px-3 border-border text-foreground"
                 size="sm"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 onClick={onCheckout}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 size="sm"
               >
                 Checkout
@@ -173,6 +170,8 @@ export function Cart({
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
+
+export default Cart;

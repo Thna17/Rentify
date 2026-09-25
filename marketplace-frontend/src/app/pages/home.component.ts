@@ -334,6 +334,50 @@ interface CategoryShelf {
     </div>
   </section>
 
+  <section class="container section payment-methods-section">
+    <div class="payment-section-box">
+      <div class="payment-header">
+        <span class="payment-eyebrow">Payment Options</span>
+        <h2>Flexible & secure payments for every purchase</h2>
+        <p>Currently supporting Cash on Delivery across Cambodia, with Bakong KHQR, ABA PayWay, and Card payments coming soon!</p>
+      </div>
+      <div class="payment-grid">
+        <div class="payment-card active">
+          <div class="payment-card-top">
+            <span class="payment-card-icon"><ui-icon name="banknote" [size]="22" [strokeWidth]="1.8" /></span>
+            <span class="payment-pill active">Available Now</span>
+          </div>
+          <h3>Cash on Delivery</h3>
+          <p>Pay with cash directly when your package is delivered to your doorstep. Safe, convenient, and available for all stores.</p>
+        </div>
+        <div class="payment-card upcoming">
+          <div class="payment-card-top">
+            <span class="payment-card-icon"><ui-icon name="qr-code" [size]="22" [strokeWidth]="1.8" /></span>
+            <span class="payment-pill upcoming">Coming Soon</span>
+          </div>
+          <h3>Bakong KHQR (Scan to Pay)</h3>
+          <p>Instant digital transfer via KHQR. Scan using ABA, Canadia, Wing, ACLEDA, or any National Bank of Cambodia Bakong app.</p>
+        </div>
+        <div class="payment-card upcoming">
+          <div class="payment-card-top">
+            <span class="payment-card-icon"><ui-icon name="wallet" [size]="22" [strokeWidth]="1.8" /></span>
+            <span class="payment-pill upcoming">Coming Soon</span>
+          </div>
+          <h3>ABA PayWay</h3>
+          <p>Seamless one-tap mobile checkout directly with your ABA Mobile account or debit card for effortless purchases.</p>
+        </div>
+        <div class="payment-card upcoming">
+          <div class="payment-card-top">
+            <span class="payment-card-icon"><ui-icon name="credit-card" [size]="22" [strokeWidth]="1.8" /></span>
+            <span class="payment-pill upcoming">Coming Soon</span>
+          </div>
+          <h3>Credit / Debit Cards</h3>
+          <p>Accepting Visa, Mastercard, and UnionPay. Enterprise-grade 256-bit SSL encryption to keep every card transaction secure.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <app-footer></app-footer>
   `,
   styles: [`
@@ -886,7 +930,119 @@ interface CategoryShelf {
     .confidence-item strong { color: var(--color-text); display: block; font-size: 12px; }
     .confidence-item small { color: var(--color-text-muted); display: block; font-size: 10px; line-height: 1.35; margin-top: 2px; }
 
+    .payment-methods-section {
+      margin-top: 14px;
+      margin-bottom: 0;
+    }
+    .payment-section-box {
+      background: var(--color-bg-alt);
+      border: 1px solid var(--color-border);
+      border-radius: 18px;
+      padding: clamp(24px, 3vw, 36px) !important;
+    }
+    .payment-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .payment-eyebrow {
+      color: var(--color-accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .payment-header h2 {
+      color: var(--color-text);
+      font-size: clamp(22px, 2vw, 30px);
+      line-height: 1.15;
+      margin: 7px 0 7px;
+    }
+    .payment-header p {
+      color: var(--color-text-muted);
+      font-size: 13px;
+      max-width: 580px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .payment-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .payment-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .payment-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    }
+    .payment-card.active {
+      border-color: rgba(52, 211, 153, 0.5);
+      background: linear-gradient(180deg, #f9fdfa 0%, #ffffff 100%);
+    }
+    .payment-card.upcoming {
+      border-style: dashed;
+      background: #fdfdfd;
+    }
+    .payment-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .payment-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-accent-soft);
+      color: var(--color-accent);
+    }
+    .payment-card.active .payment-card-icon {
+      background: #e6f4ea;
+      color: #137333;
+    }
+    .payment-pill {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 2.5px 8px;
+      border-radius: 999px;
+    }
+    .payment-pill.active {
+      background: #e6f4ea;
+      color: #137333;
+    }
+    .payment-pill.upcoming {
+      background: #fef7e0;
+      color: #b06000;
+      border: 1px solid rgba(176, 96, 0, 0.2);
+    }
+    .payment-card h3 {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin: 0 0 6px 0;
+    }
+    .payment-card p {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+      margin: 0;
+      flex: 1;
+    }
+
     @media (max-width: 980px) {
+      .payment-grid { grid-template-columns: repeat(2, 1fr); }
       .hero-inner { grid-template-columns: 1fr; }
       .confidence-grid { grid-template-columns: 1fr 1fr; gap: 16px 0; }
       .confidence-item:nth-child(2) { border-right: 0; }
@@ -909,6 +1065,8 @@ interface CategoryShelf {
       .stores-marquee { padding-inline: 16px; }
       .store-chip { flex-basis: 250px; max-width: 250px; min-width: 250px; width: 250px; }
       .purchase-confidence { padding: 22px 18px !important; }
+      .payment-section-box { padding: 22px 18px !important; }
+      .payment-grid { grid-template-columns: 1fr; }
       .purchase-copy { margin-bottom: 18px; text-align: left; }
       .confidence-grid { grid-template-columns: 1fr; gap: 0; }
       .confidence-item, .confidence-item:nth-child(3) { border-bottom: 1px solid var(--color-border); border-right: 0; padding: 12px 0; }

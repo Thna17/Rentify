@@ -80,8 +80,7 @@ async function review({ storeId, reviewerUserId, decision, checklist, reason }) 
   return Store.sequelize.transaction(async (transaction) => {
     const store = await Store.findByPk(storeId, { transaction, lock: transaction.LOCK.UPDATE });
     if (!store) throw invalid('Store not found', 404);
-    const application = await SellerApplication.findByPk(storeId, { transaction, lock: transaction.LOCK.UPDATE });
-    if (!application) throw invalid('Seller application not found', 404);
+    let application = await SellerApplication.findByPk(storeId, { transaction, lock: transaction.LOCK.UPDATE });
     if (decision === 'approved') {
       const owner = await User.findByPk(store.ownerUserId, { transaction });
       if (!owner?.isVerified || !(owner.email || owner.phoneNumber)) {
@@ -89,11 +88,30 @@ async function review({ storeId, reviewerUserId, decision, checklist, reason }) 
       }
       if (store.needsCategoryReview || !store.primaryCategory) throw invalid('Store category needs review');
     }
-    await application.update({
-      status: decision === 'suspended' ? 'rejected' : decision,
-      reviewReason: reviewReason || null,
-      reviewedAt: new Date(),
-    }, { transaction });
+    if (!application) {
+      const owner = await User.findByPk(store.ownerUserId, { transaction });
+      application = await SellerApplication.create({
+        storeId,
+        responsibleName: owner?.name || store.name,
+        pickupLocation: 'Store location pending',
+        buyerContact: owner?.email || owner?.phoneNumber || 'Pending contact',
+        sampleProductDescription: 'Store listing reviewed by administrator',
+        acceptsDeliveryResponsibility: true,
+        acceptsCodResponsibility: true,
+        acceptsReturnsResponsibility: true,
+        acceptsRefundResponsibility: true,
+        status: decision === 'suspended' ? 'rejected' : decision,
+        reviewReason: reviewReason || null,
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+      }, { transaction });
+    } else {
+      await application.update({
+        status: decision === 'suspended' ? 'rejected' : decision,
+        reviewReason: reviewReason || null,
+        reviewedAt: new Date(),
+      }, { transaction });
+    }
     const audit = await SellerReview.create({
       storeId, reviewerUserId, decision, checklist, reason: reviewReason || null,
     }, { transaction });

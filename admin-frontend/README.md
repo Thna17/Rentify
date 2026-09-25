@@ -1,33 +1,33 @@
-# Rentify Platform Administration (`admin-frontend`)
+# Rentify platform administration
 
-Dedicated standalone Angular 21 frontend application providing the unified Rentify Platform Administration dashboard on port 4800 (`http://localhost:4800`).
+The Angular admin application runs on port 4800. It requires a Core `admin`
+account and reads live Core and Commerce records. Its operations dashboard
+covers Stores and seller approval, users, websites, templates, subscriptions,
+plans and plan payments, products, cross-channel orders, customer payments,
+reviews, buyer reports, and usage statements.
 
-## Architecture & Responsibilities
+Core remains authoritative for identity, Store profiles, seller review,
+websites, and subscriptions. Commerce remains authoritative for products,
+orders, payment records, reviews, and buyer reports. Admin reads are
+paginated and require a fresh Core admin identity. The only administrative
+write exposed by this UI is the existing audited Core seller-review operation.
 
-- **Unified Platform Administration**:
-  - **Platform & Storefront Operations**: Websites hosting management, storefront templates catalog, merchant subscription packages, and platform user administration.
-  - **Marketplace Operations**: Sellers verification & approval workflows, product catalog & moderation, marketplace departments/categories, orders tracking, customer reviews, disputes & complaints, and reports.
-  - **Finance**: Payment collections, platform ledger & commission breakdown, seller settlement payouts.
-- **Port**: Serves on port `4800` (`http://localhost:4800`).
-- **Authentication**: Protected by `adminGuard` requiring the `ADMIN` role. Unauthenticated requests are redirected cleanly to Rentify Auth (`http://localhost:4300/?returnUrl=http://localhost:4800`).
-- **Styling**: Tailwind CSS + Rentify Admin design system tokens.
+The launch dashboard does not show platform revenue from COD orders,
+commission, online settlement, or seller payouts. Marketplace COD cash is
+collected by merchants; subscription payments are separate.
 
-## Development
+See [admin operations](../docs/admin-operations.md) for current capabilities,
+known limits, and the next workflow gates.
+
+## Local verification
 
 ```sh
-# Run locally on port 4800
-npm start
-
-# Run unit tests
-npm test
-
-# Build production bundle
-npm run build
-
-# Type check
 npm run typecheck
+npm test
+npm run build
 ```
 
-## Docker
-
-Runs in Docker Compose as the `admin` service on port 4800.
+Docker Compose runs the `admin` service on port 4800. The Core and Commerce
+databases must have their documented migrations applied before opening the
+dashboard. In particular, Commerce's product review migration is required
+for overview and review counts.

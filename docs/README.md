@@ -20,6 +20,8 @@ code so implementation work can proceed without relying on chat history.
   audits, staged release evidence, and retirement gates.
 - [Notes and open questions](notes.md) — verified observations, unresolved
   choices, and items requiring product decisions.
+- [Platform admin operations](admin-operations.md) — live admin scope,
+  authority boundaries, and workflow gates adapted from the reference PRD.
 - [Legacy KhmerCraft reference API](reference/legacy-khmercraft-api/README.md) —
   archived Express/Mongoose API and legacy design notes for reference only.
 

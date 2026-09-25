@@ -1,8 +1,11 @@
 import { Routes } from '@angular/router';
 import { buyerGuard } from './core/auth/auth.guard';
-import { adminGuard } from './core/auth/admin.guard';
 import { sellerGuard } from './core/auth/seller.guard';
-import { externalAuthRedirectGuard } from './pages/auth-redirect.component';
+import {
+  externalAdminRedirectGuard,
+  externalAuthRedirectGuard,
+  externalMerchantRedirectGuard,
+} from './pages/auth-redirect.component';
 
 /**
  * Everything is lazy-loaded. The storefront branch imported all 19 page
@@ -12,6 +15,7 @@ export const routes: Routes = [
   // ---------------------------------------------------------------- storefront
   {
     path: '',
+    pathMatch: 'full',
     loadComponent: () =>
       import('./pages/home.component').then((m) => m.HomeComponent),
     title: 'Rentify Marketplace',
@@ -160,39 +164,34 @@ export const routes: Routes = [
   },
 
   // ------------------------------------------------------------------- seller
+  // Merchants manage their store, orders, and catalog on the Rentify Merchant Dashboard (http://localhost:4400).
   {
     path: 'seller/login',
-    canActivate: [externalAuthRedirectGuard('login', '/seller/dashboard')],
+    canActivate: [externalAuthRedirectGuard('login', 'http://localhost:4400')],
     loadComponent: () =>
       import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
-    data: { mode: 'login', defaultReturn: '/seller/dashboard' },
+    data: { mode: 'login', defaultReturn: 'http://localhost:4400' },
     title: 'Seller sign in | Rentify Marketplace',
   },
   {
     path: 'seller/onboarding',
-    canActivate: [buyerGuard],
+    canActivate: [externalMerchantRedirectGuard('')],
     loadComponent: () =>
-      import('./features/seller/onboarding/seller-onboarding').then(
-        (m) => m.SellerOnboardingPage,
-      ),
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
     title: 'Seller onboarding | Rentify Marketplace',
   },
   {
     path: 'seller/dashboard',
-    canActivate: [sellerGuard],
+    canActivate: [externalMerchantRedirectGuard('')],
     loadComponent: () =>
-      import('./pages/seller-dashboard/seller-dashboard').then(
-        (m) => m.SellerDashboardPage,
-      ),
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
     title: 'Seller dashboard | Rentify Marketplace',
   },
   {
     path: 'seller/orders',
-    canActivate: [sellerGuard],
+    canActivate: [externalMerchantRedirectGuard('orders')],
     loadComponent: () =>
-      import('./features/seller/orders/seller-orders').then(
-        (m) => m.SellerOrders,
-      ),
+      import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
     title: 'Incoming orders | Rentify Marketplace',
   },
 
@@ -245,17 +244,18 @@ export const routes: Routes = [
   { path: 'account/change-password', pathMatch: 'full', redirectTo: 'forgot-password' },
   {
     path: 'admin',
-    canActivate: [adminGuard],
-    loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES),
-    title: 'Administration | Rentify Marketplace',
-  },
-  {
-    path: 'admin/login',
-    canActivate: [externalAuthRedirectGuard('login', '/admin')],
+    canActivate: [externalAdminRedirectGuard()],
+    children: [
+      {
+        path: '**',
+        canActivate: [externalAdminRedirectGuard()],
+        loadComponent: () =>
+          import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
+      },
+    ],
     loadComponent: () =>
       import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
-    data: { mode: 'login', defaultReturn: '/admin' },
-    title: 'Admin sign in | Rentify Marketplace',
+    title: 'Administration | Rentify Admin',
   },
 
   // ------------------------------------------------------------- support pages

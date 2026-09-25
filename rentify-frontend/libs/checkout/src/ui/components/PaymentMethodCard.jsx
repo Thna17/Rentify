@@ -10,51 +10,58 @@ export const PaymentMethodCard = ({
   icon: Icon,
   title,
   subtitle,
-  badges,
+  badges = [],
   gradient,
   isSelected,
   onClick,
+  isComingSoon = false,
 }) => (
   <motion.div
-    whileHover={{ scale: 1.02, y: -4 }}
-    whileTap={{ scale: 0.98 }}
-    className="cursor-pointer h-full"
+    whileHover={!isComingSoon ? { scale: 1.02, y: -4 } : { y: -2 }}
+    whileTap={!isComingSoon ? { scale: 0.98 } : {}}
+    className={`cursor-pointer h-full ${isComingSoon ? 'opacity-95' : ''}`}
     onClick={onClick}
   >
     <Card
       className={`
-      relative overflow-hidden transition-all duration-500 h-full border-2
+      relative overflow-hidden transition-all duration-300 h-full border-2
       ${
         isSelected
           ? 'ring-4 ring-blue-500/20 shadow-2xl border-blue-500 bg-gradient-to-br from-blue-50 to-purple-50'
-          : 'hover:shadow-xl  shadow-lg border-border/50'
+          : isComingSoon
+          ? 'border-dashed border-amber-300/80 bg-amber-50/20 hover:border-amber-400 shadow-sm'
+          : 'hover:shadow-xl shadow-lg border-border/50'
       }
     `}
     >
       <div className={`absolute inset-0 opacity-5 ${gradient}`} />
       <CardContent className="p-6 relative h-full flex flex-col">
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-5">
           <div
             className={`
-            p-4 rounded-2xl transition-all duration-300 shadow-lg
+            p-4 rounded-2xl transition-all duration-300 shadow-md
             ${
               isSelected
-                ? 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-blue-500/25'
-                : 'bg-gradient-to-br from-gray-100 to-gray-200'
+                ? 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-blue-500/25 text-white'
+                : isComingSoon
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'
             }
           `}
           >
-            <Icon
-              className={`w-8 h-8 ${
-                isSelected ? 'text-white' : 'text-gray-600'
-              }`}
-            />
+            <Icon className="w-8 h-8" />
           </div>
-          <RadioGroupItem
-            value={value}
-            id={value}
-            className={`w-6 h-6 ${isSelected ? 'border-blue-500' : ''}`}
-          />
+          {isComingSoon ? (
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
+              Coming Soon
+            </span>
+          ) : (
+            <RadioGroupItem
+              value={value}
+              id={value}
+              className={`w-6 h-6 ${isSelected ? 'border-blue-500' : ''}`}
+            />
+          )}
         </div>
 
         <div className="mb-6 flex-grow">

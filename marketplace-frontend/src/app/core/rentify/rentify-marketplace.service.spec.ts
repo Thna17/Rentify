@@ -29,6 +29,7 @@ describe('RentifyMarketplaceService', () => {
     expect(service.commerce).toBe('http://localhost:4001');
     expect(service.auth).toBe('http://localhost:4300');
     expect(service.merchantDashboard).toBe('http://localhost:4400');
+    expect(service.adminDashboard).toBe('http://localhost:4800');
     expect(service.configured).toBe(true);
   });
 
@@ -38,12 +39,14 @@ describe('RentifyMarketplaceService', () => {
       commerceApiUrl: 'https://commerce.rentify.local/',
       authUrl: 'https://auth.rentify.local/',
       merchantDashboardUrl: 'https://merchant.rentify.local/',
+      adminDashboardUrl: 'https://admin.rentify.local/',
     };
 
     expect(service.core).toBe('https://core.rentify.local');
     expect(service.commerce).toBe('https://commerce.rentify.local');
     expect(service.auth).toBe('https://auth.rentify.local');
     expect(service.merchantDashboard).toBe('https://merchant.rentify.local');
+    expect(service.adminDashboard).toBe('https://admin.rentify.local');
     expect(service.configured).toBe(true);
   });
 
@@ -146,6 +149,35 @@ describe('RentifyMarketplaceService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({});
     req.flush({ ok: true });
+  });
+
+  it('calls product reviews endpoint', () => {
+    let result: unknown;
+    service.reviews('prod-123').subscribe((res) => { result = res; });
+
+    const req = httpTesting.expectOne('http://localhost:4001/api/marketplace/products/prod-123/reviews');
+    expect(req.request.method).toBe('GET');
+    req.flush({ reviews: [], summary: { total: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } } });
+
+    expect(result).toEqual({ reviews: [], summary: { total: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } } });
+  });
+
+  it('submits a product review with rating and comment', () => {
+    let result: unknown;
+    service.submitReview('prod-123', 5, 'Exceptional craftsmanship!').subscribe((res) => { result = res; });
+
+    const req = httpTesting.expectOne('http://localhost:4001/api/marketplace/products/prod-123/reviews');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ rating: 5, comment: 'Exceptional craftsmanship!' });
+    req.flush({
+      review: { id: 'rev-1', rating: 5, comment: 'Exceptional craftsmanship!' },
+      summary: { total: 1, average: 5, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 } },
+    });
+
+    expect(result).toEqual({
+      review: { id: 'rev-1', rating: 5, comment: 'Exceptional craftsmanship!' },
+      summary: { total: 1, average: 5, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 } },
+    });
   });
 
   it('builds auth link for login and signup with returnUrl', () => {

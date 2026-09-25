@@ -10,21 +10,17 @@ import { Input } from "@rentify/shared/ui/input";
 import { Button } from "@rentify/shared/ui/button";
 import { Badge } from "@rentify/shared/ui/badge";
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@rentify/shared/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@rentify/shared/ui/Tabs";
-import { Skeleton } from "@rentify/shared/ui/skeleton";
-import { ScrollArea } from "@rentify/shared/ui/scroll-area";
 import { 
   Search,
   X,
   Grid3X3,
   List,
-  Filter,
   SortAsc,
   Package,
   Plus,
@@ -33,35 +29,55 @@ import {
   Sparkles,
   Zap,
   TrendingUp,
-  Clock,
   Star,
   Eye
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
-export function ProductGrid({ onAddToCart }) {
+export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, storeId }) {
   const { t } = useTranslation();
   const { categories, loading: categoriesLoading } = useShopCategories();
   const containerRef = useRef(null);
   
-  // Modern state management
+  // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState('grid');
   const [cardSize, setCardSize] = useState('medium');
   const [isMobile, setIsMobile] = useState(false);
 
-  // Data fetching
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
+  // Data fetching — must be declared before availableCategories useMemo
   const {
     data: productsData,
     isLoading,
     isError,
     refetch,
-  } = useGetAllProductsQuery({ websiteId, page: 1, limit: 100, status: 'active' });
+  } = useGetAllProductsQuery({ 
+    websiteId: websiteId || undefined, 
+    storeId: websiteId ? undefined : storeId, 
+    page: 1, 
+    limit: 100, 
+    status: 'active' 
+  }, {
+    skip: !websiteId && !storeId
+  });
+
+  const availableCategories = useMemo(() => {
+    if (categories && categories.length > 0) return categories;
+    const catMap = new Map();
+    productsData?.products?.forEach(p => {
+      const cat = p.Category || p.category;
+      if (cat && typeof cat === 'object' && cat.id && cat.name) {
+        catMap.set(String(cat.id), { id: String(cat.id), name: cat.name });
+      } else if (typeof cat === 'string' && cat.trim()) {
+        catMap.set(cat, { id: cat, name: cat });
+      }
+    });
+    return Array.from(catMap.values());
+  }, [categories, productsData?.products]);
 
   // Mobile detection
   useEffect(() => {
@@ -71,7 +87,7 @@ export function ProductGrid({ onAddToCart }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Enhanced product filtering and sorting
+  // Filtered and sorted products
   const filteredProducts = useMemo(() => {
     if (!productsData?.products) return [];
     
@@ -82,7 +98,12 @@ export function ProductGrid({ onAddToCart }) {
           product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.description?.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
+        const matchesCategory =
+          selectedCategory === 'all' ||
+          product.categoryId === selectedCategory ||
+          product.category === selectedCategory ||
+          (product.Category && String(product.Category.id) === selectedCategory) ||
+          (product.Category && product.Category.name === selectedCategory);
         
         return matchesSearch && matchesCategory;
       })
@@ -98,34 +119,34 @@ export function ProductGrid({ onAddToCart }) {
       });
   }, [productsData?.products, searchTerm, selectedCategory, sortBy]);
 
-  // Modern card configurations
+  // Card configurations
   const cardConfigs = {
     small: {
-      imageHeight: 'h-32',
-      contentPadding: 'p-3',
+      imageHeight: 'h-28',
+      contentPadding: 'p-2.5',
       textSize: 'text-xs',
       buttonSize: 'sm',
-      priceSize: 'text-sm font-semibold'
+      priceSize: 'text-sm font-bold'
     },
     medium: {
-      imageHeight: 'h-44',
-      contentPadding: 'p-4',
+      imageHeight: 'h-36',
+      contentPadding: 'p-3',
       textSize: 'text-sm',
       buttonSize: 'default',
-      priceSize: 'text-lg font-bold'
+      priceSize: 'text-base font-bold'
     },
     large: {
-      imageHeight: 'h-56',
-      contentPadding: 'p-5',
+      imageHeight: 'h-48',
+      contentPadding: 'p-4',
       textSize: 'text-base',
       buttonSize: 'lg',
-      priceSize: 'text-xl font-bold'
+      priceSize: 'text-lg font-bold'
     }
   };
 
   const currentConfig = cardConfigs[cardSize];
 
-  // Enhanced Product Card with modern design
+  // Enhanced Product Card
   const ProductCard = ({ product }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const isLowStock = (product.stockQuantity || 0) <= 5;
@@ -135,29 +156,25 @@ export function ProductGrid({ onAddToCart }) {
       <Card 
         onClick={() => !isOutOfStock && onAddToCart(product)}
         className={cn(
-          "group relative overflow-hidden border-border bg-background shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer",
-          "transform hover:-translate-y-1 active:scale-95",
-          isOutOfStock && "opacity-60 cursor-not-allowed",
-          viewMode === 'list' ? "flex-row items-center p-4 h-28" : "flex-col h-full min-h-[300px]",
+          "group relative overflow-hidden border border-border/70 bg-card hover:bg-card/90 shadow-2xs hover:shadow-md hover:border-primary/40 transition-all duration-200 cursor-pointer rounded-xl flex flex-col justify-between",
+          isOutOfStock && "opacity-60 cursor-not-allowed hover:border-border/70 hover:shadow-none",
+          viewMode === 'list' ? "flex-row items-center p-3 h-24" : "h-full",
           currentConfig.contentPadding
         )}
       >
-        {/* Premium gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-muted to-muted opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
         {/* Image Container */}
         <div className={cn(
-          "relative overflow-hidden rounded-xl bg-gradient-to-br from-muted to-muted-foreground",
-          viewMode === 'list' ? "w-20 h-20 flex-shrink-0" : `w-full ${currentConfig.imageHeight}`,
+          "relative overflow-hidden rounded-lg bg-muted/60 shrink-0",
+          viewMode === 'list' ? "w-18 h-18" : `w-full ${currentConfig.imageHeight}`,
           !imageLoaded && "animate-pulse"
         )}>
           <img
             src={product.images?.[0]?.url || '/api/placeholder/300/300'}
             alt={product.name}
             className={cn(
-              "absolute inset-0 w-full h-full object-cover transition-all duration-500",
+              "absolute inset-0 w-full h-full object-cover transition-all duration-300",
               imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-105",
-              "group-hover:scale-110"
+              "group-hover:scale-105"
             )}
             onLoad={() => setImageLoaded(true)}
             onError={(e) => {
@@ -173,72 +190,49 @@ export function ProductGrid({ onAddToCart }) {
           />
           
           {/* Status Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
+          <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 z-10">
             {isOutOfStock && (
-              <Badge className="bg-destructive/95 text-destructive-foreground text-xs px-2 py-1 border-0 shadow-sm">
+              <Badge className="bg-destructive text-destructive-foreground text-3xs px-1.5 py-0.5 border-0 shadow-2xs">
                 Out of Stock
               </Badge>
             )}
             {isLowStock && !isOutOfStock && (
-              <Badge className="bg-warning/95 text-warning-foreground text-xs px-2 py-1 border-0 shadow-sm">
+              <Badge className="bg-amber-500 text-white text-3xs px-1.5 py-0.5 border-0 shadow-2xs">
                 {product.stockQuantity} left
               </Badge>
             )}
             {product.salesCount > 100 && (
-              <Badge className="bg-success/95 text-success-foreground text-xs px-2 py-1 border-0 shadow-sm">
-                <TrendingUp className="h-3 w-3 mr-1" />
+              <Badge className="bg-emerald-600 text-white text-3xs px-1.5 py-0.5 border-0 shadow-2xs flex items-center gap-0.5">
+                <TrendingUp className="h-2.5 w-2.5" />
                 Popular
               </Badge>
             )}
           </div>
-
-          {/* Quick Add Button */}
-          {!isOutOfStock && (
-            <Button
-              size="sm"
-              className={cn(
-                "absolute bottom-2 right-2 rounded-full bg-background/90 backdrop-blur-sm text-foreground",
-                "shadow-lg border-0 hover:bg-background hover:scale-110 transform transition-all duration-200",
-                "opacity-0 group-hover:opacity-100"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCart(product);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
         </div>
 
         {/* Content */}
         <CardContent className={cn(
           "relative flex-1 z-10",
-          viewMode === 'list' ? "p-0 pl-4" : "p-0 pt-4",
+          viewMode === 'list' ? "p-0 pl-3" : "p-0 pt-2.5",
           "flex flex-col justify-between"
         )}>
-          <div className="space-y-2">
-            {/* Product Name */}
+          <div className="space-y-1">
             <h3 className={cn(
-              "font-semibold text-foreground leading-tight line-clamp-2",
-              "group-hover:text-muted-foreground transition-colors",
+              "font-semibold text-foreground leading-snug line-clamp-1 group-hover:text-primary transition-colors",
               currentConfig.textSize
             )}>
               {product.name}
             </h3>
             
-            {/* Description (List view only) */}
             {viewMode === 'list' && product.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2">
+              <p className="text-xs text-muted-foreground line-clamp-1">
                 {product.description}
               </p>
             )}
 
-            {/* Category & SKU */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Tag className="h-3 w-3" />
+            <div className="flex items-center gap-1.5 text-2xs text-muted-foreground">
               <span className="truncate">
-                {product.Category?.name || 'Uncategorized'}
+                {product.Category?.name || 'General'}
               </span>
               {product.sku && (
                 <>
@@ -247,61 +241,41 @@ export function ProductGrid({ onAddToCart }) {
                 </>
               )}
             </div>
-
-            {/* Stats (Grid view only) */}
-            {viewMode !== 'list' && (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                {product.salesCount > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    <span>{product.salesCount} sold</span>
-                  </div>
-                )}
-                {product.rating > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    <span>{product.rating}</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Price and Add Button */}
           <div className={cn(
-            "flex justify-between items-center",
-            viewMode === 'list' ? "mt-2" : "mt-4"
+            "flex justify-between items-center pt-2",
+            viewMode === 'list' ? "mt-1" : "mt-2 border-t border-border/40"
           )}>
-            <div className="flex flex-col">
+            <div className="flex items-baseline gap-1.5">
               <span className={cn(
-                "text-foreground",
+                "text-foreground font-mono",
                 currentConfig.priceSize
               )}>
                 ${parseFloat(product.price || 0).toFixed(2)}
               </span>
               {product.originalPrice > product.price && (
-                <span className="text-xs text-muted-foreground line-through">
+                <span className="text-2xs text-muted-foreground line-through font-mono">
                   ${parseFloat(product.originalPrice || 0).toFixed(2)}
                 </span>
               )}
             </div>
             
             <Button
-              size={currentConfig.buttonSize}
+              size="sm"
               disabled={isOutOfStock}
               className={cn(
-                "rounded-full bg-primary text-primary-foreground",
-                "shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200",
-                "border-0 hover:bg-primary/90",
-                isOutOfStock && "bg-muted cursor-not-allowed"
+                "h-7 px-2.5 rounded-lg text-xs font-semibold gap-1",
+                isOutOfStock ? "bg-muted text-muted-foreground" : "bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground transition-all"
               )}
               onClick={(e) => {
                 e.stopPropagation();
-                onAddToCart(product);
+                if (!isOutOfStock) onAddToCart(product);
               }}
             >
-              <Plus className="h-4 w-4 mr-1" />
-              {isOutOfStock ? 'Out of Stock' : 'Add'}
+              <Plus className="h-3.5 w-3.5" />
+              <span>{isOutOfStock ? 'Sold Out' : 'Add'}</span>
             </Button>
           </div>
         </CardContent>
@@ -312,33 +286,32 @@ export function ProductGrid({ onAddToCart }) {
   // Modern Loading Skeleton
   const ProductSkeleton = () => (
     <Card className={cn(
-      "border-border bg-background shadow-sm overflow-hidden",
+      "border border-border/70 bg-card shadow-2xs overflow-hidden rounded-xl",
       currentConfig.contentPadding
     )}>
       <div className={cn(
-        "relative w-full overflow-hidden bg-gradient-to-br from-muted to-muted-foreground rounded-xl",
-        currentConfig.imageHeight,
-        "animate-pulse"
+        "relative w-full overflow-hidden bg-muted/60 rounded-lg animate-pulse",
+        currentConfig.imageHeight
       )} />
-      <CardContent className="p-0 pt-4 space-y-3">
-        <div className="h-4 bg-muted rounded animate-pulse" />
-        <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
-        <div className="flex justify-between items-center">
+      <CardContent className="p-0 pt-3 space-y-2">
+        <div className="h-3.5 bg-muted rounded animate-pulse w-3/4" />
+        <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+        <div className="flex justify-between items-center pt-2">
           <div className="h-4 bg-muted rounded animate-pulse w-16" />
-          <div className="h-9 w-20 bg-muted rounded-full animate-pulse" />
+          <div className="h-7 w-16 bg-muted rounded-lg animate-pulse" />
         </div>
       </CardContent>
     </Card>
   );
 
-  // Enhanced Grid Layout
+  // Grid Layout
   const GridView = ({ products }) => (
-    <div className="p-6">
+    <div className="p-4 sm:p-5">
       <div 
-        className="gap-5 grid"
+        className="gap-3.5 grid"
         style={{
           gridTemplateColumns: `repeat(auto-fill, minmax(${
-            cardSize === 'small' ? '180px' : cardSize === 'medium' ? '240px' : '300px'
+            cardSize === 'small' ? '150px' : cardSize === 'medium' ? '190px' : '240px'
           }, 1fr))`
         }}
       >
@@ -349,114 +322,82 @@ export function ProductGrid({ onAddToCart }) {
     </div>
   );
 
-  // Enhanced List View
+  // List View
   const ListView = ({ products }) => (
-    <div className="p-6 space-y-3">
+    <div className="p-4 sm:p-5 space-y-2.5">
       {products.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </div>
   );
 
-  // Clear search function
   const handleClearSearch = () => setSearchTerm('');
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Premium Header Section */}
-      <div className="sticky top-0 z-40 p-6 bg-background/80 backdrop-blur-xl border-b border-border shadow-sm">
-        {/* Enhanced Search Bar */}
-        <div className="relative mb-6">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
+    <div className="flex flex-col w-full bg-background">
+      {/* Search & Control Header Section */}
+      <div className={cn(
+        "p-4 sm:p-5 bg-background/95 backdrop-blur-xl border-b border-border/80 shadow-2xs space-y-3",
+        isFullscreen ? "sticky top-13 z-20" : "sticky top-0 z-20"
+      )}>
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-muted-foreground" />
           </div>
           <Input
-            placeholder="Search products, SKU, or description..."
+            placeholder="Search products by name, SKU, or keyword..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-12 pr-12 h-14 text-lg rounded-2xl bg-background border-2 border-border focus:border-input focus:ring-4 focus:ring-muted shadow-sm"
+            className="pl-10 pr-10 h-10 text-sm rounded-xl bg-muted/40 hover:bg-muted/60 focus:bg-background border border-border/80 focus:border-primary transition-all shadow-2xs"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               size="icon"
               onClick={handleClearSearch}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        {/* Enhanced Control Bar */}
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-          {/* Left Controls */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* View Mode Tabs */}
-            <Tabs value={viewMode} onValueChange={setViewMode} className="w-auto">
-              <TabsList className="bg-muted/80 p-1.5 rounded-2xl backdrop-blur-sm">
-                <TabsTrigger value="grid" className="flex items-center gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <Grid3X3 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Grid</span>
-                </TabsTrigger>
-                <TabsTrigger value="list" className="flex items-center gap-2 rounded-xl px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <List className="h-4 w-4" />
-                  <span className="text-sm font-medium">List</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Card Size Selector */}
-            <Select value={cardSize} onValueChange={setCardSize}>
-              <SelectTrigger className="w-48 h-10 rounded-xl bg-background border-2 border-border shadow-sm">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                  <SelectValue placeholder="View Size" />
+        {/* Unified Control Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Left: Category & Sort */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Category Dropdown */}
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-38 sm:w-44 h-8.5 rounded-lg bg-background border border-border/80 text-xs shadow-2xs font-medium">
+                <div className="flex items-center gap-1.5 truncate">
+                  <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <SelectValue placeholder="All Categories" />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small" className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-muted rounded"></div>
-                  Compact
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    All Categories
+                  </div>
                 </SelectItem>
-                <SelectItem value="medium" className="flex items-center gap-2">
-                  <div className="w-6 h-4 bg-muted-foreground rounded"></div>
-                  Standard
-                </SelectItem>
-                <SelectItem value="large" className="flex items-center gap-2">
-                  <div className="w-8 h-4 bg-foreground rounded"></div>
-                  Large
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Right Controls */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-52 h-10 rounded-xl bg-background border-2 border-border shadow-sm">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  All Categories
-                </SelectItem>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.id} className="flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
-                    {category.name}
+                {availableCategories?.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-3.5 w-3.5" />
+                      {category.name}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Sort */}
+            {/* Sort Dropdown */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48 h-10 rounded-xl bg-background border-2 border-border shadow-sm">
-                <div className="flex items-center gap-2">
-                  <SortAsc className="h-4 w-4 text-muted-foreground" />
+              <SelectTrigger className="w-34 sm:w-40 h-8.5 rounded-lg bg-background border border-border/80 text-xs shadow-2xs font-medium">
+                <div className="flex items-center gap-1.5 truncate">
+                  <SortAsc className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <SelectValue placeholder="Sort by" />
                 </div>
               </SelectTrigger>
@@ -470,22 +411,64 @@ export function ProductGrid({ onAddToCart }) {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Right: Card Density & View Mode */}
+          <div className="flex items-center gap-2">
+            <Select value={cardSize} onValueChange={setCardSize}>
+              <SelectTrigger className="w-34 sm:w-36 h-8.5 rounded-lg bg-background border border-border/80 text-xs shadow-2xs font-medium">
+                <div className="flex items-center gap-1.5 truncate">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Density" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">Compact</SelectItem>
+                <SelectItem value="medium">Standard</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/60">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "p-1.5 rounded-md text-xs font-medium flex items-center justify-center transition-colors",
+                  viewMode === 'grid' ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Grid View"
+              >
+                <Grid3X3 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  "p-1.5 rounded-md text-xs font-medium flex items-center justify-center transition-colors",
+                  viewMode === 'list' ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="List View"
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Active Filters */}
+        {/* Active Filters Row */}
         {(searchTerm || selectedCategory !== 'all') && (
-          <div className="flex items-center gap-3 mt-4 flex-wrap">
-            <span className="text-sm text-muted-foreground font-medium">Active filters:</span>
+          <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+            <span className="text-2xs text-muted-foreground font-semibold uppercase tracking-wider">Filtered:</span>
             {searchTerm && (
-              <Badge variant="secondary" className="flex items-center gap-1 bg-primary/10 text-primary border-primary/20">
-                Search: "{searchTerm}"
+              <Badge variant="secondary" className="text-xs flex items-center gap-1 bg-primary/10 text-primary border-primary/20">
+                "{searchTerm}"
                 <X className="h-3 w-3 cursor-pointer ml-1 hover:text-primary/80" onClick={handleClearSearch} />
               </Badge>
             )}
             {selectedCategory !== 'all' && (
-              <Badge variant="secondary" className="flex items-center gap-1 bg-success/10 text-success border-success/20">
-                Category: {categories?.find(c => c.id === selectedCategory)?.name}
-                <X className="h-3 w-3 cursor-pointer ml-1 hover:text-success/80" onClick={() => setSelectedCategory('all')} />
+              <Badge variant="secondary" className="text-xs flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                {categories?.find(c => c.id === selectedCategory)?.name || 'Category'}
+                <X className="h-3 w-3 cursor-pointer ml-1" onClick={() => setSelectedCategory('all')} />
               </Badge>
             )}
             <Button
@@ -495,23 +478,23 @@ export function ProductGrid({ onAddToCart }) {
                 setSearchTerm('');
                 setSelectedCategory('all');
               }}
-              className="text-muted-foreground hover:text-foreground ml-auto"
+              className="text-xs h-6 px-2 text-muted-foreground hover:text-foreground ml-auto"
             >
-              Clear all
+              Reset
             </Button>
           </div>
         )}
       </div>
 
-      {/* Products Display */}
-      <ScrollArea className="flex-1" ref={containerRef}>
+      {/* Products Display Area */}
+      <div className="w-full" ref={containerRef}>
         {isLoading ? (
-          <div className="p-6">
+          <div className="p-4 sm:p-5">
             <div 
-              className="gap-5 grid"
+              className="gap-3.5 grid"
               style={{
                 gridTemplateColumns: `repeat(auto-fill, minmax(${
-                  cardSize === 'small' ? '180px' : cardSize === 'medium' ? '240px' : '300px'
+                  cardSize === 'small' ? '150px' : cardSize === 'medium' ? '190px' : '240px'
                 }, 1fr))`
               }}
             >
@@ -521,38 +504,40 @@ export function ProductGrid({ onAddToCart }) {
             </div>
           </div>
         ) : isError ? (
-          <div className="flex flex-col items-center justify-center h-96 text-center p-8">
-            <div className="p-4 bg-destructive/10 rounded-2xl mb-4">
-              <Package className="h-16 w-16 text-destructive" />
+          <div className="flex flex-col items-center justify-center h-80 text-center p-6">
+            <div className="p-3 bg-destructive/10 rounded-xl mb-3 text-destructive">
+              <Package className="h-10 w-10" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Failed to Load Products</h3>
-            <p className="text-muted-foreground mb-6 max-w-md">There was an issue loading the product catalog. Please check your connection.</p>
+            <h3 className="text-base font-semibold text-foreground mb-1">Failed to Load Products</h3>
+            <p className="text-xs text-muted-foreground mb-4 max-w-sm">There was an issue loading the product catalog. Please check your connection.</p>
             <Button 
               variant="outline" 
               onClick={refetch}
-              className="rounded-xl border-border hover:border-input"
+              size="sm"
+              className="rounded-lg border-border"
             >
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
               Retry Loading
             </Button>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-96 text-center p-8">
-            <div className="p-4 bg-primary/10 rounded-2xl mb-4">
-              <Search className="h-16 w-16 text-primary" />
+          <div className="flex flex-col items-center justify-center h-80 text-center p-6">
+            <div className="p-3 bg-muted rounded-xl mb-3 text-muted-foreground">
+              <Search className="h-10 w-10" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">No Products Found</h3>
-            <p className="text-muted-foreground mb-6 max-w-md">Try adjusting your search terms or filters to find what you're looking for.</p>
+            <h3 className="text-base font-semibold text-foreground mb-1">No Products Found</h3>
+            <p className="text-xs text-muted-foreground mb-4 max-w-sm">Try adjusting your search terms or filters to find what you're looking for.</p>
             <Button 
               variant="outline"
+              size="sm"
               onClick={() => {
                 setSearchTerm('');
                 setSelectedCategory('all');
               }}
-              className="rounded-xl border-border hover:border-input"
+              className="rounded-lg border-border"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Clear All Filters
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Clear Filters
             </Button>
           </div>
         ) : (
@@ -563,19 +548,16 @@ export function ProductGrid({ onAddToCart }) {
           )
         )}
 
-        {/* Results Count */}
+        {/* Results Count Footer */}
         {!isLoading && !isError && filteredProducts.length > 0 && (
-          <div className="p-6 text-center text-sm text-muted-foreground border-t border-border bg-background/50">
-            <div className="inline-flex items-center gap-2 bg-background px-4 py-2 rounded-full shadow-sm border border-border">
-              <Sparkles className="h-4 w-4 text-muted-foreground" />
-              Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
-              {searchTerm && (
-                <span className="text-foreground font-medium"> for "{searchTerm}"</span>
-              )}
-            </div>
+          <div className="p-3 text-center text-xs text-muted-foreground border-t border-border/80 bg-background/50">
+            <span>Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}</span>
+            {searchTerm && <span className="font-medium text-foreground"> for "{searchTerm}"</span>}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
+
+export default ProductGrid;

@@ -172,7 +172,7 @@ export const DashboardLayout = () => {
   const { websiteId, isLoading: websiteLoading } = useWebsiteData();
   const [store, setStore] = useState(null);
   const [storeLoaded, setStoreLoaded] = useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, profile } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) return;

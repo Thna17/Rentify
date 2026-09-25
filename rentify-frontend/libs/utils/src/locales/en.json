@@ -123,6 +123,8 @@
     "cash_on_delivery_subtitle": "Pay when your items arrive at your doorstep. Simple and secure.",
     "khqr_payment": "KHQR Payment",
     "khqr_payment_subtitle": "Instant bank transfer via QR code. Fast and convenient digital payment.",
+    "card_payment": "Credit / Debit Card",
+    "card_payment_subtitle": "Pay securely with Visa, Mastercard, or UnionPay.",
     "no_fees": "No fees",
     "secure": "Secure",
     "instant": "Instant",

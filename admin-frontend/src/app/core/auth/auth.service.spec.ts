@@ -37,7 +37,7 @@ describe('AuthService', () => {
     expect(service.isAdmin()).toBe(false);
   });
 
-  it('logs in successfully, saves token to localStorage, and updates auth signals', async () => {
+  it('logs in successfully using the session cookie and updates auth signals', async () => {
     const loginPromise = firstValueFrom(service.login('admin@rentify.local', 'AdminPass123!'));
 
     const req = httpTesting.expectOne('http://localhost:3001/api/auth/login');
@@ -65,7 +65,7 @@ describe('AuthService', () => {
     const result = await loginPromise;
     expect(result.user.id).toBe('admin-uuid-1');
     expect(result.user.role).toBe('ADMIN');
-    expect(localStorage.getItem('rentify_token')).toBe('mock-jwt-token-123');
+    expect(localStorage.getItem('rentify_token')).toBeNull();
     expect(service.isAuthenticated()).toBe(true);
     expect(service.isAdmin()).toBe(true);
   });
@@ -156,6 +156,11 @@ describe('AuthService', () => {
       status: 403,
     });
     expect(apiErrorMessage(customApiError)).toBe('Account suspended');
+
+    const plainApiError = new HttpErrorResponse({
+      error: { error: 'Admin sign-in required' }, status: 401,
+    });
+    expect(apiErrorMessage(plainApiError)).toBe('Admin sign-in required');
 
     expect(apiErrorMessage(new Error('Random error'), 'Default message')).toBe('Default message');
   });

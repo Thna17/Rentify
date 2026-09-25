@@ -63,7 +63,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
           <div class="owner-bar">
             <span class="owner-tag"><ui-icon name="store" [size]="13" /> Your store</span>
             <span class="owner-copy">This is how shoppers see it.</span>
-            <a class="owner-action" routerLink="/seller/dashboard">
+            <a class="owner-action" [href]="merchantDashboardUrl">
               Edit in dashboard <ui-icon name="arrow-right" [size]="14" />
             </a>
           </div>
@@ -352,6 +352,7 @@ export class StoreDetailComponent {
   private readonly auth = inject(AuthService);
   private readonly sellers = inject(SellerService);
   private readonly rentify = inject(RentifyMarketplaceService);
+  protected readonly merchantDashboardUrl = this.rentify.merchantDashboard;
   protected readonly activeCategory = signal<string | null>(null);
   protected readonly activeSection = signal<'products' | 'about' | 'reviews'>('products');
   private readonly storeId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id') ?? '')), { initialValue: this.route.snapshot.paramMap.get('id') ?? '' });

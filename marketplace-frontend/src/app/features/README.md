@@ -6,7 +6,8 @@ see its routes and implementation folders.
 - [User](./user/README.md) — buyer account, profile and order history
 - [Seller](./seller/README.md) — seller dashboard functionality
 - [Authentication](./authentication/README.md) — buyer and seller sign-in flows
-- [Admin](./admin/README.md) — administrator-only functionality
+
+Platform administration has moved to the standalone `admin-frontend` service on port 4800.
 
 Shared infrastructure stays in `../core`, and reusable presentational UI stays
 in `../shared`. Storefront pages that are being reorganized separately remain
