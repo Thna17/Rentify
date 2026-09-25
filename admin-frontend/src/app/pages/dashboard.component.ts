@@ -12,24 +12,11 @@ import { dstr, initials, money } from '../ui/format';
   imports: [StatComponent, BadgeComponent, IconComponent, BarChartComponent, LineChartComponent, RouterLink],
   template: `
   @if (d.ready()) {
-    <!-- Dashboard Header & Real-Time Operational Posture -->
+    <!-- Dashboard Header -->
     <div class="dashboard-header">
       <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
-          <h1 class="page-title">Platform Overview</h1>
-          @if (pendingActionCount() > 0) {
-            <span class="badge" style="background:#fef3c7;color:#b45309;font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border:1px solid #fde68a">
-              <span class="pulse-dot" style="background:#f59e0b;margin-top:0"></span>
-              {{pendingActionCount()}} Actions Pending
-            </span>
-          } @else {
-            <span class="badge t-green" style="font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:3px 8px">
-              <span class="pulse-dot" style="background:#16a34a;margin-top:0"></span>
-              All Operations Up To Date
-            </span>
-          }
-        </div>
-        <p class="page-sub">Operational command center for merchant storefronts and central marketplace</p>
+        <h1 class="page-title">Platform Overview</h1>
+        <p class="page-sub">Quick operational telemetry and management for storefronts and marketplace</p>
       </div>
 
       <div class="toolbar" style="margin-bottom:0">
@@ -49,120 +36,7 @@ import { dstr, initials, money } from '../ui/format';
       </div>
     </div>
 
-    <!-- Hero Operational Command: What Admin Needs To Do Right Now -->
-    @if (pendingActionCount() > 0) {
-      <div class="card action-center-card mb">
-        <div class="card-head" style="background:#fffdfa">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="stat-icon-wrap" style="background:#fef3c7;color:#b45309">
-              <kc-icon name="alert" [size]="16"></kc-icon>
-            </div>
-            <div>
-              <h3 class="card-title" style="color:#92400e;font-size:13.5px">Priority Action Inbox</h3>
-              <span class="cell-sub" style="color:#b45309">Immediate decisions required to unblock merchants & buyers</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="meta-tag" style="background:#fef3c7;color:#b45309;font-weight:600">
-              {{pendingActionCount()}} Pending Decisions
-            </span>
-            <a routerLink="/sellers" class="link" style="font-size:12px">View all in queue →</a>
-          </div>
-        </div>
-
-        <div class="action-columns">
-          <!-- Column 1: Seller Registrations Pending Approval -->
-          <div class="action-subcard">
-            <div class="action-subcard-head">
-              <div style="display:flex;align-items:center;gap:6px">
-                <kc-icon name="store" [size]="14"></kc-icon>
-                <strong>Seller Verifications</strong>
-              </div>
-              <span class="badge" [class.t-amber]="pendingSellers() > 0" [class.t-green]="pendingSellers() === 0">
-                {{pendingSellers()}} pending
-              </span>
-            </div>
-
-            @if (pendingSellerList().length === 0) {
-              <div class="action-subcard-empty">
-                <kc-icon name="check-circle" [size]="18" style="color:#16a34a"></kc-icon>
-                <span>All seller registrations approved</span>
-              </div>
-            } @else {
-              <div class="op-queue-list" style="padding:10px">
-                @for (s of pendingSellerList(); track s.id) {
-                  <div class="op-queue-item">
-                    <span class="thumb">{{initials(s.store)}}</span>
-                    <div class="op-queue-info">
-                      <div class="op-queue-title">{{s.store}}</div>
-                      <div class="op-queue-meta">{{s.email}} · Applied {{dstr(s.appliedAt)}}</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <button class="btn btn-sm btn-primary" (click)="quickApproveSeller(s.id)">
-                        Approve
-                      </button>
-                      <button class="btn btn-sm btn-default" (click)="quickRejectSeller(s.id)">
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-
-          <!-- Column 2: Buyer Disputes & Escalations -->
-          <div class="action-subcard">
-            <div class="action-subcard-head">
-              <div style="display:flex;align-items:center;gap:6px">
-                <kc-icon name="message" [size]="14"></kc-icon>
-                <strong>Disputes & Escalations</strong>
-              </div>
-              <span class="badge" [class.t-amber]="openComplaints() > 0" [class.t-green]="openComplaints() === 0">
-                {{openComplaints()}} active
-              </span>
-            </div>
-
-            @if (openComplaintList().length === 0) {
-              <div class="action-subcard-empty">
-                <kc-icon name="check-circle" [size]="18" style="color:#16a34a"></kc-icon>
-                <span>All customer disputes resolved</span>
-              </div>
-            } @else {
-              <div class="op-queue-list" style="padding:10px">
-                @for (c of openComplaintList(); track c.id) {
-                  <div class="op-queue-item" style="border-left:3px solid #f59e0b">
-                    <div class="op-queue-info">
-                      <div class="op-queue-title">{{c.subject}}</div>
-                      <div class="op-queue-meta">{{c.order}} · from {{c.from}} · {{dstr(c.date)}}</div>
-                    </div>
-                    <button class="btn btn-sm btn-default" (click)="quickResolveComplaint(c.id)">
-                      Resolve
-                    </button>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    } @else {
-      <!-- Reassuring All-Clear Banner When Zero Tasks Pending -->
-      <div class="card mb" style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:#f0fdf4;border-color:#bbf7d0">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="color:#16a34a;display:grid;place-items:center">
-            <kc-icon name="check-circle" [size]="20"></kc-icon>
-          </div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:#166534">All Operations Up To Date</div>
-            <div style="font-size:11.5px;color:#15803d">Zero pending seller applications or buyer complaints requiring review.</div>
-          </div>
-        </div>
-        <a routerLink="/sellers" class="link" style="color:#166534;font-size:12px">View seller directory →</a>
-      </div>
-    }
-
-    <!-- 4 High-Signal Core KPI Cards -->
+    <!-- 4 High-Signal Core Platform KPI Cards (Always directly below Header) -->
     <div class="grid stats mb">
       <kc-stat
         label="Total Platform Revenue"
@@ -202,126 +76,211 @@ import { dstr, initials, money } from '../ui/format';
       </kc-stat>
     </div>
 
-    <!-- Main Operational Workspace Grid (Left 65% / Right 35%) -->
+    <!-- Main Operational Workspace Grid (Left 60% / Right 40%) -->
     <div class="grid duo mb">
-      <!-- Left Column: Commerce Throughput Chart & Recent Cross-Channel Orders -->
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <!-- Interactive Financial & Order Volume Chart -->
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <h3 class="card-title">Financial & Order Volume Overview</h3>
-              <span class="cell-sub">Monthly gross sales and merchant order throughput</span>
-            </div>
-            <div class="time-tabs">
-              <button
-                class="time-tab"
-                [class.active]="chartView() === 'revenue'"
-                (click)="chartView.set('revenue')">
-                Revenue ($)
-              </button>
-              <button
-                class="time-tab"
-                [class.active]="chartView() === 'orders'"
-                (click)="chartView.set('orders')">
-                Orders
-              </button>
-            </div>
+      <!-- Left: Interactive Financial & Order Volume Chart -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Financial & Order Volume Overview</h3>
+            <span class="cell-sub">Monthly gross sales and merchant order throughput</span>
           </div>
-
-          @if (chartView() === 'revenue') {
-            <kc-line [values]="revVals()" [labels]="revLabels()"></kc-line>
-          } @else {
-            <kc-bars [data]="d.ordersSeries()"></kc-bars>
-          }
-
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--line);background:#fafafa;font-size:12px;color:var(--muted)">
-            <div><strong>ARR:</strong> {{money(monthlyArr())}}</div>
-            <div><strong>Avg Order:</strong> {{money(avgOrderValue())}}</div>
-            <div><strong>Take Rate:</strong> 8.5% Commission</div>
+          <div class="time-tabs">
+            <button
+              class="time-tab"
+              [class.active]="chartView() === 'revenue'"
+              (click)="chartView.set('revenue')">
+              Revenue ($)
+            </button>
+            <button
+              class="time-tab"
+              [class.active]="chartView() === 'orders'"
+              (click)="chartView.set('orders')">
+              Orders
+            </button>
           </div>
         </div>
 
-        <!-- Recent Cross-Channel Orders Table -->
-        <div class="card">
-          <div class="card-head">
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <h3 class="card-title">Recent Cross-Channel Orders</h3>
-              <div class="filter-tabs">
-                <button
-                  class="filter-tab"
-                  [class.active]="channelFilter() === 'all'"
-                  (click)="setChannel('all')">
-                  All
-                </button>
-                <button
-                  class="filter-tab"
-                  [class.active]="channelFilter() === 'storefront'"
-                  (click)="setChannel('storefront')">
-                  Storefront
-                </button>
-                <button
-                  class="filter-tab"
-                  [class.active]="channelFilter() === 'marketplace'"
-                  (click)="setChannel('marketplace')">
-                  Marketplace
-                </button>
-              </div>
-              <input
-                class="input input-search"
-                style="width:160px;padding:3px 8px;font-size:11.5px"
-                placeholder="Filter order or customer..."
-                [value]="orderFilter()"
-                (input)="orderFilter.set($any($event.target).value)" />
-            </div>
-            <a class="link" routerLink="/orders">All Orders ({{d.orders().length}}) →</a>
-          </div>
+        @if (chartView() === 'revenue') {
+          <kc-line [values]="revVals()" [labels]="revLabels()"></kc-line>
+        } @else {
+          <kc-bars [data]="d.ordersSeries()"></kc-bars>
+        }
 
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Channel</th>
-                <th class="right">Total</th>
-                <th>Payment</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (o of filteredOrders(); track o.id) {
-                <tr>
-                  <td class="cell-main">{{o.id}}</td>
-                  <td>{{o.buyer}}</td>
-                  <td>
-                    <span
-                      class="channel-pill"
-                      [class.channel-storefront]="isStorefront(o.id)"
-                      [class.channel-marketplace]="!isStorefront(o.id)">
-                      {{isStorefront(o.id) ? 'Storefront' : 'Marketplace'}}
-                    </span>
-                  </td>
-                  <td class="num">{{money(o.total)}}</td>
-                  <td><kc-badge [value]="o.payment"></kc-badge></td>
-                  <td><kc-badge [value]="o.status"></kc-badge></td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6">
-                    <div class="empty">No orders found matching your filter criteria.</div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          <div style="padding:10px 18px;border-top:1px solid var(--line);background:#fafafa;font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between">
-            <span>Showing {{filteredOrders().length}} of {{d.orders().length}} recent orders</span>
-            <a routerLink="/orders" class="link">View complete order ledger →</a>
-          </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--line);background:#fafafa;font-size:12px;color:var(--muted)">
+          <div><strong>ARR:</strong> {{money(monthlyArr())}}</div>
+          <div><strong>Avg Order:</strong> {{money(avgOrderValue())}}</div>
+          <div><strong>Take Rate:</strong> 8.5% Commission</div>
         </div>
       </div>
 
-      <!-- Right Column: Operational Risk Watchlist & Catalog Drivers -->
+      <!-- Right: Action Required Queue (Operations Command) -->
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div class="card-head">
+            <h3 class="card-title">Action Queue</h3>
+            <div class="filter-tabs">
+              <button
+                class="filter-tab"
+                [class.active]="queueFilter() === 'all'"
+                (click)="setQueueFilter('all')">
+                All ({{pendingActionCount()}})
+              </button>
+              <button
+                class="filter-tab"
+                [class.active]="queueFilter() === 'sellers'"
+                (click)="setQueueFilter('sellers')">
+                Sellers ({{pendingSellers()}})
+              </button>
+              <button
+                class="filter-tab"
+                [class.active]="queueFilter() === 'disputes'"
+                (click)="setQueueFilter('disputes')">
+                Disputes ({{openComplaints()}})
+              </button>
+            </div>
+          </div>
+
+          <div class="op-queue-list" style="max-height:295px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:12px 16px">
+            @if (pendingActionCount() === 0) {
+              <div style="text-align:center;padding:36px 16px;color:var(--muted)">
+                <div style="color:#16a34a;margin-bottom:8px">
+                  <kc-icon name="check-circle" [size]="28"></kc-icon>
+                </div>
+                <div style="font-weight:600;font-size:13.5px;color:var(--ink)">Queue is clear!</div>
+                <div style="font-size:12px;margin-top:2px">All seller applications approved and customer disputes resolved.</div>
+              </div>
+            }
+
+            <!-- Seller items -->
+            @if (queueFilter() === 'all' || queueFilter() === 'sellers') {
+              @for (s of pendingSellerList(); track s.id) {
+                <div class="op-queue-item">
+                  <span class="thumb">{{initials(s.store)}}</span>
+                  <div class="op-queue-info">
+                    <div class="op-queue-title">{{s.store}}</div>
+                    <div class="op-queue-meta">New Seller · {{s.email}} · {{dstr(s.appliedAt)}}</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <button class="btn btn-sm btn-primary" (click)="quickApproveSeller(s.id)">
+                      Approve
+                    </button>
+                    <button class="btn btn-sm btn-default" (click)="quickRejectSeller(s.id)">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Dispute items -->
+            @if (queueFilter() === 'all' || queueFilter() === 'disputes') {
+              @for (c of openComplaintList(); track c.id) {
+                <div class="op-queue-item" style="border-left:3px solid #f59e0b">
+                  <span class="thumb" style="background:#fef3c7;color:#b45309">
+                    <kc-icon name="message" [size]="14"></kc-icon>
+                  </span>
+                  <div class="op-queue-info">
+                    <div class="op-queue-title">{{c.subject}}</div>
+                    <div class="op-queue-meta">{{c.order}} · from {{c.from}} · {{dstr(c.date)}}</div>
+                  </div>
+                  <button class="btn btn-sm btn-default" (click)="quickResolveComplaint(c.id)">
+                    Resolve
+                  </button>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <div style="padding:10px 18px;border-top:1px solid var(--line);background:#fafafa;font-size:11.5px;color:var(--muted);display:flex;align-items:center;justify-content:space-between">
+          <span>Priority action queue</span>
+          <a routerLink="/sellers" class="link">Manage all sellers & disputes →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Operational Grid: Orders Ledger & Inventory Alerts -->
+    <div class="grid duo mb">
+      <!-- Left Column: Recent Cross-Channel Orders Table -->
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <h3 class="card-title">Recent Cross-Channel Orders</h3>
+            <div class="filter-tabs">
+              <button
+                class="filter-tab"
+                [class.active]="channelFilter() === 'all'"
+                (click)="setChannel('all')">
+                All
+              </button>
+              <button
+                class="filter-tab"
+                [class.active]="channelFilter() === 'storefront'"
+                (click)="setChannel('storefront')">
+                Storefront
+              </button>
+              <button
+                class="filter-tab"
+                [class.active]="channelFilter() === 'marketplace'"
+                (click)="setChannel('marketplace')">
+                Marketplace
+              </button>
+            </div>
+            <input
+              class="input input-search"
+              style="width:160px;padding:3px 8px;font-size:11.5px"
+              placeholder="Filter order or customer..."
+              [value]="orderFilter()"
+              (input)="orderFilter.set($any($event.target).value)" />
+          </div>
+          <a class="link" routerLink="/orders">All Orders ({{d.orders().length}}) →</a>
+        </div>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Channel</th>
+              <th class="right">Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of filteredOrders(); track o.id) {
+              <tr>
+                <td class="cell-main">{{o.id}}</td>
+                <td>{{o.buyer}}</td>
+                <td>
+                  <span
+                    class="channel-pill"
+                    [class.channel-storefront]="isStorefront(o.id)"
+                    [class.channel-marketplace]="!isStorefront(o.id)">
+                    {{isStorefront(o.id) ? 'Storefront' : 'Marketplace'}}
+                  </span>
+                </td>
+                <td class="num">{{money(o.total)}}</td>
+                <td><kc-badge [value]="o.payment"></kc-badge></td>
+                <td><kc-badge [value]="o.status"></kc-badge></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="empty">No orders found matching your filter criteria.</div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div style="padding:10px 18px;border-top:1px solid var(--line);background:#fafafa;font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between">
+          <span>Showing {{filteredOrders().length}} of {{d.orders().length}} recent orders</span>
+          <a routerLink="/orders" class="link">View complete order ledger →</a>
+        </div>
+      </div>
+
+      <!-- Right Column: Low Stock Alerts & Top Grossing Products -->
       <div style="display:flex;flex-direction:column;gap:14px">
         <!-- Critical Low-Stock Inventory Watchlist -->
         <div class="card">
@@ -419,6 +378,7 @@ export class DashboardComponent {
   chartView = signal<'revenue' | 'orders'>('revenue');
   orderFilter = signal('');
   channelFilter = signal<'all' | 'storefront' | 'marketplace'>('all');
+  queueFilter = signal<'all' | 'sellers' | 'disputes'>('all');
 
   setTimeRange(r: 'today' | '7d' | '30d' | '90d') {
     this.selectedRange.set(r);
@@ -426,6 +386,10 @@ export class DashboardComponent {
 
   setChannel(ch: 'all' | 'storefront' | 'marketplace') {
     this.channelFilter.set(ch);
+  }
+
+  setQueueFilter(f: 'all' | 'sellers' | 'disputes') {
+    this.queueFilter.set(f);
   }
 
   isStorefront(orderId: string): boolean {
