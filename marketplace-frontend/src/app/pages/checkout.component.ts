@@ -18,24 +18,46 @@ import { FooterComponent } from '../components/shared/layout/footer/footer.compo
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
 interface PaymentOption {
-  value: PaymentMethod;
+  value: PaymentMethod | 'KHQR' | 'CARD';
   label: string;
   hint: string;
   icon: string;
+  status: 'active' | 'coming_soon';
+  badge?: string;
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
   {
     value: 'COD',
     label: 'Cash on delivery',
-    hint: 'Pay the courier when your order arrives.',
+    hint: 'Pay the courier when your order arrives. Active & available now.',
     icon: 'banknote',
+    status: 'active',
+    badge: 'Available',
+  },
+  {
+    value: 'KHQR',
+    label: 'Bakong KHQR (Scan to Pay)',
+    hint: 'Scan with ABA, Canadia, Wing, ACLEDA, or any Bakong-supported banking app.',
+    icon: 'qr-code',
+    status: 'coming_soon',
+    badge: 'Coming Soon',
   },
   {
     value: 'ABA_PAYWAY',
     label: 'ABA PayWay',
-    hint: 'Card, KHQR, or ABA account — pay now on ABA’s secure page.',
+    hint: 'Instant payment via ABA Mobile app or online PayWay account.',
+    icon: 'wallet',
+    status: 'coming_soon',
+    badge: 'Coming Soon',
+  },
+  {
+    value: 'CARD',
+    label: 'Credit / Debit Card',
+    hint: 'Pay securely with Visa, Mastercard, or UnionPay cards.',
     icon: 'credit-card',
+    status: 'coming_soon',
+    badge: 'Coming Soon',
   },
 ];
 
@@ -136,28 +158,44 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 
               <div class="payments">
                 @for (option of paymentOptions; track option.value) {
-                  <label class="payment" [class.selected]="method() === option.value">
+                  <label
+                    class="payment"
+                    [class.selected]="method() === option.value"
+                    [class.coming-soon]="option.status === 'coming_soon'"
+                    (click)="selectMethod(option)"
+                  >
                     <input
                       type="radio"
                       name="paymentMethod"
                       [value]="option.value"
                       [checked]="method() === option.value"
-                      (change)="method.set(option.value)"
+                      (change)="selectMethod(option)"
                     />
-                    <ui-icon [name]="option.icon" [size]="18" />
-                    <div>
-                      <strong>{{ option.label }}</strong>
+                    <ui-icon [name]="option.icon" [size]="20" />
+                    <div class="payment-info">
+                      <div class="payment-title-row">
+                        <strong>{{ option.label }}</strong>
+                        @if (option.badge) {
+                          <span
+                            class="pay-badge"
+                            [class.pay-badge-active]="option.status === 'active'"
+                            [class.pay-badge-soon]="option.status === 'coming_soon'"
+                          >
+                            {{ option.badge }}
+                          </span>
+                        }
+                      </div>
                       <small>{{ option.hint }}</small>
                     </div>
                   </label>
                 }
               </div>
 
-              @if (method() === 'ABA_PAYWAY') {
-                <p class="sandbox-note">
-                  <ui-icon name="info" [size]="13" />
-                  You'll be sent to ABA's secure page to pay, then brought back here.
-                </p>
+              @if (selectedNotice()) {
+                <div class="payment-notice">
+                  <ui-icon name="info" [size]="15" />
+                  <span>{{ selectedNotice() }}</span>
+                </div>
               }
             </section>
           </form>
@@ -311,37 +349,82 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
       }
       .payment {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 12px;
         padding: 13px 15px;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
         cursor: pointer;
         font-weight: 500;
+        transition: all 140ms ease;
       }
       .payment.selected {
         border-color: var(--color-accent);
         background: var(--color-accent-soft);
       }
-      .payment div {
+      .payment.coming-soon {
+        border-style: dashed;
+        background: rgba(245, 240, 230, 0.45);
+      }
+      .payment.coming-soon:hover {
+        border-color: #d9bd8b;
+        background: rgba(245, 240, 230, 0.75);
+      }
+      .payment input[type='radio'] {
+        margin-top: 3px;
+      }
+      .payment ui-icon {
+        margin-top: 1px;
+      }
+      .payment-info {
         display: flex;
         flex-direction: column;
+        flex: 1;
+      }
+      .payment-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
       }
       .payment strong {
         font-size: 14px;
+      }
+      .pay-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+      .pay-badge-active {
+        background: #e6f4ea;
+        color: #137333;
+      }
+      .pay-badge-soon {
+        background: #fef7e0;
+        color: #b06000;
+        border: 1px solid rgba(176, 96, 0, 0.2);
       }
       .payment small {
         color: var(--color-muted);
         font-size: 12px;
         font-weight: 400;
+        margin-top: 2px;
       }
-      .sandbox-note {
+      .payment-notice {
         display: flex;
         align-items: center;
-        gap: 7px;
-        margin-top: 12px;
-        color: var(--color-muted);
-        font-size: 12px;
+        gap: 8px;
+        margin-top: 14px;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        background: #fff8e6;
+        border: 1px solid #f0dc9e;
+        color: #8c5b00;
+        font-size: 12.5px;
+        line-height: 1.4;
       }
       .summary {
         padding: 20px 22px;
@@ -442,8 +525,21 @@ export class CheckoutComponent {
 
   protected readonly paymentOptions = PAYMENT_OPTIONS;
   protected readonly method = signal<PaymentMethod>('COD');
+  protected readonly selectedNotice = signal<string>('');
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
+
+  protected selectMethod(option: PaymentOption): void {
+    if (option.status === 'coming_soon') {
+      this.selectedNotice.set(
+        `${option.label} is coming soon to Rentify Marketplace! For your order today, Cash on Delivery is selected and ready to proceed.`
+      );
+      this.method.set('COD');
+    } else {
+      this.selectedNotice.set('');
+      this.method.set(option.value as PaymentMethod);
+    }
+  }
   protected readonly shipmentGroups = computed(() => {
     const groups = new Map<string, { storeId: string; sellerName: string; lines: CartLine[] }>();
     for (const line of this.cart.lines()) {
