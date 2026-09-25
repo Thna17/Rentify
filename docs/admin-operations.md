@@ -8,7 +8,9 @@ marketplace and payment rules take precedence over that storefront-only model.
 
 - One protected Angular admin surface replaces the earlier mock-only routed
   pages. Core verifies admin identity; Commerce validates that Core identity
-  before serving its admin reads.
+  before serving its admin reads. The admin browser client sends the shared
+  session cookie to both APIs; an old bearer token in browser storage does
+  not override that session.
 - The overview shows live operational counts from each authority, with
   unavailable values hidden if either API fails. COD order totals are not
   platform revenue.

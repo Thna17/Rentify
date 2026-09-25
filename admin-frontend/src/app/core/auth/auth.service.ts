@@ -38,11 +38,6 @@ export class AuthService {
       )
       .pipe(
         map((res) => {
-          if (res?.data?.accessToken && typeof localStorage !== 'undefined') {
-            try {
-              localStorage.setItem('rentify_token', res.data.accessToken);
-            } catch {}
-          }
           const u = res?.data?.user;
           const authUser: AuthUser = {
             id: u?.id || '',
@@ -125,7 +120,10 @@ export const apiErrorMessage = (
   fallback = 'Something went wrong. Please try again.',
 ) => {
   if (error instanceof HttpErrorResponse) {
-    return (error.error as ApiError | undefined)?.error?.message ?? (error.error as any)?.message ?? fallback;
+    const body = error.error as (ApiError & { error?: { message?: string } | string; message?: string }) | null;
+    if (typeof body?.error === 'string') return body.error;
+    return body?.error?.message ?? body?.message ??
+      (error.status === 0 ? 'Cannot reach the API. Check that the service is running.' : fallback);
   }
   return fallback;
 };

@@ -7,7 +7,9 @@ const createVerifyCoreAdmin = ({ validate = (accessToken, refreshToken) => axios
 ) } = {}) => async (req, res, next) => {
   const authorization = req.headers?.authorization || '';
   const bearer = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : null;
-  const accessToken = bearer || req.cookies?.userAccessToken;
+  // Core uses the session cookie before a bearer token. Match that order so an
+  // old token left in browser storage cannot override a valid admin session.
+  const accessToken = req.cookies?.userAccessToken || bearer;
   const refreshToken = req.cookies?.userRefreshToken;
   if (!accessToken && !refreshToken) return res.status(401).json({ error: 'Admin sign-in required' });
   let result;
