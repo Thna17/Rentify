@@ -92,7 +92,7 @@ import { Product } from '../core/catalog/catalog.models';
                       [attr.aria-pressed]="chosenVariantLabel(p) === variant.label"
                       [title]="variant.label"
                     >
-                      <img [src]="variant.image" alt="" />
+                      <span class="swatch-dot" [style.background]="swatchColor(variant.label)"></span>
                     </button>
                   }
                 </div>
@@ -268,13 +268,15 @@ import { Product } from '../core/catalog/catalog.models';
       .variant-chosen { color: var(--color-text); margin-left: 8px; text-transform: none; }
       .swatches { display: flex; flex-wrap: wrap; gap: 9px; }
       .swatch {
-        background: var(--color-bg-alt); border: 2px solid var(--color-border);
-        border-radius: 50%; cursor: pointer; height: 46px; width: 46px;
-        overflow: hidden; padding: 0;
+        background: none; border: 2px solid transparent; border-radius: 50%; cursor: pointer;
+        height: 38px; width: 38px; padding: 3px;
         transition: border-color 150ms ease, transform 150ms ease;
       }
-      .swatch img { display: block; width: 100%; height: 100%; object-fit: cover; }
-      .swatch:hover { border-color: var(--color-muted); transform: scale(1.04); }
+      .swatch-dot {
+        display: block; width: 100%; height: 100%; border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, .12); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5);
+      }
+      .swatch:hover { transform: scale(1.08); }
       .swatch.active { border-color: var(--color-accent); }
 
       .product-layout {
@@ -508,6 +510,21 @@ export class ProductDetailComponent {
   protected pickImage(image: string): void {
     this.pinnedImage.set(image);
     this.pinnedVariant.set(null);
+  }
+
+  /** Real swatch colour for a variant label. Multi-word / unknown labels
+   *  fall back to a neutral grey rather than guessing wrong. */
+  private static readonly COLOR_MAP: Record<string, string> = {
+    black: '#1c1c1e', white: '#f5f5f7', silver: '#e3e4e6', gold: '#f0dfc0',
+    red: '#d6362c', blue: '#3f6fd1', green: '#4f8f5b', purple: '#8a63d2',
+    pink: '#e58fb0', yellow: '#f2cf4a', orange: '#e08a3c', burgundy: '#5c2331',
+    glacier: '#dfe6ea', lavender: '#c9b8e8', sage: '#a9b598',
+    'cloud white': '#f2f1ec', 'light gold': '#e9dcc0', 'sky blue': '#a9c6de',
+    'space black': '#2b2b2e',
+  };
+
+  protected swatchColor(label: string): string {
+    return ProductDetailComponent.COLOR_MAP[label.toLowerCase()] ?? '#c7c7cc';
   }
 
   protected pickVariant(variant: { label: string; image: string }): void {
