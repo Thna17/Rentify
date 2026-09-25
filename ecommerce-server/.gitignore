@@ -64,7 +64,6 @@ coverage/
 *.patch
 
 # Generated files by npm or yarn
-package-lock.json
 yarn.lock
 
 # Cache directories
