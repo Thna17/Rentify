@@ -8,15 +8,23 @@ const { StoreAccess, StoreDeliveryPolicy, Product } = require('../models');
 
 const CDN = 'https://res.cloudinary.com/druevh9no/image/upload';
 
-// ─── Owner UUIDs (must match seedFourStores.js) ──────────────────────────────
+// ─── Owner UUIDs & Store UUIDs (must match rentify-server/scripts/seedFourStores.js) ──
 const CLOTH_OWNER    = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const CLOTH_STORE_ID = '4c5925a8-2eeb-405e-8525-1be9f3cd58be';
+
 const PHONE_OWNER    = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-const SCHOOL_OWNER   = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const SKINCARE_OWNER = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const PHONE_STORE_ID = 'c8daaa56-4e64-4907-9857-1b6c49ccb0ec';
+
+const SCHOOL_OWNER    = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const SCHOOL_STORE_ID = '56674a8e-5fec-4328-8130-ada835828cc9';
+
+const SKINCARE_OWNER    = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const SKINCARE_STORE_ID = '688a5f23-79df-4bc0-bd09-f53145084491';
 
 // ─── Product catalogue with real Cloudinary image URLs ───────────────────────
 const CATALOGUE = {
   [CLOTH_OWNER]: {
+    storeId: CLOTH_STORE_ID,
     primaryCategory: 'Fashion',
     products: [
       { name: 'Casual Summer Dress',          price: 18.99, compareAtPrice: 24.99, marketplaceCategory: "Women's Clothing",  websiteNiche: 'fashion',     productType: 'clothing',  images: [`${CDN}/v1790266860/rentify/marketplace/cloth-store/yvpwdvnefsvvbzz9vmpn.jpg`, `${CDN}/v1790266861/rentify/marketplace/cloth-store/pbizpqaol5qcuabrhtzs.jpg`, `${CDN}/v1790266862/rentify/marketplace/cloth-store/x0h0poeazoivxzubeawf.jpg`, `${CDN}/v1790266863/rentify/marketplace/cloth-store/x5rjrwj48k8bvnkiawox.jpg`] },
@@ -31,6 +39,7 @@ const CATALOGUE = {
   },
 
   [PHONE_OWNER]: {
+    storeId: PHONE_STORE_ID,
     primaryCategory: 'Electronics',
     products: [
       { name: 'iPhone 11',       price: 329.00, compareAtPrice: 399.00, marketplaceCategory: 'Phones & Devices', websiteNiche: 'electronics', productType: 'device', images: [`${CDN}/v1790266878/rentify/marketplace/phone-store/ypnbwltakjfxmhqdvozs.webp`, `${CDN}/v1790266879/rentify/marketplace/phone-store/bxkmpqfzdnyhoujcswvt.jpg`, `${CDN}/v1790266880/rentify/marketplace/phone-store/qjzxnbmkpvdswtyhcfuo.jpg`, `${CDN}/v1790266881/rentify/marketplace/phone-store/uwfjpkdzbmynhocsvqxt.jpg`] },
@@ -45,6 +54,7 @@ const CATALOGUE = {
   },
 
   [SCHOOL_OWNER]: {
+    storeId: SCHOOL_STORE_ID,
     primaryCategory: 'Other',
     products: [
       { name: 'Pilot FriXion Erasable Gel Pen Set (10-Pack)', price: 12.99, compareAtPrice: 16.99, marketplaceCategory: 'Stationery',       websiteNiche: 'ecommerce', productType: 'physical', images: [`${CDN}/v1790266888/rentify/marketplace/school-supply-store/wgfsmnwrfgsw1tyatabs.webp`, `${CDN}/v1790266889/rentify/marketplace/school-supply-store/fwtbthpedmyjrtqcn873.webp`, `${CDN}/v1790266890/rentify/marketplace/school-supply-store/sukozoks870ivrooy1uu.webp`] },
@@ -59,6 +69,7 @@ const CATALOGUE = {
   },
 
   [SKINCARE_OWNER]: {
+    storeId: SKINCARE_STORE_ID,
     primaryCategory: 'Beauty & Skincare',
     products: [
       { name: 'Lux Botanicals Magical Orchid Body Wash',   price: 6.99,  compareAtPrice: 9.99,  marketplaceCategory: 'Body Care',  websiteNiche: 'skincare', productType: 'cleanser',  images: [`${CDN}/v1790266901/rentify/marketplace/skincare-store/xikka8m8gftnnlhqoyip.webp`, `${CDN}/v1790266902/rentify/marketplace/skincare-store/limgftuciwexowhysdoj.webp`] },
@@ -78,18 +89,51 @@ const CATALOGUE = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-async function ensureStoreAccess(ownerUserId, primaryCategory) {
-  const sa = await StoreAccess.findOne({ where: { ownerUserId } });
-  if (!sa) return null;
-  await sa.update({ primaryCategory, needsCategoryReview: false, marketplaceEnabled: true, marketplaceApprovalStatus: 'approved', status: 'active', marketplaceEntitlement: 'pilot' });
+async function ensureStoreAccess(storeId, ownerUserId, primaryCategory) {
+  let sa = await StoreAccess.findByPk(storeId);
+  const payload = {
+    storeId,
+    ownerUserId,
+    websiteId: null,
+    primaryCategory,
+    needsCategoryReview: false,
+    marketplaceEnabled: true,
+    marketplaceApprovalStatus: 'approved',
+    status: 'active',
+    version: 1,
+    marketplaceEntitlement: 'pilot',
+  };
+
+  if (!sa) {
+    // Check if there is an existing StoreAccess with this ownerUserId
+    const existing = await StoreAccess.findOne({ where: { ownerUserId } });
+    if (existing) {
+      await existing.update(payload);
+      sa = existing;
+      console.log(`  ⚡ Updated existing StoreAccess for ${primaryCategory} (${sa.storeId})`);
+    } else {
+      sa = await StoreAccess.create(payload);
+      console.log(`  ✅ Created StoreAccess for ${primaryCategory} (${storeId})`);
+    }
+  } else {
+    await sa.update(payload);
+    console.log(`  ⚡ Updated StoreAccess for ${primaryCategory} (${storeId})`);
+  }
   return sa.storeId;
 }
 
 async function ensureDeliveryPolicy(storeId) {
-  await StoreDeliveryPolicy.findOrCreate({
-    where: { storeId },
-    defaults: { storeId, flatFee: '2.00', currency: 'USD', version: 1 },
-  });
+  let policy = await StoreDeliveryPolicy.findByPk(storeId);
+  if (!policy) {
+    await StoreDeliveryPolicy.create({
+      storeId,
+      flatFee: '2.00',
+      currency: 'USD',
+      version: 1,
+    });
+  } else {
+    await policy.update({ flatFee: '2.00', currency: 'USD' });
+  }
 }
 
 async function upsertProduct(storeId, p) {
@@ -97,10 +141,26 @@ async function upsertProduct(storeId, p) {
   const existing = await Product.findOne({ where: { storeId, name: p.name } });
   if (existing) {
     // Update images to ensure real Cloudinary URLs are always used
-    await existing.update({ images, status: 'active', stockQuantity: 100, marketplaceVisibility: true });
+    await existing.update({
+      images,
+      price: p.price,
+      compareAtPrice: p.compareAtPrice,
+      marketplaceCategory: p.marketplaceCategory,
+      status: 'active',
+      stockQuantity: 100,
+      marketplaceVisibility: true,
+    });
     return false;
   }
-  await Product.create({ ...p, images, storeId, websiteId: null, marketplaceVisibility: true, status: 'active', stockQuantity: 100 });
+  await Product.create({
+    ...p,
+    images,
+    storeId,
+    websiteId: null,
+    marketplaceVisibility: true,
+    status: 'active',
+    stockQuantity: 100,
+  });
   return true;
 }
 
@@ -109,11 +169,7 @@ async function seedFourStoresProducts() {
   console.log('🛍  Seeding 4-store marketplace products (Cloudinary images)...');
 
   for (const [ownerUserId, store] of Object.entries(CATALOGUE)) {
-    const storeId = await ensureStoreAccess(ownerUserId, store.primaryCategory);
-    if (!storeId) {
-      console.log(`  ⚠️  StoreAccess not found for ${store.primaryCategory} store — run core seed first`);
-      continue;
-    }
+    const storeId = await ensureStoreAccess(store.storeId, ownerUserId, store.primaryCategory);
     await ensureDeliveryPolicy(storeId);
     console.log(`  📦 ${store.primaryCategory} store (${storeId})`);
     for (const p of store.products) {
@@ -123,17 +179,12 @@ async function seedFourStoresProducts() {
   }
 
   // Fix any out_of_stock caused by zero-stock hook
-  const storeIds = await StoreAccess.findAll({
-    where: { ownerUserId: [CLOTH_OWNER, PHONE_OWNER, SCHOOL_OWNER, SKINCARE_OWNER] },
-    attributes: ['storeId'],
-  }).then(rows => rows.map(r => r.storeId));
+  const targetStoreIds = [CLOTH_STORE_ID, PHONE_STORE_ID, SCHOOL_STORE_ID, SKINCARE_STORE_ID];
 
-  if (storeIds.length > 0) {
-    await sequelize.query(
-      'UPDATE Products SET status = ?, stockQuantity = ?, updatedAt = NOW() WHERE storeId IN (?) AND status = ?',
-      { replacements: ['active', 100, storeIds, 'out_of_stock'] }
-    );
-  }
+  await sequelize.query(
+    'UPDATE Products SET status = ?, stockQuantity = ?, updatedAt = NOW() WHERE storeId IN (?) AND (status != ? OR stockQuantity <= 0)',
+    { replacements: ['active', 100, targetStoreIds, 'active'] }
+  );
 
   console.log('✅ 4-store marketplace products seeded with real Cloudinary images');
 }
