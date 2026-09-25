@@ -1,10 +1,16 @@
 // ecommerce-server/scripts/seedFourStoresProducts.js
 // Seeds StoreAccess, StoreDeliveryPolicy, and Products for 4 marketplace-only stores.
 // Uses direct Unsplash image URLs with { url, alt } matching the pattern used by NexTech Electronics (:4600).
-// Reliable on every machine, in Docker, and on clean installs with zero external configuration.
+// Multiple high-resolution angles/shots per product for rich marketplace presentation.
 
 const { sequelize } = require('../config/db');
 const { StoreAccess, StoreDeliveryPolicy, Product } = require('../models');
+
+// Helper to construct fast, responsive Unsplash image objects
+const img = (id, alt) => ({
+  url: `https://images.unsplash.com/${id}?w=800&auto=format&fit=crop&q=80`,
+  alt,
+});
 
 // ─── Owner UUIDs & Store UUIDs (must match rentify-server/scripts/seedFourStores.js) ──
 const CLOTH_OWNER    = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -32,7 +38,11 @@ const CATALOGUE = {
         marketplaceCategory: "Women's Clothing",
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&auto=format&fit=crop&q=80', alt: 'Casual Summer Dress' }],
+        images: [
+          img('photo-1515372039744-b8f02a3ae446', 'Casual Summer Dress - Front View'),
+          img('photo-1496747611176-843222e1e57c', 'Casual Summer Dress - Lifestyle'),
+          img('photo-1572804013309-59a88b7e92f1', 'Casual Summer Dress - Detail'),
+        ],
       },
       {
         name: 'Classic White Button-Up Shirt',
@@ -41,7 +51,11 @@ const CATALOGUE = {
         marketplaceCategory: "Women's Clothing",
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80', alt: 'Classic White Button-Up Shirt' }],
+        images: [
+          img('photo-1598033129183-c4f50c736f10', 'Classic White Button-Up Shirt - Front'),
+          img('photo-1602810318383-e386cc2a3ccf', 'Classic White Button-Up Shirt - Model'),
+          img('photo-1620799140408-edc6dcb6d633', 'Classic White Button-Up Shirt - Flat Lay'),
+        ],
       },
       {
         name: 'Slim Fit Jeans',
@@ -50,7 +64,10 @@ const CATALOGUE = {
         marketplaceCategory: "Men's Clothing",
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80', alt: 'Slim Fit Jeans' }],
+        images: [
+          img('photo-1541099649105-f69ad21f3246', 'Slim Fit Jeans - Blue Denim'),
+          img('photo-1576995853123-5a10305d93c0', 'Slim Fit Jeans - Back Pocket Detail'),
+        ],
       },
       {
         name: 'Floral Midi Skirt',
@@ -59,7 +76,10 @@ const CATALOGUE = {
         marketplaceCategory: "Women's Clothing",
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80', alt: 'Floral Midi Skirt' }],
+        images: [
+          img('photo-1583496661160-fb5886a0aaaa', 'Floral Midi Skirt - Front'),
+          img('photo-1577900232427-18219b9166a0', 'Floral Midi Skirt - Style View'),
+        ],
       },
       {
         name: 'Oversized Hoodie',
@@ -68,7 +88,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Unisex Clothing',
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80', alt: 'Oversized Hoodie' }],
+        images: [
+          img('photo-1556905055-8f358a7a47b2', 'Oversized Hoodie - Front'),
+          img('photo-1509967419530-da38b4704bc6', 'Oversized Hoodie - Streetwear Fit'),
+        ],
       },
       {
         name: 'Linen Co-ord Set',
@@ -77,7 +100,10 @@ const CATALOGUE = {
         marketplaceCategory: "Women's Clothing",
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80', alt: 'Linen Co-ord Set' }],
+        images: [
+          img('photo-1509631179647-0177331693ae', 'Linen Co-ord Set - Natural Tone'),
+          img('photo-1515886657613-9f3515b0c78f', 'Linen Co-ord Set - Fashion View'),
+        ],
       },
       {
         name: 'Athletic Shorts',
@@ -86,7 +112,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Activewear',
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80', alt: 'Athletic Shorts' }],
+        images: [
+          img('photo-1591195853828-11db59a44f6b', 'Athletic Shorts - Activewear'),
+          img('photo-1506152983158-b4a74a01c721', 'Athletic Shorts - Training Fit'),
+        ],
       },
       {
         name: 'Polo Shirt',
@@ -95,7 +124,10 @@ const CATALOGUE = {
         marketplaceCategory: "Men's Clothing",
         websiteNiche: 'fashion',
         productType: 'clothing',
-        images: [{ url: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&auto=format&fit=crop&q=80', alt: 'Polo Shirt' }],
+        images: [
+          img('photo-1581655353564-df123a1eb820', 'Polo Shirt - Classic Fit'),
+          img('photo-1521572267360-ee0c2909d518', 'Polo Shirt - Casual Style'),
+        ],
       },
     ],
   },
@@ -111,7 +143,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 11' }],
+        images: [
+          img('photo-1574944985070-8f3ebc6b79d2', 'iPhone 11 - Display View'),
+          img('photo-1565849904461-04a58ad377e0', 'iPhone 11 - In Hand'),
+        ],
       },
       {
         name: 'iPhone 12',
@@ -120,7 +155,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 12' }],
+        images: [
+          img('photo-1605236453806-6ff36851218e', 'iPhone 12 - Pacific Blue'),
+          img('photo-1591337676887-a217a6970a8a', 'iPhone 12 - Dual Camera Detail'),
+        ],
       },
       {
         name: 'iPhone 14 Pro Max',
@@ -129,7 +167,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 14 Pro Max' }],
+        images: [
+          img('photo-1695048133142-1a20484d2569', 'iPhone 14 Pro Max - Front Display'),
+          img('photo-1511707171634-5f897ff02aa9', 'iPhone 14 Pro Max - Triple Camera Array'),
+        ],
       },
       {
         name: 'iPhone 16',
@@ -138,7 +179,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 16' }],
+        images: [
+          img('photo-1510557880182-3d4d3cba35a5', 'iPhone 16 - Modern Titanium Finish'),
+          img('photo-1580910051074-3eb694886505', 'iPhone 16 - Side Profile'),
+        ],
       },
       {
         name: 'iPhone 15 Pro Max',
@@ -147,7 +191,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 15 Pro Max' }],
+        images: [
+          img('photo-1695048133142-1a20484d2569', 'iPhone 15 Pro Max - Natural Titanium'),
+          img('photo-1603791440384-56cd371ee9a7', 'iPhone 15 Pro Max - Pro Camera System'),
+        ],
       },
       {
         name: 'iPhone 12 Pro Max',
@@ -156,7 +203,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 12 Pro Max' }],
+        images: [
+          img('photo-1603791440384-56cd371ee9a7', 'iPhone 12 Pro Max - Premium Finish'),
+          img('photo-1605236453806-6ff36851218e', 'iPhone 12 Pro Max - Back Housing'),
+        ],
       },
       {
         name: 'iPhone 13',
@@ -165,7 +215,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 13' }],
+        images: [
+          img('photo-1592750475338-74b7b21085ab', 'iPhone 13 - Midnight Black'),
+          img('photo-1530319067432-f2a729c03db5', 'iPhone 13 - Starlight White'),
+        ],
       },
       {
         name: 'iPhone 17 Air',
@@ -174,7 +227,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Phones & Devices',
         websiteNiche: 'electronics',
         productType: 'device',
-        images: [{ url: 'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=800&auto=format&fit=crop&q=80', alt: 'iPhone 17 Air' }],
+        images: [
+          img('photo-1565849904461-04a58ad377e0', 'iPhone 17 Air - Ultra Slim Chassis'),
+          img('photo-1510557880182-3d4d3cba35a5', 'iPhone 17 Air - Edge-to-Edge OLED'),
+        ],
       },
     ],
   },
@@ -190,7 +246,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Stationery',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?w=800&auto=format&fit=crop&q=80', alt: 'Pilot FriXion Erasable Gel Pen Set' }],
+        images: [
+          img('photo-1585776245991-cf89dd7fc73a', 'Pilot FriXion Erasable Gel Pens - Pack'),
+          img('photo-1583485088034-697b5bc54ccd', 'Pilot FriXion Pen - Writing Tip'),
+        ],
       },
       {
         name: 'Uni-Ball Jetstream Lite Touch Pen',
@@ -199,7 +258,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Stationery',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&auto=format&fit=crop&q=80', alt: 'Uni-Ball Jetstream Lite Touch Pen' }],
+        images: [
+          img('photo-1583485088034-697b5bc54ccd', 'Uni-Ball Jetstream Pen - In Action'),
+          img('photo-1569683795645-b62e50fbf103', 'Uni-Ball Jetstream Pen - Blue Barrel'),
+        ],
       },
       {
         name: 'A4 Grid Paper Pack',
@@ -208,7 +270,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Paper & Notebooks',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80', alt: 'A4 Grid Paper Pack' }],
+        images: [
+          img('photo-1607604276583-eef5d076aa5f', 'A4 Grid Paper - Stack'),
+          img('photo-1544716278-ca5e3f4abd8c', 'A4 Grid Paper - Close-up Lines'),
+        ],
       },
       {
         name: 'Faber-Castell Graphite Pencil Set',
@@ -217,7 +282,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Art Supplies',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=800&auto=format&fit=crop&q=80', alt: 'Faber-Castell Graphite Pencil Set' }],
+        images: [
+          img('photo-1513542789411-b6a5d4f31634', 'Faber-Castell Graphite Pencils - Arranged'),
+          img('photo-1585776245991-cf89dd7fc73a', 'Faber-Castell Pencils - Sharpened Tips'),
+        ],
       },
       {
         name: 'Japanese Stationery Pen (Blue)',
@@ -226,7 +294,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Stationery',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=800&auto=format&fit=crop&q=80', alt: 'Japanese Stationery Pen (Blue)' }],
+        images: [
+          img('photo-1569683795645-b62e50fbf103', 'Japanese Stationery Pen - Blue Edition'),
+          img('photo-1583485088034-697b5bc54ccd', 'Japanese Stationery Pen - Calligraphy'),
+        ],
       },
       {
         name: 'Notebook Spiral Hardcover A5',
@@ -235,7 +306,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Paper & Notebooks',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80', alt: 'Notebook Spiral Hardcover A5' }],
+        images: [
+          img('photo-1544716278-ca5e3f4abd8c', 'Spiral Hardcover Notebook A5 - Closed'),
+          img('photo-1531346878377-a5be20888e57', 'Spiral Hardcover Notebook A5 - Open on Desk'),
+        ],
       },
       {
         name: 'Multi-Pen 4-in-1 (Black, Blue, Red, Pencil)',
@@ -244,7 +318,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Stationery',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80', alt: 'Multi-Pen 4-in-1' }],
+        images: [
+          img('photo-1618005182384-a83a8bd57fbe', 'Multi-Pen 4-in-1 - Body & Selector'),
+          img('photo-1595152772835-219674b2a8a6', 'Multi-Pen 4-in-1 - Color Samples'),
+        ],
       },
       {
         name: 'Deco Mini Sticker Tape Set',
@@ -253,7 +330,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Art Supplies',
         websiteNiche: 'ecommerce',
         productType: 'physical',
-        images: [{ url: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80', alt: 'Deco Mini Sticker Tape Set' }],
+        images: [
+          img('photo-1586075010923-2dd4570fb338', 'Deco Mini Sticker Tapes - Rolls'),
+          img('photo-1531346878377-a5be20888e57', 'Deco Mini Sticker Tapes - Crafting View'),
+        ],
       },
     ],
   },
@@ -269,7 +349,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Body Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1608248597359-bb43e7fb0213?w=800&auto=format&fit=crop&q=80', alt: 'Lux Botanicals Magical Orchid Body Wash' }],
+        images: [
+          img('photo-1556228720-195a672e8a03', 'Magical Orchid Body Wash Bottle'),
+          img('photo-1601049541289-9b1b7bbbfe19', 'Magical Orchid Body Wash - Lather'),
+        ],
       },
       {
         name: 'Lux Botanicals Soft Rose Body Wash 250ml',
@@ -278,7 +361,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Body Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80', alt: 'Lux Botanicals Soft Rose Body Wash' }],
+        images: [
+          img('photo-1556228720-195a672e8a03', 'Soft Rose Body Wash 250ml Bottle'),
+          img('photo-1571781926291-c477ebfd024b', 'Soft Rose Body Wash - Pump Detail'),
+        ],
       },
       {
         name: 'Cetaphil Daily Facial Cleanser 16oz',
@@ -287,7 +373,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Face Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80', alt: 'Cetaphil Daily Facial Cleanser' }],
+        images: [
+          img('photo-1570172619644-dfd03ed5d881', 'Cetaphil Daily Facial Cleanser Bottle'),
+          img('photo-1556228720-195a672e8a03', 'Cetaphil Daily Facial Cleanser - Dispenser'),
+        ],
       },
       {
         name: 'Activated Charcoal Face Wash',
@@ -296,7 +385,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Face Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1556228722-d0b71f3b3924?w=800&auto=format&fit=crop&q=80', alt: 'Activated Charcoal Face Wash' }],
+        images: [
+          img('photo-1556228720-195a672e8a03', 'Activated Charcoal Face Wash Tube'),
+          img('photo-1526947425960-945c6e72858f', 'Activated Charcoal Face Wash - Texture'),
+        ],
       },
       {
         name: 'Rose Face Wash Gentle Foam',
@@ -305,7 +397,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Face Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=800&auto=format&fit=crop&q=80', alt: 'Rose Face Wash Gentle Foam' }],
+        images: [
+          img('photo-1598440947619-2c35fc9aa908', 'Rose Gentle Foam Pump Bottle'),
+          img('photo-1571781926291-c477ebfd024b', 'Rose Gentle Foam - Foam Head'),
+        ],
       },
       {
         name: 'Passion Flower Moisturizing Shampoo 400ml',
@@ -314,7 +409,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Hair Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=800&auto=format&fit=crop&q=80', alt: 'Passion Flower Moisturizing Shampoo' }],
+        images: [
+          img('photo-1535585209827-a15fcdbc4c2d', 'Passion Flower Shampoo Bottle'),
+          img('photo-1522337360788-8b13dee7a37e', 'Passion Flower Shampoo - Botanical Ingredients'),
+        ],
       },
       {
         name: 'Shea Butter Nourishing Shampoo',
@@ -323,7 +421,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Hair Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80', alt: 'Shea Butter Nourishing Shampoo' }],
+        images: [
+          img('photo-1522337360788-8b13dee7a37e', 'Shea Butter Nourishing Shampoo Bottle'),
+          img('photo-1535585209827-a15fcdbc4c2d', 'Shea Butter Nourishing Shampoo - Rich Texture'),
+        ],
       },
       {
         name: 'Amla & Shikakai Herbal Shampoo 400ml',
@@ -332,7 +433,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Hair Care',
         websiteNiche: 'skincare',
         productType: 'cleanser',
-        images: [{ url: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=800&auto=format&fit=crop&q=80', alt: 'Amla & Shikakai Herbal Shampoo' }],
+        images: [
+          img('photo-1527799820374-dcf8d9d4a388', 'Amla & Shikakai Herbal Shampoo Bottle'),
+          img('photo-1522337360788-8b13dee7a37e', 'Amla & Shikakai Herbal Shampoo - Natural Extracts'),
+        ],
       },
       {
         name: 'SPF 80 Mineral Sunscreen 80g',
@@ -341,7 +445,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Sun Care',
         websiteNiche: 'skincare',
         productType: 'sunscreen',
-        images: [{ url: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=800&auto=format&fit=crop&q=80', alt: 'SPF 80 Mineral Sunscreen' }],
+        images: [
+          img('photo-1598440947619-2c35fc9aa908', 'SPF 80 Mineral Sunscreen Tube'),
+          img('photo-1570172619644-dfd03ed5d881', 'SPF 80 Mineral Sunscreen - Outdoor Protection'),
+        ],
       },
       {
         name: 'Vitamin C Brightening Sunscreen',
@@ -350,7 +457,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Sun Care',
         websiteNiche: 'skincare',
         productType: 'sunscreen',
-        images: [{ url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800&auto=format&fit=crop&q=80', alt: 'Vitamin C Brightening Sunscreen' }],
+        images: [
+          img('photo-1620916566398-39f1143ab7be', 'Vitamin C Brightening Sunscreen Bottle'),
+          img('photo-1617897903246-719242758050', 'Vitamin C Brightening Sunscreen - Glowing Glow'),
+        ],
       },
       {
         name: 'Peach Glow Sunscreen SPF 50',
@@ -359,7 +469,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Sun Care',
         websiteNiche: 'skincare',
         productType: 'sunscreen',
-        images: [{ url: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=800&auto=format&fit=crop&q=80', alt: 'Peach Glow Sunscreen SPF 50' }],
+        images: [
+          img('photo-1598440947619-2c35fc9aa908', 'Peach Glow Sunscreen SPF 50 Tube'),
+          img('photo-1599305090598-fe179d501227', 'Peach Glow Sunscreen - Cream Swatch'),
+        ],
       },
       {
         name: 'Invisible Instant Glow Sunscreen',
@@ -368,7 +481,10 @@ const CATALOGUE = {
         marketplaceCategory: 'Sun Care',
         websiteNiche: 'skincare',
         productType: 'sunscreen',
-        images: [{ url: 'https://images.unsplash.com/photo-1608248597359-bb43e7fb0213?w=800&auto=format&fit=crop&q=80', alt: 'Invisible Instant Glow Sunscreen' }],
+        images: [
+          img('photo-1601049541289-9b1b7bbbfe19', 'Invisible Instant Glow Sunscreen Bottle'),
+          img('photo-1617897903246-719242758050', 'Invisible Instant Glow Sunscreen - Clear Finish'),
+        ],
       },
     ],
   },
@@ -448,7 +564,7 @@ async function upsertProduct(storeId, p) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function seedFourStoresProducts() {
-  console.log('🛍  Seeding 4-store marketplace products (Unsplash HD images like NexTech)...');
+  console.log('🛍  Seeding 4-store marketplace products (Unsplash HD multi-images like NexTech)...');
 
   for (const [ownerUserId, store] of Object.entries(CATALOGUE)) {
     const storeId = await ensureStoreAccess(store.storeId, ownerUserId, store.primaryCategory);
@@ -456,7 +572,7 @@ async function seedFourStoresProducts() {
     console.log(`  📦 ${store.primaryCategory} store (${storeId})`);
     for (const p of store.products) {
       const created = await upsertProduct(storeId, p);
-      console.log(`    ${created ? '✅' : '⚡'} ${p.name}`);
+      console.log(`    ${created ? '✅' : '⚡'} ${p.name} (${p.images.length} images)`);
     }
   }
 
@@ -468,7 +584,7 @@ async function seedFourStoresProducts() {
     { replacements: ['active', 100, targetStoreIds, 'active'] }
   );
 
-  console.log('✅ 4-store marketplace products seeded with verified Unsplash HD images');
+  console.log('✅ 4-store marketplace products seeded with verified Unsplash HD gallery images');
 }
 
 if (require.main === module) {
