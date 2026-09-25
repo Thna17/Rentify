@@ -7,6 +7,8 @@ module.exports = [
   {
     ignores: [
       '**/dist',
+      // Static assets served as-is, including vendored decoders.
+      '**/public/**',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
     ],

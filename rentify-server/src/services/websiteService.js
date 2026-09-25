@@ -1,5 +1,5 @@
 // services/websiteService.js
-const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox } = require('../models');
+const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox, WebsiteContent } = require('../models');
 const subscriptionService = require('./subscriptionService');
 const storeService = require('./storeService');
 const storeSyncService = require('./storeSyncService');
@@ -62,6 +62,20 @@ class WebsiteService {
         name: businessData.name,
         status: DEPLOYMENT.STATUS.CUSTOMIZATION,
       }, { transaction });
+
+      // Persist website content entries for the new website
+      if (initialContent && initialContent.length > 0) {
+        await WebsiteContent.bulkCreate(
+          initialContent.map((item) => ({
+            websiteId: website.id,
+            category: item.category,
+            label: item.label,
+            type: item.type,
+            value: item.value,
+          })),
+          { transaction }
+        );
+      }
 
       await store.update({ projectionVersion: store.projectionVersion + 1 }, { transaction });
       await storeSyncService.queueStore(store, { websiteId: website.id, transaction });
@@ -151,7 +165,7 @@ class WebsiteService {
    * Personalize template content
    */
   personalizeTemplateContent(templateContents, businessData) {
-    return templateContents.map(item => {
+    const items = (templateContents || []).map(item => {
       let value = this.safeParseJSON(item.value);
 
       // Apply business data personalization
@@ -164,6 +178,32 @@ class WebsiteService {
         value
       };
     });
+
+    const hasName = items.some(item =>
+      ['website name', 'site title', 'store name'].includes(String(item.label || '').toLowerCase())
+    );
+    if (!hasName && businessData?.name) {
+      items.push({
+        category: 'Header',
+        label: 'Website Name',
+        type: 'text',
+        value: { text: businessData.name }
+      });
+    }
+
+    const hasLogo = items.some(item =>
+      ['logo', 'store logo'].includes(String(item.label || '').toLowerCase())
+    );
+    if (!hasLogo && businessData?.logo && typeof businessData.logo === 'string') {
+      items.push({
+        category: 'Header',
+        label: 'Logo',
+        type: 'image',
+        value: { url: businessData.logo }
+      });
+    }
+
+    return items;
   }
 
   /**
@@ -184,13 +224,44 @@ class WebsiteService {
    * Apply business personalization
    */
   applyBusinessPersonalization(label, value, businessData) {
+    const name = businessData?.name;
+    const logo = businessData?.logo;
+    const phone = businessData?.phone || businessData?.contact;
+    const location = businessData?.location;
+
+    const wrapText = (newText, originalVal) => {
+      if (!newText) return originalVal;
+      if (typeof originalVal === 'object' && originalVal !== null && 'text' in originalVal) {
+        return { ...originalVal, text: newText };
+      }
+      return typeof originalVal === 'object' && originalVal !== null ? { ...originalVal, text: newText } : { text: newText };
+    };
+
+    const wrapImage = (newUrl, originalVal) => {
+      if (!newUrl) return originalVal;
+      if (typeof originalVal === 'object' && originalVal !== null && 'url' in originalVal) {
+        return { ...originalVal, url: newUrl };
+      }
+      return { url: newUrl };
+    };
+
     const personalizationMap = {
-      'Website Name': () => businessData?.name || value,
-      'Logo': () => businessData?.logo || value,
-      'Phone Number': () => businessData?.phone || value,
-      'Locations': () => businessData?.location || value,
+      'Website Name': () => (name ? wrapText(name, value) : value),
+      'Site Title': () => (name ? wrapText(name, value) : value),
+      'Store Name': () => (name ? wrapText(name, value) : value),
+      'Logo': () => (logo && typeof logo === 'string' ? wrapImage(logo, value) : value),
+      'Store Logo': () => (logo && typeof logo === 'string' ? wrapImage(logo, value) : value),
+      'Phone Number': () => (phone ? wrapText(phone, value) : value),
+      'Phone': () => (phone ? wrapText(phone, value) : value),
+      'Locations': () => (location ? wrapText(location, value) : value),
+      'Location': () => (location ? wrapText(location, value) : value),
+      'Copyright': () => {
+        if (!name) return value;
+        const year = new Date().getFullYear();
+        return wrapText(`© ${year} ${name}. Powered by Rentify.`, value);
+      },
       'Social Media': () => ({
-        ...value,
+        ...(typeof value === 'object' && value !== null ? value : {}),
         facebook: businessData?.socials?.facebook || '',
         instagram: businessData?.socials?.instagram || '',
         twitter: businessData?.socials?.twitter || '',

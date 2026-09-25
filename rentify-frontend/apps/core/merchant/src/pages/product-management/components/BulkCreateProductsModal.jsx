@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Button } from "@rentify/shared/ui/button"
 import { Input } from "@rentify/shared/ui/input"
 import { Label } from "@rentify/shared/ui/label"
-import { Textarea } from "@rentify/shared/ui/Textarea"
+import { Textarea } from "@rentify/shared/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -20,10 +20,9 @@ import {
 } from "@rentify/shared/ui/dialog"
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
-} from "@rentify/shared/ui/Tabs"
+} from "@rentify/shared/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@rentify/shared/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@rentify/shared/ui/avatar"
 import { Badge } from "@rentify/shared/ui/badge"
@@ -41,6 +40,7 @@ import {
   CheckCircle,
   AlertCircle
 } from "lucide-react"
+import { selectProductImages } from '../../../services/productImages'
 
 export const BulkCreateProductsModal = ({
   open,
@@ -55,12 +55,19 @@ export const BulkCreateProductsModal = ({
   const [errors, setErrors] = useState({})
   const [isDragging, setIsDragging] = useState(false)
 
+  const releasePreviews = (products) => {
+    products.forEach((product) => product.images?.forEach((image) => {
+      if (image.url?.startsWith('blob:')) URL.revokeObjectURL(image.url)
+    }))
+  }
+
   const handleManualAdd = () => {
     setManualProducts([...manualProducts, { id: Date.now() + manualProducts.length }])
   }
 
   const handleManualRemove = (id) => {
     if (manualProducts.length > 1) {
+      releasePreviews(manualProducts.filter((product) => product.id === id))
       setManualProducts(manualProducts.filter(product => product.id !== id))
       
       // Clear errors for removed product
@@ -101,9 +108,12 @@ export const BulkCreateProductsModal = ({
     if (!files) return
     
     try {
-      const newImages = Array.from(files).map((file, i) => ({
+      const product = manualProducts.find((item) => item.id === id)
+      const { accepted, rejected } = selectProductImages(files, product?.images?.length || 0)
+      if (rejected.length) toast.error(rejected[0])
+      const newImages = accepted.map((file) => ({
         url: URL.createObjectURL(file),
-        publicId: `temp_${Date.now()}_${i}`,
+        file,
         name: file.name
       }))
 
@@ -111,19 +121,21 @@ export const BulkCreateProductsModal = ({
         product.id === id 
           ? { 
               ...product, 
-              images: [...(product.images || []), ...newImages].slice(0, 8) // Limit to 8 images
+              images: [...(product.images || []), ...newImages].slice(0, 10)
             } 
           : product
       )
       
       setManualProducts(newProducts)
-      toast.success(`Added ${files.length} image(s)`)
-    } catch (error) {
+      if (accepted.length) toast.success(`Added ${accepted.length} image(s)`)
+    } catch {
       toast.error("Failed to upload images")
     }
   }
 
   const removeImage = (productId, imageIndex) => {
+    const removed = manualProducts.find((product) => product.id === productId)?.images?.[imageIndex]
+    if (removed?.url?.startsWith('blob:')) URL.revokeObjectURL(removed.url)
     const newProducts = manualProducts.map(product => 
       product.id === productId 
         ? { 
@@ -158,7 +170,7 @@ export const BulkCreateProductsModal = ({
 
         setCsvData(data)
         toast.success(`Found ${data.length} products in CSV`)
-      } catch (error) {
+      } catch {
         toast.error("Invalid CSV format")
       }
     }
@@ -194,16 +206,18 @@ export const BulkCreateProductsModal = ({
     try {
       await onSubmit(products)
       onOpenChange(false)
+      releasePreviews(manualProducts)
       setManualProducts([{ id: Date.now() }])
       setCsvData([])
       setErrors({})
     } catch (error) {
-      // Error handling is done in parent component
+      toast.error(error?.message || 'Products could not be created')
     }
   }
 
   const handleClose = () => {
     onOpenChange(false)
+    releasePreviews(manualProducts)
     setManualProducts([{ id: Date.now() }])
     setCsvData([])
     setErrors({})
@@ -218,6 +232,7 @@ export const BulkCreateProductsModal = ({
     link.href = url
     link.download = 'product_template.csv'
     link.click()
+    URL.revokeObjectURL(url)
   }
 
   return (

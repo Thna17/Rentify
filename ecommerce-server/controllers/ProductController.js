@@ -78,6 +78,19 @@ class ProductController {
     }
   }
 
+  static async getProductFormConfig(req, res) {
+    try {
+      const service = new ProductService(req.params.websiteId);
+      const config = await service.getProductFormConfig(req.query.productType);
+      res.json(config);
+    } catch (error) {
+      logger.error('Get product form config error:', error);
+      res.status(error.statusCode || 500).json({
+        error: error.message || 'Server error',
+      });
+    }
+  }
+
   static async getProductBySlug(req, res) {
     try {
       const { websiteId, slug } = req.params;

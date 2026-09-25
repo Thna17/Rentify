@@ -37,7 +37,7 @@ import {
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { Textarea } from '@rentify/shared/ui/Textarea';
+import { Textarea } from '@rentify/shared/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -466,7 +466,7 @@ const getDefaultNicheAttributes = () => {
       description: product?.description || '',
       price: product?.price || '',
       stockQuantity: product?.stockQuantity || 0,
-      status: product?.status || 'draft',
+      status: product?.status || 'active',
       images: product?.images || [],
       categoryId: getInitialCategoryId(),
       version: product?.version || 0,

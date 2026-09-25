@@ -1,8 +1,8 @@
 # Current Rentify architecture
 
-**Status:** Code-backed snapshot, 2026-09-23. This describes the current
-repository, including known inconsistencies. Marketplace integration is not
-implemented.
+**Status:** Code-backed snapshot, updated 2026-09-25. This describes the current
+repository, including known inconsistencies. Marketplace integration is staged
+and remains subject to the migration plan's release gates.
 
 ## Runtime and ownership
 
@@ -10,7 +10,7 @@ implemented.
 | --- | --- | --- |
 | `rentify-server` (`:3001`) | Merchant/admin/staff identity, initial Store profiles, websites, templates, packages, subscriptions, deployment | `rentify_core` MySQL |
 | `ecommerce-server` (`:4001`) | Website copy, catalog, carts, customers, checkout, orders, POS, invoices, payments, usage billing | `rentify_ecommerce` MySQL |
-| `rentify-frontend` | Marketing, auth, merchant dashboard, two storefront template apps | Browser session and API state |
+| `rentify-frontend` | Marketing, auth, merchant dashboard, the storefront app (`:4900`) that serves both storefront templates, and each template for standalone development | Browser session and API state |
 | Redis | Cache and deployment updates | Transient state |
 
 The local services and URLs are declared in [`compose.yaml`](../compose.yaml).
@@ -21,9 +21,13 @@ the database without changing the schema
 
 ## Request and data paths
 
-1. The marketing onboarding hook creates a website, then requests deployment
-   and polls its status
+1. The marketing onboarding hook creates a website, then publishes it
    ([hook](../rentify-frontend/apps/core/marketing/src/hooks/useDeployment.js)).
+   Publishing builds nothing: Core assigns the Website a permanent
+   `subdomain` under `HOSTED_STOREFRONT_DOMAIN`, marks it `active`, updates
+   the Commerce copy and clears the public website cache
+   ([deployment service](../rentify-server/src/services/deploymentService.js),
+   [subdomain service](../rentify-server/src/services/hostedSubdomainService.js)).
 2. Core creates or reuses one Store for the owner, then creates a Website and
    trial subscription in one transaction, queues a
    Commerce projection in the same transaction, then asynchronously posts it
@@ -36,8 +40,13 @@ the database without changing the schema
    [Product](../ecommerce-server/models/Product.js),
    [Cart](../ecommerce-server/models/Cart.js),
    [Order](../ecommerce-server/models/Order.js)).
-4. A storefront resolves its website from the browser host and uses the
-   returned website ID for catalog requests
+4. One storefront app serves every hosted store
+   ([storefront app](../rentify-frontend/apps/storefront/src/StorefrontShell.jsx)).
+   It sends the browser host to Core, which resolves `<subdomain>.<HOSTED_STOREFRONT_DOMAIN>`
+   to an `active` Website (other hosts still match `Website.domain`), and
+   loads that Website's template as a separate chunk. The template's
+   website provider reuses the same lookup and uses the returned website ID
+   for catalog requests
    ([storefront website provider](../rentify-frontend/libs/storefront/src/website.tsx)).
 5. Commerce validates merchant and staff cookies through Core, then checks
    ownership or staff permissions against its website copy
@@ -49,6 +58,14 @@ the database without changing the schema
    invoices, and store views
    ([order route](../ecommerce-server/routes/orderRoutes.js),
    [usage events](../ecommerce-server/services/usageEventService.js)).
+7. Core holds the server-side Cloudinary credentials and uploads product image
+   binaries. Storefront-linked merchants use the website-owned upload route;
+   marketplace-only merchants use the Store-owned route. Both require a
+   merchant owner, an administrator, or staff with product permission. Only
+   the returned browser-safe image metadata is saved with the canonical
+   Commerce Product. Cloudinary credentials are never injected into a frontend
+   build ([upload controller](../rentify-server/src/controllers/uploadController.js),
+   [Store authorization](../rentify-server/src/middlewares/authorization.js)).
 
 ## Constraints relevant to the migration
 

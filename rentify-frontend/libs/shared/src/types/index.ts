@@ -25,6 +25,7 @@ export type WebsitePackage = {
 
 export type WebsiteData = {
   websiteId: string | null;
+  niche: string | null;
   userId: string | null;
   userEmail: string | null;
   userPhoneNumber: string | null;

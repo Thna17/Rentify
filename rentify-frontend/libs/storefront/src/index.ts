@@ -1,4 +1,9 @@
 export * from './contract';
+export * from './theme';
+export * from './content';
+export * from './commerce';
+export * from './checkout';
+export * from './config';
 export { trackStorefrontEvent } from './analytics';
 export { storefrontRoutes } from './routes/storefrontRoutes';
 export { StorefrontUserMenu } from './StorefrontUserMenu';

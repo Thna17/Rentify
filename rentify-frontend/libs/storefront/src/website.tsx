@@ -9,63 +9,80 @@ import { useGetCategoriesQuery, useGetWebsiteByDomainQuery } from './api';
 import { templateThemes } from '@rentify/shared/themes';
 import { themeService } from '@rentify/shared/Services/themes/themeService';
 import { createThemeApplicationService } from '@rentify/shared/Services/themes/themeApplicationService';
-import type { Theme } from '@rentify/shared/types';
+import { resolveStorefrontTheme, type StorefrontTheme } from './theme';
+import { getContentValue, getStoreIdentity, type StoreIdentity, type WebsiteContentItem } from './content';
 
-const StorefrontWebsiteContext = createContext<any>(undefined);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type WebsiteContextValue = Record<string, any> & {
+  websiteId: string | null;
+  content: WebsiteContentItem[];
+  identity: StoreIdentity;
+  getFilteredContent: (category: string) => WebsiteContentItem[];
+};
 
-const hasThemeValues = (theme: Theme | undefined): theme is Theme =>
-  Boolean(
-    theme &&
-      Object.values(theme).some(
-        (value) => value && typeof value === 'object' && Object.keys(value).length > 0
-      )
-  );
+const StorefrontWebsiteContext = createContext<WebsiteContextValue | undefined>(undefined);
 
-const getContentValue = (content: any[], label: string, type: string) =>
-  content.find((item) => item.label === label && item.type === type)?.value;
+export interface StorefrontWebsiteProviderProps {
+  /** Template defaults applied underneath the merchant's saved theme. */
+  fallbackTheme?: StorefrontTheme | null;
+}
 
-export function StorefrontWebsiteProvider({ children }: PropsWithChildren) {
+/** Resolves the website from the current host and applies its sanitized theme. */
+export function StorefrontWebsiteProvider({
+  children,
+  fallbackTheme = null,
+}: PropsWithChildren<StorefrontWebsiteProviderProps>) {
   const domain =
     typeof window === 'undefined'
       ? ''
       : (window.location.host || window.location.hostname);
   const { data, isLoading, error, refetch } = useGetWebsiteByDomainQuery(domain, { skip: !domain });
-  const content = data?.WebsiteContents || data?.content || [];
+  const content: WebsiteContentItem[] = useMemo(
+    () => data?.WebsiteContents || data?.content || [],
+    [data]
+  );
   const themeApplicationService = useMemo(
     () => createThemeApplicationService(themeService),
     []
   );
-  const selectedPalette =
-    data?.selectedPalette || getContentValue(content, 'Color Palette', 'palette');
-  const customTheme = getContentValue(content, 'Theme Configuration', 'theme');
+  const selectedPalette = data?.selectedPalette ?? getContentValue(content, 'Color Palette');
+  const customTheme = getContentValue(content, 'Theme Configuration');
   const templateId = String(data?.websiteTemplateId || data?.templateId || '1');
 
+  const theme = useMemo(
+    () =>
+      resolveStorefrontTheme({
+        customTheme,
+        palette: selectedPalette,
+        presets: templateThemes[templateId] || templateThemes['1'] || {},
+        fallback: fallbackTheme,
+      }),
+    [customTheme, selectedPalette, templateId, fallbackTheme]
+  );
+
   useEffect(() => {
-    const presetTheme =
-      templateThemes[templateId]?.[selectedPalette] ||
-      templateThemes[templateId]?.default ||
-      templateThemes['1']?.[selectedPalette] ||
-      templateThemes['1']?.default;
-    const fallbackTheme: Theme | undefined =
-      !selectedPalette && data?.colorPalette
-        ? { colors: data.colorPalette }
-        : undefined;
+    themeApplicationService.applyThemeToDOM(theme);
+  }, [theme, themeApplicationService]);
 
-    themeApplicationService.applyThemeToDOM(
-      hasThemeValues(customTheme) ? customTheme : presetTheme || fallbackTheme || null
-    );
-  }, [customTheme, data?.colorPalette, selectedPalette, templateId, themeApplicationService]);
+  const fallbackName = data?.name || data?.websiteName || data?.businessDetails?.name || null;
+  const fallbackLogo = data?.logo || data?.businessDetails?.logo || null;
+  const identity = useMemo(
+    () => getStoreIdentity(content, fallbackName, fallbackLogo),
+    [content, fallbackName, fallbackLogo]
+  );
 
-  const value = {
+  const value: WebsiteContextValue = {
     websiteId: data?.websiteId || data?.id || null,
     userId: data?.userId || null,
     content,
-    theme: hasThemeValues(customTheme) ? customTheme : { palette: selectedPalette },
+    identity,
+    theme,
     staffs: [],
     isLoading,
     error,
     refetch,
-    getFilteredContent: (category: string) => content.filter((item: any) => item.category?.toLowerCase() === category.toLowerCase()),
+    getFilteredContent: (category: string) =>
+      content.filter((item) => item.category?.toLowerCase() === category.toLowerCase()),
   };
   return <StorefrontWebsiteContext.Provider value={value}>{children}</StorefrontWebsiteContext.Provider>;
 }
@@ -80,5 +97,10 @@ export function useStorefrontWebsite() {
 export function useStorefrontCategories() {
   const { websiteId } = useStorefrontWebsite();
   const query = useGetCategoriesQuery(websiteId, { skip: !websiteId });
-  return { categories: query.data || [], loading: query.isLoading, error: query.error };
+  return {
+    categories: Array.isArray(query.data) ? query.data : [],
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }

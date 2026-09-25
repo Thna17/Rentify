@@ -655,7 +655,8 @@ async function seedCommerce() {
 
   // 5. Seed Customer
   console.log('👥 Seeding Customer...');
-  const customerPassword = await bcrypt.hash('Customer@12345', 10);
+  // Deployed environments set SEED_CUSTOMER_PASSWORD; this default is public in the repository.
+  const customerPassword = await bcrypt.hash(process.env.SEED_CUSTOMER_PASSWORD || 'Customer@12345', 10);
   let customer = await Customer.findByPk(CUSTOMER_ID);
   const customerPayload = {
     id: CUSTOMER_ID,

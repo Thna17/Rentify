@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Website, WebsiteTemplate, User, Staff, Package, Payment, Subscription, WebsiteSyncOutbox } = require('../../src/models');
+const { Website, WebsiteTemplate, User, Staff, Package, Payment, Subscription, WebsiteSyncOutbox, WebsiteContent } = require('../../src/models');
 const websiteService = require('../../src/services/websiteService');
 const subscriptionService = require('../../src/services/subscriptionService');
 const storeService = require('../../src/services/storeService');
@@ -59,6 +59,9 @@ function setupCreation(t, { failSubscription = false } = {}) {
     calls.push('queue store sync');
   });
   t.mock.method(Staff, 'findAll', async () => []);
+  t.mock.method(WebsiteContent, 'bulkCreate', async (_items, options) => {
+    assert.equal(options.transaction, transaction);
+  });
   t.mock.method(Website, 'create', async (_data, options) => {
     assert.equal(options.transaction, transaction);
     assert.equal(_data.storeId, 'store-1');
@@ -165,13 +168,13 @@ test('failed deployment status sync keeps the updated status queued for retry', 
   assert.equal(outbox.payload.domain, 'shop.rentify.test');
 });
 
-test('deployment completion updates Commerce after the Core website', async (t) => {
+test('a failed publish attempt is recorded in Core, then Commerce', async (t) => {
   const calls = [];
   const website = {
+    id: 'website-1',
     domain: 'shop.rentify.test',
     async update(data) { calls.push(`core:${data.status}`); },
   };
-  t.mock.method(Website, 'findByPk', async () => website);
   t.mock.method(ecommerceSyncService, 'updateWebsiteStatus', async (id, status, domain) => {
     assert.equal(id, 'website-1');
     assert.equal(domain, website.domain);
@@ -183,10 +186,26 @@ test('deployment completion updates Commerce after the Core website', async (t) 
     json(body) { this.body = body; return this; },
   };
   await deploymentController.updateWebsiteStatus({
-    body: { websiteId: 'website-1', status: 'active' },
+    user: { id: 'user-1', role: 'merchant' },
+    website,
+    body: { websiteId: 'website-1', status: 'failed', domain: 'someone-else.rentifystore.shop' },
   }, response);
   assert.equal(response.body.success, true);
-  assert.deepEqual(calls, ['core:active', 'commerce:active']);
+  assert.deepEqual(calls, ['core:failed', 'commerce:failed']);
+});
+
+test('merchants cannot mark a website live or suspended from the browser', async (t) => {
+  const website = { id: 'website-1', async update() { assert.fail('status must not change'); } };
+  t.mock.method(ecommerceSyncService, 'updateWebsiteStatus', async () => assert.fail('Commerce must not change'));
+  for (const status of ['active', 'suspended', 'expired']) {
+    const response = {
+      statusCode: 200,
+      status(code) { this.statusCode = code; return this; },
+      json(body) { this.body = body; return this; },
+    };
+    await deploymentController.updateWebsiteStatus({ user: { id: 'user-1', role: 'merchant' }, website, body: { status } }, response);
+    assert.equal(response.statusCode, 403, status);
+  }
 });
 
 test('paid subscription keeps the existing website foreign key', async (t) => {

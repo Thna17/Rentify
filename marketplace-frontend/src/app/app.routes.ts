@@ -6,6 +6,7 @@ import {
   externalAuthRedirectGuard,
   externalMerchantRedirectGuard,
 } from './pages/auth-redirect.component';
+import { merchantDashboardUrl } from './core/rentify/rentify-marketplace.service';
 
 /**
  * Everything is lazy-loaded. The storefront branch imported all 19 page
@@ -164,13 +165,13 @@ export const routes: Routes = [
   },
 
   // ------------------------------------------------------------------- seller
-  // Merchants manage their store, orders, and catalog on the Rentify Merchant Dashboard (http://localhost:4400).
+  // Merchants manage their store, orders, and catalog on the Rentify Merchant Dashboard.
   {
     path: 'seller/login',
-    canActivate: [externalAuthRedirectGuard('login', 'http://localhost:4400')],
+    canActivate: [externalAuthRedirectGuard('login', merchantDashboardUrl())],
     loadComponent: () =>
       import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
-    data: { mode: 'login', defaultReturn: 'http://localhost:4400' },
+    data: { mode: 'login', defaultReturn: merchantDashboardUrl() },
     title: 'Seller sign in | Rentify Marketplace',
   },
   {

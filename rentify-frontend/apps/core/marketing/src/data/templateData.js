@@ -3,7 +3,7 @@ export const templates = {
       { 
           id: '044c94e2-a47c-47d5-895b-33bc00eb5abb', 
           name: 'Skin Care Website', 
-          baseUrl: 'https://ecommerce-template1-preview.vercel.app', 
+          baseUrl: 'https://aura-botanicals.mekhla.digital', 
           colorPalettes: [ 
               'boldAndVibrantTheme',
               'modernMinimalistTheme',
@@ -19,7 +19,7 @@ export const templates = {
           pages: [
               { id: 1, page: 'global setting', route: '/' },
               { id: 2, page: 'Homepage', route: '/' },
-              { id: 3, page: 'product', route: '/product' },
+              { id: 3, page: 'product', route: '/products' },
               { id: 4, page: 'About Us', route: '/about' },
               { id: 5, page: 'Contact', route: '/contact' }
           ]
@@ -30,7 +30,7 @@ export const templates = {
       { 
           id: 'af3e0202-6327-45b1-bece-02ab3aba4a05', 
           name: 'Technology Shop Website', 
-          baseUrl: 'https://ecommerce-template2-preview.vercel.app', 
+          baseUrl: 'https://nextech-electronics.mekhla.digital', 
           colorPalettes: [ 
             'boldAndVibrantTheme',
             'modernMinimalistTheme',
@@ -46,7 +46,7 @@ export const templates = {
           pages: [
               { id: 1, page: 'global setting', route: '/' },
               { id: 2, page: 'Homepage', route: '/' },
-              { id: 3, page: 'Product', route: '/shop' },
+              { id: 3, page: 'Product', route: '/products' },
             //   { id: 4, page: 'Portfolio', route: '/portfolio' },
             //   { id: 5, page: 'Contact', route: '/contact' }
           ]
@@ -57,7 +57,7 @@ export const templates = {
       { 
           id: '1a1f5801-c180-447d-b2dd-8fbf3f45b84f', 
           name: 'Technology Shop Website', 
-          baseUrl: 'https://ecommerce-template3-preview.vercel.app', 
+          baseUrl: 'https://nextech-electronics.mekhla.digital', 
           colorPalettes: [ 
             'boldAndVibrantTheme',
             'modernMinimalistTheme',

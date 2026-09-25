@@ -1,0 +1,21 @@
+// Cloudflare Worker for the mekhla.digital storefront demo.
+// Build first (npm run build:storefront:mekhla), then: npx wrangler@4 deploy --config apps/storefront/cloudflare/wrangler.jsonc
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "rentify-storefront",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "*.mekhla.digital/*", "zone_name": "mekhla.digital" }],
+  "assets": {
+    "directory": "../../../dist/apps/storefront",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "vars": {
+    "HOSTED_STOREFRONT_DOMAIN": "mekhla.digital",
+    // Keep in step with HOSTED_STOREFRONT_RESERVED in compose.mekhla.yaml.
+    "HOSTED_STOREFRONT_RESERVED": "admin,api,colis,staging,www,send,rsend,rentify,rentify-api,rentify-commerce,rentify-auth,rentify-seller,rentify-market,rentify-admin"
+  }
+}

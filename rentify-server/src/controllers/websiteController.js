@@ -15,6 +15,8 @@ const {
   WebsiteContent,
 } = require("../models");
 const { getMerchantCache } = require("../utils/cache");
+const { hostedSubdomainFromHost } = require("../utils/hostedStorefrontOrigin");
+const { validateStorefrontContent } = require("../config/storefrontContentFields");
 const cache = getMerchantCache();
 
 class WebsiteController {
@@ -143,11 +145,8 @@ class WebsiteController {
         return res.json(cachedData);
       }
 
+      // Public lookup for storefronts: no owner or staff contact details.
       const includeModels = [
-        {
-          model: User,
-          attributes: ["id", "email", "phoneNumber"],
-        },
         {
           model: WebsiteTemplate,
         },
@@ -156,19 +155,22 @@ class WebsiteController {
           as: "WebsiteContents",
           attributes: ["id", "category", "label", "type", "value"],
         },
-        {
-          model: Staff,
-          as: "staffs",
-          attributes: ["id", "email", "phoneNumber", "permissions"],
-        },
       ];
 
-      let website = await Website.findOne({
-        where: { domain: targetDomain },
-        include: includeModels,
-      });
+      // Rentify-hosted address (<subdomain>.<HOSTED_STOREFRONT_DOMAIN>): only
+      // published Websites answer, so an unpublished or suspended store is not served.
+      const hostedSubdomain = hostedSubdomainFromHost(targetDomain);
+      let website = hostedSubdomain
+        ? await Website.findOne({
+            where: { subdomain: hostedSubdomain, status: "active" },
+            include: includeModels,
+          })
+        : await Website.findOne({
+            where: { domain: targetDomain },
+            include: includeModels,
+          });
 
-      if (!website && targetDomain.includes(":")) {
+      if (!website && !hostedSubdomain && targetDomain.includes(":")) {
         const [hostOnly] = targetDomain.split(":");
         website = await Website.findOne({
           where: { domain: hostOnly },
@@ -200,8 +202,7 @@ class WebsiteController {
         storeId: website.storeId,
         userId: website.userId,
         templateId: website.templateId,
-        userEmail: website.User?.email || null,
-        userPhoneNumber: website.User?.phoneNumber || null,
+        name: website.name || null,
         content: content,
         selectedPalette:
           content.find(
@@ -219,12 +220,6 @@ class WebsiteController {
               subscriptionId: subscription.id,
             }
           : null,
-        staffs:
-          website.staffs?.map((staff) => ({
-            id: staff.id,
-            contact: staff.email || staff.phoneNumber,
-            permissions: staff.permissions,
-          })) || [],
       };
 
       // ✅ Use setWithIndex to cache and index in one call
@@ -429,6 +424,47 @@ class WebsiteController {
       console.error("❌ Error updating theme:", error);
       res.status(400).json({ error: error.message });
     }
+  });
+
+  /**
+   * GET /api/websites/:websiteId/owner-access — lets a storefront show its
+   * owner tools. requireWebsiteOwner has already refused everyone else.
+   */
+  getStorefrontOwnerAccess = asyncHandler(async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json({ owner: true, websiteId: req.website.id });
+  });
+
+  /**
+   * PUT /api/websites/:websiteId/storefront-content — the owner's edits from
+   * the live storefront. Only allowlisted fields, validated per type; missing
+   * rows are created, and the whole change is saved or nothing is.
+   */
+  updateStorefrontContent = asyncHandler(async (req, res) => {
+    const { values, errors } = validateStorefrontContent(req.body?.fields);
+    if (errors.length) return res.status(400).json({ error: "Some fields are invalid", fields: errors });
+    if (!values.length) return res.status(400).json({ error: "Nothing to update" });
+
+    const websiteId = req.website.id;
+    await WebsiteContent.sequelize.transaction(async (transaction) => {
+      for (const field of values) {
+        const existing = await WebsiteContent.findOne({
+          where: { websiteId, label: field.label },
+          transaction,
+        });
+        if (existing) {
+          await existing.update({ value: field.value }, { transaction });
+        } else {
+          await WebsiteContent.create(
+            { websiteId, category: field.category, label: field.label, type: field.type, value: field.value },
+            { transaction }
+          );
+        }
+      }
+    });
+    await cache.invalidateWebsiteCache(websiteId);
+
+    res.json({ success: true, updated: values.map((field) => ({ label: field.label, value: field.value })) });
   });
 
   updateWebsiteContent = asyncHandler(async (req, res) => {

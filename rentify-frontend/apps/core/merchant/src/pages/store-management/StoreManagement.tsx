@@ -63,7 +63,8 @@ export const StoreManagement = () => {
           id: websiteData.id,
           name:
             contents.find((c: any) => c.label === 'Website Name')?.value || '',
-          domain: websiteData.domain || '',
+          // Live address: the Rentify subdomain once published, else a connected domain.
+          domain: websiteData.storefrontUrl || websiteData.domain || '',
           email:
             contents.find((c: any) => c.label === 'Contact Email')?.value || '',
           phone:

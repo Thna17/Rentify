@@ -305,3 +305,96 @@ Point of Sale (POS) is established as an in-person physical sales channel of the
 - POS orders, invoices, stock deduction, and payment gateway configurations resolve `storeId` directly when `websiteId` is absent.
 - The merchant POS interface and product catalog query by `storeId` for marketplace-only merchants, deriving categories from loaded store inventory if storefront collections are not defined.
 
+## 2026-09-25 storefront Template 2 content and theme findings
+
+Template 2 (`rentify-frontend/apps/templates/ecommerce/ecommerce-template-2`)
+now shares Template 1's customer-only storefront foundation with its own
+editorial layout. Its home sections are driven by optional `WebsiteContents`
+fields listed in `TEMPLATE_2_FIELDS`
+([storeContent.js](../rentify-frontend/apps/templates/ecommerce/ecommerce-template-2/src/storeContent.js));
+each section stays hidden until the merchant fills it in, so a new store shows
+no placeholder claims. `rentify-server/scripts/seed.js` seeds the same fields
+as empty Template 2 `TemplateContents`. Websites created before this change do
+not receive the new fields automatically; the merchant design editor only
+edits content rows the website already has.
+
+Product badges use product data only: a discount when `compareAtPrice` is
+higher than `price`, otherwise "New" for products created in the last 30 days.
+There is no sales data, so the second home product row shows a category the
+merchant names in `Featured Category`, under a merchant-written title.
+
+`resolveStorefrontTheme` now derives readable text, surface and border colours
+from a merchant `background` when the palette sets no text colour and the
+template text would be unreadable on it (for example the seeded dark navy
+Template 2 palette). Colours the merchant sets explicitly are never replaced.
+
+Open finding: `GET /api/product/:websiteId?sort=featured` returns HTTP 500 and
+includes a server stack trace, because `ProductService.buildOrder` orders by a
+`feature` column that the Product model does not have. Both storefront
+templates no longer offer that sort.
+
+## 2026-09-25 storefront hosting decision
+
+Storefronts are no longer built per merchant on Vercel. One deployment of the
+storefront app (`rentify-frontend/apps/storefront`) serves every Rentify-hosted
+store: it resolves the Website from the browser host and loads Template 1 or 2
+on demand. Publishing assigns a permanent `Websites.subdomain` (migration
+`20260925_010_website_subdomain`) and marks the Website active; nothing is
+built, so content edits and template releases reach every store at once. This
+implements the 2026-09-23 domain decision for Rentify-owned subdomains.
+
+Reasons: the per-merchant Vercel flow could not work as configured (missing
+repository id, stale `rentify-client` repository, localhost API URLs baked
+into builds, `*.vercel.app` origins rejected by CORS, a new Vercel project per
+publish, Node 18), and every build of a template was identical because the
+template already resolved its store at runtime.
+
+Related hardening: the public website lookup serves hosted subdomains only for
+`active` Websites; the deployment status endpoint no longer lets merchants set
+`active` or other Rentify-controlled statuses, or overwrite `Website.domain`
+from the browser.
+
+Local development: both APIs default to `HOSTED_STOREFRONT_DOMAIN=localhost`
+and `HOSTED_STOREFRONT_DEV_PORT=4900` in Docker, so stores open at
+`http://<subdomain>.localhost:4900`. The dev port is ignored in production.
+
+Still open: connecting and verifying a merchant's own domain (the old Vercel
+client was removed; Vercel's domain API is the likely path), a production
+store domain and public API hosting, and removing merchant email, phone and
+staff details from the public website lookup response.
+
+## 2026-09-25 storefront owner tools and session refresh grace
+
+Store owners edit their storefront from the live store again. Templates wrap
+their layout in `StorefrontOwnerProvider`
+([StorefrontOwner.jsx](../rentify-frontend/libs/storefront/src/owner/StorefrontOwner.jsx)),
+which asks Core `GET /api/websites/:websiteId/owner-access` with the visitor's
+session. Only the owner (or an admin) gets a positive answer; only then is the
+editor chunk (`OwnerToolbar`) downloaded, so shoppers never load owner code.
+The editor lists the template's section fields (`TEMPLATE_2_FIELDS`,
+`TEMPLATE_1_FIELDS`) and saves through
+`PUT /api/websites/:websiteId/storefront-content`, which re-checks ownership,
+accepts only the labels in
+[storefrontContentFields.js](../rentify-server/src/config/storefrontContentFields.js),
+validates each value (plain text with length limits, https image URLs), creates
+missing content rows in one transaction and clears the public website cache.
+Images upload through the existing owner-only `/uploadImage/:websiteId`.
+The owner panel also adds products and categories through Commerce's existing
+`POST /api/product/:websiteId` (product permission required) and
+`POST /api/categories/:websiteId`. Commerce's product form config now returns
+`quickAddFields`: the extra fields each store type's validation requires
+(skincare: skin types and ingredients; fashion: fabric and sizes; restaurant:
+preparation time), so the quick form asks for exactly those. Category creation
+now requires a trimmed name (up to 80 characters) and accepts an optional https
+photo.
+Hosted stores need `COOKIE_DOMAIN` to cover the store subdomains so the
+merchant session reaches Core.
+
+Refresh-token rotation now has a 60-second grace window
+([refreshTokenGrace.js](../rentify-server/src/utils/refreshTokenGrace.js)):
+requests that race a rotation with the just-replaced token receive an access
+token instead of signing the person out. Only a SHA-256 fingerprint of the
+replaced token is kept in Redis; without Redis the previous behaviour applies.
+
+The public `getWebsiteByDomain` lookup no longer returns the owner's email or
+phone, or staff contacts and permissions.

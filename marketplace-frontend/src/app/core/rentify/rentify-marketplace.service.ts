@@ -9,6 +9,9 @@ const runtime = () => globalThis.window?.__RENTIFY_MARKETPLACE__;
 const base = (value: string | undefined, fallback: string) =>
   (value || (isLocal() ? fallback : '')).replace(/\/+$/, '');
 
+/** Merchant dashboard origin from marketplace-config.js (loaded before the app). */
+export const merchantDashboardUrl = () => base(runtime()?.merchantDashboardUrl, 'http://localhost:4400');
+
 export interface RentifyProduct {
   id: string;
   storeId: string;
@@ -108,7 +111,7 @@ export class RentifyMarketplaceService {
   }
 
   get merchantDashboard(): string {
-    return base(runtime()?.merchantDashboardUrl, 'http://localhost:4400');
+    return merchantDashboardUrl();
   }
 
   get adminDashboard(): string {

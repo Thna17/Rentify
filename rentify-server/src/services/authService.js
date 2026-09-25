@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { Op } = require("sequelize");
 const { generateOtp } = require("../utils/otpUtils");
 const { sendEmail } = require("../services/emailService");
+const { rememberRotatedToken, wasJustRotated } = require("../utils/refreshTokenGrace");
 const otpVerificationEmail = require("../utils/templates/otpVerificationEmail");
 const {
   generateAccessToken,
@@ -628,6 +629,10 @@ class AuthService {
     }
 
     const isMatch = await compareRefreshToken(refreshToken, entity.refreshToken);
+    if (!isMatch && entity.refreshTokenExpires >= Date.now() && (await wasJustRotated(this.cookiePrefix, refreshToken, entity.id))) {
+      // Rotated moments ago by a parallel request: issue an access token only.
+      return { accessToken: this.generateTokens(entity).accessToken };
+    }
     if (!isMatch || entity.refreshTokenExpires < Date.now()) {
       throw new ApiError(401, "Invalid or expired refresh token");
     }
@@ -638,6 +643,7 @@ class AuthService {
       Date.now() + 30 * 24 * 60 * 60 * 1000
     );
     await entity.save({ transaction });
+    await rememberRotatedToken(this.cookiePrefix, refreshToken, entity.id);
 
     return { ...tokens };
   }
@@ -650,10 +656,13 @@ class AuthService {
       maxAge: 15 * 60 * 1000,
     });
 
-    res.cookie(`${this.cookiePrefix}RefreshToken`, tokens.refreshToken, {
-      ...cookieConfig,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    // A grace-period refresh returns no new refresh token; keep the cookie the browser has.
+    if (tokens.refreshToken) {
+      res.cookie(`${this.cookiePrefix}RefreshToken`, tokens.refreshToken, {
+        ...cookieConfig,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+    }
 
     res.cookie(`authType`, this.entityType.toLowerCase(), {
       ...cookieConfig,

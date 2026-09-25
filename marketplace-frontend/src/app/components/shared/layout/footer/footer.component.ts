@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { RentifyMarketplaceService } from '../../../../core/rentify/rentify-marketplace.service';
+import { merchantDashboardUrl } from '../../../../core/rentify/rentify-marketplace.service';
 
 @Component({
   selector: 'app-footer',
@@ -155,6 +155,5 @@ export class FooterComponent {
   private readonly auth = inject(AuthService);
   protected readonly signInUrl = this.auth.getLoginUrl();
   protected readonly registerUrl = this.auth.getRegisterUrl();
-  // Sellers land on the Merchant Dashboard, whose address comes from runtime config.
-  protected readonly sellerLoginUrl = this.auth.getLoginUrl(inject(RentifyMarketplaceService).merchantDashboard);
+  protected readonly sellerLoginUrl = this.auth.getLoginUrl(merchantDashboardUrl());
 }

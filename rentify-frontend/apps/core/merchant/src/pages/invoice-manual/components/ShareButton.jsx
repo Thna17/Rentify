@@ -13,7 +13,7 @@ import {
   Popover, 
   PopoverContent, 
   PopoverTrigger 
-} from '@rentify/shared/ui/Popover';
+} from '@rentify/shared/ui/popover';
 import { useState } from 'react';
 import { pdf, PDFDownloadLink } from '@react-pdf/renderer';
 

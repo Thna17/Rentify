@@ -1,7 +1,17 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ignored = new Set(['node_modules', '.git', 'dist', 'coverage', '.env', '.env.local']);
+const ignored = new Set([
+  'node_modules',
+  '.git',
+  '.nx',
+  '.angular',
+  'dist',
+  'coverage',
+  'output',
+  '.env',
+  '.env.local',
+]);
 const findings = [];
 function visit(path) {
   if (statSync(path).isDirectory()) return readdirSync(path).forEach((entry) => !ignored.has(entry) && visit(join(path, entry)));

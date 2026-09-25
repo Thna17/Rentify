@@ -1,6 +1,7 @@
 // hooks/useLoginForm.ts
 import { useState } from 'react';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
 import {
   useLoginMutation,
   useLoginCustomerMutation,
@@ -41,6 +42,7 @@ const parseJwtPayload = (token?: string) => {
 };
 
 export const useLoginForm = () => {
+  const { t, isKhmer } = useAuthLanguage();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,26 +77,31 @@ export const useLoginForm = () => {
     setSuccess('');
     setLoading(true);
 
-    const { contact, password } = data;
+    const rawContact = (data.contact || '').trim();
+    const { password } = data;
 
     const isEmail =
-      inputMode === 'email' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
-    const isPhone = inputMode === 'phone' && validateCambodianPhone(contact);
+      inputMode === 'email' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawContact);
+    const isPhone = inputMode === 'phone' && validateCambodianPhone(rawContact);
 
     if (!isEmail && !isPhone) {
-      setError('Please enter a valid email or phone number');
+      setError(
+        inputMode === 'phone'
+          ? t('error.invalidPhone')
+          : t('error.invalidEmail')
+      );
       setLoading(false);
       return;
     }
 
-    const sanitizedPhone = sanitizePhoneNumber(contact);
+    const sanitizedPhone = sanitizePhoneNumber(rawContact);
     const isSpecialCase =
       (inputMode === 'email' &&
-        contact.toLowerCase() === userEmail?.toLowerCase()) ||
+        rawContact.toLowerCase() === userEmail?.toLowerCase()) ||
       (inputMode === 'phone' && sanitizedPhone === userPhoneNumber);
 
     const normalizedContact =
-      inputMode === 'email' ? contact.toLowerCase() : sanitizedPhone;
+      inputMode === 'email' ? rawContact.toLowerCase() : sanitizedPhone;
     const isStaff =
       Array.isArray(staffs) &&
       staffs.some(
@@ -103,7 +110,7 @@ export const useLoginForm = () => {
       );
     const payload: any = { password };
     if (inputMode === 'email') {
-      payload.email = contact;
+      payload.email = rawContact;
     } else {
       payload.phoneNumber = sanitizedPhone;
     }
@@ -178,14 +185,41 @@ export const useLoginForm = () => {
         }
       }
 
-      setSuccess("Login successful! Redirecting...");
+      setSuccess(
+        isKhmer
+          ? 'ចូលគណនីជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
+          : 'Login successful! Redirecting...'
+      );
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
     } catch (err: any) {
-      setError(
-        err?.data?.error || "Login failed. Please check your credentials"
-      );
+      const rawMsg = err?.data?.error || err?.data?.message || err?.message || '';
+      let mappedError = rawMsg || t('error.invalidCredentials');
+
+      const lower = String(rawMsg).toLowerCase();
+      if (lower.includes('not found') || lower.includes('does not exist')) {
+        mappedError = inputMode === 'phone'
+          ? t('error.phoneNotFound')
+          : t('error.emailNotFound');
+      } else if (
+        lower.includes('password') ||
+        lower.includes('credential') ||
+        lower.includes('unauthorized') ||
+        lower.includes('invalid email') ||
+        lower.includes('invalid phone')
+      ) {
+        mappedError = t('error.incorrectPassword');
+      } else if (
+        lower.includes('disabled') ||
+        lower.includes('deactivated') ||
+        lower.includes('inactive') ||
+        lower.includes('suspended')
+      ) {
+        mappedError = t('error.accountDisabled');
+      }
+
+      setError(mappedError);
     } finally {
       setLoading(false);
     }

@@ -31,6 +31,19 @@ For Docker setup, required environment variables, local commands, and troublesho
 
 Copy each service's `.env.example` to a local `.env` and supply your own development credentials. Never commit `.env` files or production credentials.
 
+For a clean source checkout, install and verify every active application from
+the repository root:
+
+```sh
+npm run install:all
+npm run verify
+```
+
+The root verification command runs repository policy and secret checks, both
+APIs, every React application, the Marketplace and the Admin console. Database
+migration execution still requires an isolated MySQL database as documented by
+each API; CI provisions those databases automatically.
+
 ## Git workflow
 
 `main` is the release branch. Create feature work from `develop` using `feature/<name>` or `fix/<name>`, open a pull request, and run the documented verification commands before review.
