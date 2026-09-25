@@ -111,7 +111,7 @@ export class TemplatesComponent {
     baseUrl: 'http://localhost:4700',
     description: '',
     features: ['Responsive Layout', 'Fast Checkout', 'SEO Optimized'],
-    colorPalette: { primary: '#1f2429', secondary: '#68707a', accent: '#8a1e2c', background: '#ffffff' },
+    colorPalette: { primary: '#1f2429', secondary: '#68707a', accent: '#2563eb', background: '#ffffff' },
     status: 'active' as const,
   };
 
@@ -126,7 +126,7 @@ export class TemplatesComponent {
       baseUrl: 'http://localhost:4700',
       description: '',
       features: ['Responsive Layout', 'Fast Checkout', 'SEO Optimized'],
-      colorPalette: { primary: '#1f2429', secondary: '#68707a', accent: '#8a1e2c', background: '#ffffff' },
+      colorPalette: { primary: '#1f2429', secondary: '#68707a', accent: '#2563eb', background: '#ffffff' },
       status: 'active',
     };
   }

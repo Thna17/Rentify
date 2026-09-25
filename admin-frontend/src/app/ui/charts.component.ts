@@ -52,15 +52,15 @@ export class BarChartComponent {
       <svg class="chart-svg" viewBox="0 0 100 48" preserveAspectRatio="none">
         <defs>
           <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#8a1e2c" stop-opacity="0.28" />
-            <stop offset="100%" stop-color="#8a1e2c" stop-opacity="0.01" />
+            <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#2563eb" stop-opacity="0.01" />
           </linearGradient>
         </defs>
         <polygon [attr.points]="area" fill="url(#chartGrad)"></polygon>
         <polyline
           [attr.points]="pts"
           fill="none"
-          stroke="#8a1e2c"
+          stroke="#2563eb"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -72,7 +72,7 @@ export class BarChartComponent {
             [attr.cy]="pt.y"
             r="1.8"
             fill="#ffffff"
-            stroke="#8a1e2c"
+            stroke="#2563eb"
             stroke-width="1.5"
             vector-effect="non-scaling-stroke"
             class="chart-dot">

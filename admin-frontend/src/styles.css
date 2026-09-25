@@ -8,9 +8,9 @@
   --line: #e6e8eb;
   --line-2: #d7dbdf;
   --gray: #f1f2f4;
-  --accent: #8a1e2c;
-  --accent-2: #711723;
-  --accent-050: #f8eef0;
+  --accent: #2563eb;
+  --accent-2: #1d4ed8;
+  --accent-050: #eff6ff;
   --green: #1a7a4a;
   --green-050: #e9f5ee;
   --amber: #96660f;
@@ -71,8 +71,9 @@ body {
   }
   .brand small {
     font-weight: 600;
-    color: var(--muted);
-    background: var(--gray);
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
     border-radius: 5px;
     padding: 1px 6px;
     font-size: 10.5px;
