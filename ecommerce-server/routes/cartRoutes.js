@@ -2,7 +2,7 @@
 const express = require("express");
 const { verifyToken, verifyOptionalCoreBuyer } = require('../middlewares/authMiddleware');
 const sessionMiddleware = require('../middlewares/sessionMiddleware');
-const CartController = require("../controllers/cartController");
+const CartController = require("../controllers/CartController");
 const marketplaceController = require("../controllers/marketplaceCheckoutController");
 const { requireWebsitePermission } = require("../middlewares/requireWebsiteAccess");
 

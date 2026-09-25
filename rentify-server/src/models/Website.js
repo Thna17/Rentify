@@ -1,5 +1,6 @@
 // models/Website.js (added customColors for dynamic custom themes, though content-based is primary)
 const { DataTypes } = require("sequelize");
+const { hostedStorefrontUrl } = require("../utils/hostedStorefrontOrigin");
 const sequelize = require("../config/db");
 
 const Website = sequelize.define(
@@ -61,6 +62,21 @@ const Website = sequelize.define(
       // validate: {
       //   isUrl: true
       // }
+    },
+    // Rentify-hosted address label: <subdomain>.<HOSTED_STOREFRONT_DOMAIN>.
+    // `domain` stays for addresses the merchant connects themselves.
+    subdomain: {
+      type: DataTypes.STRING(63),
+      allowNull: true,
+      unique: 'uq_websites_subdomain',
+    },
+    // Where shoppers reach the store: its Rentify subdomain once published.
+    storefrontUrl: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        const subdomain = this.getDataValue('subdomain');
+        return subdomain ? hostedStorefrontUrl(subdomain) : null;
+      },
     },
     status: {
       type: DataTypes.ENUM(

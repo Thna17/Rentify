@@ -1,95 +1,80 @@
-// controllers/uploadController.js
 const cloudinary = require('cloudinary').v2;
+const { uploadBuffer, verifyConnection } = require('../services/cloudinaryUploadService');
 
-// Enhanced configuration with timeout and retry settings
-cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-  timeout: 60000, // 60 second timeout
-  upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET // Optional
-});
+verifyConnection()
+  .then(() => console.log('Cloudinary image storage is ready'))
+  .catch((error) => console.warn(
+    'Cloudinary image storage is unavailable:',
+    error.code === 'CLOUDINARY_NOT_CONFIGURED' ? 'credentials are not configured' : 'credential or network check failed'
+  ));
 
-// Verify configuration on startup
-if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-  cloudinary.api.ping()
-    .then(result => console.log('Cloudinary connection test:', result))
-    .catch(error => console.error('Cloudinary connection failed:', error));
-} else {
-  console.log('Cloudinary credentials missing or not configured. Image uploads will require valid credentials.');
-}
+const uploadFolder = (req) => {
+  const tenantId = req.store?.id || req.website?.storeId || req.params.storeId || req.params.websiteId;
+  return `rentify/stores/${tenantId}/products`;
+};
+
+const respondToUploadError = (res, error) => {
+  if (error.code === 'CLOUDINARY_NOT_CONFIGURED') {
+    return res.status(503).json({ error: 'Image storage is temporarily unavailable' });
+  }
+
+  const authFailure = error.http_code === 401 || error.http_code === 403;
+  return res.status(authFailure ? 503 : 502).json({
+    error: authFailure
+      ? 'Image storage credentials need administrator attention'
+      : 'The image could not be uploaded. Please try again.',
+  });
+};
+
+exports.uploadProductImages = async (req, res) => {
+  const files = req.files || (req.file ? [req.file] : []);
+  if (!files.length) return res.status(400).json({ error: 'Choose at least one image' });
+
+  try {
+    const images = await Promise.all(
+      files.map((file) => uploadBuffer(file.buffer, { folder: uploadFolder(req) }))
+    );
+    return res.status(201).json({ images });
+  } catch (error) {
+    console.error('Product image upload failed', {
+      code: error.code || null,
+      httpCode: error.http_code || null,
+    });
+    return respondToUploadError(res, error);
+  }
+};
 
 exports.uploadImage = async (req, res) => {
-  try {
-    const { websiteId } = req.params;
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    console.log('Uploading image to Cloudinary...');
-    
-    // Validate Cloudinary configuration
-    if (!process.env.CLOUDINARY_CLOUD_NAME || 
-        !process.env.CLOUDINARY_API_KEY || 
-        !process.env.CLOUDINARY_API_SECRET) {
-      throw new Error('Cloudinary configuration is missing');
-    }
-
-    const result = await new Promise((resolve, reject) => {
-      const uploadOptions = {
-        resource_type: 'auto',
-        folder: websiteId || 'default',
-        timeout: 60000
-      };
-
-      const stream = cloudinary.uploader.upload_stream(
-        uploadOptions,
-        (error, result) => {
-          if (error) {
-            console.error('Cloudinary upload error:', error);
-            reject(error);
-          } else {
-            console.log('Cloudinary upload successful:', result.public_id);
-            resolve(result);
+  const originalJson = res.json.bind(res);
+  res.json = async (payload) => {
+    const uploaded = payload?.images?.[0];
+    if (uploaded && (req.query.isLogo === 'true' || req.query.type === 'logo')) {
+      try {
+        const { WebsiteContent } = require('../models');
+        const websiteId = req.params.websiteId || req.website?.id;
+        if (websiteId) {
+          const [logoContent] = await WebsiteContent.findOrCreate({
+            where: { websiteId, category: 'Header', label: 'Logo' },
+            defaults: { type: 'image', value: { url: uploaded.url } },
+          });
+          if (logoContent) {
+            logoContent.value = { url: uploaded.url };
+            logoContent.type = 'image';
+            await logoContent.save();
+          }
+          const cache = require('../utils/cache');
+          if (cache && cache.invalidateWebsiteCache) {
+            await cache.invalidateWebsiteCache(websiteId);
           }
         }
-      );
-      
-      stream.on('error', (error) => {
-        console.error('Stream error:', error);
-        reject(error);
-      });
-      
-      stream.end(req.file.buffer);
-    });
-
-    res.json({ 
-      url: result.secure_url,
-      publicId: result.public_id
-    });
-  } catch (error) {
-    console.error('Upload controller error:', error);
-    
-    // More specific error handling
-    if (error.message.includes('ENOTFOUND') || error.code === 'ENOTFOUND') {
-      res.status(503).json({ 
-        error: 'Service temporarily unavailable. Cannot connect to image service.',
-        details: 'Network connectivity issue'
-      });
-    } else if (error.message.includes('configuration')) {
-      res.status(500).json({ 
-        error: 'Server configuration error',
-        details: error.message
-      });
-    } else {
-      res.status(400).json({ 
-        error: 'Upload failed',
-        details: error.message
-      });
+      } catch (err) {
+        console.warn('Failed to associate uploaded logo with website:', err);
+      }
     }
-  }
+    if (uploaded) return originalJson(uploaded);
+    return originalJson(payload);
+  };
+  return exports.uploadProductImages(req, res);
 };
 
 exports.uploadPDF = async (req, res) => {

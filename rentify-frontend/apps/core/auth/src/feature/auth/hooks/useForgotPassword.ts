@@ -1,6 +1,6 @@
 // src/hooks/useForgotPassword.ts
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import {
   useForgotPasswordMutation,
@@ -11,57 +11,70 @@ import {
   formatCambodianPhone, 
   validateCambodianPhone 
 } from '../utils/phoneUtils';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
 
 export const useForgotPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const location = useLocation();
   const { websiteId } = useWebsiteData();
+  const { t, isKhmer } = useAuthLanguage();
 
   const [forgotPasswordMutation] = useForgotPasswordMutation();
   const [forgotPasswordCustomerMutation] = useForgotPasswordCustomerMutation();
 
-  const handleRequestReset = async (contact: string) => {
+  const resetStatus = () => {
+    setError('');
+    setSuccess('');
+  };
+
+  const handleRequestReset = async (contact: string): Promise<boolean> => {
     setError('');
     setSuccess('');
     setLoading(true);
 
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
-    const isPhone = validateCambodianPhone(contact);
+    const cleanContact = (contact || '').trim();
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanContact);
+    const isPhone = validateCambodianPhone(cleanContact);
 
     if (!isEmail && !isPhone) {
-      setError('Please enter a valid email or phone number');
+      setError(
+        isKhmer
+          ? 'សូមបញ្ចូលលេខទូរស័ព្ទ ឬអ៊ីមែលត្រឹមត្រូវ'
+          : 'Please enter a valid email or phone number'
+      );
       setLoading(false);
-      return;
+      return false;
     }
 
     try {
       const payload: any = {
-        email: isEmail ? contact : null,
-        phoneNumber: isPhone ? sanitizePhoneNumber(contact) : null,
+        email: isEmail ? cleanContact : null,
+        phoneNumber: isPhone ? sanitizePhoneNumber(cleanContact) : null,
       };
 
-      const response = websiteId
-        ? await forgotPasswordCustomerMutation({ ...payload, storeId: websiteId }).unwrap()
-        : await forgotPasswordMutation(payload).unwrap();
+      if (websiteId) {
+        await forgotPasswordCustomerMutation({ ...payload, storeId: websiteId }).unwrap();
+      } else {
+        await forgotPasswordMutation(payload).unwrap();
+      }
 
-      setSuccess(`Reset instructions sent to your ${isEmail ? 'email' : 'phone'}`);
-      
-      // Redirect to reset page after 2 seconds
-      setTimeout(() => {
-        navigate('/reset-password', { 
-          state: { 
-            contactMethod: isEmail ? 'email' : 'phone',
-            contact: contact
-          }
-        });
-      }, 2000);
+      setSuccess(
+        isKhmer
+          ? `ការណែនាំកំណត់ពាក្យសម្ងាត់ថ្មីត្រូវបានផ្ញើទៅកាន់ ${isEmail ? 'អ៊ីមែល' : 'ទូរស័ព្ទ'} របស់អ្នក`
+          : `Reset instructions sent to your ${isEmail ? 'email' : 'phone'}`
+      );
+      return true;
     } catch (err: any) {
       setError(
         err?.data?.error ||
-        `Failed to send reset instructions. Please try again.`
+        err?.data?.message ||
+        (isKhmer
+          ? 'មិនអាចផ្ញើការណែនាំបានទេ។ សូមពិនិត្យព័ត៌មានម្តងទៀត។'
+          : 'Failed to send reset instructions. Please try again.')
       );
+      return false;
     } finally {
       setLoading(false);
     }
@@ -71,6 +84,7 @@ export const useForgotPassword = () => {
     error,
     success,
     loading,
+    resetStatus,
     handleRequestReset,
     formatCambodianPhone,
     validateCambodianPhone,

@@ -19,12 +19,12 @@ import {
   SheetHeader, 
   SheetTitle, 
   SheetTrigger 
-} from '@rentify/shared/ui/Sheet';
+} from '@rentify/shared/ui/sheet';
 import { 
   Popover, 
   PopoverContent, 
   PopoverTrigger 
-} from '@rentify/shared/ui/Popover';
+} from '@rentify/shared/ui/popover';
 import { Switch } from '@rentify/shared/ui/switch';
 import { useState } from 'react';
 import { pdf, PDFDownloadLink } from '@react-pdf/renderer';

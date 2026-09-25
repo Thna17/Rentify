@@ -1,12 +1,12 @@
-// routes/deployments.js
+// routes/deploymentRoute.js
 const express = require('express');
 const router = express.Router();
 const deploymentController = require('../controllers/deploymentController');
 const { verifyToken } = require('../middlewares/auth');
-const { requireWebsiteOwner, requireDeploymentOwner } = require('../middlewares/authorization');
+const { requireWebsiteOwner } = require('../middlewares/authorization');
 
 router.post('/:websiteId/publish', verifyToken, requireWebsiteOwner, deploymentController.publishWebsite);
-router.get('/:deploymentId/status', verifyToken, requireDeploymentOwner, deploymentController.checkDeploymentStatus);
+router.get('/:websiteId/status', verifyToken, requireWebsiteOwner, deploymentController.checkDeploymentStatus);
 router.put('/status', verifyToken, requireWebsiteOwner, deploymentController.updateWebsiteStatus);
 
 module.exports = router;

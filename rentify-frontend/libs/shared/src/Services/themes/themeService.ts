@@ -5,7 +5,7 @@ import { templateThemes } from '../../themes';
 import { Theme } from '../../types';
 
 // Hex to OKLCH conversion
-const hexToOklch = (hex: string): string => {
+export const hexToOklch = (hex: string): string => {
   if (!hex.startsWith('#')) return hex;
 
   const r = parseInt(hex.slice(1, 3), 16) / 255;

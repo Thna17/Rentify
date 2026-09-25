@@ -1,0 +1,12 @@
+# Context is the repository root; send only the frontend sources.
+**
+!rentify-frontend
+!marketplace-frontend
+!admin-frontend
+!deploy/vps/web
+**/node_modules
+**/dist
+**/.angular
+**/.nx
+**/.env
+**/.env.*

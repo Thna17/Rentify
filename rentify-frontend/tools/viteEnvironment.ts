@@ -41,9 +41,13 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     hostedStorefrontBuyerEnabled: env.VITE_HOSTED_STOREFRONT_BUYER_ENABLED || 'false',
   };
 
+  // A laptop demo (e.g. deploy/mekhla-demo) publishes a storefront whose sign-in
+  // and dashboard links still point at this machine; it must opt in explicitly.
+  const allowLocalhostLinks = development || env.VITE_ALLOW_LOCALHOST_LINKS === 'true';
+
   for (const [key, value] of Object.entries(config)) {
     if (!value) throw new Error(`Missing required public environment variable for ${key}`);
-    if (!development && /localhost|127\.0\.0\.1/.test(value)) {
+    if (!allowLocalhostLinks && /localhost|127\.0\.0\.1/.test(value)) {
       throw new Error(`${key} cannot use localhost outside development`);
     }
   }

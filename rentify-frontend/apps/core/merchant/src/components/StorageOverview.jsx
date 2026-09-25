@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@rentify/shared/ui/card";
 import { Button } from "@rentify/shared/ui/button";
-import { Progress } from "@rentify/shared/ui/Progress";
+import { Progress } from "@rentify/shared/ui/progress";
 import { Badge } from "@rentify/shared/ui/badge";
 import { Skeleton } from "@rentify/shared/ui/skeleton";
 import { HardDrive, ArrowUp, Zap } from "lucide-react";

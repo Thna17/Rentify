@@ -1,0 +1,21 @@
+# Cloudflare Tunnel for the Rentify VPS stack. Runs as the `tunnel` service in
+# deploy/vps/compose.yaml; credentials.json (not in git) belongs to this tunnel.
+tunnel: cdfeeebe-4e2d-45ba-8645-a3ccf2289e71
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: rentify-api.mekhla.digital
+    service: http://core-api:3001
+  - hostname: rentify-commerce.mekhla.digital
+    service: http://ecommerce-api:4001
+  - hostname: rentify.mekhla.digital
+    service: http://web:80
+  - hostname: rentify-auth.mekhla.digital
+    service: http://web:80
+  - hostname: rentify-seller.mekhla.digital
+    service: http://web:80
+  - hostname: rentify-market.mekhla.digital
+    service: http://web:80
+  - hostname: rentify-admin.mekhla.digital
+    service: http://web:80
+  - service: http_status:404

@@ -1,0 +1,23 @@
+{
+  "name": "rentify-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified quality and release commands for the Rentify platform.",
+  "engines": {
+    "node": ">=20 <23",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix rentify-server && npm ci --prefix ecommerce-server && npm ci --prefix rentify-frontend && npm ci --prefix marketplace-frontend && npm ci --prefix admin-frontend",
+    "verify": "npm run verify:repository && npm run verify:core && npm run verify:commerce && npm run verify:frontend && npm run verify:marketplace && npm run verify:admin",
+    "verify:repository": "npm run secrets:scan && npm run verify:migrations && node tools/repository-policy.mjs",
+    "verify:core": "npm --prefix rentify-server run verify",
+    "verify:commerce": "npm --prefix ecommerce-server run verify",
+    "verify:frontend": "node tools/verify-frontend.mjs",
+    "verify:marketplace": "npm --prefix marketplace-frontend run lint && npm --prefix marketplace-frontend run typecheck && npm --prefix marketplace-frontend test && npm --prefix marketplace-frontend run build",
+    "verify:admin": "npm --prefix admin-frontend run lint && npm --prefix admin-frontend run typecheck && npm --prefix admin-frontend test && npm --prefix admin-frontend run build",
+    "verify:migrations": "node tools/verify-migrations.mjs",
+    "secrets:scan": "node tools/secret-scan.mjs",
+    "baseline:inventory": "node tools/classify-worktree.mjs"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "storefront",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/storefront/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/storefront",
+        "configFile": "apps/storefront/vite.config.ts",
+        "base": "/",
+        "mode": "production"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "options": {
+        "buildTarget": "storefront:build",
+        "port": 4900
+      }
+    }
+  }
+}

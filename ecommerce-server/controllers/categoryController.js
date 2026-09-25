@@ -1,15 +1,36 @@
 // controllers/categoryController.js (port 4000)
 const { Category } = require("../models");
 
+const MAX_CATEGORY_NAME = 80;
+
+// Optional category photo: an https link, as returned by the image upload.
+const categoryImage = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "https:" && !url.username && !url.password && url.href.length <= 2048 ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 exports.createCategory = async (req, res) => {
   try {
     const { websiteId } = req.params;
 
-    const { id, name } = req.body;
+    const { id } = req.body;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    if (!name || name.length > MAX_CATEGORY_NAME) {
+      return res.status(400).json({ error: `Category name is required (up to ${MAX_CATEGORY_NAME} characters)` });
+    }
+    const image = categoryImage(req.body.image);
+    if (image === undefined) return res.status(400).json({ error: "Category image must be an https link" });
+
     const category = await Category.create({
       id, // Use the same ID as in WebsiteContent
       websiteId,
       name,
+      ...(image && { image }),
       status: "active",
     });
     res.status(201).json(category);

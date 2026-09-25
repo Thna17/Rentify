@@ -1,0 +1,20 @@
+# Default repository owner. Add named teammates as their areas are formally assigned.
+* @Thna17
+
+# Backend authorities
+/rentify-server/ @Thna17
+/ecommerce-server/ @Thna17
+
+# Browser applications
+/rentify-frontend/ @Thna17
+/marketplace-frontend/ @Thna17
+/admin-frontend/ @Thna17
+
+# High-risk and operational areas
+/rentify-server/src/controllers/paymentController.js @Thna17
+/rentify-server/src/services/authService.js @Thna17
+/ecommerce-server/core/payment/ @Thna17
+/ecommerce-server/controllers/PaymentController.js @Thna17
+/deploy/ @Thna17
+/.github/ @Thna17
+/docs/ @Thna17

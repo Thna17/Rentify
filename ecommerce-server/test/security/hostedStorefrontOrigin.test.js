@@ -19,3 +19,20 @@ test('hosted storefront CORS accepts only controlled single-label HTTPS origins'
     else process.env.HOSTED_STOREFRONT_DOMAIN = original;
   }
 });
+
+test('local development may allow one HTTP port on *.localhost, never in production', () => {
+  const saved = { ...process.env };
+  try {
+    Object.assign(process.env, { HOSTED_STOREFRONT_DOMAIN: 'localhost', HOSTED_STOREFRONT_DEV_PORT: '4900', NODE_ENV: 'development' });
+    assert.equal(isHostedStorefrontOrigin('http://aura.localhost:4900'), true);
+    assert.equal(isHostedStorefrontOrigin('http://aura.localhost:5000'), false);
+    assert.equal(isHostedStorefrontOrigin('http://localhost:4900'), false);
+    process.env.NODE_ENV = 'production';
+    assert.equal(isHostedStorefrontOrigin('http://aura.localhost:4900'), false);
+  } finally {
+    for (const key of ['HOSTED_STOREFRONT_DOMAIN', 'HOSTED_STOREFRONT_DEV_PORT', 'NODE_ENV']) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+  }
+});

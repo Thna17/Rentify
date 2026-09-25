@@ -8,7 +8,7 @@ import {
 import { Button } from '@rentify/shared/ui/button';
 import { Label } from '@rentify/shared/ui/label';
 import { Badge } from '@rentify/shared/ui/badge';
-import { Progress } from '@rentify/shared/ui/Progress';
+import { Progress } from '@rentify/shared/ui/progress';
 import {
   Card,
   CardHeader,

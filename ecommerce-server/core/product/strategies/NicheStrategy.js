@@ -19,6 +19,16 @@ class NicheStrategy {
   getRecommendedOptions(productType) {
     throw new Error('getRecommendedOptions must be implemented');
   }
+
+  /**
+   * Extra fields a quick product form must ask for so validateProduct and
+   * validateOptions pass. `target` says where the value goes:
+   * 'nicheAttributes' (by key) or 'option:<Name>' (a list becomes that option).
+   * type: 'text' | 'number' | 'list' (comma-separated values).
+   */
+  quickAddFields() {
+    return [];
+  }
 }
 
 // strategies/EcommerceStrategy.js
@@ -84,6 +94,13 @@ class EcommerceStrategy extends NicheStrategy {
 
 // strategies/FashionStrategy.js
 class FashionStrategy extends NicheStrategy {
+  quickAddFields() {
+    return [
+      { key: 'fabric', target: 'nicheAttributes', type: 'text', label: 'Fabric', required: true },
+      { key: 'sizes', target: 'option:Size', optionType: 'size', type: 'list', label: 'Sizes', hint: 'Comma-separated, e.g. S, M, L', required: true },
+    ];
+  }
+
   validateProduct(productData) {
     const errors = [];
     
@@ -158,6 +175,13 @@ class FashionStrategy extends NicheStrategy {
 
 // strategies/SkincareStrategy.js
 class SkincareStrategy extends NicheStrategy {
+  quickAddFields() {
+    return [
+      { key: 'skinType', target: 'nicheAttributes', type: 'list', label: 'Skin types', hint: 'Comma-separated, e.g. Dry, Oily', required: true },
+      { key: 'ingredients', target: 'nicheAttributes', type: 'list', label: 'Ingredients', hint: 'Comma-separated', required: true },
+    ];
+  }
+
   validateProduct(productData) {
     const errors = [];
     
@@ -226,6 +250,11 @@ class SkincareStrategy extends NicheStrategy {
 
 // strategies/RestaurantStrategy.js
 class RestaurantStrategy extends NicheStrategy {
+  // Food is the default product type for restaurants, and needs a preparation time.
+  quickAddFields() {
+    return [{ key: 'preparationTime', target: 'nicheAttributes', type: 'number', label: 'Preparation time (minutes)', required: true }];
+  }
+
   validateProduct(productData) {
     const errors = [];
     

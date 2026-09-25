@@ -51,7 +51,7 @@ export function useStats() {
           setStoreOrders(data.orders);
         }
       })
-      .catch(() => {})
+      .catch(() => undefined)
       .finally(() => {
         if (active) setStoreOrdersLoading(false);
       });

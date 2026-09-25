@@ -1,9 +1,24 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Image as ImageIcon, X, Upload } from 'lucide-react';
 // Shadcn Components
 import { Button } from '@rentify/shared/ui/button';
 import { Badge } from '@rentify/shared/ui/badge';
-import { Progress } from '@rentify/shared/ui/Progress';
+import { Progress } from '@rentify/shared/ui/progress';
+import { selectProductImages } from '../../../services/productImages';
+
+const ImagePreview = ({ image, alt, className }) => {
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!(image instanceof File)) return undefined;
+    const url = URL.createObjectURL(image);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
+
+  const src = typeof image === 'string' ? image : image?.url || previewUrl;
+  return src ? <img src={src} alt={alt} className={className} /> : null;
+};
 
 export const ImageUploader = ({
   images = [],
@@ -12,6 +27,7 @@ export const ImageUploader = ({
   isUploading,
   uploadProgress,
   onRemoveImage,
+  onValidationError,
 }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
@@ -43,16 +59,9 @@ export const ImageUploader = ({
   };
 
   const handleFiles = (files) => {
-    const fileList = Array.from(files);
-    const imageFiles = fileList.filter((file) =>
-      file.type.startsWith('image/')
-    );
-    const remainingSlots = maxImages - images.length;
-    const filesToProcess = imageFiles.slice(0, remainingSlots);
-
-    if (filesToProcess.length > 0) {
-      onImagesChange(filesToProcess);
-    }
+    const { accepted, rejected } = selectProductImages(files, images.length);
+    onValidationError?.(rejected);
+    if (accepted.length > 0) onImagesChange(accepted);
   };
 
   const canAddMore = images.length < maxImages;
@@ -67,21 +76,11 @@ export const ImageUploader = ({
               key={index}
               className="relative rounded-lg overflow-hidden aspect-square border"
             >
-              {typeof image === 'string' ? (
-                <img
-                  src={image}
-                  alt={`Product preview ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : image instanceof File ? (
-                <img
-                  src={URL.createObjectURL(image)}
-                  alt={`Upload preview ${index + 1}`}
-                  className={`w-full h-full object-cover ${
-                    isUploading ? 'grayscale' : ''
-                  }`}
-                />
-              ) : null}
+              <ImagePreview
+                image={image}
+                alt={`Product preview ${index + 1}`}
+                className={`w-full h-full object-cover ${isUploading ? 'opacity-60' : ''}`}
+              />
 
               {index === 0 && (
                 <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
@@ -93,6 +92,9 @@ export const ImageUploader = ({
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2 w-6 h-6"
+                type="button"
+                aria-label={`Remove product image ${index + 1}`}
+                disabled={isUploading}
                 onClick={() => onRemoveImage(index)}
               >
                 <X className="h-3 w-3" />
@@ -136,9 +138,9 @@ export const ImageUploader = ({
             </h4>
             <p className="text-sm text-muted-foreground mb-4">
               Upload up to {maxImages - images.length} more images (JPG, PNG,
-              GIF up to 10MB each)
+              WebP, or GIF up to 5 MB each)
             </p>
-            <Button variant="outline">
+            <Button type="button" variant="outline" disabled={isUploading}>
               <Upload className="h-4 w-4 mr-2" />
               Choose Files
             </Button>

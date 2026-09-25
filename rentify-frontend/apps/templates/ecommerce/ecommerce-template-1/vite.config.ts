@@ -19,30 +19,18 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     noDiscovery: true,
     include: [
+      '@radix-ui/react-dialog',
       '@reduxjs/toolkit',
       '@reduxjs/toolkit/query/react',
-      '@n8tb1t/use-scroll-position',
-      // @react-pdf/renderer reaches these CommonJS modules from the order
-      // confirmation invoice action. With noDiscovery enabled, Vite otherwise
-      // serves transitive CommonJS modules directly as ESM and their default
-      // imports fail at runtime.
-      '@react-pdf/renderer',
-      'base64-js',
-      'buffer',
-      'class-variance-authority',
-      'clsx',
-      'framer-motion',
       'lucide-react',
+      'qrcode.react',
       'react',
       'react-dom',
       'react-dom/client',
       'react-redux',
       'react-router-dom',
       'redux-persist',
-      'redux-persist/integration/react',
       'redux-persist/lib/storage',
-      'tailwind-merge',
-      'unicode-trie',
       'use-sync-external-store/shim',
       'use-sync-external-store/shim/index.js',
       'use-sync-external-store/with-selector',

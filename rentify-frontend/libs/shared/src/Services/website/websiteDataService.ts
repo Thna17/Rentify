@@ -2,6 +2,7 @@ import { WebsiteContent, StaffWithContact, WebsiteData } from '../../types';
 export class WebsiteDataService {
 private data: WebsiteData = {
 websiteId: null,
+niche: null,
 userId: null,
 userEmail: null,
 userPhoneNumber: null,
@@ -17,6 +18,7 @@ updateFromDomainData(apiData: any) {
 if (!apiData) return;
 const {
 websiteId,
+niche = null,
 userId,
 userEmail,
 userPhoneNumber,
@@ -28,6 +30,7 @@ storageUsedMB, // If present
 } = apiData;
 this.data = {
 websiteId,
+niche,
 userId,
 userEmail,
 userPhoneNumber,
@@ -43,6 +46,7 @@ updateFromDashboardData(apiData: any) {
 if (!apiData) return;
 const {
 id: websiteId,
+niche = null,
 userId,
 userData,
 staffData = [],
@@ -53,6 +57,7 @@ storageUsedMB, // If present
 } = apiData;
 this.data = {
 websiteId,
+niche,
 userId,
 userEmail: userData?.email || null,
 userPhoneNumber: userData?.phoneNumber || null,
@@ -71,6 +76,7 @@ permissions: s.permissions || [],
 setDefaultData() {
 this.data = {
 websiteId: null,
+niche: null,
 userId: null,
 userEmail: null,
 userPhoneNumber: null,

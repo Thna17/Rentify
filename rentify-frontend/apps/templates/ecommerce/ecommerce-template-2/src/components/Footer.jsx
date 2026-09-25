@@ -1,99 +1,128 @@
-import React from 'react';
-import { 
-  MapPin, 
-  Phone, 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Linkedin 
-} from 'lucide-react';
-import { useStorefrontWebsite as useWebsiteData } from '@rentify/storefront';
-import { cn } from '@rentify/storefront';
+import { Link } from 'react-router-dom';
+import { ArrowUp, Mail, MapPin, Phone } from 'lucide-react';
+import { useStorefrontCategories, useStorefrontWebsite } from '@rentify/storefront/website';
+import { useI18n } from '../i18n';
+import { PATHS, catalogPath } from '../paths';
+import { KhmerSkyline, LotusOrnament } from './decor/Artwork';
+import { SocialIcons } from './SocialIcons';
+import { StoreMark } from './StoreMark';
+import { PaymentMethods } from './PaymentMethods';
 
-export default function Footer() {
-  const { getFilteredContent } = useWebsiteData();
+function Column({ title, children }) {
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <ul className="mt-4 space-y-2.5 text-sm">{children}</ul>
+    </div>
+  );
+}
 
-  const globalSettingContent = getFilteredContent('global setting');
-  const Locations = globalSettingContent.find((item) => item.label === 'Locations')?.value || '123 Premium Avenue, Luxury District';
-  const PhoneNumber = globalSettingContent.find((item) => item.label === 'Phone Number')?.value || '+855 12 345 678';
-  const socialMediaLinks = globalSettingContent.find(item => item.label === 'Social Media')?.value || {};
+const link = 'rounded text-muted-foreground transition-colors hover:text-primary';
 
-  const socialIcons = [
-    { name: 'facebook', icon: Facebook, label: 'Facebook' },
-    { name: 'twitter', icon: Twitter, label: 'Twitter' },
-    { name: 'instagram', icon: Instagram, label: 'Instagram' },
-    { name: 'linkedin', icon: Linkedin, label: 'LinkedIn' },
-  ];
+/**
+ * Light editorial footer over a faint temple skyline. Columns list the real
+ * categories, customer pages and only the contact details and social links
+ * the merchant has provided.
+ */
+export function Footer() {
+  const { t } = useI18n();
+  const { identity } = useStorefrontWebsite();
+  const { categories } = useStorefrontCategories();
+  const year = new Date().getFullYear();
+  const telHref = identity.phone ? `tel:${identity.phone.replace(/[^\d+]/g, '')}` : null;
+  const hasSocial = identity.socialLinks.length > 0;
 
   return (
-    <footer className="w-full bg-background border-t">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        {/* Contact Info */}
-        <div className="flex flex-col items-center text-center mb-8 lg:mb-12 space-y-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4" />
-            <span>{Locations}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="w-4 h-4" />
-            <span>{PhoneNumber}</span>
-          </div>
+    <footer className="relative mt-16 overflow-hidden border-t border-border bg-accent/60 sm:mt-20">
+      <KhmerSkyline className="pointer-events-none absolute inset-x-0 bottom-0 h-28 w-full text-primary opacity-60 sm:h-40" />
+
+      <div className={`store-container relative grid gap-10 py-12 sm:grid-cols-2 sm:py-14 ${hasSocial ? 'lg:grid-cols-[1.5fr_1fr_1fr_1fr]' : 'lg:grid-cols-[1.5fr_1fr_1fr]'}`}>
+        <div>
+          <Link to={PATHS.HOME} className="inline-flex items-center gap-3 rounded-full">
+            <StoreMark identity={identity} size="lg" />
+          </Link>
+          {identity.heroSubtitle && <p className="mt-4 max-w-xs text-sm text-muted-foreground">{identity.heroSubtitle}</p>}
         </div>
 
-        {/* Accepted Payment Methods Strip */}
-        <div className="flex flex-col sm:flex-row items-center justify-between py-6 border-t gap-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Accepted & Supported Payments
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200 shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              Cash on Delivery (Available)
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50/80 text-amber-700 border border-amber-200">
-              Bakong KHQR
-              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-800">Soon</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50/80 text-amber-700 border border-amber-200">
-              ABA PayWay
-              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-800">Soon</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50/80 text-amber-700 border border-amber-200">
-              Visa / Mastercard
-              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-800">Soon</span>
-            </span>
-          </div>
-        </div>
+        <Column title={t('footer.shop')}>
+          <li>
+            <Link to={PATHS.PRODUCTS} className={link}>
+              {t('nav.shopAll')}
+            </Link>
+          </li>
+          {categories.slice(0, 6).map((category) => (
+            <li key={category.id}>
+              <Link to={catalogPath({ category: category.id })} className={link}>
+                {category.name}
+              </Link>
+            </li>
+          ))}
+        </Column>
 
-        {/* Bottom Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Rentify. All Rights Reserved
+        <Column title={t('footer.help')}>
+          <li>
+            <Link to={PATHS.ACCOUNT} className={link}>
+              {t('nav.account')}
+            </Link>
+          </li>
+          <li>
+            <Link to={PATHS.CART} className={link}>
+              {t('nav.cart')}
+            </Link>
+          </li>
+          {identity.phone && (
+            <li className="flex gap-2">
+              <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <a href={telHref} className={link}>
+                {identity.phone}
+              </a>
+            </li>
+          )}
+          {identity.email && (
+            <li className="flex gap-2">
+              <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <a href={`mailto:${identity.email}`} className={`${link} break-all`}>
+                {identity.email}
+              </a>
+            </li>
+          )}
+          {identity.location && (
+            <li className="flex gap-2 text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              {identity.location}
+            </li>
+          )}
+        </Column>
+
+        {hasSocial && (
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">{t('footer.followUs')}</h2>
+            <SocialIcons
+              links={identity.socialLinks}
+              label={t('footer.followUs')}
+              className="mt-4"
+              itemClassName="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/20 bg-card text-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="store-container relative">
+        <PaymentMethods className="border-t border-foreground/10 py-5" />
+        <div className="flex flex-col items-center gap-4 border-t border-foreground/10 py-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
+          <p>
+            {identity.copyright || `© ${year} ${identity.name}`}
+            {!/rentify/i.test(identity.copyright) && <span> · {t('footer.poweredBy')}</span>}
           </p>
-
-          <div className="flex items-center gap-3">
-            {socialIcons.map(({ name, icon: Icon, label }) => {
-              const url = socialMediaLinks[name];
-              return (
-                url?.trim() && (
-                  <a
-                    key={name}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className={cn(
-                      "p-2 text-muted-foreground hover:text-foreground",
-                      "transition-all duration-200 hover:scale-110",
-                      "rounded-lg hover:bg-accent"
-                    )}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </a>
-                )
-              );
-            })}
-          </div>
+          <LotusOrnament className="hidden h-5 w-5 text-primary/60 sm:block" />
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-card px-4 py-2 font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('footer.backToTop')}
+          </button>
         </div>
       </div>
     </footer>

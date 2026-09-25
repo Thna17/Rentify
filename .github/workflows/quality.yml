@@ -1,0 +1,188 @@
+name: Platform quality
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-policy:
+    name: Repository policy and secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run verify:repository
+
+  core-api:
+    name: Core API
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: rentify_core_ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd="redis-cli ping" --health-interval=5s
+          --health-timeout=3s --health-retries=20
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: rentify_core_ci
+      DB_USER: root
+      DB_PASSWORD: root
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      JWT_SECRET: ci-only-jwt-secret-at-least-32-chars
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-at-least-32-chars
+      COOKIE_SECRET: ci-only-cookie-secret-at-least-32-chars
+      SESSION_SECRET: ci-only-session-secret-at-least-32-chars
+      SERVICE_TO_SERVICE_TOKEN: ci-only-service-token-at-least-32-chars
+      PAYMENT_CONFIG_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rentify-server/package-lock.json
+      - run: npm ci --prefix rentify-server
+      - run: npm run verify:core
+      - run: npm --prefix rentify-server run db:migrate
+      - run: npm --prefix rentify-server run db:migrate:verify
+
+  commerce-api:
+    name: Commerce API
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: rentify_commerce_ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd="redis-cli ping" --health-interval=5s
+          --health-timeout=3s --health-retries=20
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: rentify_commerce_ci
+      DB_USER: root
+      DB_PASSWORD: root
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      JWT_SECRET: ci-only-jwt-secret-at-least-32-chars
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-at-least-32-chars
+      COOKIE_SECRET: ci-only-cookie-secret-at-least-32-chars
+      SESSION_SECRET: ci-only-session-secret-at-least-32-chars
+      SERVICE_TO_SERVICE_TOKEN: ci-only-service-token-at-least-32-chars
+      PAYMENT_CONFIG_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ecommerce-server/package-lock.json
+      - run: npm ci --prefix ecommerce-server
+      - run: npm run verify:commerce
+      - run: npm --prefix ecommerce-server run db:migrate
+      - run: npm --prefix ecommerce-server run db:migrate:verify
+
+  react-frontend:
+    name: React applications
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      RENTIFY_API_URL: https://api.rentify.test
+      ECOMMERCE_API_URL: https://commerce.rentify.test
+      AUTH_URL: https://auth.rentify.test
+      MERCHANT_DASHBOARD_URL: https://merchant.rentify.test
+      MARKETING_URL: https://www.rentify.test
+      MARKETPLACE_URL: https://market.rentify.test
+      ADMIN_DASHBOARD_URL: https://admin.rentify.test
+      STOREFRONT_ORIGIN: https://store.rentify.test
+      VITE_RENTIFY_API_URL: https://api.rentify.test
+      VITE_ECOMMERCE_API_URL: https://commerce.rentify.test
+      VITE_AUTH_URL: https://auth.rentify.test
+      VITE_MERCHANT_DASHBOARD_URL: https://merchant.rentify.test
+      VITE_MARKETING_URL: https://www.rentify.test
+      VITE_MARKETPLACE_URL: https://market.rentify.test
+      VITE_ADMIN_DASHBOARD_URL: https://admin.rentify.test
+      VITE_STOREFRONT_ORIGIN: https://store.rentify.test
+      VITE_HOSTED_STOREFRONT_DOMAIN: stores.rentify.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rentify-frontend/package-lock.json
+      - run: npm ci --prefix rentify-frontend
+      - run: npm run verify:frontend
+
+  marketplace:
+    name: Marketplace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: marketplace-frontend/package-lock.json
+      - run: npm ci --prefix marketplace-frontend
+      - run: npm run verify:marketplace
+
+  admin:
+    name: Admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin-frontend/package-lock.json
+      - run: npm ci --prefix admin-frontend
+      - run: npm run verify:admin
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

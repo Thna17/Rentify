@@ -1,6 +1,6 @@
 // src/hooks/useResetPassword.ts
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import {
   useResetPasswordMutation,
@@ -9,6 +9,7 @@ import {
 import { 
   formatCambodianPhone, 
 } from '../utils/phoneUtils';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
 
 export const useResetPassword = () => {
   const [error, setError] = useState('');
@@ -18,8 +19,9 @@ export const useResetPassword = () => {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const location = useLocation();
-  const navigate = useNavigate();
+  const params = useParams<{ token?: string; storeId?: string }>();
   const { websiteId } = useWebsiteData();
+  const { t, isKhmer } = useAuthLanguage();
 
   const [resetPasswordMutation] = useResetPasswordMutation();
   const [resetPasswordCustomerMutation] = useResetPasswordCustomerMutation();
@@ -28,42 +30,53 @@ export const useResetPassword = () => {
     if (location.state?.contactMethod) {
       setContactMethod(location.state.contactMethod);
       if (location.state.contactMethod === 'email') {
-        setEmail(location.state.contact);
+        setEmail(location.state.contact || '');
       } else {
-        setPhoneNumber(location.state.contact);
+        setPhoneNumber(location.state.contact || '');
       }
     }
   }, [location]);
 
-  const handleResetPassword = async (token: string, password: string) => {
+  const handleResetPassword = async (token: string, password: string): Promise<boolean> => {
     setError('');
     setSuccess('');
     setLoading(true);
 
     try {
       const payload: any = {
-        token,
+        token: token.trim(),
         password,
       };
 
-      if (websiteId) {
-        payload.storeId = websiteId;
+      const effectiveStoreId = websiteId || params.storeId;
+      if (effectiveStoreId) {
+        payload.storeId = effectiveStoreId;
         await resetPasswordCustomerMutation(payload).unwrap();
       } else {
         await resetPasswordMutation(payload).unwrap();
       }
 
-      setSuccess('Password reset successfully! Redirecting to login...');
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      setSuccess(
+        isKhmer
+          ? 'ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ។'
+          : 'Your password has been reset successfully.'
+      );
+      return true;
     } catch (err: any) {
-      setError(err?.data?.error || 'Failed to reset password. Please try again.');
+      setError(
+        err?.data?.error ||
+        err?.data?.message ||
+        (isKhmer
+          ? 'មិនអាចកំណត់ពាក្យសម្ងាត់ឡើងវិញបានទេ។ សូមពិនិត្យលេខកូដ និងព្យាយាមម្តងទៀត។'
+          : 'Failed to reset password. Please check your verification code and try again.')
+      );
+      return false;
     } finally {
       setLoading(false);
     }
   };
+
+  const clearError = () => setError('');
 
   return {
     error,
@@ -73,6 +86,7 @@ export const useResetPassword = () => {
     email,
     phoneNumber,
     handleResetPassword,
+    clearError,
     formatCambodianPhone,
   };
 };

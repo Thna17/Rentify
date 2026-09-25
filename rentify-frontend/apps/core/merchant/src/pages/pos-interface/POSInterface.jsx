@@ -9,7 +9,7 @@ import { ReceiptModal } from './components/ReceiptModal';
 import usePOS from '../../hooks/usePOS';
 import { Badge } from "@rentify/shared/ui/badge";
 import { Button } from "@rentify/shared/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@rentify/shared/ui/Tabs";
+import { Tabs, TabsList, TabsTrigger } from "@rentify/shared/ui/tabs";
 import { 
   ShoppingCart, 
   Clock, 

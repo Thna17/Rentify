@@ -101,12 +101,12 @@
   }
 
   .font-khmer, [lang="km"] {
-    font-family: 'Noto Sans Khmer', 'Inter', system-ui, sans-serif;
+    font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Inter', system-ui, sans-serif;
   }
 
   /* Khmer-specific text styling */
   .font-khmer {
-    line-height: 1.8;
+    line-height: 1.65;
     letter-spacing: 0.01em;
   }
 
@@ -119,6 +119,16 @@
   .animate-gradient-x {
     animation: gradient-shift 4s ease-in-out infinite;
     background-size: 200% 200%;
+  }
+
+  .animate-shake {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
   }
 
   .text-gradient {

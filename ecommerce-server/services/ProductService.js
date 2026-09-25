@@ -467,6 +467,17 @@ async create(productData, transaction = null) {
     return builder.getRecommendedOptions(productType);
   }
 
+  async getProductFormConfig(productType = "physical") {
+    const niche = await this.getWebsiteNiche();
+    const builder = new ProductBuilder(this.websiteId, niche);
+
+    return {
+      niche,
+      recommendedOptions: builder.getRecommendedOptions(productType),
+      quickAddFields: builder.strategy.quickAddFields(),
+    };
+  }
+
   async getProductsByCategory(options = {}) {
     const {
       categoryId,

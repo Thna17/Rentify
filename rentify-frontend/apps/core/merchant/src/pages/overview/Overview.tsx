@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { LayoutDashboard, Calendar, Filter, Store, ShoppingBag, TerminalSquare, PlusCircle } from 'lucide-react';
 import useStats from '../../hooks/useStats';
 import { MetricCard } from './components/MetricCard';
-// @ts-ignore
+// @ts-expect-error Legacy JSX component has no declaration file yet.
 import { TopProducts } from './components/TopProducts';
-// @ts-ignore
+// @ts-expect-error Legacy JSX component has no declaration file yet.
 import { RevenueChart } from './components/RevenueChart';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
 import { useChannels } from '../../context/ChannelContext';

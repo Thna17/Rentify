@@ -1,6 +1,6 @@
 import { useTranslation } from '@rentify/utils';
 import { Button } from "@rentify/shared/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@rentify/shared/ui/Toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@rentify/shared/ui/toggle-group";
 import { Grid, List, Plus } from 'lucide-react';
 
 export const ProductControlsBar = ({

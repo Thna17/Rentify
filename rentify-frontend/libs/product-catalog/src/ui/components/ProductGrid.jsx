@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useCart } from '@rentify/cart/hooks/useCart';
 import { Button } from "@rentify/shared/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@rentify/shared/ui/card";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@rentify/shared/ui/Pagination";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@rentify/shared/ui/pagination";
 import { Skeleton } from "@rentify/shared/ui/skeleton";
 import { ProductCard } from './ProductCard';
 

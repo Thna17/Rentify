@@ -25,6 +25,46 @@ const STARTER_PKG_ID = '44444444-4444-4444-8444-444444444441';
 const GROWTH_PKG_ID = '44444444-4444-4444-8444-444444444442';
 const ENTERPRISE_PKG_ID = '44444444-4444-4444-8444-444444444443';
 
+
+// Template 2 section fields merchants edit in the design editor. Mirrors
+// TEMPLATE_2_FIELDS in rentify-frontend/apps/templates/ecommerce/ecommerce-template-2/src/storeContent.js
+// (Hero Headline, Hero Subtitle and Hero Image are seeded separately). Every
+// field starts empty: the storefront hides a section until the merchant fills
+// it in, so a new store never shows placeholder claims.
+const TEMPLATE_2_SECTION_FIELDS = [
+  ['Hero', 'Hero Eyebrow'],
+  ['Hero', 'Hero Button Text'],
+  ['Hero', 'Hero Note'],
+  ['Highlights', 'Highlight 1'],
+  ['Highlights', 'Highlight 2'],
+  ['Highlights', 'Highlight 3'],
+  ['Highlights', 'Highlight 4'],
+  ['Feature Banner', 'Feature Eyebrow'],
+  ['Feature Banner', 'Feature Title'],
+  ['Feature Banner', 'Feature Text'],
+  ['Feature Banner', 'Feature Image', 'image'],
+  ['Feature Banner', 'Feature Button Text'],
+  ['Feature Banner', 'Feature Button Link'],
+  ['Feature Banner', 'Feature Note'],
+  ['Featured Products', 'Featured Title'],
+  ['Featured Products', 'Featured Category'],
+  ['Shop by Need', 'Shop by Need Title'],
+  ['Shop by Need', 'Shop by Need'],
+  ['Our Story', 'Story Title'],
+  ['Our Story', 'Story Text'],
+  ['Our Story', 'Story Image', 'image'],
+];
+
+// Demo values for the two development stores, keyed by label.
+const sectionContent = (websiteId, values) =>
+  TEMPLATE_2_SECTION_FIELDS.filter(([, label]) => values[label] !== undefined).map(([category, label, type = 'text']) => ({
+    websiteId,
+    category,
+    label,
+    type,
+    value: type === 'image' ? values[label] : { text: values[label] },
+  }));
+
 async function seedCore() {
   console.log('🌱 Starting Rentify Core Database Seeding...');
   await sequelize.authenticate();
@@ -113,10 +153,12 @@ async function seedCore() {
 
   // 2. Seed Users
   console.log('👤 Seeding users...');
-  const adminPassword = await bcrypt.hash('Admin@12345', 10);
-  const merchantPassword = await bcrypt.hash('Merchant@12345', 10);
-  const staffPassword = await bcrypt.hash('Staff@12345', 10);
-  const customerPassword = await bcrypt.hash('Customer@12345', 10);
+  // Deployed environments set SEED_*_PASSWORD so the demo accounts never use
+  // the development passwords below, which are public in this repository.
+  const adminPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'Admin@12345', 10);
+  const merchantPassword = await bcrypt.hash(process.env.SEED_MERCHANT_PASSWORD || 'Merchant@12345', 10);
+  const staffPassword = await bcrypt.hash(process.env.SEED_STAFF_PASSWORD || 'Staff@12345', 10);
+  const customerPassword = await bcrypt.hash(process.env.SEED_CUSTOMER_PASSWORD || 'Customer@12345', 10);
 
   const usersData = [
     {
@@ -301,6 +343,16 @@ async function seedCore() {
     },
   ];
 
+  templateContentsData.push(
+    ...TEMPLATE_2_SECTION_FIELDS.map(([category, label, type = 'text']) => ({
+      templateId: TEMPLATE_2_ID,
+      category,
+      label,
+      type,
+      value: '',
+    }))
+  );
+
   for (const tc of templateContentsData) {
     const existing = await TemplateContent.findOne({
       where: { templateId: tc.templateId, category: tc.category, label: tc.label },
@@ -322,6 +374,7 @@ async function seedCore() {
       templateId: TEMPLATE_1_ID,
       name: 'Aura Botanicals',
       domain: 'localhost',
+      subdomain: 'aura-botanicals',
       status: 'active',
       limits: { staff: 2, storage: 1024, products: 50 },
       currentUsage: { staff: 1, storage: 120, products: 6 },
@@ -332,6 +385,7 @@ async function seedCore() {
       templateId: TEMPLATE_1_ID,
       name: 'Aura Botanicals',
       domain: 'localhost',
+      subdomain: 'aura-botanicals',
       status: 'active',
     });
   }
@@ -363,6 +417,7 @@ async function seedCore() {
       templateId: TEMPLATE_2_ID,
       name: 'NexTech Electronics',
       domain: 'localhost:4600',
+      subdomain: 'nextech-electronics',
       status: 'active',
       limits: { staff: 5, storage: 5120, products: 500 },
       currentUsage: { staff: 1, storage: 250, products: 6 },
@@ -373,6 +428,7 @@ async function seedCore() {
       templateId: TEMPLATE_2_ID,
       name: 'NexTech Electronics',
       domain: 'localhost:4600',
+      subdomain: 'nextech-electronics',
       status: 'active',
     });
   }
@@ -501,6 +557,49 @@ async function seedCore() {
     },
   ];
 
+  websiteContentsData.push(
+    ...sectionContent(WEBSITE_ID, {
+      'Hero Eyebrow': 'Botanical skincare',
+      'Hero Note': 'Kind to skin, rooted in nature',
+      'Highlight 1': 'Natural ingredients | Plant extracts in every formula',
+      'Highlight 2': 'Clean formulas | Nothing harsh, nothing hidden',
+      'Highlight 3': 'Cash on delivery | Pay when your order arrives',
+      'Highlight 4': 'Delivery across Cambodia | Phnom Penh and provinces',
+      'Feature Eyebrow': 'A slower routine',
+      'Feature Title': 'Your daily skin ritual',
+      'Feature Text': 'Cleanse, treat and protect: three simple steps with botanicals chosen for a warm, humid climate.',
+      'Feature Image': ['https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1600&auto=format&fit=crop&q=80'],
+      'Feature Button Text': 'Build your routine',
+      'Feature Button Link': '/products',
+      'Feature Note': 'Rooted in nature',
+      'Featured Title': 'Treatment favourites',
+      'Featured Category': 'Serums & Treatments',
+      'Shop by Need': 'Hydrating, Brightening, Calming, Mineral, Vegan',
+      'Story Title': 'Modern skincare, Khmer roots',
+      'Story Text': 'Aura Botanicals blends plant extracts with modern formulation, made for everyday skin in Cambodia.',
+      'Story Image': ['https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=1200&auto=format&fit=crop&q=80'],
+    }),
+    ...sectionContent(TECH_WEBSITE_ID, {
+      'Hero Eyebrow': 'Everyday tech, made simple',
+      'Hero Note': 'Plug in and go',
+      'Highlight 1': 'Delivery across Cambodia | Phnom Penh and provinces',
+      'Highlight 2': 'Cash on delivery | Pay when your order arrives',
+      'Highlight 3': 'Help choosing | Ask us before you buy',
+      'Feature Eyebrow': 'Sound, focused',
+      'Feature Title': 'Hear more, carry less',
+      'Feature Text': 'Wireless headphones and earbuds for the commute, the office and everything between.',
+      'Feature Image': ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80'],
+      'Feature Button Text': 'Shop audio',
+      'Feature Button Link': '/products?category=c5555555-5555-4555-8555-555555555555',
+      'Featured Title': 'Desk setup',
+      'Featured Category': 'Laptops & Computing',
+      'Shop by Need': 'Wireless, Earbuds, Fitness, Keyboard, Charger',
+      'Story Title': 'Tech we would use ourselves',
+      'Story Text': 'NexTech picks a small range of devices and accessories, tests them, and ships them across Cambodia.',
+      'Story Image': ['https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=1200&auto=format&fit=crop&q=80'],
+    })
+  );
+
   for (const wc of websiteContentsData) {
     const existing = await WebsiteContent.findOne({
       where: { websiteId: wc.websiteId, category: wc.category, label: wc.label },
@@ -548,6 +647,26 @@ async function seedCore() {
 
   const seedTechStore = require('./seedTechStore');
   await seedTechStore();
+
+  // Aura's Website is seeded directly, so give it the Store every Website has
+  // (reusing the owner's Store when one exists) and queue its Commerce copy.
+  const storeService = require('../src/services/storeService');
+  const storeSyncService = require('../src/services/storeSyncService');
+  const auraWebsite = await Website.findByPk(WEBSITE_ID);
+  const auraStore = await storeService.ensureForWebsite({
+    ownerUserId: MERCHANT_ID,
+    businessData: { name: 'Aura Botanicals', primaryCategory: 'Beauty & Skincare' },
+  });
+  if (auraStore.marketplaceApprovalStatus !== 'approved' || !auraStore.marketplaceEnabled) {
+    await auraStore.update({
+      marketplaceEnabled: true,
+      marketplaceApprovalStatus: 'approved',
+      projectionVersion: auraStore.projectionVersion + 1,
+    });
+  }
+  if (auraWebsite && auraWebsite.storeId !== auraStore.id) await auraWebsite.update({ storeId: auraStore.id });
+  await storeSyncService.queueStore(auraStore, { websiteId: WEBSITE_ID });
+  console.log('✅ Aura Botanicals Store ready');
 
   const seedFourStores = require('./seedFourStores');
   await seedFourStores();

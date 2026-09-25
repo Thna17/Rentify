@@ -98,7 +98,7 @@ module.exports = {
 			},
 			fontFamily: {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
-				khmer: ['Noto Sans Khmer', 'system-ui', 'sans-serif']
+				khmer: ['Kantumruy Pro', 'Noto Sans Khmer', 'system-ui', 'sans-serif']
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -107,9 +107,15 @@ module.exports = {
 				'slide-up': 'slide-up 0.8s ease-out',
 				'float': 'float 3s ease-in-out infinite',
 				'gradient-shift': 'gradient-shift 4s ease-in-out infinite',
-				'pulse-slow': 'pulse 3s ease-in-out infinite'
+				'pulse-slow': 'pulse 3s ease-in-out infinite',
+				'shake': 'shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
 			},
 			keyframes: {
+				'shake': {
+					'0%, 100%': { transform: 'translateX(0)' },
+					'20%, 60%': { transform: 'translateX(-6px)' },
+					'40%, 80%': { transform: 'translateX(6px)' },
+				},
 				'accordion-down': {
 					from: { height: '0' },
 					to: { height: 'var(--radix-accordion-content-height)' }
