@@ -64,3 +64,26 @@ exports.overview = async (_req, res) => {
   res.json({ data: { storeCount, activeStores, pendingSellers, websiteCount,
     userCount, activeSubscriptions, pendingPlanPayments } });
 };
+
+exports.updateStore = async (req, res) => {
+  const { storeId } = req.params;
+  const { marketplaceEnabled, status, marketplaceApprovalStatus } = req.body;
+  const store = await Store.findByPk(storeId);
+  if (!store) return res.status(404).json({ error: 'Store not found' });
+  const updates = {};
+  if (typeof marketplaceEnabled === 'boolean') updates.marketplaceEnabled = marketplaceEnabled;
+  if (status && ['active', 'suspended', 'closed'].includes(status)) updates.status = status;
+  if (marketplaceApprovalStatus && ['pending', 'approved', 'needs_changes', 'rejected', 'suspended'].includes(marketplaceApprovalStatus)) {
+    updates.marketplaceApprovalStatus = marketplaceApprovalStatus;
+  }
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'No valid updates provided' });
+  }
+  updates.projectionVersion = store.projectionVersion + 1;
+  await store.update(updates);
+  const website = await Website.findOne({ where: { storeId }, attributes: ['id'] });
+  const storeSyncService = require('../services/storeSyncService');
+  await storeSyncService.queueStore(store, { websiteId: website?.id || null });
+  storeSyncService.syncStore(storeId).catch(() => {});
+  res.json({ success: true, data: store });
+};

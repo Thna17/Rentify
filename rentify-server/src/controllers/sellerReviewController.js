@@ -26,12 +26,23 @@ exports.getForReview = asyncHandler(async (req, res) => {
 });
 
 exports.review = asyncHandler(async (req, res) => {
+  const decision = req.body?.decision;
+  let checklist = req.body?.checklist;
+  if (!checklist && decision === 'approved') {
+    checklist = Object.fromEntries(sellerReviewService.checklistKeys.map((k) => [k, true]));
+  }
+  let reason = req.body?.reason;
+  if (!reason && decision !== 'approved') {
+    reason = decision === 'suspended' ? 'Suspended by platform administrator' :
+             decision === 'rejected' ? 'Application rejected by platform administrator' :
+             'Review changes requested by platform administrator';
+  }
   const result = await sellerReviewService.review({
     storeId: req.params.storeId,
     reviewerUserId: req.user.id,
-    decision: req.body?.decision,
-    checklist: req.body?.checklist,
-    reason: req.body?.reason,
+    decision,
+    checklist,
+    reason,
   });
   storeSyncService.syncStore(result.store.id).catch(() => {});
   return res.json({ success: true, data: result });

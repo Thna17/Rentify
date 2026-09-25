@@ -26,9 +26,11 @@
 .ops-table-scroll table { width: 100%; min-width: 700px; }
 .ops-table-scroll td { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 .ops-pill { display: inline-block; border-radius: 99px; padding: 3px 8px; background: #edf1f5; color: #475569; font-size: 11px; font-weight: 700; }
-.ops-pill.approved, .ops-pill.active, .ops-pill.completed, .ops-pill.paid, .ops-pill.published { color: #176545; background: #e4f5ec; }
-.ops-pill.pending, .ops-pill.needs_changes, .ops-pill.flagged, .ops-pill.trial { color: #94600a; background: #fff2d9; }
+.ops-pill.approved, .ops-pill.active, .ops-pill.completed, .ops-pill.paid, .ops-pill.published, .ops-pill.resolved { color: #176545; background: #e4f5ec; }
+.ops-pill.pending, .ops-pill.needs_changes, .ops-pill.flagged, .ops-pill.trial, .ops-pill.open { color: #94600a; background: #fff2d9; }
+.ops-pill.investigating { color: #1d4ed8; background: #eff6ff; }
 .ops-pill.rejected, .ops-pill.suspended, .ops-pill.failed, .ops-pill.cancelled { color: #b63737; background: #fdecec; }
+.ops-pill.hidden, .ops-pill.archived, .ops-pill.dismissed { color: #475569; background: #f1f5f9; }
 .ops-pagination { display: flex; justify-content: space-between; align-items: center; padding: 14px 2px; color: var(--muted); font-size: 12px; }
 .ops-pagination div { display: flex; gap: 8px; }
 .ops-empty { margin: 0; padding: 24px; text-align: center; color: var(--muted); }
@@ -43,6 +45,10 @@
 .ops-links { display: flex; gap: 15px; }
 .ops-links a { color: var(--accent); font-weight: 650; text-decoration: none; }
 .ops-check { display: flex; gap: 10px; padding: 7px 0; font-size: 12px; }
+.ops-queue-tabs { display: flex; gap: 6px; padding: 10px 16px 0; border-bottom: 1px solid var(--line); }
+.ops-queue-tab { border: 0; background: none; padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
+.ops-queue-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.ops-success { margin: 10px 0; padding: 10px 14px; border: 1px solid #c3e6cb; border-radius: 8px; background: #d4edda; color: #155724; font-size: 12px; font-weight: 600; }
 .ops-field { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; font-weight: 600; }
 .ops-field textarea { width: 100%; resize: vertical; }
 .ops-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }

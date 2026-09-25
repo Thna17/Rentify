@@ -10,6 +10,7 @@ const safe = (handler) => (req, res, next) => Promise.resolve(handler(req, res))
 router.use(verifyToken, requireAdmin);
 router.get('/operations/overview', safe(operations.overview));
 router.get('/operations/:resource', safe(operations.list));
+router.patch('/operations/stores/:storeId', safe(operations.updateStore));
 router.post("/template", createTemplate);
 router.put("/template/:id", updateTemplate);
 router.delete("/template/:id", deleteTemplate);

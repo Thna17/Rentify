@@ -33,4 +33,25 @@ export class PlatformOperationsService {
     return this.http.post(`${this.urls.core}/admin/stores/${storeId}/seller-review`,
       { decision, checklist, reason });
   }
+  updateStore(storeId: string, updates: { marketplaceEnabled?: boolean; status?: string; marketplaceApprovalStatus?: string }) {
+    return this.http.patch<{ success: boolean; data: any }>(
+      `${this.urls.core}/admin/operations/stores/${storeId}`, updates);
+  }
+  updateProduct(productId: string, updates: { marketplaceVisibility?: boolean | null; status?: string; stockQuantity?: number }) {
+    return this.http.patch<{ success: boolean; data: any }>(
+      `${this.urls.commerce}/api/admin/operations/products/${productId}`, updates);
+  }
+  updateReview(reviewId: string, status: 'published' | 'hidden' | 'flagged') {
+    return this.http.patch<{ success: boolean; data: any }>(
+      `${this.urls.commerce}/api/admin/operations/reviews/${reviewId}`, { status });
+  }
+  deleteReview(reviewId: string) {
+    return this.http.delete<{ success: boolean; message: string }>(
+      `${this.urls.commerce}/api/admin/operations/reviews/${reviewId}`);
+  }
+  updateReport(reportId: string, updates: { status: string; resolutionNotes?: string }) {
+    return this.http.patch<{ success: boolean; data: any }>(
+      `${this.urls.commerce}/api/admin/operations/reports/${reportId}`, updates);
+  }
 }
+

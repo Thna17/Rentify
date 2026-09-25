@@ -1,6 +1,6 @@
 # Platform admin operations
 
-**Status: Current implementation with explicit follow-up gates (2026-09-25).**
+**Status: Current implementation with live administrative workflows (2026-09-25).**
 The Angkoro Admin PRD was used as a product and UX reference. Rentify's
 marketplace and payment rules take precedence over that storefront-only model.
 
@@ -8,21 +8,31 @@ marketplace and payment rules take precedence over that storefront-only model.
 
 - One protected Angular admin surface replaces the earlier mock-only routed
   pages. Core verifies admin identity; Commerce validates that Core identity
-  before serving its admin reads. The admin browser client sends the shared
-  session cookie to both APIs; an old bearer token in browser storage does
-  not override that session.
+  before serving its admin reads and handling administrative actions. The admin
+  browser client sends the shared session cookie to both APIs; an old bearer
+  token in browser storage does not override that session.
 - The overview shows live operational counts from each authority, with
   unavailable values hidden if either API fails. COD order totals are not
   platform revenue.
+- The overview dashboard includes a 3-tab Priority Action Queue (Pending Sellers,
+  Flagged Reviews, and Buyer Reports) allowing instant 1-click inspection and
+  triage directly from the overview console.
 - Core lists Stores, owner contact and verification, optional Websites,
   seller applications, users, templates, plans, subscriptions, and plan
   payment records. Admin can inspect a Store, follow its products and orders,
-  and approve, request changes, reject, or suspend a submitted seller
-  application using Core's required checklist and audit record.
+  approve, request changes, reject, or suspend a submitted seller
+  application using Core's required checklist and audit record, toggle
+  marketplace listing entitlement (`marketplaceEnabled`), and toggle store
+  status (`active`/`suspended`). Changes immediately synchronize to Commerce
+  via `storeSyncService`.
 - Commerce lists canonical products, orders across sales channels, customer
   payment records, product reviews, buyer order complaints and return
-  requests, and usage billing statements. Orders expose status, delivery,
-  payment facts and line items for investigation. These views are read-only.
+  requests, and usage billing statements. Admin can directly moderate
+  products (marketplace listing hold/override, catalog active/archive status,
+  and quick restock), moderate product reviews (publish, flag, hide, or delete),
+  and triage buyer order reports (open, investigating, resolved, dismissed)
+  with recorded resolution notes and reviewer metadata. Orders expose status,
+  delivery, payment facts and line items for investigation.
 - All lists are paginated and search is server-side for fields supported by
   their respective resource. Responses select operational fields and exclude
   password hashes, tokens, payment credentials, and provider payloads.
@@ -30,9 +40,9 @@ marketplace and payment rules take precedence over that storefront-only model.
 ## Boundaries
 
 - **Core owns:** identity, Store profiles, seller approval and review trail,
-  Website and subscription lifecycle. A Store may have no Website.
-- **Commerce owns:** catalog, order, delivery, payment, review, buyer report,
-  and usage billing records. Admin does not write to these tables directly.
+  Store status/marketplace toggle, Website and subscription lifecycle. A Store may have no Website.
+- **Commerce owns:** catalog, order, delivery, payment, review moderation, buyer report
+  triage, and usage billing records.
 - **Launch payments:** Marketplace and storefront checkout use COD. The
   merchant collects and refunds cash. Plan subscriptions are Rentify's launch
   revenue. Commission, custody, payout, and bank payment access remain future
@@ -49,14 +59,12 @@ have as an authoritative backend workflow. Do not add client-only controls
 for them:
 
 1. Durable support cases with assignment, notes, event history, and links to
-   users, Stores, orders, and buyer reports. A buyer report is presently an
-   immutable Commerce order event, not a resolved support case.
+   users, Stores, orders, and buyer reports beyond the current order event triage.
 2. Unified admin audit view beyond Core seller reviews, permission tiers
    beyond the current single Core `admin` role, and session/account
    moderation with independently enforced policy.
-3. Explicit review moderation and merchant order exception actions with
-   authority, state transitions, and audit rules. The admin views are
-   read-only until those policies exist server-side.
+3. Merchant order exception actions with authority, state transitions, and
+   audit rules. Fulfillment and cash collection remain with the merchant.
 4. Financial analytics with agreed measures, currency segmentation, and
    reconciled subscription revenue. Do not derive platform income from COD
    order value or invent marketplace commission.
