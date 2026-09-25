@@ -977,7 +977,11 @@ async function seedCommerce() {
   const seedTechMarketplace = require('./seedTechMarketplace');
   await seedTechMarketplace();
 
+  const seedFourStoresProducts = require('./seedFourStoresProducts');
+  await seedFourStoresProducts();
+
   console.log('✅ Rentify Commerce Database Seeding completed successfully!');
+
 }
 
 if (require.main === module) {

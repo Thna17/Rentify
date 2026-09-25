@@ -549,7 +549,11 @@ async function seedCore() {
   const seedTechStore = require('./seedTechStore');
   await seedTechStore();
 
+  const seedFourStores = require('./seedFourStores');
+  await seedFourStores();
+
   console.log('✅ Rentify Core Database Seeding completed successfully!');
+
 }
 
 if (require.main === module) {
