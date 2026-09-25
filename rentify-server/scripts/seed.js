@@ -226,7 +226,7 @@ async function seedCore() {
       websiteTemplateId: 1,
       category: 'ecommerce',
       framework: 'vite',
-      baseUrl: 'http://localhost:4700',
+      baseUrl: 'https://aura-botanicals.mekhla.digital',
       description: 'A sleek and modern e-commerce template designed for skincare brands. Featuring a clean layout, easy navigation, and built-in product showcase sections.',
       features: ['Responsive Design', 'SEO Optimized', 'Dark Mode Support', 'Integrated E-commerce'],
       pages: [
@@ -249,7 +249,7 @@ async function seedCore() {
       websiteTemplateId: 2,
       category: 'ecommerce',
       framework: 'vite',
-      baseUrl: 'http://localhost:4600',
+      baseUrl: 'https://nextech-electronics.mekhla.digital',
       description: 'A professional and elegant template designed for electronics, gadgets, and tech shops.',
       features: ['Fully Responsive', 'SEO Ready', 'Dark Mode Available', 'Tech Specs & Reviews'],
       pages: [
