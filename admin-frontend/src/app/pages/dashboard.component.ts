@@ -203,77 +203,79 @@ import { dstr, initials, money } from '../ui/format';
     <!-- Secondary Operational Grid: Orders Ledger & Inventory Alerts -->
     <div class="grid duo mb">
       <!-- Left Column: Recent Cross-Channel Orders Table -->
-      <div class="card">
-        <div class="card-head">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <h3 class="card-title">Recent Cross-Channel Orders</h3>
-            <div class="filter-tabs">
-              <button
-                class="filter-tab"
-                [class.active]="channelFilter() === 'all'"
-                (click)="setChannel('all')">
-                All
-              </button>
-              <button
-                class="filter-tab"
-                [class.active]="channelFilter() === 'storefront'"
-                (click)="setChannel('storefront')">
-                Storefront
-              </button>
-              <button
-                class="filter-tab"
-                [class.active]="channelFilter() === 'marketplace'"
-                (click)="setChannel('marketplace')">
-                Marketplace
-              </button>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div class="card-head">
+            <div style="display:flex;align-items:center;gap:10px">
+              <h3 class="card-title">Recent Cross-Channel Orders</h3>
+              <div class="filter-tabs">
+                <button
+                  class="filter-tab"
+                  [class.active]="channelFilter() === 'all'"
+                  (click)="setChannel('all')">
+                  All ({{d.orders().length}})
+                </button>
+                <button
+                  class="filter-tab"
+                  [class.active]="channelFilter() === 'storefront'"
+                  (click)="setChannel('storefront')">
+                  Storefront
+                </button>
+                <button
+                  class="filter-tab"
+                  [class.active]="channelFilter() === 'marketplace'"
+                  (click)="setChannel('marketplace')">
+                  Marketplace
+                </button>
+              </div>
             </div>
             <input
               class="input input-search"
               style="width:160px;padding:3px 8px;font-size:11.5px"
-              placeholder="Filter order or customer..."
+              placeholder="Filter orders..."
               [value]="orderFilter()"
               (input)="orderFilter.set($any($event.target).value)" />
           </div>
-          <a class="link" routerLink="/orders">All Orders ({{d.orders().length}}) →</a>
+
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Channel</th>
+                <th class="right">Total</th>
+                <th>Payment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of filteredOrders(); track o.id) {
+                <tr>
+                  <td class="cell-main">{{o.id}}</td>
+                  <td>{{o.buyer}}</td>
+                  <td>
+                    <span
+                      class="channel-pill"
+                      [class.channel-storefront]="isStorefront(o.id)"
+                      [class.channel-marketplace]="!isStorefront(o.id)">
+                      {{isStorefront(o.id) ? 'Storefront' : 'Marketplace'}}
+                    </span>
+                  </td>
+                  <td class="num">{{money(o.total)}}</td>
+                  <td><kc-badge [value]="o.payment"></kc-badge></td>
+                  <td><kc-badge [value]="o.status"></kc-badge></td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6">
+                    <div class="empty">No orders found matching your filter criteria.</div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
 
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Channel</th>
-              <th class="right">Total</th>
-              <th>Payment</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (o of filteredOrders(); track o.id) {
-              <tr>
-                <td class="cell-main">{{o.id}}</td>
-                <td>{{o.buyer}}</td>
-                <td>
-                  <span
-                    class="channel-pill"
-                    [class.channel-storefront]="isStorefront(o.id)"
-                    [class.channel-marketplace]="!isStorefront(o.id)">
-                    {{isStorefront(o.id) ? 'Storefront' : 'Marketplace'}}
-                  </span>
-                </td>
-                <td class="num">{{money(o.total)}}</td>
-                <td><kc-badge [value]="o.payment"></kc-badge></td>
-                <td><kc-badge [value]="o.status"></kc-badge></td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="6">
-                  <div class="empty">No orders found matching your filter criteria.</div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
         <div style="padding:10px 18px;border-top:1px solid var(--line);background:#fafafa;font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between">
           <span>Showing {{filteredOrders().length}} of {{d.orders().length}} recent orders</span>
           <a routerLink="/orders" class="link">View complete order ledger →</a>
@@ -432,7 +434,7 @@ export class DashboardComponent {
     if (q) {
       os = os.filter((o) => o.id.toLowerCase().includes(q) || o.buyer.toLowerCase().includes(q));
     }
-    return os.slice(0, 6);
+    return os.slice(0, 10);
   });
 
   quickApproveSeller(id: string) {
