@@ -8,7 +8,7 @@ process.env.MERCHANT_DASHBOARD_URL = "https://merchant.rentify.test";
 process.env.ADMIN_DASHBOARD_URL = "https://admin.rentify.test";
 process.env.STOREFRONT_ORIGIN = "https://store.rentify.test";
 
-const { resolveReturnUrl } = require("../../src/utils/returnUrlPolicy");
+const { resolveReturnUrl } = require("../../src/modules/auth/returnUrlPolicy");
 
 test("allows a configured Rentify return URL", () => {
   assert.equal(resolveReturnUrl("https://merchant.rentify.test/dashboard"), "https://merchant.rentify.test/dashboard");

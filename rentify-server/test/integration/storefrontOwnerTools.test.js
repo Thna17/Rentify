@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { WebsiteContent } = require('../../src/models');
 const { getMerchantCache } = require('../../src/utils/cache');
-const websiteController = require('../../src/controllers/websiteController');
+const websiteController = require('../../src/modules/websites/websiteController');
 
 // The controller's wrapper does not return its promise, so wait for the reply itself.
 const call = (handler, req) =>

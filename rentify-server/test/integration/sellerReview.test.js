@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Store, Website, User, SellerApplication, SellerReview } = require('../../src/models');
-const storeSyncService = require('../../src/services/storeSyncService');
-const sellerReviewService = require('../../src/services/sellerReviewService');
+const storeSyncService = require('../../src/modules/commerce-sync/storeSyncService');
+const sellerReviewService = require('../../src/modules/stores/sellerReviewService');
 
 const applicationInput = {
   responsibleName: 'Owner', pickupLocation: 'Market Street',

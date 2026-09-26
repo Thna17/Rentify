@@ -379,7 +379,7 @@ The editor lists the template's section fields (`TEMPLATE_2_FIELDS`,
 `TEMPLATE_1_FIELDS`) and saves through
 `PUT /api/websites/:websiteId/storefront-content`, which re-checks ownership,
 accepts only the labels in
-[storefrontContentFields.js](../rentify-server/src/config/storefrontContentFields.js),
+[storefrontContentFields.js](../rentify-server/src/modules/websites/storefrontContentFields.js),
 validates each value (plain text with length limits, https image URLs), creates
 missing content rows in one transaction and clears the public website cache.
 Images upload through the existing owner-only `/uploadImage/:websiteId`.
@@ -452,3 +452,17 @@ Constraints for this work:
 - **Boundaries come second.** After the move, modules should call each other
   only through a module's `index.js`, and direct cross-domain model access
   from controllers should move behind the owning module's service.
+
+Progress:
+
+- **Core — file move done (2026-09-26).** `routes/`, `controllers/`,
+  `services/` and `jobs/` are replaced by 14 modules under
+  `rentify-server/src/modules/` (layout in the
+  [Core README](../rentify-server/README.md)). The mounted route table is
+  identical before and after (94 routes) and `npm run verify` passes.
+  Findings kept as-is for later: `modules/notifications/telegramService.js`
+  lazily requires a `models/Customer` file that Core does not have;
+  `modules/ops/raasReminderJob.js` is never started; `commerce-sync/syncService.js`,
+  `utils/limitCalculator.js`, `utils/passwordUtils.js` and `utils/cookieUtils.js`
+  are not imported anywhere.
+- **Commerce — not started.**
