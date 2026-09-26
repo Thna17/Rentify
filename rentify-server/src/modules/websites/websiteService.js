@@ -299,10 +299,7 @@ class WebsiteService {
     const website = await Website.findOne({
       where: { userId },
       include: [
-        { 
-          model: WebsiteTemplate,
-          include: ['TemplateColorPalettes']
-        },
+        { model: WebsiteTemplate },
         'WebsiteContents'
       ]
     });
@@ -327,8 +324,8 @@ class WebsiteService {
 
     if (colorPaletteItem && website.WebsiteTemplate) {
       colorPalette = await this.resolveColorPalette(
-        colorPaletteItem.value, 
-        website.WebsiteTemplate.id
+        colorPaletteItem.value,
+        website.WebsiteTemplate
       );
     }
 
@@ -337,15 +334,12 @@ class WebsiteService {
   }
 
   /**
-   * Resolve color palette value
+   * Resolve color palette value. A string names a palette; a template has a
+   * single palette, stored on WebsiteTemplate.colorPalette.
    */
-  async resolveColorPalette(value, templateId) {
+  async resolveColorPalette(value, template) {
     if (typeof value === 'string') {
-      const palettes = await TemplateColorPalette.findAll({ 
-        where: { templateId } 
-      });
-      const palette = palettes.find(p => p.name === value);
-      return palette ? JSON.parse(palette.value) : { primary: '#3B82F6', secondary: '#10B981' };
+      return template?.colorPalette || { primary: '#3B82F6', secondary: '#10B981' };
     }
     return value;
   }

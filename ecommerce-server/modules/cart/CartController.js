@@ -1,5 +1,6 @@
 // controllers/cartController.js
 const { sequelize } = require('../../config/db');
+const { Cart } = require('../../models');
 const CartService = require('./CartService');
 const { ApiError } = require('../../utils/ApiError');
 const { logger } = require('../../utils/logger');

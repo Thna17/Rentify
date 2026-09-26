@@ -6,8 +6,9 @@
 // models.Order.update(...). Reads are allowed everywhere. Instance writes
 // (order.update(...)) cannot be attributed statically and are not checked.
 // It also fails when a model has no owner, when the ownership file names a model
-// that does not exist, and when a module imports a name the model registry does
-// not export (that import is undefined at runtime).
+// that does not exist, when a module imports a name the model registry does
+// not export (that import is undefined at runtime), and when a module queries
+// a model-like name it never declares or imports.
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -33,6 +34,7 @@ const exportBlock = registry.match(/module\.exports\s*=\s*\{([\s\S]*?)\}/);
 const exported = new Set(exportBlock
   ? exportBlock[1].split(',').map((s) => s.split(':')[0].trim()).filter(Boolean)
   : models);
+const QUERY_CALL = new RegExp(`(?<![\\w.])([A-Z]\\w*)\\.(?:findAll|findOne|findByPk|findAndCountAll|count|sum|max|min|${WRITES})\\(`, 'g');
 const REGISTRY_IMPORT = /(?:^|[^\w.])(?:const|let|var)\s*\{([^{}]*)\}\s*=\s*require\(\s*['"][./]*models(?:\/index)?['"]\s*\)/g;
 
 const shared = ownership.sharedTransactionDomain || { modules: [], models: [] };
@@ -58,6 +60,11 @@ for (const file of files) {
     for (const name of match[1].split(',').map((s) => s.split(':')[0].trim()).filter(Boolean)) {
       if (!exported.has(name)) problems.push(`${rel} imports ${name} from the model registry, which does not export it`);
     }
+  }
+  // A model-style call on a name the file never declares or imports is a ReferenceError at runtime.
+  const code = src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').replace(/(['"`])(?:\\.|(?!\1)[^\\\n])*\1/g, '""');
+  for (const name of new Set([...code.matchAll(QUERY_CALL)].map((m) => m[1]).filter((n) => !(n in globalThis)))) {
+    if (!new RegExp(`\\b${name}\\b(?!\\s*\\.)`).test(code)) problems.push(`${rel} calls ${name}.<query>() but never declares or imports ${name}`);
   }
   for (const model of models) {
     const re = new RegExp(`(?<![\\w.])(?:models\\.)?${model}\\.(${WRITES})\\(`, 'g');

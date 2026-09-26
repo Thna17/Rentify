@@ -42,9 +42,9 @@ checked.
 that may create, update or delete each model. Any module may read any model;
 to change another domain's rows, call the owning module's service.
 `npm run lint` fails on a static write from a non-owner, a model with no
-owner, or an import of a name `models/index.js` does not export. Add an entry
-under `exceptions` (with a reason) only when moving the write is not yet
-practical.
+owner, an import of a name `models/index.js` does not export, or a query on a
+name the file never declares. Add an entry under `exceptions` (with a
+reason) only when moving the write is not yet practical.
 
 ## Usage-based billing
 Rentify uses usage-based billing. Usage events are captured in the ecommerce service
