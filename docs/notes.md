@@ -402,3 +402,53 @@ replaced token is kept in Redis; without Redis the previous behaviour applies.
 
 The public `getWebsiteByDomain` lookup no longer returns the owner's email or
 phone, or staff contacts and permissions.
+
+## 2026-09-26 horizontal scaling blockers (deferred)
+
+**Open.** Neither API can safely run more than one instance today. The
+backend modularization below improves maintainability, not runtime capacity,
+so these items are recorded here and scheduled after it:
+
+1. **In-memory sessions.** Both `sessionConfig.js` files
+   ([Core](../rentify-server/src/config/sessionConfig.js),
+   [Commerce](../ecommerce-server/config/sessionConfig.js)) create
+   `express-session` without a `store`, so the process-local MemoryStore is
+   used. Core's Passport OAuth handshake depends on it: a login that starts on
+   one instance and finishes on another fails, and every restart drops
+   sessions. Target: a Redis-backed session store.
+2. **Scheduled work runs in every API process without a lock.** Core starts
+   `raasReminderJob` (every 15 minutes) and `websiteSyncJob` (every minute);
+   Commerce starts `billingWorker` (daily) and `recoveryWorker` (every 15
+   minutes). With N instances each job runs N times, which would duplicate
+   billing statements and reminders. Target: a Redis lock per job run, or a
+   separate worker process.
+3. **Process-local caches.** For example `opsInvoiceFactsService` keeps its
+   cache in a module-level `Map`; each instance would hold its own stale copy.
+4. **Core rate limiting is disabled.** `app.use(rateLimiter)` is commented out
+   in Core's `app.js`.
+5. **Request-time aggregation.** Commerce's `ecommerceStatsController`
+   aggregates Cart, Order, OrderItem, Payment and Product on every request;
+   the database, not Node, will be the first capacity limit as data grows.
+
+## 2026-09-26 backend modularization (in progress)
+
+**Decision.** Reorganize both APIs from technical layers (`controllers/`,
+`services/`, `routes/`, …) into a modular monolith: one folder per business
+domain under `modules/`, each owning its routes, controllers, services and
+domain helpers, plus a `shared/` area for cross-cutting infrastructure. The
+work proceeds one API at a time (Core first, then Commerce), one module per
+commit, with the full test suite green after each step.
+
+Constraints for this work:
+
+- **Behavior-preserving.** HTTP paths, responses, the database schema and
+  `migrations/` do not change. Frontends are unaffected.
+- **Models stay in one registry.** Sequelize associations span domains (38 in
+  Core, 32 in Commerce), so `models/index.js` remains the single place that
+  defines models and associations.
+- **First pass is a file move.** Oversized, multi-domain files (Core
+  `authService`, `websiteService`; Commerce `ProductService`,
+  `marketplaceCheckoutService`) move intact and are split later.
+- **Boundaries come second.** After the move, modules should call each other
+  only through a module's `index.js`, and direct cross-domain model access
+  from controllers should move behind the owning module's service.
