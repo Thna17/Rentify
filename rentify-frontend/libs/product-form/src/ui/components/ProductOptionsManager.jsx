@@ -381,7 +381,8 @@ export const ProductOptionsManager = ({
                           </p>
                         )}
                       </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

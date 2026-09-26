@@ -11,7 +11,7 @@ test('public Store lookup returns only approved profile fields', async (t) => {
     assert.equal(options.where.marketplaceApprovalStatus, 'approved');
     assert.equal(options.where.marketplaceEntitlement, 'pilot');
     assert.equal(options.where.needsCategoryReview, false);
-    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory']);
+    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl']);
     return [{ id, name: 'Public Store' }];
   });
   assert.deepEqual(await storeService.listPublicStores(`${id},${id}`), [{ id, name: 'Public Store' }]);
@@ -19,7 +19,7 @@ test('public Store lookup returns only approved profile fields', async (t) => {
   assert.deepEqual(await storeService.listPublicStores(''), []);
   t.mock.method(Store, 'findOne', async (options) => {
     assert.equal(options.where.id, id);
-    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory']);
+    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl']);
     return { id, name: 'Public Store' };
   });
   assert.deepEqual(await storeService.getPublicStore(id), { id, name: 'Public Store' });
