@@ -2,9 +2,9 @@
 require('dotenv').config();
 const { sequelize } = require('../config/db');
 const { Order, Payment, WebsiteData, OrderItem, Product } = require('../models');
-const recoveryWorker = require('../workers/recoveryWorker');
-const PaymentVerificationService = require('../services/PaymentVerificationService');
-const FulfillmentService = require('../services/FulfillmentService');
+const recoveryWorker = require('../modules/payments/recoveryWorker');
+const PaymentVerificationService = require('../modules/payments/PaymentVerificationService');
+const FulfillmentService = require('../modules/payments/FulfillmentService');
 
 async function testRaaS() {
     console.log('🧪 Starting RaaS Engine Simulation...\n');

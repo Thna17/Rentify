@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 process.env.JWT_SECRET = "test-access-secret";
 process.env.JWT_REFRESH_SECRET = "test-refresh-secret";
 
-const AuthService = require("../../src/services/authService");
+const AuthService = require("../../src/modules/auth/authService");
 const { hashRefreshToken, compareRefreshToken } = require("../../src/utils/refreshTokenHash");
 
 test("refresh rotation replaces the stored hash and logout revokes it", async () => {

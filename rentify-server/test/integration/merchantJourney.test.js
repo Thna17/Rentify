@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveReturnUrl } = require('../../src/utils/returnUrlPolicy');
+const { resolveReturnUrl } = require('../../src/modules/auth/returnUrlPolicy');
 const { createRequireAdmin } = require('../../src/middlewares/authorization');
 
 const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });

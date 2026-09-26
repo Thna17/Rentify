@@ -379,7 +379,7 @@ The editor lists the template's section fields (`TEMPLATE_2_FIELDS`,
 `TEMPLATE_1_FIELDS`) and saves through
 `PUT /api/websites/:websiteId/storefront-content`, which re-checks ownership,
 accepts only the labels in
-[storefrontContentFields.js](../rentify-server/src/config/storefrontContentFields.js),
+[storefrontContentFields.js](../rentify-server/src/modules/websites/storefrontContentFields.js),
 validates each value (plain text with length limits, https image URLs), creates
 missing content rows in one transaction and clears the public website cache.
 Images upload through the existing owner-only `/uploadImage/:websiteId`.
@@ -402,3 +402,175 @@ replaced token is kept in Redis; without Redis the previous behaviour applies.
 
 The public `getWebsiteByDomain` lookup no longer returns the owner's email or
 phone, or staff contacts and permissions.
+
+## 2026-09-26 horizontal scaling blockers (deferred)
+
+**Open.** Neither API can safely run more than one instance today. The
+backend modularization below improves maintainability, not runtime capacity,
+so these items are recorded here and scheduled after it:
+
+1. **In-memory sessions.** Both `sessionConfig.js` files
+   ([Core](../rentify-server/src/config/sessionConfig.js),
+   [Commerce](../ecommerce-server/config/sessionConfig.js)) create
+   `express-session` without a `store`, so the process-local MemoryStore is
+   used. Core's Passport OAuth handshake depends on it: a login that starts on
+   one instance and finishes on another fails, and every restart drops
+   sessions. Target: a Redis-backed session store.
+2. **Scheduled work runs in every API process without a lock.** Core starts
+   `websiteSyncJob` (every minute); Commerce starts `billingWorker` (daily) and
+   `recoveryWorker` (every 15 minutes). Core's `raasReminderJob` defines a
+   15-minute schedule but is never started today; if it is wired up it needs
+   the same protection. With N instances each job runs N times, which would
+   duplicate billing statements and reminders. Target: a Redis lock per job run, or a
+   separate worker process.
+3. **Process-local caches.** For example `opsInvoiceFactsService` keeps its
+   cache in a module-level `Map`; each instance would hold its own stale copy.
+4. **Core rate limiting is disabled.** `app.use(rateLimiter)` is commented out
+   in Core's `app.js`.
+5. **Request-time aggregation.** Commerce's `ecommerceStatsController`
+   aggregates Cart, Order, OrderItem, Payment and Product on every request;
+   the database, not Node, will be the first capacity limit as data grows.
+
+## 2026-09-26 backend modularization (in progress)
+
+**Decision.** Reorganize both APIs from technical layers (`controllers/`,
+`services/`, `routes/`, …) into a modular monolith: one folder per business
+domain under `modules/`, each owning its routes, controllers, services and
+domain helpers, while cross-cutting infrastructure (`config/`, `middlewares/`,
+`utils/`, `models/`) stays at the package root. The work proceeds one API at a
+time (Core first, then Commerce), each file move in its own commit, with the
+full test suite green and the route table unchanged after each step.
+
+Constraints for this work:
+
+- **Behavior-preserving.** HTTP paths, responses, the database schema and
+  `migrations/` do not change. Frontends are unaffected.
+- **Models stay in one registry.** Sequelize associations span domains (38 in
+  Core, 32 in Commerce), so `models/index.js` remains the single place that
+  defines models and associations.
+- **First pass is a file move.** Oversized, multi-domain files (Core
+  `authService`, `websiteService`; Commerce `ProductService`,
+  `marketplaceCheckoutService`) move intact and are split later.
+- **Boundaries come second.** After the move, modules should call each other
+  only through a module's `index.js`, and direct cross-domain model access
+  from controllers should move behind the owning module's service.
+
+Progress:
+
+- **Core — file move done (2026-09-26).** `routes/`, `controllers/`,
+  `services/` and `jobs/` are replaced by 14 modules under
+  `rentify-server/src/modules/` (layout in the
+  [Core README](../rentify-server/README.md)). The mounted route table is
+  identical before and after (94 routes) and `npm run verify` passes.
+- **Commerce — file move done (2026-09-26).** `controllers/`, `routes/`,
+  `services/`, `workers/` and `core/` are replaced by 17 modules under
+  `ecommerce-server/modules/` (layout in the
+  [Commerce contributing guide](../ecommerce-server/CONTRIBUTING.md)); the niche
+  strategy classes from `core/` now live in each owning module's `core/`
+  folder. The mounted route table is identical before and after (138 routes)
+  and `npm run verify` passes. Two edits beyond path rewriting keep behavior
+  the same: `updateDeploymentUrls.js` resolves `.env` one level further up, and
+  `apiMountScope.test.js` reads router paths from `app.js` instead of assuming
+  a `routes/` folder.
+- **Findings from the moves — fixed (2026-09-26).** Every relative require in
+  both APIs now resolves.
+  - Telegram account lookup: each `telegramService.findUser` required a model
+    from the other API's database (Commerce `models/User`, Core
+    `models/Customer`). Core now links merchant and staff accounts only and
+    Commerce customers only; a cross-API lookup fails with a clear error.
+    Covered by `test/security/telegramUserLookup.test.js` in both APIs. The
+    Telegram webhooks remain disabled and `SERVER_TYPE` is not configured.
+  - Removed unused code. Commerce: the order strategy classes `OrderStrategy`,
+    `EcommerceOrderStrategy`, `FashionOrderStrategy`, `RestaurantOrderStrategy`,
+    `EcommerceNicheStrategy` and `RestaurantNicheStrategy` (the order factory
+    only uses the online, invoice and POS strategies with the base
+    `NicheStrategy`; these held the broken `models` requires); the per-niche
+    catalog strategy files, which duplicated the classes in
+    `catalog/core/strategies/NicheStrategy.js` and could not load;
+    `MerchantController.js`, `OrderService.js`, `productValidation.js`,
+    `invoiceUtils.js`, `utils/orderHelpers.js` and `utils/sanitizeData.js`.
+    Core: `commerce-sync/syncService.js`, `auth/emails/resetPasswordEmail.js`,
+    `utils/cookieUtils.js`, `utils/limitCalculator.js` and
+    `utils/passwordUtils.js`.
+  - Kept on purpose, not wired up: Commerce `config/rateLimiter.js` and Core
+    `ops/raasReminderJob.js`. Turning on rate limiting or RaaS reminders is a
+    product decision and belongs with the scaling work above.
+- **Tooling.** `tools/move-modules.js` performs a move from a JSON map
+  (`git mv` plus relative-path rewriting in code, Markdown links and
+  CODEOWNERS); `tools/maps/commerce.json` is the Commerce map as it was
+  applied (it lists some files that have since been removed).
+  `tools/route-table.js` lists an app's mounted routes so the before/after
+  comparison can be repeated.
+- **Boundaries — module entry points done (2026-09-26).** Cross-module requires
+  now go through each module's `index.js` (Core: 19 requires through 6 entry
+  points; Commerce: 17 through 5). Entry points expose members as lazy
+  getters, so every file loads at the same moment as before. Both APIs' `lint`
+  runs `scripts/quality/check-module-boundaries.js`, which fails CI on a
+  require into another module's internal files. Route tables are unchanged
+  (Core 94, Commerce 138). Known exceptions outside the check: Commerce
+  `models/Invoice.js` and `models/Payment.js` call `billing/usageEventService`,
+  and the baseline migration calls `billing/pricingRuleService`. A few modules
+  reuse another module's controller in their routes (Commerce `cart` →
+  `checkout`, `store-catalog` → `orders`; Core `admin` → `stores`, `stores` →
+  `websites`); these go through the entry point but are candidates for moving
+  the route to the owning module.
+- **Boundaries — model write ownership done (2026-09-26).** Each API's
+  `model-ownership.json` (under `src/modules/` in Core, `modules/` in
+  Commerce) names the module(s) that may write each model. Reads stay open
+  to every module through the shared registry; only writes are restricted.
+  `scripts/quality/check-model-ownership.js` runs in both APIs' `lint` and
+  fails on a static write (`Model.create/update/destroy/...`) from a module
+  that does not own the model, on a model with no owner, and on an import of
+  a name the model registry does not export. Instance writes
+  (`order.update(...)`) are not attributed and not checked.
+  - Commerce's shared transaction domain (AGENTS.md rule 6): `cart`,
+    `checkout`, `orders`, `payments`, `inventory` and `invoices` may all write
+    Cart, CartItem, Order, OrderItem, OrderEvent, ShippingDetail, Payment and
+    Invoice, because placing an order writes them in one transaction.
+  - Recorded exceptions (Commerce): `orders` writes Customer (order statistics
+    and walk-in POS customers inside the order transaction) and
+    `store-access` writes Customer (the tenant backfill). Core has none.
+  - Writes moved to the owner: Core `websites` now enqueues website syncs
+    through `commerce-sync` (`ecommerceSyncService.enqueueWebsiteSync`,
+    same transaction); Commerce `websites` now attaches a Store's products to
+    a new website through `catalog`
+    (`ProductService.attachStoreProductsToWebsite`). Covered by the existing
+    `websiteCreation` tests and the new `test/security/websiteProjection.test.js`.
+  - Bug found by the registry check: Core `admin/adminController` imported
+    a `TemplateColorPalette` model that does not exist, so the admin
+    template list and detail endpoints always failed with 400. The palette
+    lives on `WebsiteTemplate.colorPalette`; the controller now includes only
+    `TemplateContent`. Covered by `test/security/adminTemplates.test.js`.
+- **Oversized files — split where they mixed concerns (2026-09-26).**
+  - Commerce `checkout/marketplaceCheckoutService.js` (830 lines) now keeps
+    checkout only and re-exports the rest, so its callers are unchanged:
+    `marketplaceRules.js` (validation, money, eligibility, order view),
+    `deliveryPolicyService.js`, `marketplaceCartService.js` and
+    `marketplaceOrderService.js` (order views, COD actions, buyer reports).
+    Functions moved verbatim; the unused `checkedProduct` was removed.
+  - Core `websites/websiteService.js`: template personalization moved to
+    `websites/templatePersonalization.js`.
+  - Left intact on purpose: Core `auth/authService.js` is one class for one
+    concern (signup, OTP, login, reset, tokens) and `staff/staffAuthService`
+    extends it; Commerce `catalog/ProductService.js` is one class whose methods
+    share per-website state. Neither mixes domains; splitting them would only
+    reduce line count.
+  - The ownership check now also fails on a query such as `X.findAll(...)`
+    where the file never declares or imports `X`. It found two more bugs,
+    both present on `develop` before this work:
+    - Commerce `POST /api/cart/merge` used `Cart` without importing it, so
+      every merge with a guest session failed. No frontend calls it today (the
+      marketplace uses `/api/marketplace/cart/merge`). Covered by
+      `test/security/cartMerge.test.js`.
+    - Core `GET /api/websites/` always failed: it included a
+      `TemplateColorPalettes` association that does not exist, and a named
+      palette referenced the missing `TemplateColorPalette` model. A named
+      palette now resolves to `WebsiteTemplate.colorPalette`. Covered by
+      `test/security/websitePalette.test.js`.
+  - **Open:** Core `PUT /api/websites/:websiteId/color-palette` writes
+    `Website.colorPaletteId`, a column that does not exist, so it reports
+    success and saves nothing. No frontend calls it. Removing it or storing the
+    palette in the website's "Color Palette" content is a product decision.
+- **Next:** move routes that reuse another module's controller (Commerce
+  `cart` → `checkout`, `store-catalog` → `orders`; Core `admin` → `stores`,
+  `stores` → `websites`) to their owning modules.

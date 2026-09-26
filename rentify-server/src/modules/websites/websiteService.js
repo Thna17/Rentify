@@ -1,0 +1,304 @@
+// services/websiteService.js
+const { Website, WebsiteTemplate, User, Staff, Package, WebsiteContent } = require('../../models');
+const subscriptionService = require('../billing').subscriptionService;
+const storeService = require('../stores').storeService;
+const storeSyncService = require('../commerce-sync').storeSyncService;
+const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
+const { logger } = require('../../utils/logger');
+const { DEPLOYMENT } = require('../../config/constants');
+const { personalizeTemplateContent } = require('./templatePersonalization');
+
+class WebsiteService {
+  /**
+   * Create website with free trial
+   */
+  async createWebsiteWithTrial({ userId, templateId, businessData, packageId, paymentId }) {
+    const transaction = await Website.sequelize.transaction();
+
+    try {
+      // Validate inputs
+      await this.validateCreationInputs({ templateId, packageId, userId });
+
+      // A deployment retry must reuse the same Website and trial. A merchant
+      // may own only one Website, including after starting as marketplace-only.
+      const existingWebsite = await Website.findOne({ where: { userId }, transaction });
+      if (existingWebsite) {
+        await transaction.commit();
+        return existingWebsite;
+      }
+
+      // Get package and template
+      const [packageData, template, user, staffs] = await Promise.all([
+        Package.findByPk(packageId, { transaction }),
+        this.getTemplateWithContents(templateId, transaction),
+        User.findByPk(userId, { transaction }),
+        Staff.findAll({ 
+          where: { merchantId: userId }, 
+          attributes: ['id', 'name', 'email', 'phoneNumber', 'permissions'],
+          transaction 
+        })
+      ]);
+
+      // Personalize template content
+      const initialContent = personalizeTemplateContent(
+        template.TemplateContents, 
+        businessData
+      );
+
+      const store = await storeService.ensureForWebsite({
+        ownerUserId: userId,
+        businessData,
+        transaction,
+      });
+
+      // Create the website first because Subscription.websiteId is required.
+      // Both rows stay in the same transaction so a failed trial rolls back
+      // the website as well.
+      const website = await Website.create({
+        userId,
+        storeId: store.id,
+        templateId,
+        businessDetails: businessData,
+        // Paid plans are paid by KHQR before this point; free plans start a trial
+        pricing: { totalPrice: Number(packageData.price) > 0 ? Number(packageData.price) : 0 },
+        limits: packageData.limits,
+        name: businessData.name,
+        status: DEPLOYMENT.STATUS.CUSTOMIZATION,
+      }, { transaction });
+
+      // Persist website content entries for the new website
+      if (initialContent && initialContent.length > 0) {
+        await WebsiteContent.bulkCreate(
+          initialContent.map((item) => ({
+            websiteId: website.id,
+            category: item.category,
+            label: item.label,
+            type: item.type,
+            value: item.value,
+          })),
+          { transaction }
+        );
+      }
+
+      await store.update({ projectionVersion: store.projectionVersion + 1 }, { transaction });
+      await storeSyncService.queueStore(store, { websiteId: website.id, transaction });
+
+      const subscription = Number(packageData.price) > 0
+        ? await subscriptionService.createPaidSubscriptionForWebsite({
+          userId,
+          pkg: packageData,
+          paymentId,
+          websiteId: website.id,
+          transaction,
+        })
+        : await subscriptionService.createTrialSubscription(
+          userId,
+          packageId,
+          website.id,
+          transaction
+        );
+      await website.update({ subscriptionId: subscription.id }, { transaction });
+
+      // Prepare data for external services
+      website._ecommerceData = {
+        websiteId: website.id,
+        storeId: store.id,
+        userId,
+        domain: website.domain || null,
+        niche: businessData?.niche || "ecommerce",
+        businessConfig: businessData?.businessConfig || {},
+        nicheSettings: businessData?.nicheSettings || {},
+        content: initialContent,
+        status: DEPLOYMENT.STATUS.CUSTOMIZATION,
+        userData: this.serializeUserData(user),
+        staffData: staffs,
+        websiteTemplateId: template.websiteTemplateId,
+        package: this.serializePackageData(subscription)
+      };
+
+      // Persist the exact projection in the same transaction. A failed HTTP
+      // request can then be retried without recreating the website or trial.
+      await ecommerceSyncService.enqueueWebsiteSync(website.id, website._ecommerceData, { transaction });
+
+      await transaction.commit();
+
+      logger.info('Website created successfully', {
+        websiteId: website.id,
+        userId
+      });
+
+      return website;
+
+    } catch (error) {
+      if (!transaction.finished) await transaction.rollback();
+      logger.error('Website creation failed', { userId, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Validate creation inputs
+   */
+  async validateCreationInputs({ templateId, packageId, userId }) {
+    if (!templateId || !packageId || !userId) {
+      throw new Error('Missing required fields: templateId, packageId, userId');
+    }
+
+    const [templateExists, packageExists] = await Promise.all([
+      WebsiteTemplate.findByPk(templateId),
+      Package.findByPk(packageId)
+    ]);
+
+    if (!templateExists) throw new Error('Template not found');
+    if (!packageExists) throw new Error('Package not found');
+  }
+
+  /**
+   * Get template with contents
+   */
+  async getTemplateWithContents(templateId, transaction = null) {
+    const template = await WebsiteTemplate.findByPk(templateId, {
+      include: ['TemplateContents'],
+      transaction
+    });
+
+    if (!template) {
+      throw new Error('Template not found');
+    }
+
+    return template;
+  }
+
+  /**
+   * Get user's website with full details
+   */
+  async getUserWebsite(userId) {
+    const website = await Website.findOne({
+      where: { userId },
+      include: [
+        { model: WebsiteTemplate },
+        'WebsiteContents'
+      ]
+    });
+
+    if (!website) return null;
+
+    // Enhance with color palette
+    const enhancedWebsite = await this.enhanceWithColorPalette(website);
+    return enhancedWebsite;
+  }
+
+  /**
+   * Enhance website with color palette
+   */
+  async enhanceWithColorPalette(website) {
+    const contents = website.WebsiteContents || [];
+    const colorPaletteItem = contents.find(item => 
+      item.label === 'Color Palette' && item.type === 'palette'
+    );
+
+    let colorPalette = { primary: '#3B82F6', secondary: '#10B981' };
+
+    if (colorPaletteItem && website.WebsiteTemplate) {
+      colorPalette = await this.resolveColorPalette(
+        colorPaletteItem.value,
+        website.WebsiteTemplate
+      );
+    }
+
+    website.dataValues.colorPalette = colorPalette;
+    return website;
+  }
+
+  /**
+   * Resolve color palette value. A string names a palette; a template has a
+   * single palette, stored on WebsiteTemplate.colorPalette.
+   */
+  async resolveColorPalette(value, template) {
+    if (typeof value === 'string') {
+      return template?.colorPalette || { primary: '#3B82F6', secondary: '#10B981' };
+    }
+    return value;
+  }
+
+  /**
+   * Validate website access
+   */
+  async validateWebsiteAccess(websiteId) {
+    const website = await Website.findByPk(websiteId, {
+      attributes: ['id', 'status', 'userId']
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    return {
+      valid: true,
+      userId: website.userId,
+      status: website.status
+    };
+  }
+
+  /**
+   * Get merchant telegram info
+   */
+  async getMerchantTelegramInfo(websiteId) {
+    const website = await Website.findByPk(websiteId, {
+      include: [{
+        model: User,
+        attributes: ['telegramChatId', 'id']
+      }]
+    });
+
+    if (!website || !website.User) {
+      throw new Error('Merchant not found');
+    }
+
+    return {
+      telegramChatId: website.User.telegramChatId,
+      merchantId: website.User.id
+    };
+  }
+
+  /**
+   * Update color palette
+   */
+  async updateColorPalette(websiteId, paletteId) {
+    const website = await Website.findByPk(websiteId);
+    
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    await website.update({ colorPaletteId: paletteId });
+    return website;
+  }
+
+  /**
+   * Serialize user data for external services
+   */
+  serializeUserData(user) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber
+    };
+  }
+
+  /**
+   * Serialize package data for external services
+   */
+  serializePackageData(subscription) {
+    return {
+      id: subscription.Package.id,
+      subscriptionId: subscription.id,
+      packageEndDate: subscription.endDate,
+      features: subscription.Package.features,
+      name: subscription.Package.name
+    };
+  }
+}
+
+module.exports = new WebsiteService();

@@ -26,21 +26,21 @@ the database without changing the schema
    Publishing builds nothing: Core assigns the Website a permanent
    `subdomain` under `HOSTED_STOREFRONT_DOMAIN`, marks it `active`, updates
    the Commerce copy and clears the public website cache
-   ([deployment service](../rentify-server/src/services/deploymentService.js),
-   [subdomain service](../rentify-server/src/services/hostedSubdomainService.js)).
+   ([deployment service](../rentify-server/src/modules/deployments/deploymentService.js),
+   [subdomain service](../rentify-server/src/modules/deployments/hostedSubdomainService.js)).
    A storefront still needs a template. If the merchant picks a brand colour
    during onboarding, it is sent as `businessData.colorPalette` and Core merges
    it into the template's `Color Palette` content
-   ([website service](../rentify-server/src/services/websiteService.js)).
+   ([website service](../rentify-server/src/modules/websites/websiteService.js)).
    An optional cover image is uploaded after creation with
    `uploadImage?type=cover`, which replaces the website's `Hero Image` content
-   ([upload controller](../rentify-server/src/controllers/uploadController.js)).
+   ([upload controller](../rentify-server/src/modules/websites/uploadController.js)).
 2. Core creates or reuses one Store for the owner, then creates a Website and
    trial subscription in one transaction, queues a
    Commerce projection in the same transaction, then asynchronously posts it
    with a service token. A background worker retries failed projections
-   ([website service](../rentify-server/src/services/websiteService.js),
-   [sync service](../rentify-server/src/services/ecommerceSyncService.js)).
+   ([website service](../rentify-server/src/modules/websites/websiteService.js),
+   [sync service](../rentify-server/src/modules/commerce-sync/ecommerceSyncService.js)).
 3. Commerce stores that copy as `WebsiteData`. Its `websiteId` is the current
    tenant key for products, categories, carts, orders, and many permissions
    ([WebsiteData](../ecommerce-server/models/WebsiteData.js),
@@ -63,15 +63,15 @@ the database without changing the schema
 6. Online, POS, and invoice orders use Commerce strategies. Payment and
    fulfillment services advance state; usage events record paid orders,
    invoices, and store views
-   ([order route](../ecommerce-server/routes/orderRoutes.js),
-   [usage events](../ecommerce-server/services/usageEventService.js)).
+   ([order route](../ecommerce-server/modules/orders/orderRoutes.js),
+   [usage events](../ecommerce-server/modules/billing/usageEventService.js)).
 7. Core holds the server-side Cloudinary credentials and uploads product image
    binaries. Storefront-linked merchants use the website-owned upload route;
    marketplace-only merchants use the Store-owned route. Both require a
    merchant owner, an administrator, or staff with product permission. Only
    the returned browser-safe image metadata is saved with the canonical
    Commerce Product. Cloudinary credentials are never injected into a frontend
-   build ([upload controller](../rentify-server/src/controllers/uploadController.js),
+   build ([upload controller](../rentify-server/src/modules/websites/uploadController.js),
    [Store authorization](../rentify-server/src/middlewares/authorization.js)).
 
 ## Constraints relevant to the migration
@@ -90,9 +90,9 @@ The trial path previously created `Subscription` without its required
 `websiteId` and before inserting Website. Core also sent `customization` to a
 Commerce status enum that did not include it. Both blockers were repaired on
 2026-09-23. See the implementation record in [notes](notes.md). The current
-service and model contracts are in the [website service](../rentify-server/src/services/websiteService.js),
-[subscription service](../rentify-server/src/services/subscriptionService.js),
-[sync service](../rentify-server/src/services/ecommerceSyncService.js), and
+service and model contracts are in the [website service](../rentify-server/src/modules/websites/websiteService.js),
+[subscription service](../rentify-server/src/modules/billing/subscriptionService.js),
+[sync service](../rentify-server/src/modules/commerce-sync/ecommerceSyncService.js), and
 [Commerce WebsiteData](../ecommerce-server/models/WebsiteData.js).
 
 Core Store foundation was added on 2026-09-23. `POST /api/stores` creates a

@@ -1,6 +1,6 @@
 const app = require('./app');
 const syncDB = require('./config/initDB');
-const { startWebsiteSyncJob } = require('./jobs/websiteSyncJob');
+const { startWebsiteSyncJob } = require('./modules/commerce-sync/websiteSyncJob');
 
 const startServer = async () => {
   await syncDB();

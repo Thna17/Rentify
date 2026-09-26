@@ -1,0 +1,44 @@
+{
+  "description": "Which module may write each model. Other modules may read any model through the shared registry, but must ask the owning module to create, update or delete rows. Checked by scripts/quality/check-model-ownership.js.",
+  "owners": {
+    "Product": ["catalog", "store-catalog"],
+    "ProductVariant": ["catalog"],
+    "ProductOption": ["catalog"],
+    "Category": ["catalog"],
+    "ProductReview": ["store-catalog"],
+    "StoreDeliveryPolicy": ["checkout"],
+    "Cart": ["cart"],
+    "CartItem": ["cart"],
+    "Order": ["orders"],
+    "OrderItem": ["orders"],
+    "OrderEvent": ["orders"],
+    "ShippingDetail": ["orders"],
+    "Payment": ["payments"],
+    "PaymentGatewayConfig": ["payments"],
+    "Invoice": ["invoices"],
+    "Customer": ["customers", "auth"],
+    "BillingStatement": ["billing"],
+    "UsageEvent": ["billing"],
+    "PricingRule": ["billing"],
+    "StoreAccess": ["store-access"],
+    "WebsiteData": ["websites"],
+    "WebsiteContent": ["websites"]
+  },
+  "sharedTransactionDomain": {
+    "reason": "AGENTS.md rule 6: checkout, stock reservation, orders, payments and invoices form one transaction domain. Placing an order writes the cart, order, items, events, payment and invoice in a single database transaction.",
+    "modules": ["cart", "checkout", "orders", "payments", "inventory", "invoices"],
+    "models": ["Cart", "CartItem", "Order", "OrderItem", "OrderEvent", "ShippingDetail", "Payment", "Invoice"]
+  },
+  "exceptions": [
+    {
+      "module": "orders",
+      "model": "Customer",
+      "reason": "Order strategies update customer order statistics and create walk-in POS customers inside the order transaction, using injected models."
+    },
+    {
+      "module": "store-access",
+      "model": "Customer",
+      "reason": "The one-time tenant backfill maps every table of a website to its Store in one transaction when Core links them."
+    }
+  ]
+}

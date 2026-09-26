@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const POSOrderStrategy = require('../../core/orderCreation/strategies/POSOrderStrategy');
-const NicheStrategy = require('../../core/orderCreation/strategies/NicheStrategy');
-const storeCatalog = require('../../services/storeCatalogService');
+const POSOrderStrategy = require('../../modules/orders/core/orderCreation/strategies/POSOrderStrategy');
+const NicheStrategy = require('../../modules/orders/core/orderCreation/strategies/NicheStrategy');
+const storeCatalog = require('../../modules/store-catalog/storeCatalogService');
 const { Product, Order, OrderItem, Payment, Invoice, Customer } = require('../../models');
 
 test('omnichannel sync: POS card and cash payments immediately deduct canonical inventory and mark order completed', async (t) => {
