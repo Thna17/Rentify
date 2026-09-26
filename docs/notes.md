@@ -541,6 +541,36 @@ Progress:
     template list and detail endpoints always failed with 400. The palette
     lives on `WebsiteTemplate.colorPalette`; the controller now includes only
     `TemplateContent`. Covered by `test/security/adminTemplates.test.js`.
-- **Next: split oversized files** (Core `authService`, `websiteService`;
-  Commerce `ProductService`, `marketplaceCheckoutService`) and move reused
-  controllers' routes to their owning modules.
+- **Oversized files — split where they mixed concerns (2026-09-26).**
+  - Commerce `checkout/marketplaceCheckoutService.js` (830 lines) now keeps
+    checkout only and re-exports the rest, so its callers are unchanged:
+    `marketplaceRules.js` (validation, money, eligibility, order view),
+    `deliveryPolicyService.js`, `marketplaceCartService.js` and
+    `marketplaceOrderService.js` (order views, COD actions, buyer reports).
+    Functions moved verbatim; the unused `checkedProduct` was removed.
+  - Core `websites/websiteService.js`: template personalization moved to
+    `websites/templatePersonalization.js`.
+  - Left intact on purpose: Core `auth/authService.js` is one class for one
+    concern (signup, OTP, login, reset, tokens) and `staff/staffAuthService`
+    extends it; Commerce `catalog/ProductService.js` is one class whose methods
+    share per-website state. Neither mixes domains; splitting them would only
+    reduce line count.
+  - The ownership check now also fails on a query such as `X.findAll(...)`
+    where the file never declares or imports `X`. It found two more bugs,
+    both present on `develop` before this work:
+    - Commerce `POST /api/cart/merge` used `Cart` without importing it, so
+      every merge with a guest session failed. No frontend calls it today (the
+      marketplace uses `/api/marketplace/cart/merge`). Covered by
+      `test/security/cartMerge.test.js`.
+    - Core `GET /api/websites/` always failed: it included a
+      `TemplateColorPalettes` association that does not exist, and a named
+      palette referenced the missing `TemplateColorPalette` model. A named
+      palette now resolves to `WebsiteTemplate.colorPalette`. Covered by
+      `test/security/websitePalette.test.js`.
+  - **Open:** Core `PUT /api/websites/:websiteId/color-palette` writes
+    `Website.colorPaletteId`, a column that does not exist, so it reports
+    success and saves nothing. No frontend calls it. Removing it or storing the
+    palette in the website's "Color Palette" content is a product decision.
+- **Next:** move routes that reuse another module's controller (Commerce
+  `cart` → `checkout`, `store-catalog` → `orders`; Core `admin` → `stores`,
+  `stores` → `websites`) to their owning modules.
