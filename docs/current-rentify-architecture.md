@@ -63,8 +63,8 @@ the database without changing the schema
 6. Online, POS, and invoice orders use Commerce strategies. Payment and
    fulfillment services advance state; usage events record paid orders,
    invoices, and store views
-   ([order route](../ecommerce-server/routes/orderRoutes.js),
-   [usage events](../ecommerce-server/services/usageEventService.js)).
+   ([order route](../ecommerce-server/modules/orders/orderRoutes.js),
+   [usage events](../ecommerce-server/modules/billing/usageEventService.js)).
 7. Core holds the server-side Cloudinary credentials and uploads product image
    binaries. Storefront-linked merchants use the website-owned upload route;
    marketplace-only merchants use the Store-owned route. Both require a

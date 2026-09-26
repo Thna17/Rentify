@@ -2,10 +2,10 @@
 
 | Area | Owner role | Primary paths |
 | --- | --- | --- |
-| Catalog, cart, orders, POS | Commerce owner | `controllers/`, `routes/product*`, `routes/cart*`, `routes/order*` |
-| Payments and KHQR | Payments owner | `controllers/Payment*`, `routes/payment*`, `core/payment/`, `utils/paymentConfigEncryption.js` |
+| Catalog, cart, orders, POS | Commerce owner | `modules/catalog/`, `modules/store-catalog/`, `modules/cart/`, `modules/orders/`, `modules/inventory/`, `modules/checkout/` |
+| Payments and KHQR | Payments owner | `modules/payments/` (including `modules/payments/core/` and `paymentConfigEncryption.js`) |
 | Tenant authorization | Security owner | `middlewares/requireWebsiteAccess.js`, `middlewares/authMiddleware.js` |
-| Usage and billing | Infrastructure owner | `routes/usage*`, `services/*billing*`, `workers/` |
+| Usage and billing | Infrastructure owner | `modules/billing/` (usage events, aggregation, billing worker) |
 | Database | Data reliability owner | `models/`, `migrations/` |
 | QA/security | Quality owner | `test/`, `.github/workflows/`, `scripts/quality/` |
 

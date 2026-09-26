@@ -436,9 +436,10 @@ so these items are recorded here and scheduled after it:
 **Decision.** Reorganize both APIs from technical layers (`controllers/`,
 `services/`, `routes/`, …) into a modular monolith: one folder per business
 domain under `modules/`, each owning its routes, controllers, services and
-domain helpers, plus a `shared/` area for cross-cutting infrastructure. The
-work proceeds one API at a time (Core first, then Commerce), one module per
-commit, with the full test suite green after each step.
+domain helpers, while cross-cutting infrastructure (`config/`, `middlewares/`,
+`utils/`, `models/`) stays at the package root. The work proceeds one API at a
+time (Core first, then Commerce), each file move in its own commit, with the
+full test suite green and the route table unchanged after each step.
 
 Constraints for this work:
 
@@ -466,4 +467,27 @@ Progress:
   `modules/ops/raasReminderJob.js` is never started; `commerce-sync/syncService.js`,
   `utils/limitCalculator.js`, `utils/passwordUtils.js` and `utils/cookieUtils.js`
   are not imported anywhere.
-- **Commerce — not started.**
+- **Commerce — file move done (2026-09-26).** `controllers/`, `routes/`,
+  `services/`, `workers/` and `core/` are replaced by 17 modules under
+  `ecommerce-server/modules/` (layout in the
+  [Commerce contributing guide](../ecommerce-server/CONTRIBUTING.md)); the niche
+  strategy classes from `core/` now live in each owning module's `core/`
+  folder. The mounted route table is identical before and after (138 routes)
+  and `npm run verify` passes. Two edits beyond path rewriting keep behavior
+  the same: `updateDeploymentUrls.js` resolves `.env` one level further up, and
+  `apiMountScope.test.js` reads router paths from `app.js` instead of assuming
+  a `routes/` folder. Findings kept as-is for later: relative requires that did
+  not resolve before the move still do not (`telegramService` requires
+  `models/User`; base methods of `OrderStrategy` and `EcommerceOrderStrategy`/
+  `EcommerceNicheStrategy` require `models` paths that do not exist and would
+  throw if a subclass does not override them); `MerchantController.js`,
+  `OrderService.js`, `productValidation.js`, `invoiceUtils.js`,
+  `utils/orderHelpers.js`, `utils/sanitizeData.js` and `config/rateLimiter.js`
+  are not imported anywhere.
+- **Tooling.** `tools/move-modules.js` performs a move from a JSON map
+  (`git mv` plus relative-path rewriting in code, Markdown links and
+  CODEOWNERS); `tools/maps/commerce.json` is the Commerce map.
+  `tools/route-table.js` lists an app's mounted routes so the before/after
+  comparison can be repeated.
+- **Next: boundaries.** Route cross-module calls through each module's
+  `index.js` and move direct cross-domain model access out of controllers.

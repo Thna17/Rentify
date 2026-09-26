@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 process.env.PAYMENT_CONFIG_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
-const { encryptSecrets, decryptSecrets, splitConfig, sanitizeConfig } = require("../../utils/paymentConfigEncryption");
+const { encryptSecrets, decryptSecrets, splitConfig, sanitizeConfig } = require("../../modules/payments/paymentConfigEncryption");
 
 test("payment-provider credentials are encrypted at rest and omitted from API data", () => {
   const { publicConfig, secrets } = splitConfig({

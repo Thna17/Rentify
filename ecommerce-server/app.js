@@ -8,7 +8,7 @@ const helmetConfig = require('./config/helmetConfig');
 const corsOptions = require('./config/corsConfig');
 const sessionConfig = require('./config/sessionConfig');
 const sessionMiddleware = require('./middlewares/sessionMiddleware');
-// const TelegramService = require('./services/telegramService');
+// const TelegramService = require('./modules/notifications/telegramService');
 
 const app = express();
 
@@ -29,26 +29,26 @@ app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 // TelegramService.setupWebhook(app);
 
 // Your routes
-app.use('/api/website-data', require('./routes/websiteRoutes'));
-app.use('/api/store-access', require('./routes/storeAccessRoutes'));
-app.use('/api', require('./routes/storeCatalogRoutes'));
-app.use('/api', require('./routes/marketplaceCheckoutRoutes'));
-app.use('/api', require('./routes/storefrontCheckoutRoutes'));
-app.use('/api/admin/operations', require('./routes/platformOperationsRoutes'));
-app.use('/ecommerce/stats', require('./routes/ecommerceStatsRoutes'));
-app.use('/api/categories', require('./routes/categoryRoutes'));
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/customer', require('./routes/customerRoutes'));
-app.use('/api/product', require('./routes/productRoutes'));
-app.use('/api/cart', require('./routes/cartRoutes'));
-app.use('/api/invoice', require('./routes/invoiceRoutes'));
-app.use('/api/merchant', require('./routes/merchantRoutes'));
-app.use('/api/payment', require('./routes/paymentRoutes'));
-app.use('/api/order', require('./routes/orderRoutes'));
-app.use('/api', require('./routes/notificationRoutes'));
-app.use("/api/payment-config", require('./routes/paymentConfig'));
-app.use("/api/ops", require("./routes/opsRoutes"));
-app.use("/api/usage", require("./routes/usageRoutes"));
+app.use('/api/website-data', require('./modules/websites/websiteRoutes'));
+app.use('/api/store-access', require('./modules/store-access/storeAccessRoutes'));
+app.use('/api', require('./modules/store-catalog/storeCatalogRoutes'));
+app.use('/api', require('./modules/checkout/marketplaceCheckoutRoutes'));
+app.use('/api', require('./modules/checkout/storefrontCheckoutRoutes'));
+app.use('/api/admin/operations', require('./modules/admin/platformOperationsRoutes'));
+app.use('/ecommerce/stats', require('./modules/stats/ecommerceStatsRoutes'));
+app.use('/api/categories', require('./modules/catalog/categoryRoutes'));
+app.use('/api/auth', require('./modules/auth/authRoutes'));
+app.use('/api/customer', require('./modules/customers/customerRoutes'));
+app.use('/api/product', require('./modules/catalog/productRoutes'));
+app.use('/api/cart', require('./modules/cart/cartRoutes'));
+app.use('/api/invoice', require('./modules/invoices/invoiceRoutes'));
+app.use('/api/merchant', require('./modules/orders/merchantRoutes'));
+app.use('/api/payment', require('./modules/payments/paymentRoutes'));
+app.use('/api/order', require('./modules/orders/orderRoutes'));
+app.use('/api', require('./modules/notifications/notificationRoutes'));
+app.use("/api/payment-config", require('./modules/payments/paymentConfig'));
+app.use("/api/ops", require("./modules/ops/opsRoutes"));
+app.use("/api/usage", require("./modules/billing/usageRoutes"));
 
 // Error handler
 app.use((err, req, res, next) => {

@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const { PaymentGatewayConfig } = require("../models");
 const { sequelize } = require("../config/db");
-const { encryptSecrets, splitConfig } = require("../utils/paymentConfigEncryption");
+const { encryptSecrets, splitConfig } = require("../modules/payments/paymentConfigEncryption");
 
 const run = async () => {
   const records = await PaymentGatewayConfig.findAll();

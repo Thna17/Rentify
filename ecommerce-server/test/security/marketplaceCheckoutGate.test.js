@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { requireMarketplaceCheckoutEnabled, requireStorefrontCheckoutEnabled } = require('../../middlewares/marketplaceCheckoutGate');
+const { requireMarketplaceCheckoutEnabled, requireStorefrontCheckoutEnabled } = require('../../modules/checkout/marketplaceCheckoutGate');
 
 test('marketplace checkout writes stay disabled until explicitly enabled', () => {
   const original = process.env.MARKETPLACE_COD_CHECKOUT_ENABLED;
