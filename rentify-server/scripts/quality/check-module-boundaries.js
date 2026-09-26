@@ -1,5 +1,7 @@
 // Enforces module boundaries: code inside one module may use another module only
 // through that module's public entry point (its index.js), never its internal files.
+// It also fails on a relative require that does not resolve, and on a member read
+// from another module's entry point that its index.js does not expose.
 //
 //   node scripts/quality/check-module-boundaries.js <modulesDir>          check (exit 1 on violations)
 //   node scripts/quality/check-module-boundaries.js <modulesDir> --fix    rewrite violations
@@ -91,6 +93,22 @@ if (fix) {
   }
   console.log(`Rewrote ${violations.length} cross-module requires through ${needed.size} module entry points.`);
   process.exit(0);
+}
+
+// Every relative require must resolve, and a member read from another module's
+// entry point must be one that index.js exposes (otherwise it is undefined at runtime).
+const MEMBER = /require\(\s*(['"])(\.{1,2}\/[^'"]+)\1\s*\)(?:\.(\w+))?/g;
+for (const file of files) {
+  const rel = toPosix(path.relative(modulesDir, file));
+  for (const [, , spec, member] of fs.readFileSync(file, 'utf8').matchAll(MEMBER)) {
+    const target = resolve(path.dirname(file), spec);
+    if (!target) { violations.push(`${rel}: requires ${spec}, which does not exist`); continue; }
+    if (!member || !target.startsWith(modulesDir + path.sep)) continue;
+    const to = moduleOf(target);
+    if (to === moduleOf(file) || toPosix(path.relative(path.join(modulesDir, to), target)) !== 'index.js') continue;
+    const exposed = [...fs.readFileSync(target, 'utf8').matchAll(/get (\w+)\(\)/g)].map((m) => m[1]);
+    if (!exposed.includes(member)) violations.push(`${rel}: reads ${to}.${member}, which ${to}/index.js does not expose`);
+  }
 }
 
 if (violations.length) {

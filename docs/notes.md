@@ -458,7 +458,7 @@ Constraints for this work:
 Progress:
 
 - **Core — file move done (2026-09-26).** `routes/`, `controllers/`,
-  `services/` and `jobs/` are replaced by 14 modules under
+  `services/` and `jobs/` are replaced by 14 modules (15 since `media` was added) under
   `rentify-server/src/modules/` (layout in the
   [Core README](../rentify-server/README.md)). The mounted route table is
   identical before and after (94 routes) and `npm run verify` passes.
@@ -571,6 +571,27 @@ Progress:
     `Website.colorPaletteId`, a column that does not exist, so it reports
     success and saves nothing. No frontend calls it. Removing it or storing the
     palette in the website's "Color Palette" content is a product decision.
-- **Next:** move routes that reuse another module's controller (Commerce
-  `cart` → `checkout`, `store-catalog` → `orders`; Core `admin` → `stores`,
-  `stores` → `websites`) to their owning modules.
+- **Routes moved to the module that owns their controller (2026-09-27).**
+  Route tables are unchanged (Core 94, Commerce 138).
+  - Commerce central marketplace cart routes (`GET/DELETE /api/cart`,
+    `/api/cart/items…`, `/api/cart/clear`) moved from `cart/cartRoutes.js` to
+    `checkout/marketplaceCartRoutes.js`. `app.js` mounts it at `/api/cart`
+    before the storefront cart router, so `/clear` still wins over
+    `/:websiteId`; its session and token middleware are per route, so
+    storefront cart requests still run them exactly once.
+  - Commerce Store POS routes (`/api/stores/:storeId/orders/pos`) moved from
+    `store-catalog` to `orders/storePosRoutes.js`, mounted right after the
+    store-catalog router.
+  - Core uploads: new `media` module with the product image and PDF uploads
+    and the Cloudinary helper, used by both `websites` and `stores`, so a
+    Store's product image route no longer depends on the websites module.
+    The logo/cover upload stays in `websites/websiteImageController.js`
+    because it also writes the website's content.
+  - Kept: Core `admin` routes use `stores`' seller review controller through
+    its entry point. `admin` is the platform-admin HTTP surface and composes
+    domain controllers behind `requireAdmin`.
+  - The boundary check now also fails on a relative require that does not
+    resolve and on a member read from an entry point that does not expose
+    it (both would fail only at runtime).
+- **Next:** controllers that still query other domains' models directly
+  (reads are allowed, but some would be clearer behind the owning service).
