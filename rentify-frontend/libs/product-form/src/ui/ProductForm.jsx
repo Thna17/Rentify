@@ -206,22 +206,63 @@ export const ProductForm = ({ onClose, category }) => {
           .min(1, 'At least one value is required'),
         required: Yup.boolean().default(false),
       })
-    ),
-    variants: Yup.array().of(
-      Yup.object({
-        sku: Yup.string(),
-        price: Yup.number().required('Variant price is required').min(0.01),
-        compareAtPrice: Yup.number().nullable().min(0),
-        costPrice: Yup.number().nullable().min(0),
-        stockQuantity: Yup.number()
-          .required('Variant stock is required')
-          .min(0)
-          .integer(),
-        weight: Yup.number().nullable().min(0),
-        optionValues: Yup.object().required('Variant options are required'),
-        status: Yup.string().oneOf(['active', 'disabled']).default('active'),
+    )
+      .test('unique-option-names', 'Duplicate option names are not allowed', function(options) {
+        if (!options) return true;
+        const names = options.map((o) => (o.name || '').trim().toLowerCase()).filter(Boolean);
+        return new Set(names).size === names.length;
       })
-    ),
+      .test('single-color-option', 'Only one Color option is allowed per product', function(options) {
+        if (!options) return true;
+        const colorCount = options.filter(
+          (o) => o.type === 'color' || (o.name || '').trim().toLowerCase() === 'color'
+        ).length;
+        return colorCount <= 1;
+      })
+      .test('unique-option-values', 'Duplicate option values are not allowed', function(options) {
+        if (!options) return true;
+        for (const opt of options) {
+          if (!opt.values) continue;
+          const vals = opt.values.map((v) => (v.value || '').trim().toLowerCase()).filter(Boolean);
+          if (new Set(vals).size !== vals.length) {
+            return this.createError({
+              message: `Option "${opt.name}" has duplicate values`,
+            });
+          }
+        }
+        return true;
+      }),
+    variants: Yup.array()
+      .of(
+        Yup.object({
+          sku: Yup.string(),
+          price: Yup.number().required('Variant price is required').min(0.01),
+          compareAtPrice: Yup.number().nullable().min(0),
+          costPrice: Yup.number().nullable().min(0),
+          stockQuantity: Yup.number()
+            .required('Variant stock is required')
+            .min(0)
+            .integer(),
+          weight: Yup.number().nullable().min(0),
+          optionValues: Yup.object().required('Variant options are required'),
+          status: Yup.string().oneOf(['active', 'disabled']).default('active'),
+        })
+      )
+      .test('unique-variants', 'Duplicate variant combinations are not allowed', function(variants) {
+        if (!variants) return true;
+        const seen = new Set();
+        for (const v of variants) {
+          if (v.optionValues && Object.keys(v.optionValues).length > 0) {
+            const key = Object.entries(v.optionValues)
+              .sort(([k1], [k2]) => k1.localeCompare(k2))
+              .map(([k, val]) => `${k}:${val}`)
+              .join('|');
+            if (seen.has(key)) return false;
+            seen.add(key);
+          }
+        }
+        return true;
+      }),
   });
 
   const getInitialCategoryId = () => {
@@ -268,6 +309,36 @@ const getDefaultNicheAttributes = () => {
   const generateVariants = (options, basePrice, baseStock) => {
     if (!options || options.length === 0) return [];
 
+    // Filter out options with duplicate names or types, and de-duplicate values within each option
+    const uniqueOptions = [];
+    const seenOptionNames = new Set();
+    let hasColor = false;
+    for (const opt of options) {
+      const trimmedName = (opt.name || '').trim();
+      const nameKey = trimmedName.toLowerCase();
+      if (!nameKey || seenOptionNames.has(nameKey)) continue;
+      if (opt.type === 'color' || nameKey === 'color') {
+        if (hasColor) continue;
+        hasColor = true;
+      }
+      seenOptionNames.add(nameKey);
+
+      // De-duplicate values within this option
+      const uniqueValues = [];
+      const seenValues = new Set();
+      for (const val of opt.values || []) {
+        const trimmedVal = (val.value || '').trim();
+        if (!trimmedVal || seenValues.has(trimmedVal.toLowerCase())) continue;
+        seenValues.add(trimmedVal.toLowerCase());
+        uniqueValues.push({ ...val, value: trimmedVal, label: val.label?.trim() || trimmedVal });
+      }
+      if (uniqueValues.length > 0) {
+        uniqueOptions.push({ ...opt, name: trimmedName, values: uniqueValues });
+      }
+    }
+
+    if (uniqueOptions.length === 0) return [];
+
     const generateCombinations = (arrays, index = 0, current = {}) => {
       if (index === arrays.length) {
         return [current];
@@ -288,9 +359,23 @@ const getDefaultNicheAttributes = () => {
       return results;
     };
 
-    const combinations = generateCombinations(options);
+    const combinations = generateCombinations(uniqueOptions);
 
-    return combinations.map((optionValues, index) => {
+    // Ensure completely unique combinations
+    const seenCombos = new Set();
+    const uniqueCombos = [];
+    for (const combo of combinations) {
+      const comboKey = Object.entries(combo)
+        .sort(([k1], [k2]) => k1.localeCompare(k2))
+        .map(([k, v]) => `${k}:${v}`)
+        .join('|');
+      if (!seenCombos.has(comboKey)) {
+        seenCombos.add(comboKey);
+        uniqueCombos.push(combo);
+      }
+    }
+
+    return uniqueCombos.map((optionValues, index) => {
       const variantSku = Object.values(optionValues)
         .map((val) => val?.toString().substring(0, 3).toUpperCase())
         .join('-');
@@ -363,16 +448,66 @@ const getDefaultNicheAttributes = () => {
 
   const handleSubmit = async (values) => {
     if (websiteNiche === 'skincare') {
-  if (!values.nicheAttributes?.skinType?.length) {
-    setSubmitError('Skin type information is required for skincare products');
-    return;
-  }
-  
-  if (!values.nicheAttributes?.ingredients?.length) {
-    setSubmitError('Ingredients list is required for skincare products');
-    return;
-  }
-}
+      if (!values.nicheAttributes?.skinType?.length) {
+        setSubmitError('Skin type information is required for skincare products');
+        return;
+      }
+      
+      if (!values.nicheAttributes?.ingredients?.length) {
+        setSubmitError('Ingredients list is required for skincare products');
+        return;
+      }
+    }
+
+    // Validate options uniqueness
+    const options = values.options || [];
+    const seenOptionNames = new Set();
+    let colorOptionCount = 0;
+    for (const opt of options) {
+      const name = (opt.name || '').trim().toLowerCase();
+      if (name) {
+        if (seenOptionNames.has(name)) {
+          setSubmitError(`Duplicate option "${opt.name}". Each option must have a unique name.`);
+          return;
+        }
+        seenOptionNames.add(name);
+      }
+      if (opt.type === 'color' || name === 'color') {
+        colorOptionCount++;
+      }
+      const seenVals = new Set();
+      for (const val of opt.values || []) {
+        const valStr = (val.value || '').trim().toLowerCase();
+        if (valStr) {
+          if (seenVals.has(valStr)) {
+            setSubmitError(`Duplicate value "${val.value}" in option "${opt.name}". Duplicate values are not allowed.`);
+            return;
+          }
+          seenVals.add(valStr);
+        }
+      }
+    }
+    if (colorOptionCount > 1) {
+      setSubmitError('Only one Color option is allowed per product.');
+      return;
+    }
+
+    // Validate variant combinations uniqueness
+    const seenVariantCombos = new Set();
+    for (const variant of values.variants || []) {
+      if (variant.optionValues && Object.keys(variant.optionValues).length > 0) {
+        const comboKey = Object.entries(variant.optionValues)
+          .sort(([k1], [k2]) => k1.localeCompare(k2))
+          .map(([k, v]) => `${k}:${v}`)
+          .join('|');
+        if (seenVariantCombos.has(comboKey)) {
+          setSubmitError(`Duplicate variant combination detected: ${Object.entries(variant.optionValues).map(([k, v]) => `${k}: ${v}`).join(', ')}.`);
+          return;
+        }
+        seenVariantCombos.add(comboKey);
+      }
+    }
+
     console.log('Form submission started with values:', values);
     setSubmitError(null);
     setSubmitSuccess(false);
@@ -487,30 +622,53 @@ const getDefaultNicheAttributes = () => {
   });
 
   const handleAddOption = (template = null) => {
-    const newOptions = [...formik.values.options];
+    const currentOptions = formik.values.options || [];
 
     if (template) {
-      newOptions.push({
-        name: template.name,
-        type: template.type,
-        values: template.values.map((val) => ({
-          value: val,
-          label: val,
-          ...(template.type === 'color' && { hexCode: '#000000' }),
-          ...(template.type === 'image' && { imageUrl: '' }),
-        })),
-        required: template.required || false,
+      const templateNameLower = template.name.trim().toLowerCase();
+      const alreadyExists = currentOptions.some((opt) => {
+        const optName = (opt.name || '').trim().toLowerCase();
+        if (optName === templateNameLower) return true;
+        if (template.type === 'color' && (opt.type === 'color' || optName === 'color')) return true;
+        return false;
       });
-    } else {
-      newOptions.push({
-        name: '',
-        type: 'select',
-        values: [{ value: '', label: '' }],
-        required: false,
-      });
-    }
 
-    formik.setFieldValue('options', newOptions);
+      if (alreadyExists) {
+        alert(
+          template.type === 'color'
+            ? 'A Color option already exists. Only one Color option is allowed.'
+            : `Option "${template.name}" already exists.`
+        );
+        return;
+      }
+
+      const newOptions = [
+        ...currentOptions,
+        {
+          name: template.name,
+          type: template.type,
+          values: template.values.map((val) => ({
+            value: val,
+            label: val,
+            ...(template.type === 'color' && { hexCode: '#000000' }),
+            ...(template.type === 'image' && { imageUrl: '' }),
+          })),
+          required: template.required || false,
+        },
+      ];
+      formik.setFieldValue('options', newOptions);
+    } else {
+      const newOptions = [
+        ...currentOptions,
+        {
+          name: '',
+          type: 'select',
+          values: [{ value: '', label: '' }],
+          required: false,
+        },
+      ];
+      formik.setFieldValue('options', newOptions);
+    }
   };
 
   const handleRemoveOption = (optionIndex) => {
@@ -564,13 +722,50 @@ const getDefaultNicheAttributes = () => {
   };
 
   const handleGenerateVariants = () => {
-    if (formik.values.options.length === 0) {
+    const options = formik.values.options || [];
+    if (options.length === 0) {
       alert('Please add options first');
       return;
     }
 
+    const seenNames = new Set();
+    let colorCount = 0;
+    for (const opt of options) {
+      const name = (opt.name || '').trim().toLowerCase();
+      if (!name) {
+        alert('All options must have a name before generating variants.');
+        return;
+      }
+      if (seenNames.has(name)) {
+        alert(`Duplicate option "${opt.name}". Each option must have a unique name.`);
+        return;
+      }
+      seenNames.add(name);
+      if (opt.type === 'color' || name === 'color') {
+        colorCount++;
+      }
+    }
+    if (colorCount > 1) {
+      alert('Only one Color option is allowed per product.');
+      return;
+    }
+
+    for (const opt of options) {
+      const seenVals = new Set();
+      for (const val of opt.values || []) {
+        const valStr = (val.value || '').trim().toLowerCase();
+        if (valStr) {
+          if (seenVals.has(valStr)) {
+            alert(`Duplicate value "${val.value}" in option "${opt.name}". Option values must be unique.`);
+            return;
+          }
+          seenVals.add(valStr);
+        }
+      }
+    }
+
     const newVariants = generateVariants(
-      formik.values.options,
+      options,
       formik.values.price,
       formik.values.stockQuantity
     );

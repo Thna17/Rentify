@@ -52,11 +52,12 @@ export const websiteApi = createApi({
       ],
     }),
     uploadImage: builder.mutation({
-      query: ({ websiteId, file, isLogo }) => {
+      query: ({ websiteId, file, isLogo, type }) => {
         const formData = new FormData();
         formData.append('image', file);
+        const query = isLogo ? '?isLogo=true' : type ? `?type=${encodeURIComponent(type)}` : '';
         return {
-          url: `/uploadImage/${websiteId}${isLogo ? '?isLogo=true' : ''}`,
+          url: `/uploadImage/${websiteId}${query}`,
           method: 'POST',
           body: formData,
         };

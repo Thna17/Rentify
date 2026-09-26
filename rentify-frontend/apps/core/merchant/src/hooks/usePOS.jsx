@@ -87,7 +87,8 @@ export const usePOS = () => {
 
   const addToCart = (product) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const lineKey = `${product.id}:${product.variantId || ''}`;
+      const existing = prev.find((item) => item.lineKey === lineKey);
       const currentQty = existing ? existing.quantity : 0;
       const maxStock = product.trackInventory !== false ? (product.stockQuantity ?? 999) : 999;
       if (maxStock <= currentQty && !product.allowBackorders) {
@@ -95,7 +96,7 @@ export const usePOS = () => {
       }
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
+          item.lineKey === lineKey
             ? {
                 ...item,
                 quantity: item.quantity + 1,
@@ -106,19 +107,19 @@ export const usePOS = () => {
       }
       return [
         ...prev,
-        { ...product, quantity: 1, subtotal: Number(product.price) },
+        { ...product, lineKey, quantity: 1, subtotal: Number(product.price) },
       ];
     });
   };
 
-  const updateCartItem = (id, quantity) => {
+  const updateCartItem = (lineKey, quantity) => {
     if (quantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(lineKey);
       return;
     }
     setCart((prev) =>
       prev.map((item) => {
-        if (item.id !== id) return item;
+        if (item.lineKey !== lineKey) return item;
         const maxStock = item.trackInventory !== false ? (item.stockQuantity ?? 999) : 999;
         const safeQty = !item.allowBackorders ? Math.min(quantity, maxStock) : quantity;
         return {
@@ -130,8 +131,8 @@ export const usePOS = () => {
     );
   };
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (lineKey) => {
+    setCart((prev) => prev.filter((item) => item.lineKey !== lineKey));
   };
 
   const clearCart = () => {
@@ -143,6 +144,8 @@ export const usePOS = () => {
       const orderData = {
         items: cart.map((item) => ({
           productId: item.id,
+          variantId: item.variantId || undefined,
+          selectedOptions: item.selectedOptions || {},
           quantity: item.quantity,
           price: item.price,
         })),
@@ -176,9 +179,6 @@ export const usePOS = () => {
       setKhqrAmount(amount);
       setShowKHQR(true);
       setShowPayment(false);
-      if (isDualScreen) {
-        setActiveTab('customer-display');
-      }
     } catch (error) {
       console.error('KHQR Order creation failed:', error);
     }
@@ -214,6 +214,8 @@ export const usePOS = () => {
       const orderData = {
         items: cart.map((item) => ({
           productId: item.id,
+          variantId: item.variantId || undefined,
+          selectedOptions: item.selectedOptions || {},
           quantity: item.quantity,
           price: item.price,
         })),

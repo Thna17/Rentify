@@ -5,8 +5,7 @@ const axios = require("axios");
 const { BakongKHQR, IndividualInfo, MerchantInfo } = require("bakong-khqr");
 const { Op } = require("sequelize");
 const cron = require("node-cron");
-const { Payment } = require("../models");
-const subscriptionService = require('../services/subscriptionService');
+const { Payment, Package } = require("../models");
 
 const KHQR_CURRENCY_CODES = {
   USD: "840",
@@ -35,8 +34,14 @@ const KHQR_CURRENCY_CODES = {
 // Initiate KHQR Payment
 exports.initiateKHQRPayment = async (req, res) => {
   try {
-    const { amount } = req.body;
     const userId = req.user.id;
+
+    // The price always comes from the package, never from the browser
+    const pkg = req.body.packageId ? await Package.findByPk(req.body.packageId) : null;
+    const amount = Number(pkg?.price);
+    if (!pkg || !(amount > 0)) {
+      return res.status(400).json({ error: "Choose a paid plan to pay for" });
+    }
 
 
     const merchantConfig = {
@@ -61,36 +66,38 @@ exports.initiateKHQRPayment = async (req, res) => {
       paymentMethod: "khqr",
       status: "pending",
       expiresAt,
-      packageId: req.body.packageId || null
+      packageId: pkg.id
     });
 
     // Generate KHQR
     const qrData = generateKHQRString(merchantConfig, amount, referenceId);
 
-    const { data } = await axios.post(
-      `${process.env.BAKONG_API_URL}/v1/generate_deeplink_by_qr`,
-      {
-        qr: qrData.qrString,
-        sourceInfo: {
-          appIconUrl: "https://yourdomain.com/logo.png",
-          appName: "Choulweb",
-          appDeepLinkCallback:
-            process.env.PAYMENT_CALLBACK_URL || "https://yourdomain.com/payment/callback",
+    // The bank-app deeplink is a convenience; the QR itself is enough to pay
+    let deeplink = null;
+    try {
+      const { data } = await axios.post(
+        `${process.env.BAKONG_API_URL}/v1/generate_deeplink_by_qr`,
+        {
+          qr: qrData.qrString,
+          sourceInfo: {
+            appIconUrl: "https://yourdomain.com/logo.png",
+            appName: "Choulweb",
+            appDeepLinkCallback:
+              process.env.PAYMENT_CALLBACK_URL || "https://yourdomain.com/payment/callback",
+          },
         },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${merchantConfig.bakongApiKey}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000,
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${merchantConfig.bakongApiKey}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }
+      );
 
-    const deeplink = data?.data?.shortLink;
-
-    if (!deeplink) {
-      throw new Error("Failed to generate Bakong deeplink");
+      deeplink = data?.data?.shortLink || null;
+    } catch (linkError) {
+      console.warn("Bakong deeplink unavailable:", linkError.message);
     }
 
     // Update payment with transaction data
@@ -121,7 +128,8 @@ exports.checkPaymentStatus = async (req, res) => {
     const { paymentId } = req.params;
     const payment = await Payment.findByPk(paymentId);
 
-    if (!payment) {
+    // Only the payer may read or advance their payment
+    if (!payment || payment.userId !== req.user.id) {
       return res.status(404).json({ error: "Payment not found" });
     }
 
@@ -156,21 +164,8 @@ exports.checkPaymentStatus = async (req, res) => {
             transactionId: verification.data.transactionId,
           });
 
-          // Trigger Subscription
-          if (payment.packageId) {
-            try {
-              await subscriptionService.createPaidSubscription(
-                payment.userId,
-                payment.packageId,
-                payment.id
-              );
-              console.log(`✅ Subscription activated for user ${payment.userId}`);
-            } catch (subError) {
-              console.error("❌ Failed to activate subscription:", subError);
-            }
-          }
-
-          // TODO: Trigger SaaS deployment
+          // The subscription is created when onboarding creates the website
+          // with this paymentId (websiteService.createWebsiteWithTrial).
         }
       } catch (error) {
         console.error("Bakong verification error:", error);

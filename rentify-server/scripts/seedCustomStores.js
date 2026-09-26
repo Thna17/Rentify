@@ -50,6 +50,7 @@ const STORES = [
     email: 'munchiesnacks@rentify.dev',
     phone: '+85512200004',
     category: 'Food & Beverage',
+    logoUrl: 'https://res.cloudinary.com/druevh9no/image/upload/v1790324496/rentify/marketplace/munchie-snack-house/uyznkr71k0gqdra3b7yk.jpg',
   },
   {
     ownerUserId: '11111111-cafe-4001-8001-000000000005',
@@ -101,6 +102,7 @@ async function seedCustomStores() {
       marketplaceEnabled: true,
       marketplaceApprovalStatus: 'approved',
       status: 'active',
+      logoUrl: s.logoUrl || null,
       projectionVersion: 1,
       marketplaceEntitlement: 'pilot',
     };

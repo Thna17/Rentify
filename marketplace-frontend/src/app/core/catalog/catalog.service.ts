@@ -6,7 +6,7 @@ import {
   findCategory,
   subcategorySlug,
 } from '../data/categories.data';
-import { Category, Product, ProductQuery, StockStatus, Store } from './catalog.models';
+import { Category, Product, ProductQuery, StockStatus, Store, isCuratedProduct, isCuratedStore } from './catalog.models';
 import {
   RentifyMarketplaceService,
   RentifyProduct,
@@ -78,16 +78,29 @@ export class CatalogService {
       if (storeIds.length > 0) {
         try {
           const storeRes = await firstValueFrom(this.rentify.stores(storeIds));
-          const storesList = storeRes.data || [];
-          storeMap = new Map(storesList.map((s) => [s.id, s]));
-          this._stores.set(storesList.map(toStoreFromRentify));
+          const storesList = (storeRes.data || []).map(toStoreFromRentify);
+          storesList.sort((a, b) => {
+            const aCurated = isCuratedStore(a);
+            const bCurated = isCuratedStore(b);
+            if (aCurated !== bCurated) return aCurated ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          });
+          storeMap = new Map((storeRes.data || []).map((s) => [s.id, s]));
+          this._stores.set(storesList);
           this.storesLoaded.set(true);
         } catch {
           // Store fetching failure is non-fatal for catalog display
         }
       }
 
-      this.products.set(all.map((p) => toProductFromRentify(p, storeMap)));
+      const mappedProducts = all.map((p) => toProductFromRentify(p, storeMap));
+      mappedProducts.sort((a, b) => {
+        const aCurated = isCuratedProduct(a);
+        const bCurated = isCuratedProduct(b);
+        if (aCurated !== bCurated) return aCurated ? -1 : 1;
+        return 0;
+      });
+      this.products.set(mappedProducts);
     } catch {
       this.products.set([]);
       this.productError.set(
@@ -126,7 +139,14 @@ export class CatalogService {
       }
       if (storeIds.length > 0) {
         const response = await firstValueFrom(this.rentify.stores(storeIds));
-        this._stores.set((response.data || []).map(toStoreFromRentify));
+        const storesList = (response.data || []).map(toStoreFromRentify);
+        storesList.sort((a, b) => {
+          const aCurated = isCuratedStore(a);
+          const bCurated = isCuratedStore(b);
+          if (aCurated !== bCurated) return aCurated ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+        this._stores.set(storesList);
       } else {
         this._stores.set([]);
       }
@@ -354,11 +374,15 @@ export class CatalogService {
         results.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         break;
       default:
-        results.sort(
-          (a, b) =>
+        results.sort((a, b) => {
+          const aCurated = isCuratedProduct(a);
+          const bCurated = isCuratedProduct(b);
+          if (aCurated !== bCurated) return aCurated ? -1 : 1;
+          return (
             Number(a.status === 'out-of-stock') -
-            Number(b.status === 'out-of-stock'),
-        );
+            Number(b.status === 'out-of-stock')
+          );
+        });
     }
 
     return results;
@@ -446,6 +470,19 @@ const toProductFromRentify = (
   };
 };
 
+const STORE_LOGOS: Record<string, string> = {
+  'phone-corner': '/assets/stores/phone-corner-logo.jpg',
+  '22222222-cafe-4002-8002-000000000001': '/assets/stores/phone-corner-logo.jpg',
+  'bright-minds-school-supply': '/assets/stores/bright-minds-logo.png',
+  '22222222-cafe-4002-8002-000000000002': '/assets/stores/bright-minds-logo.png',
+  'glow-skincare-studio': '/assets/stores/glow-skincare-logo.jpeg',
+  '22222222-cafe-4002-8002-000000000003': '/assets/stores/glow-skincare-logo.jpeg',
+  'munchie-snack-house': '/assets/stores/munchie-logo.png',
+  '22222222-cafe-4002-8002-000000000004': '/assets/stores/munchie-logo.png',
+  'second-life-thrift': 'https://res.cloudinary.com/druevh9no/image/upload/v1790324497/rentify/marketplace/second-life-thrift/ul8e1wld9uptbrfvwgig.jpg',
+  '22222222-cafe-4002-8002-000000000005': 'https://res.cloudinary.com/druevh9no/image/upload/v1790324497/rentify/marketplace/second-life-thrift/ul8e1wld9uptbrfvwgig.jpg',
+};
+
 /** Map a Rentify store onto the shape the UI renders. */
 const toStoreFromRentify = (api: RentifyStore): Store => ({
   id: api.id,
@@ -461,7 +498,7 @@ const toStoreFromRentify = (api: RentifyStore): Store => ({
   theme: 'FOREST',
   phoneNumber: '',
   showContact: false,
-  logoUrl: null,
+  logoUrl: STORE_LOGOS[api.slug] || STORE_LOGOS[api.id] || api.logoUrl || null,
   bannerUrl: null,
   featuredProductIds: [],
 });

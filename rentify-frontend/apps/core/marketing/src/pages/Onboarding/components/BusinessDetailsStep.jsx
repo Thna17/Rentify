@@ -65,7 +65,7 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
         description={t('business.description')}
       />
 
-      <Card className="gap-0 py-0">
+      <Card className="gap-0 rounded-[24px] border-0 py-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.05]">
         <CardContent className="space-y-6 p-6 md:p-8">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t('business.sections.brand')}
@@ -93,7 +93,7 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
               required
               value={details.primaryCategory || ''}
               onChange={(event) => handleInputChange('primaryCategory', event.target.value)}
-              className="h-11 w-full rounded-lg border border-input bg-background px-3"
+              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10"
             >
               <option value="">Choose a category</option>
               {categories.map((category) => (
@@ -114,7 +114,7 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
+              className="flex w-full items-center gap-4 rounded-xl border-2 border-dashed border-border p-4 text-left transition-colors hover:border-[#0071e3] hover:bg-[#0071e3]/[0.04]"
             >
               {details.logo ? (
                 <img
@@ -142,7 +142,7 @@ const BusinessDetailsStep = ({ data, onUpdate }) => {
         </CardContent>
       </Card>
 
-      <Card className="gap-0 py-0">
+      <Card className="gap-0 rounded-[24px] border-0 py-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.05]">
         <CardContent className="space-y-6 p-6 md:p-8">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t('business.sections.contact')}

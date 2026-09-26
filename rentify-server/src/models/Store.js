@@ -24,6 +24,7 @@ const Store = sequelize.define('Store', {
     allowNull: false,
     defaultValue: 'active',
   },
+  logoUrl: { type: DataTypes.STRING(2048), allowNull: true },
   projectionVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
   marketplaceEntitlement: {
     type: DataTypes.ENUM('pilot', 'none'), allowNull: false, defaultValue: 'pilot',

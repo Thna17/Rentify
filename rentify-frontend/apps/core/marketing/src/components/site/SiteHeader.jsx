@@ -44,7 +44,7 @@ const LANGUAGES = [
 ];
 
 // Globe button that opens a small menu of languages
-const LanguageToggle = ({ className, inline = false }) => {
+export const LanguageToggle = ({ className, inline = false }) => {
   const { language, setLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

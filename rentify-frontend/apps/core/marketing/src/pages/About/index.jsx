@@ -145,7 +145,7 @@ const AboutPage = () => {
               <Lead className="mt-6">{t('site.about.team.lead')}</Lead>
             </Reveal>
           </div>
-          <Stagger className="mt-16 grid gap-x-6 gap-y-14 sm:grid-cols-2 md:mt-20 lg:grid-cols-3" stagger={0.12}>
+          <Stagger className="mt-16 grid gap-x-6 gap-y-14 sm:grid-cols-2 md:mt-20 md:grid-cols-3 lg:grid-cols-5" stagger={0.12}>
             {teamMembers.map((member) => (
               <StaggerItem key={member.name}>
                 <TeamCard member={member} />

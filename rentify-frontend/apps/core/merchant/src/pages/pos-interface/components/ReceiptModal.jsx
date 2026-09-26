@@ -139,9 +139,10 @@ export const ReceiptModal = ({
               <h4 className="font-semibold text-sm text-muted-foreground mb-2">{t('dashboard.pos.items')}</h4>
               <div className="space-y-3">
                 {order.items.map((item, index) => (
-                  <div key={item.id} className="flex justify-between items-center">
+                  <div key={item.lineKey} className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{item.name}</p>
+                      {item.variantLabel && <p className="text-xs text-muted-foreground">{item.variantLabel}</p>}
                       <p className="text-sm text-muted-foreground">× {item.quantity}</p>
                     </div>
                     <p className="font-semibold">{formatCurrency(item.subtotal)}</p>

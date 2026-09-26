@@ -57,46 +57,46 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         : t('nav.backToHome'));
 
   return (
-    <div className="min-h-screen w-full bg-[#f7f8fb] font-sans selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen w-full bg-slate-950 font-sans selection:bg-emerald-500 selection:text-white">
       <div className="grid min-h-screen lg:grid-cols-[1fr_1.2fr] xl:grid-cols-[1fr_1.35fr]">
         {/* Left: Hero Brand Panel (Desktop) */}
-        <aside className="relative hidden overflow-hidden bg-gradient-to-br from-emerald-50 via-slate-50 to-white p-10 text-slate-900 lg:flex lg:flex-col lg:justify-between xl:p-14 border-r border-slate-200/70">
+        <aside className="relative hidden overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14 border-r border-white/10">
           {/* Subtle Ambient Background Lighting */}
-          <div className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full bg-emerald-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-sky-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute top-1/2 left-1/3 h-64 w-64 -translate-y-1/2 rounded-full bg-indigo-100/50 blur-2xl" />
+          <div className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full bg-emerald-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
+          <div className="pointer-events-none absolute top-1/2 left-1/3 h-64 w-64 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-2xl" />
 
           {/* Top Brand Header */}
           <div className="relative z-10 flex items-center justify-between">
             <Link to="/" className="group flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-md shadow-emerald-500/20 transition-transform group-hover:scale-105">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/25 ring-1 ring-white/20 transition-transform group-hover:scale-105">
                 <Store className="h-6 w-6 text-slate-950" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-slate-900">
+                <span className="text-xl font-bold tracking-tight text-white">
                   Rentify
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-400">
                   Cambodia & Global Commerce
                 </span>
               </div>
             </Link>
 
             {/* Context Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 backdrop-blur-md">
               {isCustomerFlow ? (
                 <>
-                  <ShoppingBag className="h-3.5 w-3.5 text-emerald-600" />
+                  <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
                   <span>{storeName || 'Store Customer Portal'}</span>
                 </>
               ) : isMarketplace ? (
                 <>
-                  <Store className="h-3.5 w-3.5 text-blue-600" />
+                  <Store className="h-3.5 w-3.5 text-blue-400" />
                   <span>Rentify Marketplace</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
                   <span>Merchant & Admin Suite</span>
                 </>
               )}
@@ -105,12 +105,12 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
           {/* Center Brand Value Proposition */}
           <div className="relative z-10 my-auto py-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100/70 px-3.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20 mb-6">
               <CheckCircle2 className="h-3.5 w-3.5" />
               <span>{t('hero.badge')}</span>
             </div>
 
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 xl:text-4xl">
+            <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white xl:text-4xl">
               {isCustomerFlow
                 ? t('hero.title.customer')
                 : isMarketplace
@@ -118,7 +118,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   : t('hero.title.merchant')}
             </h1>
 
-            <p className="mt-4 text-base text-slate-500 xl:text-lg leading-relaxed max-w-lg">
+            <p className="mt-4 text-base text-slate-300 xl:text-lg leading-relaxed max-w-lg">
               {isCustomerFlow
                 ? t('hero.subtitle.customer')
                 : isMarketplace
@@ -128,43 +128,43 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
             {/* Feature Highlights Grid */}
             <div className="mt-10 space-y-4 max-w-lg">
-              <div className="flex items-start gap-4 rounded-2xl bg-white/80 p-4 shadow-sm shadow-slate-200/60 ring-1 ring-slate-200/60 transition-all hover:bg-white">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+              <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm transition-all hover:bg-white/[0.06]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30">
                   <QrCode className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900">
+                  <h4 className="text-sm font-semibold text-white">
                     {t('hero.feature.khqr')}
                   </h4>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-normal">
+                  <p className="mt-0.5 text-xs text-slate-400 leading-normal">
                     {t('hero.feature.khqrDesc')}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 rounded-2xl bg-white/80 p-4 shadow-sm shadow-slate-200/60 ring-1 ring-slate-200/60 transition-all hover:bg-white">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+              <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm transition-all hover:bg-white/[0.06]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900">
+                  <h4 className="text-sm font-semibold text-white">
                     {t('hero.feature.security')}
                   </h4>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-normal">
+                  <p className="mt-0.5 text-xs text-slate-400 leading-normal">
                     {t('hero.feature.securityDesc')}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 rounded-2xl bg-white/80 p-4 shadow-sm shadow-slate-200/60 ring-1 ring-slate-200/60 transition-all hover:bg-white">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+              <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm transition-all hover:bg-white/[0.06]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30">
                   <Layers className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900">
+                  <h4 className="text-sm font-semibold text-white">
                     {t('hero.feature.channels')}
                   </h4>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-normal">
+                  <p className="mt-0.5 text-xs text-slate-400 leading-normal">
                     {t('hero.feature.channelsDesc')}
                   </p>
                 </div>
@@ -173,9 +173,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </div>
 
           {/* Bottom Trust & Compliance Footnote */}
-          <div className="relative z-10 pt-6 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <div className="relative z-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
             <span>{t('footer.copyright')}</span>
-            <span className="flex items-center gap-1.5 text-emerald-600">
+            <span className="flex items-center gap-1.5 text-emerald-400">
               <ShieldCheck className="h-3.5 w-3.5" />
               <span>PCI DSS & Bakong Ready</span>
             </span>

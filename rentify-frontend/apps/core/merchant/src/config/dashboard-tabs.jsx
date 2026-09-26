@@ -99,17 +99,7 @@ export const ALL_TABS = [
     hideInSidebar: true,
   },
 
-  // --- Sales Channels: Storefront, Marketplace, POS ---
-  {
-    name: 'dashboard.store_management.title',
-    label: 'Storefront',
-    icon: Store,
-    path: 'store-management',
-    roles: ['admin', 'user', 'staff'],
-    permission: null,
-    channel: 'storefront',
-    section: 'sell',
-  },
+  // --- Sales Channels: Marketplace, POS, Storefront ---
   {
     name: 'COD orders',
     label: 'Marketplace',
@@ -128,6 +118,16 @@ export const ALL_TABS = [
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_pos',
     channel: 'pos',
+    section: 'sell',
+  },
+  {
+    name: 'dashboard.store_management.title',
+    label: 'Storefront',
+    icon: Store,
+    path: 'store-management',
+    roles: ['admin', 'user', 'staff'],
+    permission: null,
+    channel: 'storefront',
     section: 'sell',
   },
 

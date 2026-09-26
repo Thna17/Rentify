@@ -123,3 +123,33 @@ export interface ProductQuery {
   onSaleOnly?: boolean;
   sort?: ProductSort;
 }
+
+export const CUSTOM_STORE_IDS = new Set<string>([
+  '22222222-cafe-4002-8002-000000000001', // Phone Corner
+  '22222222-cafe-4002-8002-000000000002', // Bright Minds School Supply
+  '22222222-cafe-4002-8002-000000000003', // Glow Skincare Studio
+  '22222222-cafe-4002-8002-000000000004', // Munchie Snack House
+  '22222222-cafe-4002-8002-000000000005', // Second Life Thrift
+]);
+
+export const CUSTOM_STORE_SLUGS = new Set<string>([
+  'phone-corner',
+  'bright-minds-school-supply',
+  'glow-skincare-studio',
+  'munchie-snack-house',
+  'second-life-thrift',
+]);
+
+/** Returns true if product is from the merchant's curated stores or has a direct good image (not generic external unsplash stock). */
+export function isCuratedProduct(product: Product): boolean {
+  if (product.storeId && CUSTOM_STORE_IDS.has(product.storeId)) return true;
+  const img = product.image || '';
+  if (img.includes('unsplash.com')) return false;
+  if (img.includes('cloudinary') || img.startsWith('/assets/')) return true;
+  return false;
+}
+
+/** Returns true if store is one of the curated stores created with good images. */
+export function isCuratedStore(store: { id: string; slug?: string }): boolean {
+  return CUSTOM_STORE_IDS.has(store.id) || (!!store.slug && CUSTOM_STORE_SLUGS.has(store.slug));
+}

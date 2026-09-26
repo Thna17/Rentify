@@ -22,6 +22,9 @@ export const businessDetailErrors = ({ email, contact } = {}) => ({
   contact: contact && !isValidPhone(contact) ? 'business.contact.invalid' : null,
 });
 
+/** Step 1: name, category, location, phone and email. */
+export const isEssentialsComplete = (details = {}) => isBusinessDetailsComplete(details);
+
 export const isBusinessDetailsComplete = (details = {}) => {
   const { name, location, contact, email, primaryCategory } = details;
   if (!(name?.trim() && location && contact && email && primaryCategory)) return false;

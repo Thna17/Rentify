@@ -24,13 +24,17 @@ export interface Promo {
   imageMode?: 'photo' | 'illustration';
   /** CSS background behind an illustration. */
   background?: string;
+  badge?: string;
+  perks?: string[];
+  kicker?: string;
 }
 
 /**
  * The fixed formats a promo can be shown in. Sizes live in PromoCardComponent,
  * so every card of the same format is always the same size.
  *
- * - 'card':    300px tall  (collections, section banners)
- * - 'compact': 124px tall  (stacked side cards next to the hero)
+ * - 'card':     300px tall  (collections, section banners)
+ * - 'compact':  124px tall  (stacked side cards next to the hero)
+ * - 'featured': stretches to 100% equal height of adjacent cards with rich content
  */
-export type PromoFormat = 'card' | 'compact';
+export type PromoFormat = 'card' | 'compact' | 'featured';

@@ -120,9 +120,6 @@ export const usePOS = () => {
       setShowKHQR(true);
       setShowPayment(false);
       setPollingCount(0);
-      if (isDualScreen) {
-        setActiveTab('customer-display');
-      }
     } catch (error) {
       console.error('KHQR Order creation failed:', error);
     }

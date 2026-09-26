@@ -84,7 +84,7 @@ export function SiteHeader({
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder="Search menu..."
-            className="w-full bg-card pl-10 pr-9 h-10 rounded-xl border-transparent shadow-[var(--shadow-soft)] text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
+            className="w-full bg-card pl-10 pr-9 h-10 rounded-xl border-transparent [box-shadow:var(--shadow-soft)] text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
           />
           {searchFilter && (
             <button

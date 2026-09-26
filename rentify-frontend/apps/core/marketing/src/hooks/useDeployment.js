@@ -154,8 +154,8 @@ export default function useDeployment(data) {
       templateId: data.template?.id,
       businessData: data.businessDetails,
       packageId: data.package?.id,
-      pricing: { totalPrice: 0 },
-      payment: null,
+      // Paid plans send the completed KHQR payment; Core checks it again
+      paymentId: Number(data.package?.price || 0) > 0 ? data.payment?.paymentId : undefined,
     }).unwrap();
     const website = response?.data || response;
     if (!website?.id)
@@ -176,6 +176,20 @@ export default function useDeployment(data) {
       }
     }
 
+    if (data.businessDetails?.coverFile) {
+      try {
+        addDetail('Uploading store cover…');
+        await uploadImage({
+          websiteId: website.id,
+          file: data.businessDetails.coverFile,
+          type: 'cover',
+        }).unwrap();
+        addDetail('Store cover uploaded.', 'success');
+      } catch (uploadErr) {
+        console.warn('Cover upload during deployment could not complete:', uploadErr);
+      }
+    }
+
     addDetail('Storefront created. Publishing it on its own web address.', 'success');
     updateProgress(30, true);
     return website;
@@ -184,6 +198,8 @@ export default function useDeployment(data) {
     createWebsite,
     data.businessDetails,
     data.package?.id,
+    data.package?.price,
+    data.payment?.paymentId,
     data.template?.id,
     startProgressSimulation,
     updateProgress,

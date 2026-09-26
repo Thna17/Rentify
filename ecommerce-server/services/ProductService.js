@@ -391,6 +391,66 @@ async create(productData, transaction = null) {
 
       await product.update(updateData, { transaction });
 
+      // Validate options update
+      if (Array.isArray(updates.options)) {
+        const seenOptionNames = new Set();
+        let colorCount = 0;
+        for (const opt of updates.options) {
+          const name = (opt.name || '').trim().toLowerCase();
+          if (name) {
+            if (seenOptionNames.has(name)) {
+              throw new ApiError(400, `Duplicate option name "${opt.name}" is not allowed`);
+            }
+            seenOptionNames.add(name);
+          }
+          if (opt.type === 'color' || name === 'color') {
+            colorCount++;
+          }
+          if (Array.isArray(opt.values)) {
+            const seenVals = new Set();
+            for (const val of opt.values) {
+              const valStr = (typeof val === 'string' ? val : (val?.value || '')).trim().toLowerCase();
+              if (valStr) {
+                if (seenVals.has(valStr)) {
+                  throw new ApiError(400, `Duplicate value "${typeof val === 'string' ? val : val?.value}" in option "${opt.name}"`);
+                }
+                seenVals.add(valStr);
+              }
+            }
+          }
+        }
+        if (colorCount > 1) {
+          throw new ApiError(400, 'Only one Color option is allowed per product');
+        }
+      }
+
+      // Validate variants update
+      if (Array.isArray(updates.variants)) {
+        const seenVariantCombos = new Set();
+        const seenVariantNames = new Set();
+        for (const variant of updates.variants) {
+          if (variant.name) {
+            const nameLower = variant.name.trim().toLowerCase();
+            if (seenVariantNames.has(nameLower)) {
+              throw new ApiError(400, `Duplicate variant name "${variant.name}" is not allowed`);
+            }
+            seenVariantNames.add(nameLower);
+          }
+          if (variant.optionValues && typeof variant.optionValues === 'object') {
+            const comboKey = Object.entries(variant.optionValues)
+              .sort(([k1], [k2]) => k1.localeCompare(k2))
+              .map(([k, v]) => `${k.toLowerCase()}:${String(v).toLowerCase()}`)
+              .join('|');
+            if (comboKey) {
+              if (seenVariantCombos.has(comboKey)) {
+                throw new ApiError(400, `Duplicate variant combination: ${comboKey}`);
+              }
+              seenVariantCombos.add(comboKey);
+            }
+          }
+        }
+      }
+
       // Handle variants update
       if (updates.variants !== undefined) {
         await ProductVariant.destroy({

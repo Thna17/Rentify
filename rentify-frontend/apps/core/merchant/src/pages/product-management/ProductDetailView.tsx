@@ -200,6 +200,22 @@ export function ProductDetailView({
    * Handles saving product changes
    */
   const handleSave = () => {
+    if (editedProduct?.variants && editedProduct.variants.length > 0) {
+      const seenVariantNames = new Set<string>();
+      for (const variant of editedProduct.variants) {
+        const trimmedName = (variant.name || '').trim().toLowerCase();
+        if (!trimmedName) {
+          toast.error('All variants must have a name.');
+          return;
+        }
+        if (seenVariantNames.has(trimmedName)) {
+          toast.error(`Duplicate variant "${variant.name}". Each variant must have a unique name.`);
+          return;
+        }
+        seenVariantNames.add(trimmedName);
+      }
+    }
+
     if (onSave && editedProduct) {
       onSave(editedProduct as Product);
     }
@@ -925,80 +941,102 @@ export function ProductDetailView({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {editedProduct.variants.map((variant, index) => (
-                          <TableRow key={variant.id}>
-                            <TableCell className="py-3">
-                              {isEditing ? (
-                                <Input
-                                  value={variant.name}
-                                  onChange={(e) =>
-                                    handleVariantChange(
-                                      index,
-                                      'name',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-8"
-                                />
-                              ) : (
-                                variant.name
-                              )}
-                            </TableCell>
-                            <TableCell className="py-3">
-                              {isEditing ? (
-                                <Input
-                                  value={variant.sku}
-                                  onChange={(e) =>
-                                    handleVariantChange(
-                                      index,
-                                      'sku',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-8"
-                                />
-                              ) : (
-                                variant.sku
-                              )}
-                            </TableCell>
-                            <TableCell className="py-3 text-right">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={variant.stock}
-                                  onChange={(e) =>
-                                    handleVariantChange(
-                                      index,
-                                      'stock',
-                                      parseInt(e.target.value) || 0
-                                    )
-                                  }
-                                  className="w-20 h-8"
-                                />
-                              ) : (
-                                variant.stock
-                              )}
-                            </TableCell>
-                            {isEditing && (
-                              <TableCell className="py-3 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    const newVariants = editedProduct.variants?.filter(
-                                      (_, i) => i !== index
-                                    ) || [];
-                                    handleFieldChange('variants', newVariants);
-                                  }}
-                                  className="h-8 w-8"
-                                >
-                                  <IconTrash className="h-4 w-4" />
-                                </Button>
+                        {editedProduct.variants.map((variant, index) => {
+                          const trimmedName = variant.name?.trim().toLowerCase();
+                          const isDuplicateName =
+                            !!trimmedName &&
+                            editedProduct.variants?.some(
+                              (other, idx) =>
+                                idx !== index &&
+                                other.name?.trim().toLowerCase() === trimmedName
+                            );
+
+                          return (
+                            <TableRow key={variant.id}>
+                              <TableCell className="py-3">
+                                {isEditing ? (
+                                  <div className="space-y-1">
+                                    <Input
+                                      value={variant.name}
+                                      onChange={(e) =>
+                                        handleVariantChange(
+                                          index,
+                                          'name',
+                                          e.target.value
+                                        )
+                                      }
+                                      className={`h-8 ${
+                                        isDuplicateName
+                                          ? 'border-destructive focus-visible:ring-destructive'
+                                          : ''
+                                      }`}
+                                    />
+                                    {isDuplicateName && (
+                                      <p className="text-[11px] text-destructive font-medium">
+                                        Duplicate variant name
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  variant.name
+                                )}
                               </TableCell>
-                            )}
-                          </TableRow>
-                        ))}
+                              <TableCell className="py-3">
+                                {isEditing ? (
+                                  <Input
+                                    value={variant.sku}
+                                    onChange={(e) =>
+                                      handleVariantChange(
+                                        index,
+                                        'sku',
+                                        e.target.value
+                                      )
+                                    }
+                                    className="h-8"
+                                  />
+                                ) : (
+                                  variant.sku
+                                )}
+                              </TableCell>
+                              <TableCell className="py-3 text-right">
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={variant.stock}
+                                    onChange={(e) =>
+                                      handleVariantChange(
+                                        index,
+                                        'stock',
+                                        parseInt(e.target.value) || 0
+                                      )
+                                    }
+                                    className="w-20 h-8"
+                                  />
+                                ) : (
+                                  variant.stock
+                                )}
+                              </TableCell>
+                              {isEditing && (
+                                <TableCell className="py-3 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      const newVariants = editedProduct.variants?.filter(
+                                        (_, i) => i !== index
+                                      ) || [];
+                                      handleFieldChange('variants', newVariants);
+                                    }}
+                                    className="h-8 w-8"
+                                  >
+                                    <IconTrash className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -1008,9 +1046,20 @@ export function ProductDetailView({
                       variant="outline"
                       className="mt-4"
                       onClick={() => {
+                        const existingNames = new Set(
+                          (editedProduct.variants || []).map((v) =>
+                            v.name.trim().toLowerCase()
+                          )
+                        );
+                        let variantNum = (editedProduct.variants || []).length + 1;
+                        let newName = `Variant ${variantNum}`;
+                        while (existingNames.has(newName.toLowerCase())) {
+                          variantNum++;
+                          newName = `Variant ${variantNum}`;
+                        }
                         const newVariant: ProductVariant = {
                           id: `new-${Date.now()}`,
-                          name: 'New Variant',
+                          name: newName,
                           sku: '',
                           stock: 0,
                           price: 0,

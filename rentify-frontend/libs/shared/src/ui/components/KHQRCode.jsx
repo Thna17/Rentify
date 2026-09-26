@@ -1,55 +1,120 @@
+import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslation } from '@rentify/utils/contexts/TranslationContext';
 
-export const KHQRCode = ({ rawQR, currency, qrCanvasId }) => {
+// Official Bakong KHQR Wordmark SVG
+const KhqrWordmark = ({ className = 'h-5 w-auto' }) => (
+  <svg
+    viewBox="0 0 3000 710"
+    className={className}
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="KHQR"
+  >
+    <path d="m 0,0.03316065 h 130.12116 l 0.014,318.13267935 C 233.74068,213.55008 443.94173,2.5596428 444.48677,1.0664481 444.9679,-0.25167388 599.68926,-0.32516983 599.68926,0.99272374 486.57317,115.28505 371.72975,227.87418 257.21308,340.76853 c 20.97523,21.33678 282.3634,288.92492 357.65314,368.20425 0.65411,0.68876 -1.66382,0.99992 -77.17034,0.99992 H 459.73294 L 336.53629,585.72505 C 192.18995,440.14727 131.5997,379.75815 130.74116,379.75815 c -0.97346,110.06303 -0.62,220.14479 -0.62,330.21455 H 0 Z M 1208.4296,400.10055 H 842.95884 V 709.9727 H 716.79789 L 716.22858,0.03316065 H 842.95884 V 297.25838 H 1208.4296 V 0.10393571 L 1335.1563,0 v 709.9727 h -126.7267 z m 1514.243,188.60833 c -66.7198,-66.68699 -121.2089,-121.26394 -121.0692,-121.29991 0.1397,-0.036 35.4501,0.18884 78.4672,0.49963 l 78.2133,0.56505 86.4183,85.46964 c 137.7689,136.25637 155.0701,156.03188 154.7403,156.02941 -0.4084,-0.003 -103.6312,-0.51832 -155.4465,0 z M 1560.4467,709.97304 c -16.1379,-0.55379 -32.9532,-10.24556 -46.6705,-19.51539 -6.9569,-4.70134 -19.2747,-16.38202 -26.5809,-25.20617 -5.9447,-7.17977 -15.0496,-25.92873 -18.2971,-37.67776 l -3.055,-11.05251 -0.3309,-256.54041 c -0.359,-278.392633 -0.5867,-266.806561 5.6132,-285.669744 6.3968,-19.462404 20.5256,-39.027764 37.2996,-51.652247 11.1554,-8.39579 20.5183,-13.2107146 35.4908,-18.2513305 l 11.3149,-3.8092509 261.205,-0.29674884 261.205,-0.29674882 11.3309,2.86097216 c 14.8478,3.7488926 26.437,8.6527199 36.7824,15.5638289 20.3137,13.570359 35.5357,32.794807 42.7843,54.033877 6.4483,18.89392 6.1728,5.744005 6.1777,294.858942 v 266.14221 l -55.4189,-55.344 -55.4191,-55.344 -0.3093,-175.76404 c -0.291,-167.92384 -0.3987,-176.04133 -2.4096,-181.97982 -8.8441,-26.11777 -26.8665,-43.73799 -52.2413,-51.0754 l -9.0122,-2.60596 h -181.6039 -181.6039 l -7.3546,2.62867 c -12.3916,4.42895 -21.5422,10.21361 -30.5502,19.31286 -9.677,9.77482 -15.9266,19.7384 -19.5545,31.17478 l -2.5095,7.91094 v 181.38648 c 0,143.66042 0.3021,182.67929 1.4523,187.60223 0.7989,3.41864 3.6817,10.79277 6.4062,16.38694 8.578,17.61255 21.6642,29.51025 40.3928,36.72405 7.7117,2.97044 11.4807,3.67874 23.4647,4.40965 7.8524,0.47892 86.6496,0.72975 175.1047,0.55739 88.4552,-0.17235 162.086,0.0394 163.6242,0.47031 1.5395,0.43146 27.3682,25.03821 57.466,54.74757 l 54.6697,55.30949 h -264.6848 c -145.5766,0 -272.4039,0.0612 -274.1782,3.4e-4 z m 825.7135,-1.19632 c -26.9307,-3.11842 -54.2309,-19.77939 -71.1259,-41.95624 -11.6294,-15.26477 -17.997,-29.27579 -21.0351,-46.28374 -1.9276,-10.79088 -2.2975,-251.84349 -0.4287,-279.39581 3.9643,-58.45084 14.914,-100.14281 38.5348,-146.72478 23.4952,-46.33445 54.5203,-84.65461 93.8058,-115.863057 56.046,-44.522955 118.0676,-69.6753622 189.5243,-76.8600649 50.7725,-5.1049871 107.4757,2.901448 158.9994,22.4505889 18.2153,6.911221 49.0282,22.704492 65.0829,33.358531 28.5306,18.933106 61.4883,48.706502 81.5007,73.626512 34.6076,43.09443 60.4913,97.70145 71.1609,150.12886 4.2544,20.90466 9.2611,68.41547 7.4337,70.54076 -0.4059,0.47222 -25.4026,0.7265 -55.5478,0.56508 l -54.8096,-0.29351 -0.8411,-12.43146 c -1.7656,-26.10028 -7.7173,-54.37893 -14.9847,-71.19845 -0.8057,-1.86472 -3.1133,-7.20461 -5.1278,-11.86641 -18.9374,-43.82127 -52.4615,-82.6438 -93.4721,-108.24536 -72.0624,-44.98604 -158.5339,-49.629366 -235.2042,-12.62994 -60.7818,29.33194 -108.1942,85.64793 -126.5514,150.31634 -9.6873,34.12675 -8.9807,16.73362 -9.4418,231.33736 l -0.4139,192.62077 c -6.3032,-0.0934 -17.0584,-1.19598 -17.0584,-1.19598 z M 1715.9021,485.02273 c -9.8918,-3.24648 -19.6413,-11.95632 -24.217,-21.63467 l -2.9387,-6.21574 V 354.8952 252.61809 l 2.8287,-5.5517 c 4.2081,-8.259 11.6883,-15.94802 19.0063,-19.53718 l 6.4522,-3.16448 h 101.2682 101.2682 l 6.7317,2.70833 c 8.4892,3.41539 16.2362,10.59855 20.5044,19.01219 l 3.3141,6.53284 0.5658,116.21582 c 0.3111,63.9187 0.3536,116.42756 0.094,116.68633 -0.7905,0.78894 -232.4534,0.29825 -234.8781,-0.49751 z" />
+  </svg>
+);
+
+// Official Bakong 8-pointed Lotus/Star Emblem SVG
+const BakongEmblem = ({ className = 'w-6 h-6' }) => (
+  <svg
+    viewBox="0 0 62 62"
+    className={className}
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g transform="translate(0, -8.28)">
+      <path d="M5.12,40.79c.56.55,1.12,1.07,1.66,1.63,1.92,2,3.82,4,5.74,5.95a1,1,0,0,1,.23.73v3.18q0,3.57,0,7.13c0,.32.09.42.4.42q5.06,0,10.11,0a.73.73,0,0,1,.46.25c1,1,2,2.06,3,3.09L31,67.72l1-1q3.18-3.32,6.37-6.64a1,1,0,0,1,.65-.24H49c.3,0,.36-.11.36-.4,0-3.45,0-6.89,0-10.34a1,1,0,0,1,.31-.8c1.56-1.6,3.1-3.21,4.66-4.81a.68.68,0,0,1,.44-.23c1.55,0,3.11,0,4.67,0l.2,0c-.06.08-.09.16-.14.21l-6.18,6.43a.93.93,0,0,0-.28.71c0,4.14,0,8.29,0,12.43,0,.59,0,.59-.58.59h-12a.77.77,0,0,0-.52.22c-2,2-3.92,4.08-5.88,6.12-.93,1-1.87,1.94-2.8,2.92-.18.19-.29.15-.46,0l-3-3.1-5.75-6a.59.59,0,0,0-.4-.16H9.6c-.53,0-.54,0-.54-.56q0-6.24,0-12.5a.87.87,0,0,0-.25-.65C7,48.06,5.18,46.16,3.36,44.27L.13,40.88,0,40.72c.13-.15.24-.3.37-.44l5.68-5.91c.93-1,1.86-1.92,2.76-2.9a1,1,0,0,0,.24-.6q0-6.3,0-12.58c0-.49,0-.49.5-.49q6,0,12,0a.87.87,0,0,0,.67-.29l8.26-8.6c.18-.19.34-.39.54-.63L32.69,10c2.42,2.52,4.84,5,7.27,7.56a.85.85,0,0,0,.55.23l12.07,0c.49,0,.49,0,.49.53q0,6.24,0,12.5a.9.9,0,0,0,.26.68c2,2.08,4,4.17,6,6.26.13.13.24.28.36.42l0,.1H58.54c-1.18,0-2.36,0-3.54,0a.92.92,0,0,1-.61-.26c-1.59-1.63-3.17-3.28-4.74-4.93a1,1,0,0,1-.25-.59q0-5.22,0-10.42c0-.36-.09-.46-.42-.45H39a.84.84,0,0,1-.54-.24Q34.88,17.7,31.35,14c-.2-.21-.33-.25-.56,0-1.42,1.51-2.87,3-4.31,4.5-.92,1-1.84,1.93-2.78,2.88a.9.9,0,0,1-.58.23c-3.29,0-6.58,0-9.86,0h-.48c0,.2,0,.37,0,.54,0,3.36,0,6.72,0,10.09a1.27,1.27,0,0,1-.38,1c-2.35,2.42-4.68,4.87-7,7.3Z" />
+      <path d="M43.88,43.3c-.29.91-.58,1.78-.85,2.66a3.39,3.39,0,0,0-.17.95q0,2.85,0,5.7c0,.35-.13.4-.41.4-1.83,0-3.65,0-5.48,0a4.42,4.42,0,0,0-1.56.47,12.25,12.25,0,0,1-7.45.39c-.69-.18-1.34-.48-2-.71a2.29,2.29,0,0,0-.68-.14c-1.84,0-3.69,0-5.54,0-.36,0-.45-.11-.45-.48,0-1.92,0-3.85,0-5.77a1.82,1.82,0,0,0-.14-.7,13.8,13.8,0,0,1-.66-8.65c.17-.66.43-1.29.63-1.94a3.27,3.27,0,0,0,.17-.87c0-1.9,0-3.8,0-5.7,0-.47,0-.47.47-.47h5.54a1.75,1.75,0,0,0,.71-.16A12.19,12.19,0,0,1,35.5,28a5.59,5.59,0,0,0,2.17.42c1.59,0,3.18,0,4.77,0,.32,0,.42.1.42.44,0,1.9,0,3.8,0,5.7a3.47,3.47,0,0,0,.18,1c.23.82.49,1.62.74,2.43.08.26,0,.35-.26.35-1.06,0-2.13,0-3.19,0A.45.45,0,0,1,40,38c-.26-.63-.51-1.26-.73-1.89a2.51,2.51,0,0,1-.11-.72c0-.92,0-1.85,0-2.77,0-.29-.08-.39-.36-.38-.91,0-1.82,0-2.73,0a2.7,2.7,0,0,1-1-.3,9,9,0,0,0-8.37.17,1.41,1.41,0,0,1-.64.13c-.93,0-1.85,0-2.77,0-.28,0-.37.08-.36.37,0,.94,0,1.88,0,2.82a2.3,2.3,0,0,1-.19.9,9.9,9.9,0,0,0,0,8.66A2.69,2.69,0,0,1,23,46c0,.92,0,1.83,0,2.75,0,.29.07.4.37.39.95,0,1.9,0,2.84,0a1.26,1.26,0,0,1,.57.14,9,9,0,0,0,8.47.1,2.51,2.51,0,0,1,1-.23c.89,0,1.78,0,2.66,0,.27,0,.35-.09.34-.36,0-1,0-2,0-2.92a2.54,2.54,0,0,1,.2-.8c.18-.52.38-1,.6-1.55.06-.13.21-.29.32-.3,1.11,0,2.22,0,3.33,0C43.67,43.23,43.72,43.26,43.88,43.3Z" />
+    </g>
+  </svg>
+);
+
+export const KHQRCode = ({
+  rawQR,
+  currency = 'USD',
+  qrCanvasId = 'khqr-canvas',
+  size = 180,
+  bankName = "ABA' BANK",
+  showBrand = true,
+  showInstructions = false,
+  className = '',
+}) => {
   const { t } = useTranslation();
 
   return (
-    <>
-      <div className="w-[220px] h-auto mx-auto mb-[24px] flex flex-col items-center rounded-[16px] shadow-[0px_5px_20px_rgba(0,0,0,0.1)] bg-white overflow-hidden border">
-        <div className="relative h-[80px] bg-[#e0232d] rounded-tl-[8px] rounded-bl-[8px] flex items-center flex-col justify-center w-full">
-          <img
-            src="https://bredcambodia.com.kh/wp-content/uploads/2022/12/KHQR-available-here-logo-with-bg-1024x422.png"
-            alt="khqr logo"
-            className="w-[72px] h-[72px] p-[8px]"
-          />
-
-          <div
-            className="w-full h-full  bg-white [clip-path:polygon(0_0,_calc(100%-30px)_0,_100%_20px,_100%_100%,_0_100%)]"
-          />
+    <div className={`flex flex-col items-center select-none ${className}`}>
+      {/* Authentic Bakong Red Stand Frame */}
+      <div className="w-[236px] bg-[#E11B22] rounded-[26px] p-2.5 pb-3.5 shadow-md flex flex-col items-center transition-transform duration-200">
+        {/* Top Header with official KHQR wordmark */}
+        <div className="py-2.5 flex items-center justify-center">
+          <KhqrWordmark className="h-[22px] w-auto text-white fill-white" />
         </div>
 
-        <div className="flex items-center justify-center relative w-full -mt-[16px] pb-[24px] px-[16px]">
-          <div className="relative inline-flex justify-center items-center">
+        {/* White Inner Card with Chamfered Top-Right Corner */}
+        <div
+          className="w-full bg-white rounded-b-[18px] rounded-tl-[18px] p-2.5 flex flex-col items-center justify-center relative overflow-hidden"
+          style={{
+            clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%)',
+          }}
+        >
+          {/* QR Code Canvas */}
+          <div className="relative inline-flex items-center justify-center bg-white">
             <QRCodeCanvas
               id={qrCanvasId}
-              value={rawQR}
-              size={180}
-              includeMargin
+              value={rawQR || 'https://bakong.nbc.gov.kh'}
+              size={size}
+              includeMargin={false}
               level="H"
               bgColor="#ffffff"
               fgColor="#000000"
             />
-            <div className="w-[36px] h-[36px] rounded-full bg-[#0A4B64] flex items-center justify-center absolute z-[1]">
-              <span className="text-white font-bold text-[24px] leading-none">
-                {getCurrencySymbol(currency)}
-              </span>
+
+            {/* Official Bakong Circular Center Emblem */}
+            <div className="absolute inset-0 m-auto w-11 h-11 rounded-full bg-[#E11B22] border-[2.5px] border-white flex items-center justify-center shadow-sm pointer-events-none">
+              <BakongEmblem className="w-[26px] h-[26px] text-white fill-white" />
             </div>
           </div>
         </div>
       </div>
 
-      <p className="text-[20px] font-semibold text-gray-900 mb-[8px] text-center">
-        {t('dashboard.pos.scan_to_pay')}
-      </p>
-      <p className="text-[14px] text-gray-600 text-center">
-        {t('dashboard.pos.use_khqr_app')}
-      </p>
-    </>
+      {/* Sub-Branding Below Red Card */}
+      {showBrand && (
+        <div className="mt-3 flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-[#005F82]">
+            <span className="font-extrabold text-[15px] tracking-tight">{bankName}</span>
+            <span className="text-gray-300 font-light text-sm">|</span>
+            <div className="flex items-center gap-1">
+              <svg viewBox="0 0 16 12" fill="none" className="w-3.5 h-3 inline-block shrink-0">
+                <path d="M0 2L4 0L7 12L3 12L0 2Z" fill="#E11B22" />
+                <path d="M6 2L10 0L13 12L9 12L6 2Z" fill="#E11B22" />
+              </svg>
+              <span className="text-[7.5px] font-bold uppercase tracking-tight leading-[9px] text-left">
+                NATIONAL BANK<br />OF CANADA GROUP
+              </span>
+            </div>
+          </div>
+
+          {/* Pill Badge */}
+          <span className="px-3.5 py-0.5 bg-gray-100 rounded text-gray-500 font-semibold text-[11px] tracking-wider uppercase">
+            KHQR
+          </span>
+        </div>
+      )}
+
+      {/* Optional Instructions */}
+      {showInstructions && (
+        <div className="mt-3 text-center">
+          <p className="text-[17px] font-semibold text-gray-900 mb-1">
+            {t('dashboard.pos.scan_to_pay', 'Scan to pay with KHQR')}
+          </p>
+          <p className="text-xs text-gray-500">
+            {t('dashboard.pos.use_khqr_app', 'Use any KHQR-compatible banking app')}
+          </p>
+        </div>
+      )}
+    </div>
   );
 };
 
-const getCurrencySymbol = (currency) => {
-  const c = (currency || '').toUpperCase();
-  return c === 'KHR' ? '៛' : '$';
-};
+export default KHQRCode;

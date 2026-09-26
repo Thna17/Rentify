@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion';
-import { Check, ImagePlus, Ribbon, Send, Shirt, ShoppingBag } from 'lucide-react';
+import { BarChart3, Check, Home, ImagePlus, Package, Ribbon, Send, Shirt, ShoppingBag, TrendingUp } from 'lucide-react';
 import { cn } from '@rentify/utils';
 import { EASE } from '../motion';
 
@@ -294,11 +294,18 @@ export const DashboardScreen = () => {
   const inView = useInView(ref, { amount: 0.5 });
 
   return (
-    <div ref={ref} className="flex h-full flex-col bg-[#f5f5f7] px-[7%] pb-[11%] pt-[3%] text-left">
-      <p className="text-[length:3.6cqw] text-[#86868b]">Today</p>
-      <p className="text-[length:8.5cqw] font-semibold tracking-tight text-[#1d1d1f]">$412.50</p>
-      <div className="mt-[5%] rounded-[14px] bg-white p-[6%]">
-        <svg viewBox="0 0 200 70" className="w-full">
+    <div ref={ref} className="flex h-full flex-col bg-[#f5f5f7] px-[7%] pb-[7%] pt-[3%] text-left">
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-[length:3.6cqw] text-[#86868b]">Today</p>
+          <p className="text-[length:8.5cqw] font-semibold tracking-tight text-[#1d1d1f]">$412.50</p>
+        </div>
+        <span className="mb-[2%] inline-flex items-center gap-1 rounded-full bg-[#e3f5e8] px-[3%] py-[1%] text-[length:3.2cqw] font-medium text-[#1a7f37]">
+          <TrendingUp className="h-[1em] w-[1em]" /> 12%
+        </span>
+      </div>
+      <div className="mt-[4%] rounded-[14px] bg-white p-[5%]">
+        <svg viewBox="0 0 200 60" className="w-full">
           <defs>
             <linearGradient id="dash-fill" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stopColor="#0071e3" stopOpacity="0.18" />
@@ -306,11 +313,11 @@ export const DashboardScreen = () => {
             </linearGradient>
           </defs>
           <path
-            d="M0,58 C20,52 30,40 50,44 C70,48 80,26 100,30 C120,34 130,18 150,20 C170,22 180,8 200,6 L200,70 L0,70 Z"
+            d="M0,50 C20,45 30,34 50,38 C70,42 80,22 100,26 C120,30 130,15 150,17 C170,19 180,7 200,5 L200,60 L0,60 Z"
             fill="url(#dash-fill)"
           />
           <motion.path
-            d="M0,58 C20,52 30,40 50,44 C70,48 80,26 100,30 C120,34 130,18 150,20 C170,22 180,8 200,6"
+            d="M0,50 C20,45 30,34 50,38 C70,42 80,22 100,26 C120,30 130,15 150,17 C170,19 180,7 200,5"
             fill="none"
             stroke="#0071e3"
             strokeWidth="2.5"
@@ -321,24 +328,68 @@ export const DashboardScreen = () => {
           />
         </svg>
       </div>
-      <div className="mt-[5%] grid grid-cols-2 gap-[5%]">
+      <div className="mt-[4%] grid grid-cols-3 gap-[3%]">
         {[
           ['Orders', '18'],
           ['Visitors', '342'],
+          ['Avg. order', '$22.9'],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-[12px] bg-white p-[10%]">
-            <p className="text-[length:3.2cqw] text-[#86868b]">{label}</p>
-            <p className="text-[length:6cqw] font-semibold text-[#1d1d1f]">{value}</p>
+          <div key={label} className="rounded-[12px] bg-white px-[9%] py-[10%]">
+            <p className="truncate text-[length:2.9cqw] text-[#86868b]">{label}</p>
+            <p className="text-[length:5cqw] font-semibold text-[#1d1d1f]">{value}</p>
           </div>
         ))}
       </div>
-      <div className="mt-[5%] space-y-[3%] rounded-[14px] bg-white p-[6%]">
-        <p className="text-[length:3.2cqw] text-[#86868b]">Top products</p>
-        {['Gentle Foaming Cleanser', 'Hydrating Serum', 'Daily Moisturizer'].map((item, i) => (
-          <div key={item} className="flex items-center justify-between text-[length:3.6cqw]">
-            <span className="truncate text-[#1d1d1f]">{item}</span>
-            <span className="text-[#86868b]">{[24, 17, 11][i]}</span>
-          </div>
+      <div className="mt-[4%] rounded-[14px] bg-white p-[5%]">
+        <div className="flex items-center justify-between">
+          <p className="text-[length:3.2cqw] text-[#86868b]">Top products</p>
+          <p className="text-[length:3cqw] text-[#0071e3]">See all</p>
+        </div>
+        <div className="mt-[3%] space-y-[3.5%]">
+          {[
+            ['Gentle Foaming Cleanser', 24, 'from-[#f3dfe3] to-[#d9a3ae]'],
+            ['Hydrating Serum', 17, 'from-[#dde6ee] to-[#9fb4c7]'],
+            ['Daily Moisturizer', 11, 'from-[#efe7dc] to-[#d9c8b1]'],
+          ].map(([item, sold, tone]) => (
+            <div key={item} className="flex items-center gap-[4%]">
+              <span className={`h-[7cqw] w-[7cqw] shrink-0 rounded-[8px] bg-gradient-to-br ${tone}`} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between text-[length:3.4cqw]">
+                  <span className="truncate text-[#1d1d1f]">{item}</span>
+                  <span className="text-[#86868b]">{sold}</span>
+                </div>
+                <div className="mt-[2%] h-[0.9cqw] overflow-hidden rounded-full bg-[#f0f0f2]">
+                  <div className="h-full rounded-full bg-[#0071e3]/70" style={{ width: `${(sold / 24) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-[4%] rounded-[14px] bg-white p-[5%]">
+        <p className="text-[length:3.2cqw] text-[#86868b]">Recent orders</p>
+        <div className="mt-[3%] space-y-[3%]">
+          {ORDERS.slice(0, 3).map((order) => (
+            <div key={order.id} className="flex items-center gap-[4%] text-[length:3.3cqw]">
+              <span className="flex h-[7cqw] w-[7cqw] shrink-0 items-center justify-center rounded-full bg-[#f0f0f2] text-[length:2.8cqw] font-medium text-[#6e6e73]">
+                {initials(order.name)}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[#1d1d1f]">{order.name}</span>
+              <span className={`rounded-full px-[3%] py-[0.5%] text-[length:2.7cqw] ${STATUS_STYLES[order.status]}`}>
+                {order.status}
+              </span>
+              <span className="font-medium text-[#1d1d1f]">{order.amount}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-auto flex justify-around pt-[4%] text-[#86868b]">
+        {[Home, Package, ShoppingBag, BarChart3].map((Icon, i) => (
+          <Icon
+            key={i}
+            className={cn('h-[6cqw] w-[6cqw]', i === 0 && 'text-[#0071e3]')}
+            strokeWidth={1.8}
+          />
         ))}
       </div>
     </div>

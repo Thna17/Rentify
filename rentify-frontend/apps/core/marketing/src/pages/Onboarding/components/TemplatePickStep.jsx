@@ -141,22 +141,26 @@ const TemplatePickStep = ({ data, onUpdate }) => {
       {/* Category filter */}
       <div className="flex flex-wrap gap-2">
         {industries.map((industry) => (
-          <Button
+          <button
             key={industry.value}
-            size="sm"
-            variant={filter === industry.value ? 'default' : 'outline'}
+            type="button"
             onClick={() => setFilter(industry.value)}
-            className="rounded-full"
+            className={cn(
+              'h-9 rounded-full px-4 text-[14px] transition-colors',
+              filter === industry.value
+                ? 'bg-[#1d1d1f] text-white'
+                : 'bg-white text-[#1d1d1f] ring-1 ring-black/[0.08] hover:ring-black/20'
+            )}
           >
             {t(industry.labelKey)}
-          </Button>
+          </button>
         ))}
       </div>
 
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2">
           {[...Array(2)].map((_, i) => (
-            <Card key={i} className="gap-0 overflow-hidden py-0">
+            <Card key={i} className="gap-0 overflow-hidden rounded-[24px] border-0 py-0 ring-1 ring-black/[0.06]">
               <Skeleton className="aspect-[16/10] rounded-none" />
               <CardContent className="space-y-3 p-5">
                 <Skeleton className="h-5 w-2/3" />
@@ -167,7 +171,7 @@ const TemplatePickStep = ({ data, onUpdate }) => {
           ))}
         </div>
       ) : templates.length === 0 ? (
-        <Card className="border-dashed py-0">
+        <Card className="rounded-[24px] border-dashed py-0">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <LayoutTemplate className="h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -184,16 +188,16 @@ const TemplatePickStep = ({ data, onUpdate }) => {
               <Card
                 key={template.id}
                 className={cn(
-                  'group gap-0 overflow-hidden py-0 transition-all duration-300',
+                  'group gap-0 overflow-hidden rounded-[24px] border-0 py-0 transition-all duration-300',
                   isSelected
-                    ? 'ring-2 ring-primary shadow-lg'
-                    : 'hover:-translate-y-0.5 hover:shadow-lg'
+                    ? 'ring-2 ring-[#0071e3] shadow-[0_20px_50px_-25px_rgba(0,113,227,0.5)]'
+                    : 'ring-1 ring-black/[0.06] hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]'
                 )}
               >
                 <div className="relative">
                   <TemplateThumbnail template={template} />
                   {isSelected && (
-                    <Badge className="absolute right-3 top-3 gap-1 bg-primary shadow-md">
+                    <Badge className="absolute right-3 top-3 gap-1 rounded-full bg-[#0071e3] shadow-md">
                       <Check className="h-3 w-3" />
                       {t('onboarding.templates.selected')}
                     </Badge>
@@ -257,14 +261,17 @@ const TemplatePickStep = ({ data, onUpdate }) => {
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="h-11 flex-1 rounded-full"
                       onClick={() => handlePreview(template)}
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       {t('onboarding.templates.preview')}
                     </Button>
                     <Button
-                      className="flex-1"
+                      className={cn(
+                        'h-11 flex-1 rounded-full',
+                        !isSelected && 'bg-[#0071e3] text-white hover:bg-[#0077ed]'
+                      )}
                       variant={isSelected ? 'secondary' : 'default'}
                       onClick={() => handleTemplateSelect(template)}
                     >

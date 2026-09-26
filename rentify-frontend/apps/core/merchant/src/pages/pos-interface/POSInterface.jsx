@@ -4,20 +4,19 @@ import { ProductGrid } from './components/ProductGrid';
 import { Cart } from './components/Cart';
 import { PaymentModal } from './components/PaymentModal';
 import { OrderHistory } from './components/OrderHistory';
-import { CustomerDisplay } from './components/CustomerDisplay';
+import { KHQRDisplay } from './components/KHQRDisplay';
 import { ReceiptModal } from './components/ReceiptModal';
 import usePOS from '../../hooks/usePOS';
 import { Badge } from "@rentify/shared/ui/badge";
 import { Button } from "@rentify/shared/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@rentify/shared/ui/tabs";
+import { StatusTabs } from '@rentify/shared/ui/components/StatusTabs';
 import { 
   ShoppingCart, 
   Clock, 
-  Monitor, 
   Maximize2,
   Minimize2,
   LayoutDashboard,
-  SplitSquareVertical,
   Phone,
   Store
 } from 'lucide-react';
@@ -43,8 +42,6 @@ export const POSInterface = () => {
     setShowReceipt,
     currentOrder,
     orders,
-    isDualScreen,
-    setIsDualScreen,
     isFullscreen,
     showKHQR,
     khqrAmount,
@@ -88,28 +85,10 @@ export const POSInterface = () => {
       window.removeEventListener('resize', checkMobile);
     };
   }, []);
-  
-  useEffect(() => {
-    if (isMobile) {
-      setIsDualScreen(false);
-    }
-  }, [isMobile]);
 
   // Header Actions Component for Normal View
   const HeaderActions = () => (
     <div className="flex items-center gap-2.5">
-      {!isMobile && (
-        <Button
-          variant={isDualScreen ? "default" : "outline"}
-          onClick={() => setIsDualScreen(!isDualScreen)}
-          size="sm"
-          className="flex items-center gap-2 h-9 text-xs font-medium rounded-lg shadow-2xs"
-        >
-          <SplitSquareVertical className="h-4 w-4" />
-          {isDualScreen ? 'Single View' : 'Dual View'}
-        </Button>
-      )}
-
       <Button 
         variant="outline" 
         size="icon"
@@ -135,12 +114,12 @@ export const POSInterface = () => {
       icon: Clock,
       badge: orders.length,
     },
-    {
-      id: 'customer-display',
-      label: t('dashboard.pos.customer_display'),
-      icon: Monitor,
-    },
   ];
+  const posStatusFilters = {
+    pos: { label: 'dashboard.pos.title', icon: <ShoppingCart className="h-4 w-4" /> },
+    orders: { label: 'dashboard.pos.orders', icon: <Clock className="h-4 w-4" /> },
+  };
+  const posStatusCounts = { pos: cart.length, orders: orders.length };
 
   return (
     <div 
@@ -175,44 +154,30 @@ export const POSInterface = () => {
           </div>
 
           {/* Center: Tabs Navigation */}
-          {!isDualScreen && (
-            <div className="flex items-center">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="bg-muted/50 border border-border/60 h-9 p-0.5 rounded-lg flex gap-1">
-                  {tabs.map((tab) => (
-                    <TabsTrigger
-                      key={tab.id}
-                      value={tab.id}
-                      className="flex items-center gap-1.5 h-8 px-3 rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground text-muted-foreground text-xs font-medium transition-all"
-                    >
-                      <tab.icon className="h-3.5 w-3.5" />
-                      <span>{tab.label}</span>
-                      {tab.badge > 0 && (
-                        <Badge className="ml-1 h-4 min-w-4 px-1 flex items-center justify-center text-3xs bg-primary/15 text-primary border-0">
-                          {tab.badge}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
-          )}
+          <div className="flex items-center">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="bg-muted/50 border border-border/60 h-9 p-0.5 rounded-lg flex gap-1">
+                {tabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="flex items-center gap-1.5 h-8 px-3 rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground text-muted-foreground text-xs font-medium transition-all"
+                  >
+                    <tab.icon className="h-3.5 w-3.5" />
+                    <span>{tab.label}</span>
+                    {tab.badge > 0 && (
+                      <Badge className="ml-1 h-4 min-w-4 px-1 flex items-center justify-center text-3xs bg-primary/15 text-primary border-0">
+                        {tab.badge}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            {!isMobile && (
-              <Button
-                variant={isDualScreen ? "default" : "outline"}
-                onClick={() => setIsDualScreen(!isDualScreen)}
-                size="sm"
-                className="h-8 text-xs font-medium gap-1.5 rounded-lg"
-              >
-                <SplitSquareVertical className="h-3.5 w-3.5" />
-                <span>{isDualScreen ? 'Single View' : 'Dual View'}</span>
-              </Button>
-            )}
-
             <Button
               variant="outline"
               size="sm"
@@ -238,46 +203,30 @@ export const POSInterface = () => {
             ]}
           />
 
-          {!isDualScreen && (
-            <div className="border-b border-border/60 bg-background/95 backdrop-blur-sm px-4 md:px-6 shrink-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-transparent border-0 h-11 p-0 flex gap-6 md:gap-8 justify-start">
-                  {tabs.map((tab) => (
-                    <TabsTrigger 
-                      key={tab.id}
-                      value={tab.id}
-                      className="relative flex items-center gap-2 h-11 px-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none bg-transparent hover:text-foreground text-muted-foreground font-medium text-sm transition-all"
-                    >
-                      <tab.icon className="h-4 w-4" />
-                      <span>{tab.label}</span>
-                      {tab.badge > 0 && (
-                        <Badge className="ml-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-2xs bg-primary/10 text-primary border-primary/20">
-                          {tab.badge}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
-          )}
+          <div className="bg-background px-6 pt-5 md:px-8 shrink-0">
+            <StatusTabs
+              statusFilters={posStatusFilters}
+              statusCounts={posStatusCounts}
+              currentStatus={activeTab}
+              onStatusChange={setActiveTab}
+            />
+          </div>
         </>
       )}
 
       {/* Main Workspace Area */}
       <div className="flex-1 flex flex-col w-full">
-        {isDualScreen ? (
-          /* Dual Screen Mode */
-          <div className="flex-1 flex flex-col xl:flex-row items-start w-full">
-            {/* Products Panel - Left */}
-            <div className="flex-1 min-w-0 w-full border-r border-border/80">
-              <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} storeName={websiteName} />
+        {activeTab === 'pos' && (
+          <div className="flex-1 flex flex-col lg:flex-row items-start w-full">
+            {/* Product Catalog Column */}
+            <div className="flex-1 min-w-0 w-full">
+              <ProductGrid onAddToCart={addToCart} cart={cart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} storeName={websiteName} />
             </div>
 
-            {/* Cart Panel - Middle */}
+            {/* Cart Column */}
             <div className={cn(
-              "border-r border-border/80 shrink-0 flex flex-col bg-card/40",
-              isMobile ? "w-full border-b" : "w-[340px]",
+              "border-border/60 shrink-0 flex flex-col bg-card [box-shadow:var(--shadow-soft)]",
+              isMobile ? "w-full border-t" : "w-[360px] lg:w-[400px] border-l",
               !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
             )}>
               <Cart
@@ -291,100 +240,29 @@ export const POSInterface = () => {
                 isFullscreen={isFullscreen}
               />
             </div>
-
-            {/* Customer Display - Right */}
-            <div className={cn(
-              "shrink-0 overflow-y-auto bg-muted/20 p-4",
-              isMobile ? "w-full" : "w-[360px] lg:w-[420px]",
-              !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
-            )}>
-              <CustomerDisplay
-                cart={cart}
-                total={cartTotal}
-                showKHQR={showKHQR}
-                khqrAmount={khqrAmount}
-                onKHQRComplete={handleKHQRComplete}
-                onKHQRCancel={handleKHQRCancel}
-                khqrData={khqrData}
-                isMobile={isMobile}
-                paymentStatus={paymentStatus}
-                name={websiteName}
-              />
-            </div>
           </div>
-        ) : (
-          /* Single Screen Mode */
-          <div className="flex-1 flex flex-col w-full">
-            {activeTab === 'pos' && (
-              <div className="flex-1 flex flex-col lg:flex-row items-start w-full">
-                {/* Product Catalog Column */}
-                <div className="flex-1 min-w-0 w-full">
-                  <ProductGrid onAddToCart={addToCart} isFullscreen={isFullscreen} websiteId={websiteId} storeId={storeId} storeName={websiteName} />
-                </div>
+        )}
 
-                {/* Cart Column */}
-                <div className={cn(
-                  "border-border/60 shrink-0 flex flex-col bg-card shadow-[var(--shadow-soft)]",
-                  isMobile ? "w-full border-t" : "w-[360px] lg:w-[400px] border-l",
-                  !isMobile && (isFullscreen ? "sticky top-13 self-start h-[calc(100vh-3.25rem)] max-h-[calc(100vh-3.25rem)]" : "sticky top-0 self-start h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]")
-                )}>
-                  <Cart
-                    items={cart}
-                    total={cartTotal}
-                    onUpdateItem={updateCartItem}
-                    onRemoveItem={removeFromCart}
-                    onClearCart={clearCart}
-                    onCheckout={startCheckout}
-                    isMobile={isMobile}
-                    isFullscreen={isFullscreen}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'orders' && (
-              <div className="flex-1 w-full p-4 md:p-6 bg-background">
-                <OrderHistory orders={orders} websiteId={websiteId} storeId={storeId} />
-              </div>
-            )}
-
-            {activeTab === 'customer-display' && (
-              <div className="flex-1 w-full p-4 md:p-6 bg-background flex items-center justify-center min-h-[500px]">
-                <div className="max-w-2xl w-full">
-                  <CustomerDisplay
-                    cart={cart}
-                    total={cartTotal}
-                    showKHQR={showKHQR}
-                    khqrAmount={khqrAmount}
-                    onKHQRComplete={handleKHQRComplete}
-                    onKHQRCancel={handleKHQRCancel}
-                    khqrData={khqrData}
-                    isMobile={isMobile}
-                    isOverlay={false}
-                    name={websiteName}
-                  />
-                </div>
-              </div>
-            )}
+        {activeTab === 'orders' && (
+          <div className="flex-1 w-full p-4 md:p-6 bg-background">
+            <OrderHistory orders={orders} websiteId={websiteId} storeId={storeId} />
           </div>
         )}
       </div>
 
-      {/* Mobile KHQR Overlay */}
-      {isMobile && showKHQR && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl">
-          <CustomerDisplay
-            cart={cart}
-            total={cartTotal}
-            showKHQR={showKHQR}
-            khqrAmount={khqrAmount}
-            onKHQRComplete={handleKHQRComplete}
-            onKHQRCancel={handleKHQRCancel}
-            khqrData={khqrData}
-            isMobile={isMobile}
-            isOverlay={true}
-            name={websiteName}
-          />
+      {/* KHQR Payment Overlay */}
+      {showKHQR && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-card rounded-2xl overflow-hidden shadow-2xl border border-border">
+            <KHQRDisplay
+              amount={khqrAmount}
+              onPaymentComplete={handleKHQRComplete}
+              onCancel={handleKHQRCancel}
+              paymentStatus={paymentStatus}
+              khqrData={khqrData}
+              isMobile={isMobile}
+            />
+          </div>
         </div>
       )}
 
@@ -395,7 +273,6 @@ export const POSInterface = () => {
           items={cart}
           onClose={() => setShowPayment(false)}
           onPaymentComplete={handlePaymentComplete}
-          isDualScreen={isDualScreen}
           onKHQRPayment={handleKHQRPayment}
           container={posRef.current}
           isFullscreen={isFullscreen}

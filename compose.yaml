@@ -243,6 +243,9 @@ services:
     command: npm run start -- --host 0.0.0.0
     ports:
       - '4500:4500'
+    volumes:
+      - ./marketplace-frontend:/app
+      - marketplace-node-modules:/app/node_modules
     depends_on:
       core-api:
         condition: service_healthy
@@ -328,3 +331,4 @@ volumes:
   template-2-node-modules:
   admin-node-modules:
   storefront-node-modules:
+  marketplace-node-modules:

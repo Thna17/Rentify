@@ -73,7 +73,7 @@ export function Cart({
         ) : (
           <ul className="divide-y divide-border/60">
             {items.map((item) => (
-              <li key={item.id} className="flex gap-3 py-3.5 ds-page">
+              <li key={item.lineKey} className="flex gap-3 py-3.5 ds-page">
                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
                   {item.images?.[0]?.url && (
                     <img src={item.images[0].url} alt="" className="h-full w-full object-cover" />
@@ -88,13 +88,14 @@ export function Cart({
                       {money(item.subtotal)}
                     </span>
                   </div>
+                  {item.variantLabel && <p className="text-xs text-muted-foreground mt-0.5">{item.variantLabel}</p>}
                   <p className="text-xs text-muted-foreground mt-0.5">{money(item.price)} each</p>
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center rounded-xl bg-muted">
                       <button
                         type="button"
                         aria-label="Decrease quantity"
-                        onClick={() => onUpdateItem(item.id, Math.max(1, item.quantity - 1))}
+                        onClick={() => onUpdateItem(item.lineKey, Math.max(1, item.quantity - 1))}
                         disabled={item.quantity <= 1}
                         className="h-8 w-8 flex items-center justify-center text-foreground hover:bg-card rounded-l-xl disabled:opacity-40"
                       >
@@ -106,7 +107,7 @@ export function Cart({
                       <button
                         type="button"
                         aria-label="Increase quantity"
-                        onClick={() => onUpdateItem(item.id, item.quantity + 1)}
+                        onClick={() => onUpdateItem(item.lineKey, item.quantity + 1)}
                         className="h-8 w-8 flex items-center justify-center text-foreground hover:bg-card rounded-r-xl"
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -115,7 +116,7 @@ export function Cart({
                     <button
                       type="button"
                       aria-label={`Remove ${item.name}`}
-                      onClick={() => onRemoveItem(item.id)}
+                      onClick={() => onRemoveItem(item.lineKey)}
                       className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />

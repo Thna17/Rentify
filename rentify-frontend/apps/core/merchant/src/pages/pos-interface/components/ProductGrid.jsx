@@ -21,6 +21,7 @@ import {
   Check,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@rentify/shared/ui/dialog';
 
 const money = (value) => `$${parseFloat(value || 0).toFixed(2)}`;
 
@@ -46,10 +47,20 @@ const matchesCode = (product, code) =>
     .filter((value) => value != null && value !== '')
     .some((value) => String(value).toLowerCase() === code);
 
+const variantsOf = (product) => product?.ProductVariants || [];
+const hasVariants = (product) => variantsOf(product).length > 0 || (product?.ProductOptions?.length || 0) > 0;
+const inStock = (item) =>
+  item.trackInventory === false || Number(item.stockQuantity || 0) > 0;
+const variantLabel = (variant) =>
+  Object.entries(variant.optionValues || {}).map(([name, value]) => `${name}: ${value}`).join(' / ') || variant.sku || 'Variant';
+
 function ProductCard({ product, storeName, onAdd }) {
+  const variants = variantsOf(product);
   const stock = product.stockQuantity || 0;
-  const isOutOfStock = stock === 0;
-  const isLowStock = !isOutOfStock && stock <= 5;
+  const isOutOfStock = hasVariants(product)
+    ? !variants.some(inStock)
+    : !inStock(product);
+  const isLowStock = variants.length === 0 && product.trackInventory !== false && !isOutOfStock && stock <= 5;
   const price = parseFloat(product.price || 0);
   const originalPrice = parseFloat(product.originalPrice || 0);
   const onSale = originalPrice > price;
@@ -66,8 +77,7 @@ function ProductCard({ product, storeName, onAdd }) {
 
   const add = () => {
     if (isOutOfStock) return;
-    onAdd(product);
-    setJustAdded(true);
+    if (onAdd(product)) setJustAdded(true);
   };
 
   return (
@@ -78,7 +88,7 @@ function ProductCard({ product, storeName, onAdd }) {
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), add())}
       aria-disabled={isOutOfStock}
       className={cn(
-        'group flex flex-col overflow-hidden rounded-2xl bg-card p-2 text-left shadow-[var(--shadow-soft)]',
+        'group flex flex-col overflow-hidden rounded-2xl bg-card p-2 text-left [box-shadow:var(--shadow-soft)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
         justAdded && 'ring-2 ring-primary/40',
         isOutOfStock ? 'cursor-not-allowed opacity-60' : 'lift cursor-pointer'
@@ -145,7 +155,7 @@ function ProductCard({ product, storeName, onAdd }) {
           </div>
           <button
             type="button"
-            aria-label={`Add ${product.name} to sale`}
+            aria-label={hasVariants(product) ? `Choose variant for ${product.name}` : `Add ${product.name} to sale`}
             disabled={isOutOfStock}
             onClick={(e) => {
               e.stopPropagation();
@@ -166,7 +176,7 @@ function ProductCard({ product, storeName, onAdd }) {
 
 function ProductSkeleton() {
   return (
-    <div className="rounded-2xl bg-card p-2 shadow-[var(--shadow-soft)]">
+    <div className="rounded-2xl bg-card p-2 [box-shadow:var(--shadow-soft)]">
       <div className="aspect-[4/3] rounded-xl bg-muted animate-pulse" />
       <div className="px-1.5 pt-3 pb-1 space-y-2">
         <div className="h-3.5 w-3/4 rounded bg-muted animate-pulse" />
@@ -182,7 +192,7 @@ function ProductSkeleton() {
 
 const GRID_CLASS = 'grid gap-3 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]';
 
-export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, storeId, storeName = 'Store' }) {
+export function ProductGrid({ onAddToCart, cart = [], isFullscreen = false, websiteId, storeId, storeName = 'Store' }) {
   const { categories } = useShopCategories();
   const searchRef = useRef(null);
 
@@ -190,6 +200,40 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [scanNotice, setScanNotice] = useState('');
+  const [variantProduct, setVariantProduct] = useState(null);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const variantAvailable = (variant, product) =>
+    inStock(variant) && (variant.trackInventory === false ||
+      (cart.find((line) => line.id === product.id && line.variantId === variant.id)?.quantity || 0) < Number(variant.stockQuantity || 0));
+
+  const chooseProduct = (product, scannedVariant = null) => {
+    if (hasVariants(product)) {
+      setVariantProduct(product);
+      setSelectedVariantId(scannedVariant?.id || null);
+      return false;
+    }
+    onAddToCart(product);
+    return true;
+  };
+
+  const addSelectedVariant = () => {
+    const variant = variantsOf(variantProduct).find((item) => item.id === selectedVariantId);
+    if (!variant || !variantAvailable(variant, variantProduct)) return;
+    onAddToCart({
+      ...variantProduct,
+      variantId: variant.id,
+      selectedOptions: variant.optionValues || {},
+      variantLabel: variantLabel(variant),
+      price: variant.price,
+      originalPrice: variant.compareAtPrice,
+      stockQuantity: variant.stockQuantity,
+      trackInventory: variant.trackInventory,
+      images: variant.images?.length ? variant.images : variantProduct.images,
+    });
+    setVariantProduct(null);
+    setSelectedVariantId(null);
+    setScanNotice(`Added ${variantProduct.name} — ${variantLabel(variant)}`);
+  };
 
   const {
     data: productsData,
@@ -264,17 +308,23 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
     const code = searchTerm.trim().toLowerCase();
     if (!code) return;
     const exact = products.find((p) => matchesCode(p, code));
-    const target = exact || (filteredProducts.length === 1 ? filteredProducts[0] : null);
+    const variantMatch = !exact && products.map((product) => ({
+      product,
+      variant: variantsOf(product).find((variant) => String(variant.sku || '').toLowerCase() === code),
+    })).find(({ variant }) => variant);
+    const target = exact || variantMatch?.product || (filteredProducts.length === 1 ? filteredProducts[0] : null);
     if (!target) {
       setScanNotice(`No product matches “${searchTerm.trim()}”`);
       return;
     }
-    if ((target.stockQuantity || 0) === 0) {
+    if (hasVariants(target)
+      ? !variantsOf(target).some(inStock)
+      : !inStock(target)) {
       setScanNotice(`${target.name} is out of stock`);
       return;
     }
-    onAddToCart(target);
-    setScanNotice(`Added ${target.name}`);
+    const added = chooseProduct(target, variantMatch?.variant);
+    setScanNotice(added ? `Added ${target.name}` : `Choose a variant for ${target.name}`);
     setSearchTerm('');
   };
 
@@ -311,7 +361,7 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
               onKeyDown={handleSearchKeyDown}
               placeholder="Search products or enter product ID…"
               aria-label="Search products or enter product ID"
-              className="h-12 w-full rounded-xl border border-transparent bg-card shadow-[var(--shadow-soft)] pl-11 pr-10 text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15"
+              className="h-12 w-full rounded-xl border border-transparent bg-card [box-shadow:var(--shadow-soft)] pl-11 pr-10 text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15"
             />
             {searchTerm && (
               <button
@@ -332,7 +382,7 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
             variant="outline"
             onClick={() => searchRef.current?.focus()}
             title="Scan barcode: focus the field, then scan"
-            className="h-12 rounded-xl px-3.5 gap-2 border-transparent bg-card shadow-[var(--shadow-soft)] hover:bg-primary/5 hover:text-primary"
+            className="h-12 rounded-xl px-3.5 gap-2 border-transparent bg-card [box-shadow:var(--shadow-soft)] hover:bg-primary/5 hover:text-primary"
           >
             <ScanBarcode className="h-5 w-5" />
             <span className="hidden md:inline text-sm font-medium">Scan</span>
@@ -340,7 +390,7 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger
               aria-label="Sort products"
-              className="h-12 w-12 md:w-40 rounded-xl border-transparent bg-card shadow-[var(--shadow-soft)] justify-center md:justify-between"
+              className="h-12 w-12 md:w-40 rounded-xl border-transparent bg-card [box-shadow:var(--shadow-soft)] justify-center md:justify-between"
             >
               <ArrowUpDown className="h-4 w-4 text-muted-foreground md:hidden" />
               <span className="hidden md:inline"><SelectValue placeholder="Sort by" /></span>
@@ -372,7 +422,7 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
                   'shrink-0 h-9 inline-flex items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors',
                   active
                     ? 'border-transparent bg-primary text-primary-foreground shadow-sm'
-                    : 'border-transparent bg-card text-foreground shadow-[var(--shadow-soft)] hover:bg-primary/5 hover:text-primary'
+                    : 'border-transparent bg-card text-foreground [box-shadow:var(--shadow-soft)] hover:bg-primary/5 hover:text-primary'
                 )}
               >
                 {tab.name}
@@ -428,7 +478,7 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
                   key={product.id}
                   product={product}
                   storeName={storeName}
-                  onAdd={onAddToCart}
+                  onAdd={chooseProduct}
                 />
               ))}
             </div>
@@ -438,6 +488,44 @@ export function ProductGrid({ onAddToCart, isFullscreen = false, websiteId, stor
           </>
         )}
       </div>
+      <Dialog open={Boolean(variantProduct)} onOpenChange={(open) => {
+        if (!open) {
+          setVariantProduct(null);
+          setSelectedVariantId(null);
+        }
+      }}>
+        <DialogContent container={isFullscreen ? document.fullscreenElement || undefined : undefined} className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Choose a variant for {variantProduct?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2" role="radiogroup" aria-label="Product variants">
+            {variantsOf(variantProduct).map((variant) => {
+              const available = variantAvailable(variant, variantProduct);
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedVariantId === variant.id}
+                  disabled={!available}
+                  onClick={() => setSelectedVariantId(variant.id)}
+                  className={cn('w-full rounded-xl border p-3 text-left flex items-center justify-between gap-3',
+                    selectedVariantId === variant.id ? 'border-primary bg-primary/5' : 'border-border',
+                    !available && 'opacity-50 cursor-not-allowed')}
+                >
+                  <span className="font-medium">{variantLabel(variant)}</span>
+                  <span className="text-sm tabular-nums text-muted-foreground">
+                    {available ? money(variant.price) : 'Sold out'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <Button disabled={!selectedVariantId || !variantsOf(variantProduct).some((variant) => variant.id === selectedVariantId && variantAvailable(variant, variantProduct))} onClick={addSelectedVariant} className="w-full">
+            Add to sale
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

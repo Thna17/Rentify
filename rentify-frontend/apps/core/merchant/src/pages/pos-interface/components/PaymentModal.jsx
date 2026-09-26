@@ -44,7 +44,6 @@ export const PaymentModal = ({
   items,
   onClose,
   onPaymentComplete,
-  isDualScreen = false,
   onKHQRPayment,
   container,
   isFullscreen = false,

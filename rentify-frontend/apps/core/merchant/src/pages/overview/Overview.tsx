@@ -93,7 +93,7 @@ export const Overview = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
-              <SelectTrigger className="w-[160px] h-10 bg-card border-transparent shadow-[var(--shadow-soft)]">
+              <SelectTrigger className="w-[160px] h-10 bg-card border-transparent [box-shadow:var(--shadow-soft)]">
                 <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue>{PERIOD_LABEL[selectedPeriod] || 'Last 7 days'}</SelectValue>
               </SelectTrigger>
@@ -108,7 +108,7 @@ export const Overview = () => {
             <button
               type="button"
               onClick={() => navigate('/products/create')}
-              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-card shadow-[var(--shadow-soft)] text-sm font-medium text-foreground hover:bg-muted/60"
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-card [box-shadow:var(--shadow-soft)] text-sm font-medium text-foreground hover:bg-muted/60"
             >
               <Package className="h-4 w-4" />
               Add Product
@@ -144,7 +144,7 @@ export const Overview = () => {
           ) : (
             <a
               href={`${MARKETING_URL}/start`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card shadow-[var(--shadow-soft)] text-primary hover:bg-primary/5 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card [box-shadow:var(--shadow-soft)] text-primary hover:bg-primary/5 transition-colors"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               Add a storefront
