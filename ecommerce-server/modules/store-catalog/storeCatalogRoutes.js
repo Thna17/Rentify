@@ -1,6 +1,5 @@
 const router = require('express').Router();
 const controller = require('./storeCatalogController');
-const OrderController = require('../orders').OrderController;
 const { verifyStoreActor, verifyCoreBuyer } = require('../../middlewares/authMiddleware');
 const { createRequireStoreAccess } = require('../../middlewares/requireStoreAccess');
 
@@ -21,11 +20,5 @@ router.post('/stores/:storeId/products', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.create);
 router.patch('/stores/:storeId/products/:productId', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.update);
-
-// Direct store POS routes under /api/stores/:storeId/orders/pos
-router.post('/stores/:storeId/orders/pos', verifyStoreActor,
-  createRequireStoreAccess({ permissions: ['pos', 'manage_pos'] }), OrderController.createPOSOrder);
-router.get('/stores/:storeId/orders/pos', verifyStoreActor,
-  createRequireStoreAccess({ permissions: ['pos', 'manage_pos'] }), OrderController.getPOSOrders);
 
 module.exports = router;

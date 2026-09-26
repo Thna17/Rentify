@@ -11,10 +11,10 @@ under `modules/`; shared infrastructure stays at the package root.
 | `modules/customers/` | Customer profile, password change, customer order cancellation |
 | `modules/catalog/` | Merchant products and categories; product strategies and builders (`core/`) |
 | `modules/store-catalog/` | Public Store-keyed catalog and product reviews |
-| `modules/cart/` | Carts; niche cart strategies (`core/`) |
-| `modules/orders/` | Orders, merchant order management, POS; order creation and retrieval strategies (`core/`) |
+| `modules/cart/` | Storefront (website-scoped) carts; niche cart strategies (`core/`) |
+| `modules/orders/` | Orders, merchant order management, website and Store POS; order creation and retrieval strategies (`core/`) |
 | `modules/inventory/` | Stock reservation and shared-stock rules |
-| `modules/checkout/` | Marketplace and storefront COD checkout, merchant contact lookup |
+| `modules/checkout/` | Marketplace carts (including `/api/cart`), marketplace and storefront COD checkout, merchant contact lookup |
 | `modules/payments/` | Payments, payment gateway config and encryption, verification, fulfillment, recovery worker; payment strategies (`core/`) |
 | `modules/invoices/` | Invoices |
 | `modules/billing/` | Usage events, usage aggregation, pricing rules, billing worker |

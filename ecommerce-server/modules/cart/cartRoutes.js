@@ -1,9 +1,9 @@
-// routes/cartRoutes.js - Central and Storefront Cart Routes
+// Storefront (website-scoped) cart routes under /api/cart. The central marketplace
+// cart routes are in checkout/marketplaceCartRoutes.js, mounted before this router.
 const express = require("express");
-const { verifyToken, verifyOptionalCoreBuyer } = require('../../middlewares/authMiddleware');
+const { verifyToken } = require('../../middlewares/authMiddleware');
 const sessionMiddleware = require('../../middlewares/sessionMiddleware');
 const CartController = require("./CartController");
-const marketplaceController = require("../checkout").marketplaceCheckoutController;
 const { requireWebsitePermission } = require("../../middlewares/requireWebsiteAccess");
 
 const router = express.Router();
@@ -11,15 +11,6 @@ const router = express.Router();
 // Apply middlewares
 router.use(sessionMiddleware);
 router.use(verifyToken);
-
-// Central marketplace cart routes (no websiteId required)
-router.get("/", verifyOptionalCoreBuyer, marketplaceController.getCart);
-router.post("/items", verifyOptionalCoreBuyer, marketplaceController.addToCart);
-router.patch("/items/:itemId", verifyOptionalCoreBuyer, marketplaceController.updateCartItem);
-router.put("/items/:itemId", verifyOptionalCoreBuyer, marketplaceController.updateCartItem);
-router.delete("/items/:itemId", verifyOptionalCoreBuyer, marketplaceController.removeCartItem);
-router.delete("/clear", verifyOptionalCoreBuyer, marketplaceController.clearCart);
-router.delete("/", verifyOptionalCoreBuyer, marketplaceController.clearCart);
 
 // Storefront website-scoped routes
 router.get("/:websiteId", CartController.getCart);
