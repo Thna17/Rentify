@@ -417,10 +417,11 @@ so these items are recorded here and scheduled after it:
    one instance and finishes on another fails, and every restart drops
    sessions. Target: a Redis-backed session store.
 2. **Scheduled work runs in every API process without a lock.** Core starts
-   `raasReminderJob` (every 15 minutes) and `websiteSyncJob` (every minute);
-   Commerce starts `billingWorker` (daily) and `recoveryWorker` (every 15
-   minutes). With N instances each job runs N times, which would duplicate
-   billing statements and reminders. Target: a Redis lock per job run, or a
+   `websiteSyncJob` (every minute); Commerce starts `billingWorker` (daily) and
+   `recoveryWorker` (every 15 minutes). Core's `raasReminderJob` defines a
+   15-minute schedule but is never started today; if it is wired up it needs
+   the same protection. With N instances each job runs N times, which would
+   duplicate billing statements and reminders. Target: a Redis lock per job run, or a
    separate worker process.
 3. **Process-local caches.** For example `opsInvoiceFactsService` keeps its
    cache in a module-level `Map`; each instance would hold its own stale copy.
