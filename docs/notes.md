@@ -514,6 +514,33 @@ Progress:
   `checkout`, `store-catalog` → `orders`; Core `admin` → `stores`, `stores` →
   `websites`); these go through the entry point but are candidates for moving
   the route to the owning module.
-- **Next: cross-domain model access.** Controllers and services still query
-  other domains' models directly through the shared registry; move that access
-  behind the owning module's service.
+- **Boundaries — model write ownership done (2026-09-26).** Each API's
+  `model-ownership.json` (under `src/modules/` in Core, `modules/` in
+  Commerce) names the module(s) that may write each model. Reads stay open
+  to every module through the shared registry; only writes are restricted.
+  `scripts/quality/check-model-ownership.js` runs in both APIs' `lint` and
+  fails on a static write (`Model.create/update/destroy/...`) from a module
+  that does not own the model, on a model with no owner, and on an import of
+  a name the model registry does not export. Instance writes
+  (`order.update(...)`) are not attributed and not checked.
+  - Commerce's shared transaction domain (AGENTS.md rule 6): `cart`,
+    `checkout`, `orders`, `payments`, `inventory` and `invoices` may all write
+    Cart, CartItem, Order, OrderItem, OrderEvent, ShippingDetail, Payment and
+    Invoice, because placing an order writes them in one transaction.
+  - Recorded exceptions (Commerce): `orders` writes Customer (order statistics
+    and walk-in POS customers inside the order transaction) and
+    `store-access` writes Customer (the tenant backfill). Core has none.
+  - Writes moved to the owner: Core `websites` now enqueues website syncs
+    through `commerce-sync` (`ecommerceSyncService.enqueueWebsiteSync`,
+    same transaction); Commerce `websites` now attaches a Store's products to
+    a new website through `catalog`
+    (`ProductService.attachStoreProductsToWebsite`). Covered by the existing
+    `websiteCreation` tests and the new `test/security/websiteProjection.test.js`.
+  - Bug found by the registry check: Core `admin/adminController` imported
+    a `TemplateColorPalette` model that does not exist, so the admin
+    template list and detail endpoints always failed with 400. The palette
+    lives on `WebsiteTemplate.colorPalette`; the controller now includes only
+    `TemplateContent`. Covered by `test/security/adminTemplates.test.js`.
+- **Next: split oversized files** (Core `authService`, `websiteService`;
+  Commerce `ProductService`, `marketplaceCheckoutService`) and move reused
+  controllers' routes to their owning modules.

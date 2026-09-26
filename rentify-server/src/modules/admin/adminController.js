@@ -1,26 +1,15 @@
+// A template's color palette is stored on WebsiteTemplate.colorPalette (JSON),
+// which is what onboarding and the marketing site read. There is no separate
+// palette table.
 const {
   WebsiteTemplate,
-  TemplateColorPalette,
   TemplateContent,
 } = require("../../models");
-
-const { Op } = require('sequelize');
 
 exports.createTemplate = async (req, res) => {
   try {
     // Create website template
     const template = await WebsiteTemplate.create(req.body);
-
-    if (Array.isArray(req.body.colorPalettes)) {
-      await Promise.all(
-        req.body.colorPalettes.map(async (paletteName) => {
-          await TemplateColorPalette.create({
-            name: paletteName,
-            templateId: template.id,
-          });
-        })
-      );
-    }
 
     // Create template content
     if (Array.isArray(req.body.content)) {
@@ -61,23 +50,7 @@ exports.updateTemplate = async (req, res) => {
     // 2. Update template main fields
     await template.update(req.body);
 
-    // 3. Replace color palettes
-    if (Array.isArray(req.body.colorPalettes)) {
-      // Delete old palettes
-      await TemplateColorPalette.destroy({ where: { templateId: id } });
-
-      // Add new ones
-      await Promise.all(
-        req.body.colorPalettes.map((paletteName) =>
-          TemplateColorPalette.create({
-            name: paletteName,
-            templateId: id,
-          })
-        )
-      );
-    }
-
-    // 4. Replace content
+    // 3. Replace content
     if (Array.isArray(req.body.content)) {
       // Delete old content
       await TemplateContent.destroy({ where: { templateId: id } });
@@ -119,7 +92,7 @@ exports.getAllTemplates = async (req, res) => {
   try {
     console.log("Admin getting all templates");
     const templates = await WebsiteTemplate.findAll({
-      include: [TemplateContent, TemplateColorPalette],
+      include: [TemplateContent],
     });
     res.json(templates);
   } catch (error) {
@@ -131,7 +104,7 @@ exports.getTemplateById = async (req, res) => {
   try {
     console.log("Admin getting template by id");
     const template = await WebsiteTemplate.findByPk(req.params.id, {
-      include: [TemplateContent, TemplateColorPalette],
+      include: [TemplateContent],
     });
     if (!template) return res.status(404).json({ error: "Template not found" });
 

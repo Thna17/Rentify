@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createTemplate, updateTemplate, deleteTemplate, getAllTemplates, getTemplateById, getAuditLogs } = require("./adminController");
+const { createTemplate, updateTemplate, deleteTemplate, getAllTemplates, getTemplateById } = require("./adminController");
 const { verifyToken } = require("../../middlewares/auth");
 const { requireAdmin } = require("../../middlewares/authorization");
 const sellerReviewController = require('../stores').sellerReviewController;

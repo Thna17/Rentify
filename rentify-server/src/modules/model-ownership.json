@@ -1,0 +1,22 @@
+{
+  "description": "Which module may write each model. Other modules may read any model through the shared registry, but must ask the owning module to create, update or delete rows. Checked by scripts/quality/check-model-ownership.js.",
+  "owners": {
+    "User": ["auth", "users"],
+    "Staff": ["staff"],
+    "Store": ["stores"],
+    "SellerApplication": ["stores"],
+    "SellerReview": ["stores"],
+    "Website": ["websites"],
+    "WebsiteContent": ["websites"],
+    "WebsiteTemplate": ["admin", "templates"],
+    "TemplateContent": ["admin", "templates"],
+    "Package": ["billing"],
+    "Subscription": ["billing"],
+    "Payment": ["billing"],
+    "StoreSyncOutbox": ["commerce-sync"],
+    "WebsiteSyncOutbox": ["commerce-sync"],
+    "OutcomeContract": ["ops"],
+    "ReminderLog": ["ops"]
+  },
+  "exceptions": []
+}

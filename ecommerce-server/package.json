@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "lint": "node scripts/quality/check-js.js . test --ignore node_modules --ignore migrations && node scripts/quality/check-module-boundaries.js modules",
+    "lint": "node scripts/quality/check-js.js . test --ignore node_modules --ignore migrations && node scripts/quality/check-module-boundaries.js modules && node scripts/quality/check-model-ownership.js modules models",
     "typecheck": "node scripts/quality/check-js.js . test --ignore node_modules --ignore migrations",
     "test:unit": "node --test test/security/**/*.test.js",
     "test:integration": "node --test test/integration/**/*.test.js",

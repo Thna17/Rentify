@@ -28,6 +28,15 @@ function validMarketplaceVisibility(value) {
 }
 
 class ProductService {
+  /**
+   * Link a Store's products that have no website yet to that Store's website.
+   * Called when Core first projects a website for an existing Store, so
+   * products created before the storefront appear on it.
+   */
+  static async attachStoreProductsToWebsite(storeId, websiteId) {
+    return Product.update({ websiteId }, { where: { storeId, websiteId: null } });
+  }
+
   constructor(websiteId, options = {}) {
     if (typeof options === 'object' && options !== null) {
       this.websiteId = options.websiteId !== undefined ? options.websiteId : websiteId;

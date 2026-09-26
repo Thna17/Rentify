@@ -52,11 +52,8 @@ exports.websiteData = async (req, res) => {
     const [data] = await WebsiteData.upsert(upsertData);
 
     if (storeId) {
-      const { Product } = require("../../models");
-      await Product.update(
-        { websiteId },
-        { where: { storeId, websiteId: null } }
-      );
+      const ProductService = require("../catalog").ProductService;
+      await ProductService.attachStoreProductsToWebsite(storeId, websiteId);
     }
 
     await Promise.all(

@@ -1,8 +1,9 @@
 // services/websiteService.js
-const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox, WebsiteContent } = require('../../models');
+const { Website, WebsiteTemplate, User, Staff, Package, WebsiteContent } = require('../../models');
 const subscriptionService = require('../billing').subscriptionService;
 const storeService = require('../stores').storeService;
 const storeSyncService = require('../commerce-sync').storeSyncService;
+const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
 const { logger } = require('../../utils/logger');
 const { DEPLOYMENT } = require('../../config/constants');
 
@@ -116,10 +117,7 @@ class WebsiteService {
 
       // Persist the exact projection in the same transaction. A failed HTTP
       // request can then be retried without recreating the website or trial.
-      await WebsiteSyncOutbox.create({
-        websiteId: website.id,
-        payload: website._ecommerceData,
-      }, { transaction });
+      await ecommerceSyncService.enqueueWebsiteSync(website.id, website._ecommerceData, { transaction });
 
       await transaction.commit();
 

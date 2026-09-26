@@ -38,6 +38,14 @@ class EcommerceSyncService {
   }
 
   /**
+   * Record a website projection for Commerce in the outbox. Pass the caller's
+   * transaction so the outbox row commits or rolls back with the website.
+   */
+  async enqueueWebsiteSync(websiteId, payload, { transaction } = {}) {
+    return WebsiteSyncOutbox.create({ websiteId, payload }, { transaction });
+  }
+
+  /**
    * Sync website data to ecommerce service
    */
   async syncWebsiteData(website) {

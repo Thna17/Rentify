@@ -38,6 +38,14 @@ adds the member to the target's `index.js` and rewrites the require. App
 wiring (`app.js`, `server.js`), models, migrations, scripts and tests are not
 checked.
 
+**Model ownership.** `src/modules/model-ownership.json` names the module(s)
+that may create, update or delete each model. Any module may read any model;
+to change another domain's rows, call the owning module's service.
+`npm run lint` fails on a static write from a non-owner, a model with no
+owner, or an import of a name `models/index.js` does not export. Add an entry
+under `exceptions` (with a reason) only when moving the write is not yet
+practical.
+
 ## Usage-based billing
 Rentify uses usage-based billing. Usage events are captured in the ecommerce service
 and billed monthly (ORDER_PAID, INVOICE_PAID, STORE_VIEW). No ops guarantees or
