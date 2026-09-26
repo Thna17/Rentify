@@ -1,5 +1,19 @@
 import { useEffect, useState } from 'react';
+import { Package, Truck, ImagePlus } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { Card, CardContent } from '@rentify/shared/ui/card';
+import { Input } from '@rentify/shared/ui/input';
+import { Label } from '@rentify/shared/ui/label';
+import { Textarea } from '@rentify/shared/ui/textarea';
+import { Button } from '@rentify/shared/ui/button';
+import { Badge } from '@rentify/shared/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@rentify/shared/ui/select';
 import { ImageUploader } from '../product-form/components/ImageUploader';
 import { uploadProductImages } from '../../services/productImages';
 
@@ -119,66 +133,251 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
     finally { setDeliveryBusy(false); }
   }
 
-  if (loading) return <div className="p-6">Loading catalog…</div>;
-  return <section className="space-y-6 p-4 md:p-6">
-    <div><h2 className="text-2xl font-bold">Store catalog</h2>
-      <p className="text-sm text-slate-600">One product ID, price, and stock balance for your storefront and the marketplace.</p></div>
-    <form onSubmit={saveDeliveryFee} className="rounded-xl border bg-white p-5">
-      <h3 className="text-lg font-semibold">Marketplace delivery fee</h3>
-      <p className="mt-1 text-sm text-slate-600">Post one flat fee per order. Buyers pay the shown fee with the product total on delivery. Enter 0 for free delivery.</p>
-      <div className="mt-4 flex flex-wrap items-end gap-3">
-        <label className="text-sm">Delivery fee (USD)
-          <input required type="number" min="0" max="1000" step="0.01" value={deliveryFee}
-            onChange={(event) => setDeliveryFee(event.target.value)} className="mt-1 block w-40 rounded border px-3 py-2" />
-        </label>
-        <button disabled={deliveryBusy || !storeId} className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">
-          {deliveryBusy ? 'Saving…' : deliveryPolicy ? 'Update fee' : 'Post fee'}
-        </button>
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-xs font-medium text-muted-foreground">Loading catalog…</span>
+        </div>
       </div>
-      {!deliveryPolicy && <p className="mt-3 text-sm text-amber-700">Post a fee before your approved products appear in the marketplace.</p>}
-    </form>
-    <form onSubmit={create} className="grid gap-3 rounded-xl border bg-white p-5 md:grid-cols-2">
-      <h3 className="text-lg font-semibold md:col-span-2">Add a product</h3>
-      <label className="text-sm">Name<input required maxLength={200} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2" /></label>
-      <label className="text-sm">Marketplace category<select required value={form.marketplaceCategory} onChange={(event) => setForm({ ...form, marketplaceCategory: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2"><option value="">Choose category</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
-      <label className="text-sm">Price (USD)<input required type="number" min="0.01" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2" /></label>
-      <label className="text-sm">Stock<input required type="number" min="0" step="1" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2" /></label>
-      <label className="text-sm md:col-span-2">Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2" /></label>
-      <div className="md:col-span-2">
-        <p className="text-sm font-medium text-slate-900">Product images</p>
-        <p className="mt-1 text-sm text-slate-600">Add up to 10 images. The first image becomes the cover.</p>
-        <ImageUploader
-          images={productImages}
-          onImagesChange={(files) => setProductImages((current) => [...current, ...files])}
-          onRemoveImage={(index) => setProductImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-          onValidationError={setImageErrors}
-          isUploading={busy}
-          uploadProgress={uploadProgress}
-        />
-        {imageErrors.length > 0 && (
-          <div role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-            {imageErrors.map((error) => <p key={error}>{error}</p>)}
-          </div>
+    );
+  }
+
+  return (
+    <div className="min-h-full">
+      <div className="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 space-y-6 md:space-y-8">
+        <div>
+          <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Store catalog</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            One product ID, price, and stock balance for your storefront and the marketplace.
+          </p>
+        </div>
+
+        {message && (
+          <p role="status" className="rounded-xl bg-primary/[0.06] px-4 py-3 text-sm text-primary">
+            {message}
+          </p>
         )}
+
+        <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Truck className="h-4 w-4" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground">Marketplace delivery fee</h3>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Post one flat fee per order. Buyers pay the shown fee with the product total on delivery. Enter 0 for free delivery.
+            </p>
+            <form onSubmit={saveDeliveryFee} className="mt-4 flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="delivery-fee">Delivery fee (USD)</Label>
+                <Input
+                  id="delivery-fee"
+                  required
+                  type="number"
+                  min="0"
+                  max="1000"
+                  step="0.01"
+                  value={deliveryFee}
+                  onChange={(event) => setDeliveryFee(event.target.value)}
+                  className="w-40 h-10 border-transparent [box-shadow:var(--shadow-soft)] bg-background"
+                />
+              </div>
+              <Button type="submit" disabled={deliveryBusy || !storeId} className="h-10">
+                {deliveryBusy ? 'Saving…' : deliveryPolicy ? 'Update fee' : 'Post fee'}
+              </Button>
+            </form>
+            {!deliveryPolicy && (
+              <p className="mt-3 text-sm text-amber-600">
+                Post a fee before your approved products appear in the marketplace.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Package className="h-4 w-4" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground">Add a product</h3>
+            </div>
+
+            <form onSubmit={create} className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="product-name">Name</Label>
+                <Input
+                  id="product-name"
+                  required
+                  maxLength={200}
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Marketplace category</Label>
+                <Select
+                  value={form.marketplaceCategory}
+                  onValueChange={(value) => setForm({ ...form, marketplaceCategory: value })}
+                >
+                  <SelectTrigger className="w-full h-9 border-transparent [box-shadow:var(--shadow-soft)] bg-background">
+                    <SelectValue placeholder="Choose category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="product-price">Price (USD)</Label>
+                <Input
+                  id="product-price"
+                  required
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(event) => setForm({ ...form, price: event.target.value })}
+                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="product-stock">Stock</Label>
+                <Input
+                  id="product-stock"
+                  required
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.stockQuantity}
+                  onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })}
+                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background"
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label htmlFor="product-description">Description</Label>
+                <Textarea
+                  id="product-description"
+                  value={form.description}
+                  onChange={(event) => setForm({ ...form, description: event.target.value })}
+                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background min-h-24"
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">Product images</p>
+                </div>
+                <p className="text-sm text-muted-foreground">Add up to 10 images. The first image becomes the cover.</p>
+                <ImageUploader
+                  images={productImages}
+                  onImagesChange={(files) => setProductImages((current) => [...current, ...files])}
+                  onRemoveImage={(index) => setProductImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                  onValidationError={setImageErrors}
+                  isUploading={busy}
+                  uploadProgress={uploadProgress}
+                />
+                {imageErrors.length > 0 && (
+                  <div role="alert" className="rounded-xl border border-destructive/20 bg-destructive/[0.06] p-3 text-sm text-destructive">
+                    {imageErrors.map((error) => <p key={error}>{error}</p>)}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Publication</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) => setForm({ ...form, status: value })}
+                >
+                  <SelectTrigger className="w-full h-9 border-transparent [box-shadow:var(--shadow-soft)] bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="md:col-span-2">
+                <Button type="submit" disabled={busy || !storeId} className="h-10">
+                  {busy ? (uploadProgress > 0 ? `Uploading ${uploadProgress}%…` : 'Saving…') : 'Save product'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
+          <CardContent className="p-6">
+            <h3 className="text-base font-semibold text-foreground mb-1">Your products</h3>
+            {products.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-2">No products yet.</p>
+            )}
+            <div className="mt-3 divide-y divide-border">
+              {products.map((product) => (
+                <div key={product.id} className="flex flex-wrap items-center gap-3 py-4 first:pt-0 last:pb-0">
+                  <div className="min-w-44 flex-1">
+                    <p className="font-medium text-foreground">{product.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-muted-foreground">${product.price} · Stock {product.stockQuantity}</p>
+                      <Badge variant={product.status === 'active' ? 'default' : 'subtle'} className="capitalize">
+                        {product.status}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <Select
+                    value={product.marketplaceCategory || ''}
+                    onValueChange={(value) => changeProduct(product, { marketplaceCategory: value })}
+                  >
+                    <SelectTrigger aria-label={`Category for ${product.name}`} className="h-9 border-transparent [box-shadow:var(--shadow-soft)] bg-background w-[180px]">
+                      <SelectValue placeholder="Choose category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
+                    className="border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
+                  >
+                    {product.status === 'active' ? 'Make draft' : 'Publish'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => changeProduct(product, { marketplaceVisibility: product.marketplaceVisibility === false ? null : false })}
+                    className="border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
+                  >
+                    {product.marketplaceVisibility === false ? 'Use Store visibility' : 'Hide from marketplace'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <label className="text-sm">Publication<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className="mt-1 block w-full rounded border px-3 py-2"><option value="draft">Draft</option><option value="active">Active</option></select></label>
-      <button disabled={busy || !storeId} className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">
-        {busy ? (uploadProgress > 0 ? `Uploading ${uploadProgress}%…` : 'Saving…') : 'Save product'}
-      </button>
-    </form>
-    <div className="rounded-xl border bg-white p-5">
-      <h3 className="text-lg font-semibold">Your products</h3>
-      {products.length === 0 && <p className="mt-3 text-slate-600">No products yet.</p>}
-      <div className="mt-3 divide-y">{products.map((product) => <div key={product.id} className="flex flex-wrap items-center gap-3 py-3">
-        <div className="min-w-44 flex-1"><p className="font-medium">{product.name}</p><p className="text-sm text-slate-600">${product.price} · Stock {product.stockQuantity} · {product.status}</p></div>
-        <select aria-label={`Category for ${product.name}`} value={product.marketplaceCategory || ''}
-          onChange={(event) => changeProduct(product, { marketplaceCategory: event.target.value })} className="rounded border px-2 py-1">
-          <option value="">Choose category</option>{categories.map((category) => <option key={category}>{category}</option>)}
-        </select>
-        <button disabled={busy} onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })} className="rounded border px-3 py-1">{product.status === 'active' ? 'Make draft' : 'Publish'}</button>
-        <button disabled={busy} onClick={() => changeProduct(product, { marketplaceVisibility: product.marketplaceVisibility === false ? null : false })} className="rounded border px-3 py-1">{product.marketplaceVisibility === false ? 'Use Store visibility' : 'Hide from marketplace'}</button>
-      </div>)}</div>
     </div>
-    {message && <p role="status" className="rounded bg-blue-50 p-3 text-blue-900">{message}</p>}
-  </section>;
+  );
 }

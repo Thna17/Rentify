@@ -24,7 +24,7 @@ class WebsiteController {
    * Create website with free trial
    */
   createWebsite = asyncHandler(async (req, res) => {
-    const { templateId, businessData, packageId } = req.body;
+    const { templateId, businessData, packageId, paymentId } = req.body;
     const userId = req.user.id;
 
     logger.info("Creating website", { userId, templateId, packageId });
@@ -34,6 +34,7 @@ class WebsiteController {
       templateId,
       businessData,
       packageId,
+      paymentId,
     });
 
     // Sync to ecommerce service (non-blocking)
@@ -48,7 +49,7 @@ class WebsiteController {
     res.status(201).json({
       success: true,
       data: website,
-      message: "Website created successfully with free trial",
+      message: "Website created successfully",
     });
   });
 

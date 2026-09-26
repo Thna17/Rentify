@@ -28,6 +28,13 @@ the database without changing the schema
    the Commerce copy and clears the public website cache
    ([deployment service](../rentify-server/src/services/deploymentService.js),
    [subdomain service](../rentify-server/src/services/hostedSubdomainService.js)).
+   A storefront still needs a template. If the merchant picks a brand colour
+   during onboarding, it is sent as `businessData.colorPalette` and Core merges
+   it into the template's `Color Palette` content
+   ([website service](../rentify-server/src/services/websiteService.js)).
+   An optional cover image is uploaded after creation with
+   `uploadImage?type=cover`, which replaces the website's `Hero Image` content
+   ([upload controller](../rentify-server/src/controllers/uploadController.js)).
 2. Core creates or reuses one Store for the owner, then creates a Website and
    trial subscription in one transaction, queues a
    Commerce projection in the same transaction, then asynchronously posts it

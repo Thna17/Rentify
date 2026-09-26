@@ -92,7 +92,7 @@ export function NavMain({ items, currentTab, onTabChange }) {
                     <button
                       type="button"
                       onClick={() => handleItemClick(item)}
-                      className={`group flex w-full items-center h-10 rounded-xl px-3 text-left text-[13.5px] font-medium transition-colors duration-150 ${
+                      className={`group flex w-full items-center h-10 rounded-xl px-3 text-left text-[13.5px] font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
                         isCurrentActive
                           ? 'bg-primary/[0.08] text-primary dark:bg-blue-950/30 dark:text-blue-400 font-semibold'
                           : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'

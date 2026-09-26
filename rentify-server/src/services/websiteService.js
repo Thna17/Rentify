@@ -10,7 +10,7 @@ class WebsiteService {
   /**
    * Create website with free trial
    */
-  async createWebsiteWithTrial({ userId, templateId, businessData, packageId }) {
+  async createWebsiteWithTrial({ userId, templateId, businessData, packageId, paymentId }) {
     const transaction = await Website.sequelize.transaction();
 
     try {
@@ -57,7 +57,8 @@ class WebsiteService {
         storeId: store.id,
         templateId,
         businessDetails: businessData,
-        pricing: { totalPrice: 0 }, // Free trial
+        // Paid plans are paid by KHQR before this point; free plans start a trial
+        pricing: { totalPrice: Number(packageData.price) > 0 ? Number(packageData.price) : 0 },
         limits: packageData.limits,
         name: businessData.name,
         status: DEPLOYMENT.STATUS.CUSTOMIZATION,
@@ -80,12 +81,20 @@ class WebsiteService {
       await store.update({ projectionVersion: store.projectionVersion + 1 }, { transaction });
       await storeSyncService.queueStore(store, { websiteId: website.id, transaction });
 
-      const subscription = await subscriptionService.createTrialSubscription(
-        userId,
-        packageId,
-        website.id,
-        transaction
-      );
+      const subscription = Number(packageData.price) > 0
+        ? await subscriptionService.createPaidSubscriptionForWebsite({
+          userId,
+          pkg: packageData,
+          paymentId,
+          websiteId: website.id,
+          transaction,
+        })
+        : await subscriptionService.createTrialSubscription(
+          userId,
+          packageId,
+          website.id,
+          transaction
+        );
       await website.update({ subscriptionId: subscription.id }, { transaction });
 
       // Prepare data for external services
@@ -245,7 +254,19 @@ class WebsiteService {
       return { url: newUrl };
     };
 
+    // Brand colours the merchant picked during onboarding (hex values only)
+    const HEX = /^#[0-9a-f]{6}$/i;
+    const brandPalette = Object.fromEntries(
+      Object.entries(businessData?.colorPalette || {}).filter(
+        ([key, color]) => ['primary', 'secondary', 'background'].includes(key) && HEX.test(String(color))
+      )
+    );
+
     const personalizationMap = {
+      'Color Palette': () =>
+        Object.keys(brandPalette).length
+          ? { ...(typeof value === 'object' && value !== null ? value : {}), ...brandPalette }
+          : value,
       'Website Name': () => (name ? wrapText(name, value) : value),
       'Site Title': () => (name ? wrapText(name, value) : value),
       'Store Name': () => (name ? wrapText(name, value) : value),

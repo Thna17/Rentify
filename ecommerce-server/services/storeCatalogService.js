@@ -231,7 +231,14 @@ async function listPublic(query = {}) {
   const where = eligibleProductWhere(query);
   const { count, rows } = await Product.findAndCountAll({
     where, include: [eligibleStore], distinct: true, subQuery: false,
-    order: [['createdAt', 'DESC']], offset: (page - 1) * limit, limit,
+    // Sellers' own uploaded (Cloudinary) photos outrank generic stock/demo
+    // images of the same product, so a mismatched stock photo never sits
+    // above a real one for the same listing.
+    order: [
+      [sequelize.literal("(JSON_EXTRACT(images, '$[0].url') LIKE '%res.cloudinary.com%')"), 'DESC'],
+      ['createdAt', 'DESC'],
+    ],
+    offset: (page - 1) * limit, limit,
   });
   const ratings = await ratingSummariesFor(rows.map((row) => row.id));
   const products = rows.map((row) => publicProduct(row, ratings.get(row.id)));

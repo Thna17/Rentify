@@ -19,7 +19,12 @@ import {
 } from '../../../components/site/motion';
 import { KhqrCard } from '../../../components/site/mockups/PaymentMocks';
 import PosMock from '../../../components/site/mockups/PosMock';
-import { LanguageMock } from '../../../components/site/mockups/StudioMocks';
+import { PhoneFrame, Screen, TabletFrame } from '../../../components/site/DeviceFrames';
+import storeEnglish from '../../../assets/site/store-language-en.jpg';
+import storeKhmer from '../../../assets/site/store-language-kh.jpg';
+
+// Set to an imported screenshot of the real merchant POS to replace the drawn one
+const POS_SCREENSHOT = null;
 import {
   Container,
   Eyebrow,
@@ -102,7 +107,13 @@ export const PosSection = () => {
           </Reveal>
         </div>
         <ScrollScale from={0.84} className="mx-auto mt-16 max-w-[1180px] md:mt-24">
-          <PosMock />
+          <TabletFrame>
+            {POS_SCREENSHOT ? (
+              <Screen src={POS_SCREENSHOT} alt="Rentify point of sale on an iPad" />
+            ) : (
+              <PosMock className="rounded-none bg-transparent p-0 shadow-none ring-0 md:rounded-none md:p-0" />
+            )}
+          </TabletFrame>
         </ScrollScale>
       </Container>
     </Section>
@@ -116,8 +127,21 @@ export const LanguageSection = () => {
     <Section tone="white">
       <Container className="grid items-center gap-16 lg:grid-cols-2">
         <div className="order-2 flex justify-center lg:order-1">
-          <Reveal className="w-full max-w-[360px] 2xl:max-w-[420px]">
-            <LanguageMock />
+          {/* The real Aura Botanicals store, in English and in Khmer */}
+          <Reveal className="flex w-full max-w-[520px] items-end justify-center">
+            {[
+              { src: storeEnglish, label: 'English', tilt: '-rotate-[4deg] translate-y-4' },
+              { src: storeKhmer, label: 'ខ្មែរ', tilt: 'rotate-[4deg] -ml-6 z-10' },
+            ].map(({ src, label, tilt }) => (
+              <div key={label} className={`relative w-1/2 ${tilt}`}>
+                <PhoneFrame>
+                  <Screen src={src} alt={`Aura Botanicals store in ${label}`} />
+                </PhoneFrame>
+                <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-[13px] font-medium text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06]">
+                  {label}
+                </span>
+              </div>
+            ))}
           </Reveal>
         </div>
         <div className="order-1 lg:order-2">

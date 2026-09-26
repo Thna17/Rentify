@@ -28,7 +28,7 @@ class StoreService {
     marketplaceEntitlement: 'pilot', needsCategoryReview: false,
   };
 
-  publicStoreAttributes = ['id', 'name', 'slug', 'primaryCategory'];
+  publicStoreAttributes = ['id', 'name', 'slug', 'primaryCategory', 'logoUrl'];
 
   async listPublicStores(ids) {
     if (typeof ids !== 'string' || !ids.trim()) return [];

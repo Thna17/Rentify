@@ -127,7 +127,7 @@ const STORES = [
     websiteNiche: 'grocery',
     productType: 'packaged',
     priceRange: [1, 4],
-    grouping: 'file',
+    grouping: 'munchie',
   },
   {
     ownerUserId: '11111111-cafe-4001-8001-000000000005',
@@ -235,6 +235,96 @@ async function upsertProduct(storeId, p) {
   return true;
 }
 
+const MUNCHIE_CATALOG = {
+  'IMG_3732 7.JPG': {
+    name: 'LyLy MOMO Corn Puffs (Milk Flavour)',
+    price: 1.00,
+    compareAtPrice: 1.25,
+    description: 'Crispy and delicious puffed corn rings made from Cambodian sweet corn with rich milk flavour.',
+  },
+  'IMG_3733 5.JPG': {
+    name: 'LyLy POP Squid Chips (Spicy Squid)',
+    price: 1.25,
+    compareAtPrice: 1.50,
+    description: 'Crunchy wavy snack chips with authentic spicy squid seasoning. No artificial colours.',
+  },
+  'IMG_3736 3.JPG': {
+    name: 'LyLy Crispy Jackfruit Puff Snack',
+    price: 1.50,
+    compareAtPrice: 1.80,
+    description: 'Healthy puffed and extruded snack crafted with natural Cambodian jackfruit. Gluten-free, no added MSG.',
+  },
+  'IMG_3737 3.JPG': {
+    name: 'LyLy Back to School Wheel Snack (Nom Kong)',
+    price: 0.75,
+    compareAtPrice: 1.00,
+    description: 'Iconic crunchy wheel-shaped snack, a childhood favourite across Cambodia. Crispy, savory, and light.',
+  },
+  'IMG_3739 3.JPG': {
+    name: 'LyLy Crispy Corn Roll (Milk Flavour)',
+    price: 1.00,
+    compareAtPrice: 1.25,
+    description: 'Hollow crispy corn rolls infused with sweet cream milk. Delightfully crispy and melt-in-your-mouth.',
+  },
+  'IMG_3740 3.JPG': {
+    name: 'LyLy Round Chips (Spicy Crab)',
+    price: 1.25,
+    compareAtPrice: 1.60,
+    description: 'Light and crunchy crinkle-cut round chips generously coated in savoury spicy crab seasoning.',
+    gallery: ['IMG_3743 3.JPG'],
+  },
+  'IMG_3741 3.JPG': {
+    name: 'LyLy Jasmine Rice Crackers (Assorted Flavours)',
+    price: 2.00,
+    compareAtPrice: 2.50,
+    description: 'Baked premium Cambodian jasmine rice crackers in 4 distinct varieties: Durian, Seaweed, Spicy, and Snow sweet.',
+  },
+  'IMG_3742 3.JPG': {
+    name: 'LyLy Triangle Chips (Cheese Flavor)',
+    price: 1.50,
+    compareAtPrice: 1.90,
+    description: 'Golden triangular crunchy tortilla chips coated with savory cheese seasoning. Perfect for dipping.',
+    gallery: ['IMG_3745.JPG'],
+  },
+  'IMG_3744 3.JPG': {
+    name: 'LyLy Turtle Snack (Spicy Flavor)',
+    price: 1.75,
+    compareAtPrice: 2.20,
+    description: 'Four-layer crispy turtle shell chips with a zesty, spicy crunch. Bursting with flavor in every bite.',
+    gallery: ['IMG_3751.JPG'],
+  },
+  'IMG_3746.JPG': {
+    name: 'LyLy Kiss Chocolate Wafers',
+    price: 2.50,
+    compareAtPrice: 3.00,
+    description: 'Crispy triple-layered wafer bars enrobed in smooth cocoa and filled with creamy milk chocolate.',
+  },
+  'IMG_3747.JPG': {
+    name: 'LyLy Touch Dubai Pistachio Chocolate Wafers',
+    price: 3.00,
+    compareAtPrice: 3.80,
+    description: 'Inspired by Dubai chocolate — premium cocoa-coated triple wafer bars filled with rich pistachio cream.',
+  },
+  'IMG_3748.JPG': {
+    name: 'LyLy Tic Tak Chocolate Hazelnut Wafers',
+    price: 2.50,
+    compareAtPrice: 3.00,
+    description: 'Triple crispy wafers with smooth hazelnut chocolate cream filling, coated in rich cocoa.',
+  },
+  'IMG_3749.JPG': {
+    name: 'LyLy Corn Hat (Tomyum Flavor)',
+    price: 1.50,
+    compareAtPrice: 1.90,
+    description: 'Fun cone-shaped corn snack with tangy, zesty Tom Yum herbs and spices. Extra crispy and addictive.',
+  },
+  'IMG_3750.JPG': {
+    name: 'LyLy Koko Momo Chocolate Milk 2-in-1 Corn Puffs',
+    price: 1.25,
+    compareAtPrice: 1.60,
+    description: 'Dual-flavour corn puffs blending rich chocolate and sweet milk rings in one delightful pack.',
+  },
+};
+
 /** Build the product list for one store from its seed-images folder. */
 async function buildProducts(store) {
   const base = path.join(IMG_BASE, store.slug);
@@ -279,6 +369,36 @@ async function buildProducts(store) {
         description: `${name}, listed by ${titleCase(store.slug)}.`,
         images,
         nicheAttributes: variants.length ? { variants } : {},
+      });
+    }
+    return products;
+  }
+
+  if (store.grouping === 'munchie') {
+    for (const [fileName, meta] of Object.entries(MUNCHIE_CATALOG)) {
+      const filePath = path.join(base, fileName);
+      if (!fs.existsSync(filePath)) continue;
+      const leadUrl = await uploadImage(filePath, store.slug);
+      if (!leadUrl) continue;
+      const images = [{ url: leadUrl, alt: meta.name }];
+      if (meta.gallery) {
+        for (const gFile of meta.gallery) {
+          const gPath = path.join(base, gFile);
+          if (fs.existsSync(gPath)) {
+            const gUrl = await uploadImage(gPath, store.slug);
+            if (gUrl) images.push({ url: gUrl, alt: `${meta.name} view` });
+          }
+        }
+      }
+      products.push({
+        name: meta.name,
+        price: meta.price,
+        compareAtPrice: meta.compareAtPrice,
+        marketplaceCategory: store.marketplaceCategory,
+        websiteNiche: store.websiteNiche,
+        productType: store.productType,
+        description: meta.description,
+        images,
       });
     }
     return products;

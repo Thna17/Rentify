@@ -65,11 +65,6 @@ const SiteFooter = () => {
     },
   ];
 
-  // Flattened into one compact row; the column grouping is no longer shown.
-  const links = columns.flatMap((column) => column.links).filter(
-    (link, index, all) => all.findIndex((other) => other.label === link.label) === index
-  );
-
   return (
     <footer
       className={cn(
@@ -77,45 +72,51 @@ const SiteFooter = () => {
         language === 'KH' ? 'font-site-kh' : 'font-site'
       )}
     >
-      <Container className="py-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
-          <Link to="/" className="inline-flex shrink-0 items-center gap-2">
-            <img src={rentifyLogo} alt="Rentify" className="h-6 w-6 rounded-[6px] object-cover ring-1 ring-black/10" />
-            <span className="text-[14px] font-bold tracking-tight text-[#1d1d1f]">Rentify</span>
-          </Link>
+      <Container className="py-10">
+        <div className="flex flex-col gap-10 sm:grid sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,1fr)] lg:gap-6">
+          <div className="flex flex-col gap-3">
+            <Link to="/" className="inline-flex shrink-0 items-center gap-2">
+              <img src={rentifyLogo} alt="Rentify" className="h-6 w-6 rounded-[6px] object-cover ring-1 ring-black/10" />
+              <span className="text-[14px] font-bold tracking-tight text-[#1d1d1f]">Rentify</span>
+            </Link>
+            {socials.length > 0 && (
+              <div className="flex shrink-0 items-center gap-1.5" aria-label={t('site.footer.social')}>
+                {socials.map((item) => {
+                  const Icon = SOCIAL_ICONS[item.id];
+                  return (
+                    <SmartLink
+                      key={item.id}
+                      to={item.url}
+                      aria-label={item.label}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1d1d1f] ring-1 ring-black/[0.06] transition-colors hover:bg-[#e8e8ed]"
+                    >
+                      <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
+                    </SmartLink>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-          <nav aria-label="Footer" className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1.5">
-            {links.map((link) => (
-              <SmartLink
-                key={link.label}
-                to={link.to}
-                className="text-[#424245] transition-colors hover:text-[#1d1d1f] hover:underline"
-              >
-                {link.label}
-              </SmartLink>
-            ))}
-          </nav>
-
-          {socials.length > 0 && (
-            <div className="flex shrink-0 items-center gap-1.5" aria-label={t('site.footer.social')}>
-              {socials.map((item) => {
-                const Icon = SOCIAL_ICONS[item.id];
-                return (
-                  <SmartLink
-                    key={item.id}
-                    to={item.url}
-                    aria-label={item.label}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1d1d1f] ring-1 ring-black/[0.06] transition-colors hover:bg-[#e8e8ed]"
-                  >
-                    <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
-                  </SmartLink>
-                );
-              })}
-            </div>
-          )}
+          {columns.map((column) => (
+            <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[#1d1d1f]">
+                {column.title}
+              </span>
+              {column.links.map((link) => (
+                <SmartLink
+                  key={link.label}
+                  to={link.to}
+                  className="text-[#424245] transition-colors hover:text-[#1d1d1f] hover:underline"
+                >
+                  {link.label}
+                </SmartLink>
+              ))}
+            </nav>
+          ))}
         </div>
 
-        <div className="mt-3 flex flex-col gap-2 border-t border-black/10 pt-3 md:flex-row md:items-center md:justify-between">
+        <div className="mt-8 flex flex-col gap-2 border-t border-black/10 pt-5 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             <span>© {new Date().getFullYear()} Rentify. {t('site.footer.rights')}</span>
             <SmartLink to={CONTACT.phoneHref} className="flex items-center gap-1.5 hover:text-[#1d1d1f]">

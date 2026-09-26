@@ -136,3 +136,28 @@ export const Screen = ({ src, alt, eager = false, className }) => (
     className={cn('block h-full w-full object-cover object-top', className)}
   />
 );
+
+// An iPad Pro–style tablet in landscape: aluminium edge, thin even bezel,
+// front camera on the long edge and the top button. Children fill the screen.
+export const TabletFrame = ({ className, screenClassName, children }) => (
+  <div className={cn('relative', className)}>
+    <span
+      aria-hidden
+      className="absolute -top-[0.7%] right-[12%] h-[1.1%] w-[7%] rounded-t-[3px] bg-[linear-gradient(180deg,#8e8e93,#3a3a3c)]"
+    />
+    <div className="rounded-[3.6%/4.8%] bg-[linear-gradient(145deg,#b8bbc0_0%,#6e7176_22%,#4a4c50_50%,#6e7176_78%,#b8bbc0_100%)] p-[0.45%] shadow-[0_60px_120px_-45px_rgba(0,0,0,0.55)]">
+      <div className="relative rounded-[3.3%/4.4%] bg-black p-[2.1%]">
+        <span
+          aria-hidden
+          className="absolute left-1/2 top-[1.05%] h-[0.9%] w-[0.68%] -translate-x-1/2 rounded-full bg-[#1c1d22] ring-1 ring-white/10"
+        />
+        <div
+          className={cn('relative aspect-[4/3] overflow-hidden rounded-[1.6%/2.1%] bg-white', screenClassName)}
+          style={{ containerType: 'inline-size' }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  </div>
+);

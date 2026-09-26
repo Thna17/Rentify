@@ -7,12 +7,8 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { SHOWCASE } from '../../../data/templateMedia';
 import { BrowserFrame, PhoneFrame, Screen } from '../../../components/site/DeviceFrames';
 import { EASE } from '../../../components/site/motion';
-import PosMock from '../../../components/site/mockups/PosMock';
-import {
-  CatalogMock,
-  InvoiceCard,
-  TelegramStack,
-} from '../../../components/site/mockups/CommerceMocks';
+import { STORE_SHOWCASE } from '../../../data/storeShowcase';
+import { InvoiceCard, TelegramStack } from '../../../components/site/mockups/CommerceMocks';
 import { ChevronLink } from '../../../components/site/ui';
 
 const ShowcaseVisual = ({ media }) => (
@@ -28,6 +24,54 @@ const ShowcaseVisual = ({ media }) => (
   </div>
 );
 
+// A real seeded store with its own product photos
+const StoreVisual = ({ store }) => (
+  <div className="w-full max-w-[460px] rounded-[24px] bg-white p-5 text-left shadow-[0_40px_90px_-40px_rgba(0,0,0,0.35)] ring-1 ring-black/[0.06]">
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center gap-2.5 min-w-0">
+        {store.logo && (
+          <img
+            src={store.logo}
+            alt={store.storeName}
+            className="h-7 w-7 rounded-full object-cover shrink-0 ring-1 ring-black/[0.08]"
+          />
+        )}
+        <p className="truncate text-[15px] font-semibold tracking-tight text-[#1d1d1f]">{store.storeName}</p>
+      </div>
+      <div className="flex shrink-0 gap-3 text-[11px] text-[#6e6e73]">
+        {store.links.map((link) => (
+          <span key={link}>{link}</span>
+        ))}
+      </div>
+    </div>
+    <div className="mt-4 grid grid-cols-2 gap-3">
+      {store.items.map((item, index) => (
+        <motion.div
+          key={item.name}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: EASE, delay: 0.1 + index * 0.08 }}
+        >
+          <div className={cn('overflow-hidden rounded-[14px] bg-[#f5f5f7]', store.aspect)}>
+            <img
+              src={item.image}
+              alt={item.name}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <p className="mt-2 text-[12px] font-medium text-[#1d1d1f]">{item.name}</p>
+          <p className="text-[11px] text-[#6e6e73]">
+            {item.price}
+            {item.was && <span className="ml-1.5 text-[#aeaeb2] line-through">{item.was}</span>}
+          </p>
+        </motion.div>
+      ))}
+    </div>
+  </div>
+);
+
 const SocialVisual = () => (
   <div className="relative flex w-full max-w-[460px] justify-end pb-28 pt-4">
     <InvoiceCard className="max-w-[320px]" />
@@ -37,12 +81,12 @@ const SocialVisual = () => (
   </div>
 );
 
-// Hash links from older pages (e.g. /solutions#cafe) open the matching tab
+// Hash links from older pages (e.g. /solutions#cafe or /solutions#snack) open the matching tab
 export const SEGMENTS = [
-  { id: 'fashion', visual: () => <CatalogMock /> },
+  { id: 'fashion', visual: () => <StoreVisual store={STORE_SHOWCASE.fashion} /> },
   { id: 'beauty', visual: () => <ShowcaseVisual media={SHOWCASE.beauty} />, template: true },
   { id: 'electronics', visual: () => <ShowcaseVisual media={SHOWCASE.tech} />, template: true },
-  { id: 'cafe', visual: () => <PosMock className="w-full" /> },
+  { id: 'snack', visual: () => <StoreVisual store={STORE_SHOWCASE.snack} /> },
   { id: 'social', visual: () => <SocialVisual /> },
 ];
 
@@ -54,7 +98,8 @@ const IndustrySwitcher = () => {
   const key = (name) => `site.solutions.segments.${active}.${name}`;
 
   useEffect(() => {
-    const fromHash = hash.replace('#', '');
+    let fromHash = hash.replace('#', '');
+    if (fromHash === 'cafe') fromHash = 'snack';
     if (SEGMENTS.some((item) => item.id === fromHash)) setActive(fromHash);
   }, [hash]);
 

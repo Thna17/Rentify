@@ -121,6 +121,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
   `,
   styles: [
     `
+      :host { display: block; height: 100%; }
       .product-card {
         display: flex;
         flex-direction: column;
@@ -706,8 +707,10 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         background: var(--color-bg-alt);
       }
       .product-body { padding: 12px 2px 0 !important; gap: 2px !important; }
-      .product-kicker { order: 3; min-height: 0 !important; margin: 0 !important; }
-      .product-kicker:empty { display: none; }
+      /* Fixed min-height so a card with no reviews takes the same space as
+         one with a rating row — otherwise cards in the same grid row end up
+         at different heights depending on whether they have reviews yet. */
+      .product-kicker { order: 3; min-height: 15px !important; margin: 0 !important; }
       .name {
         font-size: 14px !important; font-weight: 500 !important; line-height: 1.35 !important;
         font-family: var(--font-body) !important; color: var(--color-text) !important;

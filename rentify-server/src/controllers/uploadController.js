@@ -71,6 +71,34 @@ exports.uploadImage = async (req, res) => {
         console.warn('Failed to associate uploaded logo with website:', err);
       }
     }
+    // A cover chosen during onboarding replaces the template's stock banner photos
+    if (uploaded && req.query.type === 'cover') {
+      try {
+        const { WebsiteContent } = require('../models');
+        const websiteId = req.params.websiteId || req.website?.id;
+        if (websiteId) {
+          const existing = await WebsiteContent.findOne({ where: { websiteId, label: 'Hero Image' } });
+          if (existing) {
+            existing.value = [uploaded.url];
+            await existing.save();
+          } else {
+            await WebsiteContent.create({
+              websiteId,
+              category: 'Hero',
+              label: 'Hero Image',
+              type: 'image[]',
+              value: [uploaded.url],
+            });
+          }
+          const cache = require('../utils/cache');
+          if (cache && cache.invalidateWebsiteCache) {
+            await cache.invalidateWebsiteCache(websiteId);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to associate uploaded cover with website:', err);
+      }
+    }
     if (uploaded) return originalJson(uploaded);
     return originalJson(payload);
   };

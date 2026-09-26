@@ -116,6 +116,58 @@ class ProductBuilder {
     const optionErrors = this.strategy.validateOptions(this.options);
     errors.push(...optionErrors);
 
+    // Duplicate option validation and color limit
+    if (Array.isArray(this.options)) {
+      const seenOptionNames = new Set();
+      let colorCount = 0;
+      for (const opt of this.options) {
+        const name = (opt.name || '').trim().toLowerCase();
+        if (name) {
+          if (seenOptionNames.has(name)) {
+            errors.push(`Duplicate option name "${opt.name}" is not allowed`);
+          }
+          seenOptionNames.add(name);
+        }
+        if (opt.type === 'color' || name === 'color') {
+          colorCount++;
+        }
+        if (Array.isArray(opt.values)) {
+          const seenVals = new Set();
+          for (const val of opt.values) {
+            const valStr = (typeof val === 'string' ? val : (val?.value || '')).trim().toLowerCase();
+            if (valStr) {
+              if (seenVals.has(valStr)) {
+                errors.push(`Duplicate value "${typeof val === 'string' ? val : val?.value}" in option "${opt.name}"`);
+              }
+              seenVals.add(valStr);
+            }
+          }
+        }
+      }
+      if (colorCount > 1) {
+        errors.push('Only one Color option is allowed per product');
+      }
+    }
+
+    // Variant uniqueness validation
+    if (Array.isArray(this.variants) && this.variants.length > 0) {
+      const seenCombos = new Set();
+      for (const variant of this.variants) {
+        if (variant.optionValues && typeof variant.optionValues === 'object') {
+          const comboKey = Object.entries(variant.optionValues)
+            .sort(([k1], [k2]) => k1.localeCompare(k2))
+            .map(([k, v]) => `${k.toLowerCase()}:${String(v).toLowerCase()}`)
+            .join('|');
+          if (comboKey) {
+            if (seenCombos.has(comboKey)) {
+              errors.push(`Duplicate variant combination: ${comboKey}`);
+            }
+            seenCombos.add(comboKey);
+          }
+        }
+      }
+    }
+
     return errors;
   }
 

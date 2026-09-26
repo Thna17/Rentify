@@ -29,7 +29,7 @@ const Navigation = () => {
       href: '/solutions', 
       label: t('nav.solutions'),
       dropdown: [
-        { href: '/solutions#cafe', label: 'Cafes & Restaurants', icon: '☕' },
+        { href: '/solutions#snack', label: 'Snack Stores', icon: '🍿' },
         { href: '/solutions#fashion', label: 'Fashion Boutiques', icon: '👕' },
         { href: '/solutions#electronics', label: 'Electronics Stores', icon: '📱' }
       ]

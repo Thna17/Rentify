@@ -19,7 +19,7 @@ import { PromoCardComponent } from '../components/shared/ui/promo-card/promo-car
 import { PROMO_SLOTS } from '../core/promos/promos.data';
 import { HomeHeroComponent } from '../components/user/home/home-hero/home-hero.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
-import { Category, Product } from '../core/catalog/catalog.models';
+import { Category, Product, isCuratedProduct, isCuratedStore } from '../core/catalog/catalog.models';
 
 interface CategoryShelf {
   slug: string;
@@ -182,7 +182,7 @@ interface CategoryShelf {
       <a routerLink="/products" [queryParams]="promoSlots.smartphones.params" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
     </div>
     <div class="phones" [class.solo]="!phones().length">
-      <app-promo-card [promo]="promoSlots.smartphones" />
+      <app-promo-card class="phones-promo" [promo]="promoSlots.smartphones" format="featured" />
       @if (phones().length) {
         <div class="phone-grid">
           @for (product of phones(); track product.id) {
@@ -205,21 +205,6 @@ interface CategoryShelf {
     </section>
   }
 
-  <section class="container section collections-section">
-    <div class="section-head collections-head">
-      <div>
-        <h2>Featured collections</h2>
-        <p class="collections-subtitle">Handpicked selections to help you discover the best of Cambodia.</p>
-      </div>
-      <a routerLink="/categories" class="see-all">View all collections <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
-    </div>
-
-    <div class="fc-grid">
-      @for (c of promoSlots.collections; track c.id) {
-        <app-promo-card [promo]="c" />
-      }
-    </div>
-  </section>
 
   <section class="container section">
     <div class="section-head"><h2>Popular stores</h2><a routerLink="/stores" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a></div>
@@ -316,67 +301,6 @@ interface CategoryShelf {
     }
   </section>
 
-  <section class="container section">
-    <div class="newsletter">
-      <div class="newsletter-copy">
-        <h2>Get the best deals first</h2>
-        <p>New arrivals, seller offers and flash sales — once a week, no spam.</p>
-      </div>
-      @if (subscribed()) {
-        <p class="newsletter-done"><ui-icon name="check-circle" [size]="18" /> You're on the list. Thanks for subscribing!</p>
-      } @else {
-        <form class="newsletter-form" (submit)="subscribe($event, email.value)">
-          <label class="sr-only" for="newsletter-email">Email address</label>
-          <input #email id="newsletter-email" type="email" required placeholder="Enter your email" autocomplete="email" />
-          <button type="submit">Subscribe</button>
-        </form>
-      }
-    </div>
-  </section>
-
-  <section class="container section payment-methods-section">
-    <div class="payment-section-box">
-      <div class="payment-header">
-        <span class="payment-eyebrow">Payment Options</span>
-        <h2>Flexible & secure payments for every purchase</h2>
-        <p>Currently supporting Cash on Delivery across Cambodia, with Bakong KHQR, ABA PayWay, and Card payments coming soon!</p>
-      </div>
-      <div class="payment-grid">
-        <div class="payment-card active">
-          <div class="payment-card-top">
-            <span class="payment-card-icon"><ui-icon name="banknote" [size]="22" [strokeWidth]="1.8" /></span>
-            <span class="payment-pill active">Available Now</span>
-          </div>
-          <h3>Cash on Delivery</h3>
-          <p>Pay with cash directly when your package is delivered to your doorstep. Safe, convenient, and available for all stores.</p>
-        </div>
-        <div class="payment-card upcoming">
-          <div class="payment-card-top">
-            <span class="payment-card-icon"><ui-icon name="qr-code" [size]="22" [strokeWidth]="1.8" /></span>
-            <span class="payment-pill upcoming">Coming Soon</span>
-          </div>
-          <h3>Bakong KHQR (Scan to Pay)</h3>
-          <p>Instant digital transfer via KHQR. Scan using ABA, Canadia, Wing, ACLEDA, or any National Bank of Cambodia Bakong app.</p>
-        </div>
-        <div class="payment-card upcoming">
-          <div class="payment-card-top">
-            <span class="payment-card-icon"><ui-icon name="wallet" [size]="22" [strokeWidth]="1.8" /></span>
-            <span class="payment-pill upcoming">Coming Soon</span>
-          </div>
-          <h3>ABA PayWay</h3>
-          <p>Seamless one-tap mobile checkout directly with your ABA Mobile account or debit card for effortless purchases.</p>
-        </div>
-        <div class="payment-card upcoming">
-          <div class="payment-card-top">
-            <span class="payment-card-icon"><ui-icon name="credit-card" [size]="22" [strokeWidth]="1.8" /></span>
-            <span class="payment-pill upcoming">Coming Soon</span>
-          </div>
-          <h3>Credit / Debit Cards</h3>
-          <p>Accepting Visa, Mastercard, and UnionPay. Enterprise-grade 256-bit SSL encryption to keep every card transaction secure.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <app-footer></app-footer>
   `,
@@ -391,12 +315,29 @@ interface CategoryShelf {
     }
 
     /* ---------- smartphones */
-    .phones { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .phones {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
     .phones.solo { grid-template-columns: 1fr; }
-    .phone-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-    @media (max-width: 1180px) { .phone-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .phone-grid > :nth-child(n + 4) { display: none; } }
+    .phones-promo {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 100%;
+    }
+    .phone-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      align-items: stretch;
+    }
+    
     @media (max-width: 900px) {
       .phones { grid-template-columns: 1fr; }
+      .phones-promo { height: auto; min-height: 380px; }
       .phone-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .phone-grid > :nth-child(n + 3) { display: none; }
     }
@@ -584,8 +525,8 @@ interface CategoryShelf {
 
     .discover-grid {
       display: grid;
-      gap: 18px;
-      grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       margin-top: 28px;
     }
     .discover-more {
@@ -930,119 +871,7 @@ interface CategoryShelf {
     .confidence-item strong { color: var(--color-text); display: block; font-size: 12px; }
     .confidence-item small { color: var(--color-text-muted); display: block; font-size: 10px; line-height: 1.35; margin-top: 2px; }
 
-    .payment-methods-section {
-      margin-top: 14px;
-      margin-bottom: 0;
-    }
-    .payment-section-box {
-      background: var(--color-bg-alt);
-      border: 1px solid var(--color-border);
-      border-radius: 18px;
-      padding: clamp(24px, 3vw, 36px) !important;
-    }
-    .payment-header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .payment-eyebrow {
-      color: var(--color-accent);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .09em;
-      text-transform: uppercase;
-    }
-    .payment-header h2 {
-      color: var(--color-text);
-      font-size: clamp(22px, 2vw, 30px);
-      line-height: 1.15;
-      margin: 7px 0 7px;
-    }
-    .payment-header p {
-      color: var(--color-text-muted);
-      font-size: 13px;
-      max-width: 580px;
-      margin: 0 auto;
-      line-height: 1.5;
-    }
-    .payment-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-    .payment-card {
-      background: #ffffff;
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      padding: 20px 18px;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .payment-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
-    }
-    .payment-card.active {
-      border-color: rgba(52, 211, 153, 0.5);
-      background: linear-gradient(180deg, #f9fdfa 0%, #ffffff 100%);
-    }
-    .payment-card.upcoming {
-      border-style: dashed;
-      background: #fdfdfd;
-    }
-    .payment-card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .payment-card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--color-accent-soft);
-      color: var(--color-accent);
-    }
-    .payment-card.active .payment-card-icon {
-      background: #e6f4ea;
-      color: #137333;
-    }
-    .payment-pill {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      padding: 2.5px 8px;
-      border-radius: 999px;
-    }
-    .payment-pill.active {
-      background: #e6f4ea;
-      color: #137333;
-    }
-    .payment-pill.upcoming {
-      background: #fef7e0;
-      color: #b06000;
-      border: 1px solid rgba(176, 96, 0, 0.2);
-    }
-    .payment-card h3 {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: var(--color-text);
-      margin: 0 0 6px 0;
-    }
-    .payment-card p {
-      font-size: 12px;
-      color: var(--color-text-muted);
-      line-height: 1.45;
-      margin: 0;
-      flex: 1;
-    }
-
     @media (max-width: 980px) {
-      .payment-grid { grid-template-columns: repeat(2, 1fr); }
       .hero-inner { grid-template-columns: 1fr; }
       .confidence-grid { grid-template-columns: 1fr 1fr; gap: 16px 0; }
       .confidence-item:nth-child(2) { border-right: 0; }
@@ -1065,8 +894,6 @@ interface CategoryShelf {
       .stores-marquee { padding-inline: 16px; }
       .store-chip { flex-basis: 250px; max-width: 250px; min-width: 250px; width: 250px; }
       .purchase-confidence { padding: 22px 18px !important; }
-      .payment-section-box { padding: 22px 18px !important; }
-      .payment-grid { grid-template-columns: 1fr; }
       .purchase-copy { margin-bottom: 18px; text-align: left; }
       .confidence-grid { grid-template-columns: 1fr; gap: 0; }
       .confidence-item, .confidence-item:nth-child(3) { border-bottom: 1px solid var(--color-border); border-right: 0; padding: 12px 0; }
@@ -1128,7 +955,12 @@ export class HomeComponent {
     this.catalog
       .allProducts()
       .filter((p) => p.status !== 'out-of-stock' && !!p.compareAtPrice && p.compareAtPrice > p.price)
-      .sort((a, b) => b.compareAtPrice! / b.price - a.compareAtPrice! / a.price)
+      .sort((a, b) => {
+        const aCurated = isCuratedProduct(a);
+        const bCurated = isCuratedProduct(b);
+        if (aCurated !== bCurated) return aCurated ? -1 : 1;
+        return b.compareAtPrice! / b.price - a.compareAtPrice! / a.price;
+      })
       .slice(0, 16),
   );
 
@@ -1147,7 +979,7 @@ export class HomeComponent {
       .allProducts()
       .filter((p) => p.subcategorySlug === 'phones-tablets' && p.status !== 'out-of-stock')
       .sort((a, b) => this.discoveryScore(b) - this.discoveryScore(a))
-      .slice(0, 4),
+      .slice(0, 8),
   );
 
   readonly trending = computed(() =>
@@ -1180,7 +1012,11 @@ export class HomeComponent {
 
   // Keep the home tiles in the same canonical order as the navigation menu.
   readonly categories = computed(() => this.catalog.categories);
-  readonly stores = computed(() => this.catalog.allStores());
+  readonly stores = computed(() => {
+    const all = this.catalog.allStores();
+    const curated = all.filter((s) => isCuratedStore(s));
+    return curated.length > 0 ? curated : all;
+  });
 
   /**
    * One poster per category that actually has real inventory — real product
@@ -1284,7 +1120,7 @@ export class HomeComponent {
   protected selectDiscoverCategory(slug: string): void {
     this.discoverCategory.set(slug);
     this.discoverSubcategory.set('all');
-    this.discoverRows.set(4);
+    this.discoverRows.set(6);
   }
 
   /** Departments present in live inventory, fullest first. */
@@ -1353,10 +1189,10 @@ export class HomeComponent {
    */
   private readonly discoverGrid = viewChild<ElementRef<HTMLElement>>('discoverGrid');
   readonly discoverColumns = signal(4);
-  readonly discoverRows = signal(4);
+  readonly discoverRows = signal(6);
 
   protected showMoreRows(): void {
-    this.discoverRows.update((rows) => rows + 2);
+    this.discoverRows.update((rows) => rows + 3);
   }
 
   private measureColumns(): void {
@@ -1571,6 +1407,9 @@ export class HomeComponent {
    * sales and reviews arrive, the earned signals take over on their own.
    */
   private discoveryScore(product: Product): number {
+    const isCurated = isCuratedProduct(product);
+    // Prioritize products from user-created stores with real images; external image URL products are sent to the back
+    const curatedBoost = isCurated ? 2000 : 0;
     const orderable = product.status === 'out-of-stock' ? -1000 : 100;
     const sales = Math.min(product.soldCount, 500) * 0.8;
     const reviewConfidence = product.reviewCount > 0
@@ -1588,7 +1427,7 @@ export class HomeComponent {
     // 0.15 reaches every one of them.
     const freshness = Math.max(0, 30 - ageInDays) * 0.15;
     const rotation = this.rotationValue(product.id) * 60;
-    return orderable + sales + reviewConfidence + freshness + rotation;
+    return curatedBoost + orderable + sales + reviewConfidence + freshness + rotation;
   }
 
 

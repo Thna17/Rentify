@@ -37,11 +37,15 @@ import marketplacePreview from "../../assets/site/onboarding-marketplace.png";
 import posPreview from "../../assets/site/onboarding-pos.png";
 
 import SiteFooter from "../../components/site/SiteFooter";
+import CtaBand from "../../components/site/CtaBand";
 import useStartTrial from "../../hooks/useStartTrial";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PlanCards from "../pricing/components/PlanCards";
 import { Container, Heading, Lead, Section } from "../../components/site/ui";
 import { Reveal } from "../../components/site/motion";
+
+import { HomeFaq, HomeSolutions, HomeTemplates } from './components/HomeHighlights';
+import { LanguageSection, PaymentsSection, PosSection } from '../feature/components/FeatureShowcases';
 
 const RentifyLaptopShowcase = React.lazy(() => import('./components/RentifyLaptopShowcase'));
 // --- Enhanced Hero Section ---
@@ -499,40 +503,6 @@ const PricingSection = () => {
 };
 
 // --- Final CTA Section ---
-const FinalCTASection = () => (
-  <section className="py-16 md:py-24 bg-gradient-to-r from-blue-600 to-teal-500 text-white">
-    <div className="container text-center">
-      <h2 className="text-3xl font-bold md:text-4xl mb-4">Ready to Transform Your Business?</h2>
-      <p className="text-lg mb-8 max-w-2xl mx-auto opacity-90">
-        Join hundreds of Cambodian businesses already using Rentify to save time and grow faster.
-      </p>
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
-        <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8">
-          <Zap className="mr-2 h-4 w-4" /> Start Your Free Trial
-        </Button>
-        <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-          Schedule a Demo
-        </Button>
-      </div>
-      <div className="mt-6 flex justify-center items-center gap-6 text-sm opacity-80">
-        <div className="flex items-center">
-          <Users className="h-4 w-4 mr-1" />
-          <span>500+ Cambodian Businesses</span>
-        </div>
-        <div className="flex items-center">
-          <Shield className="h-4 w-4 mr-1" />
-          <span>Secure & Reliable</span>
-        </div>
-        <div className="flex items-center">
-          <Clock className="h-4 w-4 mr-1" />
-          <span>5-Minute Setup</span>
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-// --- Main Homepage Component ---
 const Homepage = () => {
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -548,27 +518,43 @@ const Homepage = () => {
       {/* Social Proof */}
       <SocialProof />
       
-      {/* How It Works */}
-      <HowItWorks />
-
       {/* Scroll-driven product story */}
       <React.Suspense
         fallback={<section className="h-screen bg-gradient-to-b from-white to-blue-50" aria-label="Loading product showcase" />}
       >
         <RentifyLaptopShowcase />
       </React.Suspense>
-      
+
+      {/* How It Works */}
+      <HowItWorks />
+
       {/* Feature Showcase */}
       <FeatureShowcase />
-      
+
+      {/* KHQR payments and the POS on iPad, shared with the Features page */}
+      <PaymentsSection />
+      <PosSection />
+
+      {/* Business types, shared with the Solutions page */}
+      <HomeSolutions />
+
+      {/* Store templates, shared with the Templates page */}
+      <HomeTemplates />
+
+      {/* Khmer and English storefronts */}
+      <LanguageSection />
+
       {/* Local Features */}
       <LocalFeatures />
-      
+
       {/* Pricing */}
       <PricingSection />
+
+      {/* Questions, shared with the Pricing page */}
+      <HomeFaq />
       
       {/* Final CTA */}
-      <FinalCTASection />
+      <CtaBand />
       
       {/* Footer */}
       <SiteFooter />

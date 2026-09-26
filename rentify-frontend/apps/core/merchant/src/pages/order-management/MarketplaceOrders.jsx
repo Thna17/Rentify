@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+import { PackageSearch, RefreshCw, CheckCircle2, Undo2 } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { Card, CardContent } from '@rentify/shared/ui/card';
+import { Input } from '@rentify/shared/ui/input';
+import { Label } from '@rentify/shared/ui/label';
+import { Button } from '@rentify/shared/ui/button';
+import { Badge } from '@rentify/shared/ui/badge';
+import { Checkbox } from '@rentify/shared/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@rentify/shared/ui/select';
 
 const api = `${ECOMMERCE_API_ROOT}/api`;
+const fieldClass = 'border-transparent [box-shadow:var(--shadow-soft)] bg-background';
 
 async function request(url, options = {}) {
   const response = await fetch(url, { credentials: 'include', ...options });
@@ -81,77 +96,220 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
     finally { setBusy(false); }
   }
 
-  if (loading) return <div className="p-6">Loading COD orders…</div>;
-  return <section className="space-y-5 p-4 md:p-6">
-    <div className="flex items-center justify-between gap-3">
-      <div><h2 className="text-2xl font-bold">COD orders</h2>
-        <p className="text-sm text-slate-600">Deliver orders, collect cash directly, and record any refund.</p></div>
-      <button type="button" disabled={!storeId || busy} onClick={() => load(storeId).catch((error) => setMessage(error.message))}
-        className="rounded border px-3 py-2 text-sm">Refresh</button>
-    </div>
-    {message && <p role="status" className="rounded bg-blue-50 p-3 text-sm text-blue-900">{message}</p>}
-    {!orders.length && <p className="rounded border bg-white p-5">No COD orders yet.</p>}
-    {!!orders.length && <div className="grid gap-5 lg:grid-cols-[minmax(14rem,1fr)_minmax(20rem,2fr)]">
-      <div className="space-y-2">
-        {orders.map((order) => <button key={order.id} type="button" onClick={() => setSelectedId(order.id)}
-          className={`w-full rounded-lg border p-4 text-left ${selectedId === order.id ? 'border-blue-600 bg-blue-50' : 'bg-white'}`}>
-          <strong className="block">{order.orderNumber || order.id.slice(0, 8)}</strong>
-          <span className="text-sm">{order.salesChannel === 'storefront' ? 'Storefront' : 'Marketplace'} · {order.customerInfo?.name} · ${order.totalAmount} · {order.deliveryStatus}</span>
-        </button>)}
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-xs font-medium text-muted-foreground">Loading COD orders…</span>
+        </div>
       </div>
-      {selected && <div className="space-y-5 rounded-xl border bg-white p-5">
-        <div><h3 className="text-lg font-semibold">Order {selected.orderNumber || selected.id}</h3>
-          <p className="text-sm">Delivery: {selected.deliveryStatus} · COD: {selected.payment?.status || 'unknown'}</p></div>
-        <div className="grid gap-1 text-sm">
-          <p>Buyer: {selected.customerInfo?.name} · {selected.customerInfo?.phone}</p>
-          <p>Address: {selected.shippingInfo?.address}</p>
-          {selected.items.map((item) => <p key={item.productId}>{item.quantity} × {item.name} · ${item.total}</p>)}
-          <p>Products: ${selected.subtotal} · Delivery: ${selected.deliveryFee}</p>
-          <p className="font-semibold">Cash due: ${selected.totalAmount}</p>
-          <p>Collected: ${selected.payment?.collectedAmount || '0.00'} · Refunded: ${selected.payment?.refundedAmount || '0.00'}</p>
+    );
+  }
+
+  return (
+    <div className="min-h-full">
+      <div className="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 space-y-6 md:space-y-8">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-[28px] font-semibold tracking-tight text-foreground">COD orders</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Deliver orders, collect cash directly, and record any refund.
+            </p>
+          </div>
+          <Button
+            type="button"
+            disabled={!storeId || busy}
+            onClick={() => load(storeId).catch((error) => setMessage(error.message))}
+            className="h-10 border-transparent [box-shadow:var(--shadow-soft)] bg-card text-foreground hover:bg-muted/60"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
         </div>
-        {['pending', 'retrying'].includes(selected.deliveryStatus) && <div className="space-y-3 border-t pt-4">
-          <button type="button" disabled={busy} onClick={() => act('delivered')}
-            className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Mark delivered</button>
-          <form onSubmit={(event) => { event.preventDefault(); act('delivery_failed', { reason, resolution }); }} className="grid gap-2">
-            <label className="text-sm">Failed delivery reason<input required maxLength={500} value={reason}
-              onChange={(event) => setReason(event.target.value)} className="mt-1 block w-full rounded border px-3 py-2" /></label>
-            <label className="text-sm">Next step<select value={resolution} onChange={(event) => setResolution(event.target.value)}
-              className="ml-2 rounded border px-2 py-1"><option value="retry">Wait for buyer-approved retry</option>
-              <option value="cancel">Cancel and restore stock</option></select></label>
-            <button disabled={busy} className="w-fit rounded border px-4 py-2 disabled:opacity-50">Record failed delivery</button>
-          </form>
-        </div>}
-        {selected.deliveryStatus === 'failed' && selected.status !== 'cancelled' && <div className="space-y-2 border-t pt-4">
-          <label className="flex gap-2 text-sm"><input type="checkbox" checked={buyerAgreed}
-            onChange={(event) => setBuyerAgreed(event.target.checked)} />Buyer agreed to another delivery attempt</label>
-          <button type="button" disabled={busy || !buyerAgreed} onClick={() => act('retry_delivery', { buyerAgreed: true })}
-            className="rounded border px-4 py-2 disabled:opacity-50">Retry delivery</button>
-        </div>}
-        {selected.deliveryStatus === 'delivered' && selected.payment?.status === 'pending' && <div className="border-t pt-4">
-          <button type="button" disabled={busy} onClick={() => act('collect_cod', { amount: selected.totalAmount })}
-            className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Confirm ${selected.totalAmount} cash collected</button>
-        </div>}
-        {selected.payment?.status === 'paid' && <form onSubmit={(event) => { event.preventDefault(); act('confirm_refund', refund); }}
-          className="grid gap-2 border-t pt-4">
-          <h4 className="font-semibold">Record direct refund</h4>
-          <input required type="number" min="0.01" max={Number(selected.payment.collectedAmount) - Number(selected.payment.refundedAmount)}
-            step="0.01" placeholder="Amount (USD)" value={refund.amount}
-            onChange={(event) => setRefund({ ...refund, amount: event.target.value })} className="rounded border px-3 py-2" />
-          <input required maxLength={80} placeholder="Refund method" value={refund.method}
-            onChange={(event) => setRefund({ ...refund, method: event.target.value })} className="rounded border px-3 py-2" />
-          <input required maxLength={500} placeholder="Confirmation reference" value={refund.confirmation}
-            onChange={(event) => setRefund({ ...refund, confirmation: event.target.value })} className="rounded border px-3 py-2" />
-          <button disabled={busy} className="w-fit rounded border px-4 py-2 disabled:opacity-50">Confirm refund</button>
-        </form>}
-        <div className="border-t pt-4"><h4 className="font-semibold">Activity</h4>
-          {!events.length && <p className="text-sm text-slate-500">No activity recorded yet.</p>}
-          {events.map((event) => <p key={event.id} className="mt-2 text-sm">
-            {event.type.replaceAll('_', ' ')} · {new Date(event.createdAt).toLocaleString()}
-            {event.details?.reason ? ` · ${event.details.reason}` : ''}
-          </p>)}
-        </div>
-      </div>}
-    </div>}
-  </section>;
+
+        {message && (
+          <p role="status" className="rounded-xl bg-primary/[0.06] px-4 py-3 text-sm text-primary">
+            {message}
+          </p>
+        )}
+
+        {!orders.length && (
+          <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
+            <CardContent className="p-16 flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+              <PackageSearch className="h-8 w-8 opacity-40" />
+              <p className="text-sm">No COD orders yet.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {!!orders.length && (
+          <div className="grid gap-5 lg:grid-cols-[minmax(14rem,1fr)_minmax(20rem,2fr)]">
+            <div className="space-y-2">
+              {orders.map((order) => (
+                <button
+                  key={order.id}
+                  type="button"
+                  onClick={() => setSelectedId(order.id)}
+                  className={`w-full rounded-xl border-transparent [box-shadow:var(--shadow-soft)] p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/30 transition-colors ${
+                    selectedId === order.id ? 'bg-primary/[0.08] text-primary' : 'bg-card hover:bg-muted/40'
+                  }`}
+                >
+                  <strong className="block font-semibold">{order.orderNumber || order.id.slice(0, 8)}</strong>
+                  <span className="text-sm text-muted-foreground">
+                    {order.salesChannel === 'storefront' ? 'Storefront' : 'Marketplace'} · {order.customerInfo?.name} · ${order.totalAmount} · {order.deliveryStatus}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {selected && (
+              <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
+                <CardContent className="p-6 space-y-5">
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">Order {selected.orderNumber || selected.id}</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Delivery: {selected.deliveryStatus} · COD: {selected.payment?.status || 'unknown'}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-1.5 text-sm text-foreground">
+                    <p>Buyer: {selected.customerInfo?.name} · {selected.customerInfo?.phone}</p>
+                    <p>Address: {selected.shippingInfo?.address}</p>
+                    {selected.items.map((item) => (
+                      <p key={item.productId}>{item.quantity} × {item.name} · ${item.total}</p>
+                    ))}
+                    <p className="text-muted-foreground">Products: ${selected.subtotal} · Delivery: ${selected.deliveryFee}</p>
+                    <p className="font-semibold">Cash due: ${selected.totalAmount}</p>
+                    <p className="text-muted-foreground">
+                      Collected: ${selected.payment?.collectedAmount || '0.00'} · Refunded: ${selected.payment?.refundedAmount || '0.00'}
+                    </p>
+                  </div>
+
+                  {['pending', 'retrying'].includes(selected.deliveryStatus) && (
+                    <div className="space-y-4 border-t border-border pt-5">
+                      <Button type="button" disabled={busy} onClick={() => act('delivered')} className="h-10">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Mark delivered
+                      </Button>
+
+                      <form onSubmit={(event) => { event.preventDefault(); act('delivery_failed', { reason, resolution }); }} className="grid gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="failed-reason">Failed delivery reason</Label>
+                          <Input
+                            id="failed-reason"
+                            required
+                            maxLength={500}
+                            value={reason}
+                            onChange={(event) => setReason(event.target.value)}
+                            className={fieldClass}
+                          />
+                        </div>
+                        <div className="space-y-1.5 w-fit">
+                          <Label>Next step</Label>
+                          <Select value={resolution} onValueChange={setResolution}>
+                            <SelectTrigger className={`w-full h-9 ${fieldClass}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="retry">Wait for buyer-approved retry</SelectItem>
+                              <SelectItem value="cancel">Cancel and restore stock</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type="submit"
+                          disabled={busy}
+                          className="w-fit border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
+                        >
+                          Record failed delivery
+                        </Button>
+                      </form>
+                    </div>
+                  )}
+
+                  {selected.deliveryStatus === 'failed' && selected.status !== 'cancelled' && (
+                    <div className="space-y-3 border-t border-border pt-5">
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <Checkbox checked={buyerAgreed} onCheckedChange={(value) => setBuyerAgreed(Boolean(value))} />
+                        Buyer agreed to another delivery attempt
+                      </label>
+                      <Button
+                        type="button"
+                        disabled={busy || !buyerAgreed}
+                        onClick={() => act('retry_delivery', { buyerAgreed: true })}
+                        className="border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
+                      >
+                        <Undo2 className="h-4 w-4" />
+                        Retry delivery
+                      </Button>
+                    </div>
+                  )}
+
+                  {selected.deliveryStatus === 'delivered' && selected.payment?.status === 'pending' && (
+                    <div className="border-t border-border pt-5">
+                      <Button type="button" disabled={busy} onClick={() => act('collect_cod', { amount: selected.totalAmount })} className="h-10">
+                        Confirm ${selected.totalAmount} cash collected
+                      </Button>
+                    </div>
+                  )}
+
+                  {selected.payment?.status === 'paid' && (
+                    <form onSubmit={(event) => { event.preventDefault(); act('confirm_refund', refund); }} className="grid gap-3 border-t border-border pt-5">
+                      <h4 className="text-sm font-semibold text-foreground">Record direct refund</h4>
+                      <Input
+                        required
+                        type="number"
+                        min="0.01"
+                        max={Number(selected.payment.collectedAmount) - Number(selected.payment.refundedAmount)}
+                        step="0.01"
+                        placeholder="Amount (USD)"
+                        value={refund.amount}
+                        onChange={(event) => setRefund({ ...refund, amount: event.target.value })}
+                        className={fieldClass}
+                      />
+                      <Input
+                        required
+                        maxLength={80}
+                        placeholder="Refund method"
+                        value={refund.method}
+                        onChange={(event) => setRefund({ ...refund, method: event.target.value })}
+                        className={fieldClass}
+                      />
+                      <Input
+                        required
+                        maxLength={500}
+                        placeholder="Confirmation reference"
+                        value={refund.confirmation}
+                        onChange={(event) => setRefund({ ...refund, confirmation: event.target.value })}
+                        className={fieldClass}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={busy}
+                        className="w-fit border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
+                      >
+                        Confirm refund
+                      </Button>
+                    </form>
+                  )}
+
+                  <div className="border-t border-border pt-5">
+                    <h4 className="text-sm font-semibold text-foreground">Activity</h4>
+                    {!events.length && <p className="text-sm text-muted-foreground mt-2">No activity recorded yet.</p>}
+                    {events.map((event) => (
+                      <p key={event.id} className="mt-2 text-sm text-muted-foreground">
+                        {event.type.replaceAll('_', ' ')} · {new Date(event.createdAt).toLocaleString()}
+                        {event.details?.reason ? ` · ${event.details.reason}` : ''}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

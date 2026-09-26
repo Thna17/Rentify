@@ -29,6 +29,7 @@ export interface RentifyStore {
   name: string;
   slug: string;
   primaryCategory: string;
+  logoUrl?: string | null;
 }
 
 export interface BuyerSession {

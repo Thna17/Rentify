@@ -305,6 +305,10 @@ Point of Sale (POS) is established as an in-person physical sales channel of the
 - POS orders, invoices, stock deduction, and payment gateway configurations resolve `storeId` directly when `websiteId` is absent.
 - The merchant POS interface and product catalog query by `storeId` for marketplace-only merchants, deriving categories from loaded store inventory if storefront collections are not defined.
 
+## 2026-09-26 POS variant selection
+
+Current: selecting a product with active variants opens a picker before adding it to a POS sale. The cart keeps each product and variant combination on its own line, uses variant price and stock, and sends the variant ID and option values in POS order requests. Products without variants still add directly.
+
 ## 2026-09-25 storefront Template 2 content and theme findings
 
 Template 2 (`rentify-frontend/apps/templates/ecommerce/ecommerce-template-2`)

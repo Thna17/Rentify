@@ -100,23 +100,41 @@ export const ProductOptionsManager = ({
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {recommendedOptions.recommendedOptions?.map(
-                    (template, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="justify-start h-auto py-3 px-4 hover:bg-primary/5"
-                        onClick={() => onAddOption(template)}
-                      >
-                        <div className="text-left">
-                          <div className="font-medium text-sm">
-                            {template.name}
+                    (template, index) => {
+                      const templateNameLower = template.name?.trim().toLowerCase();
+                      const isAlreadyAdded = options.some(
+                        (opt) =>
+                          opt.name?.trim().toLowerCase() === templateNameLower ||
+                          (template.type === 'color' && (opt.type === 'color' || opt.name?.trim().toLowerCase() === 'color'))
+                      );
+                      return (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          disabled={isAlreadyAdded}
+                          className={`justify-start h-auto py-3 px-4 ${
+                            isAlreadyAdded
+                              ? 'opacity-50 cursor-not-allowed bg-muted/20 border-dashed'
+                              : 'hover:bg-primary/5'
+                          }`}
+                          onClick={() => !isAlreadyAdded && onAddOption(template)}
+                        >
+                          <div className="text-left">
+                            <div className="font-medium text-sm flex items-center gap-2">
+                              {template.name}
+                              {isAlreadyAdded && (
+                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 font-normal">
+                                  Already added
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground capitalize">
+                              {template.type} • {template.values.length} values
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground capitalize">
-                            {template.type} • {template.values.length} values
-                          </div>
-                        </div>
-                      </Button>
-                    )
+                        </Button>
+                      );
+                    }
                   )}
                 </div>
               )}
@@ -175,52 +193,77 @@ export const ProductOptionsManager = ({
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium">
-                        Option Name *
-                      </Label>
-                      <Input
-                        value={option.name}
-                        onChange={(e) =>
-                          onOptionChange(optionIndex, 'name', e.target.value)
-                        }
-                        placeholder="e.g., Color, Size, Material"
-                        className="mt-1.5"
-                      />
-                    </div>
+                  {(() => {
+                    const nameTrimmed = option.name?.trim().toLowerCase();
+                    const isDuplicateName = !!nameTrimmed && options.some(
+                      (other, idx) => idx !== optionIndex && other.name?.trim().toLowerCase() === nameTrimmed
+                    );
+                    const isColorType = option.type === 'color' || nameTrimmed === 'color';
+                    const isDuplicateColor = isColorType && options.some(
+                      (other, idx) => idx !== optionIndex && (other.type === 'color' || other.name?.trim().toLowerCase() === 'color')
+                    );
 
-                    <div>
-                      <Label className="text-sm font-medium">Option Type</Label>
-                      <Select
-                        value={option.type}
-                        onValueChange={(value) =>
-                          onOptionChange(optionIndex, 'type', value)
-                        }
-                      >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(
-                            NICHE_OPTION_TYPES[niche] || [
-                              'select',
-                              'color',
-                              'image',
-                              'text',
-                              'size',
-                              'radio',
-                              'checkbox',
-                            ]
-                          ).map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                    return (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">
+                              Option Name *
+                            </Label>
+                            <Input
+                              value={option.name}
+                              onChange={(e) =>
+                                onOptionChange(optionIndex, 'name', e.target.value)
+                              }
+                              placeholder="e.g., Color, Size, Material"
+                              className={`mt-1.5 ${isDuplicateName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                            />
+                            {isDuplicateName && (
+                              <p className="text-xs text-destructive mt-1 font-medium">
+                                Option &quot;{option.name}&quot; already exists. Duplicate options are not allowed.
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium">Option Type</Label>
+                            <Select
+                              value={option.type}
+                              onValueChange={(value) =>
+                                onOptionChange(optionIndex, 'type', value)
+                              }
+                            >
+                              <SelectTrigger className={`mt-1.5 ${isDuplicateColor ? 'border-destructive focus-visible:ring-destructive' : ''}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(
+                                  NICHE_OPTION_TYPES[niche] || [
+                                    'select',
+                                    'color',
+                                    'image',
+                                    'text',
+                                    'size',
+                                    'radio',
+                                    'checkbox',
+                                  ]
+                                ).map((type) => (
+                                  <SelectItem key={type} value={type}>
+                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {isDuplicateColor && (
+                              <p className="text-xs text-destructive mt-1 font-medium">
+                                Only one Color option is allowed per product.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Color-specific fields */}
                   {option.type === 'color' && (
@@ -256,48 +299,52 @@ export const ProductOptionsManager = ({
                     </div>
 
                     <div className="space-y-2">
-                      {option.values.map((value, valueIndex) => (
-                        <div
-                          key={valueIndex}
-                          className="flex gap-2 items-start"
-                        >
-                          <Input
-                            value={value.value}
-                            onChange={(e) =>
-                              onOptionValueChange(
-                                optionIndex,
-                                valueIndex,
-                                'value',
-                                e.target.value
-                              )
-                            }
-                            placeholder="Value (e.g., Red, Large)"
-                            className="flex-1 h-9"
-                          />
+                      {option.values.map((value, valueIndex) => {
+                        const valTrimmed = value.value?.trim().toLowerCase();
+                        const isDuplicateVal = !!valTrimmed && option.values.some(
+                          (other, idx) => idx !== valueIndex && other.value?.trim().toLowerCase() === valTrimmed
+                        );
 
-                          {option.type === 'color' && (
-                            <div className="flex items-center gap-2">
+                        return (
+                          <div key={valueIndex} className="space-y-1">
+                            <div className="flex gap-2 items-start">
                               <Input
-                                value={value.hexCode || ''}
+                                value={value.value}
                                 onChange={(e) =>
                                   onOptionValueChange(
                                     optionIndex,
                                     valueIndex,
-                                    'hexCode',
+                                    'value',
                                     e.target.value
                                   )
                                 }
-                                placeholder="#000000"
-                                className="w-24 h-9"
+                                placeholder="Value (e.g., Red, Large)"
+                                className={`flex-1 h-9 ${isDuplicateVal ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                               />
-                              <div
-                                className="w-9 h-9 rounded-lg border"
-                                style={{
-                                  backgroundColor: value.hexCode || '#ccc',
-                                }}
-                              />
-                            </div>
-                          )}
+
+                              {option.type === 'color' && (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={value.hexCode || ''}
+                                    onChange={(e) =>
+                                      onOptionValueChange(
+                                        optionIndex,
+                                        valueIndex,
+                                        'hexCode',
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="#000000"
+                                    className="w-24 h-9"
+                                  />
+                                  <div
+                                    className="w-9 h-9 rounded-lg border"
+                                    style={{
+                                      backgroundColor: value.hexCode || '#ccc',
+                                    }}
+                                  />
+                                </div>
+                              )}
 
                           {option.type === 'image' && (
                             <Input
@@ -328,6 +375,12 @@ export const ProductOptionsManager = ({
                             </Button>
                           )}
                         </div>
+                        {isDuplicateVal && (
+                          <p className="text-[11px] text-destructive">
+                            Value &quot;{value.value}&quot; is already added to this option.
+                          </p>
+                        )}
+                      </div>
                       ))}
                     </div>
                   </div>

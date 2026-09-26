@@ -15,11 +15,17 @@ const POS_TEXTURE = '/rentify/laptop-pos.png';
 const MACBOOK_MODEL = '/rentify/mac-draco.glb';
 const DRACO_DECODER_PATH = '/rentify/draco/';
 
+// Each screen swap uses a different wipe direction/shape so the sequence
+// doesn't feel like the same left-to-right slide five times in a row:
+// 0 = left→right, 1 = top→bottom, 2 = diagonal, 3 = centre iris, 4 = fade.
+const TRANSITION_EFFECTS = [0, 1, 2, 3, 4];
+
 const makeScreenMaterial = (dashboardTexture, marketplaceTexture) => new THREE.ShaderMaterial({
   uniforms: {
     currentMap: { value: dashboardTexture },
     nextMap: { value: marketplaceTexture },
     progress: { value: 0 },
+    effect: { value: 0 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -32,10 +38,31 @@ const makeScreenMaterial = (dashboardTexture, marketplaceTexture) => new THREE.S
     uniform sampler2D currentMap;
     uniform sampler2D nextMap;
     uniform float progress;
+    uniform int effect;
     varying vec2 vUv;
     void main() {
-      float boundary = progress * 1.05 - 0.025;
-      float edge = smoothstep(boundary - 0.01, boundary + 0.01, vUv.x);
+      float edge;
+      if (effect == 1) {
+        // top -> bottom wipe
+        float boundary = progress * 1.05 - 0.025;
+        edge = smoothstep(boundary - 0.01, boundary + 0.01, 1.0 - vUv.y);
+      } else if (effect == 2) {
+        // diagonal wipe
+        float boundary = progress * 1.6 - 0.3;
+        edge = smoothstep(boundary - 0.05, boundary + 0.05, (vUv.x + (1.0 - vUv.y)) * 0.5);
+      } else if (effect == 3) {
+        // centre iris reveal — the new screen expands outward from the middle
+        float dist = distance(vUv, vec2(0.5)) / 0.7071;
+        float boundary = progress * 1.1;
+        edge = smoothstep(boundary - 0.06, boundary + 0.06, dist);
+      } else if (effect == 4) {
+        // plain cross-dissolve
+        edge = 1.0 - progress;
+      } else {
+        // left -> right wipe
+        float boundary = progress * 1.05 - 0.025;
+        edge = smoothstep(boundary - 0.01, boundary + 0.01, vUv.x);
+      }
       gl_FragColor = mix(texture2D(nextMap, vUv), texture2D(currentMap, vUv), edge);
       #include <colorspace_fragment>
     }
@@ -585,6 +612,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
         screenMaterial.uniforms.currentMap.value = screenSequence[stage];
         screenMaterial.uniforms.nextMap.value = screenSequence[stage + 1];
         screenMaterial.uniforms.progress.value = screen - stage;
+        screenMaterial.uniforms.effect.value = TRANSITION_EFFECTS[stage];
         // On wide screens the laptop moves right to make room for the feature text
         const slideDistance = window.innerWidth >= 1024 ? 1.35 : 0;
         activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance + (window.innerWidth < 640 ? 0.2 : 0);
