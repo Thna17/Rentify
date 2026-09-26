@@ -1,7 +1,7 @@
 const { randomUUID } = require('node:crypto');
 const { Op } = require('sequelize');
 const { Store, User, Staff, Website } = require('../../models');
-const storeSyncService = require('../commerce-sync/storeSyncService');
+const storeSyncService = require('../commerce-sync').storeSyncService;
 const { normalizeStoreCategory } = require('./storeCategories');
 
 const clean = (value, maxLength) =>

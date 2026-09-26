@@ -4,7 +4,7 @@ const { logger } = require('../../utils/logger');
 const { getMerchantCache } = require('../../utils/cache');
 const { hostedStorefrontDomain, hostedStorefrontUrl } = require('../../utils/hostedStorefrontOrigin');
 const { assignSubdomain } = require('./hostedSubdomainService');
-const ecommerceSyncService = require('../commerce-sync/ecommerceSyncService');
+const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
 
 /**
  * Templates served by the single storefront app

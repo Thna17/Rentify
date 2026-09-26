@@ -1,7 +1,7 @@
 const axios = require("axios");
 const { Op } = require("sequelize");
 const { OutcomeContract, ReminderLog, Website, User } = require("../../models");
-const telegramService = require("../notifications/telegramService");
+const telegramService = require("../notifications").telegramService;
 const { logger } = require("../../utils/logger");
 const { ecommerceApiUrl } = require("../../config/runtimeUrls");
 

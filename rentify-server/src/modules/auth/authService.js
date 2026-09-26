@@ -3,7 +3,7 @@ const { hashRefreshToken, compareRefreshToken } = require("../../utils/refreshTo
 const crypto = require("crypto");
 const { Op } = require("sequelize");
 const { generateOtp } = require("../../utils/otpUtils");
-const { sendEmail } = require("../notifications/emailService");
+const { sendEmail } = require("../notifications").emailService;
 const { rememberRotatedToken, wasJustRotated } = require("../../utils/refreshTokenGrace");
 const otpVerificationEmail = require("./emails/otpVerificationEmail");
 const {
@@ -13,7 +13,7 @@ const {
   verifyRefreshToken,
 } = require("../../utils/jwtUtils");
 const { ApiError } = require("../../utils/errors");
-const NotificationService = require("../notifications/notificationService");
+const NotificationService = require("../notifications").notificationService;
 const notificationService = new NotificationService("merchant"); 
 class AuthService {
   constructor(entityModel, entityType, storeIdRequired = false) {

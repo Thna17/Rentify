@@ -1,5 +1,5 @@
 const { Store, Website, User, SellerApplication, SellerReview } = require('../../models');
-const storeSyncService = require('../commerce-sync/storeSyncService');
+const storeSyncService = require('../commerce-sync').storeSyncService;
 
 const fields = ['responsibleName', 'pickupLocation', 'buyerContact', 'sampleProductDescription'];
 const commitments = [

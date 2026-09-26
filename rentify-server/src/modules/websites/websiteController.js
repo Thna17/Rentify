@@ -1,7 +1,7 @@
 // controllers/websiteController.js
 const websiteService = require("./websiteService");
-const ecommerceSyncService = require("../commerce-sync/ecommerceSyncService");
-const storeSyncService = require('../commerce-sync/storeSyncService');
+const ecommerceSyncService = require("../commerce-sync").ecommerceSyncService;
+const storeSyncService = require('../commerce-sync').storeSyncService;
 const { logger } = require("../../utils/logger");
 const { asyncHandler } = require("../../utils/helpers");
 const { ERROR_CODES } = require("../../config/constants");

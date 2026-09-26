@@ -155,7 +155,7 @@ class NicheStrategy {
   }
 
   async updateItemInventory(item, transaction = null) {
-    const { changeStock } = require('../../../../inventory/sharedStockService');
+    const { changeStock } = require('../../../../inventory').sharedStockService;
     await changeStock(item.productId, -item.quantity, transaction, item.variantId || null);
   }
 

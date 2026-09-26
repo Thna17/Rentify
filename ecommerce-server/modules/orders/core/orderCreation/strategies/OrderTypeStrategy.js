@@ -1,7 +1,7 @@
 // strategies/OrderTypeStrategy.js
 const { sequelize } = require("../../../../../config/db");
 const { ApiError } = require("../../../../../utils/ApiError");
-const { getWebsiteOwnerContact } = require("../../../../checkout/merchantContactService");
+const { getWebsiteOwnerContact } = require("../../../../checkout").merchantContactService;
 
 class OrderTypeStrategy {
   constructor(models, paymentProcessor, notificationService, nicheStrategy) {

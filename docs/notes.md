@@ -501,5 +501,19 @@ Progress:
   applied (it lists some files that have since been removed).
   `tools/route-table.js` lists an app's mounted routes so the before/after
   comparison can be repeated.
-- **Next: boundaries.** Route cross-module calls through each module's
-  `index.js` and move direct cross-domain model access out of controllers.
+- **Boundaries — module entry points done (2026-09-26).** Cross-module requires
+  now go through each module's `index.js` (Core: 19 requires through 6 entry
+  points; Commerce: 17 through 5). Entry points expose members as lazy
+  getters, so every file loads at the same moment as before. Both APIs' `lint`
+  runs `scripts/quality/check-module-boundaries.js`, which fails CI on a
+  require into another module's internal files. Route tables are unchanged
+  (Core 94, Commerce 138). Known exceptions outside the check: Commerce
+  `models/Invoice.js` and `models/Payment.js` call `billing/usageEventService`,
+  and the baseline migration calls `billing/pricingRuleService`. A few modules
+  reuse another module's controller in their routes (Commerce `cart` →
+  `checkout`, `store-catalog` → `orders`; Core `admin` → `stores`, `stores` →
+  `websites`); these go through the entry point but are candidates for moving
+  the route to the owning module.
+- **Next: cross-domain model access.** Controllers and services still query
+  other domains' models directly through the shared registry; move that access
+  behind the owning module's service.

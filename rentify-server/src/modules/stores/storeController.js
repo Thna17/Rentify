@@ -1,5 +1,5 @@
 const storeService = require('./storeService');
-const storeSyncService = require('../commerce-sync/storeSyncService');
+const storeSyncService = require('../commerce-sync').storeSyncService;
 const { asyncHandler } = require('../../utils/helpers');
 const { STORE_CATEGORIES } = require('./storeCategories');
 

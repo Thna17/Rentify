@@ -1,13 +1,13 @@
 // controllers/MerchantController.js
 const { Order, Payment, OrderItem, Product } = require("../../models");
-const { sendStatusUpdateEmail } = require("../notifications/emailService");
+const { sendStatusUpdateEmail } = require("../notifications").emailService;
 const retryTransaction = require("../../utils/retryTransaction");
 const {
   PAYMENT_METHODS,
   ORDER_STATUS,
   PAYMENT_STATUS,
 } = require("../../utils/constants");
-const { updateStock } = require("../inventory/stockService");
+const { updateStock } = require("../inventory").stockService;
 
 exports.processOrder = async (req, res) => {
   const { orderId } = req.params;

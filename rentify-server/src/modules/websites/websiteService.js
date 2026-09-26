@@ -1,8 +1,8 @@
 // services/websiteService.js
 const { Website, WebsiteTemplate, User, Staff, Package, WebsiteSyncOutbox, WebsiteContent } = require('../../models');
-const subscriptionService = require('../billing/subscriptionService');
-const storeService = require('../stores/storeService');
-const storeSyncService = require('../commerce-sync/storeSyncService');
+const subscriptionService = require('../billing').subscriptionService;
+const storeService = require('../stores').storeService;
+const storeSyncService = require('../commerce-sync').storeSyncService;
 const { logger } = require('../../utils/logger');
 const { DEPLOYMENT } = require('../../config/constants');
 

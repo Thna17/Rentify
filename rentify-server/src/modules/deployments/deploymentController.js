@@ -1,7 +1,7 @@
 const deploymentService = require('./deploymentService');
 const { logger } = require('../../utils/logger');
 const { hostedStorefrontUrl } = require('../../utils/hostedStorefrontOrigin');
-const ecommerceSyncService = require('../commerce-sync/ecommerceSyncService');
+const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
 
 // A merchant may only record that a publish attempt failed or return to
 // editing. Going live happens through publishWebsite, and suspension or expiry

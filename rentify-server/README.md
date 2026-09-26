@@ -29,6 +29,15 @@ A module keeps its routes, controllers and services side by side
 (`storeRoutes.js`, `storeController.js`, `storeService.js`). `src/app.js`
 mounts each module's router; HTTP paths are unchanged by the move.
 
+**Module boundaries.** A module uses another module only through that
+module's `index.js`, for example `require('../stores').storeService`, never
+`require('../stores/storeService')`. Each `index.js` lists the members other
+modules may use, as lazy getters. `npm run lint` fails on a cross-module
+require that bypasses `index.js`; `node scripts/quality/check-module-boundaries.js src/modules --fix`
+adds the member to the target's `index.js` and rewrites the require. App
+wiring (`app.js`, `server.js`), models, migrations, scripts and tests are not
+checked.
+
 ## Usage-based billing
 Rentify uses usage-based billing. Usage events are captured in the ecommerce service
 and billed monthly (ORDER_PAID, INVOICE_PAID, STORE_VIEW). No ops guarantees or

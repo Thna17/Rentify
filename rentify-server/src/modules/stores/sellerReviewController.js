@@ -1,5 +1,5 @@
 const sellerReviewService = require('./sellerReviewService');
-const storeSyncService = require('../commerce-sync/storeSyncService');
+const storeSyncService = require('../commerce-sync').storeSyncService;
 const { Store, SellerApplication, SellerReview } = require('../../models');
 const { asyncHandler } = require('../../utils/helpers');
 

@@ -1,4 +1,4 @@
-const AuthService = require("../auth/authService");
+const AuthService = require("../auth").authService;
 const bcrypt = require("bcrypt");
 const { Staff, User } = require("../../models");
 const { ApiError } = require("../../utils/errors");

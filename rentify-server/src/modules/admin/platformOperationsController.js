@@ -82,7 +82,7 @@ exports.updateStore = async (req, res) => {
   updates.projectionVersion = store.projectionVersion + 1;
   await store.update(updates);
   const website = await Website.findOne({ where: { storeId }, attributes: ['id'] });
-  const storeSyncService = require('../commerce-sync/storeSyncService');
+  const storeSyncService = require('../commerce-sync').storeSyncService;
   await storeSyncService.queueStore(store, { websiteId: website?.id || null });
   storeSyncService.syncStore(storeId).catch(() => {});
   res.json({ success: true, data: store });

@@ -1,12 +1,12 @@
 // controllers/OrderController.js
 const OrderTypeFactory = require("./core/orderCreation/factory/OrderFactory");
-const PaymentProcessor = require("../payments/PaymentProcessor");
+const PaymentProcessor = require("../payments").PaymentProcessor;
 const models = require("../../models");
-const NotificationService = require("../notifications/notificationService");
+const NotificationService = require("../notifications").notificationService;
 const OrderRetrievalFactory = require('./core/orderRetrieval/factory/OrderRetrievalFactory');
 const { WebsiteData } = require("../../models");
 const { sequelize } = require('../../config/db');
-const { decryptSecrets } = require("../payments/paymentConfigEncryption");
+const { decryptSecrets } = require("../payments").paymentConfigEncryption;
 
 const hydratePaymentConfig = (config) => {
   if (!config?.config?.encryptedSecrets) return config;

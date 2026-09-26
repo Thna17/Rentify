@@ -1,5 +1,5 @@
 const { Invoice, Order, Payment, Customer } = require("../../models");
-const telegramService = require("../notifications/telegramService");
+const telegramService = require("../notifications").telegramService;
 const { Op } = require("sequelize");
 
 const buildCandidate = (invoice, order, payment, customer) => {

@@ -3,9 +3,9 @@ const { createHash } = require('node:crypto');
 const { Op } = require('sequelize');
 const { Cart, CartItem, Product, ProductVariant, StoreAccess, StoreDeliveryPolicy,
   Order, OrderItem, Payment, OrderEvent, WebsiteData } = require('../../models');
-const { changeStock } = require('../inventory/sharedStockService');
+const { changeStock } = require('../inventory').sharedStockService;
 const { getStoreOwnerContact } = require('./merchantContactService');
-const NotificationService = require('../notifications/notificationService');
+const NotificationService = require('../notifications').notificationService;
 
 function fail(message, statusCode = 400) {
   const error = new Error(message);

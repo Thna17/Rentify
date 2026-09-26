@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const { Customer, Order } = require("../../models");
-const { updateStock } = require("../inventory/stockService");
+const { updateStock } = require("../inventory").stockService;
 const retryTransaction = require("../../utils/retryTransaction");
 const { ORDER_STATUS } = require("../../utils/constants");
 

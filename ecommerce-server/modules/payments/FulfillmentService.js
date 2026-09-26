@@ -1,5 +1,5 @@
 const { Payment, Order, Invoice } = require("../../models");
-const { updateStock } = require("../inventory/stockService");
+const { updateStock } = require("../inventory").stockService;
 const { ORDER_STATUS, PAYMENT_STATUS } = require("../../utils/constants");
 const retryTransaction = require("../../utils/retryTransaction");
 

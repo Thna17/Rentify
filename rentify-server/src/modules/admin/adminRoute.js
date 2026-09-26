@@ -3,7 +3,7 @@ const router = express.Router();
 const { createTemplate, updateTemplate, deleteTemplate, getAllTemplates, getTemplateById, getAuditLogs } = require("./adminController");
 const { verifyToken } = require("../../middlewares/auth");
 const { requireAdmin } = require("../../middlewares/authorization");
-const sellerReviewController = require('../stores/sellerReviewController');
+const sellerReviewController = require('../stores').sellerReviewController;
 const operations = require('./platformOperationsController');
 const safe = (handler) => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 

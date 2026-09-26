@@ -3,7 +3,7 @@ const { verifyToken } = require('../../middlewares/auth');
 const controller = require('./storeController');
 const sellerReviewController = require('./sellerReviewController');
 const { productImagesUpload } = require('../../middlewares/multer');
-const { uploadProductImages } = require('../websites/uploadController');
+const { uploadProductImages } = require('../websites').uploadController;
 const { requireStoreAccess } = require('../../middlewares/authorization');
 
 router.get('/categories', controller.getCategories);

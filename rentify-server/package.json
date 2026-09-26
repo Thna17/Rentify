@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "lint": "node scripts/quality/check-js.js src test",
+    "lint": "node scripts/quality/check-js.js src test && node scripts/quality/check-module-boundaries.js src/modules",
     "typecheck": "node scripts/quality/check-js.js src test",
     "test:unit": "node --test test/security/**/*.test.js",
     "test:integration": "node --test test/integration/**/*.test.js",

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const controller = require('./storeCatalogController');
-const OrderController = require('../orders/OrderController');
+const OrderController = require('../orders').OrderController;
 const { verifyStoreActor, verifyCoreBuyer } = require('../../middlewares/authMiddleware');
 const { createRequireStoreAccess } = require('../../middlewares/requireStoreAccess');
 
