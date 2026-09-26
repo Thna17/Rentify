@@ -43,6 +43,34 @@ export const PROMO_SLOTS: {
       params: { sale: '1' },
       image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&q=80',
     },
+    // Second set: rotates in on the same timer as the main banner, so the
+    // side cards feel alive too instead of three fixed images forever.
+    {
+      id: 'new-arrivals',
+      eyebrow: 'Just in',
+      title: 'New arrivals',
+      cta: 'Discover now',
+      link: '/products',
+      params: { sort: 'newest' },
+      image: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80',
+    },
+    {
+      id: 'home-living',
+      eyebrow: 'Home',
+      title: 'Home & Living picks',
+      cta: 'Shop the room',
+      link: '/products',
+      params: { category: 'home-living' },
+      image: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=600&q=80',
+    },
+    {
+      id: 'top-rated',
+      eyebrow: 'Loved',
+      title: 'Top rated stores',
+      cta: 'Browse stores',
+      link: '/stores',
+      image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=600&q=80',
+    },
   ],
   flashDeals: {
     id: 'elevate-space',

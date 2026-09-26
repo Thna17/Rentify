@@ -433,8 +433,10 @@ const toProductFromRentify = (
     subcategorySlug: subcategorySlugVal,
     sellerName,
     storeId: api.storeId,
-    rating: 4.8,
-    reviewCount: 12,
+    // Real average + count from the reviews API — was hardcoded to the same
+    // 4.8/12 on every single product regardless of its actual reviews.
+    rating: Number((api as any).rating) || 0,
+    reviewCount: Number((api as any).reviewCount) || 0,
     stock,
     status,
     description: api.description || '',

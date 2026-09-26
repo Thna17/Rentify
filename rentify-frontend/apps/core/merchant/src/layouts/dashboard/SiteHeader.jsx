@@ -56,7 +56,7 @@ export function SiteHeader({
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background text-foreground border-border px-4 md:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-4 bg-background/80 backdrop-blur-md text-foreground px-4 md:px-8">
       <div className="flex items-center gap-3 flex-1 max-w-xl min-w-0">
         {(!isSidebarOpen || isMobile) && (
           <Button
@@ -84,7 +84,7 @@ export function SiteHeader({
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder="Search menu..."
-            className="w-full bg-muted/40 pl-10 pr-9 h-10 rounded-xl border-border text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
+            className="w-full bg-card pl-10 pr-9 h-10 rounded-xl border-transparent shadow-[var(--shadow-soft)] text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
           />
           {searchFilter && (
             <button
@@ -102,7 +102,7 @@ export function SiteHeader({
 
           {/* Quick Menu Results Dropdown */}
           {isSearchFocused && searchFilter.trim() && (
-            <div className="absolute left-0 top-full mt-1.5 w-full rounded-xl border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1.5 max-h-80 overflow-y-auto scrollbar-subtle">
+            <div className="absolute left-0 top-full mt-1.5 w-full rounded-xl bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1.5 max-h-80 overflow-y-auto scrollbar-subtle">
               {filteredTabs.length > 0 ? (
                 filteredTabs.map((item) => {
                   const Icon = item.icon;

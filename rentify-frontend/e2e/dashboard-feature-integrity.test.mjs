@@ -22,24 +22,24 @@ test('all required dashboard configuration files exist and are non-empty', () =>
   }
 });
 
-test('dashboard-tabs defines Storefront Customization under channels for all relevant roles', () => {
+test('dashboard-tabs defines the Storefront channel for all relevant roles', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
-  // Verify Storefront Customization entry
+  // Verify the Storefront entry
   assert.match(content, /path:\s*['"]store-management['"]/);
-  assert.match(content, /label:\s*['"]Storefront Customization['"]/);
+  assert.match(content, /label:\s*['"]Storefront['"]/);
   assert.match(content, /channel:\s*['"]storefront['"]/);
-  assert.match(content, /section:\s*['"]channels['"]/);
+  assert.match(content, /section:\s*['"]sell['"]/);
 
   // Verify roles include staff
-  const storeMgmtBlock = content.match(/path:\s*['"]store-management['"][\s\S]*?section:\s*['"]channels['"]/)?.[0];
+  const storeMgmtBlock = content.match(/path:\s*['"]store-management['"][\s\S]*?section:\s*['"]sell['"]/)?.[0];
   assert.ok(storeMgmtBlock, 'Store management block must be found');
   assert.match(storeMgmtBlock, /'staff'/, 'Store management must allow staff role');
   assert.match(storeMgmtBlock, /'user'/, 'Store management must allow user role');
   assert.match(storeMgmtBlock, /'admin'/, 'Store management must allow admin role');
 });
 
-test('dashboard-tabs defines Marketplace Orders and POS under channels', () => {
+test('dashboard-tabs defines Marketplace Orders and POS as sales channels', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
   // Verify Marketplace Orders

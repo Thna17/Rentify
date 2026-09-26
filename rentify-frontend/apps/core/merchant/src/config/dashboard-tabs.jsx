@@ -11,14 +11,19 @@ import {
   CreditCard,
   Headphones,
   Search,
+  Users,
+  Boxes,
 } from 'lucide-react';
 
-// Define tab structure with clean labels, grouping sections, and channel requirements
+// Simplified, non-technical structure: Home, Products, Orders, Sales
+// Channels, Customers, Analytics, Finance, Settings. Storefront, Marketplace
+// and POS live inside Sales Channels; Invoices and Billing live inside
+// Finance — a merchant never has to guess where something lives.
 export const ALL_TABS = [
-  // --- Top Featured: Overview ---
+  // --- Home ---
   {
     name: 'dashboard.overview',
-    label: 'Overview',
+    label: 'Home',
     icon: LayoutGrid,
     path: 'overview',
     roles: ['admin', 'user', 'staff'],
@@ -26,7 +31,7 @@ export const ALL_TABS = [
     section: 'overview',
   },
 
-  // --- Catalog & Products ---
+  // --- Products ---
   {
     name: 'dashboard.product.title',
     label: 'Products',
@@ -34,7 +39,7 @@ export const ALL_TABS = [
     path: 'products',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_products',
-    section: 'inventory',
+    section: 'sell',
   },
   {
     name: 'dashboard.product.detail',
@@ -66,7 +71,7 @@ export const ALL_TABS = [
   {
     name: 'Store catalog',
     label: 'Store Catalog',
-    icon: Package,
+    icon: Boxes,
     path: 'catalog',
     roles: ['admin', 'user', 'staff'],
     permission: null,
@@ -74,7 +79,7 @@ export const ALL_TABS = [
     hideInSidebar: true,
   },
 
-  // --- Sales & Orders ---
+  // --- Orders ---
   {
     name: 'dashboard.order.title',
     label: 'Orders',
@@ -82,7 +87,7 @@ export const ALL_TABS = [
     path: 'orders',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
-    section: 'orders',
+    section: 'sell',
   },
   {
     name: 'dashboard.order.detail',
@@ -93,36 +98,27 @@ export const ALL_TABS = [
     permission: 'manage_orders',
     hideInSidebar: true,
   },
-  {
-    name: 'dashboard.invoices.title',
-    label: 'Invoices',
-    icon: Receipt,
-    path: 'invoices',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_invoices',
-    section: 'orders',
-  },
 
-  // --- Sales Channels ---
+  // --- Sales Channels: Storefront, Marketplace, POS ---
   {
     name: 'dashboard.store_management.title',
-    label: 'Storefront Customization',
+    label: 'Storefront',
     icon: Store,
     path: 'store-management',
     roles: ['admin', 'user', 'staff'],
     permission: null,
     channel: 'storefront',
-    section: 'channels',
+    section: 'sell',
   },
   {
     name: 'COD orders',
-    label: 'Marketplace Orders',
+    label: 'Marketplace',
     icon: ShoppingBag,
     path: 'marketplace-orders',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
     channel: 'marketplace',
-    section: 'channels',
+    section: 'sell',
   },
   {
     name: 'dashboard.pos.title',
@@ -132,7 +128,18 @@ export const ALL_TABS = [
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_pos',
     channel: 'pos',
-    section: 'channels',
+    section: 'sell',
+  },
+
+  // --- Customers ---
+  {
+    name: 'dashboard.customers.title',
+    label: 'Customers',
+    icon: Users,
+    path: 'customers',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    section: 'customers',
   },
 
   // --- Analytics ---
@@ -143,24 +150,33 @@ export const ALL_TABS = [
     path: 'analytics',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_analytics',
-    section: 'analytics',
+    section: 'insights',
   },
 
-  // --- Store Plan & Billing ---
+  // --- Finance: Invoices, Billing ---
+  {
+    name: 'dashboard.invoices.title',
+    label: 'Invoices',
+    icon: Receipt,
+    path: 'invoices',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_invoices',
+    section: 'money',
+  },
   {
     name: 'dashboard.usage.title',
-    label: 'Plan & Billing',
+    label: 'Billing',
     icon: CreditCard,
     path: 'usage',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_analytics',
-    section: 'billing',
+    section: 'money',
   },
 
-  // --- Store Settings ---
+  // --- Settings ---
   {
     name: 'dashboard.settings.title',
-    label: 'Store Settings',
+    label: 'Settings',
     icon: Settings,
     path: 'settings',
     roles: ['admin', 'user', 'staff'],
@@ -168,7 +184,8 @@ export const ALL_TABS = [
     section: 'settings',
   },
 
-  // --- Issues & Support ---
+  // --- Support: kept reachable, but folded under Settings rather than its
+  // own top-level section, to stay to the eight requested sections. ---
   {
     name: 'dashboard.support',
     label: 'Support',
@@ -176,7 +193,7 @@ export const ALL_TABS = [
     path: 'help',
     roles: ['admin', 'user', 'staff'],
     permission: null,
-    section: 'support',
+    section: 'settings',
   },
 ];
 

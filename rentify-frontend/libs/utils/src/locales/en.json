@@ -405,7 +405,7 @@
       "border_radius_full": "Full Radius"
     },
     "product": {
-      "title": "Product Management",
+      "title": "Products",
       "all_products": "All Products",
       "active": "Active",
       "inactive": "Inactive",
@@ -498,7 +498,7 @@
       "update_inventory": "Update Inventory"
     },
     "order": {
-      "title": "Order Management",
+      "title": "Orders",
       "all_orders": "All Orders",
       "pending": "Pending",
       "confirmed": "Confirmed",

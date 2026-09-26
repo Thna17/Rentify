@@ -1,106 +1,73 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@rentify/shared/ui/card";
-import { Badge } from "@rentify/shared/ui/badge";
+import { Card } from "@rentify/shared/ui/card";
 import { Skeleton } from "@rentify/shared/ui/skeleton";
-import { Package, TrendingUp } from "lucide-react";
-import { cn } from "@rentify/utils";
+import { Package } from "lucide-react";
 
-export const TopProducts = ({ products, isLoading }) => {
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
 
-  if (isLoading) {
-    return (
-      <Card className="border border-border rounded-lg shadow-sm bg-background">
-        <CardHeader>
-          <CardTitle>Top Performing Products</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+export const TopProducts = ({ products = [], isLoading }) => {
+  const maxRevenue = Math.max(1, ...products.map((p) => Number(p.revenue) || 0));
+
+  return (
+    <Card className="h-full gap-0 p-6 bg-card">
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-base font-semibold text-foreground">Top products</h3>
+        <span className="text-xs text-muted-foreground">By revenue</span>
+      </div>
+
+      {isLoading ? (
+        <div className="mt-5 space-y-5">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-3">
-              <Skeleton className="w-12 h-12 rounded-lg" />
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-xl" />
               <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16" />
-                  <Skeleton className="h-5 w-20" />
-                </div>
+                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-1.5 w-full rounded-full" />
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="border border-border rounded-lg shadow-sm bg-background">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-xl font-semibold">Top Performing Products</CardTitle>
-        <Badge variant="outline" className="text-xs">
-          <TrendingUp className="w-3 h-3 mr-1" />
-          Best Sellers
-        </Badge>
-      </CardHeader>
-      <CardContent>
-        {products.length > 0 ? (
-          <div className="space-y-4">
-            {products.map((product, index) => (
-              <div
-                key={product.id}
-                className={cn(
-                  "flex items-center space-x-4 p-3 rounded-xl transition-all duration-200",
-                  "hover:bg-muted/50 hover:shadow-sm",
-                  index === 0 && "bg-primary/5 border border-primary/20"
-                )}
-              >
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Package className="w-6 h-6 text-primary" />
-                  </div>
-                  {index === 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-primary-foreground">#1</span>
-                    </div>
-                  )}
+        </div>
+      ) : products.length > 0 ? (
+        <ul className="mt-4 space-y-1">
+          {products.map((product, index) => (
+            <li
+              key={product.id}
+              className="flex items-center gap-3 rounded-xl px-2 py-2.5 -mx-2 hover:bg-muted/60 transition-colors"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-sm font-semibold text-muted-foreground">
+                {index + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-medium text-foreground truncate">{product.name}</p>
+                  <span className="text-sm font-semibold text-foreground tabular-nums">
+                    {formatCurrency(product.revenue)}
+                  </span>
                 </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-sm text-foreground truncate">
-                    {product.name}
-                  </h4>
-                  {product.category && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {product.category}
-                    </p>
-                  )}
-                  <div className="flex gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {product.unitsSold} sold
-                    </Badge>
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs text-success border-success/30 bg-success/5"
-                    >
-                      {formatCurrency(product.revenue)}
-                    </Badge>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary/70 transition-[width] duration-500"
+                      style={{ width: `${((Number(product.revenue) || 0) / maxRevenue) * 100}%` }}
+                    />
                   </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {product.unitsSold} sold
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="h-[250px] flex items-center justify-center flex-col">
-            <Package className="w-16 h-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-center">
-              No product sales data available
-            </p>
-          </div>
-        )}
-      </CardContent>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
+          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <Package className="h-5 w-5" />
+          </span>
+          <p className="text-sm font-medium text-foreground">No sales yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Your best sellers will show up here.</p>
+        </div>
+      )}
     </Card>
   );
 };

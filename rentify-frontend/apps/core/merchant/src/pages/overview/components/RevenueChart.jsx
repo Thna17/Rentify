@@ -24,13 +24,13 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
   
   if (isLoading) {
     return (
-      <Card className="col-span-1 lg:col-span-2 border border-border rounded-lg shadow-sm bg-background">
+      <Card className="h-full gap-4 py-6 bg-card">
         <CardHeader>
-          <CardTitle>Revenue & Orders</CardTitle>
+          <CardTitle className="text-base">Sales</CardTitle>
           <CardDescription>Loading revenue data</CardDescription>
         </CardHeader>
         <CardContent>
-          <Skeleton className="w-full h-[300px]" />
+          <Skeleton className="w-full h-[320px] rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -46,19 +46,19 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
   const chartConfig = {
     revenue: {
       label: "Revenue",
-      color: "hsl(var(--primary))",
+      color: "oklch(var(--primary))",
     },
     orders: {
       label: "Orders",
-      color: "hsl(var(--secondary))",
+      color: "oklch(var(--secondary))",
     },
   };
 
   return (
-    <Card className="col-span-1 lg:col-span-2 border border-border rounded-lg shadow-sm bg-background">
+    <Card className="h-full gap-4 py-6 bg-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle>Revenue & Orders</CardTitle>
+          <CardTitle className="text-base">Sales</CardTitle>
           <CardDescription>
             {dateRange && (
               <span>
@@ -71,32 +71,32 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
           type="single"
           value={timeRange}
           onValueChange={setTimeRange}
-          variant="outline"
           size="sm"
+          className="rounded-xl bg-muted p-0.5"
         >
-          <ToggleGroupItem value="7d">7D</ToggleGroupItem>
-          <ToggleGroupItem value="30d">30D</ToggleGroupItem>
-          <ToggleGroupItem value="90d">90D</ToggleGroupItem>
+          <ToggleGroupItem value="7d" className="rounded-lg px-3 text-xs data-[state=on]:bg-card data-[state=on]:shadow-sm">7D</ToggleGroupItem>
+          <ToggleGroupItem value="30d" className="rounded-lg px-3 text-xs data-[state=on]:bg-card data-[state=on]:shadow-sm">30D</ToggleGroupItem>
+          <ToggleGroupItem value="90d" className="rounded-lg px-3 text-xs data-[state=on]:bg-card data-[state=on]:shadow-sm">90D</ToggleGroupItem>
         </ToggleGroup>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
+        <ChartContainer config={chartConfig} className="h-[320px] w-full">
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--primary)"
-                  stopOpacity={0.8}
+                  stopColor="oklch(var(--primary))"
+                  stopOpacity={0.22}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--primary)"
-                  stopOpacity={0.1}
+                  stopColor="oklch(var(--primary))"
+                  stopOpacity={0}
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="oklch(var(--border))" />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -139,14 +139,15 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
               dataKey="revenue"
               type="natural"
               fill="url(#fillRevenue)"
-              stroke="var(--primary)"
-              strokeWidth={2}
+              stroke="oklch(var(--primary))"
+              strokeWidth={2.25}
             />
             <Line
               dataKey="orders"
               type="monotone"
-              stroke="var(--secondary)"
-              strokeWidth={2}
+              stroke="oklch(var(--secondary))"
+              strokeWidth={1.5}
+              strokeOpacity={0.6}
               dot={false}
             />
           </AreaChart>
