@@ -11,7 +11,8 @@ Core is a modular monolith. Business code lives in one folder per domain under
 | `src/modules/users/` | Merchant profile |
 | `src/modules/staff/` | Staff invitations, staff login and staff-token middleware |
 | `src/modules/stores/` | Store profiles, store categories, marketplace seller review |
-| `src/modules/websites/` | Websites, storefront content, image uploads |
+| `src/modules/websites/` | Websites, storefront content, website logo and cover images |
+| `src/modules/media/` | Image and PDF uploads to Cloudinary (used by websites and stores) |
 | `src/modules/deployments/` | Publishing and hosted subdomains |
 | `src/modules/commerce-sync/` | Website and Store projections to Commerce (outboxes and retry job) |
 | `src/modules/templates/` | Public website template catalog |

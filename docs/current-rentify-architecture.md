@@ -34,7 +34,7 @@ the database without changing the schema
    ([website service](../rentify-server/src/modules/websites/websiteService.js)).
    An optional cover image is uploaded after creation with
    `uploadImage?type=cover`, which replaces the website's `Hero Image` content
-   ([upload controller](../rentify-server/src/modules/websites/uploadController.js)).
+   ([website image controller](../rentify-server/src/modules/websites/websiteImageController.js)).
 2. Core creates or reuses one Store for the owner, then creates a Website and
    trial subscription in one transaction, queues a
    Commerce projection in the same transaction, then asynchronously posts it
@@ -71,7 +71,7 @@ the database without changing the schema
    merchant owner, an administrator, or staff with product permission. Only
    the returned browser-safe image metadata is saved with the canonical
    Commerce Product. Cloudinary credentials are never injected into a frontend
-   build ([upload controller](../rentify-server/src/modules/websites/uploadController.js),
+   build ([upload controller](../rentify-server/src/modules/media/uploadController.js),
    [Store authorization](../rentify-server/src/middlewares/authorization.js)).
 
 ## Constraints relevant to the migration
