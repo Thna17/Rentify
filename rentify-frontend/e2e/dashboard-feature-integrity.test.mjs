@@ -22,24 +22,27 @@ test('all required dashboard configuration files exist and are non-empty', () =>
   }
 });
 
-test('dashboard-tabs defines Storefront Customization under channels for all relevant roles', () => {
+// Returns the { ... } tab object that declares the given path.
+const tabBlock = (content, tabPath) =>
+  content.match(new RegExp(`\\{[^{}]*path:\\s*['"]${tabPath}['"][^{}]*\\}`))?.[0];
+
+test('dashboard-tabs defines the Storefront channel under Sell for all relevant roles', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
-  // Verify Storefront Customization entry
-  assert.match(content, /path:\s*['"]store-management['"]/);
-  assert.match(content, /label:\s*['"]Storefront Customization['"]/);
-  assert.match(content, /channel:\s*['"]storefront['"]/);
-  assert.match(content, /section:\s*['"]channels['"]/);
+  // Sales channels (Storefront, Marketplace, POS) live in the Sell section
+  const storeMgmtBlock = tabBlock(content, 'store-management');
+  assert.ok(storeMgmtBlock, 'Store management block must be found');
+  assert.match(storeMgmtBlock, /label:\s*['"]Storefront['"]/);
+  assert.match(storeMgmtBlock, /channel:\s*['"]storefront['"]/);
+  assert.match(storeMgmtBlock, /section:\s*['"]sell['"]/);
 
   // Verify roles include staff
-  const storeMgmtBlock = content.match(/path:\s*['"]store-management['"][\s\S]*?section:\s*['"]channels['"]/)?.[0];
-  assert.ok(storeMgmtBlock, 'Store management block must be found');
   assert.match(storeMgmtBlock, /'staff'/, 'Store management must allow staff role');
   assert.match(storeMgmtBlock, /'user'/, 'Store management must allow user role');
   assert.match(storeMgmtBlock, /'admin'/, 'Store management must allow admin role');
 });
 
-test('dashboard-tabs defines Marketplace Orders and POS under channels', () => {
+test('dashboard-tabs defines Marketplace Orders and POS under Sell', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
   // Verify Marketplace Orders
@@ -49,6 +52,12 @@ test('dashboard-tabs defines Marketplace Orders and POS under channels', () => {
   // Verify POS
   assert.match(content, /path:\s*['"]pos['"]/);
   assert.match(content, /channel:\s*['"]pos['"]/);
+
+  for (const tabPath of ['marketplace-orders', 'pos']) {
+    const block = tabBlock(content, tabPath);
+    assert.ok(block, `${tabPath} block must be found`);
+    assert.match(block, /section:\s*['"]sell['"]/, `${tabPath} must be in the Sell section`);
+  }
 });
 
 test('every tab in dashboard-tabs has a corresponding route in dashboardRoutes', () => {
