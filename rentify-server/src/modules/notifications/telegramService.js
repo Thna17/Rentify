@@ -66,16 +66,17 @@ class TelegramService {
     }
   }
 
+// Core stores merchant and staff accounts. Storefront customers live in Commerce's
+// database, so their Telegram links are handled by Commerce's TelegramService.
 async findUser(phoneNumber, userType) {
   let model;
 
-  
   if (userType === 'merchant') {
     model = require("../../models/User");
   } else if (userType === 'staff') {
     model = require("../../models/Staff");
   } else if (userType === 'customer') {
-    model = require("../../models/Customer");
+    throw new Error('Telegram linking for customer accounts is handled by the Commerce API, not Core');
   } else {
     throw new Error(`Unknown user type: ${userType}`);
   }

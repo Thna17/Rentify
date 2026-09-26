@@ -462,11 +462,6 @@ Progress:
   `rentify-server/src/modules/` (layout in the
   [Core README](../rentify-server/README.md)). The mounted route table is
   identical before and after (94 routes) and `npm run verify` passes.
-  Findings kept as-is for later: `modules/notifications/telegramService.js`
-  lazily requires a `models/Customer` file that Core does not have;
-  `modules/ops/raasReminderJob.js` is never started; `commerce-sync/syncService.js`,
-  `utils/limitCalculator.js`, `utils/passwordUtils.js` and `utils/cookieUtils.js`
-  are not imported anywhere.
 - **Commerce — file move done (2026-09-26).** `controllers/`, `routes/`,
   `services/`, `workers/` and `core/` are replaced by 17 modules under
   `ecommerce-server/modules/` (layout in the
@@ -476,17 +471,34 @@ Progress:
   and `npm run verify` passes. Two edits beyond path rewriting keep behavior
   the same: `updateDeploymentUrls.js` resolves `.env` one level further up, and
   `apiMountScope.test.js` reads router paths from `app.js` instead of assuming
-  a `routes/` folder. Findings kept as-is for later: relative requires that did
-  not resolve before the move still do not (`telegramService` requires
-  `models/User`; base methods of `OrderStrategy` and `EcommerceOrderStrategy`/
-  `EcommerceNicheStrategy` require `models` paths that do not exist and would
-  throw if a subclass does not override them); `MerchantController.js`,
-  `OrderService.js`, `productValidation.js`, `invoiceUtils.js`,
-  `utils/orderHelpers.js`, `utils/sanitizeData.js` and `config/rateLimiter.js`
-  are not imported anywhere.
+  a `routes/` folder.
+- **Findings from the moves — fixed (2026-09-26).** Every relative require in
+  both APIs now resolves.
+  - Telegram account lookup: each `telegramService.findUser` required a model
+    from the other API's database (Commerce `models/User`, Core
+    `models/Customer`). Core now links merchant and staff accounts only and
+    Commerce customers only; a cross-API lookup fails with a clear error.
+    Covered by `test/security/telegramUserLookup.test.js` in both APIs. The
+    Telegram webhooks remain disabled and `SERVER_TYPE` is not configured.
+  - Removed unused code. Commerce: the order strategy classes `OrderStrategy`,
+    `EcommerceOrderStrategy`, `FashionOrderStrategy`, `RestaurantOrderStrategy`,
+    `EcommerceNicheStrategy` and `RestaurantNicheStrategy` (the order factory
+    only uses the online, invoice and POS strategies with the base
+    `NicheStrategy`; these held the broken `models` requires); the per-niche
+    catalog strategy files, which duplicated the classes in
+    `catalog/core/strategies/NicheStrategy.js` and could not load;
+    `MerchantController.js`, `OrderService.js`, `productValidation.js`,
+    `invoiceUtils.js`, `utils/orderHelpers.js` and `utils/sanitizeData.js`.
+    Core: `commerce-sync/syncService.js`, `auth/emails/resetPasswordEmail.js`,
+    `utils/cookieUtils.js`, `utils/limitCalculator.js` and
+    `utils/passwordUtils.js`.
+  - Kept on purpose, not wired up: Commerce `config/rateLimiter.js` and Core
+    `ops/raasReminderJob.js`. Turning on rate limiting or RaaS reminders is a
+    product decision and belongs with the scaling work above.
 - **Tooling.** `tools/move-modules.js` performs a move from a JSON map
   (`git mv` plus relative-path rewriting in code, Markdown links and
-  CODEOWNERS); `tools/maps/commerce.json` is the Commerce map.
+  CODEOWNERS); `tools/maps/commerce.json` is the Commerce map as it was
+  applied (it lists some files that have since been removed).
   `tools/route-table.js` lists an app's mounted routes so the before/after
   comparison can be repeated.
 - **Next: boundaries.** Route cross-module calls through each module's
