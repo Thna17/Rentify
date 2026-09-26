@@ -1,7 +1,7 @@
 const sequelize = require('../src/config/db');
 const { Store, User, Website } = require('../src/models');
-const storeService = require('../src/services/storeService');
-const storeSyncService = require('../src/services/storeSyncService');
+const storeService = require('../src/modules/stores/storeService');
+const storeSyncService = require('../src/modules/commerce-sync/storeSyncService');
 
 async function run() {
   if (!storeService.developmentApprovalEnabled()) {

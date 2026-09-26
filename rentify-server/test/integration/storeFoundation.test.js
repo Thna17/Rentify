@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Store, User, Website, Staff } = require('../../src/models');
-const storeService = require('../../src/services/storeService');
-const storeSyncService = require('../../src/services/storeSyncService');
+const storeService = require('../../src/modules/stores/storeService');
+const storeSyncService = require('../../src/modules/commerce-sync/storeSyncService');
 
 test('public Store lookup returns only approved profile fields', async (t) => {
   const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';

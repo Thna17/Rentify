@@ -1,6 +1,6 @@
 const sequelize = require('../src/config/db');
-const storeService = require('../src/services/storeService');
-const storeSyncService = require('../src/services/storeSyncService');
+const storeService = require('../src/modules/stores/storeService');
+const storeSyncService = require('../src/modules/commerce-sync/storeSyncService');
 
 const examples = [
   { ownerUserId: '22222222-2222-4222-8222-222222222222',

@@ -1,7 +1,7 @@
 const app = require('./app');
 const syncDB = require('./config/initDb');
 
-const startDeploymentListener = require('./services/DeploymentListener');
+const startDeploymentListener = require('./modules/websites/DeploymentListener');
 
 const startServer = async () => {
   await syncDB();
@@ -10,8 +10,8 @@ const startServer = async () => {
   startDeploymentListener();
 
   // Start Recovery Watchdog
-  require('./workers/recoveryWorker').start();
-  require('./workers/billingWorker').start();
+  require('./modules/payments/recoveryWorker').start();
+  require('./modules/billing/billingWorker').start();
 
   const port = process.env.PORT || 4000;
   const server = app.listen(port, '0.0.0.0', () => {

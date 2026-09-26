@@ -1,6 +1,6 @@
 // utils/transactionHandler.js
 const  sequelize  = require("../config/db");
-const { ApiError } = require("../utils/errors");
+const { ApiError } = require("./errors");
 
 module.exports = (handler) => async (req, res, next) => {
   const transaction = await sequelize.transaction();

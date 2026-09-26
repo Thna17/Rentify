@@ -2,9 +2,9 @@ const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { sequelize } = require('../config/db');
 const { StoreAccess, StoreDeliveryPolicy, WebsiteData, Product } = require('../models');
-const catalog = require('../services/storeCatalogService');
-const checkout = require('../services/marketplaceCheckoutService');
-const ProductService = require('../services/ProductService');
+const catalog = require('../modules/store-catalog/storeCatalogService');
+const checkout = require('../modules/checkout/marketplaceCheckoutService');
+const ProductService = require('../modules/catalog/ProductService');
 
 async function run() {
   if (process.env.NODE_ENV !== 'test') throw new Error('Use an isolated test database');

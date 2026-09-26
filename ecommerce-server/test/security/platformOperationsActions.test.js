@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const controller = require('../../controllers/platformOperationsController');
+const controller = require('../../modules/admin/platformOperationsController');
 const { Product, ProductReview, OrderEvent } = require('../../models');
 
 const response = () => ({

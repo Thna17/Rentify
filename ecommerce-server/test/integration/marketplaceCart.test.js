@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
-const service = require('../../services/marketplaceCheckoutService');
+const service = require('../../modules/checkout/marketplaceCheckoutService');
 const { Cart, CartItem, Product, ProductVariant, StoreAccess, StoreDeliveryPolicy } = require('../../models');
 
 test('marketplace cart: guest session getCart, setCartItem, updateCartItem, and multi-store support', async (t) => {

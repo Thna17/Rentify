@@ -1,0 +1,97 @@
+{
+  "routes/authRoutes.js": "modules/auth/authRoutes.js",
+  "services/authService.js": "modules/auth/authService.js",
+  "middlewares/storeValidationMiddleware.js": "modules/auth/storeValidationMiddleware.js",
+  "utils/templates/otpVerificationEmail.js": "modules/auth/emails/otpVerificationEmail.js",
+
+  "routes/customerRoutes.js": "modules/customers/customerRoutes.js",
+  "controllers/customerController.js": "modules/customers/customerController.js",
+
+  "routes/productRoutes.js": "modules/catalog/productRoutes.js",
+  "routes/categoryRoutes.js": "modules/catalog/categoryRoutes.js",
+  "controllers/ProductController.js": "modules/catalog/ProductController.js",
+  "controllers/categoryController.js": "modules/catalog/categoryController.js",
+  "services/ProductService.js": "modules/catalog/ProductService.js",
+  "middlewares/validation/productValidation.js": "modules/catalog/productValidation.js",
+  "core/product": "modules/catalog/core",
+
+  "routes/storeCatalogRoutes.js": "modules/store-catalog/storeCatalogRoutes.js",
+  "controllers/storeCatalogController.js": "modules/store-catalog/storeCatalogController.js",
+  "services/storeCatalogService.js": "modules/store-catalog/storeCatalogService.js",
+  "services/productReviewService.js": "modules/store-catalog/productReviewService.js",
+
+  "routes/cartRoutes.js": "modules/cart/cartRoutes.js",
+  "controllers/CartController.js": "modules/cart/CartController.js",
+  "services/CartService.js": "modules/cart/CartService.js",
+  "core/cart": "modules/cart/core",
+
+  "routes/orderRoutes.js": "modules/orders/orderRoutes.js",
+  "routes/merchantRoutes.js": "modules/orders/merchantRoutes.js",
+  "controllers/OrderController.js": "modules/orders/OrderController.js",
+  "controllers/MerchantOrderController.js": "modules/orders/MerchantOrderController.js",
+  "controllers/MerchantController.js": "modules/orders/MerchantController.js",
+  "services/OrderService.js": "modules/orders/OrderService.js",
+  "core/orderCreation": "modules/orders/core/orderCreation",
+  "core/orderRetrieval": "modules/orders/core/orderRetrieval",
+
+  "services/stockService.js": "modules/inventory/stockService.js",
+  "services/sharedStockService.js": "modules/inventory/sharedStockService.js",
+
+  "routes/marketplaceCheckoutRoutes.js": "modules/checkout/marketplaceCheckoutRoutes.js",
+  "routes/storefrontCheckoutRoutes.js": "modules/checkout/storefrontCheckoutRoutes.js",
+  "controllers/marketplaceCheckoutController.js": "modules/checkout/marketplaceCheckoutController.js",
+  "services/marketplaceCheckoutService.js": "modules/checkout/marketplaceCheckoutService.js",
+  "services/merchantContactService.js": "modules/checkout/merchantContactService.js",
+  "middlewares/marketplaceCheckoutGate.js": "modules/checkout/marketplaceCheckoutGate.js",
+
+  "routes/paymentRoutes.js": "modules/payments/paymentRoutes.js",
+  "routes/paymentConfig.js": "modules/payments/paymentConfig.js",
+  "controllers/PaymentController.js": "modules/payments/PaymentController.js",
+  "controllers/paymentConfigController.js": "modules/payments/paymentConfigController.js",
+  "services/PaymentProcessor.js": "modules/payments/PaymentProcessor.js",
+  "services/PaymentVerificationService.js": "modules/payments/PaymentVerificationService.js",
+  "services/FulfillmentService.js": "modules/payments/FulfillmentService.js",
+  "utils/paymentConfigEncryption.js": "modules/payments/paymentConfigEncryption.js",
+  "workers/recoveryWorker.js": "modules/payments/recoveryWorker.js",
+  "core/payment": "modules/payments/core",
+
+  "routes/invoiceRoutes.js": "modules/invoices/invoiceRoutes.js",
+  "controllers/invoiceController.js": "modules/invoices/invoiceController.js",
+  "utils/invoiceUtils.js": "modules/invoices/invoiceUtils.js",
+
+  "routes/usageRoutes.js": "modules/billing/usageRoutes.js",
+  "controllers/usageController.js": "modules/billing/usageController.js",
+  "controllers/usageAggregationController.js": "modules/billing/usageAggregationController.js",
+  "services/usageEventService.js": "modules/billing/usageEventService.js",
+  "services/usageAggregationService.js": "modules/billing/usageAggregationService.js",
+  "services/billingService.js": "modules/billing/billingService.js",
+  "services/pricingRuleService.js": "modules/billing/pricingRuleService.js",
+  "workers/billingWorker.js": "modules/billing/billingWorker.js",
+
+  "routes/storeAccessRoutes.js": "modules/store-access/storeAccessRoutes.js",
+  "controllers/storeAccessController.js": "modules/store-access/storeAccessController.js",
+  "services/storeAccessService.js": "modules/store-access/storeAccessService.js",
+
+  "routes/websiteRoutes.js": "modules/websites/websiteRoutes.js",
+  "controllers/websiteController.js": "modules/websites/websiteController.js",
+  "utils/updateDeploymentUrls.js": "modules/websites/updateDeploymentUrls.js",
+  "services/DeploymentListener.js": "modules/websites/DeploymentListener.js",
+
+  "routes/notificationRoutes.js": "modules/notifications/notificationRoutes.js",
+  "controllers/telegramController.js": "modules/notifications/telegramController.js",
+  "services/telegramService.js": "modules/notifications/telegramService.js",
+  "services/notificationService.js": "modules/notifications/notificationService.js",
+  "services/emailService.js": "modules/notifications/emailService.js",
+  "services/messageFormatters.js": "modules/notifications/messageFormatters.js",
+
+  "routes/opsRoutes.js": "modules/ops/opsRoutes.js",
+  "controllers/opsInvoiceController.js": "modules/ops/opsInvoiceController.js",
+  "middlewares/opsAuth.js": "modules/ops/opsAuth.js",
+
+  "routes/platformOperationsRoutes.js": "modules/admin/platformOperationsRoutes.js",
+  "controllers/platformOperationsController.js": "modules/admin/platformOperationsController.js",
+  "middlewares/verifyCoreAdmin.js": "modules/admin/verifyCoreAdmin.js",
+
+  "routes/ecommerceStatsRoutes.js": "modules/stats/ecommerceStatsRoutes.js",
+  "controllers/ecommerceStatsController.js": "modules/stats/ecommerceStatsController.js"
+}

@@ -650,8 +650,8 @@ async function seedCore() {
 
   // Aura's Website is seeded directly, so give it the Store every Website has
   // (reusing the owner's Store when one exists) and queue its Commerce copy.
-  const storeService = require('../src/services/storeService');
-  const storeSyncService = require('../src/services/storeSyncService');
+  const storeService = require('../src/modules/stores/storeService');
+  const storeSyncService = require('../src/modules/commerce-sync/storeSyncService');
   const auraWebsite = await Website.findByPk(WEBSITE_ID);
   const auraStore = await storeService.ensureForWebsite({
     ownerUserId: MERCHANT_ID,

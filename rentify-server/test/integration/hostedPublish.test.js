@@ -2,8 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Website } = require('../../src/models');
 const { getMerchantCache } = require('../../src/utils/cache');
-const ecommerceSyncService = require('../../src/services/ecommerceSyncService');
-const deploymentService = require('../../src/services/deploymentService');
+const ecommerceSyncService = require('../../src/modules/commerce-sync/ecommerceSyncService');
+const deploymentService = require('../../src/modules/deployments/deploymentService');
 
 const withHosting = (t, { domain = 'rentifystore.shop', devPort = '', env = 'production' } = {}) => {
   const saved = {

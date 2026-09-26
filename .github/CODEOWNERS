@@ -11,10 +11,10 @@
 /admin-frontend/ @Thna17
 
 # High-risk and operational areas
-/rentify-server/src/controllers/paymentController.js @Thna17
-/rentify-server/src/services/authService.js @Thna17
-/ecommerce-server/core/payment/ @Thna17
-/ecommerce-server/controllers/PaymentController.js @Thna17
+/rentify-server/src/modules/billing/paymentController.js @Thna17
+/rentify-server/src/modules/auth/authService.js @Thna17
+/ecommerce-server/modules/payments/core/ @Thna17
+/ecommerce-server/modules/payments/PaymentController.js @Thna17
 /deploy/ @Thna17
 /.github/ @Thna17
 /docs/ @Thna17

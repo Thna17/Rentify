@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Website, Subscription } = require('../../src/models');
 const { getMerchantCache } = require('../../src/utils/cache');
-const websiteController = require('../../src/controllers/websiteController');
+const websiteController = require('../../src/modules/websites/websiteController');
 
 test('the public storefront lookup never includes owner or staff contact details', async (t) => {
   const cache = getMerchantCache();
