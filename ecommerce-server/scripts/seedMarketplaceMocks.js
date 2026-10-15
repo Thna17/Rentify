@@ -1,7 +1,7 @@
 const { sequelize } = require('../config/db');
 const { Product, StoreAccess, StoreDeliveryPolicy } = require('../models');
 const { canonicalCategory } = require('../config/marketplaceTaxonomy');
-const { setDeliveryPolicy } = require('../services/marketplaceCheckoutService');
+const { setDeliveryPolicy } = require('../modules/checkout/marketplaceCheckoutService');
 
 const examples = [
   { websiteId: '7b8f9e01-2a3b-4c5d-8e9f-0a1b2c3d4e5f', fee: '2.50', products: [

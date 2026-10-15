@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 process.env.COOKIE_DOMAIN = ".rentify.test";
-const AuthService = require("../../services/authService");
+const AuthService = require("../../modules/auth/authService");
 const { hashRefreshToken, compareRefreshToken } = require("../../utils/refreshTokenHash");
 
 const cookieResponse = () => ({

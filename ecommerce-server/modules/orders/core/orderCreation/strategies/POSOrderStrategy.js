@@ -1,0 +1,193 @@
+// strategies/POSOrderStrategy.js
+const OrderTypeStrategy = require('./OrderTypeStrategy');
+
+class POSOrderStrategy extends OrderTypeStrategy {
+  async processOrder(orderData, transaction) {
+    const { websiteId, storeId, items, paymentMethod, cashierId, customerInfo, currency = 'USD' } = orderData;
+
+    // Validate products using niche strategy
+    await this.validateOrderItems(items, transaction);
+
+    // Calculate totals using niche strategy
+    const totals = this.nicheStrategy.calculateOrderTotals(
+      items, 
+      'pos', 
+      {}, 
+      currency
+    );
+
+    const normalizedMethod = String(paymentMethod || '').toLowerCase();
+    const isImmediatePayment = ['cash', 'card', 'credit_card', 'debit_card'].includes(normalizedMethod);
+
+    // Create customer record for POS if provided
+    let customer = null;
+    if (customerInfo?.email) {
+      customer = await this.findOrCreateCustomer(customerInfo, websiteId, storeId, transaction);
+    }
+
+    // Create order
+    const order = await this.createOrderRecord({
+      websiteId: websiteId || null,
+      storeId: storeId || null,
+      orderType: "pos",
+      salesChannel: "pos",
+      customerId: customer?.id,
+      status: isImmediatePayment ? 'completed' : 'pending',
+      deliveryStatus: isImmediatePayment ? 'delivered' : 'pending',
+      cashierId,
+      stockDeducted: isImmediatePayment,
+      customerInfo,
+      currency,
+      ...totals
+    }, totals, transaction);
+
+    // Create order items
+    const orderItems = await this.createOrderItems(order.id, items, transaction);
+
+    // Update inventory for immediate payments
+    if (isImmediatePayment) {
+      await this.nicheStrategy.updateInventory(items, transaction);
+    }
+
+    // Process payment
+    let payment;
+    const isKHQR = ['khqr', 'wallet', 'bakong'].includes(normalizedMethod);
+
+    try {
+      payment = await this.paymentProcessor.process(
+        order,
+        paymentMethod,
+        orderData.merchantConfig,
+        transaction,
+        currency
+      );
+    } catch (procErr) {
+      if (isKHQR) {
+        // Fallback for POS counter-stand QR when merchant has no automated Bakong API credentials configured
+        const PaymentModel = this.models?.Payment || require('../../../../../models').Payment;
+        if (PaymentModel && typeof PaymentModel.create === 'function') {
+          payment = await PaymentModel.create(
+            {
+              orderId: order.id,
+              amount: order.totalAmount,
+              paymentMethod: 'WALLET',
+              status: 'completed',
+              transactionData: {
+                posData: {
+                  terminalId: "POS_TERMINAL_1",
+                  method: "KHQR_COUNTER",
+                  timestamp: new Date(),
+                },
+              },
+              currency: currency || 'USD',
+            },
+            { transaction }
+          );
+          await this.nicheStrategy.updateInventory(items, transaction);
+          await order.update({ status: 'completed', deliveryStatus: 'delivered', stockDeducted: true }, { transaction });
+        } else {
+          throw procErr;
+        }
+      } else {
+        throw procErr;
+      }
+    }
+
+    // Process niche-specific logic
+    await this.nicheStrategy.processNicheSpecific(order, orderItems, transaction);
+
+    // Create invoice
+    const invoice = await this.createInvoice(
+      order, 
+      payment, 
+      transaction, 
+      customerInfo
+    );
+
+    // Update order status for instant payments
+    if (isImmediatePayment) {
+      await order.update({ 
+        status: 'completed',
+        deliveryStatus: 'delivered',
+        stockDeducted: true 
+      }, { transaction });
+    }
+
+    return {
+      order: order.toJSON(),
+      payment: payment.toJSON(),
+      invoice: invoice.toJSON(),
+      orderItems: orderItems.map(item => item.toJSON()),
+      khqrData: payment.transactionData?.rawQR ? {
+        rawQR: payment.transactionData.rawQR,
+        md5Hash: payment.transactionData.md5Hash,
+        deeplink: payment.transactionData.qrCodeUrl,
+      } : null,
+    };
+  }
+
+  async findOrCreateCustomer(customerInfo, websiteId, storeId, transaction) {
+    const { Customer } = this.models;
+    const { Op } = require('sequelize');
+
+    const targetStoreId = websiteId || storeId;
+    let customer = null;
+    if (targetStoreId) {
+      const conditions = [];
+      if (websiteId) conditions.push({ storeId: websiteId });
+      if (storeId) {
+        conditions.push({ storeId });
+        conditions.push({ tenantStoreId: storeId });
+      }
+      customer = await Customer.findOne({
+        where: { email: customerInfo.email, [Op.or]: conditions },
+        transaction
+      });
+    }
+
+    if (!customer) {
+      customer = await Customer.create({
+        storeId: websiteId || storeId,
+        tenantStoreId: storeId || null,
+        email: customerInfo.email,
+        name: customerInfo.name || 'POS Customer',
+        phoneNumber: customerInfo.phone,
+        shippingAddress: customerInfo.addresses || [],
+      }, { transaction });
+    }
+
+    return customer;
+  }
+
+  async createInvoice(order, payment, transaction, customerInfo = {}) {
+    const invoiceNumber = this.generateInvoiceNumber();
+    
+    return await this.models.Invoice.create({
+      websiteId: order.websiteId || null,
+      storeId: order.storeId || null,
+      orderId: order.id,
+      paymentId: payment.id,
+      invoiceNumber,
+      status: payment.status === 'completed' ? 'paid' : 'sent',
+      customerName: customerInfo.name || order.customerInfo?.name || 'POS Customer',
+      customerEmail: customerInfo.email || order.customerInfo?.email,
+      subtotal: order.subtotal,
+      tax: order.taxTotal || 0,
+      discount: order.discountTotal || 0,
+      total: order.totalAmount,
+      currency: order.currency,
+    }, { transaction });
+  }
+
+  generateInvoiceNumber() {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+    return `POS-INV-${timestamp}-${random}`;
+  }
+
+  getOrderType() {
+    return 'pos';
+  }
+}
+
+module.exports = POSOrderStrategy;

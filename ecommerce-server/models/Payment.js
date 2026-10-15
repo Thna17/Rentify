@@ -74,7 +74,7 @@ const Payment = sequelize.define("Payment", {
       payment.version = payment.version + 1;
     },
     afterUpdate: async (payment) => {
-      const { recordOrderPaidEvent } = require("../services/usageEventService");
+      const { recordOrderPaidEvent } = require("../modules/billing/usageEventService");
       const previousStatus = payment.previous("status");
       if (
         (payment.status === "completed" || payment.status === "paid") &&
@@ -84,7 +84,7 @@ const Payment = sequelize.define("Payment", {
       }
     },
     afterCreate: async (payment) => {
-      const { recordOrderPaidEvent } = require("../services/usageEventService");
+      const { recordOrderPaidEvent } = require("../modules/billing/usageEventService");
       if (payment.status === "completed" || payment.status === "paid") {
         await recordOrderPaidEvent(payment.orderId, payment.paidAt || payment.createdAt);
       }

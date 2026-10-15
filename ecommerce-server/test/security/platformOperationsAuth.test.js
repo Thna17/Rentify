@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createVerifyCoreAdmin } = require('../../middlewares/verifyCoreAdmin');
+const { createVerifyCoreAdmin } = require('../../modules/admin/verifyCoreAdmin');
 
 const response = () => ({
   status(code) { this.statusCode = code; return this; },

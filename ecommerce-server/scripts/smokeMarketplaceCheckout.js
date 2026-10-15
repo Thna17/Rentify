@@ -3,9 +3,9 @@ const { randomUUID } = require('node:crypto');
 const { sequelize } = require('../config/db');
 const { StoreAccess, StoreDeliveryPolicy, WebsiteData, Product,
   Cart, CartItem, Order, OrderItem, Payment, OrderEvent } = require('../models');
-const catalog = require('../services/storeCatalogService');
-const checkout = require('../services/marketplaceCheckoutService');
-const NicheStrategy = require('../core/orderCreation/strategies/NicheStrategy');
+const catalog = require('../modules/store-catalog/storeCatalogService');
+const checkout = require('../modules/checkout/marketplaceCheckoutService');
+const NicheStrategy = require('../modules/orders/core/orderCreation/strategies/NicheStrategy');
 const { audit: auditCodOrders } = require('./auditMarketplaceCod');
 
 async function run() {

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const storeService = require('../../src/services/storeService');
+const storeService = require('../../src/modules/stores/storeService');
 
 const { storeLogoUrl } = storeService;
 

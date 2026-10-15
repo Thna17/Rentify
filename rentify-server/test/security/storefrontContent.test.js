@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateStorefrontContent } = require('../../src/config/storefrontContentFields');
+const { validateStorefrontContent } = require('../../src/modules/websites/storefrontContentFields');
 const { TEMPLATE_3_SECTION_FIELDS } = require('../../scripts/cafeTemplate');
 
 test('storefront editing accepts only allowlisted fields with valid values', () => {

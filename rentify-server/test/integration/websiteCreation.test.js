@@ -1,12 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Website, WebsiteTemplate, User, Staff, Package, Payment, Subscription, WebsiteSyncOutbox, WebsiteContent } = require('../../src/models');
-const websiteService = require('../../src/services/websiteService');
-const subscriptionService = require('../../src/services/subscriptionService');
-const storeService = require('../../src/services/storeService');
-const storeSyncService = require('../../src/services/storeSyncService');
-const ecommerceSyncService = require('../../src/services/ecommerceSyncService');
-const deploymentController = require('../../src/controllers/deploymentController');
+const websiteService = require('../../src/modules/websites/websiteService');
+const subscriptionService = require('../../src/modules/billing/subscriptionService');
+const storeService = require('../../src/modules/stores/storeService');
+const storeSyncService = require('../../src/modules/commerce-sync/storeSyncService');
+const ecommerceSyncService = require('../../src/modules/commerce-sync/ecommerceSyncService');
+const deploymentController = require('../../src/modules/deployments/deploymentController');
 
 const businessData = {
   name: 'Test shop',

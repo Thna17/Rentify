@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const StrategyFactory = require('../../core/product/factories/StrategyFactory');
+const StrategyFactory = require('../../modules/catalog/core/factories/StrategyFactory');
 const { Category } = require('../../models');
-const categoryController = require('../../controllers/categoryController');
+const categoryController = require('../../modules/catalog/categoryController');
 
 const response = () => ({
   statusCode: 200,

@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const POSOrderStrategy = require('../../core/orderCreation/strategies/POSOrderStrategy');
-const POSOrdersStrategy = require('../../core/orderRetrieval/strategies/POSOrdersStrategy');
-const NicheStrategy = require('../../core/orderCreation/strategies/NicheStrategy');
+const POSOrderStrategy = require('../../modules/orders/core/orderCreation/strategies/POSOrderStrategy');
+const POSOrdersStrategy = require('../../modules/orders/core/orderRetrieval/strategies/POSOrdersStrategy');
+const NicheStrategy = require('../../modules/orders/core/orderCreation/strategies/NicheStrategy');
 const { Product, Order, OrderItem, Payment, Invoice, Customer, StoreAccess } = require('../../models');
 const { createRequireStoreAccess } = require('../../middlewares/requireStoreAccess');
 const { createRequireWebsiteAccess } = require('../../middlewares/requireWebsiteAccess');
@@ -399,7 +399,7 @@ test('marketplace POS: POS orders under $50 have $0 shipping fee and salesChanne
     }
   };
 
-  const PaymentFactory = require('../../core/payment/factory/PaymentFactory');
+  const PaymentFactory = require('../../modules/payments/core/factory/PaymentFactory');
   const cardStrategy = PaymentFactory.createStrategy('CARD', mockModels);
   assert.ok(cardStrategy, 'PaymentFactory must instantiate CARD strategy case-insensitively');
 

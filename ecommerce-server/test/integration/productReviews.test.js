@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
-const reviewService = require('../../services/productReviewService');
+const reviewService = require('../../modules/store-catalog/productReviewService');
 const { Product, ProductReview, Order, OrderItem } = require('../../models');
 
 test('product reviews: add, get, summary calculations, and upsert', async (t) => {

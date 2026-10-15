@@ -54,14 +54,14 @@ const Invoice = sequelize.define("Invoice", {
       invoice.version = invoice.version + 1;
     },
     afterUpdate: async (invoice) => {
-      const { recordInvoicePaidEvent } = require("../services/usageEventService");
+      const { recordInvoicePaidEvent } = require("../modules/billing/usageEventService");
       const previousStatus = invoice.previous("status");
       if (invoice.status === "paid" && previousStatus !== "paid") {
         await recordInvoicePaidEvent(invoice.id, invoice.updatedAt);
       }
     },
     afterCreate: async (invoice) => {
-      const { recordInvoicePaidEvent } = require("../services/usageEventService");
+      const { recordInvoicePaidEvent } = require("../modules/billing/usageEventService");
       if (invoice.status === "paid") {
         await recordInvoicePaidEvent(invoice.id, invoice.createdAt);
       }

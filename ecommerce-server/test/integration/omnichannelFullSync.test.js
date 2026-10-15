@@ -1,10 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const POSOrderStrategy = require('../../core/orderCreation/strategies/POSOrderStrategy');
-const OnlineOrderStrategy = require('../../core/orderCreation/strategies/OnlineOrderStrategy');
-const NicheStrategy = require('../../core/orderCreation/strategies/NicheStrategy');
-const { changeStock } = require('../../services/sharedStockService');
-const { updateStock } = require('../../services/stockService');
+const POSOrderStrategy = require('../../modules/orders/core/orderCreation/strategies/POSOrderStrategy');
+const OnlineOrderStrategy = require('../../modules/orders/core/orderCreation/strategies/OnlineOrderStrategy');
+const NicheStrategy = require('../../modules/orders/core/orderCreation/strategies/NicheStrategy');
+const { changeStock } = require('../../modules/inventory/sharedStockService');
+const { updateStock } = require('../../modules/inventory/stockService');
 const { Product, ProductVariant, Order, OrderItem, Payment, Invoice, Customer, Cart, CartItem, ShippingDetail } = require('../../models');
 
 test('omnichannel full sync: POS, Storefront, and Marketplace share canonical inventory and status transitions', async (t) => {

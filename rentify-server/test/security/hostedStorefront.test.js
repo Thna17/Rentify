@@ -5,7 +5,7 @@ const {
   hostedStorefrontUrl,
   hostedSubdomainFromHost,
 } = require('../../src/utils/hostedStorefrontOrigin');
-const { subdomainBase } = require('../../src/services/hostedSubdomainService');
+const { subdomainBase } = require('../../src/modules/deployments/hostedSubdomainService');
 
 const withEnv = (values, run) => {
   const saved = Object.fromEntries(Object.keys(values).map((key) => [key, process.env[key]]));

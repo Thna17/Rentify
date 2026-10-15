@@ -1,9 +1,9 @@
 const express = require('express');
-const passport = require('./config/passport');
+const passport = require('./modules/auth/passport');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const telegramService = require('./services/telegramService');
+const telegramService = require('./modules/notifications/telegramService');
 const { getMerchantRedis } = require('./config/redis');
 
 const helmetConfig = require('./config/helmetConfig');
@@ -12,20 +12,20 @@ const corsOptions = require('./config/corsConfig');
 const sessionConfig = require('./config/sessionConfig');
 
 // Route modules
-const authRoutes = require('./routes/authRoutes');
-const adminRoute = require('./routes/adminRoute');
-const userRoutes = require('./routes/userRoutes');
-const websiteRoutes = require('./routes/websiteRoutes');
-const storeRoutes = require('./routes/storeRoutes');
-const deploymentRoutes = require('./routes/deploymentRoute');
-const websiteTemplate = require('./routes/websiteTemplate');
-const dashboardRoute = require('./routes/dashboardRoute');
-const staffRoutes = require('./routes/staffRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const packageRoutes = require('./routes/packageRoutes');
-const opsRoutes = require('./routes/opsRoutes');
-const internalRoutes = require('./routes/internalRoutes');
+const authRoutes = require('./modules/auth/authRoutes');
+const adminRoute = require('./modules/admin/adminRoute');
+const userRoutes = require('./modules/users/userRoutes');
+const websiteRoutes = require('./modules/websites/websiteRoutes');
+const storeRoutes = require('./modules/stores/storeRoutes');
+const deploymentRoutes = require('./modules/deployments/deploymentRoute');
+const websiteTemplate = require('./modules/templates/websiteTemplate');
+const dashboardRoute = require('./modules/dashboard/dashboardRoute');
+const staffRoutes = require('./modules/staff/staffRoutes');
+const notificationRoutes = require('./modules/notifications/notificationRoutes');
+const paymentRoutes = require('./modules/billing/paymentRoutes');
+const packageRoutes = require('./modules/billing/packageRoutes');
+const opsRoutes = require('./modules/ops/opsRoutes');
+const internalRoutes = require('./modules/internal/internalRoutes');
 dotenv.config();
 const app = express();
 

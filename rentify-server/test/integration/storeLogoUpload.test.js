@@ -1,9 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const storeService = require('../../src/services/storeService');
-const storeSyncService = require('../../src/services/storeSyncService');
-const cloudinaryUploadService = require('../../src/services/cloudinaryUploadService');
-const controller = require('../../src/controllers/storeController');
+const storeService = require('../../src/modules/stores/storeService');
+const storeSyncService = require('../../src/modules/commerce-sync/storeSyncService');
+const cloudinaryUploadService = require('../../src/modules/media/cloudinaryUploadService');
+const controller = require('../../src/modules/stores/storeController');
 
 const OWNER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const STORE = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
