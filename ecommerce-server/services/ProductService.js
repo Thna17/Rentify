@@ -13,6 +13,38 @@ const { logger } = require("../utils/logger");
 const { ApiError } = require("../utils/ApiError");
 const { canonicalCategory } = require('../config/marketplaceTaxonomy');
 
+const STORE_OR_NICHE_TO_MARKETPLACE_CATEGORY = {
+  'beauty & skincare': 'Skincare',
+  'beauty': 'Beauty',
+  'skincare': 'Skincare',
+  'fashion & apparel': 'Clothing',
+  'fashion': 'Clothing',
+  'clothing': 'Clothing',
+  'electronics & gadgets': 'Phones & Devices',
+  'electronics': 'Phones & Devices',
+  'food & beverage': 'Food & Beverage',
+  'restaurant': 'Food & Beverage',
+  'cafe': 'Food & Beverage',
+  'grocery': 'Groceries',
+  'groceries': 'Groceries',
+  'handmade crafts & gifts': 'Handmade Crafts',
+  'home & living': 'Home Goods',
+  'jewelry & watches': 'Jewelry',
+  'health & wellness': 'Beauty',
+};
+
+function inferMarketplaceCategory(primaryCategory, websiteNiche) {
+  const normPrimary = String(primaryCategory || '').trim().toLowerCase();
+  if (normPrimary && STORE_OR_NICHE_TO_MARKETPLACE_CATEGORY[normPrimary]) {
+    return STORE_OR_NICHE_TO_MARKETPLACE_CATEGORY[normPrimary];
+  }
+  const normNiche = String(websiteNiche || '').trim().toLowerCase();
+  if (normNiche && STORE_OR_NICHE_TO_MARKETPLACE_CATEGORY[normNiche]) {
+    return STORE_OR_NICHE_TO_MARKETPLACE_CATEGORY[normNiche];
+  }
+  return canonicalCategory(primaryCategory) || 'Other';
+}
+
 function validMarketplaceCategory(value) {
   if (value === undefined || value === null || value === '') return null;
   const category = canonicalCategory(value);
@@ -317,6 +349,19 @@ class ProductService {
 
 async create(productData, transaction = null) {
   const websiteNiche = await this.getWebsiteNiche();
+  let defaultMarketplaceCategory = inferMarketplaceCategory(null, websiteNiche);
+  try {
+    const storeCondition = await this.resolveStoreWhere(transaction);
+    if (storeCondition?.storeId) {
+      const { StoreAccess } = require('../models');
+      const store = await StoreAccess.findByPk(storeCondition.storeId, { transaction });
+      if (store?.primaryCategory) {
+        defaultMarketplaceCategory = inferMarketplaceCategory(store.primaryCategory, websiteNiche);
+      }
+    }
+  } catch {
+    // Non-fatal fallback
+  }
 
   const builder = new ProductBuilder(this.websiteId, websiteNiche);
 
@@ -325,12 +370,13 @@ async create(productData, transaction = null) {
   }
 
   try {
+    const resolvedMarketplaceCategory = validMarketplaceCategory(productData.marketplaceCategory) || defaultMarketplaceCategory;
     builder
       .setBasicInfo(productData)
       .setInventoryInfo(productData)
       .setSeoInfo(productData)
       .setCategory(productData.categoryId)
-      .setMarketplaceCategory(validMarketplaceCategory(productData.marketplaceCategory),
+      .setMarketplaceCategory(resolvedMarketplaceCategory,
         validMarketplaceVisibility(productData.marketplaceVisibility))
       .setImages(productData.images)
       .setTags(productData.tags)

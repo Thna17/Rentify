@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
+import { StoreLogoCard } from './components/StoreLogoCard';
 
 export const AccountSettings = () => {
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
@@ -304,6 +305,13 @@ export const AccountSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* The store's presentation belongs to its owner; staff do not see it. */}
+      {profile?.role !== 'staff' && (
+        <div className="mt-6">
+          <StoreLogoCard />
+        </div>
+      )}
     </SettingsLayout>
   );
 };

@@ -31,7 +31,7 @@ const asyncHandler = (fn) => async (req, res, next) => {
   }
 };
 
-router.get('/session', verifyToken, async (req, res) => {
+router.get(['/session', '/me'], verifyToken, async (req, res) => {
   try {
     if (req.user?.role === 'staff') {
       const staff = await Staff.findByPk(req.user.id, {

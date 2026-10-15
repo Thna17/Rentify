@@ -611,7 +611,9 @@ export class CheckoutComponent {
 
       if (storeCarts.length > 0) {
         for (const cart of storeCarts) {
-          const idempotencyKey = `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
           const expectedTotal = cart.totalAmount || cart.subtotal || '0';
           const res = await firstValueFrom(
             this.rentify.checkout(
@@ -641,7 +643,9 @@ export class CheckoutComponent {
       } else {
         const groups = this.shipmentGroups();
         for (const g of groups) {
-          const idempotencyKey = `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `chk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
           const groupTotal = g.lines.reduce((s, l) => s + l.lineTotal, 0).toFixed(2);
           const res = await firstValueFrom(
             this.rentify.checkout(

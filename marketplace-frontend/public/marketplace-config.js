@@ -4,6 +4,7 @@ window.__RENTIFY_MARKETPLACE__ = {
   coreApiUrl: '',
   commerceApiUrl: '',
   authUrl: '',
+  marketingUrl: '',
   merchantDashboardUrl: '',
   adminDashboardUrl: '',
 };

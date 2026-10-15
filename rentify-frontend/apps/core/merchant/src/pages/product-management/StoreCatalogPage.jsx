@@ -40,8 +40,8 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imageErrors, setImageErrors] = useState([]);
   const [form, setForm] = useState({
-    name: '', description: '', price: '', stockQuantity: 0,
-    marketplaceCategory: '', status: 'draft',
+    name: '', description: '', price: '', stockQuantity: 10,
+    marketplaceCategory: '', status: 'active',
   });
 
   async function refresh(id) {
@@ -63,8 +63,16 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
         : getJson(`${RENTIFY_API_BASE}/api/stores/mine`),
     ]).then(async ([taxonomy, storeResult]) => {
       if (!active) return;
-      setCategories(taxonomy.categories || []);
+      const cats = taxonomy.categories || [];
+      setCategories(cats);
       setStoreId(storeResult.data.id);
+      const primaryCat = storeResult.data?.primaryCategory;
+      if (primaryCat && cats.includes(primaryCat)) {
+        setForm((prev) => ({
+          ...prev,
+          marketplaceCategory: prev.marketplaceCategory || primaryCat,
+        }));
+      }
       await Promise.all([refresh(storeResult.data.id), loadDelivery(storeResult.data.id)]);
     }).catch((error) => { if (active) setMessage(error.message); })
       .finally(() => { if (active) setLoading(false); });
@@ -87,8 +95,8 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
           ...form, price: Number(form.price), stockQuantity: Number(form.stockQuantity), images,
         }),
       });
-      setForm({ name: '', description: '', price: '', stockQuantity: 0,
-        marketplaceCategory: '', status: 'draft' });
+      setForm((prev) => ({ name: '', description: '', price: '', stockQuantity: 10,
+        marketplaceCategory: prev.marketplaceCategory || '', status: 'active' }));
       setProductImages([]);
       setImageErrors([]);
       await refresh(storeId);

@@ -18,6 +18,7 @@ import {
   validateCambodianPhone,
 } from '../utils/phoneUtils';
 import { useAuthConfig } from '../utils/authUtils';
+import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 export const useSignupForm = () => {
   const { t, isKhmer } = useAuthLanguage();
@@ -51,7 +52,38 @@ export const useSignupForm = () => {
   const location = useLocation();
   const { websiteId } = useWebsiteData();
 
-  const { redirectUrl, isWebsiteTemplate, isMarketplace } = useAuthConfig();
+  const {
+    redirectUrl,
+    hasExplicitReturnUrl,
+    returnDomain,
+    isWebsiteTemplate,
+    isHostedStorefrontBuyer,
+    isMarketplace,
+  } = useAuthConfig();
+
+  const resolvePostSignupRedirect = () => {
+    if (isWebsiteTemplate || isHostedStorefrontBuyer || isMarketplace) {
+      return redirectUrl;
+    }
+    const marketingStartUrl = `${MARKETING_URL.replace(/\/+$/, '')}/start`;
+    if (!hasExplicitReturnUrl) {
+      return marketingStartUrl;
+    }
+    try {
+      const marketingHost = new URL(MARKETING_URL).host;
+      const parsed = new URL(redirectUrl);
+      if (
+        returnDomain === marketingHost &&
+        parsed.pathname &&
+        parsed.pathname !== '/'
+      ) {
+        return redirectUrl;
+      }
+    } catch {
+      // Fall through to unified onboarding start
+    }
+    return marketingStartUrl;
+  };
 
   useEffect(() => {
     const otpParam = new URLSearchParams(window.location.search).get('otp');
@@ -247,8 +279,9 @@ export const useSignupForm = () => {
           ? 'ការផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
           : 'Verification successful! Redirecting...'
       );
+      const destination = resolvePostSignupRedirect();
       setTimeout(() => {
-        window.location.href = redirectUrl;
+        window.location.href = destination;
       }, 1500);
     } catch (err: any) {
       setError(

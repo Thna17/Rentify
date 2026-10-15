@@ -1,20 +1,21 @@
+import { DEFAULT_PACKAGES } from '../../hooks/useStartTrial';
+
 const normalize = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /**
- * The package onboarding should use, from the packages Core actually has.
- * The link may carry a package id or a plan name (e.g. "growth"); ids go stale
- * when the database is re-created, so an unknown id falls back to a name
- * match and then to the free package instead of failing at the last step.
+ * Resolves the package for storefront onboarding.
+ * Creating a storefront website unlocks Starter (≈$5/mo, 14-day free trial) or Pro (≈$10/mo, 14-day free trial).
  */
 export const resolvePackage = (packages, requested) => {
-  const list = Array.isArray(packages) ? packages.filter((item) => item?.id) : [];
+  const source = Array.isArray(packages) && packages.length > 0 ? packages : DEFAULT_PACKAGES;
+  const list = source.filter((item) => item?.id);
   if (!list.length) return null;
 
   const byId = list.find((item) => item.id === requested);
-  if (byId) return byId;
+  if (byId && Number(byId.price) > 0) return byId;
 
   const key = normalize(requested);
-  if (key) {
+  if (key && key !== 'free') {
     const byName = list.find((item) => {
       const name = normalize(item.name);
       return name && (name === key || name.includes(key) || key.includes(name));
@@ -22,6 +23,9 @@ export const resolvePackage = (packages, requested) => {
     if (byName) return byName;
   }
 
-  const free = list.find((item) => Number(item.price) === 0);
-  return free || [...list].sort((a, b) => Number(a.price) - Number(b.price))[0];
+  const starter =
+    list.find((item) => normalize(item.name) === 'starter') ||
+    list.find((item) => Number(item.price) === 5);
+  return starter || [...list].sort((a, b) => Number(a.price) - Number(b.price))[0];
 };
+

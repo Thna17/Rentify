@@ -23,7 +23,10 @@ async function changeStock(productId, delta, transaction, variantId = null) {
     if (!variant.trackInventory) return variant;
     const nextVariantStock = variant.stockQuantity + delta;
     if (nextVariantStock < 0) fail(`Only ${variant.stockQuantity} left in stock`);
-    await variant.update({ stockQuantity: nextVariantStock, version: variant.version + 1 }, { transaction });
+    const nextStatus = nextVariantStock === 0 && variant.status === 'active'
+      ? 'out_of_stock'
+      : (nextVariantStock > 0 && variant.status === 'out_of_stock' ? 'active' : variant.status);
+    await variant.update({ stockQuantity: nextVariantStock, status: nextStatus, version: variant.version + 1 }, { transaction });
     return variant;
   }
   if (!product.trackInventory) return product;

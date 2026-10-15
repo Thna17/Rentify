@@ -19,6 +19,7 @@ const TECH_MERCHANT_ID = '55555555-5555-4555-8555-555555555555';
 const TECH_STAFF_ID = '66666666-6666-4666-8666-666666666666';
 const TEMPLATE_1_ID = '044c94e2-a47c-47d5-895b-33bc00eb5abb';
 const TEMPLATE_2_ID = 'af3e0202-6327-45b1-bece-02ab3aba4a05';
+const { TEMPLATE_3_ID, TEMPLATE_3_SECTION_FIELDS } = require('./cafeTemplate');
 const WEBSITE_ID = '7b8f9e01-2a3b-4c5d-8e9f-0a1b2c3d4e5f';
 const TECH_WEBSITE_ID = '8c90a1b2-3b4c-5d6e-9f0a-1b2c3d4e5f60';
 const STARTER_PKG_ID = '44444444-4444-4444-8444-444444444441';
@@ -74,64 +75,100 @@ async function seedCore() {
   const packagesData = [
     {
       id: STARTER_PKG_ID,
-      name: 'Free Trial',
+      name: 'Free',
       price: 0.0,
-      duration: '14 days',
-      features: [
-        'basic-dashboard',
-        'product-management',
-        'order-management',
-        'store',
-        'advanced-analytics',
-        'invoice',
-        'pos',
-        '1 Store',
-        '50 Products',
-        'Standard Analytics',
-        'Vite Storefront',
-      ],
-      limits: { staff: 2, storage: 1024, products: 50 },
-    },
-    {
-      id: GROWTH_PKG_ID,
-      name: 'Growth',
-      price: 29.0,
       duration: '1 month',
       features: [
         'basic-dashboard',
         'product-management',
         'order-management',
-        'store',
-        'advanced-analytics',
-        'invoice',
-        'pos',
-        'Unlimited Products',
-        '5 Staff Members',
-        'Custom Domain',
-        'Telegram Order Notifications',
-        'KHQR Payments',
+        'marketplace',
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
       ],
-      limits: { staff: 5, storage: 5120, products: 500 },
+      limits: {
+        staff: 0,
+        storage: 1024,
+        products: 100,
+        whoItsFor: 'Facebook seller, new seller',
+        commission: 'Only on marketplace orders',
+        storeAndCatalog: true,
+        marketplace: true,
+        ownStorefront: false,
+        pos: false,
+        proTools: false,
+      },
     },
     {
-      id: ENTERPRISE_PKG_ID,
-      name: 'Enterprise',
-      price: 99.0,
-      duration: '1 year',
+      id: GROWTH_PKG_ID,
+      name: 'Starter',
+      price: 5.0,
+      duration: '1 month',
       features: [
         'basic-dashboard',
         'product-management',
         'order-management',
+        'marketplace',
         'store',
-        'advanced-analytics',
-        'invoice',
         'pos',
-        'Multi-Storefront',
-        'Unlimited Staff',
-        'Dedicated Support',
-        'Custom Integrations',
+        'invoice',
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Own storefront (subdomain + templates)',
+        'POS at the counter',
+        '14-day free trial',
+        'KHQR Payments',
       ],
-      limits: { staff: 25, storage: 20480, products: 5000 },
+      limits: {
+        staff: 0,
+        storage: 5120,
+        products: 500,
+        trialDays: 14,
+        whoItsFor: 'Shop with a counter or brand',
+        commission: 'Only on marketplace orders',
+        storeAndCatalog: true,
+        marketplace: true,
+        ownStorefront: true,
+        pos: true,
+        proTools: false,
+      },
+    },
+    {
+      id: ENTERPRISE_PKG_ID,
+      name: 'Pro',
+      price: 10.0,
+      duration: '1 month',
+      features: [
+        'basic-dashboard',
+        'product-management',
+        'order-management',
+        'marketplace',
+        'store',
+        'pos',
+        'invoice',
+        'advanced-analytics',
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Own storefront (subdomain + templates)',
+        'POS at the counter',
+        'Custom domain, staff accounts, analytics, marketing tools',
+        'Custom Domain',
+        'Telegram Order Notifications',
+        'KHQR Payments',
+      ],
+      limits: {
+        staff: 10,
+        storage: 20480,
+        products: 5000,
+        trialDays: 14,
+        whoItsFor: 'Growing shop',
+        commission: 'Only on marketplace orders',
+        storeAndCatalog: true,
+        marketplace: true,
+        ownStorefront: true,
+        pos: true,
+        proTools: true,
+      },
     },
   ];
 
@@ -264,6 +301,27 @@ async function seedCore() {
         background: '#0F172A',
       },
     },
+    {
+      id: TEMPLATE_3_ID,
+      name: 'Coffee Shop Website',
+      websiteTemplateId: 3,
+      category: 'cafe',
+      framework: 'vite',
+      baseUrl: 'https://mekong-brew.mekhla.digital',
+      description: 'A warm café template with a tabbed menu, signature drinks, opening hours with an "Open now" badge, and ordering for pickup or delivery.',
+      features: ['Menu with Categories', 'Opening Hours', 'Quick Add to Order', 'Khmer & English'],
+      pages: [
+        { id: 1, page: 'global setting', route: '/' },
+        { id: 2, page: 'Homepage', route: '/' },
+        { id: 3, page: 'Menu', route: '/products' },
+      ],
+      colorPalette: {
+        primary: '#8A4B2A',
+        secondary: '#2B1D16',
+        accent: '#F3E7D8',
+        background: '#FBF7F1',
+      },
+    },
   ];
 
   for (const t of templatesData) {
@@ -346,6 +404,20 @@ async function seedCore() {
   templateContentsData.push(
     ...TEMPLATE_2_SECTION_FIELDS.map(([category, label, type = 'text']) => ({
       templateId: TEMPLATE_2_ID,
+      category,
+      label,
+      type,
+      value: '',
+    })),
+    {
+      templateId: TEMPLATE_3_ID,
+      category: 'Color Palette',
+      label: 'Color Palette',
+      type: 'palette',
+      value: { primary: '#8A4B2A', secondary: '#2B1D16', background: '#FBF7F1' },
+    },
+    ...TEMPLATE_3_SECTION_FIELDS.map(([category, label, type = 'text']) => ({
+      templateId: TEMPLATE_3_ID,
       category,
       label,
       type,
@@ -647,6 +719,9 @@ async function seedCore() {
 
   const seedTechStore = require('./seedTechStore');
   await seedTechStore();
+
+  const seedCafeStore = require('./seedCafeStore');
+  await seedCafeStore({ passwordHash: merchantPassword });
 
   // Aura's Website is seeded directly, so give it the Store every Website has
   // (reusing the owner's Store when one exists) and queue its Commerce copy.

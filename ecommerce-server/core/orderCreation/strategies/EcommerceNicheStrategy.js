@@ -44,6 +44,11 @@ class EcommerceNicheStrategy extends NicheStrategy {
   }
 
   calculateShippingFee(items, orderType, shippingInfo) {
+    // POS in-person sales and in-store pickups never incur shipping fees
+    if (orderType === 'pos' || orderType === 'pickup') {
+      return 0;
+    }
+
     let shipping = 0;
     let hasPhysicalProduct = false;
 

@@ -10,6 +10,9 @@ const SECTIONS = {
     'Featured Products': 'Featured row',
     'Shop by Need': 'Shop by need',
     'Our Story': 'Our story',
+    'Signature Drinks': 'Signature drinks',
+    Menu: 'Menu',
+    'Visit Us': 'Visit us',
   },
   km: {
     Header: 'របារប្រកាស',
@@ -20,6 +23,9 @@ const SECTIONS = {
     'Featured Products': 'ជួរទំនិញពិសេស',
     'Shop by Need': 'ទិញតាមតម្រូវការ',
     'Our Story': 'រឿងរ៉ាវរបស់យើង',
+    'Signature Drinks': 'ភេសជ្ជៈពិសេស',
+    Menu: 'មុខម្ហូប',
+    'Visit Us': 'មកលេងយើង',
   },
 };
 

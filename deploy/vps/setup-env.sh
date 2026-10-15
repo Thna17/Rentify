@@ -13,7 +13,7 @@ password() { echo "$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | cut -c1-14)@
 umask 077
 cat > .env <<ENV
 PUBLIC_DOMAIN=mekhla.digital
-RESERVED_SUBDOMAINS=admin,api,colis,staging,www,send,rsend,rentify,rentify-api,rentify-commerce,rentify-auth,rentify-seller,rentify-market,rentify-admin
+RESERVED_SUBDOMAINS=admin,api,colis,staging,www,send,rsend,rentify,rentify-api,rentify-commerce,rentify-auth,rentify-seller,rentify-market,rentify-admin,rentify-pos
 AUTO_APPROVE_SELLERS=true
 MYSQL_ROOT_PASSWORD=$(secret)
 MYSQL_APP_PASSWORD=$(secret)

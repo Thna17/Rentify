@@ -8,6 +8,7 @@ export type PublicRuntimeConfig = {
   marketingUrl: string;
   marketplaceUrl: string;
   adminDashboardUrl: string;
+  posUrl: string;
   storefrontOrigin: string;
   hostedStorefrontDomain: string;
   hostedStorefrontBuyerEnabled: string;
@@ -26,6 +27,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     marketingUrl: 'http://localhost:4200',
     marketplaceUrl: 'http://localhost:4500',
     adminDashboardUrl: 'http://localhost:4800',
+    posUrl: 'http://localhost:4450',
     storefrontOrigin: 'http://localhost:4700',
   };
   const config = {
@@ -36,6 +38,7 @@ export function getPublicRuntimeConfig(mode: string): PublicRuntimeConfig {
     marketingUrl: env.VITE_MARKETING_URL || env.MARKETING_URL || (development ? local.marketingUrl : ''),
     marketplaceUrl: env.VITE_MARKETPLACE_URL || env.MARKETPLACE_URL || (development ? local.marketplaceUrl : ''),
     adminDashboardUrl: env.VITE_ADMIN_DASHBOARD_URL || env.ADMIN_DASHBOARD_URL || (development ? local.adminDashboardUrl : ''),
+    posUrl: env.VITE_POS_URL || env.POS_URL || (development ? local.posUrl : ''),
     storefrontOrigin: env.VITE_STOREFRONT_ORIGIN || env.STOREFRONT_ORIGIN || (development ? local.storefrontOrigin : ''),
     hostedStorefrontDomain: env.VITE_HOSTED_STOREFRONT_DOMAIN || 'rentifystore.shop',
     hostedStorefrontBuyerEnabled: env.VITE_HOSTED_STOREFRONT_BUYER_ENABLED || 'false',
@@ -65,6 +68,7 @@ export function vitePublicDefines(mode: string) {
     __MARKETING_URL__: JSON.stringify(config.marketingUrl),
     __MARKETPLACE_URL__: JSON.stringify(config.marketplaceUrl),
     __ADMIN_DASHBOARD_URL__: JSON.stringify(config.adminDashboardUrl),
+    __POS_URL__: JSON.stringify(config.posUrl),
     __STOREFRONT_ORIGIN__: JSON.stringify(config.storefrontOrigin),
     __HOSTED_STOREFRONT_DOMAIN__: JSON.stringify(config.hostedStorefrontDomain),
     __HOSTED_STOREFRONT_BUYER_ENABLED__: JSON.stringify(config.hostedStorefrontBuyerEnabled === 'true'),

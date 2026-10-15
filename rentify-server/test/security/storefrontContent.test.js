@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { validateStorefrontContent } = require('../../src/config/storefrontContentFields');
+const { TEMPLATE_3_SECTION_FIELDS } = require('../../scripts/cafeTemplate');
 
 test('storefront editing accepts only allowlisted fields with valid values', () => {
   const { values, errors } = validateStorefrontContent({
@@ -30,4 +31,24 @@ test('images must be https and within the per-field limit', () => {
   assert.equal(validateStorefrontContent({ 'Hero Image': seven }).errors[0].message, 'Up to 6 images');
   assert.equal(validateStorefrontContent({ 'Feature Image': ['https://a.test/1.jpg', 'https://a.test/2.jpg'] }).errors[0].message, 'Only one image');
   assert.equal(validateStorefrontContent(null).errors.length, 1);
+});
+
+test('the café template fields are editable from the storefront, as plain text', () => {
+  const { values, errors } = validateStorefrontContent({
+    'Menu Title': ' Our menu ',
+    'Opening Hours': 'Mon–Fri | 7:00–18:00\nSun | Closed',
+    'Map Link': 'https://maps.google.com/?q=cafe',
+    'Menu Note': 'x'.repeat(301),
+  });
+  assert.deepEqual(values, [
+    { label: 'Menu Title', category: 'Menu', type: 'text', value: 'Our menu' },
+    { label: 'Opening Hours', category: 'Visit Us', type: 'text', value: 'Mon–Fri | 7:00–18:00\nSun | Closed' },
+    { label: 'Map Link', category: 'Visit Us', type: 'text', value: 'https://maps.google.com/?q=cafe' },
+  ]);
+  assert.deepEqual(errors.map((error) => error.label), ['Menu Note']);
+});
+
+test('every Template 3 section field seeded for new cafés can be edited from the storefront', () => {
+  const cleared = Object.fromEntries(TEMPLATE_3_SECTION_FIELDS.map(([, label]) => [label, '']));
+  assert.deepEqual(validateStorefrontContent(cleared).errors, []);
 });

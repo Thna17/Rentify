@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 const {
-  StoreAccess, WebsiteData, Product, Category, Cart, Order, Invoice,
+  StoreAccess, StoreDeliveryPolicy, WebsiteData, Product, Category, Cart, Order, Invoice,
   Payment, UsageEvent, BillingStatement, PaymentGatewayConfig, Customer,
 } = require('../models');
 
@@ -88,6 +88,15 @@ async function applySnapshot(snapshot) {
     };
     if (existing) await existing.update(data, { transaction });
     else await StoreAccess.create(data, { transaction });
+    const policy = await StoreDeliveryPolicy.findByPk(snapshot.storeId, { transaction });
+    if (!policy) {
+      await StoreDeliveryPolicy.create({
+        storeId: snapshot.storeId,
+        flatFee: '2.00',
+        currency: 'USD',
+        version: 1,
+      }, { transaction });
+    }
     await backfillWebsiteRows(snapshot.storeId, snapshot.websiteId, transaction);
     return { applied: true, version: snapshot.version };
   });

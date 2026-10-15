@@ -11,6 +11,7 @@ import {
   LayoutTemplate,
   Monitor,
   Palette,
+  Sparkles,
   Smartphone,
   Tablet,
   X,
@@ -20,12 +21,21 @@ import { useGetTemplatesByCategoryQuery } from '@rentify/apis';
 import { getTemplateMedia } from '../../../data/templateMedia';
 import StepHeader from './StepHeader';
 
+// `value` is the WebsiteTemplate category Core filters on.
 const industries = [
   { value: 'ecommerce', labelKey: 'onboarding.templates.industries.ecommerce' },
-  { value: 'Food & Beverage', labelKey: 'onboarding.templates.industries.food' },
+  { value: 'cafe', labelKey: 'onboarding.templates.industries.food' },
   { value: 'Beauty & Wellness', labelKey: 'onboarding.templates.industries.beauty' },
   { value: 'Custom', labelKey: 'onboarding.templates.industries.custom' },
 ];
+
+// Template category that best fits a store category chosen in step 1.
+const TEMPLATE_CATEGORY_FOR_STORE = {
+  'food & beverage': 'cafe',
+};
+
+export const recommendedTemplateCategory = (primaryCategory) =>
+  TEMPLATE_CATEGORY_FOR_STORE[String(primaryCategory || '').trim().toLowerCase()] || null;
 
 const previewPages = [
   { key: 'homepage', route: '/' },
@@ -91,7 +101,9 @@ const TemplatePickStep = ({ data, onUpdate }) => {
   const { t } = useLanguage();
   const [selectedTemplate, setSelectedTemplate] = useState(data.template);
   const [previewTemplate, setPreviewTemplate] = useState(null);
-  const [filter, setFilter] = useState('ecommerce');
+  const recommendedCategory = recommendedTemplateCategory(data.businessDetails?.primaryCategory);
+  // Opens on the templates that fit the store; the merchant can still switch.
+  const [filter, setFilter] = useState(recommendedCategory || 'ecommerce');
   const [currentPreviewPage, setCurrentPreviewPage] = useState('/');
   const [deviceMode, setDeviceMode] = useState('desktop');
   const { data: apiTemplates = [], isLoading } =
@@ -196,11 +208,19 @@ const TemplatePickStep = ({ data, onUpdate }) => {
               >
                 <div className="relative">
                   <TemplateThumbnail template={template} />
-                  {isSelected && (
+                  {isSelected ? (
                     <Badge className="absolute right-3 top-3 gap-1 rounded-full bg-[#0071e3] shadow-md">
                       <Check className="h-3 w-3" />
                       {t('onboarding.templates.selected')}
                     </Badge>
+                  ) : (
+                    recommendedCategory &&
+                    String(template.category || '').toLowerCase() === recommendedCategory && (
+                      <Badge className="absolute right-3 top-3 gap-1 rounded-full bg-amber-500 text-white shadow-md hover:bg-amber-500">
+                        <Sparkles className="h-3 w-3" />
+                        {t('onboarding.templates.recommended')}
+                      </Badge>
+                    )
                   )}
                   {template.media?.domain && (
                     <span className="absolute bottom-2.5 left-2.5 z-10 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-mono text-white/90 backdrop-blur-sm shadow-sm pointer-events-none">

@@ -24,8 +24,32 @@ class WebsiteController {
    * Create website with free trial
    */
   createWebsite = asyncHandler(async (req, res) => {
-    const { templateId, businessData, packageId, paymentId } = req.body;
+    const { templateId, businessData, paymentId } = req.body;
+    let { packageId } = req.body;
     const userId = req.user.id;
+
+    // Resolve packageId if a plan slug (e.g. 'starter', 'pro') or Free package was passed
+    try {
+      const allPackages = await Package.findAll();
+      if (allPackages.length > 0) {
+        const matchedById = allPackages.find((p) => p.id === packageId);
+        if (!matchedById) {
+          const targetName = String(packageId || 'starter').toLowerCase();
+          const matchedByName =
+            allPackages.find((p) => String(p.name || '').toLowerCase() === targetName) ||
+            allPackages.find((p) => String(p.name || '').toLowerCase() === 'starter') ||
+            allPackages.find((p) => Number(p.price) > 0) ||
+            allPackages[0];
+          if (matchedByName) packageId = matchedByName.id;
+        } else if (String(matchedById.name || '').toLowerCase() === 'free') {
+          // Creating a storefront website unlocks the Starter 14-day free trial
+          const starterPkg = allPackages.find((p) => String(p.name || '').toLowerCase() === 'starter');
+          if (starterPkg) packageId = starterPkg.id;
+        }
+      }
+    } catch {
+      // Fallback to provided packageId
+    }
 
     logger.info("Creating website", { userId, templateId, packageId });
 

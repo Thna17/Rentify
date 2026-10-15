@@ -39,16 +39,15 @@ test('dashboard-tabs defines the Storefront channel for all relevant roles', () 
   assert.match(storeMgmtBlock, /'admin'/, 'Store management must allow admin role');
 });
 
-test('dashboard-tabs defines Marketplace Orders and POS as sales channels', () => {
+test('dashboard-tabs defines Marketplace Orders as a sales channel and keeps POS decoupled', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
   // Verify Marketplace Orders
   assert.match(content, /path:\s*['"]marketplace-orders['"]/);
   assert.match(content, /channel:\s*['"]marketplace['"]/);
 
-  // Verify POS
-  assert.match(content, /path:\s*['"]pos['"]/);
-  assert.match(content, /channel:\s*['"]pos['"]/);
+  // Verify POS is not an embedded tab (POS is a dedicated standalone app at rentify-pos.mekhla.digital)
+  assert.equal(/channel:\s*['"]pos['"]/.test(content), false, 'POS should not be an embedded tab in merchant dashboard');
 });
 
 test('every tab in dashboard-tabs has a corresponding route in dashboardRoutes', () => {

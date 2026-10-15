@@ -91,25 +91,40 @@ export class SellerOnboardingPage implements OnInit {
   }> = [
     {
       key: 'STARTER',
-      name: 'Starter',
+      name: 'Free',
       price: 0,
-      description: 'A complete storefront for a new or small business.',
-      features: ['Publish and manage products', 'Receive and manage orders', 'Store profile and customer reviews'],
+      description: 'Facebook seller, new seller • Commission only on marketplace orders.',
+      features: [
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Upgrade to Storefront or POS anytime',
+      ],
     },
     {
       key: 'STANDARD',
-      name: 'Growth',
-      price: 12,
-      description: 'More visibility and insight for a growing catalogue.',
-      badge: 'Most popular',
-      features: ['Everything in Starter', 'Expanded sales insights', 'Priority marketplace support'],
+      name: 'Starter',
+      price: 5,
+      description: 'Shop with a counter or brand • 14-day free trial.',
+      badge: '14-day free trial',
+      features: [
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Own storefront (subdomain + templates)',
+        'POS at the counter',
+      ],
     },
     {
       key: 'PREMIUM',
-      name: 'Professional',
-      price: 29,
-      description: 'Support and tools for an established store operation.',
-      features: ['Everything in Growth', 'Professional onboarding support', 'Early access to new seller tools'],
+      name: 'Pro',
+      price: 10,
+      description: 'Growing shop • 14-day free trial.',
+      badge: '14-day free trial',
+      features: [
+        'Everything in Starter',
+        'Custom domain + Free SSL',
+        'Staff accounts & permissions',
+        'Analytics & marketing tools',
+      ],
     },
   ];
 

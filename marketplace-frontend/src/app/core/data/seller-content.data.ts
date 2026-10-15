@@ -94,7 +94,7 @@ export const faqItems: FaqItem[] = [
   {
     question: 'How much does it cost to sell?',
     answer:
-      'Starter is $0 per month, Growth is $12, and Professional is $29. Paid plan billing is confirmed separately before money is collected.',
+      'Free is $0/mo (Store and one catalog + Sell on Rentify Marketplace). Starter is ≈$5/mo (adds your own storefront website + POS at the counter, with a 14-day free trial), and Pro is ≈$10/mo (adds custom domain, staff accounts, analytics, and marketing tools). Commission applies only on marketplace orders.',
   },
   {
     question: 'What shipping options are available?',

@@ -18,4 +18,6 @@ ingress:
     service: http://web:80
   - hostname: rentify-admin.mekhla.digital
     service: http://web:80
+  - hostname: rentify-pos.mekhla.digital
+    service: http://web:80
   - service: http_status:404

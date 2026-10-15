@@ -65,6 +65,7 @@ exports.createOrder = async (req, res) => {
     const result = await strategy.execute({
       user,
       websiteId,
+      storeId: website.storeId || null,
       shippingDetails,
       paymentMethod,
       merchantConfig,
@@ -214,6 +215,7 @@ exports.createPOSOrder = async (req, res) => {
       payment: result.payment,
       invoice: result.invoice,
       khqr: result.khqrData,
+      khqrData: result.khqrData,
     });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });

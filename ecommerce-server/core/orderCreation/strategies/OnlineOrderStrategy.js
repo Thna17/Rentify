@@ -5,7 +5,18 @@ const axios = require('axios');
 class OnlineOrderStrategy extends OrderTypeStrategy {
   async processOrder(orderData, transaction) {
     const { user, websiteId, shippingDetails, paymentMethod, currency = 'USD' } = orderData;
-    const { Cart, CartItem, Customer, Product, ProductVariant } = this.models;
+    let storeId = orderData.storeId || null;
+    const { Cart, CartItem, Customer, Product, ProductVariant, WebsiteData } = this.models;
+    const { Op } = require('sequelize');
+
+    if (!storeId && websiteId && WebsiteData) {
+      const site = await WebsiteData.findOne({
+        where: { websiteId },
+        attributes: ['storeId'],
+        transaction,
+      });
+      if (site) storeId = site.storeId;
+    }
 
     // Validate payment method
     const validPaymentMethods = ['COD'];
@@ -44,8 +55,23 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     // price is a display cache and must never become the order price.
     const items = [];
     for (const item of [...cart.CartItems].sort((a, b) => a.productId.localeCompare(b.productId))) {
-      const product = await Product.findOne({ where: { id: item.productId, websiteId, status: 'active' },
-        transaction, lock: transaction.LOCK.UPDATE });
+      const productWhere = {
+        id: item.productId,
+        status: 'active',
+      };
+      if (storeId && websiteId) {
+        productWhere[Op.or] = [{ websiteId }, { storeId }];
+      } else if (websiteId) {
+        productWhere.websiteId = websiteId;
+      } else if (storeId) {
+        productWhere.storeId = storeId;
+      }
+
+      const product = await Product.findOne({
+        where: productWhere,
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
       if (!product) throw new Error('Product is not available on this Website');
       const variant = item.variantId ? await ProductVariant.findOne({
         where: { id: item.variantId, productId: product.id, status: 'active' },
@@ -93,7 +119,11 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
 
     // Create order
     const order = await this.createOrderRecord({
-      websiteId,
+      websiteId: websiteId || null,
+      storeId: storeId || null,
+      salesChannel: 'storefront',
+      deliveryStatus: 'pending',
+      orderType: 'online',
       userId: user.type === "customer" ? user.id : null,
       sessionId: user.type === "guest" ? user.sessionId : null,
       customerId: customer?.id,
@@ -103,6 +133,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
       },
       customerEmail: shippingDetails.email,
       currency,
+      stockDeducted: true,
       ...totals
     }, totals, transaction);
 

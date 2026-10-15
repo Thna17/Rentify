@@ -7,14 +7,29 @@ const { normalizeStoreCategory } = require('../config/storeCategories');
 const clean = (value, maxLength) =>
   typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 
-const developmentApprovalEnabled = () => process.env.NODE_ENV === 'development' &&
-  process.env.DEV_MARKETPLACE_AUTO_APPROVAL === 'true';
+const developmentApprovalEnabled = () =>
+  process.env.DEV_MARKETPLACE_AUTO_APPROVAL === 'true' &&
+  process.env.NODE_ENV === 'development';
 
 const eligibleForDevelopmentApproval = (store, owner) =>
   developmentApprovalEnabled() && store.status === 'active' &&
   store.marketplaceApprovalStatus === 'pending' &&
   !store.needsCategoryReview && Boolean(normalizeStoreCategory(store.primaryCategory)) &&
   owner?.isVerified === true && Boolean(owner.email || owner.phoneNumber);
+
+const MAX_LOGO_URL_LENGTH = 2048;
+
+/** A store logo link: an https URL, null to clear it, or undefined when invalid. */
+const storeLogoUrl = (value) => {
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string' || value.trim().length > MAX_LOGO_URL_LENGTH) return undefined;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' && !url.username && !url.password ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 const approvalCandidate = (store, changes = {}) => ({
   status: store.status, marketplaceApprovalStatus: store.marketplaceApprovalStatus,
@@ -163,8 +178,17 @@ class StoreService {
     });
   }
 
-  async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled }) {
+  async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled, logoUrl }) {
     const changes = {};
+    if (logoUrl !== undefined) {
+      const logo = storeLogoUrl(logoUrl);
+      if (logo === undefined) {
+        const error = new Error('Logo must be an https:// image link');
+        error.statusCode = 400;
+        throw error;
+      }
+      changes.logoUrl = logo;
+    }
     if (primaryCategory !== undefined) {
       const category = normalizeStoreCategory(primaryCategory);
       if (!category) {
@@ -211,3 +235,4 @@ class StoreService {
 module.exports = new StoreService();
 module.exports.developmentApprovalEnabled = developmentApprovalEnabled;
 module.exports.eligibleForDevelopmentApproval = eligibleForDevelopmentApproval;
+module.exports.storeLogoUrl = storeLogoUrl;

@@ -349,3 +349,90 @@ test('marketplace POS: createRequireWebsiteAccess gracefully resolves storeId pa
     StoreAccess.findByPk = originalFindByPk;
   }
 });
+
+test('marketplace POS: POS orders under $50 have $0 shipping fee and salesChannel pos', async (t) => {
+  const storeId = '33333333-4444-5555-6666-777777777777';
+  const productId = 'cccccccc-dddd-eeee-ffff-000000000000';
+
+  const mockTransaction = { LOCK: { UPDATE: 'UPDATE' } };
+  const mockProduct = {
+    id: productId,
+    websiteId: null,
+    storeId,
+    name: 'Single Coffee Cup',
+    price: 4.50,
+    status: 'active',
+    trackInventory: true,
+    stockQuantity: 10,
+    productType: 'physical',
+    version: 1,
+    ProductVariants: [],
+    update: async function() { return this; }
+  };
+
+  t.mock.method(Product, 'findByPk', async () => mockProduct);
+
+  let createdOrder = null;
+  const mockModels = {
+    Product,
+    ProductVariant: { findByPk: async () => null },
+    Order: {
+      create: async (data) => {
+        createdOrder = { ...data };
+        return {
+          ...data,
+          id: 'coffee-order-1',
+          update: async function(changes) { Object.assign(this, changes); return this; },
+          toJSON: function() { return { ...this }; }
+        };
+      }
+    },
+    OrderItem: {
+      create: async (data) => ({ ...data, toJSON: () => ({ ...data }) })
+    },
+    Invoice: {
+      create: async (data) => ({ ...data, toJSON: () => ({ ...data }) })
+    },
+    Customer: {
+      findOne: async () => null,
+      create: async (data) => ({ ...data, id: 'cust-coffee' })
+    }
+  };
+
+  const PaymentFactory = require('../../core/payment/factory/PaymentFactory');
+  const cardStrategy = PaymentFactory.createStrategy('CARD', mockModels);
+  assert.ok(cardStrategy, 'PaymentFactory must instantiate CARD strategy case-insensitively');
+
+  const khqrStrategy = PaymentFactory.createStrategy('khqr', mockModels);
+  assert.ok(khqrStrategy, 'PaymentFactory must instantiate khqr strategy case-insensitively');
+
+  const mockPaymentProcessor = {
+    process: async (order, paymentMethod) => ({
+      id: 'pay-coffee-1',
+      orderId: order.id,
+      amount: order.totalAmount,
+      status: 'completed',
+      paymentMethod,
+      toJSON: () => ({ id: 'pay-coffee-1', status: 'completed' })
+    })
+  };
+
+  const nicheStrategy = new NicheStrategy('ecommerce');
+  const posStrategy = new POSOrderStrategy(mockModels, mockPaymentProcessor, {}, nicheStrategy);
+
+  const result = await posStrategy.processOrder({
+    websiteId: null,
+    storeId,
+    items: [{ productId, quantity: 1, price: 4.50, productType: 'physical' }],
+    paymentMethod: 'CARD',
+    cashierId: 'cashier-coffee',
+    customerInfo: { name: 'Walk-in Coffee' },
+    currency: 'USD'
+  }, mockTransaction);
+
+  assert.equal(result.order.shippingFee, 0, 'In-person POS order must have $0 shipping fee');
+  assert.equal(result.order.salesChannel, 'pos', 'Order salesChannel must be pos');
+  assert.equal(result.order.status, 'completed', 'Immediate card payment must complete order');
+  assert.equal(result.order.stockDeducted, true, 'Immediate card payment must deduct stock');
+});
+

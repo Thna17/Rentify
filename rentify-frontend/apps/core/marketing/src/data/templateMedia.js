@@ -2,6 +2,8 @@ import beautyDesktop from '../assets/site/storefront-beauty-desktop.jpg';
 import beautyMobile from '../assets/site/storefront-beauty-mobile.jpg';
 import techDesktop from '../assets/site/storefront-tech-desktop.jpg';
 import techMobile from '../assets/site/storefront-tech-mobile.jpg';
+import cafeDesktop from '../assets/site/storefront-cafe-desktop.jpg';
+import cafeMobile from '../assets/site/storefront-cafe-mobile.jpg';
 
 // Screenshots of the live storefront templates, keyed by websiteTemplateId.
 // Templates without screenshots fall back to a live preview of their demo.
@@ -20,11 +22,19 @@ export const TEMPLATE_MEDIA = {
     domain: 'nextech-electronics.mekhla.digital',
     previewUrl: 'https://nextech-electronics.mekhla.digital',
   },
+  3: {
+    desktop: cafeDesktop,
+    mobile: cafeMobile,
+    storeName: 'Mekong Brew',
+    domain: 'mekong-brew.mekhla.digital',
+    previewUrl: 'https://mekong-brew.mekhla.digital',
+  },
 };
 
 export const SHOWCASE = {
   beauty: TEMPLATE_MEDIA[1],
   tech: TEMPLATE_MEDIA[2],
+  cafe: TEMPLATE_MEDIA[3],
 };
 
 export const getTemplateMedia = (template) => {
@@ -54,6 +64,16 @@ export const getTemplateMedia = (template) => {
     /tech|electro|gadget/i.test(template.name || '')
   ) {
     return TEMPLATE_MEDIA[2];
+  }
+
+  // Template 3 (Café / Coffee shop)
+  if (
+    template.id === '56245606-c064-4507-85cb-05a611cb3d8f' ||
+    template.id === '3' ||
+    template.websiteTemplateId === 3 ||
+    /caf[eé]|coffee/i.test(template.name || '')
+  ) {
+    return TEMPLATE_MEDIA[3];
   }
 
   return null;

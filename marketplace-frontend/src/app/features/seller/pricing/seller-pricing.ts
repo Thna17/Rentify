@@ -27,8 +27,8 @@ import { faqItems, sellerTools } from '../../../core/data/seller-content.data';
               <div class="plan-card" [class.featured]="plan.featured" [kcReveal]="i">
                 <span class="plan-badge" [class.gold]="plan.featured">{{ plan.badge }}</span>
                 <h2>{{ plan.name }}</h2>
-                <p class="plan-description">{{ plan.description }}</p>
-                <div class="plan-amount">{{ plan.price }}<small>/ month</small></div>
+                <p class="plan-description"><strong>Who it’s for:</strong> {{ plan.description }}</p>
+                <div class="plan-amount">{{ plan.price }}<small>/ mo</small></div>
                 <ul>
                   @for (feature of plan.features; track feature) {
                     <li><kc-icon name="check" [size]="14" /> {{ feature }}</li>
@@ -40,7 +40,7 @@ import { faqItems, sellerTools } from '../../../core/data/seller-content.data';
           </div>
           <div class="plan-footnote reveal">
             <kc-icon name="info" [size]="16" />
-            <p>These are the approved plan prices. Features marked “planned” are not active yet and will only become plan benefits after their backend workflow is available.</p>
+            <p>All plans use one store and one shared catalog. Starter and Pro include a 14-day free trial. Commission applies only on marketplace orders.</p>
           </div>
         </div>
       </section>
@@ -49,8 +49,8 @@ import { faqItems, sellerTools } from '../../../core/data/seller-content.data';
         <div class="wrap">
           <div class="included-intro centered" [kcReveal]="0">
             <p class="eyebrow">Included in every plan</p>
-            <h2>The seller workspace we are building.</h2>
-            <p class="lead">Core store and order workflows are being connected now. Higher-plan capabilities must not be treated as active until they are released.</p>
+            <h2>One store, one catalog, upgrade when ready.</h2>
+            <p class="lead">Start selling on Rentify Marketplace for $0/mo, then unlock your own storefront website and POS at the counter anytime from your dashboard.</p>
           </div>
           <div class="included-grid">
             @for (tool of tools; track tool.title; let i = $index) {
@@ -135,9 +135,53 @@ export class SellerPricing {
   protected readonly tools = sellerTools;
 
   protected readonly plans = [
-    { key: 'STARTER', name: 'Starter', badge: 'Start here', price: '$0', description: 'For new makers beginning their online journey.', featured: false, cta: 'Choose Starter', features: ['Publish and manage products', 'Standard storefront', 'Order management', 'Customer reviews'] },
-    { key: 'STANDARD', name: 'Growth', badge: 'Approved price', price: '$12', description: 'For active sellers ready to reach more customers.', featured: true, cta: 'Choose Growth', features: ['Everything in Starter', 'Sales and stock overview', 'Store logo and cover controls', 'Promotion tools · planned'] },
-    { key: 'PREMIUM', name: 'Professional', badge: 'Approved price', price: '$29', description: 'For established workshops and growing brands.', featured: false, cta: 'Choose Professional', features: ['Everything in Growth', 'Multiple-store workspace', 'Team access · planned', 'Featured campaigns · planned'] },
+    {
+      key: 'STARTER',
+      name: 'Free',
+      badge: 'Free forever',
+      price: '$0',
+      description: 'Facebook seller, new seller',
+      featured: false,
+      cta: 'Start Free',
+      features: [
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Commission: Only on marketplace orders',
+      ],
+    },
+    {
+      key: 'STANDARD',
+      name: 'Starter',
+      badge: '14-day free trial',
+      price: '≈$5',
+      description: 'Shop with a counter or brand',
+      featured: true,
+      cta: 'Start 14-Day Free Trial',
+      features: [
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Own storefront (subdomain + templates)',
+        'POS at the counter',
+        'Commission: Only on marketplace orders',
+      ],
+    },
+    {
+      key: 'PREMIUM',
+      name: 'Pro',
+      badge: '14-day free trial',
+      price: '≈$10',
+      description: 'Growing shop',
+      featured: false,
+      cta: 'Start 14-Day Free Trial',
+      features: [
+        'Store and one catalog',
+        'Sell on Rentify Marketplace',
+        'Own storefront (subdomain + templates)',
+        'POS at the counter',
+        'Custom domain, staff accounts, analytics, marketing tools',
+        'Commission: Only on marketplace orders',
+      ],
+    },
   ] as const;
 
   protected readonly pricingFaq = faqItems.filter((item) =>
@@ -148,3 +192,4 @@ export class SellerPricing {
     void this.router.navigate(['/seller/onboarding'], { queryParams: { plan } });
   }
 }
+

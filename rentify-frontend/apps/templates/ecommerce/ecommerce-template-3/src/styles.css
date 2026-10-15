@@ -1,0 +1,202 @@
+/* Each template compiles with its own Tailwind config, including inside the shared storefront app. */
+@config "../tailwind.config.js";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * First-paint defaults. The storefront theme service replaces these with the
+ * merchant's sanitized theme (layered over Template 3 defaults) once the
+ * website loads. Values are OKLCH triplets.
+ */
+@layer base {
+  :root {
+    --background: 0.978 0.009 75;
+    --foreground: 0.24 0.025 45;
+    --card: 1 0 0;
+    --card-foreground: 0.24 0.025 45;
+    --popover: 1 0 0;
+    --popover-foreground: 0.24 0.025 45;
+    --primary: 0.47 0.1 48;
+    --primary-foreground: 0.99 0 0;
+    --secondary: 0.24 0.025 45;
+    --secondary-foreground: 0.99 0 0;
+    --muted: 0.95 0.012 70;
+    --muted-foreground: 0.5 0.03 50;
+    --accent: 0.94 0.025 70;
+    --accent-foreground: 0.24 0.025 45;
+    --border: 0.9 0.02 70;
+    --input: 0.9 0.02 70;
+    --ring: 0.47 0.1 48;
+    --success: 0.5 0.12 150;
+    --warning: 0.55 0.13 65;
+    --error: 0.5 0.18 27;
+    --font-primary: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans Khmer',
+      'Kantumruy Pro', 'Khmer Sangam MN', system-ui, sans-serif;
+    --font-secondary: Fraunces, 'Noto Serif Khmer', Georgia, 'Times New Roman', serif;
+    --header-height: 3.5rem;
+    --leading-xs: 1rem;
+    --leading-sm: 1.25rem;
+    --leading-base: 1.5rem;
+    --leading-lg: 1.75rem;
+    --leading-xl: 1.75rem;
+    --leading-2xl: 2rem;
+    --leading-3xl: 2.25rem;
+    --leading-4xl: 2.5rem;
+    --leading-5xl: 1.1;
+  }
+
+  :root:lang(km) {
+    --leading-xs: 1.35rem;
+    --leading-sm: 1.6rem;
+    --leading-base: 1.85rem;
+    --leading-lg: 2.05rem;
+    --leading-xl: 2.2rem;
+    --leading-2xl: 2.5rem;
+    --leading-3xl: 2.9rem;
+    --leading-4xl: 3.3rem;
+    --leading-5xl: 4rem;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --header-height: 4rem;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Khmer script needs extra vertical room for stacked subscripts and vowels. */
+  :lang(km) body,
+  :lang(km) input,
+  :lang(km) button,
+  :lang(km) select,
+  :lang(km) textarea {
+    line-height: 1.75;
+    letter-spacing: 0;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  img {
+    @apply select-none;
+  }
+}
+
+@layer components {
+  .store-container {
+    @apply mx-auto w-full max-w-store px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .btn-outline {
+    @apply btn border border-border bg-card text-foreground hover:bg-muted;
+  }
+
+  .btn-ghost {
+    @apply btn text-foreground hover:bg-muted;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-foreground;
+  }
+
+  .field-input {
+    @apply block min-h-11 w-full rounded-lg border border-input bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/80 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/30 aria-[invalid=true]:border-error sm:text-sm;
+  }
+
+  .field-error {
+    @apply mt-1.5 text-sm text-error;
+  }
+
+  .field-hint {
+    @apply mt-1.5 text-xs text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  /* Curls of steam rising from the placeholder cup; stilled for reduced motion below. */
+  .steam {
+    animation: steam-rise 3.2s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: bottom;
+  }
+
+  .steam-2 {
+    animation-delay: 0.6s;
+  }
+
+  .steam-3 {
+    animation-delay: 1.2s;
+  }
+
+  @keyframes steam-rise {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: translateY(4px) scaleY(0.92);
+    }
+    50% {
+      opacity: 0.9;
+      transform: translateY(-4px) scaleY(1);
+    }
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Outside layers so it outranks the tight leading/tracking utilities used on English headings. */
+:lang(km) .leading-tight,
+:lang(km) .leading-snug {
+  line-height: 1.5;
+}
+
+:lang(km) .tracking-tight,
+:lang(km) .tracking-wide,
+:lang(km) [class*='tracking-['] {
+  letter-spacing: 0;
+}
+
+/* Khmer has no capitals, and its stacked glyphs need room in small labels. */
+:lang(km) .uppercase {
+  text-transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

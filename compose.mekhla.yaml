@@ -12,7 +12,7 @@ x-mekhla-hosting: &mekhla-hosting
   # Empty: stores use https://<store>.mekhla.digital, not a local dev port.
   HOSTED_STOREFRONT_DEV_PORT: ''
   # Existing mekhla.digital sites and the demo API hostnames are never stores.
-  HOSTED_STOREFRONT_RESERVED: admin,api,colis,staging,www,send,rsend,rentify,rentify-api,rentify-commerce,rentify-auth,rentify-seller,rentify-market,rentify-admin
+  HOSTED_STOREFRONT_RESERVED: admin,api,colis,staging,www,send,rsend,rentify,rentify-api,rentify-commerce,rentify-auth,rentify-seller,rentify-market,rentify-admin,rentify-pos
 
 services:
   core-api:

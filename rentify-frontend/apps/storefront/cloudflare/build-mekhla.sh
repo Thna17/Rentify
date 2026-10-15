@@ -13,6 +13,7 @@ export VITE_MERCHANT_DASHBOARD_URL=https://rentify-seller.mekhla.digital
 export VITE_MARKETING_URL=https://rentify.mekhla.digital
 export VITE_MARKETPLACE_URL=https://rentify-market.mekhla.digital
 export VITE_ADMIN_DASHBOARD_URL=https://rentify-admin.mekhla.digital
+export VITE_POS_URL=https://rentify-pos.mekhla.digital
 export VITE_STOREFRONT_ORIGIN=https://rentify.mekhla.digital
 
 npx vite build --config apps/storefront/vite.config.ts

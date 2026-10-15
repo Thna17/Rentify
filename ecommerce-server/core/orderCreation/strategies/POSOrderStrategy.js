@@ -30,8 +30,10 @@ class POSOrderStrategy extends OrderTypeStrategy {
       websiteId: websiteId || null,
       storeId: storeId || null,
       orderType: "pos",
+      salesChannel: "pos",
       customerId: customer?.id,
       status: isImmediatePayment ? 'completed' : 'pending',
+      deliveryStatus: isImmediatePayment ? 'delivered' : 'pending',
       cashierId,
       stockDeducted: isImmediatePayment,
       customerInfo,
@@ -48,13 +50,48 @@ class POSOrderStrategy extends OrderTypeStrategy {
     }
 
     // Process payment
-    const payment = await this.paymentProcessor.process(
-      order,
-      paymentMethod,
-      orderData.merchantConfig,
-      transaction,
-      currency
-    );
+    let payment;
+    const isKHQR = ['khqr', 'wallet', 'bakong'].includes(normalizedMethod);
+
+    try {
+      payment = await this.paymentProcessor.process(
+        order,
+        paymentMethod,
+        orderData.merchantConfig,
+        transaction,
+        currency
+      );
+    } catch (procErr) {
+      if (isKHQR) {
+        // Fallback for POS counter-stand QR when merchant has no automated Bakong API credentials configured
+        const PaymentModel = this.models?.Payment || require('../../../models').Payment;
+        if (PaymentModel && typeof PaymentModel.create === 'function') {
+          payment = await PaymentModel.create(
+            {
+              orderId: order.id,
+              amount: order.totalAmount,
+              paymentMethod: 'WALLET',
+              status: 'completed',
+              transactionData: {
+                posData: {
+                  terminalId: "POS_TERMINAL_1",
+                  method: "KHQR_COUNTER",
+                  timestamp: new Date(),
+                },
+              },
+              currency: currency || 'USD',
+            },
+            { transaction }
+          );
+          await this.nicheStrategy.updateInventory(items, transaction);
+          await order.update({ status: 'completed', deliveryStatus: 'delivered', stockDeducted: true }, { transaction });
+        } else {
+          throw procErr;
+        }
+      } else {
+        throw procErr;
+      }
+    }
 
     // Process niche-specific logic
     await this.nicheStrategy.processNicheSpecific(order, orderItems, transaction);
@@ -71,6 +108,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
     if (isImmediatePayment) {
       await order.update({ 
         status: 'completed',
+        deliveryStatus: 'delivered',
         stockDeducted: true 
       }, { transaction });
     }

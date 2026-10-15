@@ -18,10 +18,11 @@ import { fileURLToPath } from 'node:url';
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const TEMPLATE_1_ENTRY = 'apps/templates/ecommerce/ecommerce-template-1/src/main.jsx';
 export const TEMPLATE_2_ENTRY = 'apps/templates/ecommerce/ecommerce-template-2/src/main.jsx';
+export const TEMPLATE_3_ENTRY = 'apps/templates/ecommerce/ecommerce-template-3/src/main.jsx';
 // The single storefront app that serves every hosted store; it may load the templates.
 export const STOREFRONT_SHELL_ENTRY = 'apps/storefront/src/main.jsx';
-export const STOREFRONT_ENTRIES = [STOREFRONT_SHELL_ENTRY, TEMPLATE_1_ENTRY, TEMPLATE_2_ENTRY];
-const SERVABLE_TEMPLATES = /^apps\/templates\/ecommerce\/ecommerce-template-[12]\//;
+export const STOREFRONT_ENTRIES = [STOREFRONT_SHELL_ENTRY, TEMPLATE_1_ENTRY, TEMPLATE_2_ENTRY, TEMPLATE_3_ENTRY];
+const SERVABLE_TEMPLATES = /^apps\/templates\/ecommerce\/ecommerce-template-[123]\//;
 
 /** Modules a customer storefront must never load, with the reason reported. */
 export const FORBIDDEN_MODULES = [

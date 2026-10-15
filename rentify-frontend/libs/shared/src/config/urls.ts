@@ -25,6 +25,10 @@ export const ADMIN_DASHBOARD_URL = typeof __ADMIN_DASHBOARD_URL__ !== 'undefined
   ? __ADMIN_DASHBOARD_URL__
   : 'http://localhost:4800';
 
+export const POS_URL = typeof __POS_URL__ !== 'undefined'
+  ? __POS_URL__
+  : 'http://localhost:4450';
+
 export const STOREFRONT_ORIGIN = __STOREFRONT_ORIGIN__;
 export const HOSTED_STOREFRONT_DOMAIN = __HOSTED_STOREFRONT_DOMAIN__;
 export const HOSTED_STOREFRONT_BUYER_ENABLED = __HOSTED_STOREFRONT_BUYER_ENABLED__;

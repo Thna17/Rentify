@@ -5,7 +5,8 @@
  *
  * Mirrors the storefront templates' editable sections:
  * rentify-frontend/apps/templates/ecommerce/ecommerce-template-2/src/storeContent.js
- * (Template 1 uses the shared hero and announcement fields).
+ * and ecommerce-template-3/src/storeContent.js (Template 1 uses the shared
+ * hero and announcement fields).
  *
  * text:  plain string, trimmed, up to `max` characters ('' clears it)
  * image: one https URL (or '' to clear); `multiple` allows up to `max` URLs
@@ -39,6 +40,12 @@ const STOREFRONT_CONTENT_FIELDS = Object.freeze({
   'Story Title': text('Our Story', 120),
   'Story Text': text('Our Story', 1200),
   'Story Image': image('Our Story'),
+  // Template 3 (café)
+  'Menu Title': text('Menu', 80),
+  'Menu Note': text('Menu', 300),
+  'Visit Title': text('Visit Us', 80),
+  'Opening Hours': text('Visit Us', 400),
+  'Map Link': text('Visit Us', 300),
 });
 
 const MAX_URL_LENGTH = 2048;

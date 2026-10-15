@@ -1,6 +1,7 @@
 class PaymentStrategy {
-  constructor(models) {
+  constructor(models, paymentMethod = null) {
     this.models = models;
+    this.paymentMethod = paymentMethod;
   }
 
   async process(order, merchantConfig, transaction, currency) {

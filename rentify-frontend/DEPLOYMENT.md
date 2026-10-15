@@ -21,7 +21,7 @@ cd rentify-frontend && npm run dev:marketing
 cd rentify-frontend && npm run dev:storefront
 ```
 
-`dev:storefront` is the single storefront app. With `HOSTED_STOREFRONT_DOMAIN=localhost` and `HOSTED_STOREFRONT_DEV_PORT=4900` on both APIs (the Docker defaults), a published store opens at `http://<subdomain>.localhost:4900`, for example `http://aura-botanicals.localhost:4900`. Each template can still run alone for template work: `npm run dev:ecommerce-template-1` (`http://localhost:4700`) and `npm run dev:ecommerce-template-2` (`http://localhost:4600`). Development defaults are Core `http://localhost:3001`, Commerce `http://localhost:4001`, Auth `http://localhost:4300`, Merchant `http://localhost:4400`, Marketing `http://localhost:4200`, Marketplace `http://localhost:4500`, and Template 1 `http://localhost:4700`.
+`dev:storefront` is the single storefront app. With `HOSTED_STOREFRONT_DOMAIN=localhost` and `HOSTED_STOREFRONT_DEV_PORT=4900` on both APIs (the Docker defaults), a published store opens at `http://<subdomain>.localhost:4900`, for example `http://aura-botanicals.localhost:4900`. Each template can still run alone for template work: `npm run dev:ecommerce-template-1` (`http://localhost:4700`), `npm run dev:ecommerce-template-2` (`http://localhost:4600`) and `npm run dev:ecommerce-template-3` (`http://localhost:4650`, the café template). Development defaults are Core `http://localhost:3001`, Commerce `http://localhost:4001`, Auth `http://localhost:4300`, Merchant `http://localhost:4400`, Marketing `http://localhost:4200`, Marketplace `http://localhost:4500`, and Template 1 `http://localhost:4700`.
 
 ## Staging and production
 
@@ -29,7 +29,7 @@ Copy each service's `.env.example` to its private environment manager and supply
 
 ### Storefront hosting
 
-Every published store is served by one deployment of the storefront app (`apps/storefront`). It reads the address the shopper opened, asks Core which Website that is, and loads that Website's template (Template 1 or Template 2, each its own chunk and stylesheet). Publishing in onboarding or the dashboard does not build anything: Core gives the Website a permanent subdomain from its name (`aura-botanicals`, then `aura-botanicals-2` if taken, `store-<id>` for names without Latin letters or reserved words), marks it live, and the store is reachable at once. Content and theme edits appear immediately because they load at runtime.
+Every published store is served by one deployment of the storefront app (`apps/storefront`). It reads the address the shopper opened, asks Core which Website that is, and loads that Website's template (Template 1, 2 or 3, each its own chunk and stylesheet). Publishing in onboarding or the dashboard does not build anything: Core gives the Website a permanent subdomain from its name (`aura-botanicals`, then `aura-botanicals-2` if taken, `store-<id>` for names without Latin letters or reserved words), marks it live, and the store is reachable at once. Content and theme edits appear immediately because they load at runtime.
 
 One-time setup:
 
@@ -47,4 +47,5 @@ Template builds on their own are still available for template development:
 cd rentify-frontend
 npx vite build --config apps/templates/ecommerce/ecommerce-template-1/vite.config.ts
 npx vite build --config apps/templates/ecommerce/ecommerce-template-2/vite.config.ts
+npx vite build --config apps/templates/ecommerce/ecommerce-template-3/vite.config.ts
 ```

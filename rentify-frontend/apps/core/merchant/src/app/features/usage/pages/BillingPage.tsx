@@ -1,6 +1,10 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@rentify/shared/ui/card";
 import { Badge } from "@rentify/shared/ui/badge";
+import { Button } from "@rentify/shared/ui/button";
+import { MARKETING_URL } from "@rentify/shared/config/urls";
+import { useChannels } from "../../../../context/ChannelContext";
 import { LoadingState } from "../components/LoadingState";
 import { ErrorState } from "../components/ErrorState";
 import { EmptyState } from "../components/EmptyState";
@@ -12,6 +16,7 @@ const getMonth = (date = new Date()) => date.toISOString().slice(0, 7);
 
 export const BillingPage = () => {
   const { websiteId, isLoading: websiteLoading } = useWebsiteId();
+  const { store } = useChannels();
   const currentMonth = useMemo(() => getMonth(), []);
   const lastMonth = useMemo(() => {
     const date = new Date();
@@ -35,12 +40,42 @@ export const BillingPage = () => {
   if (websiteLoading) return <LoadingState />;
   if (!websiteId) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-6">
         <UsageTabs />
-        <EmptyState
-          title="No store selected"
-          description="Select or create a store to see billing."
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-semibold">Billing Summary</div>
+            <div className="text-xs text-muted-foreground">
+              {store?.name || "Your Store"} is currently on the Free Plan ($0/mo).
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/settings/billing">Manage Plans</Link>
+            </Button>
+            <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <a href={`${MARKETING_URL}/onboarding/starter?step=template`}>
+                Start 14-Day Free Trial (Starter ≈$5/mo)
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        <Card className="border-border">
+          <CardContent className="p-5 space-y-2">
+            <div className="text-sm font-semibold">Current month ({currentMonth})</div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Free Plan • Store & Marketplace</span>
+              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
+                Active
+              </Badge>
+            </div>
+            <div className="text-2xl font-semibold text-foreground">$0.00</div>
+            <p className="text-xs text-muted-foreground">
+              No monthly subscription charge. Commission applies only on marketplace orders.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

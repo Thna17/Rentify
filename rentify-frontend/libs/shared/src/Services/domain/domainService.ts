@@ -1,4 +1,11 @@
-import { AUTH_URL, DASHBOARD_URL } from '../../config/urls';
+import {
+  AUTH_URL,
+  DASHBOARD_URL,
+  POS_URL,
+  MARKETING_URL,
+  MARKETPLACE_URL,
+  ADMIN_DASHBOARD_URL,
+} from '../../config/urls';
 
 export class DomainService {
   getCurrentDomain(): string {
@@ -32,6 +39,27 @@ export class DomainService {
     );
   }
 
+  isPlatformDomain(domain: string): boolean {
+    if (!domain) return false;
+    const getHost = (u?: string) => {
+      try {
+        return u ? new URL(u).host : '';
+      } catch {
+        return '';
+      }
+    };
+    const platformHosts = [
+      getHost(AUTH_URL),
+      getHost(DASHBOARD_URL),
+      getHost(POS_URL),
+      getHost(MARKETING_URL),
+      getHost(MARKETPLACE_URL),
+      getHost(ADMIN_DASHBOARD_URL),
+    ].filter(Boolean);
+
+    return platformHosts.includes(domain) || domain.includes('platform.');
+  }
+
   getEffectiveDomain(
     currentDomain: string,
     isAuth: boolean,
@@ -49,6 +77,7 @@ export class DomainService {
     isAuth: boolean,
     queryDomain: string
   ): boolean {
+    if (this.isPlatformDomain(effectiveDomain)) return true;
     return !isDashboard && (!effectiveDomain || (isAuth && !queryDomain));
   }
 }
