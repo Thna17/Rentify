@@ -100,3 +100,5 @@ export const templateThemes: Record<string, Record<string, Theme>> = {
 // Template 2 is another ecommerce storefront. It supports the same merchant
 // palette keys as Template 1 while keeping its layout and components distinct.
 templateThemes['2'] = templateThemes['1'];
+// Template 3 (café) takes the same merchant palette keys.
+templateThemes['3'] = templateThemes['1'];

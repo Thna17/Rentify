@@ -21,6 +21,7 @@ import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { useAuthConfig } from '../utils/authUtils';
 import { useAuthLanguage } from '../context/AuthLanguageContext';
 import { getSafeReturnUrl } from '../utils/returnUrl';
+import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { sanitizePhoneNumber, maskContact } from '../utils/phoneUtils';
 import { Button } from '@rentify/shared/ui/button';
 import { Alert, AlertDescription } from '@rentify/shared/ui/alert';
@@ -39,7 +40,11 @@ export default function VerifyOtpForm() {
   const phoneParam = searchParams.get('phone') || searchParams.get('phoneNumber') || '';
   const rawContact = phoneParam || emailParam || '';
   const isPhone = Boolean(phoneParam || (rawContact && !rawContact.includes('@')));
-  const redirect = getSafeReturnUrl(searchParams.get('redirectUrl'));
+  const rawRedirect = searchParams.get('redirectUrl') || searchParams.get('returnUrl');
+  const defaultRedirect = isCustomerFlow
+    ? MARKETING_URL
+    : `${MARKETING_URL.replace(/\/+$/, '')}/start`;
+  const redirect = getSafeReturnUrl(rawRedirect, defaultRedirect);
 
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [resendTime, setResendTime] = useState<number>(60);

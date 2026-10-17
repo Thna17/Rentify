@@ -4,6 +4,7 @@ import {
   ADMIN_DASHBOARD_URL,
   MARKETING_URL,
   MARKETPLACE_URL,
+  POS_URL,
   STOREFRONT_ORIGIN,
   HOSTED_STOREFRONT_BUYER_ENABLED,
   HOSTED_STOREFRONT_DOMAIN,
@@ -11,7 +12,7 @@ import {
 
 const allowedOrigins = () =>
   new Set(
-    [AUTH_URL, MARKETING_URL, MARKETPLACE_URL, DASHBOARD_URL, ADMIN_DASHBOARD_URL, STOREFRONT_ORIGIN]
+    [AUTH_URL, MARKETING_URL, MARKETPLACE_URL, DASHBOARD_URL, ADMIN_DASHBOARD_URL, POS_URL, STOREFRONT_ORIGIN]
       .filter(Boolean)
       .map((url) => new URL(url).origin)
   );
@@ -35,10 +36,13 @@ export const getSafeReturnUrl = (
 
 export const isHostedStorefrontReturn = (url: string) => {
   const parsed = new URL(url);
+  const posHost = POS_URL ? new URL(POS_URL).host : '';
+  if (posHost && parsed.host === posHost) return false;
   if (HOSTED_STOREFRONT_BUYER_ENABLED && HOSTED_STOREFRONT_DOMAIN === 'localhost' &&
       parsed.origin === new URL(STOREFRONT_ORIGIN).origin) return true;
   return HOSTED_STOREFRONT_BUYER_ENABLED && parsed.protocol === 'https:' && parsed.port === '' &&
     !parsed.username && !parsed.password &&
+    parsed.hostname !== posHost &&
     parsed.hostname.endsWith(`.${HOSTED_STOREFRONT_DOMAIN}`) &&
     /^[a-z0-9-]+$/.test(parsed.hostname.slice(0, -(HOSTED_STOREFRONT_DOMAIN.length + 1)));
 };

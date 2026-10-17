@@ -10,6 +10,9 @@ const { User, Store } = require('../src/models');
 // Deployed environments set SEED_STORE_PASSWORD; this default is public in the repository.
 const PASSWORD = process.env.SEED_STORE_PASSWORD || 'Rentify@1234';
 
+// Logos uploaded with the stores' product photos (see ecommerce-server/scripts/data/fourStoresCatalogue.js).
+const logo = (key) => `https://res.cloudinary.com/druevh9no/image/upload/f_auto,q_auto,c_limit,w_400/rentify/demo-stores/${key}.jpg`;
+
 const STORES = [
   {
     ownerUserId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -18,6 +21,7 @@ const STORES = [
     email: 'clothstore@rentify.dev',
     phone: '+85512100001',
     category: 'Fashion',
+    logoUrl: logo('cloth-31'),
   },
   {
     ownerUserId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
@@ -26,6 +30,7 @@ const STORES = [
     email: 'phonestore@rentify.dev',
     phone: '+85512100002',
     category: 'Electronics',
+    logoUrl: logo('phone-09'),
   },
   {
     ownerUserId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
@@ -34,6 +39,7 @@ const STORES = [
     email: 'schoolsupply@rentify.dev',
     phone: '+85512100003',
     category: 'Other',
+    logoUrl: logo('school-25'),
   },
   {
     ownerUserId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
@@ -42,6 +48,7 @@ const STORES = [
     email: 'skincarestore@rentify.dev',
     phone: '+85512100004',
     category: 'Beauty & Skincare',
+    logoUrl: logo('skincare-00'),
   },
 ];
 
@@ -88,6 +95,7 @@ async function seedFourStores() {
       name: s.name,
       slug: `store-${s.storeId}`,
       primaryCategory: s.category,
+      logoUrl: s.logoUrl,
       needsCategoryReview: false,
       marketplaceEnabled: true,
       marketplaceApprovalStatus: 'approved',

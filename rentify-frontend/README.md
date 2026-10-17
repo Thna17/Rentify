@@ -18,6 +18,7 @@ npm run dev:marketing               # http://localhost:4200
 npm run dev:merchant                # http://localhost:4400
 npm run dev:ecommerce-template-1    # http://localhost:4700
 npm run dev:ecommerce-template-2    # http://localhost:4600
+npm run dev:ecommerce-template-3    # http://localhost:4650 (café)
 ```
 
 **Author:** Hong Than Brathna  

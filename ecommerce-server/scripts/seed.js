@@ -978,6 +978,9 @@ async function seedCommerce() {
   const seedTechMarketplace = require('./seedTechMarketplace');
   await seedTechMarketplace();
 
+  const seedCafeStore = require('./seedCafeStore');
+  await seedCafeStore();
+
   const seedFourStoresProducts = require('./seedFourStoresProducts');
   await seedFourStoresProducts();
 

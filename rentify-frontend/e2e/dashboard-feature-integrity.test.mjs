@@ -29,7 +29,7 @@ const tabBlock = (content, tabPath) =>
 test('dashboard-tabs defines the Storefront channel under Sell for all relevant roles', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
-  // Sales channels (Storefront, Marketplace, POS) live in the Sell section
+  // Sales channels live in the Sell section
   const storeMgmtBlock = tabBlock(content, 'store-management');
   assert.ok(storeMgmtBlock, 'Store management block must be found');
   assert.match(storeMgmtBlock, /label:\s*['"]Storefront['"]/);
@@ -42,22 +42,19 @@ test('dashboard-tabs defines the Storefront channel under Sell for all relevant 
   assert.match(storeMgmtBlock, /'admin'/, 'Store management must allow admin role');
 });
 
-test('dashboard-tabs defines Marketplace Orders and POS under Sell', () => {
+test('dashboard-tabs defines Marketplace Orders as a sales channel and keeps POS decoupled', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
   // Verify Marketplace Orders
   assert.match(content, /path:\s*['"]marketplace-orders['"]/);
   assert.match(content, /channel:\s*['"]marketplace['"]/);
 
-  // Verify POS
-  assert.match(content, /path:\s*['"]pos['"]/);
-  assert.match(content, /channel:\s*['"]pos['"]/);
+  const block = tabBlock(content, 'marketplace-orders');
+  assert.ok(block, 'marketplace-orders block must be found');
+  assert.match(block, /section:\s*['"]sell['"]/, 'marketplace-orders must be in the Sell section');
 
-  for (const tabPath of ['marketplace-orders', 'pos']) {
-    const block = tabBlock(content, tabPath);
-    assert.ok(block, `${tabPath} block must be found`);
-    assert.match(block, /section:\s*['"]sell['"]/, `${tabPath} must be in the Sell section`);
-  }
+  // Verify POS is not an embedded tab (POS is a dedicated standalone app at rentify-pos.mekhla.digital)
+  assert.equal(/channel:\s*['"]pos['"]/.test(content), false, 'POS should not be an embedded tab in merchant dashboard');
 });
 
 test('every tab in dashboard-tabs has a corresponding route in dashboardRoutes', () => {

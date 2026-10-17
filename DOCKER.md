@@ -70,7 +70,8 @@ Running `docker compose up -d` automatically applies all migrations and seeds fu
 
 ### What's pre-seeded:
 - **Packages**: Free Trial, Growth, and Enterprise subscription tiers.
-- **Templates**: Skin Care Template 1 (`:4700`) and Technology Template 2 (`:4600`).
+- **Templates**: Skin Care Template 1 (`:4700`), Technology Template 2 (`:4600`) and Café Template 3 (served by the storefront app).
+- **Café demo**: *Mekong Brew* (Template 3) at `http://mekong-brew.localhost:4900`, with 5 menu categories and 11 items; its merchant signs in as `cafe.merchant@rentify.local` with the merchant seed password.
 - **Store & Products**: *Aura Botanicals* skincare store with 6 high-definition products, 4 categories, inventory counts, and price tiers.
 - **Transactions & Orders**: Sample completed & pending KHQR orders, invoices, and automated usage aggregation events.
 

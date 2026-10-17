@@ -39,6 +39,11 @@
       "module": "store-access",
       "model": "Customer",
       "reason": "The one-time tenant backfill maps every table of a website to its Store in one transaction when Core links them."
+    },
+    {
+      "module": "store-access",
+      "model": "StoreDeliveryPolicy",
+      "reason": "When a Store snapshot is projected from Core, a default delivery policy is provisioned if none exists."
     }
   ]
 }

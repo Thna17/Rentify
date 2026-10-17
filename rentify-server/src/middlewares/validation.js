@@ -5,8 +5,9 @@ const { logger } = require('../utils/logger');
 /**
  * Validation middleware for website creation
  */
-const validateCreateWebsite = (req, res, next) => {
-  const { templateId, businessData, packageId } = req.body;
+const validateCreateWebsite = async (req, res, next) => {
+  const { templateId } = req.body;
+  let { businessData } = req.body;
 
   // Check required fields
   if (!templateId) {
@@ -15,6 +16,31 @@ const validateCreateWebsite = (req, res, next) => {
       error: ERROR_CODES.VALIDATION_ERROR,
       message: 'Template ID is required'
     });
+  }
+
+  // If upgrading from an existing Store (Dashboard checklist -> Pick template),
+  // hydrate any omitted businessData fields from the merchant's Store & User record
+  if (req.user?.id && (!businessData || !businessData.name || !businessData.email || !businessData.contact || !businessData.primaryCategory)) {
+    try {
+      const { User, Store } = require('../models');
+      const [userRecord, storeRecord] = await Promise.all([
+        User.findByPk(req.user.id),
+        Store.findOne({ where: { ownerUserId: req.user.id } }),
+      ]);
+      if (userRecord || storeRecord) {
+        businessData = {
+          ...(businessData || {}),
+          name: businessData?.name || storeRecord?.name || userRecord?.name || '',
+          primaryCategory: businessData?.primaryCategory || storeRecord?.primaryCategory || 'Other',
+          email: businessData?.email || userRecord?.email || `${req.user.id}@merchant.rentify.local`,
+          contact: businessData?.contact || userRecord?.phoneNumber || '+855 12 000 000',
+          location: businessData?.location || 'phnom-penh',
+        };
+        req.body.businessData = businessData;
+      }
+    } catch {
+      // Proceed to standard validation if lookup fails
+    }
   }
 
   if (!businessData) {

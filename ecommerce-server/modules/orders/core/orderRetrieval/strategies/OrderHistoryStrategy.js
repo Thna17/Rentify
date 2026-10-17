@@ -6,13 +6,29 @@ class OrderHistoryStrategy extends BaseRetrievalStrategy {
     try {
       const { websiteId } = req.params;
       const { status, page = 1, limit = 10 } = req.query;
+      const { Op } = require('sequelize');
       
-      const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+      const validStatuses = ['pending', 'confirmed', 'processing', 'completed', 'fulfilled', 'shipped', 'delivered', 'cancelled', 'refunded'];
       if (status && !validStatuses.includes(status)) {
         return res.status(400).json({ error: 'Invalid status filter' });
       }
 
-      const where = { websiteId };
+      let effectiveStoreId = null;
+      if (websiteId && this.models.WebsiteData) {
+        const website = await this.models.WebsiteData.findOne({
+          where: { websiteId },
+          attributes: ['storeId'],
+        });
+        if (website?.storeId) effectiveStoreId = website.storeId;
+      }
+
+      const conditions = [];
+      if (websiteId) conditions.push({ websiteId });
+      if (effectiveStoreId) conditions.push({ storeId: effectiveStoreId });
+
+      const where = conditions.length > 1
+        ? { [Op.or]: conditions }
+        : (conditions[0] || { websiteId });
       if (status) where.status = status;
 
       const orders = await this.models.Order.findAndCountAll({

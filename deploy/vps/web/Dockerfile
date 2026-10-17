@@ -13,12 +13,14 @@ ARG VITE_MERCHANT_DASHBOARD_URL
 ARG VITE_MARKETING_URL
 ARG VITE_MARKETPLACE_URL
 ARG VITE_ADMIN_DASHBOARD_URL
+ARG VITE_POS_URL
 ARG VITE_STOREFRONT_ORIGIN
 ARG VITE_HOSTED_STOREFRONT_DOMAIN
 ARG VITE_HOSTED_STOREFRONT_BUYER_ENABLED
 RUN npx vite build --config apps/core/marketing/vite.config.ts \
  && npx vite build --config apps/core/auth/vite.config.ts \
- && npx vite build --config apps/core/merchant/vite.config.ts
+ && npx vite build --config apps/core/merchant/vite.config.ts \
+ && npx vite build --config apps/core/pos/vite.config.ts
 
 FROM node:22-bookworm-slim AS marketplace
 WORKDIR /src
@@ -38,6 +40,7 @@ FROM nginx:1.27-alpine
 COPY --from=rentify-frontend /src/dist/apps/core/marketing /srv/marketing
 COPY --from=rentify-frontend /src/dist/apps/core/auth /srv/auth
 COPY --from=rentify-frontend /src/dist/apps/core/merchant /srv/merchant
+COPY --from=rentify-frontend /src/dist/apps/core/pos /srv/pos
 COPY --from=marketplace /src/dist/marketplace-frontend/browser /srv/marketplace
 COPY --from=admin /src/dist/admin-frontend/browser /srv/admin
 COPY deploy/vps/web/nginx.conf /etc/nginx/conf.d/default.conf

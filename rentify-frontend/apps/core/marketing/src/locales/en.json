@@ -903,5 +903,6 @@
   "onboarding.khqr.plan": "Plan",
   "onboarding.khqr.period": "Billing period",
   "onboarding.khqr.noteTitle": "The price is set by Rentify.",
-  "onboarding.khqr.noteBody": "The amount comes from your plan and is checked again before your store is created."
+  "onboarding.khqr.noteBody": "The amount comes from your plan and is checked again before your store is created.",
+  "onboarding.templates.recommended": "Recommended for your store"
 }

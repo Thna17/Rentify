@@ -75,6 +75,18 @@ test('publishing again keeps the first subdomain', async (t) => {
   assert.equal(result.deploymentUrl, 'http://aura.localhost:4900');
 });
 
+test('the café template (Template 3) publishes like the others', async (t) => {
+  withHosting(t);
+  const website = fakeWebsite({ name: 'Mekong Brew', WebsiteTemplate: { websiteTemplateId: 3 } });
+  t.mock.method(Website, 'findByPk', async () => website);
+  t.mock.method(Website, 'findAll', async () => []);
+  stubSideEffects(t);
+
+  const result = await deploymentService.publishWebsite(website.id);
+  assert.equal(result.deploymentUrl, 'https://mekong-brew.rentifystore.shop');
+  assert.equal(website.status, 'active');
+});
+
 test('publishing refuses unknown templates and unconfigured hosting', async (t) => {
   withHosting(t, { domain: '' });
   t.mock.method(Website, 'findByPk', async () => fakeWebsite());

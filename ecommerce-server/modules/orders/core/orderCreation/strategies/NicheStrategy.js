@@ -126,6 +126,11 @@ class NicheStrategy {
   }
 
   calculateShippingFee(items, orderType, shippingInfo) {
+    // POS in-person sales and in-store pickups never incur shipping fees
+    if (orderType === 'pos' || orderType === 'pickup') {
+      return 0;
+    }
+
     // Base shipping logic - override in subclasses
     let shipping = 0;
     

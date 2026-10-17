@@ -13,6 +13,7 @@ ports, volumes, Caddy and the host `cloudflared` service are not touched.
 | `https://rentify-seller.mekhla.digital` | Merchant dashboard |
 | `https://rentify-market.mekhla.digital` | Marketplace |
 | `https://rentify-admin.mekhla.digital` | Platform administration |
+| `https://rentify-pos.mekhla.digital` | Point of Sale (POS) register |
 | `https://rentify-api.mekhla.digital` | Core API |
 | `https://rentify-commerce.mekhla.digital` | Commerce API |
 | `https://<store>.mekhla.digital` | Published stores (Cloudflare Worker, `rentify-frontend/apps/storefront/cloudflare`) |

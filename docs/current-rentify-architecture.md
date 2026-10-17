@@ -10,7 +10,7 @@ and remains subject to the migration plan's release gates.
 | --- | --- | --- |
 | `rentify-server` (`:3001`) | Merchant/admin/staff identity, initial Store profiles, websites, templates, packages, subscriptions, deployment | `rentify_core` MySQL |
 | `ecommerce-server` (`:4001`) | Website copy, catalog, carts, customers, checkout, orders, POS, invoices, payments, usage billing | `rentify_ecommerce` MySQL |
-| `rentify-frontend` | Marketing, auth, merchant dashboard, the storefront app (`:4900`) that serves both storefront templates, and each template for standalone development | Browser session and API state |
+| `rentify-frontend` | Marketing, auth, merchant dashboard, the storefront app (`:4900`) that serves the three storefront templates, and each template for standalone development | Browser session and API state |
 | Redis | Cache and deployment updates | Transient state |
 
 The local services and URLs are declared in [`compose.yaml`](../compose.yaml).

@@ -18,11 +18,11 @@ export const formatDuration = (duration, t) => {
   return key ? `${amount} ${t(key)}` : duration;
 };
 
-// Billing period shown after a price: "/mo", "/yr" or "for 14 days"
+// Billing period shown after a price: "/mo", "/yr" or "Free forever"
 export const formatPeriod = (plan, t) => {
   const duration = String(plan?.duration || '').toLowerCase();
   if (Number(plan?.price) === 0) {
-    return `${t('site.common.for')} ${formatDuration(plan?.duration, t)}`;
+    return t('site.common.perMonth');
   }
   if (duration === '1 month') return t('site.common.perMonth');
   if (duration === '1 year') return t('site.common.perYear');
@@ -47,6 +47,63 @@ export const formatRiel = (price) =>
   `${(Math.round((Number(price) * KHR_PER_USD) / 1000) * 1000).toLocaleString(
     'en-US'
   )}៛`;
+
+// Canonical tier identification
+export const planTierKey = (plan, index = 0) => {
+  const name = String(plan?.name || '').trim().toLowerCase();
+  const price = Number(plan?.price || 0);
+  if (name === 'free' || (price === 0 && index === 0)) return 'free';
+  if (name === 'starter' || (price > 0 && price <= 5)) return 'starter';
+  if (name === 'pro' || price >= 10) return 'pro';
+  if (index === 0) return 'free';
+  if (index === 1) return 'starter';
+  return 'pro';
+};
+
+export const planWhoItsFor = (plan, index = 0) => {
+  if (plan?.limits?.whoItsFor) return plan.limits.whoItsFor;
+  const key = planTierKey(plan, index);
+  if (key === 'free') return 'Facebook seller, new seller';
+  if (key === 'starter') return 'Shop with a counter or brand';
+  return 'Growing shop';
+};
+
+export const planCommission = (plan) =>
+  plan?.limits?.commission || 'Only on marketplace orders';
+
+export const planHasStoreAndCatalog = () => true;
+export const planHasMarketplace = () => true;
+
+export const planHasOwnStorefront = (plan, index = 0) => {
+  if (typeof plan?.limits?.ownStorefront === 'boolean') {
+    return plan.limits.ownStorefront;
+  }
+  const key = planTierKey(plan, index);
+  return key === 'starter' || key === 'pro' || Number(plan?.price) > 0;
+};
+
+export const planHasPos = (plan, index = 0) => {
+  if (typeof plan?.limits?.pos === 'boolean') {
+    return plan.limits.pos;
+  }
+  const key = planTierKey(plan, index);
+  return key === 'starter' || key === 'pro' || Number(plan?.price) > 0;
+};
+
+export const planHasProTools = (plan, index = 0) => {
+  if (typeof plan?.limits?.proTools === 'boolean') {
+    return plan.limits.proTools;
+  }
+  const key = planTierKey(plan, index);
+  return key === 'pro' || Number(plan?.price) >= 10;
+};
+
+export const formatColumnHeading = (plan, index = 0) => {
+  const key = planTierKey(plan, index);
+  const price = Number(plan?.price || 0);
+  if (key === 'free' || price === 0) return 'Free';
+  return `${plan?.name || (key === 'starter' ? 'Starter' : 'Pro')} (≈$${price}/mo)`;
+};
 
 // Slug-style features returned by the packages API
 const FEATURE_KEYS = {
@@ -81,10 +138,6 @@ export const CORE_FEATURES = [
   'basic-dashboard',
   'product-management',
   'order-management',
-  'store',
-  'advanced-analytics',
-  'invoice',
-  'pos',
 ];
 
 export const translateFeature = (feature, t) => {
@@ -103,26 +156,31 @@ export const translateFeature = (feature, t) => {
   return feature;
 };
 
-const COUNT_FEATURE = /^(\d+|unlimited)\s+(products?|staff(\s+members?)?)$/i;
-
-// Plan-specific extras: skips the core features every plan shares and the
-// product/staff counts that are shown separately as limits
-export const planHighlights = (plan, t) => {
-  const coreLabels = new Set(CORE_FEATURES.map((feature) => translateFeature(feature, t)));
-  const seen = new Set();
-
-  return (plan?.features || [])
-    .filter((feature) => {
-      const text = String(feature).trim();
-      return !CORE_FEATURES.includes(text.toLowerCase()) && !COUNT_FEATURE.test(text);
-    })
-    .map((feature) => translateFeature(feature, t))
-    .filter((label) => {
-      if (coreLabels.has(label) || seen.has(label)) return false;
-      seen.add(label);
-      return true;
-    });
+// Canonical checklist rows shown on each plan card
+export const planFeatureChecklist = (plan, index = 0) => {
+  const items = [
+    { label: 'Store and one catalog', included: true },
+    { label: 'Sell on Rentify Marketplace', included: true },
+    {
+      label: 'Own storefront (subdomain + templates)',
+      included: planHasOwnStorefront(plan, index),
+    },
+    {
+      label: 'POS at the counter',
+      included: planHasPos(plan, index),
+    },
+    {
+      label: 'Custom domain, staff accounts, analytics, marketing tools',
+      included: planHasProTools(plan, index),
+    },
+  ];
+  return items;
 };
+
+export const planHighlights = (plan, t) =>
+  planFeatureChecklist(plan)
+    .filter((item) => item.included)
+    .map((item) => item.label);
 
 // starter / growth / scale, by position in the price-sorted list
 export const planTier = (index, count) => {
@@ -138,7 +196,6 @@ const hasFeature = (plan, name) =>
 
 export const planIncludes = hasFeature;
 
-// Products and staff can be advertised as unlimited even when a soft limit exists
 export const planLimit = (plan, kind, t) => {
   const unlimited = (plan?.features || []).some((feature) =>
     new RegExp(`^unlimited ${kind}`, 'i').test(feature)

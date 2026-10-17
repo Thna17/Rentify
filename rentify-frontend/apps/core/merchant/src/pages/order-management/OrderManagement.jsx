@@ -25,6 +25,7 @@ import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
 
 import { OrderRowDetail } from './components/OrderRowDetail';
 import { QuickActionsDropdown } from './components/OrderQuickActions';
+import MarketplaceOrders from './MarketplaceOrders';
 
 // Shadcn components
 import { Badge } from '@rentify/shared/ui/badge';
@@ -61,10 +62,8 @@ const STATUS_FILTERS = {
   },
 };
 
-export function OrderManagement() {
+function OrderManagementContent({ websiteId }) {
   const { t } = useTranslation();
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
   const showSnackbar = useSnackbar();
@@ -741,6 +740,17 @@ export function OrderManagement() {
       />
     </div>
   );
+}
+
+export function OrderManagement() {
+  const { websiteData } = useThemeService();
+  const websiteId = websiteData?.websiteId;
+
+  if (!websiteId) {
+    return <MarketplaceOrders />;
+  }
+
+  return <OrderManagementContent websiteId={websiteId} />;
 }
 
 export default OrderManagement;

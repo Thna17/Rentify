@@ -498,7 +498,8 @@ const toStoreFromRentify = (api: RentifyStore): Store => ({
   theme: 'FOREST',
   phoneNumber: '',
   showContact: false,
-  logoUrl: STORE_LOGOS[api.slug] || STORE_LOGOS[api.id] || api.logoUrl || null,
+  // The store's own https logo from Core; the bundled logos cover the demo stores without one.
+  logoUrl: (api.logoUrl?.startsWith('https://') ? api.logoUrl : null) || STORE_LOGOS[api.slug] || STORE_LOGOS[api.id] || null,
   bannerUrl: null,
   featuredProductIds: [],
 });

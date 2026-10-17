@@ -11,7 +11,7 @@ const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
  * (rentify-frontend/apps/storefront). It is deployed once; it reads the host,
  * finds the Website and loads that Website's template.
  */
-const SUPPORTED_TEMPLATES = new Set([1, 2]);
+const SUPPORTED_TEMPLATES = new Set([1, 2, 3]);
 
 class DeploymentService {
   /**

@@ -6,6 +6,7 @@ window.__RENTIFY_MARKETPLACE__ = {
   coreApiUrl: '${RENTIFY_API_URL}',
   commerceApiUrl: '${ECOMMERCE_API_URL}',
   authUrl: '${AUTH_URL}',
+  marketingUrl: '${MARKETING_URL}',
   merchantDashboardUrl: '${MERCHANT_DASHBOARD_URL}',
   adminDashboardUrl: '${ADMIN_DASHBOARD_URL}',
 };

@@ -6,6 +6,7 @@ declare global {
       coreApiUrl?: string;
       commerceApiUrl?: string;
       authUrl?: string;
+      marketingUrl?: string;
       merchantDashboardUrl?: string;
       adminDashboardUrl?: string;
     };

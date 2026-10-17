@@ -13,6 +13,7 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signin" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/register" element={<SignupPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -23,6 +24,7 @@ const App: React.FC = () => {
           path="/reset-password/:storeId/:token"
           element={<ResetPasswordPage />}
         />
+        <Route path="*" element={<LoginPage />} />
       </Routes>
     </AuthLanguageProvider>
   );

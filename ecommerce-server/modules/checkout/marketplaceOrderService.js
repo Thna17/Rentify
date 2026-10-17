@@ -5,7 +5,7 @@ const { createHash } = require('node:crypto');
 const { Op } = require('sequelize');
 const { Order, OrderItem, Payment, OrderEvent } = require('../../models');
 const { changeStock } = require('../inventory').sharedStockService;
-const { fail, uuid, requiredText, cents, dollars, orderView } = require('./marketplaceRules');
+const { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, orderView } = require('./marketplaceRules');
 
 function actionFingerprint(action, input) {
   const fields = {
@@ -43,7 +43,7 @@ async function recordEvent({ orderId, storeId, actorId, eventKey, type, amount =
 }
 
 async function merchantAction({ storeId, orderId, actorId, eventKey, action, details = {} }) {
-  uuid(storeId, 'Store'); uuid(orderId, 'order'); uuid(actorId, 'actor'); uuid(eventKey, 'idempotency key');
+  uuid(storeId, 'Store'); uuid(orderId, 'order'); uuid(actorId, 'actor'); validIdempotencyKey(eventKey);
   if (!['delivered', 'delivery_failed', 'retry_delivery', 'collect_cod', 'confirm_refund'].includes(action)) fail('Invalid action');
   const fingerprint = actionFingerprint(action, details);
   const prior = await OrderEvent.findOne({ where: { eventKey } });
@@ -156,7 +156,7 @@ async function orderEvents(storeId, orderId) {
 
 async function buyerReport({ buyerId, orderId, eventKey, type, details,
   storeId, channel = 'marketplace' }) {
-  uuid(buyerId, 'buyer'); uuid(orderId, 'order'); uuid(eventKey, 'idempotency key');
+  uuid(buyerId, 'buyer'); uuid(orderId, 'order'); validIdempotencyKey(eventKey);
   if (!['return_requested', 'complaint'].includes(type)) fail('Invalid report type');
   const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: channel,
     ...(storeId ? { storeId } : {}) } });

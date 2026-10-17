@@ -74,10 +74,10 @@ export function AppSidebar({
             Add a branded website with your custom domain.
           </p>
           <a
-            href={`${MARKETING_URL}/start`}
+            href={`${MARKETING_URL}/onboarding/starter?step=template`}
             className="inline-block text-center font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md py-1 px-2.5 w-full transition-colors text-xs shadow-sm"
           >
-            Get Storefront
+            Get Storefront (14d Free)
           </a>
         </div>
       )}

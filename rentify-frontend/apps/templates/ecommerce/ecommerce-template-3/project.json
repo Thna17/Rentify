@@ -1,0 +1,29 @@
+{
+  "name": "ecommerce-template-3",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/templates/ecommerce/ecommerce-template-3/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project ecommerce-template-3 --web",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/templates/ecommerce/ecommerce-template-3",
+        "configFile": "apps/templates/ecommerce/ecommerce-template-3/vite.config.ts",
+        "base": "/",
+        "mode": "production",
+        "define": {
+          "process.env.NODE_ENV": "'production'"
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "options": {
+        "buildTarget": "ecommerce-template-3:build",
+        "port": 4650
+      }
+    }
+  }
+}

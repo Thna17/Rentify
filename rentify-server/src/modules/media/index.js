@@ -2,4 +2,5 @@
 // not the files inside the module. Members load lazily when first read.
 module.exports = {
   get uploadController() { return require('./uploadController'); },
+  get cloudinaryUploadService() { return require('./cloudinaryUploadService'); },
 };

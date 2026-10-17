@@ -4,13 +4,14 @@ import { STOREFRONT_SHELL_ENTRY, findBoundaryViolations } from '../../../../tool
 describe('storefront app boundary', () => {
   const { graph, violations } = findBoundaryViolations(STOREFRONT_SHELL_ENTRY);
 
-  test('reaches both templates but no merchant, admin, staff or payment-configuration code', () => {
+  test('reaches every template but no merchant, admin, staff or payment-configuration code', () => {
     expect(violations).toEqual([]);
     expect(graph.unresolved).toEqual([]);
     expect(graph.files).toEqual(
       expect.arrayContaining([
         'apps/templates/ecommerce/ecommerce-template-1/src/app.jsx',
         'apps/templates/ecommerce/ecommerce-template-2/src/app.jsx',
+        'apps/templates/ecommerce/ecommerce-template-3/src/app.jsx',
         'libs/storefront/src/website.tsx',
       ])
     );

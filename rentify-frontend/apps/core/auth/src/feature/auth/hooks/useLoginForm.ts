@@ -21,6 +21,7 @@ import {
   ADMIN_DASHBOARD_URL,
   MARKETING_URL,
   MARKETPLACE_URL,
+  POS_URL,
 } from '@rentify/shared/config/urls';
 
 const parseJwtPayload = (token?: string) => {
@@ -158,20 +159,40 @@ export const useLoginForm = () => {
       const userRole = response?.data?.user?.role || parseJwtPayload(response?.data?.accessToken)?.role;
       const isAdmin = userRole === 'admin';
       const isStaffSuccess = selectedLogin === loginStaffMutation || userRole === 'staff';
+      const dashboardHost = new URL(DASHBOARD_URL).host;
+      const posHost = POS_URL ? new URL(POS_URL).host : '';
+      const marketingStartUrl = `${MARKETING_URL.replace(/\/+$/, '')}/start`;
+      const isBareMarketingRoot = (() => {
+        try {
+          const parsed = new URL(redirectUrl);
+          return (
+            returnDomain === marketingHost &&
+            (!parsed.pathname || parsed.pathname === '/')
+          );
+        } catch {
+          return false;
+        }
+      })();
 
       let destination = redirectUrl;
 
       if (isAdmin) {
-        if (hasExplicitReturnUrl && redirectUrl !== `${MARKETING_URL}/start` && redirectUrl !== MARKETING_URL) {
+        if (hasExplicitReturnUrl && redirectUrl !== marketingStartUrl && redirectUrl !== MARKETING_URL && !isBareMarketingRoot) {
           destination = redirectUrl;
         } else {
           destination = `${ADMIN_DASHBOARD_URL}/admin/dashboard`;
         }
-      } else if (hasExplicitReturnUrl) {
+      } else if (hasExplicitReturnUrl && !isBareMarketingRoot) {
         if (returnDomain === adminDashboardHost) {
           destination = response?.data?.hasStore || isStaffSuccess
             ? `${DASHBOARD_URL}/overview`
-            : `${MARKETING_URL}/start`;
+            : marketingStartUrl;
+        } else if (
+          (returnDomain === dashboardHost || (posHost && returnDomain === posHost)) &&
+          !response?.data?.hasStore &&
+          !isStaffSuccess
+        ) {
+          destination = marketingStartUrl;
         } else {
           destination = redirectUrl;
         }
@@ -181,7 +202,7 @@ export const useLoginForm = () => {
         } else if (isWebsiteTemplate) {
           destination = redirectUrl;
         } else {
-          destination = `${MARKETING_URL}/start`;
+          destination = marketingStartUrl;
         }
       }
 

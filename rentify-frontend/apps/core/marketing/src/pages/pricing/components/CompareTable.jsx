@@ -1,135 +1,133 @@
 import React from 'react';
-import { Check, Minus } from 'lucide-react';
-import { cn } from '@rentify/utils';
+import { Check } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Reveal } from '../../../components/site/motion';
 import {
-  formatStorage,
-  planIncludes,
-  planLimit,
-  translateFeature,
+  formatColumnHeading,
+  planCommission,
+  planHasMarketplace,
+  planHasOwnStorefront,
+  planHasPos,
+  planHasProTools,
+  planHasStoreAndCatalog,
+  planWhoItsFor,
 } from '../../../utils/planFormat';
 
-// Each row reads straight from the package data returned by the API
-const buildGroups = (t) => [
+const DEFAULT_PLANS = [
+  { id: 'free', name: 'Free', price: 0 },
+  { id: 'starter', name: 'Starter', price: 5 },
+  { id: 'pro', name: 'Pro', price: 10 },
+];
+
+const buildMatrixRows = () => [
   {
-    title: t('site.pricing.compare.groups.store'),
-    rows: [
-      { label: translateFeature('store', t), value: (plan) => planIncludes(plan, 'store') },
-      { label: t('site.pricing.limits.products'), value: (plan) => planLimit(plan, 'products', t) },
-      {
-        label: t('site.pricing.compare.rows.stores'),
-        value: (plan) => (planIncludes(plan, 'Multi-Storefront') ? t('site.pricing.compare.multiple') : '1'),
-      },
-      { label: translateFeature('Custom Domain', t), value: (plan) => planIncludes(plan, 'Custom Domain') },
-    ],
+    key: 'whoItsFor',
+    label: 'Who it’s for',
+    value: (plan, idx) => planWhoItsFor(plan, idx),
   },
   {
-    title: t('site.pricing.compare.groups.selling'),
-    rows: [
-      { label: translateFeature('pos', t), value: (plan) => planIncludes(plan, 'pos') },
-      { label: translateFeature('invoice', t), value: (plan) => planIncludes(plan, 'invoice') },
-      { label: translateFeature('KHQR Payments', t), value: (plan) => planIncludes(plan, 'KHQR Payments') },
-      {
-        label: translateFeature('Telegram Order Notifications', t),
-        value: (plan) => planIncludes(plan, 'Telegram Order Notifications'),
-      },
-    ],
+    key: 'storeAndCatalog',
+    label: 'Store and one catalog',
+    value: (plan, idx) => planHasStoreAndCatalog(plan, idx),
   },
   {
-    title: t('site.pricing.compare.groups.team'),
-    rows: [
-      { label: t('site.pricing.limits.staff'), value: (plan) => planLimit(plan, 'staff', t) },
-      {
-        label: t('site.pricing.compare.rows.analytics'),
-        value: (plan) => planIncludes(plan, 'advanced-analytics') || planIncludes(plan, 'Standard Analytics'),
-      },
-      { label: t('site.pricing.limits.storage'), value: (plan) => formatStorage(plan.limits?.storage) },
-    ],
+    key: 'marketplace',
+    label: 'Sell on Rentify Marketplace',
+    value: (plan, idx) => planHasMarketplace(plan, idx),
   },
   {
-    title: t('site.pricing.compare.groups.support'),
-    rows: [
-      { label: translateFeature('Dedicated Support', t), value: (plan) => planIncludes(plan, 'Dedicated Support') },
-      {
-        label: translateFeature('Custom Integrations', t),
-        value: (plan) => planIncludes(plan, 'Custom Integrations'),
-      },
-    ],
+    key: 'ownStorefront',
+    label: 'Own storefront (subdomain + templates)',
+    value: (plan, idx) => planHasOwnStorefront(plan, idx),
+  },
+  {
+    key: 'pos',
+    label: 'POS at the counter',
+    value: (plan, idx) => planHasPos(plan, idx),
+  },
+  {
+    key: 'proTools',
+    label: 'Custom domain, staff accounts, analytics, marketing tools',
+    value: (plan, idx) => planHasProTools(plan, idx),
+  },
+  {
+    key: 'commission',
+    label: 'Commission',
+    value: (plan) => planCommission(plan),
   },
 ];
 
 const Cell = ({ value, t }) => {
   if (value === true) {
     return (
-      <Check
-        className="mx-auto h-5 w-5 text-[#0071e3]"
-        strokeWidth={2.2}
-        aria-label={t('site.pricing.compare.included')}
-      />
+      <span className="inline-flex items-center justify-center text-[#1d1d1f] font-semibold">
+        <Check
+          className="h-5 w-5 text-[#0071e3]"
+          strokeWidth={2.4}
+          aria-label={t('site.pricing.compare.included')}
+        />
+      </span>
     );
   }
   if (value === false) {
     return (
-      <Minus
-        className="mx-auto h-5 w-5 text-[#d2d2d7]"
+      <span
+        className="text-[16px] font-medium text-[#86868b]"
         aria-label={t('site.pricing.compare.notIncluded')}
-      />
+      >
+        —
+      </span>
     );
   }
-  return <span className="text-[15px] font-medium text-[#1d1d1f]">{value}</span>;
+  return <span className="text-[15px] font-normal leading-relaxed text-[#1d1d1f]">{value}</span>;
 };
 
 const CompareTable = ({ plans }) => {
   const { t } = useLanguage();
-  if (!plans.length) return null;
-  const groups = buildGroups(t);
+  const displayPlans = Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS;
+  const rows = buildMatrixRows();
 
   return (
     <Reveal className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
-      <table className="w-full min-w-[640px] border-collapse text-left">
-        <thead>
-          <tr>
-            <th className="sticky left-0 z-10 w-[34%] bg-white py-5 text-[13px] font-normal text-[#86868b]">
-              {t('site.pricing.compare.feature')}
-            </th>
-            {plans.map((plan) => (
-              <th key={plan.id} className="py-5 text-center text-[17px] font-semibold text-[#1d1d1f]">
-                {plan.name}
+      <div className="overflow-hidden rounded-[24px] border border-black/[0.08] bg-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.12)]">
+        <table className="w-full min-w-[680px] border-collapse text-left">
+          <thead>
+            <tr className="border-b border-black/[0.08] bg-[#fbfbfd]">
+              <th className="sticky left-0 z-10 w-[34%] bg-[#fbfbfd] px-6 py-5 text-[14px] font-semibold text-[#86868b]">
+                {/* Empty header matching reference table */}
               </th>
-            ))}
-          </tr>
-        </thead>
-        {groups.map((group) => (
-          <tbody key={group.title}>
-            <tr>
-              <th
-                colSpan={plans.length + 1}
-                className="sticky left-0 bg-white pb-3 pt-10 text-[13px] font-semibold uppercase tracking-wider text-[#86868b]"
-              >
-                {group.title}
-              </th>
+              {displayPlans.map((plan, idx) => (
+                <th
+                  key={plan.id || idx}
+                  className="w-[22%] px-6 py-5 text-left text-[16px] font-bold tracking-[-0.01em] text-[#1d1d1f]"
+                >
+                  {formatColumnHeading(plan, idx)}
+                </th>
+              ))}
             </tr>
-            {group.rows.map((row, rowIndex) => (
-              <tr key={`${group.title}-${rowIndex}`} className="border-t border-black/[0.08]">
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={row.key}
+                className="border-t border-black/[0.08] transition-colors hover:bg-black/[0.015]"
+              >
                 <th
                   scope="row"
-                  className={cn(
-                    'sticky left-0 z-10 bg-white py-4 pr-4 text-[15px] font-normal text-[#1d1d1f]'
-                  )}
+                  className="sticky left-0 z-10 bg-white px-6 py-5 text-[15px] font-medium leading-snug text-[#1d1d1f]"
                 >
                   {row.label}
                 </th>
-                {plans.map((plan) => (
-                  <td key={plan.id} className="py-4 text-center">
-                    <Cell value={row.value(plan)} t={t} />
+                {displayPlans.map((plan, idx) => (
+                  <td key={plan.id || idx} className="px-6 py-5 text-left align-top">
+                    <Cell value={row.value(plan, idx)} t={t} />
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
-        ))}
-      </table>
+        </table>
+      </div>
     </Reveal>
   );
 };

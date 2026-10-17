@@ -13,7 +13,6 @@ const OrderManagement = lazy(() => import('../pages/order-management/OrderManage
 const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
 const InvoiceManual = lazy(() => import('../pages/invoice-manual/InvoiceManual'));
-const POSInterface = lazy(() => import('../pages/pos-interface/POSInterface'));
 // const Setting = lazy(() => import('@rentify/setting/ui/Setting'));
 const ProductForm = lazy(() => import('../pages/product-form/ProductForm'));
 const AccountSettings = lazy(() => import('../pages/setting/AccountSettings'));
@@ -48,7 +47,6 @@ export const dashboardRoutes = {
     { path: 'orders/:id', element: <OrderDetailView /> },
     { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
-    { path: 'pos', element: <POSInterface /> },
     { path: 'help', element: <SupportPage /> },
     { path: 'support', element: <Navigate to="/help" replace /> },
     { path: 'settings', element: <Navigate to="/settings/account" replace /> },

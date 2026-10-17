@@ -59,7 +59,8 @@ import {
 } from '@rentify/shared/ui/collapsible';
 import { useGetManagedProductQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
-import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
+import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { useChannels } from '../../context/ChannelContext';
 import { ImageUploader as ProductImageUploader } from './components/ImageUploader';
 import { uploadProductImages } from '../../services/productImages';
 
@@ -88,7 +89,12 @@ const toStringList = (value) => {
 export const ProductForm = ({ onClose, category }) => {
   const navigate = useNavigate();
   const { websiteData } = useThemeService();
+  const { store: channelStore } = useChannels();
   const websiteId = websiteData?.websiteId;
+  const [fallbackStore, setFallbackStore] = useState(null);
+  const activeStore = channelStore || fallbackStore;
+  const activeStoreId = activeStore?.id || null;
+
   const closeForm = () => {
     if (onClose) onClose();
     else navigate('/products');
@@ -110,8 +116,17 @@ export const ProductForm = ({ onClose, category }) => {
       })
       .then((result) => { if (active) setMarketplaceCategories(result.categories || []); })
       .catch(() => { if (active) setMarketplaceCategoriesError(true); });
+
+    if (!websiteId && !channelStore?.id) {
+      fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((res) => {
+          if (active && res?.data) setFallbackStore(res.data);
+        })
+        .catch(() => null);
+    }
     return () => { active = false; };
-  }, []);
+  }, [websiteId, channelStore?.id]);
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
     niche: true,
@@ -128,7 +143,7 @@ export const ProductForm = ({ onClose, category }) => {
     data: product,
     isLoading: productLoading,
     isError: createError,
-  } = useGetManagedProductQuery({ websiteId, productId: id }, { skip: !id });
+  } = useGetManagedProductQuery({ websiteId, productId: id }, { skip: !id || !websiteId });
 
   const {
     data: productFormConfig,
@@ -206,17 +221,24 @@ export const ProductForm = ({ onClose, category }) => {
     return null;
   };
 
+  const defaultMarketplaceCategory =
+    product?.marketplaceCategory ||
+    (activeStore?.primaryCategory &&
+    marketplaceCategories.includes(activeStore.primaryCategory)
+      ? activeStore.primaryCategory
+      : '');
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
       name: product?.name || '',
       description: product?.description || '',
       price: product?.price || '',
-      stockQuantity: product?.stockQuantity || '',
+      stockQuantity: product?.stockQuantity ?? 10,
       status: product?.status || 'active',
       images: product?.images || [],
       categoryId: getInitialCategoryId(),
-      marketplaceCategory: product?.marketplaceCategory || '',
+      marketplaceCategory: defaultMarketplaceCategory,
       version: product?.version || 0,
       comparePrice: product?.comparePrice || '',
       sku: product?.sku || '',
@@ -237,11 +259,11 @@ export const ProductForm = ({ onClose, category }) => {
     validationSchema,
     validateOnMount: true,
     onSubmit: async (values) => {
-      if (!websiteId) {
-        setSubmitError('Your website is not ready yet. Refresh the page or finish store setup first.');
+      if (!websiteId && !activeStoreId) {
+        setSubmitError('Your store is not ready yet. Refresh the page or finish store setup first.');
         return;
       }
-      if (!productFormConfig?.niche) {
+      if (websiteId && !productFormConfig?.niche) {
         setSubmitError(
           'Could not verify your store product requirements. Refresh the page and try again.'
         );
@@ -253,7 +275,7 @@ export const ProductForm = ({ onClose, category }) => {
       try {
         const uploadedImagesData = await uploadProductImages({
           files: uploadedImages,
-          websiteId,
+          ...(websiteId ? { websiteId } : { storeId: activeStoreId }),
           onProgress: setUploadProgress,
         });
         const { ingredientsText, ...productValues } = values;
@@ -269,17 +291,35 @@ export const ProductForm = ({ onClose, category }) => {
           },
         };
 
-        if (isEditMode) {
-          await updateProduct({
-            websiteId,
-            productId: product.id,
-            product: productData,
-          }).unwrap();
+        if (websiteId) {
+          if (isEditMode) {
+            await updateProduct({
+              websiteId,
+              productId: product.id,
+              product: productData,
+            }).unwrap();
+          } else {
+            await createProduct({
+              websiteId,
+              product: productData,
+            }).unwrap();
+          }
         } else {
-          await createProduct({
-            websiteId,
-            product: productData,
-          }).unwrap();
+          const endpoint = isEditMode
+            ? `${ECOMMERCE_API_ROOT}/api/stores/${activeStoreId}/products/${product?.id || id}`
+            : `${ECOMMERCE_API_ROOT}/api/stores/${activeStoreId}/products`;
+          const response = await fetch(endpoint, {
+            method: isEditMode ? 'PATCH' : 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(
+              result?.error || result?.message || 'Could not save the product'
+            );
+          }
         }
 
         setUploadedImages([]);

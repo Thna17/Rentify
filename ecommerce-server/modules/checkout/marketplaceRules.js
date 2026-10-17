@@ -15,6 +15,13 @@ function uuid(value, label) {
   return value;
 }
 
+function validIdempotencyKey(value) {
+  if (typeof value !== 'string' || !/^[a-zA-Z0-9_-]{8,64}$/.test(value.trim())) {
+    fail('Invalid idempotency key');
+  }
+  return value.trim();
+}
+
 function requiredText(value, label, max = 255) {
   if (typeof value !== 'string' || !value.trim() || value.trim().length > max) fail(`Invalid ${label}`);
   return value.trim();
@@ -101,5 +108,5 @@ function orderView(order, items, payment) {
   };
 }
 
-module.exports = { fail, uuid, requiredText, cents, dollars, deliveryFeeCents, eligibleStore, eligibleProduct,
+module.exports = { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, deliveryFeeCents, eligibleStore, eligibleProduct,
   checkedProductAndVariant, orderView };

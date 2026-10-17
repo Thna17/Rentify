@@ -57,8 +57,23 @@ const pdfUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB (adjust as needed)
 });
 
+// One store logo image, same types and size limit as product images.
+const storeLogoUpload = (req, res, next) => {
+  imageUpload.single('logo')(req, res, (error) => {
+    if (!error) return next();
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'The logo must be 5 MB or smaller' });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ error: 'Upload one logo image' });
+    }
+    return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid image upload' });
+  });
+};
+
 module.exports = {
   imageUpload,
   productImagesUpload,
+  storeLogoUpload,
   pdfUpload
 };

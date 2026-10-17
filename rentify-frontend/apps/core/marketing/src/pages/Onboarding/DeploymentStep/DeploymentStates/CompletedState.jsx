@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   CheckCircle2,
   Copy,
@@ -6,9 +5,11 @@ import {
   LayoutDashboard,
   Rocket,
   Sparkles,
+  WalletCards,
 } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Card, CardContent } from '@rentify/shared/ui/card';
+import { POS_URL } from '@rentify/shared/config/urls';
 
 const normalizeUrl = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -26,6 +27,7 @@ export default function CompletedState({
 }) {
   const storefrontUrl = normalizeUrl(siteUrl);
   const dashboardLink = normalizeUrl(dashboardUrl);
+  const posLink = normalizeUrl(POS_URL);
 
   return (
     <div className="space-y-6">
@@ -49,7 +51,7 @@ export default function CompletedState({
         </p>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-start gap-3">
@@ -126,6 +128,50 @@ export default function CompletedState({
                   <a href={dashboardLink}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {language === 'KH' ? 'បើក Dashboard' : 'Open dashboard'}
+                  </a>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="flex h-full flex-col p-5">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-emerald-100 p-2.5 text-emerald-700">
+                <WalletCards className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">
+                  {language === 'KH' ? 'ប្រព័ន្ធលក់នៅកន្លែង (POS)' : 'Point of Sale (POS)'}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {language === 'KH' ? 'គិតលុយលឿន និងស្កេនបាកូដ' : 'Fast in-store register & barcode scanning'}
+                </p>
+              </div>
+            </div>
+            {posLink && (
+              <div className="mt-5 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <span className="min-w-0 flex-1 truncate px-1 text-sm font-medium text-slate-700">
+                  {posLink}
+                </span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Copy POS URL"
+                  onClick={() => onCopy(posLink)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="mt-auto pt-3">
+              {posLink && (
+                <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
+                  <a href={posLink} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {language === 'KH' ? 'បើកបញ្ជរ POS' : 'Launch POS Register'}
                   </a>
                 </Button>
               )}

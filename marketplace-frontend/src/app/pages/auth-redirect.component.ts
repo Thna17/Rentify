@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, CanActivateFn } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
-import { RentifyMarketplaceService } from '../core/rentify/rentify-marketplace.service';
+import { RentifyMarketplaceService, marketingSiteUrl } from '../core/rentify/rentify-marketplace.service';
 
 export const externalAuthRedirectGuard = (
   mode: 'login' | 'signup' | 'forgot-password' | 'reset-password' = 'login',
@@ -42,6 +42,15 @@ export const externalMerchantRedirectGuard = (
   if (typeof window !== 'undefined') {
     const merchantBase = rentify?.merchantDashboard || 'http://localhost:4400';
     window.location.href = resolveMerchantRedirectUrl(merchantBase, path);
+  }
+  return false;
+};
+
+export const externalOnboardingRedirectGuard = (): CanActivateFn => () => {
+  const rentify = inject(RentifyMarketplaceService, { optional: true });
+  if (typeof window !== 'undefined') {
+    const marketingBase = (rentify?.marketing || marketingSiteUrl() || 'http://localhost:4200').replace(/\/+$/, '');
+    window.location.href = `${marketingBase}/start`;
   }
   return false;
 };

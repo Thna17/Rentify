@@ -98,3 +98,5 @@ exports.uploadPDF = async (req, res) => {
     }
   }
 };
+
+exports.respondToUploadError = respondToUploadError;

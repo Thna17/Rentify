@@ -12,6 +12,17 @@ const base = (value: string | undefined, fallback: string) =>
 /** Merchant dashboard origin from marketplace-config.js (loaded before the app). */
 export const merchantDashboardUrl = () => base(runtime()?.merchantDashboardUrl, 'http://localhost:4400');
 
+/** Marketing / unified onboarding origin from marketplace-config.js. */
+export const marketingSiteUrl = () => {
+  const configured = base(runtime()?.marketingUrl, 'http://localhost:4200');
+  if (configured) return configured;
+  const merch = merchantDashboardUrl();
+  if (merch.includes('://rentify-seller.')) {
+    return merch.replace('://rentify-seller.', '://rentify.');
+  }
+  return 'http://localhost:4200';
+};
+
 export interface RentifyProduct {
   id: string;
   storeId: string;
@@ -113,6 +124,10 @@ export class RentifyMarketplaceService {
 
   get merchantDashboard(): string {
     return merchantDashboardUrl();
+  }
+
+  get marketing(): string {
+    return marketingSiteUrl();
   }
 
   get adminDashboard(): string {

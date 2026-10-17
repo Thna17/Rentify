@@ -6,7 +6,7 @@ const { Cart, CartItem, StoreDeliveryPolicy, Order, OrderItem, Payment } = requi
 const { changeStock } = require('../inventory').sharedStockService;
 const { getStoreOwnerContact } = require('./merchantContactService');
 const NotificationService = require('../notifications').notificationService;
-const { fail, uuid, requiredText, cents, dollars, eligibleStore, checkedProductAndVariant,
+const { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, eligibleStore, checkedProductAndVariant,
   orderView } = require('./marketplaceRules');
 const { getDeliveryPolicy, setDeliveryPolicy } = require('./deliveryPolicyService');
 const { getCart, setCartItem, updateCartItem, removeCartItem, clearCart, mergeCarts } = require('./marketplaceCartService');
@@ -26,7 +26,7 @@ async function findOrderByKey(checkoutKey, buyerId, transaction = null) {
 
 async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, customerInfo, shippingInfo,
   channel = 'marketplace' }) {
-  uuid(buyerId, 'buyer'); uuid(storeId, 'Store'); uuid(checkoutKey, 'idempotency key');
+  uuid(buyerId, 'buyer'); uuid(storeId, 'Store'); validIdempotencyKey(checkoutKey);
   if (expectedTotalAmount === undefined || expectedTotalAmount === null) fail('Expected cart total is required');
   const expectedTotal = cents(expectedTotalAmount);
   const name = requiredText(customerInfo?.name, 'customer name', 120);

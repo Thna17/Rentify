@@ -6,6 +6,7 @@ import {
   DASHBOARD_URL,
   ADMIN_DASHBOARD_URL,
   AUTH_URL,
+  POS_URL,
 } from '@rentify/shared/config/urls';
 import { getSafeReturnUrl, isHostedStorefrontReturn } from './returnUrl';
 
@@ -19,6 +20,7 @@ export const useAuthConfig = () => {
   const dashboardHost = new URL(DASHBOARD_URL).host;
   const adminDashboardHost = ADMIN_DASHBOARD_URL ? new URL(ADMIN_DASHBOARD_URL).host : '';
   const authHost = new URL(AUTH_URL).host;
+  const posHost = POS_URL ? new URL(POS_URL).host : '';
   const returnDomain = new URL(returnUrl).host;
   const isHostedStorefrontBuyer = isHostedStorefrontReturn(returnUrl);
 
@@ -29,6 +31,7 @@ export const useAuthConfig = () => {
     adminDashboardHost,
     isMarketplace: returnDomain === marketplaceHost,
     isAdminDashboard: Boolean(adminDashboardHost && returnDomain === adminDashboardHost),
+    isPOS: Boolean(posHost && returnDomain === posHost),
     isHostedStorefrontBuyer,
     isWebsiteTemplate:
       returnDomain !== marketingHost &&
@@ -36,6 +39,7 @@ export const useAuthConfig = () => {
       returnDomain !== dashboardHost &&
       returnDomain !== adminDashboardHost &&
       returnDomain !== authHost &&
+      returnDomain !== posHost &&
       !isHostedStorefrontBuyer,
   };
 };

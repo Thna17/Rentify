@@ -3,12 +3,12 @@ import {
   BarChart3,
   Check,
   FileText,
-  HardDrive,
   LayoutDashboard,
+  Minus,
   Package,
   ShoppingBag,
+  Sparkles,
   Store,
-  Users,
   Wallet,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
@@ -20,10 +20,10 @@ import {
   formatPeriod,
   formatPrice,
   formatRiel,
-  formatStorage,
-  planHighlights,
-  planLimit,
-  planTier,
+  planCommission,
+  planFeatureChecklist,
+  planTierKey,
+  planWhoItsFor,
   translateFeature,
 } from '../../../utils/planFormat';
 
@@ -39,14 +39,12 @@ const CORE_ICONS = {
 
 const PlanCard = ({ plan, index, count, recommended }) => {
   const { t } = useLanguage();
-  const tier = planTier(index, count);
+  const tierKey = planTierKey(plan, index, count);
   const free = Number(plan.price) === 0;
-  const highlights = planHighlights(plan, t);
-  const limits = [
-    { icon: Package, label: t('site.pricing.limits.products'), value: planLimit(plan, 'products', t) },
-    { icon: Users, label: t('site.pricing.limits.staff'), value: planLimit(plan, 'staff', t) },
-    { icon: HardDrive, label: t('site.pricing.limits.storage'), value: formatStorage(plan.limits?.storage) },
-  ];
+  const checklist = planFeatureChecklist(plan);
+  const whoItsFor = planWhoItsFor(plan);
+  const commission = planCommission(plan);
+  const ctaLink = free ? '/start' : `/start?plan=${tierKey}`;
 
   return (
     <div
@@ -57,61 +55,80 @@ const PlanCard = ({ plan, index, count, recommended }) => {
           : 'ring-1 ring-black/[0.06] hover:shadow-[0_30px_80px_-50px_rgba(0,0,0,0.35)]'
       )}
     >
-      <div className="h-6">
-        {recommended && (
-          <p className="text-[13px] font-semibold text-[#0071e3]">
-            {t('site.pricing.recommended')}
-          </p>
+      <div className="flex min-h-[28px] items-center justify-between gap-2">
+        {recommended ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0071e3]/10 px-3 py-1 text-[12px] font-semibold text-[#0071e3]">
+            <Sparkles className="h-3.5 w-3.5" />
+            {t('site.pricing.recommended')} • 14-day free trial
+          </span>
+        ) : free ? (
+          <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-700">
+            Free Forever
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-700">
+            14-day free trial
+          </span>
         )}
       </div>
-      <h3 className="mt-1 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
+
+      <h3 className="mt-3 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
         {plan.name}
       </h3>
-      <p className="mt-2 min-h-[44px] text-[15px] leading-snug text-[#6e6e73]">
-        {t(`site.pricing.tiers.${tier}`)}
+      <p className="mt-1.5 text-[14px] font-medium text-[#0071e3]">
+        Who it’s for: <span className="font-normal text-[#424245]">{whoItsFor}</span>
       </p>
 
-      <div className="mt-8 flex items-baseline gap-1.5">
-        <span className="text-[56px] font-semibold leading-none tracking-[-0.04em] text-[#1d1d1f]">
-          {formatPrice(plan.price)}
+      <div className="mt-7 flex items-baseline gap-1.5">
+        <span className="text-[52px] font-semibold leading-none tracking-[-0.04em] text-[#1d1d1f]">
+          {free ? '$0' : `≈${formatPrice(plan.price)}`}
         </span>
         <span className="text-[17px] text-[#6e6e73]">{formatPeriod(plan, t)}</span>
       </div>
       <p className="mt-2 h-5 text-[13px] text-[#86868b]">
-        {free ? '' : `${t('site.pricing.approx')} ${formatRiel(plan.price)}`}
+        {free
+          ? 'No monthly fee • Start selling today'
+          : `${t('site.pricing.approx')} ${formatRiel(plan.price)}/mo after 14-day free trial`}
       </p>
 
       <ButtonLink
-        to={`/onboarding/${plan.id}`}
+        to={ctaLink}
         variant={recommended ? 'primary' : 'dark'}
         size="lg"
-        className="mt-8 w-full"
+        className="mt-7 w-full"
       >
-        {free ? t('site.common.startTrial') : `${t('site.pricing.choose')} ${plan.name}`}
+        {free ? 'Start Free' : `Start 14-Day Free Trial`}
       </ButtonLink>
 
-      <dl className="mt-8 space-y-3 border-t border-black/10 pt-8">
-        {limits.map(({ icon: Icon, label, value }) => (
-          <div key={label} className="flex items-center justify-between text-[15px]">
-            <dt className="flex items-center gap-2.5 text-[#6e6e73]">
-              <Icon className="h-4 w-4" strokeWidth={1.6} />
-              {label}
-            </dt>
-            <dd className="font-medium text-[#1d1d1f]">{value}</dd>
-          </div>
+      <ul className="mt-8 flex-1 space-y-3.5 border-t border-black/10 pt-7">
+        {checklist.map(({ label, included }) => (
+          <li
+            key={label}
+            className={cn(
+              'flex items-start gap-3 text-[15px] leading-snug',
+              included ? 'text-[#1d1d1f] font-medium' : 'text-[#86868b]'
+            )}
+          >
+            {included ? (
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+            ) : (
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <Minus className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
+            )}
+            <span>{label}</span>
+          </li>
         ))}
-      </dl>
+      </ul>
 
-      {highlights.length > 0 && (
-        <ul className="mt-8 space-y-3 border-t border-black/10 pt-8">
-          {highlights.map((highlight) => (
-            <li key={highlight} className="flex items-start gap-2.5 text-[15px] text-[#1d1d1f]">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0071e3]" strokeWidth={2.2} />
-              {highlight}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="mt-7 rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[13px]">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-[#1d1d1f]">Commission</span>
+          <span className="font-medium text-[#424245]">{commission}</span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -149,7 +166,7 @@ const PlanCards = ({ plans, isLoading }) => {
     <>
       <Stagger
         className={cn(
-          'grid gap-5',
+          'grid gap-6',
           plans.length >= 3 ? 'lg:grid-cols-3' : 'mx-auto max-w-3xl md:grid-cols-2'
         )}
         stagger={0.12}
@@ -187,3 +204,4 @@ const PlanCards = ({ plans, isLoading }) => {
 };
 
 export default PlanCards;
+

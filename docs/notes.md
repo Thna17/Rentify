@@ -403,6 +403,60 @@ replaced token is kept in Redis; without Redis the previous behaviour applies.
 The public `getWebsiteByDomain` lookup no longer returns the owner's email or
 phone, or staff contacts and permissions.
 
+## 2026-09-26 Template 3: café storefront
+
+Template 3 (`rentify-frontend/apps/templates/ecommerce/ecommerce-template-3`,
+`websiteTemplateId` 3, WebsiteTemplate `56245606-…`, category `cafe`) is a
+coffee-shop design built on the same storefront contract as Template 2: cart,
+checkout, hosted buyer mode, owner tools and KHQR/COD handling are unchanged.
+What is new:
+
+- The catalog and a home-page "Our menu" section list items as menu rows
+  (thumbnail, dotted leader, price, one-line description, quick add). Items
+  with variants, such as cup sizes, send the shopper to the item page to
+  choose first.
+- A "Visit us" section shows address, phone, a directions link and the
+  merchant's `Opening Hours`. Lines such as `Mon–Fri | 7:00–18:00` are
+  parsed (English and Khmer day names, 24-hour or am/pm, closing after
+  midnight) to show "Open now"/"Closed now" on the shopper's clock; lines that
+  cannot be read are shown as written with no badge. The badge uses the
+  shopper's device time, not the store's time zone.
+- Editable fields are `TEMPLATE_3_FIELDS`
+  ([storeContent.js](../rentify-frontend/apps/templates/ecommerce/ecommerce-template-3/src/storeContent.js)).
+  Core's storefront-content allowlist gained `Menu Title`, `Menu Note`,
+  `Visit Title`, `Opening Hours` and `Map Link` (plain text with length
+  limits; the storefront uses a map link only when it is https).
+- Core publishes Template 3 like Templates 1 and 2
+  (`SUPPORTED_TEMPLATES` in deploymentService).
+
+The seeds add the template and a demo café, *Mekong Brew* (subdomain
+`mekong-brew`, merchant `cafe.merchant@rentify.local`), in
+[rentify-server/scripts/seedCafeStore.js](../rentify-server/scripts/seedCafeStore.js)
+and [ecommerce-server/scripts/seedCafeStore.js](../ecommerce-server/scripts/seedCafeStore.js).
+Both use the Store id `a6b158b9-…` on a fresh database and reuse an existing
+Store otherwise, so Commerce products attach to the same Store Core projects.
+Menu items use the Commerce `cafe` niche (`beverage`, `food`, `merchandise`).
+Marketing and onboarding show Template 3 with screenshots of that demo.
+
+## 2026-09-26 Store logos and demo store photos
+
+Core Stores have an optional `logoUrl` (migration `20260926_011_store_logo`).
+It is part of the public store fields (`GET /api/stores/public`), and owners can
+set or clear it with `PATCH /api/stores/mine` (`logoUrl`: an https link, or
+`''`/`null` to clear). The marketplace shows it on store cards and the store
+page and falls back to initials otherwise; it ignores any non-https value.
+Owners upload a logo from the merchant dashboard (Settings → Account, "Store
+logo") through `POST /api/stores/mine/logo` (multipart field `logo`, one JPG,
+PNG, WebP or GIF up to 5 MB; SVG is refused). Core checks ownership before
+uploading, stores the image under `rentify/stores/<storeId>/logo` in
+Cloudinary, saves the URL and re-syncs the Store. Staff cannot change it.
+
+The four marketplace-only demo stores now use their own product photos,
+uploaded to Cloudinary under `rentify/demo-stores`. Their catalogue lives in
+[fourStoresCatalogue.js](../ecommerce-server/scripts/data/fourStoresCatalogue.js);
+`legacyNames` let the seed rename earlier product rows in place so ids, stock
+and orders are kept. The Core seed sets the four stores' logos.
+
 ## 2026-09-26 horizontal scaling blockers (deferred)
 
 **Open.** Neither API can safely run more than one instance today. The

@@ -12,6 +12,8 @@ const Store = sequelize.define('Store', {
   name: { type: DataTypes.STRING(120), allowNull: false },
   slug: { type: DataTypes.STRING(160), allowNull: false, unique: true },
   primaryCategory: { type: DataTypes.STRING(120), allowNull: true },
+  // https:// image shown on the marketplace; null shows the store's initial.
+  logoUrl: { type: DataTypes.STRING(2048), allowNull: true },
   needsCategoryReview: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   marketplaceEnabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   marketplaceApprovalStatus: {

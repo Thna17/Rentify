@@ -11,7 +11,7 @@ import {
   Send,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
-import { AUTH_URL, DASHBOARD_URL } from '@rentify/shared/config/urls';
+import { AUTH_URL, DASHBOARD_URL, MARKETPLACE_URL } from '@rentify/shared/config/urls';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useStartTrial from '../../hooks/useStartTrial';
 import { CONTACT, SOCIAL } from '../../data/contact';
@@ -24,11 +24,13 @@ const SiteFooter = () => {
   const { t, language, toggleLanguage } = useLanguage();
   const { trialPath } = useStartTrial();
   const socials = SOCIAL.filter((item) => item.url);
+  const marketplaceHref = MARKETPLACE_URL || 'https://rentify-market.mekhla.digital/';
 
   const columns = [
     {
       title: t('site.footer.platform'),
       links: [
+        { label: t('site.footer.links.marketplace'), to: marketplaceHref },
         { label: t('site.footer.links.onlineStore'), to: '/feature#store' },
         { label: t('site.footer.links.pos'), to: '/feature#pos' },
         { label: t('site.footer.links.inventory'), to: '/feature#more' },

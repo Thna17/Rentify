@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Globe } from 'lucide-react';
+import { ArrowUpRight, Check, Globe, ShoppingBag } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
-import { AUTH_URL } from '@rentify/shared/config/urls';
+import { AUTH_URL, MARKETPLACE_URL } from '@rentify/shared/config/urls';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useStartTrial from '../../hooks/useStartTrial';
 import rentifyLogo from '../../assets/Logo.webp';
 import { ButtonLink, Container } from './ui';
 import { EASE } from './motion';
+
+export const MARKETPLACE_HREF =
+  MARKETPLACE_URL || 'https://rentify-market.mekhla.digital/';
 
 export const NAV_ITEMS = [
   { to: '/solutions', key: 'site.nav.solutions' },
@@ -178,7 +181,7 @@ const SiteHeader = () => {
         <Container className="flex h-12 items-center justify-between md:h-[52px]">
           <Wordmark />
 
-          <nav className="hidden items-center gap-8 lg:flex" aria-label="Main">
+          <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.to}
@@ -194,6 +197,16 @@ const SiteHeader = () => {
                 {t(item.key)}
               </Link>
             ))}
+            <a
+              href={MARKETPLACE_HREF}
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-amber-200/90 bg-amber-50/90 px-3 py-1 text-[13px] font-medium text-amber-900 transition-all hover:border-amber-300 hover:bg-amber-100"
+            >
+              <ShoppingBag className="h-3.5 w-3.5 text-amber-600" />
+              <span>{t('site.nav.marketplace')}</span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-amber-600 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </a>
           </nav>
 
           <div className="hidden items-center gap-5 lg:flex">
@@ -269,12 +282,39 @@ const SiteHeader = () => {
                     </Link>
                   </motion.div>
                 ))}
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0, y: -8 },
+                    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } },
+                  }}
+                >
+                  <a
+                    href={MARKETPLACE_HREF}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 py-2 text-[28px] font-semibold tracking-[-0.02em] text-amber-700"
+                  >
+                    <ShoppingBag className="h-6 w-6 text-amber-600" />
+                    <span>{t('site.nav.marketplace')}</span>
+                    <ArrowUpRight className="h-6 w-6 text-amber-600" />
+                  </a>
+                </motion.div>
               </motion.nav>
 
               <div className="mt-auto space-y-4 pt-10">
                 <ButtonLink to={trialPath} size="lg" className="w-full">
                   {t('site.nav.getStarted')}
                 </ButtonLink>
+                <a
+                  href={MARKETPLACE_HREF}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-6 text-[16px] font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+                >
+                  <ShoppingBag className="h-4 w-4 text-amber-600" />
+                  <span>{t('site.nav.marketplace')}</span>
+                  <ArrowUpRight className="h-4 w-4 text-amber-600" />
+                </a>
                 <div className="flex items-center justify-between text-[15px]">
                   <a href={AUTH_URL} className="text-[#0066cc]">
                     {t('site.nav.signIn')}

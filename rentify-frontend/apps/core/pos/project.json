@@ -1,0 +1,25 @@
+{
+  "name": "pos",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/core/pos/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/core/pos",
+        "configFile": "apps/core/pos/vite.config.ts",
+        "base": "/",
+        "mode": "production"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "options": {
+        "buildTarget": "pos:build",
+        "port": 4450
+      }
+    }
+  }
+}

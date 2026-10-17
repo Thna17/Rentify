@@ -14,9 +14,10 @@ x-public-urls: &public-urls
   MARKETING_URL: https://rentify.${PUBLIC_DOMAIN}
   MARKETPLACE_URL: https://rentify-market.${PUBLIC_DOMAIN}
   ADMIN_DASHBOARD_URL: https://rentify-admin.${PUBLIC_DOMAIN}
+  POS_URL: https://rentify-pos.${PUBLIC_DOMAIN}
   STOREFRONT_ORIGIN: https://rentify.${PUBLIC_DOMAIN}
 
-x-app-origins: &app-origins https://rentify.${PUBLIC_DOMAIN},https://rentify-auth.${PUBLIC_DOMAIN},https://rentify-seller.${PUBLIC_DOMAIN},https://rentify-market.${PUBLIC_DOMAIN},https://rentify-admin.${PUBLIC_DOMAIN}
+x-app-origins: &app-origins https://rentify.${PUBLIC_DOMAIN},https://rentify-auth.${PUBLIC_DOMAIN},https://rentify-seller.${PUBLIC_DOMAIN},https://rentify-market.${PUBLIC_DOMAIN},https://rentify-admin.${PUBLIC_DOMAIN},https://rentify-pos.${PUBLIC_DOMAIN}
 
 x-hosting: &hosting
   HOSTED_STOREFRONT_DOMAIN: ${PUBLIC_DOMAIN}
@@ -172,6 +173,7 @@ services:
         VITE_MARKETING_URL: https://rentify.${PUBLIC_DOMAIN}
         VITE_MARKETPLACE_URL: https://rentify-market.${PUBLIC_DOMAIN}
         VITE_ADMIN_DASHBOARD_URL: https://rentify-admin.${PUBLIC_DOMAIN}
+        VITE_POS_URL: https://rentify-pos.${PUBLIC_DOMAIN}
         VITE_STOREFRONT_ORIGIN: https://rentify.${PUBLIC_DOMAIN}
         VITE_HOSTED_STOREFRONT_DOMAIN: ${PUBLIC_DOMAIN}
         VITE_HOSTED_STOREFRONT_BUYER_ENABLED: 'true'

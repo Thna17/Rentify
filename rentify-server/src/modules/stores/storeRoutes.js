@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { verifyToken } = require('../../middlewares/auth');
 const controller = require('./storeController');
 const sellerReviewController = require('./sellerReviewController');
-const { productImagesUpload } = require('../../middlewares/multer');
+const { productImagesUpload, storeLogoUpload } = require('../../middlewares/multer');
 const { uploadProductImages } = require('../media').uploadController;
 const { requireStoreAccess } = require('../../middlewares/authorization');
 
@@ -13,6 +13,7 @@ router.use(verifyToken);
 router.get('/mine', controller.getOwnStore);
 router.post('/', controller.createStore);
 router.patch('/mine', controller.updateOwnStore);
+router.post('/mine/logo', storeLogoUpload, controller.uploadOwnLogo);
 router.post('/:storeId/product-images', requireStoreAccess,
   productImagesUpload, uploadProductImages);
 router.get('/mine/seller-application', sellerReviewController.getMine);

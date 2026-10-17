@@ -56,12 +56,14 @@ describe('CatalogService', () => {
             name: 'Aura Botanicals',
             slug: 'aura-botanicals',
             primaryCategory: 'Beauty & Skincare',
+            logoUrl: 'https://res.cloudinary.com/demo/aura-logo.jpg',
           },
           {
             id: '00000000-0000-4000-8000-000000000002',
             name: 'NexTech Electronics',
             slug: 'nextech-electronics',
             primaryCategory: 'Electronics',
+            logoUrl: 'javascript:alert(1)',
           },
         ],
       }),
@@ -127,5 +129,11 @@ describe('CatalogService', () => {
     const phones = service.search({ category: 'electronics', subcategory: 'phones-tablets' });
     expect(phones.length).toBe(1);
     expect(phones[0].name).toBe('Apex Horizon Titanium Smartwatch');
+  });
+
+  it('shows a store logo only when it is an https link', () => {
+    const [aura, nextech] = service.stores;
+    expect(aura.logoUrl).toBe('https://res.cloudinary.com/demo/aura-logo.jpg');
+    expect(nextech.logoUrl).toBeNull();
   });
 });

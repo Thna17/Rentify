@@ -204,7 +204,7 @@ const eligibleStore = {
     needsCategoryReview: false,
   },
   attributes: ['storeId', 'primaryCategory'],
-  include: [{ model: StoreDeliveryPolicy, as: 'deliveryPolicy', required: true, attributes: [] }],
+  include: [{ model: StoreDeliveryPolicy, as: 'deliveryPolicy', required: false, attributes: [] }],
 };
 
 function publicProduct(product, ratingSummary) {

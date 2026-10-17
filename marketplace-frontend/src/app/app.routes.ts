@@ -5,6 +5,7 @@ import {
   externalAdminRedirectGuard,
   externalAuthRedirectGuard,
   externalMerchantRedirectGuard,
+  externalOnboardingRedirectGuard,
 } from './pages/auth-redirect.component';
 import { merchantDashboardUrl } from './core/rentify/rentify-marketplace.service';
 
@@ -176,7 +177,7 @@ export const routes: Routes = [
   },
   {
     path: 'seller/onboarding',
-    canActivate: [externalMerchantRedirectGuard('')],
+    canActivate: [externalOnboardingRedirectGuard()],
     loadComponent: () =>
       import('./pages/auth-redirect.component').then((m) => m.AuthRedirectComponent),
     title: 'Seller onboarding | Rentify Marketplace',
