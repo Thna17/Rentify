@@ -72,6 +72,28 @@ paths:
                 status: ok
       security: []
 
+  /ready:
+    get:
+      tags:
+        - System
+      summary: Service readiness probe
+      description: Evaluates connectivity to required dependencies (database, migrations, redis where required) and reports whether this instance can safely handle traffic.
+      operationId: getReady
+      responses:
+        '200':
+          description: Service is ready or safely degraded (can accept traffic)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service is not ready to serve traffic (dependency failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+      security: []
+
   /api/auth/session:
     get:
       tags:
@@ -3880,6 +3902,106 @@ components:
         status:
           type: string
           example: ok
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - service
+        - version
+        - checks
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - ready
+            - not_ready
+            - degraded
+          example: ready
+        service:
+          type: string
+          example: rentify-server
+        version:
+          type: string
+          example: 1.0.0
+        checks:
+          type: object
+          required:
+            - database
+            - migrations
+            - redis
+            - workers
+          properties:
+            database:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: true
+                latencyMs:
+                  type: number
+                  example: 1.25
+                message:
+                  type: string
+                  example: Database connection failed
+            migrations:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: true
+                pendingCount:
+                  type: integer
+                  example: 0
+                message:
+                  type: string
+                  example: Pending migrations not applied
+            redis:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Redis unavailable (cache fallback active)
+            workers:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-19T02:00:00.000Z'
 
     FieldError:
       type: object

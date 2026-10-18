@@ -245,6 +245,37 @@ export namespace Commerce {
     variants?: Array<Commerce.ProductVariant>;
   }
 
+  export interface ReadinessResponse {
+    checks: {
+      database: {
+        latencyMs?: number;
+        message?: string;
+        required: boolean;
+        status: string;
+      };
+      migrations: {
+        message?: string;
+        pendingCount?: number;
+        required: boolean;
+        status: string;
+      };
+      redis: {
+        message?: string;
+        required: boolean;
+        status: string;
+      };
+      workers: {
+        message?: string;
+        required: boolean;
+        status: string;
+      };
+    };
+    service: string;
+    status: "ready" | "not_ready" | "degraded";
+    timestamp: string;
+    version: string;
+  }
+
   export interface StandardErrorDetail {
     /** Machine-readable stable error code */
     code: string;
@@ -1929,6 +1960,13 @@ export namespace Commerce {
         status: string;
       };
     };
+    get_ready: {
+      method: 'GET';
+      path: '/ready';
+      parameters: {
+      };
+      response: Commerce.ReadinessResponse;
+    };
   }
 }
 
@@ -1949,6 +1987,7 @@ export type CommerceProduct = Commerce.Product;
 export type CommerceProductReview = Commerce.ProductReview;
 export type CommerceProductVariant = Commerce.ProductVariant;
 export type CommercePublicProduct = Commerce.PublicProduct;
+export type CommerceReadinessResponse = Commerce.ReadinessResponse;
 export type CommerceStandardErrorDetail = Commerce.StandardErrorDetail;
 export type CommerceStoreAccess = Commerce.StoreAccess;
 export type CommerceStoreDeliveryPolicy = Commerce.StoreDeliveryPolicy;

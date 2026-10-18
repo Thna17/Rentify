@@ -4164,6 +4164,29 @@ export class CommerceApiClient {
     return (this as any).get_health(options);
   }
 
+  /**
+   * Service readiness probe
+   * GET /ready
+   */
+  async get_ready(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<Commerce.ReadinessResponse>> {
+    return this.transport.request<Commerce.ReadinessResponse>({
+      method: 'GET',
+      path: '/ready',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_ready */
+  async getReady(options: any = {}): Promise<ApiResponse<Commerce.ReadinessResponse>> {
+    return (this as any).get_ready(options);
+  }
+
 }
 
 export const createCommerceApiClient = (configOrTransport: ApiClientConfig | HttpTransport) => new CommerceApiClient(configOrTransport);

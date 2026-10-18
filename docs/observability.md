@@ -159,3 +159,73 @@ Observability and correlation behaviors are verified continuously by the test su
   - Core -> Commerce website projection trace propagation across live ephemeral HTTP servers.
   - Commerce -> Core merchant lookup trace propagation across live ephemeral HTTP servers.
   - Log verification proving zero plaintext leakage of sensitive credentials, cookies, addresses, or QR payloads in structured logs.
+
+---
+
+## 7. Service Readiness & Dependency Health (P1-OBS-002)
+
+To safely manage container lifecycles, load balancing, and traffic draining during deployments or outages, services clearly distinguish between **Liveness** and **Readiness**.
+
+### 7.1 Liveness Probe (`GET /health`)
+- **Purpose**: Answers whether the Node.js process is alive, listening, and processing the event loop.
+- **Dependency checks**: None. An external outage (such as database or cache connectivity) must **never** fail the liveness probe. If liveness fails, orchestrators (e.g., Kubernetes) restart the container, which can cause restart crash-loops during database failovers.
+- **Response**: HTTP 200 with `{ "status": "ok" }`.
+
+### 7.2 Readiness Probe (`GET /ready`)
+- **Purpose**: Answers whether the service can safely handle live customer requests.
+- **Dependency checks**:
+  1. **Database (`database`)**: Required. Bounded `SELECT 1 AS ready;` ping. If unreachable or timed out, marks readiness `not_ready`.
+  2. **Migrations (`migrations`)**: Required. Verifies that `SequelizeMeta` exists and matches the on-disk migration directory. If migrations are pending or missing, marks readiness `not_ready`.
+  3. **Redis (`redis`)**: Configurable via `REDIS_REQUIRED=true`. By default (`false`), Redis is treated as an optional cache/pubsub layer. When unreachable, the service degrades gracefully (falling back to direct DB or local handling) and remains `200 OK` (`status: "degraded"`). When `REDIS_REQUIRED=true`, failure returns `503 Service Unavailable`.
+  4. **Background Workers (`workers`)**: Reports health of registered background processing loops (e.g. `websiteSyncJob`, `recoveryWorker`, `billingWorker`).
+- **Response Status Codes**:
+  - `200 OK`: All required dependencies healthy (`status: "ready"`), or optional dependencies degraded (`status: "degraded"`). Traffic can be safely routed.
+  - `503 Service Unavailable`: Any required dependency down or timed out (`status: "not_ready"`). Ingress or load balancer immediately removes pod from routing pool.
+
+### 7.3 Bounded Timeouts & Zero-Leak Security Guardrail
+- **Timeouts**: Every check runs within a bounded timeout (default 2000ms for database/migrations, 1500ms for Redis). Probes will never hang indefinitely.
+- **Redaction**: Responses contain only machine status codes, latency metrics, and safe human summaries. Hostnames, ports, credentials, database usernames, connection strings, and schema internals are strictly redacted.
+
+### 7.4 Container & Orchestrator Configuration
+
+#### Kubernetes Deployment Example
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rentify-core
+spec:
+  template:
+    spec:
+      containers:
+        - name: rentify-core
+          image: rentify-server:latest
+          ports:
+            - containerPort: 3001
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+```
+
+### 7.5 Verification & Test Evidence
+- **Core Readiness Suite**: `rentify-server/test/security/readinessHealth.test.js`
+- **Commerce Readiness Suite**: `ecommerce-server/test/security/readinessHealth.test.js`
+  - Proves healthy service is live (`/health` = 200) and ready (`/ready` = 200).
+  - Proves database loss triggers `503 Service Unavailable` on `/ready` without failing `/health`.
+  - Proves missing `SequelizeMeta` or pending migrations triggers `503`.
+  - Proves optional Redis failure remains `200 OK` (`degraded`), while required Redis failure triggers `503`.
+  - Proves zero leakage of database hostnames, usernames, passwords, or connection strings.
+  - Proves dependency checks are strictly bounded and abort on timeout.

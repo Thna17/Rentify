@@ -263,6 +263,37 @@ export namespace Core {
     url?: string;
   }
 
+  export interface ReadinessResponse {
+    checks: {
+      database: {
+        latencyMs?: number;
+        message?: string;
+        required: boolean;
+        status: string;
+      };
+      migrations: {
+        message?: string;
+        pendingCount?: number;
+        required: boolean;
+        status: string;
+      };
+      redis: {
+        message?: string;
+        required: boolean;
+        status: string;
+      };
+      workers: {
+        message?: string;
+        required: boolean;
+        status: string;
+      };
+    };
+    service: string;
+    status: "ready" | "not_ready" | "degraded";
+    timestamp: string;
+    version: string;
+  }
+
   export interface ReminderLog {
     channel?: "telegram" | "sms" | "email";
     contractId?: string | null;
@@ -1719,6 +1750,13 @@ export namespace Core {
         meta?: Core.PaginationMeta;
       };
     };
+    getReady: {
+      method: 'GET';
+      path: '/ready';
+      parameters: {
+      };
+      response: Core.ReadinessResponse;
+    };
     listPublicTemplates: {
       method: 'GET';
       path: '/templates';
@@ -1771,6 +1809,7 @@ export type CorePayment = Core.Payment;
 export type CorePublicStore = Core.PublicStore;
 export type CorePublicStorefrontPayload = Core.PublicStorefrontPayload;
 export type CorePublishWebsiteResponse = Core.PublishWebsiteResponse;
+export type CoreReadinessResponse = Core.ReadinessResponse;
 export type CoreReminderLog = Core.ReminderLog;
 export type CoreSellerApplication = Core.SellerApplication;
 export type CoreSellerApplicationSubmission = Core.SellerApplicationSubmission;

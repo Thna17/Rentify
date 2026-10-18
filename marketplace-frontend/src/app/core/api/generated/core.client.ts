@@ -2510,6 +2510,24 @@ export class CoreApiClient {
   }
 
   /**
+   * Service readiness probe
+   * GET /ready
+   */
+  async getReady(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<Core.ReadinessResponse>> {
+    return this.transport.request<Core.ReadinessResponse>({
+      method: 'GET',
+      path: '/ready',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * List all website templates
    * GET /templates
    */

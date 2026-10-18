@@ -44,9 +44,17 @@ app.use(passport.initialize());
 app.use(passport.session());
 // telegramService.setupWebhook(app);
 
-// Container and load-balancer health probe. It intentionally reveals no
-// tenant or dependency details.
+const { getReadinessReport } = require('./modules/health');
+
+// Container and load-balancer probes.
+// Liveness probe: lightweight signal answering whether the process is alive.
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+// Readiness probe: deep dependency check answering whether traffic can be served safely.
+app.get('/ready', async (_req, res) => {
+  const { statusCode, payload } = await getReadinessReport();
+  return res.status(statusCode).json(payload);
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
