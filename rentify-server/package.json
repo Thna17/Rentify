@@ -13,7 +13,9 @@
     "test": "npm run test:unit && npm run test:integration",
     "build": "node --check src/server.js",
     "secrets:scan": "node scripts/quality/secret-scan.js",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run secrets:scan",
+    "openapi:verify": "node ../tools/verify-openapi.mjs",
+    "openapi:diff": "node ../tools/openapi-diff.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run secrets:scan && npm run openapi:verify && npm run openapi:diff",
     "db:migrate": "node src/migrations/runner.js migrate",
     "db:migrate:verify": "node src/migrations/runner.js verify",
     "db:seed": "node scripts/seed.js",
@@ -57,5 +59,9 @@
     "sequelize": "^6.37.5",
     "sqlite3": "^5.1.7",
     "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.64.1",
+    "yaml": "^2.9.1"
   }
 }

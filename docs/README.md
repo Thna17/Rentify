@@ -12,6 +12,8 @@ code so implementation work can proceed without relying on chat history.
   marketplace into Rentify, with release gates and rollback paths.
 - [Shared catalog contract](catalog-migration-contract.md) — Rentify Product
   ownership, marketplace eligibility, and data checks.
+- [Core OpenAPI baseline contract](openapi/README.md) — active Release 1 routes,
+  schemas, security definitions, and breaking-change verification.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —
