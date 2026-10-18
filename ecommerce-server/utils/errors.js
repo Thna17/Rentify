@@ -1,8 +1,4 @@
-class ApiError extends Error {
-  constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode;
-  }
-}
+// utils/errors.js - Compatibility export re-exporting ApiError definitions
+const ApiErrorModule = require('./ApiError');
 
-module.exports = { ApiError };
+module.exports = ApiErrorModule;

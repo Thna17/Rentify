@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const { Product, Order, OrderItem, Payment, ProductReview, OrderEvent,
   BillingStatement } = require('../../models');
 const { sequelize } = require('../../config/db');
+const { ApiError } = require('../../utils/ApiError');
 
 const scope = (req) => req.query.storeId ? { storeId: req.query.storeId } : {};
 const resources = {
@@ -57,7 +58,7 @@ const resources = {
 
 exports.list = async (req, res) => {
   const config = resources[req.params.resource];
-  if (!config) return res.status(404).json({ error: 'Unknown admin resource' });
+  if (!config) throw ApiError.notFound('Unknown admin resource');
   const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
   const q = String(req.query.q || '').trim().slice(0, 120);
@@ -87,7 +88,7 @@ exports.updateProduct = async (req, res) => {
   const { id } = req.params;
   const { marketplaceVisibility, status, stockQuantity } = req.body;
   const product = await Product.findByPk(id);
-  if (!product) return res.status(404).json({ error: 'Product not found' });
+  if (!product) throw ApiError.notFound('Product not found');
   const updates = {};
   if (marketplaceVisibility === null || typeof marketplaceVisibility === 'boolean') {
     updates.marketplaceVisibility = marketplaceVisibility;
@@ -102,7 +103,7 @@ exports.updateProduct = async (req, res) => {
     }
   }
   if (Object.keys(updates).length === 0) {
-    return res.status(400).json({ error: 'No valid product updates provided' });
+    throw ApiError.badRequest('No valid product updates provided');
   }
   updates.version = (product.version || 0) + 1;
   await product.update(updates);
@@ -113,10 +114,10 @@ exports.updateReview = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   if (!['published', 'hidden', 'flagged'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid review status. Must be published, hidden, or flagged.' });
+    throw ApiError.badRequest('Invalid review status. Must be published, hidden, or flagged.');
   }
   const review = await ProductReview.findByPk(id);
-  if (!review) return res.status(404).json({ error: 'Review not found' });
+  if (!review) throw ApiError.notFound('Review not found');
   await review.update({ status });
   res.json({ success: true, data: review });
 };
@@ -124,7 +125,7 @@ exports.updateReview = async (req, res) => {
 exports.deleteReview = async (req, res) => {
   const { id } = req.params;
   const review = await ProductReview.findByPk(id);
-  if (!review) return res.status(404).json({ error: 'Review not found' });
+  if (!review) throw ApiError.notFound('Review not found');
   await review.destroy();
   res.json({ success: true, message: 'Review deleted successfully' });
 };
@@ -133,12 +134,12 @@ exports.updateReport = async (req, res) => {
   const { id } = req.params;
   const { status, resolutionNotes } = req.body;
   if (!['open', 'investigating', 'resolved', 'dismissed'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid report status. Must be open, investigating, resolved, or dismissed.' });
+    throw ApiError.badRequest('Invalid report status. Must be open, investigating, resolved, or dismissed.');
   }
   const report = await OrderEvent.findOne({
     where: { id, type: { [Op.in]: ['complaint', 'return_requested'] } },
   });
-  if (!report) return res.status(404).json({ error: 'Report not found' });
+  if (!report) throw ApiError.notFound('Report not found');
   const currentDetails = report.details || {};
   const updatedDetails = {
     ...currentDetails,

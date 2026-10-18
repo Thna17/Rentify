@@ -3881,18 +3881,74 @@ components:
           type: string
           example: ok
 
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field name or input key with validation issue
+          example: email
+        message:
+          type: string
+          description: Validation message describing the constraint
+          example: Invalid email format
+
+    StandardErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - fieldErrors
+        - retryable
+        - correlationId
+      properties:
+        code:
+          type: string
+          description: Machine-readable stable error code
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Safe human-readable error description
+          example: Invalid input parameters
+        fieldErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+        retryable:
+          type: boolean
+          description: Indicates whether the request can be safely retried
+          example: false
+        correlationId:
+          type: string
+          description: Unique correlation identifier matching response header
+          example: req-123e4567-e89b-12d3-a456-426614174000
+
     StandardError:
       type: object
       properties:
         error:
-          type: string
-          example: Unauthorized access
+          oneOf:
+            - $ref: '#/components/schemas/StandardErrorDetail'
+            - type: string
+              example: Unauthorized access
         message:
           type: string
           example: Resource not found
         success:
           type: boolean
           example: false
+        statusCode:
+          type: integer
+          example: 400
+        correlationId:
+          type: string
+          example: req-123e4567-e89b-12d3-a456-426614174000
+
+    ErrorEnvelope:
+      $ref: '#/components/schemas/StandardError'
 
     StandardSuccessResponse:
       type: object

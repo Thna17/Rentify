@@ -4074,18 +4074,78 @@ components:
       default: USD
       description: Release 1 standard currency is USD.
       example: USD
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field name or JSON path with invalid input
+          example: quantity
+        message:
+          type: string
+          description: Human-readable validation message for this field
+          example: Quantity must be greater than zero
+    StandardErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - fieldErrors
+        - retryable
+        - correlationId
+      properties:
+        code:
+          type: string
+          description: Machine-readable stable error code
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Safe human-readable error description
+          example: Invalid input parameters
+        fieldErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+        retryable:
+          type: boolean
+          description: Indicates whether the request can be safely retried
+          example: false
+        correlationId:
+          type: string
+          description: Unique correlation identifier matching response header
+          example: req-123e4567-e89b-12d3-a456-426614174000
     ErrorResponse:
       type: object
       required:
         - error
       properties:
         error:
+          oneOf:
+            - $ref: "#/components/schemas/StandardErrorDetail"
+            - type: string
+              description: Legacy human-readable error description
+              example: Insufficient stock
+        message:
           type: string
-          description: Human-readable error description
+          description: Backward-compatible root error message
           example: Insufficient stock
+        success:
+          type: boolean
+          description: Backward-compatible boolean success status
+          example: false
         statusCode:
           type: integer
+          description: Backward-compatible HTTP status code
           example: 409
+        correlationId:
+          type: string
+          description: Backward-compatible root correlation identifier
+          example: req-123e4567-e89b-12d3-a456-426614174000
+    ErrorEnvelope:
+      $ref: "#/components/schemas/ErrorResponse"
     Product:
       type: object
       required:

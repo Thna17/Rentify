@@ -162,6 +162,24 @@ describe('AuthService', () => {
     });
     expect(apiErrorMessage(plainApiError)).toBe('Admin sign-in required');
 
+    const fullStandardEnvelope = new HttpErrorResponse({
+      error: {
+        error: {
+          code: 'UNAUTHENTICATED',
+          message: 'Admin sign-in required',
+          fieldErrors: [],
+          retryable: false,
+          correlationId: 'cid-admin-401',
+        },
+        message: 'Admin sign-in required',
+        success: false,
+        statusCode: 401,
+        correlationId: 'cid-admin-401',
+      },
+      status: 401,
+    });
+    expect(apiErrorMessage(fullStandardEnvelope)).toBe('Admin sign-in required');
+
     expect(apiErrorMessage(new Error('Random error'), 'Default message')).toBe('Default message');
   });
 });

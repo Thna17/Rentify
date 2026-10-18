@@ -56,17 +56,7 @@ app.use("/api/ops", require("./modules/ops/opsRoutes"));
 app.use("/api/usage", require("./modules/billing/usageRoutes"));
 
 // Error handler
-app.use((err, req, res, next) => {
-  const correlationId = req.correlationId || req.headers?.['x-correlation-id'] || getCorrelationId();
-  logger.error(err.message || 'Internal server error', {
-    correlationId,
-    status: err.statusCode || 500,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
-  });
-  res.status(err.statusCode || 500).json({
-    message: err.message || 'Internal server error',
-    correlationId,
-  });
-});
+const errorHandler = require('./middlewares/errorHandler');
+app.use(errorHandler);
 
 module.exports = app;

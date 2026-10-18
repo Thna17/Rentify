@@ -16,6 +16,8 @@ code so implementation work can proceed without relying on chat history.
   Commerce routes, schemas, security definitions, and breaking-change verification.
 - [Cross-service observability](observability.md) — correlation IDs, structured
   JSON logging, redaction policy, and cross-service request tracing.
+- [Standard API error handling](api-error-handling.md) — unified error envelope,
+  stable machine codes, retryable semantics, and legacy retirement criteria.
 - [Shared platform test fixtures](fixtures.md) — deterministic scenario builders,
   safety guards against production databases, and multi-tenant test fixtures.
 - [Shared design tokens](design-tokens.md) — framework-neutral semantic tokens,
