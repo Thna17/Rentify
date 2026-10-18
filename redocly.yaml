@@ -1,6 +1,8 @@
 apis:
   core:
     root: docs/openapi/core.openapi.yaml
+  commerce:
+    root: docs/openapi/commerce.openapi.yaml
 extends:
   - recommended
 rules:
