@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@rentify/utils/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rentify-focus-ring-color,#4f46e5)] focus-visible:ring-offset-1 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
   {
     variants: {
       variant: {
@@ -24,15 +24,29 @@ const badgeVariants = cva(
 
         outline:
           "bg-transparent text-foreground border-border [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-            /** 👇 ROLE VARIANTS (theme-driven, clean) */
-    admin:
-      "bg-primary/10 text-primary border-primary/20",
 
-    customer:
-      "bg-muted text-foreground border-border",
+        /* Semantic status variants backed by Rentify Design Tokens */
+        success:
+          "border-[var(--rentify-color-success-border,#bbf7d0)] bg-[var(--rentify-color-success-subtle,#f0fdf4)] text-[var(--rentify-color-success-text,#14532d)]",
 
-    merchant:
-      "bg-secondary/10 text-secondary border-secondary/20",
+        warning:
+          "border-[var(--rentify-color-warning-border,#fde68a)] bg-[var(--rentify-color-warning-subtle,#fffbeb)] text-[var(--rentify-color-warning-text,#78350f)]",
+
+        danger:
+          "border-[var(--rentify-color-danger-border,#fecaca)] bg-[var(--rentify-color-danger-subtle,#fef2f2)] text-[var(--rentify-color-danger-text,#7f1d1d)]",
+
+        info:
+          "border-[var(--rentify-color-info-border,#bfdbfe)] bg-[var(--rentify-color-info-subtle,#eff6ff)] text-[var(--rentify-color-info-text,#1e3a8a)]",
+
+        /** 👇 ROLE VARIANTS (theme-driven, clean) */
+        admin:
+          "bg-primary/10 text-primary border-primary/20",
+
+        customer:
+          "bg-muted text-foreground border-border",
+
+        merchant:
+          "bg-secondary/10 text-secondary border-secondary/20",
       },
     },
     defaultVariants: {

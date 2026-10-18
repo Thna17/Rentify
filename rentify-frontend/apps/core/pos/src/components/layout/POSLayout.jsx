@@ -41,7 +41,7 @@ const PRIMARY_POS_NAV = [
 ];
 
 const POSShellContext = createContext({
-  setShellActions: () => {},
+  setShellActions: () => { /* noop */ },
 });
 
 export function usePOSShell() {
@@ -79,10 +79,10 @@ export default function POSLayout({ children }) {
 
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
+      document.documentElement.requestFullscreen?.().catch(() => { /* noop */ });
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen?.().catch(() => {});
+      document.exitFullscreen?.().catch(() => { /* noop */ });
       setIsFullscreen(false);
     }
   };

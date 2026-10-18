@@ -1,0 +1,31 @@
+{
+  "name": "@rentify/design-tokens",
+  "version": "1.0.0",
+  "description": "Framework-neutral semantic design tokens and accessibility foundations for Rentify",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "style": "index.css",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    },
+    "./css": "./index.css",
+    "./tokens.json": "./tokens.json",
+    "./tailwind": "./tailwind-preset.js"
+  },
+  "files": [
+    "tokens.json",
+    "index.css",
+    "index.js",
+    "index.d.ts",
+    "tailwind-preset.js",
+    "contrast-validator.js"
+  ],
+  "scripts": {
+    "test": "node contrast-validator.js && node --test test/tokens.test.js",
+    "validate:contrast": "node contrast-validator.js"
+  },
+  "license": "UNLICENSED"
+}

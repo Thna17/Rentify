@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../../packages/design-tokens/index.css';
 /* ============================================================
    Rentify Marketplace — Design System
    Minimal, content-first visual language inspired by Notion's

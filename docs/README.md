@@ -18,6 +18,8 @@ code so implementation work can proceed without relying on chat history.
   JSON logging, redaction policy, and cross-service request tracing.
 - [Shared platform test fixtures](fixtures.md) — deterministic scenario builders,
   safety guards against production databases, and multi-tenant test fixtures.
+- [Shared design tokens](design-tokens.md) — framework-neutral semantic tokens,
+  accessibility contrast baselines, and multi-framework adapters for React and Angular.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —
