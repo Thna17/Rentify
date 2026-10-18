@@ -1,6 +1,5 @@
-// services/ecommerceSyncService.js
 const axios = require('axios');
-const { logger } = require('../../utils/logger');
+const { logger, getCorrelationId, runWithCorrelation } = require('../../utils/logger');
 const { ecommerceApiUrl } = require('../../config/runtimeUrls');
 const { WebsiteSyncOutbox } = require('../../models');
 const { Op } = require('sequelize');
@@ -35,6 +34,15 @@ class EcommerceSyncService {
         'x-rentify-service-token': process.env.SERVICE_TO_SERVICE_TOKEN,
       }
     });
+
+    this.apiClient.interceptors.request.use((config) => {
+      const correlationId = getCorrelationId();
+      if (correlationId && !config.headers?.['x-correlation-id']) {
+        config.headers = config.headers || {};
+        config.headers['x-correlation-id'] = correlationId;
+      }
+      return config;
+    });
   }
 
   /**
@@ -42,7 +50,9 @@ class EcommerceSyncService {
    * transaction so the outbox row commits or rolls back with the website.
    */
   async enqueueWebsiteSync(websiteId, payload, { transaction } = {}) {
-    return WebsiteSyncOutbox.create({ websiteId, payload }, { transaction });
+    const correlationId = payload?._correlationId || getCorrelationId();
+    const enriched = correlationId ? { ...payload, _correlationId: correlationId } : payload;
+    return WebsiteSyncOutbox.create({ websiteId, payload: enriched }, { transaction });
   }
 
   /**
@@ -54,38 +64,48 @@ class EcommerceSyncService {
       return;
     }
 
-    try {
-      if (website._ecommerceData._syncType === 'status') {
-        await this.apiClient.put(`/api/website-data/${website.id}`, {
-          status: toCommerceStatus(website._ecommerceData.status),
-          ...(website._ecommerceData.domain && { domain: website._ecommerceData.domain }),
+    const correlationId = website._ecommerceData._correlationId || getCorrelationId();
+    const execute = async () => {
+      try {
+        const { _correlationId, _syncType, ...cleanData } = website._ecommerceData;
+        if (website._ecommerceData._syncType === 'status') {
+          await this.apiClient.put(`/api/website-data/${website.id}`, {
+            status: toCommerceStatus(cleanData.status),
+            ...(cleanData.domain && { domain: cleanData.domain }),
+          });
+        } else {
+          await this.apiClient.post('/api/website-data', {
+            ...cleanData,
+            status: toCommerceStatus(cleanData.status),
+          });
+        }
+        await WebsiteSyncOutbox.update({
+          status: 'synced',
+          lastError: null,
+          syncedAt: new Date(),
+        }, { where: { websiteId: website.id } });
+        logger.info('Website data synced to ecommerce service', { websiteId: website.id, correlationId });
+        return true;
+      } catch (error) {
+        await WebsiteSyncOutbox.increment('attempts', { where: { websiteId: website.id } });
+        await WebsiteSyncOutbox.update({
+          lastError: String(error.message).slice(0, 500),
+        }, { where: { websiteId: website.id } });
+        logger.error('Ecommerce sync failed', {
+          websiteId: website.id,
+          correlationId,
+          error: error.message,
+          response: error.response?.data
         });
-      } else {
-        await this.apiClient.post('/api/website-data', {
-          ...website._ecommerceData,
-          status: toCommerceStatus(website._ecommerceData.status),
-        });
+        // The pending outbox row is retried by the background worker.
+        return false;
       }
-      await WebsiteSyncOutbox.update({
-        status: 'synced',
-        lastError: null,
-        syncedAt: new Date(),
-      }, { where: { websiteId: website.id } });
-      logger.info('Website data synced to ecommerce service', { websiteId: website.id });
-      return true;
-    } catch (error) {
-      await WebsiteSyncOutbox.increment('attempts', { where: { websiteId: website.id } });
-      await WebsiteSyncOutbox.update({
-        lastError: String(error.message).slice(0, 500),
-      }, { where: { websiteId: website.id } });
-      logger.error('Ecommerce sync failed', {
-        websiteId: website.id,
-        error: error.message,
-        response: error.response?.data
-      });
-      // The pending outbox row is retried by the background worker.
-      return false;
+    };
+
+    if (correlationId && !getCorrelationId()) {
+      return runWithCorrelation(correlationId, execute);
     }
+    return execute();
   }
 
   async retryPendingWebsiteData() {

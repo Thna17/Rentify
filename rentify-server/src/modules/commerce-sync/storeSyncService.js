@@ -2,7 +2,7 @@ const axios = require('axios');
 const { Op } = require('sequelize');
 const { StoreSyncOutbox } = require('../../models');
 const { ecommerceApiUrl } = require('../../config/runtimeUrls');
-const { logger } = require('../../utils/logger');
+const { logger, getCorrelationId, runWithCorrelation } = require('../../utils/logger');
 
 const apiClient = axios.create({
   baseURL: ecommerceApiUrl,
@@ -11,6 +11,15 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'x-rentify-service-token': process.env.SERVICE_TO_SERVICE_TOKEN,
   },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const correlationId = getCorrelationId();
+  if (correlationId && !config.headers?.['x-correlation-id']) {
+    config.headers = config.headers || {};
+    config.headers['x-correlation-id'] = correlationId;
+  }
+  return config;
 });
 
 const snapshot = (store, websiteId = null) => ({
@@ -24,6 +33,7 @@ const snapshot = (store, websiteId = null) => ({
   status: store.status,
   marketplaceEntitlement: store.marketplaceEntitlement,
   version: store.projectionVersion,
+  _correlationId: getCorrelationId(),
 });
 
 async function queueStore(store, { websiteId = null, transaction } = {}) {
@@ -40,19 +50,28 @@ async function queueStore(store, { websiteId = null, transaction } = {}) {
 async function syncStore(storeId) {
   const item = await StoreSyncOutbox.findByPk(storeId);
   if (!item || item.status !== 'pending') return true;
-  try {
-    await apiClient.post('/api/store-access/sync', item.payload);
-    // A newer version may have entered the outbox during this HTTP call.
-    await StoreSyncOutbox.update({
-      status: 'synced', lastError: null, syncedAt: new Date(),
-    }, { where: { storeId, status: 'pending', version: item.version } });
-    return true;
-  } catch (error) {
-    await StoreSyncOutbox.increment('attempts', { where: { storeId } });
-    await StoreSyncOutbox.update({ lastError: String(error.message).slice(0, 500) }, { where: { storeId } });
-    logger.error('Store projection sync failed', { storeId, error: error.message });
-    return false;
+  const correlationId = item.payload?._correlationId || getCorrelationId();
+  const execute = async () => {
+    try {
+      const { _correlationId, ...payloadToSend } = item.payload;
+      await apiClient.post('/api/store-access/sync', payloadToSend);
+      // A newer version may have entered the outbox during this HTTP call.
+      await StoreSyncOutbox.update({
+        status: 'synced', lastError: null, syncedAt: new Date(),
+      }, { where: { storeId, status: 'pending', version: item.version } });
+      return true;
+    } catch (error) {
+      await StoreSyncOutbox.increment('attempts', { where: { storeId } });
+      await StoreSyncOutbox.update({ lastError: String(error.message).slice(0, 500) }, { where: { storeId } });
+      logger.error('Store projection sync failed', { storeId, correlationId, error: error.message });
+      return false;
+    }
+  };
+
+  if (correlationId && !getCorrelationId()) {
+    return runWithCorrelation(correlationId, execute);
   }
+  return execute();
 }
 
 async function retryPendingStores() {

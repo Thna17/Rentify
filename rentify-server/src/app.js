@@ -26,10 +26,13 @@ const paymentRoutes = require('./modules/billing/paymentRoutes');
 const packageRoutes = require('./modules/billing/packageRoutes');
 const opsRoutes = require('./modules/ops/opsRoutes');
 const internalRoutes = require('./modules/internal/internalRoutes');
+const correlationMiddleware = require('./middlewares/correlation');
+const { logger, getCorrelationId } = require('./utils/logger');
 dotenv.config();
 const app = express();
 
 // Global middleware
+app.use(correlationMiddleware);
 app.use(helmetConfig);
 // app.use(rateLimiter);
 app.use(cors(corsOptions));
@@ -75,9 +78,15 @@ initializeRedis();
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  const correlationId = req.correlationId || req.headers?.['x-correlation-id'] || getCorrelationId();
+  logger.error(err.message || 'Internal server error', {
+    correlationId,
+    status: err.statusCode || 500,
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+  });
   res.status(err.statusCode || 500).json({
     message: err.message || 'Internal server error',
+    correlationId,
   });
 });
 
