@@ -14,6 +14,9 @@ code so implementation work can proceed without relying on chat history.
   ownership, marketplace eligibility, and data checks.
 - [OpenAPI baseline contracts](openapi/README.md) — active Release 1 Core and
   Commerce routes, schemas, security definitions, and breaking-change verification.
+- [Generated typed API clients](api-clients.md) — deterministic typed SDK
+  generation from OpenAPI contracts, React and Angular adapters, correlation ID
+  injection, and error envelope handling.
 - [Cross-service observability](observability.md) — correlation IDs, structured
   JSON logging, redaction policy, and cross-service request tracing.
 - [Standard API error handling](api-error-handling.md) — unified error envelope,

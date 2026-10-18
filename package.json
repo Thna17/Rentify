@@ -10,7 +10,7 @@
   "scripts": {
     "install:all": "npm ci --prefix rentify-server && npm ci --prefix ecommerce-server && npm ci --prefix rentify-frontend && npm ci --prefix marketplace-frontend && npm ci --prefix admin-frontend",
     "verify": "npm run verify:repository && npm run verify:core && npm run verify:commerce && npm run verify:frontend && npm run verify:marketplace && npm run verify:admin",
-    "verify:repository": "npm run secrets:scan && npm run verify:migrations && npm run verify:openapi && npm run verify:tokens && node tools/repository-policy.mjs",
+    "verify:repository": "npm run secrets:scan && npm run verify:migrations && npm run verify:openapi && npm run verify:clients && npm run verify:tokens && node tools/repository-policy.mjs",
     "verify:core": "npm --prefix rentify-server run verify",
     "verify:commerce": "npm --prefix ecommerce-server run verify",
     "verify:frontend": "node tools/verify-frontend.mjs",
@@ -18,6 +18,8 @@
     "verify:admin": "npm --prefix admin-frontend run lint && npm --prefix admin-frontend run typecheck && npm --prefix admin-frontend test && npm --prefix admin-frontend run build",
     "verify:migrations": "node tools/verify-migrations.mjs",
     "verify:openapi": "node tools/verify-openapi.mjs && node tools/openapi-diff.mjs",
+    "verify:clients": "node tools/generate-api-clients.mjs --check",
+    "generate:clients": "node tools/generate-api-clients.mjs",
     "verify:tokens": "node packages/design-tokens/contrast-validator.js && node --test packages/design-tokens/test/tokens.test.js",
     "secrets:scan": "node tools/secret-scan.mjs",
     "baseline:inventory": "node tools/classify-worktree.mjs"
