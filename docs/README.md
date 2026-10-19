@@ -25,6 +25,8 @@ code so implementation work can proceed without relying on chat history.
   safety guards against production databases, and multi-tenant test fixtures.
 - [Shared design tokens](design-tokens.md) — framework-neutral semantic tokens,
   accessibility contrast baselines, and multi-framework adapters for React and Angular.
+- [End-to-end contract & browser testing](e2e-testing.md) — CI-capable browser
+  test harness, golden buyer and merchant journeys, and OpenAPI contract validation.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

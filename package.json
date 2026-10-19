@@ -22,6 +22,8 @@
     "generate:clients": "node tools/generate-api-clients.mjs",
     "verify:tokens": "node packages/design-tokens/contrast-validator.js && node --test packages/design-tokens/test/tokens.test.js",
     "secrets:scan": "node tools/secret-scan.mjs",
-    "baseline:inventory": "node tools/classify-worktree.mjs"
+    "baseline:inventory": "node tools/classify-worktree.mjs",
+    "test:e2e": "node tools/e2e/runner.js",
+    "verify:e2e": "node tools/e2e/runner.js --ci"
   }
 }

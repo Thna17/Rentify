@@ -22,6 +22,8 @@ coverage/
 .angular/
 .playwright-cli/
 output/
+artifacts/
+test-results/
 
 # Local operating-system and editor files
 .DS_Store
