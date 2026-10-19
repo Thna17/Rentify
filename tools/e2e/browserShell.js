@@ -1,28 +1,11 @@
-// tools/e2e/browserShell.js - CI-capable browser automation shell with observable state waiting, network tracing, and screenshot capture
+// tools/e2e/browserShell.js - Real Playwright browser automation shell with observable state waiting, network tracing, and native screenshot capture
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { chromium } = require('playwright');
 const { ROOT_DIR, TIMEOUTS } = require('./config');
 const { assertSafeUrl } = require('./safety');
 
-// Locate JSDOM from frontend dependencies
-function getJSDOM() {
-  const candidates = [
-    path.join(ROOT_DIR, 'marketplace-frontend/node_modules/jsdom'),
-    path.join(ROOT_DIR, 'rentify-frontend/node_modules/jsdom'),
-    path.join(ROOT_DIR, 'admin-frontend/node_modules/jsdom'),
-    path.join(ROOT_DIR, 'node_modules/jsdom'),
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) {
-      return require(c).JSDOM;
-    }
-  }
-  return null;
-}
-
-// Locate Chrome/Chromium binary for native headless screenshot rendering
 function findChromeBinary() {
   const candidates = [
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -34,7 +17,7 @@ function findChromeBinary() {
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;
   }
-  return null;
+  return undefined;
 }
 
 class BrowserSession {
@@ -45,264 +28,164 @@ class BrowserSession {
   constructor(options = {}) {
     this.collector = options.artifactCollector || null;
     this.currentUrl = null;
-    this.dom = null;
-    this.document = null;
-    this.window = null;
-    this.cookies = new Map();
-    this.JSDOM = getJSDOM();
+    this.browser = null;
+    this.context = null;
+    this.page = null;
     this.chromeBin = findChromeBinary();
+    this.isInitialized = false;
   }
 
-  /**
-   * Navigates to a target URL, enforcing safety checks and intercepting network traffic.
-   *
-   * @param {string} url
-   * @param {object} [options]
-   */
+  async init(journeyName = 'journey') {
+    if (this.isInitialized) return;
+
+    this.browser = await chromium.launch({
+      headless: true,
+      executablePath: this.chromeBin,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
+
+    this.context = await this.browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      ignoreHTTPSErrors: true,
+    });
+
+    // Start native Playwright tracing
+    await this.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+    this.isTracing = true;
+
+    this.page = await this.context.newPage();
+
+    // Hook console logs
+    this.page.on('console', (msg) => {
+      if (this.collector) {
+        this.collector.recordConsole({ level: msg.type(), text: msg.text() });
+      }
+    });
+
+    // Hook failed network requests
+    this.page.on('requestfailed', (req) => {
+      if (this.collector) {
+        this.collector.recordNetwork({
+          method: req.method(),
+          url: req.url(),
+          failed: true,
+          error: req.failure()?.errorText,
+        });
+      }
+    });
+
+    // Hook responses
+    this.page.on('response', (res) => {
+      if (this.collector) {
+        this.collector.recordNetwork({
+          method: res.request().method(),
+          url: res.url(),
+          status: res.status(),
+        });
+      }
+    });
+
+    this.isInitialized = true;
+  }
+
   async goto(url, options = {}) {
     assertSafeUrl(url);
+    if (!this.isInitialized) await this.init();
     this.currentUrl = url;
-    const startTime = Date.now();
 
-    const headers = {
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'User-Agent': 'Rentify-E2E-Runner/1.0 (Headless)',
-      ...(options.headers || {}),
-    };
-
-    if (this.cookies.size > 0) {
-      headers.Cookie = Array.from(this.cookies.entries())
-        .map(([k, v]) => `${k}=${v}`)
-        .join('; ');
-    }
-
-    try {
-      const res = await fetch(url, { headers, redirect: 'follow' });
-      const duration = Date.now() - startTime;
-      const html = await res.text();
-
-      // Store cookies if any
-      const setCookie = res.headers.get('set-cookie');
-      if (setCookie) {
-        const parts = setCookie.split(';')[0].split('=');
-        if (parts.length === 2) this.cookies.set(parts[0].trim(), parts[1].trim());
-      }
-
-      if (this.collector) {
-        this.collector.recordNetwork({
-          method: 'GET',
-          url,
-          status: res.status,
-          durationMs: duration,
-        });
-      }
-
-      if (this.JSDOM) {
-        this.dom = new this.JSDOM(html, {
-          url,
-          runScripts: 'outside-only',
-          resources: 'usable',
-        });
-        this.window = this.dom.window;
-        this.document = this.window.document;
-      }
-
-      return { status: res.status, ok: res.ok, html };
-    } catch (err) {
-      if (this.collector) {
-        this.collector.recordNetwork({
-          method: 'GET',
-          url,
-          status: 0,
-          error: err.message,
-          durationMs: Date.now() - startTime,
-        });
-      }
-      throw err;
-    }
-  }
-
-  /**
-   * Title of current document.
-   */
-  async title() {
-    return this.document?.title || '';
-  }
-
-  /**
-   * Waits for a selector to become present in the DOM (observable state check, not arbitrary sleep).
-   *
-   * @param {string} selector
-   * @param {object} [options]
-   * @param {number} [options.timeout]
-   * @returns {Promise<Element>}
-   */
-  async waitForSelector(selector, options = {}) {
-    const timeout = options.timeout || TIMEOUTS.selector;
-    const start = Date.now();
-
-    while (Date.now() - start < timeout) {
-      const el = this.document?.querySelector(selector);
-      if (el) return el;
-      await new Promise((r) => setTimeout(r, TIMEOUTS.pollInterval));
-    }
-
-    throw new Error(`Timed out waiting for selector "${selector}" after ${timeout}ms. URL: ${this.currentUrl}`);
-  }
-
-  /**
-   * Waits for text content within an element to match expected substring.
-   *
-   * @param {string} selector
-   * @param {string|RegExp} expectedText
-   * @param {object} [options]
-   */
-  async waitForText(selector, expectedText, options = {}) {
-    const timeout = options.timeout || TIMEOUTS.selector;
-    const start = Date.now();
-
-    while (Date.now() - start < timeout) {
-      const el = this.document?.querySelector(selector);
-      if (el) {
-        const text = el.textContent || '';
-        const matches =
-          expectedText instanceof RegExp ? expectedText.test(text) : text.includes(expectedText);
-        if (matches) return el;
-      }
-      await new Promise((r) => setTimeout(r, TIMEOUTS.pollInterval));
-    }
-
-    throw new Error(
-      `Timed out waiting for text "${expectedText}" in selector "${selector}" after ${timeout}ms. Current text: "${this.document?.querySelector(selector)?.textContent}"`
-    );
-  }
-
-  /**
-   * Returns textContent of an element.
-   *
-   * @param {string} selector
-   */
-  async textContent(selector) {
-    const el = await this.waitForSelector(selector);
-    return el.textContent?.trim() || '';
-  }
-
-  /**
-   * Returns attribute value of an element.
-   *
-   * @param {string} selector
-   * @param {string} attr
-   */
-  async getAttribute(selector, attr) {
-    const el = await this.waitForSelector(selector);
-    return el.getAttribute(attr);
-  }
-
-  /**
-   * Fills a form input field.
-   *
-   * @param {string} selector
-   * @param {string} value
-   */
-  async fill(selector, value) {
-    const el = await this.waitForSelector(selector);
-    el.value = value;
-    const event = new this.window.Event('input', { bubbles: true });
-    el.dispatchEvent(event);
-    const changeEvent = new this.window.Event('change', { bubbles: true });
-    el.dispatchEvent(changeEvent);
-    return true;
-  }
-
-  /**
-   * Clicks an element.
-   *
-   * @param {string} selector
-   */
-  async click(selector) {
-    const el = await this.waitForSelector(selector);
-    const clickEvent = new this.window.MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: this.window,
+    const res = await this.page.goto(url, {
+      waitUntil: options.waitUntil || 'domcontentloaded',
+      timeout: options.timeout || TIMEOUTS.navigation,
     });
-    el.dispatchEvent(clickEvent);
-    return true;
+
+    return {
+      ok: res ? res.ok() : true,
+      status: res ? res.status() : 200,
+      url: this.page.url(),
+    };
   }
 
-  /**
-   * Captures a failure or progress screenshot.
-   * Uses Chrome headless when available; produces deterministic high-contrast snapshot otherwise.
-   *
-   * @param {object} [options]
-   * @param {string} [options.name]
-   * @param {string} [options.path]
-   * @returns {string} Path to saved screenshot
-   */
-  async screenshot(options = {}) {
-    const name = options.name || 'screenshot';
-    let screenshotBuffer = null;
+  async title() {
+    if (!this.isInitialized) await this.init();
+    return this.page.title();
+  }
 
-    if (this.chromeBin && this.currentUrl) {
-      try {
-        const tempPath = path.join(ROOT_DIR, `temp-${Date.now()}.png`);
-        execFileSync(this.chromeBin, [
-          '--headless',
-          '--disable-gpu',
-          '--no-sandbox',
-          `--screenshot=${tempPath}`,
-          `--window-size=1280,800`,
-          this.currentUrl,
-        ], { timeout: 8000 });
+  async waitForSelector(selector, options = {}) {
+    if (!this.isInitialized) await this.init();
+    return this.page.waitForSelector(selector, {
+      state: options.state || 'visible',
+      timeout: options.timeout || TIMEOUTS.selector,
+    });
+  }
 
-        if (fs.existsSync(tempPath)) {
-          screenshotBuffer = fs.readFileSync(tempPath);
-          fs.unlinkSync(tempPath);
+  async click(selector, options = {}) {
+    if (!this.isInitialized) await this.init();
+    await this.page.click(selector, options);
+  }
+
+  async fill(selector, text, options = {}) {
+    if (!this.isInitialized) await this.init();
+    await this.page.fill(selector, text, options);
+  }
+
+  async textContent(selector, options = {}) {
+    if (!this.isInitialized) await this.init();
+    return this.page.textContent(selector, options);
+  }
+
+  async evaluate(fn, arg) {
+    if (!this.isInitialized) await this.init();
+    return this.page.evaluate(fn, arg);
+  }
+
+  async screenshot(name) {
+    if (!this.isInitialized) await this.init();
+    const filePath = this.collector
+      ? this.collector.getScreenshotPath(name)
+      : path.join(ROOT_DIR, `artifacts/${name}.png`);
+    await this.page.screenshot({ path: filePath, fullPage: true });
+    return filePath;
+  }
+
+  async saveTrace(testName) {
+    if (this.context && this.isTracing) {
+      this.isTracing = false;
+      const tracePath = this.collector
+        ? this.collector.getTracePath(testName)
+        : path.join(ROOT_DIR, `artifacts/${testName}-trace.zip`);
+      await this.context.tracing.stop({ path: tracePath });
+      return tracePath;
+    }
+    return null;
+  }
+
+  async close(testName = null) {
+    try {
+      if (this.context) {
+        if (testName && this.isTracing) {
+          await this.saveTrace(testName);
+        } else if (this.isTracing) {
+          this.isTracing = false;
+          await this.context.tracing.stop().catch(() => {});
         }
-      } catch (err) {
-        if (this.collector) this.collector.recordConsole({ text: `Chrome screenshot fallback: ${err.message}`, level: 'warn' });
+        await this.context.close().catch(() => {});
       }
-    }
-
-    // High-contrast SVG/PNG fallback if Chrome was unavailable
-    if (!screenshotBuffer) {
-      const pageTitle = this.document?.title || 'Rentify Page';
-      const bodySnippet = (this.document?.body?.textContent || '').slice(0, 300).replace(/</g, '&lt;');
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
-        <rect width="1280" height="800" fill="#0f172a"/>
-        <rect x="40" y="40" width="1200" height="720" rx="8" fill="#1e293b" stroke="#334155" stroke-width="2"/>
-        <text x="80" y="100" font-family="system-ui, sans-serif" font-size="28" fill="#f8fafc" font-weight="bold">${pageTitle}</text>
-        <text x="80" y="140" font-family="monospace" font-size="16" fill="#94a3b8">URL: ${this.currentUrl || 'none'}</text>
-        <line x1="80" y1="170" x2="1160" y2="170" stroke="#475569" stroke-width="1"/>
-        <text x="80" y="210" font-family="system-ui, sans-serif" font-size="16" fill="#e2e8f0">Rendered DOM Summary:</text>
-        <foreignObject x="80" y="230" width="1080" height="480">
-          <div xmlns="http://www.w3.org/1999/xhtml" style="color: #cbd5e1; font-family: monospace; font-size: 14px; white-space: pre-wrap; line-height: 1.5;">
-            ${bodySnippet}
-          </div>
-        </foreignObject>
-      </svg>`;
-      screenshotBuffer = Buffer.from(svg, 'utf8');
-    }
-
-    if (this.collector) {
-      return this.collector.saveScreenshot(name, screenshotBuffer);
-    }
-    return '';
-  }
-
-  /**
-   * Closes browser session and releases resources.
-   */
-  async close() {
-    if (this.window) {
-      this.window.close();
-      this.window = null;
-      this.document = null;
-      this.dom = null;
+      if (this.browser) {
+        await this.browser.close().catch(() => {});
+      }
+    } catch (_err) {
+      // Ignore closing errors
+    } finally {
+      this.isInitialized = false;
+      this.isTracing = false;
+      this.page = null;
+      this.context = null;
+      this.browser = null;
     }
   }
 }
 
 module.exports = {
   BrowserSession,
+  findChromeBinary,
 };

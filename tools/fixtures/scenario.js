@@ -96,6 +96,7 @@ function createPlatformScenario(options = {}) {
       phoneNumber: '+85512999888',
       role: 'user',
       isVerified: true,
+      password: '$2b$10$6bNTGZ30hZLAoggHpu7Dj.hx.jYTf7T7tWN06MYn5qLlhoXofgOrC',
     },
     storefrontMerchant: {
       id: IDS.merchantStorefrontUserId,
@@ -104,6 +105,7 @@ function createPlatformScenario(options = {}) {
       phoneNumber: '+85512777666',
       role: 'user',
       isVerified: true,
+      password: '$2b$10$6bNTGZ30hZLAoggHpu7Dj.hx.jYTf7T7tWN06MYn5qLlhoXofgOrC',
     },
     staffMember: {
       id: IDS.staffUserId,
@@ -112,6 +114,7 @@ function createPlatformScenario(options = {}) {
       phoneNumber: '+85512555444',
       role: 'user',
       isVerified: true,
+      password: '$2b$10$6bNTGZ30hZLAoggHpu7Dj.hx.jYTf7T7tWN06MYn5qLlhoXofgOrC',
     },
     buyer: {
       id: IDS.buyerUserId,
@@ -120,6 +123,7 @@ function createPlatformScenario(options = {}) {
       phoneNumber: '+85512345678',
       role: 'user',
       isVerified: true,
+      password: '$2b$10$6bNTGZ30hZLAoggHpu7Dj.hx.jYTf7T7tWN06MYn5qLlhoXofgOrC',
     },
     admin: {
       id: IDS.adminUserId,
@@ -127,6 +131,7 @@ function createPlatformScenario(options = {}) {
       email: prefix ? `${prefix}.admin@rentify.test` : 'ops.admin@rentify.test',
       role: 'admin',
       isVerified: true,
+      password: '$2b$10$6bNTGZ30hZLAoggHpu7Dj.hx.jYTf7T7tWN06MYn5qLlhoXofgOrC',
     },
   };
 
@@ -158,7 +163,7 @@ function createPlatformScenario(options = {}) {
       marketplaceEnabled: true,
       marketplaceApprovalStatus: 'approved',
       status: 'active',
-      marketplaceEntitlement: 'standard',
+      marketplaceEntitlement: 'pilot',
       projectionVersion: 1,
       websiteId: IDS.storefrontWebsiteId, // Distinct from storeId
     },
@@ -167,6 +172,11 @@ function createPlatformScenario(options = {}) {
   // 4. Website Template & Optional Website
   const template = {
     id: IDS.templateId,
+    websiteTemplateId: 101,
+    category: 'fashion',
+    framework: 'vite',
+    features: ['custom_subdomain', 'catalog_management'],
+    pages: ['home', 'shop', 'about'],
     name: 'Boutique Silk & Fashion Template',
     slug: makeId('boutique-fashion-template'),
     description: 'High-end artisan fashion template with responsive layout',
@@ -181,7 +191,7 @@ function createPlatformScenario(options = {}) {
       name: 'Mekong Silk Storefront',
       domain: makeId('mekong-silk.rentifymarket.test'),
       subdomain: makeId('mekong-silk'),
-      status: 'published',
+      status: 'active',
     },
   };
 
@@ -226,6 +236,14 @@ function createPlatformScenario(options = {}) {
     marketplaceStore: {
       id: IDS.sellerAppMarketplaceId,
       storeId: IDS.marketplaceStoreId,
+      responsibleName: 'Kosal Ceramicist',
+      pickupLocation: 'St 101, Siem Reap',
+      buyerContact: '+85512999888',
+      sampleProductDescription: 'Handmade pottery and clay crafts',
+      acceptsDeliveryResponsibility: true,
+      acceptsCodResponsibility: true,
+      acceptsReturnsResponsibility: true,
+      acceptsRefundResponsibility: true,
       status: 'approved',
       submittedAt: new Date('2026-10-01T00:00:00.000Z'),
       reviewedAt: new Date('2026-10-02T00:00:00.000Z'),
@@ -233,6 +251,14 @@ function createPlatformScenario(options = {}) {
     storefrontStore: {
       id: IDS.sellerAppStorefrontId,
       storeId: IDS.storefrontStoreId,
+      responsibleName: 'Bopha Weaver',
+      pickupLocation: 'St 202, Phnom Penh',
+      buyerContact: '+85512777666',
+      sampleProductDescription: 'Handmade silk scarves and fabrics',
+      acceptsDeliveryResponsibility: true,
+      acceptsCodResponsibility: true,
+      acceptsReturnsResponsibility: true,
+      acceptsRefundResponsibility: true,
       status: 'approved',
       submittedAt: new Date('2026-10-01T00:00:00.000Z'),
       reviewedAt: new Date('2026-10-02T00:00:00.000Z'),
@@ -243,8 +269,8 @@ function createPlatformScenario(options = {}) {
   const categories = {
     pottery: {
       id: IDS.potteryCategoryId,
-      storeId: IDS.marketplaceStoreId,
-      websiteId: null,
+      storeId: IDS.storefrontStoreId,
+      websiteId: IDS.storefrontWebsiteId,
       name: 'Handcrafted Ceramics',
       slug: makeId('handcrafted-ceramics'),
       description: 'Authentic clay and celadon pottery from Cambodian artisans',
@@ -270,6 +296,7 @@ function createPlatformScenario(options = {}) {
       name: 'Handmade Celadon Tea Pot',
       slug: makeId('handmade-celadon-tea-pot'),
       description: 'Traditional wood-fired celadon ceramic teapot with bamboo handle',
+      shortDescription: 'Handmade celadon ceramic teapot',
       price: 35.00,
       stockQuantity: 20,
       productType: 'physical',
@@ -288,9 +315,10 @@ function createPlatformScenario(options = {}) {
       name: 'Golden Silk Ikat Scarf',
       slug: makeId('golden-silk-ikat-scarf'),
       description: 'Masterfully dyed 100% pure Cambodian mulberry silk scarf',
+      shortDescription: 'Golden mulberry silk ikat scarf',
       price: 60.00,
       stockQuantity: 25, // Total aggregate inventory
-      productType: 'physical',
+      productType: 'accessories',
       websiteNiche: 'fashion',
       trackInventory: true,
       status: 'active',
@@ -359,6 +387,7 @@ function createPlatformScenario(options = {}) {
       productId: IDS.simpleProductId,
       variantId: null,
       quantity: 1,
+      unitPrice: 35.00,
       price: 35.00,
     },
     storefrontItem: {
@@ -367,6 +396,7 @@ function createPlatformScenario(options = {}) {
       productId: IDS.variantProductId,
       variantId: IDS.variantRubyId,
       quantity: 2,
+      unitPrice: 60.00,
       price: 60.00,
     },
   };
@@ -433,6 +463,7 @@ function createPlatformScenario(options = {}) {
       productId: IDS.simpleProductId,
       variantId: null,
       quantity: 1,
+      basePrice: 35.00,
       price: 35.00,
       total: 35.00,
     },
@@ -442,6 +473,7 @@ function createPlatformScenario(options = {}) {
       productId: IDS.variantProductId,
       variantId: IDS.variantRubyId,
       quantity: 2,
+      basePrice: 60.00,
       price: 60.00,
       total: 120.00,
     },
@@ -451,6 +483,7 @@ function createPlatformScenario(options = {}) {
       productId: IDS.variantProductId,
       variantId: IDS.variantSapphireId,
       quantity: 1,
+      basePrice: 65.00,
       price: 65.00,
       total: 65.00,
     },
@@ -515,8 +548,12 @@ function createPlatformScenario(options = {}) {
     marketplaceShipping: {
       id: IDS.shippingMarketplaceId,
       orderId: IDS.marketplaceCodOrderId,
+      name: 'Sokha Buyer',
+      phone: '+85512345678',
       address: 'No 12, St 178, Chey Chumneah, Phnom Penh',
+      street: 'No 12, St 178',
       city: 'Phnom Penh',
+      province: 'Phnom Penh',
       phoneNumber: '+85512345678',
       deliveryFee: 0.00,
       status: 'pending',
@@ -524,8 +561,12 @@ function createPlatformScenario(options = {}) {
     deliveredShipping: {
       id: IDS.shippingDeliveredId,
       orderId: IDS.storefrontDeliveredOrderId,
+      name: 'Sokha Buyer',
+      phone: '+85512345678',
       address: 'Villa 45, St 310, Boeng Keng Kang, Phnom Penh',
+      street: 'Villa 45, St 310',
       city: 'Phnom Penh',
+      province: 'Phnom Penh',
       phoneNumber: '+85512345678',
       deliveryFee: 3.00,
       status: 'delivered',
@@ -533,8 +574,12 @@ function createPlatformScenario(options = {}) {
     refundedShipping: {
       id: IDS.shippingRefundedId,
       orderId: IDS.storefrontRefundedOrderId,
+      name: 'Sokha Buyer',
+      phone: '+85512345678',
       address: 'Villa 45, St 310, Boeng Keng Kang, Phnom Penh',
+      street: 'Villa 45, St 310',
       city: 'Phnom Penh',
+      province: 'Phnom Penh',
       phoneNumber: '+85512345678',
       deliveryFee: 0.00,
       status: 'returned',
@@ -545,9 +590,20 @@ function createPlatformScenario(options = {}) {
     refundConfirmed: {
       id: IDS.orderEventRefundId,
       orderId: IDS.storefrontRefundedOrderId,
+      storeId: IDS.storefrontStoreId,
+      actorId: IDS.merchantStorefrontUserId,
+      eventKey: makeId('EVT-REFUND-001'),
+      type: 'refund_confirmed',
       eventType: 'refund_confirmed',
       actorType: 'merchant',
-      actorId: IDS.merchantStorefrontUserId,
+      amount: 65.00,
+      details: {
+        amount: 65.00,
+        currency: 'USD',
+        reason: 'damaged_in_transit',
+        refundMethod: 'cash',
+        confirmedBy: 'Bopha Weaver',
+      },
       eventData: {
         amount: 65.00,
         currency: 'USD',
@@ -582,7 +638,7 @@ function createPlatformScenario(options = {}) {
       marketplaceEnabled: true,
       marketplaceApprovalStatus: 'approved',
       status: 'active',
-      marketplaceEntitlement: 'standard',
+      marketplaceEntitlement: 'pilot',
       version: 1,
     },
     // WebsiteData (Commerce projection of Core Website)
@@ -612,14 +668,20 @@ function createPlatformScenario(options = {}) {
     // StoreDeliveryPolicy (Commerce per-store COD policy)
     deliveryPolicyMarketplace: {
       storeId: IDS.marketplaceStoreId,
-      codEnabled: true,
+      flatFee: 0.00,
       deliveryFee: 0.00,
+      currency: 'USD',
+      version: 1,
+      codEnabled: true,
       freeDeliveryThreshold: 50.00,
     },
     deliveryPolicyStorefront: {
       storeId: IDS.storefrontStoreId,
-      codEnabled: true,
+      flatFee: 3.00,
       deliveryFee: 3.00,
+      currency: 'USD',
+      version: 1,
+      codEnabled: true,
       freeDeliveryThreshold: 100.00,
     },
   };

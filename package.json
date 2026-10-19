@@ -25,5 +25,8 @@
     "baseline:inventory": "node tools/classify-worktree.mjs",
     "test:e2e": "node tools/e2e/runner.js",
     "verify:e2e": "node tools/e2e/runner.js --ci"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1"
   }
 }

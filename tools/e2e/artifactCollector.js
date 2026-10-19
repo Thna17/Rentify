@@ -51,11 +51,35 @@ class ArtifactCollector {
   }
 
   recordServiceLog(serviceName, line) {
-    this.serviceLogs.push({
+    const entry = {
       timestamp: new Date().toISOString(),
       service: serviceName,
       message: line,
-    });
+    };
+    this.serviceLogs.push(entry);
+    try {
+      const logFilePath = path.join(this.logsDir, 'services.log');
+      fs.appendFileSync(logFilePath, `[${entry.timestamp}] [${entry.service}] ${entry.message}\n`, 'utf8');
+    } catch {}
+  }
+
+  /**
+   * Returns path for a PNG screenshot.
+   *
+   * @param {string} name - Screenshot file name
+   */
+  getScreenshotPath(name) {
+    const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filePath = path.join(this.screenshotsDir, `${safeName}.png`);
+    this.artifacts.push({ type: 'screenshot', name, path: filePath });
+    return filePath;
+  }
+
+  getTracePath(name) {
+    const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filePath = path.join(this.tracesDir, `${safeName}-trace.zip`);
+    this.artifacts.push({ type: 'trace', name, path: filePath });
+    return filePath;
   }
 
   /**

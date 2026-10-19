@@ -64,8 +64,10 @@ function assertSafeUrl(urlString) {
  * @param {object} [options]
  */
 function assertSafeE2EEnvironment(options = {}) {
+  process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+
   // 1. Check database & runtime safety via shared fixture rules
-  assertSafeTestEnvironment(options);
+  assertSafeTestEnvironment({ database: 'rentify_core_test', ...options });
 
   // 2. Enforce NODE_ENV !== 'production'
   if (process.env.NODE_ENV === 'production') {

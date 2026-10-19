@@ -92,7 +92,7 @@ async function seedCoreFixtures(models, scenario, options = {}) {
     const appList = Object.values(activeScenario.sellerApplications);
     for (const app of appList) {
       const record = await models.SellerApplication.create(app, { transaction });
-      tracker.created.SellerApplication.push(record.id || app.id);
+      tracker.created.SellerApplication.push(record.storeId || record.id || app.storeId);
     }
   }
 
@@ -121,7 +121,7 @@ async function cleanupCoreFixtures(models, trackerOrScenario, options = {}) {
     Staff: Object.values(trackerOrScenario?.staff || {}).map((st) => st.id),
     Package: [trackerOrScenario?.coreBilling?.package?.id].filter(Boolean),
     Subscription: [trackerOrScenario?.coreBilling?.subscription?.id].filter(Boolean),
-    SellerApplication: Object.values(trackerOrScenario?.sellerApplications || {}).map((a) => a.id),
+    SellerApplication: Object.values(trackerOrScenario?.sellerApplications || {}).map((a) => a.storeId || a.id),
   };
 
   const cleanupOrder = [
@@ -138,9 +138,10 @@ async function cleanupCoreFixtures(models, trackerOrScenario, options = {}) {
   for (const modelName of cleanupOrder) {
     const ids = created[modelName];
     const model = models[modelName];
+    const key = modelName === 'SellerApplication' ? 'storeId' : (model?.primaryKeyAttribute || 'id');
     if (model && Array.isArray(ids) && ids.length > 0) {
       deletedCounts[modelName] = await model.destroy({
-        where: { id: ids },
+        where: { [key]: ids },
         transaction,
       });
     } else {

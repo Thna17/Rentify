@@ -170,6 +170,9 @@ class OpenAPIContractValidator {
           if (schema.properties) {
             for (const [propName, propSchema] of Object.entries(schema.properties)) {
               if (data[propName] !== undefined) {
+                if (data[propName] === null && (!Array.isArray(schema.required) || !schema.required.includes(propName))) {
+                  continue;
+                }
                 this.validateSchema(spec, propSchema, data[propName], `${pathName}.${propName}`);
               }
             }

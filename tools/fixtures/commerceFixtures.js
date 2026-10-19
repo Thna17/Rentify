@@ -235,6 +235,34 @@ async function cleanupCommerceFixtures(models, trackerOrScenario, options = {}) 
     { modelName: 'StoreAccess', key: 'storeId' },
   ];
 
+  // Clean up any dynamic orders, payments, order items, and products created during tests
+  const storeIds = created.StoreAccess || [];
+  const productIds = created.Product || [];
+  if (models.OrderItem && productIds.length > 0) {
+    await models.OrderItem.destroy({
+      where: { productId: productIds },
+      transaction,
+    }).catch(() => {});
+  }
+  if (models.Payment && storeIds.length > 0) {
+    await models.Payment.destroy({
+      where: { storeId: storeIds },
+      transaction,
+    }).catch(() => {});
+  }
+  if (models.Order && storeIds.length > 0) {
+    await models.Order.destroy({
+      where: { storeId: storeIds },
+      transaction,
+    }).catch(() => {});
+  }
+  if (models.Product && storeIds.length > 0) {
+    await models.Product.destroy({
+      where: { storeId: storeIds },
+      transaction,
+    }).catch(() => {});
+  }
+
   for (const { modelName, key } of cleanupSpecs) {
     const ids = created[modelName];
     const model = models[modelName];
