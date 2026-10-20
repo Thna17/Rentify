@@ -1,9 +1,81 @@
-// tools/e2e/dbHelper.js - Database fixture setup and teardown across isolated test databases
+// tools/e2e/dbHelper.js - Database fixture setup, migrations, and teardown across isolated test databases
 
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const { ROOT_DIR } = require('./config');
+const { assertSafeTestEnvironment } = require('./safety');
 const { createPlatformScenario } = require('../fixtures/scenario');
+
+function getMysqlDriver() {
+  try {
+    return require(path.join(ROOT_DIR, 'rentify-server/node_modules/mysql2/promise'));
+  } catch (_e) {
+    return require(path.join(ROOT_DIR, 'ecommerce-server/node_modules/mysql2/promise'));
+  }
+}
+
+/**
+ * Creates isolated test databases if they do not exist and applies all pending migrations.
+ */
+async function ensureDatabasesAndMigrations() {
+  assertSafeTestEnvironment({
+    host: '127.0.0.1',
+    database: 'rentify_core_test',
+  });
+  assertSafeTestEnvironment({
+    host: '127.0.0.1',
+    database: 'rentify_commerce_test',
+  });
+
+  const mysql = getMysqlDriver();
+  const connection = await mysql.createConnection({
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'root',
+    password: 'root',
+  });
+
+  try {
+    await connection.query('CREATE DATABASE IF NOT EXISTS rentify_core_test;');
+    await connection.query('CREATE DATABASE IF NOT EXISTS rentify_commerce_test;');
+  } finally {
+    await connection.end();
+  }
+
+  const nodeBinary = process.execPath;
+  const commonEnv = {
+    ...process.env,
+    DB_HOST: '127.0.0.1',
+    DB_PORT: '3306',
+    DB_USER: 'root',
+    DB_PASSWORD: 'root',
+    NODE_ENV: 'test',
+  };
+
+  // Run & verify Core API migrations
+  execFileSync(nodeBinary, ['rentify-server/src/migrations/runner.js', 'migrate'], {
+    cwd: ROOT_DIR,
+    env: { ...commonEnv, DB_NAME: 'rentify_core_test' },
+    stdio: 'pipe',
+  });
+  execFileSync(nodeBinary, ['rentify-server/src/migrations/runner.js', 'verify'], {
+    cwd: ROOT_DIR,
+    env: { ...commonEnv, DB_NAME: 'rentify_core_test' },
+    stdio: 'pipe',
+  });
+
+  // Run & verify Commerce API migrations
+  execFileSync(nodeBinary, ['ecommerce-server/migrations/runner.js', 'migrate'], {
+    cwd: ROOT_DIR,
+    env: { ...commonEnv, DB_NAME: 'rentify_commerce_test' },
+    stdio: 'pipe',
+  });
+  execFileSync(nodeBinary, ['ecommerce-server/migrations/runner.js', 'verify'], {
+    cwd: ROOT_DIR,
+    env: { ...commonEnv, DB_NAME: 'rentify_commerce_test' },
+    stdio: 'pipe',
+  });
+}
 
 function runIsolatedScript(env, code) {
   const nodeBinary = process.execPath;
@@ -32,6 +104,9 @@ function runIsolatedScript(env, code) {
  * @returns {Promise<object>} Active scenario
  */
 async function setupTestDatabases(scenario) {
+  // Ensure databases exist and migrations are applied before seeding
+  await ensureDatabasesAndMigrations();
+
   const activeScenario = scenario || createPlatformScenario();
 
   // Clean up any stale fixtures before seeding
@@ -124,6 +199,7 @@ async function teardownTestDatabases(scenario) {
 }
 
 module.exports = {
+  ensureDatabasesAndMigrations,
   setupTestDatabases,
   teardownTestDatabases,
 };

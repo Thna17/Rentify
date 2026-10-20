@@ -22,19 +22,27 @@ async function runBuyerJourney({ serverManager, contractValidator, artifactColle
     await browser.waitForSelector('app-navbar');
     await browser.waitForSelector('.search-bar');
 
-    // 2. Search / Browse products
+    // 2. Search / Browse products via Playwright overlay interaction
     const searchButton = await browser.waitForSelector('.search-bar');
     assert.ok(searchButton, 'Search bar trigger must be present');
     await browser.click('.search-bar');
     await browser.waitForSelector('app-search-overlay input[type="search"]');
     await browser.fill('app-search-overlay input[type="search"]', 'Celadon');
 
-    // 3. Open canonical product detail page
+    // Wait for observable search result matching the query
+    await browser.waitForSelector('app-search-overlay .results button');
+    const resultName = await browser.textContent('app-search-overlay .results button .result-name');
+    assert.ok(
+      resultName.includes('Celadon') || resultName.includes('Vase'),
+      `Search overlay must display matching product, got: "${resultName}"`
+    );
+
+    // Click the actual search result in Playwright to navigate to product detail
+    await browser.click('app-search-overlay .results button');
+
+    // 3. Confirm canonical product detail page is reached via search result click
     const targetProduct = scenario.products.simpleVase;
     const targetStore = scenario.stores.marketplaceOnly;
-    const detailUrl = `${urls.marketplace}/product/${targetProduct.id}`;
-    const detailResult = await browser.goto(detailUrl);
-    assert.equal(detailResult.ok, true, `Product detail must return 200, got ${detailResult.status}`);
 
     // Wait for observable detail page elements
     await browser.waitForSelector('.info h1');

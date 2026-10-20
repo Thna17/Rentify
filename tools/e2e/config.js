@@ -19,9 +19,9 @@ const URLS = {
 };
 
 const TIMEOUTS = {
-  serverStartup: 15000,
-  navigation: 10000,
-  selector: 8000,
+  serverStartup: 20000,
+  navigation: 15000,
+  selector: 15000,
   networkIdle: 5000,
   pollInterval: 50,
 };

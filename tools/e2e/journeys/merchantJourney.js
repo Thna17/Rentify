@@ -11,15 +11,7 @@ async function runMerchantJourney({ serverManager, contractValidator, artifactCo
   try {
     artifactCollector.recordConsole('Starting Authenticated Merchant Journey (@merchant, @golden, @contract)...');
 
-    // 1. Open merchant application in Playwright
-    const merchantResult = await browser.goto(urls.merchant);
-    assert.equal(merchantResult.ok, true, `Merchant UI must return 200, got ${merchantResult.status}`);
-    await browser.waitForSelector('#root');
-
-    // Capture Playwright screenshot of merchant dashboard
-    await browser.screenshot('golden-merchant-dashboard');
-
-    // 2. Sign in Store B storefront merchant (Bopha Silk) via real Core auth
+    // 1. Sign in Store B storefront merchant (Bopha Silk) via real Core auth
     const merchantBUser = scenario.users.storefrontMerchant;
     const loginPayloadB = {
       email: merchantBUser.email,
@@ -45,6 +37,39 @@ async function runMerchantJourney({ serverManager, contractValidator, artifactCo
 
     // Validate login against Core OpenAPI contract
     contractValidator.validateResponse('core', 'POST', '/api/auth/login', 200, loginDataB, loginHeadersB);
+
+    // 2. Authenticate the Playwright browser session for Store B and load the real merchant UI
+    await browser.clearCookies();
+    await browser.addCookies([
+      { name: 'authType', value: 'user', domain: '127.0.0.1', path: '/' },
+      { name: 'userAccessToken', value: tokenB, domain: '127.0.0.1', path: '/' },
+      { name: 'accessToken', value: tokenB, domain: '127.0.0.1', path: '/' },
+    ]);
+
+    const merchantResultB = await browser.goto(urls.merchant);
+    assert.equal(merchantResultB.ok, true, `Merchant UI must return 200, got ${merchantResultB.status}`);
+    await browser.waitForSelector('#root');
+    await browser.waitForSelector('main');
+
+    // Wait on observable rendered DOM state for Store B in merchant UI
+    await browser.page.waitForFunction(
+      () => document.body.textContent.includes('Mekong Silk Heritage'),
+      { timeout: 15000 }
+    );
+
+    // Assert that the real merchant UI renders Store B data and storefront status
+    const bodyContentB = await browser.textContent('body');
+    assert.ok(
+      bodyContentB.includes('Mekong Silk Heritage'),
+      `Merchant UI must render Store B name "Mekong Silk Heritage". Got: "${bodyContentB.slice(0, 200)}"`
+    );
+    assert.ok(
+      bodyContentB.includes('Storefront · Live'),
+      'Merchant UI must render "Storefront · Live" badge for storefront-enabled Store B'
+    );
+
+    // Capture Playwright screenshot of Store B authenticated merchant dashboard
+    await browser.screenshot('golden-merchant-store-b-dashboard');
 
     // 3. Read Store-scoped information (GET /api/stores/mine) for Store B
     const storeBRes = await fetch(`${urls.coreApi}/api/stores/mine`, {
@@ -89,6 +114,38 @@ async function runMerchantJourney({ serverManager, contractValidator, artifactCo
     const loginDataA = await loginResA.json();
     const tokenA = loginDataA.data?.accessToken || loginDataA.token;
     assert.ok(tokenA, 'Store A token must be returned');
+
+    // Authenticate the Playwright browser session for Store A and assert UI presentation
+    await browser.clearCookies();
+    await browser.addCookies([
+      { name: 'authType', value: 'user', domain: '127.0.0.1', path: '/' },
+      { name: 'userAccessToken', value: tokenA, domain: '127.0.0.1', path: '/' },
+      { name: 'accessToken', value: tokenA, domain: '127.0.0.1', path: '/' },
+    ]);
+
+    const merchantResultA = await browser.goto(urls.merchant);
+    assert.equal(merchantResultA.ok, true, `Merchant UI must return 200, got ${merchantResultA.status}`);
+    await browser.waitForSelector('#root');
+    await browser.waitForSelector('main');
+
+    // Wait on observable rendered DOM state for Store A in merchant UI
+    await browser.page.waitForFunction(
+      () => document.body.textContent.includes('Angkor Artisan Pottery'),
+      { timeout: 15000 }
+    );
+
+    const bodyContentA = await browser.textContent('body');
+    assert.ok(
+      bodyContentA.includes('Angkor Artisan Pottery'),
+      `Merchant UI must render Store A name "Angkor Artisan Pottery". Got: "${bodyContentA.slice(0, 200)}"`
+    );
+    assert.ok(
+      bodyContentA.includes('Get your own website') || !bodyContentA.includes('Storefront · Live'),
+      'Merchant UI for marketplace-only store must show website prompt and NOT indicate storefront live'
+    );
+
+    // Capture Playwright screenshot of Store A authenticated merchant dashboard
+    await browser.screenshot('golden-merchant-store-a-dashboard');
 
     const storeARes = await fetch(`${urls.coreApi}/api/stores/mine`, {
       headers: {

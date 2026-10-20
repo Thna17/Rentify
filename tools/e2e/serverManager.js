@@ -152,9 +152,13 @@ class E2EServerManager {
     const distDir = path.join(ROOT_DIR, 'marketplace-frontend/dist/marketplace-frontend/browser');
     const indexPath = path.join(distDir, 'index.html');
 
-    let indexHtml = fs.existsSync(indexPath)
-      ? fs.readFileSync(indexPath, 'utf8')
-      : '<!DOCTYPE html><html><head><title>Rentify Marketplace</title></head><body><app-root></app-root></body></html>';
+    if (!fs.existsSync(indexPath) || !fs.existsSync(distDir)) {
+      throw new Error(
+        `Marketplace frontend build is missing at ${distDir}. Run 'npm run e2e:prepare' or 'npm --prefix marketplace-frontend run build' before running E2E tests.`
+      );
+    }
+
+    let indexHtml = fs.readFileSync(indexPath, 'utf8');
 
     const runtimeScript = `
 <script>
@@ -212,9 +216,7 @@ window.__KHMERCRAFT_API__ = '${URLS.commerceApi}';
       req.pipe(proxyReq, { end: true });
     });
 
-    if (fs.existsSync(distDir)) {
-      app.use(express.static(distDir, { index: false }));
-    }
+    app.use(express.static(distDir, { index: false }));
 
     // SPA fallback
     app.get('*', (_req, res) => {
@@ -234,9 +236,13 @@ window.__KHMERCRAFT_API__ = '${URLS.commerceApi}';
     const merchantDist = path.join(ROOT_DIR, 'rentify-frontend/dist/apps/core/merchant');
     const merchantIndex = path.join(merchantDist, 'index.html');
 
-    let merchantHtml = fs.existsSync(merchantIndex)
-      ? fs.readFileSync(merchantIndex, 'utf8')
-      : '<!DOCTYPE html><html><head><title>Rentify Merchant</title></head><body><div id="root">Merchant App</div></body></html>';
+    if (!fs.existsSync(merchantIndex) || !fs.existsSync(merchantDist)) {
+      throw new Error(
+        `Merchant frontend build is missing at ${merchantDist}. Run 'npm run e2e:prepare' or 'npm --prefix rentify-frontend run build:merchant' before running E2E tests.`
+      );
+    }
+
+    const merchantHtml = fs.readFileSync(merchantIndex, 'utf8');
 
     // Proxy API requests to real Core server
     app.use('/api', (req, res) => {
@@ -259,9 +265,7 @@ window.__KHMERCRAFT_API__ = '${URLS.commerceApi}';
       req.pipe(proxyReq, { end: true });
     });
 
-    if (fs.existsSync(merchantDist)) {
-      app.use(express.static(merchantDist, { index: false }));
-    }
+    app.use(express.static(merchantDist, { index: false }));
 
     app.get('*', (_req, res) => {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -289,10 +293,37 @@ window.__KHMERCRAFT_API__ = '${URLS.commerceApi}';
       }
     }
 
-    // Terminate child processes
+    // Terminate child processes with bounded shutdown and SIGKILL escalation
     for (const [name, proc] of Object.entries(this.procs)) {
       if (proc && !proc.killed) {
-        proc.kill('SIGTERM');
+        this.log('orchestrator', `Stopping ${name} process (PID: ${proc.pid})...`);
+        await new Promise((resolve) => {
+          let resolved = false;
+          const finish = () => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(killTimer);
+              resolve();
+            }
+          };
+
+          const killTimer = setTimeout(() => {
+            if (!proc.killed) {
+              this.log('orchestrator', `Process ${name} (PID: ${proc.pid}) did not exit within 3000ms. Escalating to SIGKILL.`);
+              try {
+                proc.kill('SIGKILL');
+              } catch {}
+            }
+            finish();
+          }, 3000);
+
+          proc.once('exit', () => finish());
+          try {
+            proc.kill('SIGTERM');
+          } catch {
+            finish();
+          }
+        });
         this.procs[name] = null;
       }
     }

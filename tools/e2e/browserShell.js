@@ -138,6 +138,17 @@ class BrowserSession {
     return this.page.evaluate(fn, arg);
   }
 
+  async addCookies(cookies) {
+    if (!this.isInitialized) await this.init();
+    await this.context.addCookies(cookies);
+  }
+
+  async clearCookies() {
+    if (this.context) {
+      await this.context.clearCookies();
+    }
+  }
+
   async screenshot(name) {
     if (!this.isInitialized) await this.init();
     const filePath = this.collector
