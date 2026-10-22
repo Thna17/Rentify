@@ -7,9 +7,18 @@ class MyOrderDetailsStrategy extends BaseRetrievalStrategy {
       const { orderId } = req.params;
       const user = req.user;
 
+      if (!user) return res.status(401).json({ error: 'Identification required' });
+
       const where = { id: orderId };
-      if (user.type === 'customer') where.userId = user.id;
-      else where.sessionId = user.sessionId;
+      if (user.type === 'customer' && user.id) {
+        where.userId = user.id;
+      } else if (user.type === 'user' && user.id) {
+        where.buyerId = user.id;
+      } else if (user.sessionId) {
+        where.sessionId = user.sessionId;
+      } else {
+        return res.status(401).json({ error: 'Identification required' });
+      }
 
       const order = await this.models.Order.findOne({
         where,

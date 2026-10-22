@@ -22,7 +22,22 @@ const createVerifyCoreBuyer = ({ validate = (accessToken, refreshToken) => axios
     ? authHeader.slice(7).trim()
     : null;
   const headerToken = req.headers?.['x-access-token'] || req.headers?.['x-user-access-token'];
-  const accessToken = req.cookies?.userAccessToken || bearerToken || headerToken;
+  const cookieAccessToken = req.cookies?.userAccessToken;
+
+  // Reject conflicting credentials if both cookie and bearer are supplied with conflicting tokens
+  if (cookieAccessToken && bearerToken && cookieAccessToken !== bearerToken) {
+    try {
+      const { verifyAccessToken } = require('../utils/jwtUtils');
+      const decCookie = verifyAccessToken(cookieAccessToken);
+      const decBearer = verifyAccessToken(bearerToken);
+      if (decCookie?.id && decBearer?.id && decCookie.id !== decBearer.id) {
+        if (optional) return next();
+        return res.status(401).json({ error: "Unauthorized: Conflicting credentials provided" });
+      }
+    } catch (_err) {}
+  }
+
+  const accessToken = cookieAccessToken || bearerToken || headerToken;
   const refreshToken = req.cookies?.userRefreshToken;
   if (!accessToken && !refreshToken) {
     if (optional) return next();
@@ -78,10 +93,21 @@ const verifyToken = async (req, res, next) => {
   // Get tokens from cookies
   const customerAccessToken = req.cookies.customerAccessToken;
   const customerRefreshToken = req.cookies.customerRefreshToken;
-  const userAccessToken = req.cookies?.userAccessToken ||
-    (typeof req.headers?.authorization === 'string' && req.headers.authorization.startsWith('Bearer ')
-      ? req.headers.authorization.slice(7).trim()
-      : null) ||
+  const cookieUserAccess = req.cookies?.userAccessToken;
+  const authHeader = req.headers?.authorization;
+  const bearerToken = typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : null;
+  if (cookieUserAccess && bearerToken && cookieUserAccess !== bearerToken) {
+    try {
+      const decCookie = verifyAccessToken(cookieUserAccess);
+      const decBearer = verifyAccessToken(bearerToken);
+      if (decCookie?.id && decBearer?.id && decCookie.id !== decBearer.id) {
+        return res.status(401).json({ error: "Unauthorized: Conflicting credentials provided" });
+      }
+    } catch (_err) {}
+  }
+  const userAccessToken = cookieUserAccess || bearerToken ||
     req.headers?.['x-access-token'] || req.headers?.['x-user-access-token'];
   const userRefreshToken = req.cookies.userRefreshToken;
   const staffAccessToken = req.cookies.staffAccessToken;

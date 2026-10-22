@@ -253,7 +253,13 @@ exports.getStaffProfile = async (req, res) => {
 // Add to staffController
 exports.sendStaffInvitation = async (req, res) => {
   const transaction = req.transaction;
-  const { merchantId, name, contact, contactMethod, permissions } = req.body;
+  const { merchantId: bodyMerchantId, name, contact, contactMethod, permissions } = req.body;
+
+  // Identity is strictly derived from the verified session; non-admins cannot specify another merchantId
+  if (bodyMerchantId && req.user?.role !== 'admin' && bodyMerchantId !== req.user?.id) {
+    throw new ApiError(403, "Cannot invite staff for another merchant");
+  }
+  const merchantId = req.user?.role === 'admin' && bodyMerchantId ? bodyMerchantId : req.user?.id;
 
   // Validate input
   if (!name || !contact || !contactMethod || !permissions) {

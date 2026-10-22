@@ -12,10 +12,25 @@ const { rememberRotatedToken, wasJustRotated } = require("../utils/refreshTokenG
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers?.authorization || '';
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
-  const userAccessToken = req.cookies?.userAccessToken || bearerToken;
+  const cookieAccessToken = req.cookies?.userAccessToken;
   const userRefreshToken = req.cookies?.userRefreshToken;
   const staffAccessToken = req.cookies?.staffAccessToken;
   const staffRefreshToken = req.cookies?.staffRefreshToken;
+
+  // Reject conflicting credentials: if both cookie and bearer are supplied with different subject IDs
+  if (cookieAccessToken && bearerToken && cookieAccessToken !== bearerToken) {
+    try {
+      const decodedCookie = verifyAccessToken(cookieAccessToken);
+      const decodedBearer = verifyAccessToken(bearerToken);
+      if (decodedCookie?.id && decodedBearer?.id && decodedCookie.id !== decodedBearer.id) {
+        return res.status(401).json({ error: "Unauthorized: Conflicting credentials provided" });
+      }
+    } catch (_err) {
+      // Normal token verification below handles invalid tokens
+    }
+  }
+
+  const userAccessToken = cookieAccessToken || bearerToken;
 
   if (!userAccessToken && !userRefreshToken && (staffAccessToken || staffRefreshToken)) {
     return handleStaffAuth(req, res, next);

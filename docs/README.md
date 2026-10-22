@@ -30,6 +30,9 @@ code so implementation work can proceed without relying on chat history.
 - [Phase 1 verification report](audits/phase-1-verification.md) — complete
   verification evidence, package checklist, test results, security audit, and
   exit gate decision.
+- [Identity and authoritative subject model](identity-subject-model.md) —
+  authoritative subject definition, token & session models, role coexistence,
+  ambiguous-credential precedence, and security boundaries.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

@@ -550,12 +550,29 @@ class WebsiteController {
       let clearedCount = 0;
 
       if (websiteId) {
+        if (req.user?.role !== 'admin') {
+          const { Website } = require('../../models');
+          const website = await Website.findByPk(websiteId);
+          if (!website || website.userId !== req.user?.id) {
+            return res.status(403).json({ error: "You do not have access to this website" });
+          }
+        }
         clearedCount = await cache.invalidateWebsiteCache(websiteId);
         message = `Cleared ${clearedCount} cache entries for website: ${websiteId}`;
       } else if (userId) {
+        if (req.user?.role !== 'admin' && req.user?.id !== userId) {
+          return res.status(403).json({ error: "Cannot clear cache for another user" });
+        }
         await cache.invalidateDashboardCache(userId);
         message = `Cleared dashboard cache for user: ${userId}`;
       } else if (domain) {
+        if (req.user?.role !== 'admin') {
+          const { Website } = require('../../models');
+          const website = await Website.findOne({ where: { domain } });
+          if (!website || website.userId !== req.user?.id) {
+            return res.status(403).json({ error: "You do not have access to this domain" });
+          }
+        }
         await cache.invalidatePublicCache(domain);
         message = `Cleared public cache for domain: ${domain}`;
       } else {
