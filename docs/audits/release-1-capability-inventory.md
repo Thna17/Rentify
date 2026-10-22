@@ -249,8 +249,8 @@ Merchant Storefront Onboard-> POST /api/websites               -> WebsiteService
 | **DISC-002** | `ecommerce-server` | Legacy `websiteId` foreign key is required in `Products` and `Orders` tables, requiring simulated dummy website mapping for marketplace-only stores. | High | `P3-CAT-001`, `P3-ORD-001` |
 | **DISC-003** | `rentify-frontend` | Nx module boundary checking is disabled during `verify-frontend` due to path aliases in template libraries. | Low | `P1-UX-001` |
 | **DISC-004** | Contracts | OpenAPI specs are informal and dispersed across documentation prose rather than validated in CI. | High | `P1-API-001`, `P1-API-002` |
-| **DISC-005** | Observability | Correlation IDs are not systematically propagated across Core and Commerce HTTP calls. | Medium | `P1-OBS-001` |
-| **DISC-006** | Test Fixtures | Core and Commerce integration tests utilize independent ad-hoc seeders rather than a unified fixture builder. | Medium | `P1-QA-001` |
+| **DISC-005** | Observability | Correlation IDs are not systematically propagated across Core and Commerce HTTP calls. | Medium | `P1-OBS-001` (Resolved: cross-service tracing & structured logging implemented) |
+| **DISC-006** | Test Fixtures | Core and Commerce integration tests utilize independent ad-hoc seeders rather than a unified fixture builder. | Medium | `P1-QA-001` (Resolved: deterministic shared platform fixtures and safety harness implemented) |
 
 ---
 

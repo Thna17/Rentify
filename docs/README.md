@@ -12,6 +12,24 @@ code so implementation work can proceed without relying on chat history.
   marketplace into Rentify, with release gates and rollback paths.
 - [Shared catalog contract](catalog-migration-contract.md) — Rentify Product
   ownership, marketplace eligibility, and data checks.
+- [OpenAPI baseline contracts](openapi/README.md) — active Release 1 Core and
+  Commerce routes, schemas, security definitions, and breaking-change verification.
+- [Generated typed API clients](api-clients.md) — deterministic typed SDK
+  generation from OpenAPI contracts, React and Angular adapters, correlation ID
+  injection, and error envelope handling.
+- [Cross-service observability](observability.md) — correlation IDs, structured
+  JSON logging, redaction policy, and cross-service request tracing.
+- [Standard API error handling](api-error-handling.md) — unified error envelope,
+  stable machine codes, retryable semantics, and legacy retirement criteria.
+- [Shared platform test fixtures](fixtures.md) — deterministic scenario builders,
+  safety guards against production databases, and multi-tenant test fixtures.
+- [Shared design tokens](design-tokens.md) — framework-neutral semantic tokens,
+  accessibility contrast baselines, and multi-framework adapters for React and Angular.
+- [End-to-end contract & browser testing](e2e-testing.md) — CI-capable browser
+  test harness, golden buyer and merchant journeys, and OpenAPI contract validation.
+- [Phase 1 verification report](audits/phase-1-verification.md) — complete
+  verification evidence, package checklist, test results, security audit, and
+  exit gate decision.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

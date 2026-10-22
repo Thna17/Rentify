@@ -1,0 +1,5345 @@
+openapi: 3.0.3
+info:
+  title: Rentify Core API
+  version: 1.0.0
+  license:
+    name: ISC
+    url: https://opensource.org/licenses/ISC
+  description: |
+    Authoritative Core API contract for active Release 1 routes in `rentify-server`.
+
+    This specification documents the current, code-backed behavior of `rentify-server` (Port 3001),
+    governing identity, merchant and store ownership, storefront websites, templates, subscriptions,
+    staff permissions, deployments, admin operations, and internal service communication.
+
+    ### Release 1 Principles
+    - **Rentify is the Backend Authority**: Core owns identity, store registration, website configuration, and subscriptions.
+    - **Current Implemented Behavior Only**: Unimplemented methods and route discrepancies observed in code are explicitly marked.
+    - **Safe Examples**: Zero production credentials, customer PII, or real tokens are included.
+servers:
+  - url: http://localhost:3001
+    description: Local development Core API
+  - url: https://api.rentifymarket.com
+    description: Production Core API
+tags:
+  - name: System
+    description: Service health and system probes
+  - name: Auth
+    description: Authentication, session management, OTP, and password recovery
+  - name: Users
+    description: User account profile and password management
+  - name: Stores
+    description: Merchant Store identity, seller application, and public store profiles
+  - name: Websites
+    description: Storefront website provisioning, content personalization, palettes,
+      and themes
+  - name: Templates
+    description: Public storefront templates catalog
+  - name: Deployments
+    description: Website publishing, status polling, and hosted subdomain orchestration
+  - name: Dashboard
+    description: Merchant dashboard website and subscription context
+  - name: Staff
+    description: Merchant staff management, invitations, authentication, and permissions
+  - name: Billing & Packages
+    description: Subscription plans and merchant QR payment initiation
+  - name: Admin Operations
+    description: Platform administrator console, store reviews, and template management
+  - name: Platform Ops
+    description: Outcome contracts, invoice reminders, and automated recovery telemetry
+  - name: Internal Service
+    description: Synchronous service-to-service communication between Core and Commerce APIs
+  - name: Notifications
+    description: Merchant notification dispatch, order callbacks, and Telegram integration
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check probe
+      description: Returns container and load-balancer status without exposing
+        internal dependency states.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+      security: []
+
+  /ready:
+    get:
+      tags:
+        - System
+      summary: Service readiness probe
+      description: Evaluates connectivity to required dependencies (database, migrations, redis where required) and reports whether this instance can safely handle traffic.
+      operationId: getReady
+      responses:
+        '200':
+          description: Service is ready or safely degraded (can accept traffic)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service is not ready to serve traffic (dependency failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+      security: []
+
+  /api/auth/session:
+    get:
+      tags:
+        - Auth
+      summary: Get active session profile
+      description: |
+        Retrieves the profile of the currently authenticated actor.
+        Mounted identically on `/api/auth/session` and `/api/auth/me`.
+      operationId: getSessionProfile
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Active session user or staff member profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              examples:
+                merchantUser:
+                  value:
+                    user:
+                      id: 018d34b1-827c-74a9-a9c1-5827c9b83701
+                      name: Sokha Chan
+                      email: sokha.chan@example.com
+                      phoneNumber: "+85512345678"
+                      role: user
+                      isVerified: true
+                staffMember:
+                  value:
+                    user:
+                      id: 018d34b1-827c-74a9-a9c1-5827c9b83702
+                      name: Vicheka Keo
+                      email: vicheka@example.com
+                      phoneNumber: "+85598765432"
+                      role: staff
+                      isVerified: true
+                      websiteId: 018d34b1-827c-74a9-a9c1-5827c9b83703
+                      merchantId: 018d34b1-827c-74a9-a9c1-5827c9b83701
+                      permissions:
+                        - manage_products
+                        - manage_orders
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Get active session profile (alias)
+      description: Alias of `/api/auth/session`.
+      operationId: getSessionProfileAlias
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Active session profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/signup:
+    post:
+      tags:
+        - Auth
+      summary: Register a new merchant or buyer account
+      description: |
+        Creates a new user record. If returnUrl or returnDomain is supplied, it is validated
+        against allowed Rentify origins to prevent open redirects.
+      operationId: authSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              name: Sokha Chan
+              email: sokha.chan@example.com
+              phoneNumber: "+85512345678"
+              password: StrongPassword123!
+              verificationMethod: email
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security: []
+
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: User and fallback staff login
+      description: |
+        Authenticates with email/phone and password. If no user is found with matching credentials,
+        checks the Staff model and logs in as active staff. Sets `userAccessToken` (or `staffAccessToken`),
+        `userRefreshToken` (or `staffRefreshToken`), and `authType` cookies.
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: sokha.chan@example.com
+              password: StrongPassword123!
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Sets access and refresh cookies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security: []
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out active user
+      description: Revokes the stored refresh token hash and clears authentication cookies.
+      operationId: authLogout
+      security:
+        - userRefreshTokenCookie: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccessResponse'
+              example:
+                success: true
+                message: Logout successful
+                data: null
+
+  /api/auth/refresh-token:
+    post:
+      tags:
+        - Auth
+      summary: Refresh authentication access token
+      description: |
+        Rotates the refresh token using the `userRefreshToken` cookie.
+        Supports token rotation grace window to survive client request races.
+      operationId: authRefreshToken
+      security:
+        - userRefreshTokenCookie: []
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token refreshed
+                  accessToken:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/validate-token:
+    post:
+      tags:
+        - Auth
+      summary: Validate access or refresh token
+      operationId: authValidateToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  entity:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security: []
+
+  /api/auth/verify-otp:
+    post:
+      tags:
+        - Auth
+      summary: Verify account via OTP
+      operationId: authVerifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                otp:
+                  type: string
+                  example: "123456"
+                returnUrl:
+                  type: string
+                returnDomain:
+                  type: string
+              required:
+                - otp
+      responses:
+        '200':
+          description: Verification successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Verification successful
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      accessToken:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security: []
+
+  /api/auth/resend-otp:
+    post:
+      tags:
+        - Auth
+      summary: Resend verification OTP
+      operationId: authResendOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                verificationMethod:
+                  type: string
+                  enum: [ email, sms, telegram ]
+                returnDomain:
+                  type: string
+      responses:
+        '200':
+          description: OTP resent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP sent successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: Request password reset link or token
+      operationId: authForgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Reset token sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Reset token sent
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Reset password with token
+      operationId: authResetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successful
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+      security: []
+
+  /api/auth/telegram-login-config:
+    get:
+      tags:
+        - Auth
+      summary: Get Telegram login widget configuration
+      operationId: authTelegramLoginConfig
+      responses:
+        '200':
+          description: Telegram widget configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    example: true
+                  botId:
+                    type: string
+                    nullable: true
+                    example: "1234567890"
+      security: []
+
+  /api/auth/login/telegram:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate via Telegram login widget
+      operationId: authLoginTelegram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - authData
+              properties:
+                authData:
+                  type: object
+                  required:
+                    - id
+                    - hash
+                    - auth_date
+                  properties:
+                    id:
+                      type: integer
+                    first_name:
+                      type: string
+                    username:
+                      type: string
+                    photo_url:
+                      type: string
+                    auth_date:
+                      type: integer
+                    hash:
+                      type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security: []
+
+  /api/auth/check-telegram-link:
+    get:
+      tags:
+        - Auth
+      summary: Check if a user's phone number is linked to Telegram
+      operationId: authCheckTelegramLink
+      parameters:
+        - name: phoneNumber
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "+85512345678"
+      responses:
+        '200':
+          description: Link status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isLinked:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Telegram account is linked
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/user:
+    get:
+      tags:
+        - Users
+      summary: Get user profile with associated website and template
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileWithWebsite'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    patch:
+      tags:
+        - Users
+      summary: Update user profile name and email
+      operationId: updateUserProfile
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Sokha Chan
+                email:
+                  type: string
+                  format: email
+                  example: sokha.new@example.com
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Email is already in use
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email is already in use
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/user/change-password:
+    post:
+      tags:
+        - Users
+      summary: Change password for authenticated user
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+                  description: Must be at least 8 chars, contain an uppercase letter and a number.
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/stores/categories:
+    get:
+      tags:
+        - Stores
+      summary: Get list of official Store primary categories
+      description: Returns the curated taxonomy of allowed primary store categories.
+      operationId: getStoreCategories
+      responses:
+        '200':
+          description: Store categories list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - Fashion
+                      - Beauty & Skincare
+                      - Electronics
+                      - Home & Living
+                      - Food & Beverage
+                      - Groceries
+                      - Handmade Crafts
+                      - Other
+      security: []
+
+  /api/stores/public:
+    get:
+      tags:
+        - Stores
+      summary: Batch lookup approved public stores
+      description: Returns public store card details for up to 60 comma-separated
+        approved store IDs.
+      operationId: listPublicStores
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Comma-separated store UUIDs (max 60)
+          schema:
+            type: string
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83701,018d34b1-827c-74a9-a9c1-5827c9b83702
+      responses:
+        '200':
+          description: List of approved public store profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PublicStore'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+      security: []
+
+  /api/stores/public/{storeId}:
+    get:
+      tags:
+        - Stores
+      summary: Get single approved public store by ID
+      operationId: getPublicStore
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Public store profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PublicStore'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/stores/mine:
+    get:
+      tags:
+        - Stores
+      summary: Get own store profile
+      description: |
+        Returns the merchant owner's store profile, or the store associated with a permitted staff member.
+        Enriched with linked website ID, domain, and deployment status.
+      operationId: getOwnStore
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Merchant store details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/OwnStore'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    patch:
+      tags:
+        - Stores
+      summary: Update own store settings
+      description: Updates primary category, marketplace preference, or logo URL.
+      operationId: updateOwnStore
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primaryCategory:
+                  type: string
+                  example: Handmade Crafts
+                marketplaceEnabled:
+                  type: boolean
+                  example: true
+                logoUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+                  example: https://res.cloudinary.com/rentify/image/upload/v1/logo.png
+      responses:
+        '200':
+          description: Store updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/stores:
+    post:
+      tags:
+        - Stores
+      summary: Create a marketplace-only store
+      description: |
+        Creates a merchant Store without requiring a storefront website.
+        If the owner already has a store, the existing store is returned idempotently.
+      operationId: createMarketplaceStore
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - primaryCategory
+              properties:
+                name:
+                  type: string
+                  maxLength: 120
+                  example: Angkor Artisan Crafts
+                primaryCategory:
+                  type: string
+                  example: Handmade Crafts
+                marketplaceEnabled:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Store created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Store'
+        '200':
+          description: Store already exists (idempotent response)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/stores/mine/logo:
+    post:
+      tags:
+        - Stores
+      summary: Upload store logo image
+      description: Uploads a multipart image and stores the secure Cloudinary URL on
+        the merchant store.
+      operationId: uploadStoreLogo
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - logo
+              properties:
+                logo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Logo uploaded and store updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/stores/{storeId}/product-images:
+    post:
+      tags:
+        - Stores
+      summary: Upload product images for store
+      description: Uploads up to 10 product images for a store. Requires store
+        ownership, admin, or staff product permission.
+      operationId: uploadStoreProductImages
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Images uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  images:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UploadedImageMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/stores/mine/seller-application:
+    get:
+      tags:
+        - Stores
+      summary: Get own seller application status
+      operationId: getOwnSellerApplication
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Current seller application
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/SellerApplication'
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    post:
+      tags:
+        - Stores
+      summary: Submit marketplace seller application
+      description: Submits merchant operational commitments and product description
+        for marketplace approval.
+      operationId: submitSellerApplication
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerApplicationSubmission'
+      responses:
+        '202':
+          description: Application submitted and pending review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/SellerApplication'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: Seller is already approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Seller is already approved
+
+  /api/websites:
+    get:
+      tags:
+        - Websites
+      summary: Get user's website with full details
+      operationId: getUserWebsite
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Website configuration and content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Website'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    post:
+      tags:
+        - Websites
+      summary: Create website with template and trial subscription
+      description: Creates the Store (if absent), Website, and trial subscription in a
+        single atomic transaction.
+      operationId: createWebsite
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebsiteRequest'
+      responses:
+        '201':
+          description: Website created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Website created successfully
+                  data:
+                    $ref: '#/components/schemas/Website'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/websites/merchant:
+    get:
+      tags:
+        - Websites
+      summary: Get merchant workspace website payload
+      description: Returns enriched website data including user, staff, subscription,
+        template, and contents. Cached in Redis.
+      operationId: getWebsiteForMerchant
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Merchant website payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantWebsitePayload'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/websites/getWebsiteByDomain:
+    get:
+      tags:
+        - Websites
+      summary: Public storefront resolution by domain or subdomain
+      description: |
+        Resolves a hosted `<subdomain>.<HOSTED_STOREFRONT_DOMAIN>` (active status only)
+        or merchant custom domain to its template and public contents.
+        Omits owner contact and staff details.
+      operationId: getWebsiteByDomain
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+          example: aura-botanicals.stores.rentifymarket.com
+      responses:
+        '200':
+          description: Public storefront payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicStorefrontPayload'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security: []
+
+  /api/websites/validate/{websiteId}:
+    get:
+      tags:
+        - Websites
+      summary: Validate website access and subscription status
+      operationId: validateWebsiteAccess
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      isValid:
+                        type: boolean
+                        example: true
+      security: []
+
+  /api/websites/{websiteId}/merchant-telegram:
+    get:
+      tags:
+        - Websites
+      summary: Get merchant Telegram connection info for website
+      operationId: getMerchantTelegramInfo
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Telegram connection state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      isConnected:
+                        type: boolean
+                        example: true
+                      telegramChatId:
+                        type: string
+                        nullable: true
+                        example: "987654321"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/websites/{websiteId}/owner-access:
+    get:
+      tags:
+        - Websites
+      summary: Verify storefront owner access
+      description: Returns confirmation if current authenticated user owns this
+        website. Never cached.
+      operationId: getStorefrontOwnerAccess
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Owner access confirmed
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  owner:
+                    type: boolean
+                    example: true
+                  websiteId:
+                    type: string
+                    format: uuid
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/websites/{websiteId}/storefront-content:
+    put:
+      tags:
+        - Websites
+      summary: Live in-place storefront content editing
+      description: Updates allowlisted storefront template content fields validated by
+        type. Invalidates cache.
+      operationId: updateStorefrontContent
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fields
+              properties:
+                fields:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - label
+                      - value
+                    properties:
+                      label:
+                        type: string
+                        example: Hero Title
+                      value:
+                        description: Primitive string or JSON structure allowed for the label
+      responses:
+        '200':
+          description: Fields updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  updated:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                        value: {}
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/websites/{websiteId}/color-palette:
+    put:
+      tags:
+        - Websites
+      summary: Update website color palette
+      operationId: updateColorPalette
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paletteId
+              properties:
+                paletteId:
+                  type: string
+                  example: modern-minimal
+      responses:
+        '200':
+          description: Palette updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Website'
+                  message:
+                    type: string
+                    example: Color palette updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/websites/theme/{websiteId}:
+    get:
+      tags:
+        - Websites
+      summary: Get theme configuration content
+      operationId: getThemeConfiguration
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Theme configuration content row
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteContent'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    put:
+      tags:
+        - Websites
+      summary: Update theme configuration
+      operationId: updateThemeConfiguration
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - theme
+              properties:
+                theme:
+                  type: object
+      responses:
+        '200':
+          description: Theme configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/WebsiteContent'
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/websites/content/{contentId}:
+    put:
+      tags:
+        - Websites
+      summary: Update single website content block
+      operationId: updateWebsiteContent
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value: {}
+      responses:
+        '200':
+          description: Content block updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/WebsiteContent'
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/websites/uploadImage/{websiteId}:
+    post:
+      tags:
+        - Websites
+      summary: Upload website image (logo or banner cover)
+      description: |
+        Uploads image file and associates it with website content (Header Logo or Hero Image).
+      operationId: uploadWebsiteImage
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: isLogo
+          in: query
+          schema:
+            type: boolean
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [ logo, cover ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Uploaded image metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadedImageMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/websites/{websiteId}/product-images:
+    post:
+      tags:
+        - Websites
+      summary: Upload product images for website
+      operationId: uploadWebsiteProductImages
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Images uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  images:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UploadedImageMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/websites/upload-pdf/{websiteId}:
+    post:
+      tags:
+        - Websites
+      summary: Upload PDF document (e.g. menu or catalogue)
+      operationId: uploadWebsitePdf
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pdf
+              properties:
+                pdf:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: PDF uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                  publicId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/websites/cache/stats:
+    get:
+      tags:
+        - Websites
+      summary: Get Redis cache statistics
+      operationId: getCacheStats
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Cache stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stats:
+                        type: object
+                      sample:
+                        type: object
+                      totalKeys:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/websites/cache/clear:
+    post:
+      tags:
+        - Websites
+      summary: Invalidate website, user, or domain cache
+      operationId: clearCache
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                websiteId:
+                  type: string
+                  format: uuid
+                userId:
+                  type: string
+                  format: uuid
+                domain:
+                  type: string
+      responses:
+        '200':
+          description: Cache cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                  clearedCount:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /templates:
+    get:
+      tags:
+        - Templates
+      summary: List all website templates
+      operationId: listPublicTemplates
+      responses:
+        '200':
+          description: Array of available templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsiteTemplate'
+      security: []
+
+  /templates/{id}:
+    get:
+      tags:
+        - Templates
+      summary: Get template by ID
+      operationId: getPublicTemplateById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteTemplate'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /templates/category/{category}:
+    get:
+      tags:
+        - Templates
+      summary: List templates filtered by category
+      operationId: getTemplatesByCategory
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ restaurant, ecommerce, cafe, blog, fashion ]
+      responses:
+        '200':
+          description: Templates in category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsiteTemplate'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/deployments/{websiteId}/publish:
+    post:
+      tags:
+        - Deployments
+      summary: Publish website to permanent Rentify subdomain
+      description: |
+        Reserves a hosted subdomain under HOSTED_STOREFRONT_DOMAIN based on the store name.
+        Transitions website status to 'active', updates Commerce projection, and purges cache.
+      operationId: publishWebsite
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Website published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishWebsiteResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/deployments/{websiteId}/status:
+    get:
+      tags:
+        - Deployments
+      summary: Check website deployment status and storefront URL
+      operationId: checkDeploymentStatus
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deployment status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: READY
+                  url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    example: https://aura-botanicals.stores.rentifymarket.com
+                  subdomain:
+                    type: string
+                    nullable: true
+                    example: aura-botanicals
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/deployments/status:
+    put:
+      tags:
+        - Deployments
+      summary: Update website deployment status
+      description: |
+        Limited to 'failed' or 'customization' for merchant actors.
+        Admins may apply other lifecycle statuses.
+      operationId: updateWebsiteDeploymentStatus
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [ failed, customization, active, suspended, expired, archived, deleted ]
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Status cannot be set by current actor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Website status "active" cannot be set here
+
+  /dashboard/website/current:
+    get:
+      tags:
+        - Dashboard
+      summary: Get active website context for merchant dashboard
+      operationId: getDashboardCurrentWebsite
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Current website summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                      phoneNumber:
+                        type: string
+                  templateId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  storageUsedMB:
+                    type: number
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /dashboard/subscription/current:
+    get:
+      tags:
+        - Dashboard
+      summary: Get current active or trial subscription for merchant dashboard
+      operationId: getDashboardCurrentSubscription
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Current subscription details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  package:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      features:
+                        type: object
+                      packageEndDate:
+                        type: string
+                        format: date-time
+                      subscriptionId:
+                        type: string
+                        format: uuid
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/staff:
+    get:
+      tags:
+        - Staff
+      summary: List merchant's staff members
+      operationId: listStaff
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: List of staff
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+        - Staff
+      summary: Direct creation of staff member by merchant
+      operationId: createStaff
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - websiteId
+                - permissions
+              properties:
+                name:
+                  type: string
+                  example: Vicheka Keo
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                password:
+                  type: string
+                websiteId:
+                  type: string
+                  format: uuid
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      [
+                        manage_products,
+                        manage_orders,
+                        manage_invoices,
+                        manage_pos,
+                        manage_analytics,
+                        manage_settings,
+                        manage_staff
+                      ]
+      responses:
+        '201':
+          description: Staff created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Staff created successfully
+                  data:
+                    type: object
+                    properties:
+                      staffId:
+                        type: string
+                        format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/staff/me:
+    get:
+      tags:
+        - Staff
+      summary: Get authenticated staff profile
+      operationId: getStaffProfile
+      security:
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Staff profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/staff/{id}:
+    get:
+      tags:
+        - Staff
+      summary: Get staff member by ID
+      operationId: getStaffById
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Staff details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/staff/login:
+    post:
+      tags:
+        - Staff
+      summary: Staff member login
+      operationId: staffLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Staff login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Staff login successful
+                  data:
+                    type: object
+                    properties:
+                      staff:
+                        $ref: '#/components/schemas/Staff'
+                      accessToken:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security: []
+
+  /api/staff/logout:
+    post:
+      tags:
+        - Staff
+      summary: Log out staff member
+      operationId: staffLogout
+      security:
+        - staffRefreshTokenCookie: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccessResponse'
+
+  /api/staff/refresh-token:
+    post:
+      tags:
+        - Staff
+      summary: Refresh staff access token
+      operationId: staffRefreshToken
+      security:
+        - staffRefreshTokenCookie: []
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token refreshed
+                  accessToken:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/staff/validate-token:
+    post:
+      tags:
+        - Staff
+      summary: Validate staff token
+      operationId: staffValidateToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  entity:
+                    $ref: '#/components/schemas/Staff'
+                  permissions:
+                    type: array
+                    items:
+                      type: string
+                  merchantId:
+                    type: string
+                    format: uuid
+                  websiteId:
+                    type: string
+                    format: uuid
+                  isActive:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+      security: []
+
+  /api/staff/resend-otp:
+    post:
+      tags:
+        - Staff
+      summary: Resend OTP to staff
+      operationId: staffResendOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                phoneNumber:
+                  type: string
+                verificationMethod:
+                  type: string
+      responses:
+        '200':
+          description: OTP resent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP sent successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/staff/verify-otp:
+    post:
+      tags:
+        - Staff
+      summary: Verify staff member OTP
+      operationId: staffVerifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - otp
+              properties:
+                email:
+                  type: string
+                phoneNumber:
+                  type: string
+                otp:
+                  type: string
+      responses:
+        '200':
+          description: Verification successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Verification successful
+                  data:
+                    type: object
+                    properties:
+                      staff:
+                        $ref: '#/components/schemas/Staff'
+                      accessToken:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+      security: []
+
+  /api/staff/forgot-password:
+    post:
+      tags:
+        - Staff
+      summary: Request staff password reset
+      operationId: staffForgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                phoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Reset token sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Reset token sent
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/staff/reset-password:
+    post:
+      tags:
+        - Staff
+      summary: Reset staff password
+      operationId: staffResetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successful
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+      security: []
+
+  /api/staff/invite:
+    post:
+      tags:
+        - Staff
+      summary: Send email invitation to prospective staff member
+      operationId: sendStaffInvitation
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - websiteId
+                - permissions
+              properties:
+                email:
+                  type: string
+                  format: email
+                websiteId:
+                  type: string
+                  format: uuid
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation sent successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/staff/accept-invitation:
+    post:
+      tags:
+        - Staff
+      summary: Accept staff invitation and activate account
+      operationId: acceptStaffInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - name
+                - password
+              properties:
+                token:
+                  type: string
+                name:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                phoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation accepted successfully
+                  data:
+                    type: object
+                    properties:
+                      staffId:
+                        type: string
+                        format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/payment/khqr:
+    post:
+      tags:
+        - Billing & Packages
+      summary: Initiate Bakong KHQR payment for subscription package
+      description: |
+        Generates a Bakong KHQR string and optional deeplink for paying plan subscription fees.
+        The price is looked up from the requested package record on the server.
+      operationId: initiateKHQRPayment
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - packageId
+              properties:
+                packageId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: KHQR generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KHQRInitiationResponse'
+        '400':
+          description: Invalid package or non-paid package
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Choose a paid plan to pay for
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/payment/status/{paymentId}:
+    get:
+      tags:
+        - Billing & Packages
+      summary: Check payment verification status
+      description: Returns payment status and verifies pending payments with the
+        Bakong API if pending.
+      operationId: checkPaymentStatus
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/packages:
+    get:
+      tags:
+        - Billing & Packages
+      summary: List all subscription packages
+      operationId: listPackages
+      responses:
+        '200':
+          description: Array of packages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Package'
+      security: []
+    post:
+      tags:
+        - Billing & Packages
+      summary: Create subscription package (Admin)
+      description: |
+        > [!NOTE]
+        > **Unimplemented Limitation in Current Code**: `subscriptionService.createPackage` is not defined
+        > in the current implementation, resulting in a runtime 400 error.
+      operationId: createPackage
+      deprecated: true
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+                duration:
+                  type: string
+                features:
+                  type: object
+                limits:
+                  type: object
+      responses:
+        '201':
+          description: Package created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/packages/{id}:
+    get:
+      tags:
+        - Billing & Packages
+      summary: Get package by ID
+      operationId: getPackageById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Package details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+    put:
+      tags:
+        - Billing & Packages
+      summary: Update package by ID (Admin)
+      description: |
+        > [!NOTE]
+        > **Unimplemented Limitation in Current Code**: `subscriptionService.updatePackage` is not defined
+        > in the current implementation, resulting in a runtime 400 error.
+      operationId: updatePackage
+      deprecated: true
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Package updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    delete:
+      tags:
+        - Billing & Packages
+      summary: Delete package by ID (Admin)
+      description: |
+        > [!NOTE]
+        > **Unimplemented Limitation in Current Code**: `subscriptionService.deletePackage` is not defined
+        > in the current implementation, resulting in a runtime 404 error.
+      operationId: deletePackage
+      deprecated: true
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Package deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/operations/overview:
+    get:
+      tags:
+        - Admin Operations
+      summary: Platform administrator overview counts
+      description: Aggregates counts of stores, active stores, pending sellers,
+        websites, users, subscriptions, and pending payments.
+      operationId: getAdminOverview
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Overview statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOverviewResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/operations/{resource}:
+    get:
+      tags:
+        - Admin Operations
+      summary: Paginated resource listing for platform administrators
+      description: |
+        Supports paginated query, search, and filtering across:
+        `stores`, `users`, `websites`, `templates`, `subscriptions`, `packages`, `plan-payments`, `seller-reviews`.
+      operationId: listAdminResource
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: resource
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              [
+                stores,
+                users,
+                websites,
+                templates,
+                subscriptions,
+                packages,
+                plan-payments,
+                seller-reviews
+              ]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: q
+          in: query
+          description: Search term across resource-specific text fields
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter stores by marketplaceApprovalStatus
+          schema:
+            type: string
+        - name: applicationStatus
+          in: query
+          description: Filter stores by sellerApplication.status (e.g. 'pending')
+          schema:
+            type: string
+        - name: storeId
+          in: query
+          description: Filter seller-reviews by storeId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Paginated resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminResourceResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/operations/stores/{storeId}:
+    patch:
+      tags:
+        - Admin Operations
+      summary: Administrator update to store status or marketplace approval
+      operationId: updateStoreByAdmin
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marketplaceEnabled:
+                  type: boolean
+                status:
+                  type: string
+                  enum: [ active, suspended, closed ]
+                marketplaceApprovalStatus:
+                  type: string
+                  enum: [ pending, approved, needs_changes, rejected, suspended ]
+      responses:
+        '200':
+          description: Store updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/template:
+    post:
+      tags:
+        - Admin Operations
+      summary: Create new website template with contents (Admin)
+      operationId: createAdminTemplate
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/template/{id}:
+    get:
+      tags:
+        - Admin Operations
+      summary: Get template by ID with full contents (Admin)
+      operationId: getAdminTemplateById
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Template with contents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Admin Operations
+      summary: Update template and replace content blocks (Admin)
+      operationId: updateAdminTemplate
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Template updated successfully
+                  template:
+                    $ref: '#/components/schemas/WebsiteTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Admin Operations
+      summary: Delete template (Admin)
+      operationId: deleteAdminTemplate
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Template deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Template deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/templates:
+    get:
+      tags:
+        - Admin Operations
+      summary: List all templates with contents (Admin)
+      operationId: listAdminTemplates
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: All templates with content
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsiteTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/stores/{storeId}/seller-application:
+    get:
+      tags:
+        - Admin Operations
+      summary: Get seller application and review history for admin adjudication
+      operationId: getSellerApplicationForAdmin
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Application and review audits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      application:
+                        $ref: '#/components/schemas/SellerApplication'
+                      reviews:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SellerReview'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/stores/{storeId}/seller-review:
+    post:
+      tags:
+        - Admin Operations
+      summary: Adjudicate seller application (Approve, Request Changes, Reject, Suspend)
+      operationId: reviewSellerApplication
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerReviewRequest'
+      responses:
+        '200':
+          description: Review recorded and store status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      application:
+                        $ref: '#/components/schemas/SellerApplication'
+                      audit:
+                        $ref: '#/components/schemas/SellerReview'
+                      store:
+                        $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /ops/reminders:
+    get:
+      tags:
+        - Platform Ops
+      summary: Query reminder dispatch logs
+      operationId: getOpsReminderLogs
+      security:
+        - opsTokenHeader: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ sent, failed, skipped ]
+        - name: reminderType
+          in: query
+          schema:
+            type: string
+            enum: [ first, second, overdue ]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated reminder logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReminderLog'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /ops/outcomes/summary:
+    get:
+      tags:
+        - Platform Ops
+      summary: Summarize on-time payment outcomes and reminder effectiveness
+      operationId: getOpsOutcomeSummary
+      security:
+        - opsTokenHeader: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Outcome analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /ops/invoices/at-risk:
+    get:
+      tags:
+        - Platform Ops
+      summary: List overdue and due-soon invoices
+      operationId: getOpsAtRiskInvoices
+      security:
+        - opsTokenHeader: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dueSoonDays
+          in: query
+          schema:
+            type: integer
+            default: 3
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: At-risk invoices categorized as overdue or due soon
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtRiskInvoicesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /ops/contracts/{id}/pause:
+    post:
+      tags:
+        - Platform Ops
+      summary: Pause outcome contract
+      operationId: pauseOutcomeContract
+      security:
+        - opsTokenHeader: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contract paused
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OutcomeContract'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /ops/contracts/{id}/resume:
+    post:
+      tags:
+        - Platform Ops
+      summary: Resume outcome contract
+      operationId: resumeOutcomeContract
+      security:
+        - opsTokenHeader: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contract resumed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OutcomeContract'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/internal/store-owner/{storeId}:
+    get:
+      tags:
+        - Internal Service
+      summary: Resolve store owner contact details for marketplace order notifications
+      description: |
+        Internal service-to-service endpoint called exclusively by Commerce API.
+        Protected by constant-time evaluation of `x-internal-secret`.
+      operationId: getStoreOwnerContactInternal
+      security:
+        - internalSecretHeader: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Store owner contact information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/InternalOwnerContact'
+        '401':
+          description: Invalid internal service secret
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid internal service secret
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/internal/website-owner/{websiteId}:
+    get:
+      tags:
+        - Internal Service
+      summary: Resolve website owner contact details for storefront order notifications
+      description: |
+        Internal service-to-service endpoint called exclusively by Commerce API.
+        Protected by constant-time evaluation of `x-internal-secret`.
+      operationId: getWebsiteOwnerContactInternal
+      security:
+        - internalSecretHeader: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Website owner contact information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/InternalOwnerContact'
+        '401':
+          description: Invalid internal service secret
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid internal service secret
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/notifications/send:
+    post:
+      tags:
+        - Notifications
+      summary: Send merchant Telegram direct notification
+      operationId: sendMerchantNotification
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - websiteId
+                - message
+              properties:
+                websiteId:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+                options:
+                  type: object
+      responses:
+        '200':
+          description: Message dispatched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Merchant Telegram not configured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Merchant Telegram not configured
+
+  /api/notifications/callback:
+    post:
+      tags:
+        - Notifications
+      summary: Handle Telegram callback queries
+      operationId: handleMerchantCallback
+      security:
+        - serviceTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - callbackQuery
+              properties:
+                callbackQuery:
+                  type: object
+      responses:
+        '200':
+          description: Callback processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/notifications/orders:
+    post:
+      tags:
+        - Notifications
+      summary: Format and dispatch order lifecycle notifications to merchant
+      operationId: handleOrderNotification
+      security:
+        - serviceTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - order
+                - websiteId
+              properties:
+                type:
+                  type: string
+                  enum: [ new_order, order_cancelled ]
+                order:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                payment:
+                  type: object
+                orderItems:
+                  type: array
+                  items:
+                    type: object
+                websiteId:
+                  type: string
+                  format: uuid
+                initiator:
+                  type: string
+                  enum: [ customer, merchant ]
+      responses:
+        '200':
+          description: Order notification sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/notifications/orders/{orderId}/process:
+    post:
+      tags:
+        - Notifications
+      summary: Process order notification actions (e.g. cancellation)
+      operationId: processOrderNotification
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [ cancel, confirm ]
+      responses:
+        '200':
+          description: Action processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JSON Web Token passed in Authorization: Bearer <token> header."
+    userAccessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: userAccessToken
+      description: Short-lived access token cookie (15 min) for merchant and admin users.
+    userRefreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: userRefreshToken
+      description: Long-lived refresh token cookie (30 days) for session rotation.
+    staffAccessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: staffAccessToken
+      description: Short-lived access token cookie (15 min) for staff members.
+    staffRefreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: staffRefreshToken
+      description: Long-lived refresh token cookie (30 days) for staff rotation.
+    internalSecretHeader:
+      type: apiKey
+      in: header
+      name: x-internal-secret
+      description: Shared internal secret between Rentify Core and Commerce APIs.
+    serviceTokenHeader:
+      type: apiKey
+      in: header
+      name: x-rentify-service-token
+      description: Shared service authentication token for webhook and notification relays.
+    opsTokenHeader:
+      type: apiKey
+      in: header
+      name: x-ops-token
+      description: High-privilege operational token for platform telemetry and
+        contract management.
+
+  responses:
+    BadRequestError:
+      description: Bad Request — validation error or malformed input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          examples:
+            validation:
+              value:
+                error: Store name, primary category, and a boolean marketplace setting are
+                  required
+            generic:
+              value:
+                message: All fields are required
+    UnauthorizedError:
+      description: Unauthorized — missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          examples:
+            noToken:
+              value:
+                error: "Unauthorized: No token provided"
+            invalidSession:
+              value:
+                error: Session is no longer valid
+    ForbiddenError:
+      description: Forbidden — actor does not possess required role or permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          examples:
+            notOwner:
+              value:
+                error: You do not have access to this store
+            adminRequired:
+              value:
+                error: Admin access required
+    NotFoundError:
+      description: Not Found — requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          examples:
+            storeNotFound:
+              value:
+                message: Store not found
+            websiteNotFound:
+              value:
+                error: Website not found
+    BadGatewayError:
+      description: Bad Gateway — upstream media storage or provider network error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: The image could not be uploaded. Please try again.
+    ServiceUnavailableError:
+      description: Service Unavailable — downstream service or storage temporarily
+        unconfigured
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Image storage is temporarily unavailable
+    ServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+          example:
+            message: Internal server error
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: ok
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - service
+        - version
+        - checks
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - ready
+            - not_ready
+            - degraded
+          example: ready
+        service:
+          type: string
+          example: rentify-server
+        version:
+          type: string
+          example: 1.0.0
+        checks:
+          type: object
+          required:
+            - database
+            - migrations
+            - redis
+            - workers
+          properties:
+            database:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: true
+                latencyMs:
+                  type: number
+                  example: 1.25
+                message:
+                  type: string
+                  example: Database connection failed
+            migrations:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: true
+                pendingCount:
+                  type: integer
+                  example: 0
+                message:
+                  type: string
+                  example: Pending migrations not applied
+            redis:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Redis unavailable (cache fallback active)
+            workers:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-19T02:00:00.000Z'
+
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field name or input key with validation issue
+          example: email
+        message:
+          type: string
+          description: Validation message describing the constraint
+          example: Invalid email format
+
+    StandardErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - fieldErrors
+        - retryable
+        - correlationId
+      properties:
+        code:
+          type: string
+          description: Machine-readable stable error code
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Safe human-readable error description
+          example: Invalid input parameters
+        fieldErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+        retryable:
+          type: boolean
+          description: Indicates whether the request can be safely retried
+          example: false
+        correlationId:
+          type: string
+          description: Unique correlation identifier matching response header
+          example: req-123e4567-e89b-12d3-a456-426614174000
+
+    StandardError:
+      type: object
+      properties:
+        error:
+          oneOf:
+            - $ref: '#/components/schemas/StandardErrorDetail'
+            - type: string
+              example: Unauthorized access
+        message:
+          type: string
+          example: Resource not found
+        success:
+          type: boolean
+          example: false
+        statusCode:
+          type: integer
+          example: 400
+        correlationId:
+          type: string
+          example: req-123e4567-e89b-12d3-a456-426614174000
+
+    ErrorEnvelope:
+      $ref: '#/components/schemas/StandardError'
+
+    StandardSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Action completed successfully
+        data:
+          type: object
+          nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83701
+        name:
+          type: string
+          example: Sokha Chan
+        email:
+          type: string
+          format: email
+          example: sokha.chan@example.com
+        phoneNumber:
+          type: string
+          example: "+85512345678"
+        role:
+          type: string
+          enum: [ user, admin ]
+          example: user
+        isVerified:
+          type: boolean
+          example: true
+        profileImage:
+          type: string
+          example: default.jpg
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserProfileWithWebsite:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+        profileImage:
+          type: string
+        role:
+          type: string
+        isVerified:
+          type: boolean
+        Website:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            domain:
+              type: string
+            subdomain:
+              type: string
+            status:
+              type: string
+            WebsiteTemplate:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+
+    Staff:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83702
+        merchantId:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83701
+        websiteId:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83703
+        email:
+          type: string
+          format: email
+          example: vicheka@example.com
+        phoneNumber:
+          type: string
+          example: "+85598765432"
+        name:
+          type: string
+          example: Vicheka Keo
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - manage_products
+              - manage_orders
+              - manage_invoices
+              - manage_pos
+              - manage_analytics
+              - manage_settings
+              - manage_staff
+          example:
+            - manage_products
+            - manage_orders
+        isActive:
+          type: boolean
+          example: true
+        isVerified:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83701
+        ownerUserId:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83700
+        name:
+          type: string
+          example: Angkor Artisan Crafts
+        slug:
+          type: string
+          example: store-018d34b1-827c-74a9-a9c1-5827c9b83701
+        primaryCategory:
+          type: string
+          nullable: true
+          example: Handmade Crafts
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://res.cloudinary.com/rentify/image/upload/v1/logo.png
+        needsCategoryReview:
+          type: boolean
+          example: false
+        marketplaceEnabled:
+          type: boolean
+          example: true
+        marketplaceApprovalStatus:
+          type: string
+          enum: [ pending, approved, needs_changes, rejected, suspended ]
+          example: pending
+        status:
+          type: string
+          enum: [ active, suspended, closed ]
+          example: active
+        projectionVersion:
+          type: integer
+          example: 1
+        marketplaceEntitlement:
+          type: string
+          enum: [ pilot, none ]
+          example: pilot
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PublicStore:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        primaryCategory:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+
+    OwnStore:
+      allOf:
+        - $ref: '#/components/schemas/Store'
+        - type: object
+          properties:
+            websiteId:
+              type: string
+              format: uuid
+              nullable: true
+            websiteDomain:
+              type: string
+              nullable: true
+            websiteStatus:
+              type: string
+              nullable: true
+
+    Website:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 018d34b1-827c-74a9-a9c1-5827c9b83703
+        userId:
+          type: string
+          format: uuid
+        storeId:
+          type: string
+          format: uuid
+          nullable: true
+        templateId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        domain:
+          type: string
+          nullable: true
+        subdomain:
+          type: string
+          nullable: true
+          example: aura-botanicals
+        storefrontUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://aura-botanicals.stores.rentifymarket.com
+        status:
+          type: string
+          enum:
+            [
+              customization,
+              pending,
+              active,
+              building,
+              suspended,
+              expired,
+              archived,
+              deleted,
+              failed
+            ]
+          example: active
+        subscriptionId:
+          type: string
+          format: uuid
+          nullable: true
+        Subscription:
+          $ref: '#/components/schemas/Subscription'
+        limits:
+          type: object
+          properties:
+            staff:
+              type: integer
+            storage:
+              type: integer
+            products:
+              type: integer
+        currentUsage:
+          type: object
+          properties:
+            staff:
+              type: integer
+            storage:
+              type: integer
+            products:
+              type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WebsiteTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Café Template
+        websiteTemplateId:
+          type: integer
+          example: 3
+        category:
+          type: string
+          enum: [ restaurant, ecommerce, cafe, blog, fashion ]
+          example: cafe
+        framework:
+          type: string
+          enum: [ vite, nextjs ]
+          example: vite
+        baseUrl:
+          type: string
+          nullable: true
+        features:
+          type: object
+        pages:
+          type: object
+        description:
+          type: string
+          nullable: true
+        colorPalette:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TemplateContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          example: Header
+        label:
+          type: string
+          example: Logo
+        type:
+          type: string
+          example: image
+        value: {}
+
+    WebsiteContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        websiteId:
+          type: string
+          format: uuid
+        category:
+          type: string
+          example: Hero
+        label:
+          type: string
+          example: Hero Title
+        type:
+          type: string
+          example: text
+        value: {}
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Package:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Starter
+        price:
+          type: number
+          example: 15
+        duration:
+          type: string
+          example: 1 month
+        features:
+          type: object
+        limits:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        packageId:
+          type: string
+          format: uuid
+        websiteId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ active, pending, expired, suspended, trial ]
+          example: active
+        paymentId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        packageId:
+          type: string
+          format: uuid
+          nullable: true
+        amount:
+          type: number
+          example: 15.00
+        currency:
+          type: string
+          example: USD
+        status:
+          type: string
+          enum: [ pending, completed, failed, expired ]
+          example: pending
+        paymentMethod:
+          type: string
+          example: khqr
+        transactionData:
+          type: object
+        transactionId:
+          type: string
+          nullable: true
+        md5Hash:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SellerApplication:
+      type: object
+      properties:
+        storeId:
+          type: string
+          format: uuid
+        responsibleName:
+          type: string
+          example: Sokha Chan
+        pickupLocation:
+          type: string
+          example: St. 2004, Sen Sok, Phnom Penh
+        buyerContact:
+          type: string
+          example: "+85512345678"
+        sampleProductDescription:
+          type: string
+          example: Handcrafted silver lotus jewelry and silk scarves
+        acceptsDeliveryResponsibility:
+          type: boolean
+          example: true
+        acceptsCodResponsibility:
+          type: boolean
+          example: true
+        acceptsReturnsResponsibility:
+          type: boolean
+          example: true
+        acceptsRefundResponsibility:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum: [ pending, approved, needs_changes, rejected ]
+          example: pending
+        reviewReason:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SellerReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        storeId:
+          type: string
+          format: uuid
+        reviewerUserId:
+          type: string
+          format: uuid
+        decision:
+          type: string
+          enum: [ approved, needs_changes, rejected, suspended ]
+          example: approved
+        checklist:
+          type: object
+          properties:
+            accountVerified:
+              type: boolean
+            identityReviewed:
+              type: boolean
+            storeDetailsReviewed:
+              type: boolean
+            sampleProductReviewed:
+              type: boolean
+            fulfillmentReviewed:
+              type: boolean
+            restrictedProductsReviewed:
+              type: boolean
+        reason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    OutcomeContract:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        websiteId:
+          type: string
+          format: uuid
+        resultType:
+          type: string
+          example: on_time_invoice
+        targetIncrease:
+          type: number
+          example: 0.25
+        measurementWindowDays:
+          type: integer
+          example: 60
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [ active, paused, completed ]
+          example: active
+        isActive:
+          type: boolean
+          example: true
+        pausedAt:
+          type: string
+          format: date-time
+          nullable: true
+        effectiveFrom:
+          type: string
+          format: date-time
+        effectiveTo:
+          type: string
+          format: date-time
+          nullable: true
+        conditions:
+          type: object
+        metadata:
+          type: object
+
+    ReminderLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        websiteId:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+        contractId:
+          type: string
+          format: uuid
+          nullable: true
+        orderId:
+          type: string
+          format: uuid
+          nullable: true
+        channel:
+          type: string
+          enum: [ telegram, sms, email ]
+          example: telegram
+        reminderType:
+          type: string
+          enum: [ first, second, overdue ]
+          example: first
+        status:
+          type: string
+          enum: [ sent, failed, skipped ]
+          example: sent
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+        customerContact:
+          type: object
+        messagePreview:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 45
+        totalPages:
+          type: integer
+          example: 3
+
+    UploadedImageMetadata:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          example: https://res.cloudinary.com/rentify/image/upload/v1/prod.jpg
+        publicId:
+          type: string
+          example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1
+        width:
+          type: integer
+        height:
+          type: integer
+        format:
+          type: string
+          example: jpg
+        bytes:
+          type: integer
+          example: 204800
+
+    SessionResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+            phoneNumber:
+              type: string
+            role:
+              type: string
+              enum: [ user, admin, staff ]
+            isVerified:
+              type: boolean
+            websiteId:
+              type: string
+              format: uuid
+            merchantId:
+              type: string
+              format: uuid
+            permissions:
+              type: array
+              items:
+                type: string
+
+    SignupRequest:
+      type: object
+      required:
+        - name
+        - password
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        verificationMethod:
+          type: string
+          enum: [ email, sms, telegram ]
+        returnUrl:
+          type: string
+        returnDomain:
+          type: string
+
+    SignupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Account created successfully
+        data:
+          type: object
+          properties:
+            entity:
+              $ref: '#/components/schemas/User'
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+
+    LoginRequest:
+      type: object
+      required:
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+        password:
+          type: string
+        returnUrl:
+          type: string
+        returnDomain:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login successful
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                email:
+                  type: string
+                phoneNumber:
+                  type: string
+                role:
+                  type: string
+                isVerified:
+                  type: boolean
+                profileImage:
+                  type: string
+            accessToken:
+              type: string
+            hasStore:
+              type: boolean
+              example: true
+
+    CreateWebsiteRequest:
+      type: object
+      required:
+        - templateId
+        - businessData
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        packageId:
+          type: string
+        businessData:
+          type: object
+          required:
+            - name
+            - email
+            - contact
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            contact:
+              type: string
+            primaryCategory:
+              type: string
+            colorPalette:
+              type: object
+            location:
+              type: string
+        paymentId:
+          type: string
+          format: uuid
+
+    MerchantWebsitePayload:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        domain:
+          type: string
+          nullable: true
+        websiteId:
+          type: string
+          format: uuid
+        storeId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        niche:
+          type: string
+        status:
+          type: string
+        businessConfig:
+          type: object
+        userData:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+            phoneNumber:
+              type: string
+        staffData:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              email:
+                type: string
+              permissions:
+                type: array
+                items:
+                  type: string
+              phoneNumber:
+                type: string
+        package:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            features:
+              type: object
+            packageEndDate:
+              type: string
+              format: date-time
+            subscriptionId:
+              type: string
+              format: uuid
+        websiteTemplateId:
+          type: integer
+        nicheSettings:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        WebsiteContents:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebsiteContent'
+        selectedPalette:
+          type: object
+          nullable: true
+        colorPalette:
+          type: object
+          nullable: true
+
+    PublicStorefrontPayload:
+      type: object
+      properties:
+        websiteId:
+          type: string
+          format: uuid
+        storeId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebsiteContent'
+        selectedPalette:
+          type: object
+          nullable: true
+        colorPalette:
+          type: object
+          nullable: true
+        websiteTemplateId:
+          type: integer
+        package:
+          type: object
+          nullable: true
+
+    PublishWebsiteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        subdomain:
+          type: string
+          example: aura-botanicals
+        url:
+          type: string
+          format: uri
+          example: https://aura-botanicals.stores.rentifymarket.com
+        status:
+          type: string
+          example: active
+
+    KHQRInitiationResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+        qrCodeUrl:
+          type: string
+          format: uri
+          nullable: true
+        rawQR:
+          type: string
+          example: "00020101021229..."
+        amount:
+          type: number
+          example: 15.00
+        expiresAt:
+          type: string
+          format: date-time
+
+    SellerApplicationSubmission:
+      type: object
+      required:
+        - responsibleName
+        - pickupLocation
+        - buyerContact
+        - sampleProductDescription
+        - acceptsDeliveryResponsibility
+        - acceptsCodResponsibility
+        - acceptsReturnsResponsibility
+        - acceptsRefundResponsibility
+      properties:
+        responsibleName:
+          type: string
+          maxLength: 120
+          example: Sokha Chan
+        pickupLocation:
+          type: string
+          maxLength: 255
+          example: St. 2004, Sen Sok, Phnom Penh
+        buyerContact:
+          type: string
+          maxLength: 120
+          example: "+85512345678"
+        sampleProductDescription:
+          type: string
+          maxLength: 500
+          example: Handcrafted silverware, copper pots, and natural soy candles
+        acceptsDeliveryResponsibility:
+          type: boolean
+          enum: [ true ]
+        acceptsCodResponsibility:
+          type: boolean
+          enum: [ true ]
+        acceptsReturnsResponsibility:
+          type: boolean
+          enum: [ true ]
+        acceptsRefundResponsibility:
+          type: boolean
+          enum: [ true ]
+
+    SellerReviewRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum: [ approved, needs_changes, rejected, suspended ]
+          example: approved
+        checklist:
+          type: object
+          properties:
+            accountVerified:
+              type: boolean
+            identityReviewed:
+              type: boolean
+            storeDetailsReviewed:
+              type: boolean
+            sampleProductReviewed:
+              type: boolean
+            fulfillmentReviewed:
+              type: boolean
+            restrictedProductsReviewed:
+              type: boolean
+        reason:
+          type: string
+          maxLength: 500
+          example: Verified national ID, registered location, and compliant craft
+            products.
+
+    CreateTemplateRequest:
+      type: object
+      required:
+        - name
+        - websiteTemplateId
+        - category
+        - framework
+        - features
+        - pages
+      properties:
+        name:
+          type: string
+          example: Bakery & Pastry
+        websiteTemplateId:
+          type: integer
+          example: 4
+        category:
+          type: string
+          enum: [ restaurant, ecommerce, cafe, blog, fashion ]
+        framework:
+          type: string
+          enum: [ vite, nextjs ]
+        baseUrl:
+          type: string
+        features:
+          type: object
+        pages:
+          type: object
+        description:
+          type: string
+        colorPalette:
+          type: object
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateContent'
+
+    AdminOverviewResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            storeCount:
+              type: integer
+            activeStores:
+              type: integer
+            pendingSellers:
+              type: integer
+            websiteCount:
+              type: integer
+            userCount:
+              type: integer
+            activeSubscriptions:
+              type: integer
+            pendingPlanPayments:
+              type: integer
+
+    PaginatedAdminResourceResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    OutcomeSummaryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            totalInvoices:
+              type: integer
+            paidTotal:
+              type: integer
+            paidOnTime:
+              type: integer
+            onTimeRate:
+              type: number
+            overdueUnpaid:
+              type: integer
+            overdueRate:
+              type: number
+            reminderEffectiveness:
+              type: object
+              properties:
+                totalRemindersSent:
+                  type: integer
+                paidWithin24h:
+                  type: integer
+                rate:
+                  type: number
+            range:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+
+    AtRiskInvoicesResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            overdue:
+              type: array
+              items:
+                type: object
+            dueSoon:
+              type: array
+              items:
+                type: object
+        meta:
+          type: object
+          properties:
+            dueSoonDays:
+              type: integer
+            counts:
+              type: object
+              properties:
+                overdue:
+                  type: integer
+                dueSoon:
+                  type: integer
+
+    InternalOwnerContact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+        telegramChatId:
+          type: string
+          nullable: true

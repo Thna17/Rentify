@@ -1,0 +1,5103 @@
+openapi: 3.0.3
+info:
+  title: Rentify Commerce API
+  version: 1.0.0
+  description: |
+    Machine-readable OpenAPI 3.0.3 contract for active Release 1 routes in `ecommerce-server`.
+
+    This specification represents the authoritative runtime contract for Rentify's commerce engine,
+    spanning multi-channel catalog discovery, shopping carts, Cash On Delivery (COD) and Bakong KHQR checkout,
+    order lifecycle management, point-of-sale (POS), invoice generation, store delivery policies, usage billing,
+    and reconciliation-facing operational endpoints.
+
+    ### Architectural and Tenancy Model
+    - **Service Authority**: `ecommerce-server` is the authority for catalog, inventory, carts, checkout, orders, invoices, and payments.
+    - **Stores and Channels**:
+      - `storeId` uniquely identifies a merchant store.
+      - `websiteId` is an optional storefront presentation channel linked to a store.
+      - Sales channels include `marketplace` (central shared marketplace), `storefront` (merchant custom website), and `pos` (in-person point of sale).
+    - **Money and Currency**:
+      - All monetary amounts are formatted as two-decimal numeric strings (e.g., `"25.00"`).
+      - Base currency for Release 1 is strictly `"USD"`.
+      - Internal arithmetic operates in integer cents to prevent floating-point inaccuracies.
+    - **Idempotency**:
+      - Marketplace and storefront checkout endpoints enforce idempotency via the `Idempotency-Key` HTTP header (or body `idempotencyKey`), mapped to database column `checkoutKey` (UUID/string up to 64 characters).
+      - Buyer order events (e.g., report/dispute submission) enforce idempotency using `eventKey`.
+
+    ### Release 1 Implementation Findings & Discrepancies
+    - **CutLuy Payment Behavior**: In accordance with Release 1 constraints, CutLuy provider integrations are unproven in this baseline contract and are not exposed. Release 1 payments support direct Bakong KHQR and Cash On Delivery (COD).
+    - **Multi-Route Carts**: Both storefront (website-scoped `/api/cart/{websiteId}`) and central marketplace (`/api/marketplace/cart` and `/api/cart`) cart endpoints exist in the Express routing table. The central marketplace cart operates per `storeId`, whereas storefront carts resolve against the active website's underlying store.
+    - **Store POS vs Website POS**: Point-of-Sale endpoints are mounted under both `/api/stores/{storeId}/orders/pos` and `/api/order/websites/{websiteId}/orders/pos`. Both routes utilize the shared `OrderController.createPOSOrder` and `POSOrdersStrategy`.
+  license:
+    name: Proprietary
+    url: https://rentify.test/license
+servers:
+  - url: http://localhost:4000
+    description: Local development commerce service
+  - url: https://commerce.rentify.test
+    description: CI and test environment gateway
+tags:
+  - name: Marketplace Catalog
+    description: Public product discovery, category taxonomy, and reviews on the central marketplace
+  - name: Store Catalog
+    description: Merchant product and inventory management scoped to storeId
+  - name: Storefront Products
+    description: Website-scoped storefront product catalog, search, and variants
+  - name: Categories
+    description: Storefront category management
+  - name: Marketplace Cart
+    description: Multi-store marketplace shopping cart management
+  - name: Storefront Cart
+    description: Website-scoped shopping cart and quick-add actions
+  - name: Checkout & COD
+    description: Cash on Delivery (COD) checkout for marketplace and storefront channels
+  - name: Buyer Orders
+    description: Authenticated buyer order history, details, and issue reporting
+  - name: Merchant Orders
+    description: Merchant order processing, confirmation, and status transitions
+  - name: Store Delivery
+    description: Store delivery policies and flat fee configurations
+  - name: Point of Sale (POS)
+    description: Omnichannel in-person cash and digital payment order creation
+  - name: Invoices
+    description: Storefront and customer invoice generation and PDF exports
+  - name: Payments
+    description: Payment link generation, status inspection, and payment reconciliation
+  - name: Payment Configuration
+    description: Website-scoped payment gateway credentials and encryption
+  - name: Customer Auth & Profile
+    description: Storefront customer registration, OTP verification, and profiles
+  - name: Store Access & Sync
+    description: Core-to-Commerce tenant synchronization and access resolution
+  - name: Platform Operations
+    description: Central administration product, review, and report moderation
+  - name: Operations Telemetry
+    description: Fact reconciliation and invoice reminder triggers
+  - name: Usage Billing
+    description: Store view telemetry and usage aggregation billing
+  - name: Ecommerce Statistics
+    description: Analytical reports for merchants and platform administrators
+  - name: Notifications
+    description: Telegram order notification webhooks
+  - name: Health
+    description: Container and load balancer probe
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check probe
+      description: Returns service liveness without disclosing sensitive dependencies or database status.
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    example: ok
+      operationId: get_health
+      security: []
+  /ready:
+    get:
+      tags:
+        - Health
+      summary: Service readiness probe
+      description: Evaluates connectivity to required dependencies (database, migrations, redis where required) and reports whether this instance can safely handle traffic.
+      responses:
+        "200":
+          description: Service is ready or safely degraded (can accept traffic)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          description: Service is not ready to serve traffic (dependency failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+      operationId: get_ready
+      security: []
+  /api/marketplace/categories:
+    get:
+      tags:
+        - Marketplace Catalog
+      summary: List central marketplace categories
+      description: Returns the curated canonical taxonomy of product categories approved for marketplace listings.
+      responses:
+        "200":
+          description: List of marketplace categories
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - categories
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - handicrafts
+                      - textiles
+                      - jewelry
+                      - art
+                      - home-decor
+                      - food-beverage
+                      - fashion
+                      - ceramics
+      operationId: get_api_marketplace_categories
+      security: []
+  /api/marketplace/products:
+    get:
+      tags:
+        - Marketplace Catalog
+      summary: Search and browse marketplace products
+      description: |
+        Retrieves active, publicly visible marketplace products from approved pilot stores.
+        Includes computed review ratings and Cloudinary image prioritization.
+      parameters:
+        - name: category
+          in: query
+          description: Filter by canonical marketplace category
+          schema:
+            type: string
+            example: handicrafts
+        - name: storeId
+          in: query
+          description: Filter products belonging to a specific store
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: search
+          in: query
+          description: Keyword search across product name
+          schema:
+            type: string
+            example: silk
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Items per page (max 60)
+          schema:
+            type: integer
+            default: 20
+            maximum: 60
+      responses:
+        "200":
+          description: Paginated public products
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - products
+                  - total
+                  - page
+                  - limit
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicProduct"
+                  total:
+                    type: integer
+                    example: 42
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 20
+        "400":
+          $ref: "#/components/responses/Error400"
+      operationId: get_api_marketplace_products
+      security: []
+  /api/marketplace/products/{productId}:
+    get:
+      tags:
+        - Marketplace Catalog
+      summary: Get marketplace product details
+      description: Returns public product details, verified ratings, image URLs, and variant options for active marketplace products.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Public product details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProduct"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_marketplace_products_productId
+      security: []
+  /api/marketplace/products/{productId}/reviews:
+    get:
+      tags:
+        - Marketplace Catalog
+      summary: Get published reviews for a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Published reviews list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - reviews
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProductReview"
+      operationId: get_api_marketplace_products_productId_reviews
+      security: []
+    post:
+      tags:
+        - Marketplace Catalog
+      summary: Submit a product review
+      description: Submits a buyer rating and review for a purchased product. Requires authenticated verified buyer.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+                - comment
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                comment:
+                  type: string
+                  maxLength: 2000
+                  example: Excellent craftsmanship and rapid delivery!
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductReview"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: post_api_marketplace_products_productId_reviews
+  /api/stores/{storeId}/products:
+    get:
+      tags:
+        - Store Catalog
+      summary: List merchant store products
+      description: Returns all products belonging to the store with full inventory, status, and pricing fields.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+        - userRefreshTokenCookie: []
+        - staffRefreshTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Store product list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - products
+                  - total
+                  - page
+                  - limit
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+                  total:
+                    type: integer
+                    example: 15
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 20
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: get_api_stores_storeId_products
+    post:
+      tags:
+        - Store Catalog
+      summary: Create a product in store
+      description: Creates a product with inventory tracking, category classification, and optional marketplace visibility.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - marketplaceCategory
+                - stockQuantity
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  example: Hand-woven Silk Scarf
+                description:
+                  type: string
+                  maxLength: 4000
+                  example: 100% pure silk dyed with natural tree bark extracts.
+                price:
+                  $ref: "#/components/schemas/Money"
+                marketplaceCategory:
+                  type: string
+                  example: textiles
+                stockQuantity:
+                  type: integer
+                  minimum: 0
+                  example: 25
+                status:
+                  type: string
+                  enum:
+                    - active
+                    - draft
+                  default: draft
+                marketplaceVisibility:
+                  type: boolean
+                  nullable: true
+                  example: true
+                images:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - url
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        example: https://res.cloudinary.com/rentify/image/upload/v1/silk-scarf.jpg
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_stores_storeId_products
+  /api/stores/{storeId}/products/{productId}:
+    patch:
+      tags:
+        - Store Catalog
+      summary: Update store product
+      description: Updates product fields, pricing, inventory stock, or marketplace visibility. Requires optimistic lock `expectedVersion`.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - expectedVersion
+              properties:
+                expectedVersion:
+                  type: integer
+                  description: Current version of the product for optimistic locking
+                  example: 1
+                name:
+                  type: string
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 4000
+                price:
+                  $ref: "#/components/schemas/Money"
+                stockQuantity:
+                  type: integer
+                  minimum: 0
+                status:
+                  type: string
+                  enum:
+                    - active
+                    - draft
+                    - archived
+                    - out_of_stock
+                marketplaceCategory:
+                  type: string
+                marketplaceVisibility:
+                  type: boolean
+                  nullable: true
+                images:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - url
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          description: Conflict due to version mismatch or stock rule violation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      operationId: patch_api_stores_storeId_products_productId
+  /api/product/stores/{storeId}:
+    get:
+      tags:
+        - Storefront Products
+      summary: List all products for store
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+      operationId: get_api_product_stores_storeId
+      security: []
+  /api/product/stores/{storeId}/search:
+    get:
+      tags:
+        - Storefront Products
+      summary: Search store products
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: query
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+      operationId: get_api_product_stores_storeId_search
+      security: []
+  /api/product/{websiteId}:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get all storefront products for website
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: categoryId
+          in: query
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - active
+              - draft
+              - archived
+              - out_of_stock
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Storefront products list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+      operationId: get_api_product_websiteId
+      security: []
+    post:
+      tags:
+        - Storefront Products
+      summary: Create storefront product
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+              properties:
+                name:
+                  type: string
+                price:
+                  $ref: "#/components/schemas/Money"
+                description:
+                  type: string
+                categoryId:
+                  $ref: "#/components/schemas/UUID"
+                stockQuantity:
+                  type: integer
+                  default: 0
+                status:
+                  type: string
+                  enum:
+                    - active
+                    - draft
+                  default: active
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+      operationId: post_api_product_websiteId
+  /api/product/{websiteId}/{productId}:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get storefront product by ID
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_product_websiteId_productId
+      security: []
+    put:
+      tags:
+        - Storefront Products
+      summary: Update storefront product
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                price:
+                  $ref: "#/components/schemas/Money"
+                description:
+                  type: string
+                stockQuantity:
+                  type: integer
+                status:
+                  type: string
+                  enum:
+                    - active
+                    - draft
+                    - archived
+                    - out_of_stock
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+      operationId: put_api_product_websiteId_productId
+    delete:
+      tags:
+        - Storefront Products
+      summary: Delete storefront product
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Product deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product deleted successfully
+      operationId: delete_api_product_websiteId_productId
+  /api/product/{websiteId}/{productId}/inventory:
+    patch:
+      tags:
+        - Storefront Products
+      summary: Update storefront product inventory quantity
+      description: Direct inventory quantity adjustment for products or variants.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stockQuantity
+              properties:
+                stockQuantity:
+                  type: integer
+                  minimum: 0
+                  example: 50
+                allowBackorders:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: Inventory updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Inventory updated successfully
+                  product:
+                    $ref: "#/components/schemas/Product"
+      operationId: patch_api_product_websiteId_productId_inventory
+  /api/product/{websiteId}/analytics/overview:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get product analytics overview
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                type: object
+      operationId: get_api_product_websiteId_analytics_overview
+  /api/product/{websiteId}/bulk:
+    post:
+      tags:
+        - Storefront Products
+      summary: Bulk create products
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - products
+              properties:
+                products:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Bulk products created
+      operationId: post_api_product_websiteId_bulk
+    patch:
+      tags:
+        - Storefront Products
+      summary: Bulk update products
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - updates
+              properties:
+                updates:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: Bulk products updated
+      operationId: patch_api_product_websiteId_bulk
+  /api/product/{websiteId}/bulk/csv:
+    post:
+      tags:
+        - Storefront Products
+      summary: Import products from CSV file
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Products imported from CSV
+      operationId: post_api_product_websiteId_bulk_csv
+  /api/product/{websiteId}/category/products:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get products grouped by category
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Products grouped by category
+      operationId: get_api_product_websiteId_category_products
+      security: []
+  /api/product/{websiteId}/filter/advanced:
+    get:
+      tags:
+        - Storefront Products
+      summary: Advanced product filtering
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Filtered product results
+      operationId: get_api_product_websiteId_filter_advanced
+      security: []
+  /api/product/{websiteId}/manage/config:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get product form configuration for website niche
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Niche configuration for product management
+      operationId: get_api_product_websiteId_manage_config
+  /api/product/{websiteId}/manage/products:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get managed products for store owner dashboard
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Managed product list
+      operationId: get_api_product_websiteId_manage_products
+  /api/product/{websiteId}/manage/products/{productId}:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get managed product by ID with editing metadata
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Managed product details
+      operationId: get_api_product_websiteId_manage_products_productId
+  /api/product/{websiteId}/recommended-options:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get recommended options for website niche
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Recommended variant option templates
+      operationId: get_api_product_websiteId_recommended_options
+      security: []
+  /api/product/{websiteId}/search:
+    get:
+      tags:
+        - Storefront Products
+      summary: Search storefront products
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: query
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+      operationId: get_api_product_websiteId_search
+      security: []
+  /api/product/{websiteId}/slug/{slug}:
+    get:
+      tags:
+        - Storefront Products
+      summary: Get storefront product by URL slug
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_product_websiteId_slug_slug
+      security: []
+  /api/categories/{id}:
+    put:
+      tags:
+        - Categories
+      summary: Update storefront category
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: Category updated
+      operationId: put_api_categories_id
+    delete:
+      tags:
+        - Categories
+      summary: Delete storefront category
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Category deleted
+      operationId: delete_api_categories_id
+    get:
+      tags:
+        - Categories
+      summary: Get storefront categories for website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+          description: Website ID for storefront category lookup
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - id
+                    - name
+                  properties:
+                    id:
+                      $ref: "#/components/schemas/UUID"
+                    name:
+                      type: string
+                    slug:
+                      type: string
+      operationId: get_api_categories_id
+      security: []
+    post:
+      tags:
+        - Categories
+      summary: Create storefront category
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+          description: Website ID for storefront category creation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Category created
+      operationId: post_api_categories_id
+  /api/marketplace/cart:
+    get:
+      tags:
+        - Marketplace Cart
+      summary: Get buyer or guest marketplace shopping carts
+      description: Returns separate cart containers partitioned by merchant `storeId` with delivery policies and checkout readiness.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: storeId
+          in: query
+          description: Optionally filter to a single store cart
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Active marketplace carts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - carts
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+        "400":
+          $ref: "#/components/responses/Error400"
+      operationId: get_api_marketplace_cart
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Clear entire marketplace shopping cart
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      responses:
+        "200":
+          description: Carts cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - carts
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: delete_api_marketplace_cart
+  /api/marketplace/cart/{storeId}:
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Clear cart for a specific store
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Store cart cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - carts
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: delete_api_marketplace_cart_storeId
+  /api/marketplace/cart/items:
+    post:
+      tags:
+        - Marketplace Cart
+      summary: Add an item to marketplace cart
+      description: Adds a product or variant to the store-specific cart. Increments quantity if already present.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+              properties:
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+                productId:
+                  $ref: "#/components/schemas/UUID"
+                variantId:
+                  $ref: "#/components/schemas/UUID"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 999
+                  default: 1
+      responses:
+        "201":
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - carts
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_marketplace_cart_items
+  /api/marketplace/cart/{storeId}/items/{productId}:
+    put:
+      tags:
+        - Marketplace Cart
+      summary: Set quantity for item by store and product
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 999
+                variantId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cart updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: put_api_marketplace_cart_storeId_items_productId
+    patch:
+      tags:
+        - Marketplace Cart
+      summary: Patch quantity for item by store and product
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 999
+                variantId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cart updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: patch_api_marketplace_cart_storeId_items_productId
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Remove item from cart by store and product
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Item removed from cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: delete_api_marketplace_cart_storeId_items_productId
+  /api/marketplace/cart/items/{itemId}:
+    put:
+      tags:
+        - Marketplace Cart
+      summary: Update cart item quantity by item ID
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 999
+      responses:
+        "200":
+          description: Cart item updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: put_api_marketplace_cart_items_itemId
+    patch:
+      tags:
+        - Marketplace Cart
+      summary: Patch cart item quantity by item ID
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 999
+      responses:
+        "200":
+          description: Cart item updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: patch_api_marketplace_cart_items_itemId
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Remove item from cart by item ID
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cart item removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: delete_api_marketplace_cart_items_itemId
+  /api/marketplace/cart/merge:
+    post:
+      tags:
+        - Marketplace Cart
+      summary: Merge anonymous guest cart into authenticated buyer cart
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId:
+                  type: string
+                  example: guest-sess-982183719283
+      responses:
+        "200":
+          description: Carts merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: post_api_marketplace_cart_merge
+  /api/cart:
+    get:
+      tags:
+        - Marketplace Cart
+      summary: Get cart (alias to marketplace cart)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      responses:
+        "200":
+          description: Active carts
+      operationId: get_api_cart
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Clear cart (alias to marketplace cart clear)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      responses:
+        "200":
+          description: Carts cleared
+      operationId: delete_api_cart
+  /api/cart/items:
+    post:
+      tags:
+        - Marketplace Cart
+      summary: Add item to cart (alias)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+              properties:
+                productId:
+                  $ref: "#/components/schemas/UUID"
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+                quantity:
+                  type: integer
+                  default: 1
+      responses:
+        "201":
+          description: Item added
+      operationId: post_api_cart_items
+  /api/cart/items/{itemId}:
+    put:
+      tags:
+        - Marketplace Cart
+      summary: Update cart item (alias)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+      responses:
+        "200":
+          description: Cart updated
+      operationId: put_api_cart_items_itemId
+    patch:
+      tags:
+        - Marketplace Cart
+      summary: Patch cart item (alias)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+      responses:
+        "200":
+          description: Cart updated
+      operationId: patch_api_cart_items_itemId
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Remove cart item (alias)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cart item removed
+      operationId: delete_api_cart_items_itemId
+  /api/cart/clear:
+    delete:
+      tags:
+        - Marketplace Cart
+      summary: Clear cart items
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      responses:
+        "200":
+          description: Cart cleared
+      operationId: delete_api_cart_clear
+  /api/cart/merge:
+    post:
+      tags:
+        - Marketplace Cart
+      summary: Merge carts
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Carts merged
+      operationId: post_api_cart_merge
+  /api/cart/{websiteId}:
+    get:
+      tags:
+        - Storefront Cart
+      summary: Get storefront website cart
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Storefront cart details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+      operationId: get_api_cart_websiteId
+    delete:
+      tags:
+        - Storefront Cart
+      summary: Clear storefront website cart
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+        - sessionIdCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Storefront cart cleared
+      operationId: delete_api_cart_websiteId
+  /api/cart/{websiteId}/summary:
+    get:
+      tags:
+        - Storefront Cart
+      summary: Get storefront cart summary totals
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cart summary totals
+      operationId: get_api_cart_websiteId_summary
+      security: []
+  /api/cart/{websiteId}/validate-stock:
+    get:
+      tags:
+        - Storefront Cart
+      summary: Validate stock availability for items in storefront cart
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Stock validation result
+      operationId: get_api_cart_websiteId_validate_stock
+      security: []
+  /api/cart/{websiteId}/analytics:
+    get:
+      tags:
+        - Storefront Cart
+      summary: Get storefront cart conversion and abandonment analytics
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cart analytics
+      operationId: get_api_cart_websiteId_analytics
+  /api/cart/{websiteId}/items:
+    post:
+      tags:
+        - Storefront Cart
+      summary: Add item to storefront cart
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+                - quantity
+              properties:
+                productId:
+                  $ref: "#/components/schemas/UUID"
+                variantId:
+                  $ref: "#/components/schemas/UUID"
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Item added to storefront cart
+      operationId: post_api_cart_websiteId_items
+      security: []
+  /api/cart/{websiteId}/items/{itemId}:
+    put:
+      tags:
+        - Storefront Cart
+      summary: Update quantity of storefront cart item
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+      responses:
+        "200":
+          description: Cart item updated
+      operationId: put_api_cart_websiteId_items_itemId
+      security: []
+    delete:
+      tags:
+        - Storefront Cart
+      summary: Remove item from storefront cart
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Item removed from storefront cart
+      operationId: delete_api_cart_websiteId_items_itemId
+      security: []
+  /api/cart/{websiteId}/items/{itemId}/variant:
+    put:
+      tags:
+        - Storefront Cart
+      summary: Update variant selection of storefront cart item
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - variantId
+              properties:
+                variantId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Variant selection updated
+      operationId: put_api_cart_websiteId_items_itemId_variant
+      security: []
+  /api/storefront/{websiteId}/cart:
+    get:
+      tags:
+        - Storefront Cart
+      summary: Get storefront quick cart
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Storefront cart containers
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - carts
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: get_api_storefront_websiteId_cart
+  /api/storefront/{websiteId}/cart/items/{productId}:
+    put:
+      tags:
+        - Storefront Cart
+      summary: Quick add/set item in storefront cart
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 999
+      responses:
+        "200":
+          description: Cart updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCart"
+      operationId: put_api_storefront_websiteId_cart_items_productId
+  /api/marketplace/checkout:
+    post:
+      tags:
+        - Checkout & COD
+      summary: Marketplace Cash on Delivery (COD) checkout
+      description: |
+        Executes atomic checkout for a specific store's marketplace cart under Cash On Delivery terms.
+
+        - Enforces idempotency via the `Idempotency-Key` header (or body `idempotencyKey`), mapped to database column `checkoutKey`.
+        - Takes row-level database locks (`SELECT ... FOR UPDATE`) on product stock and delivery policy.
+        - Verifies that `expectedTotalAmount` matches computed `subtotal + deliveryFee` to protect against concurrent price changes.
+        - Immediately deducts inventory stock and creates matching `Order`, `OrderItem`, and `Payment` (method: `COD`, status: `pending`) records in one ACID transaction.
+        - Emits an asynchronous order notification to the store owner.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Unique idempotency key (8-64 alphanumeric characters, underscores, hyphens)
+          schema:
+            type: string
+            pattern: ^[a-zA-Z0-9_-]{8,64}$
+            example: chk_mkt_20261018_98765432
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - storeId
+                - expectedTotalAmount
+                - customerInfo
+                - shippingInfo
+              properties:
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+                expectedTotalAmount:
+                  $ref: "#/components/schemas/Money"
+                idempotencyKey:
+                  type: string
+                  description: Alternative to Idempotency-Key header
+                  example: chk_mkt_20261018_98765432
+                customerInfo:
+                  type: object
+                  required:
+                    - name
+                    - phone
+                  properties:
+                    name:
+                      type: string
+                      maxLength: 120
+                      example: Jane Doe
+                    phone:
+                      type: string
+                      maxLength: 40
+                      example: "+85512345678"
+                shippingInfo:
+                  type: object
+                  required:
+                    - address
+                  properties:
+                    address:
+                      type: string
+                      maxLength: 500
+                      example: House 12, Street 345, Boeung Keng Kang 1, Phnom Penh, Cambodia
+            example:
+              storeId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+              expectedTotalAmount: "52.50"
+              idempotencyKey: chk_mkt_20261018_98765432
+              customerInfo:
+                name: Jane Doe
+                phone: "+85512345678"
+              shippingInfo:
+                address: House 12, Street 345, Boeung Keng Kang 1, Phnom Penh, Cambodia
+      responses:
+        "201":
+          description: Order created successfully via COD
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - order
+                properties:
+                  order:
+                    $ref: "#/components/schemas/CODOrderView"
+              example:
+                order:
+                  id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                  orderNumber: ORD-20261018-7821
+                  storeId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  websiteId: null
+                  buyerId: c3d4e5f6-a7b8-9012-cdef-123456789012
+                  status: pending
+                  deliveryStatus: pending
+                  salesChannel: marketplace
+                  subtotal: "50.00"
+                  deliveryFee: "2.50"
+                  totalAmount: "52.50"
+                  currency: USD
+                  customerInfo:
+                    name: Jane Doe
+                    phone: "+85512345678"
+                  shippingInfo:
+                    address: House 12, Street 345, Boeung Keng Kang 1, Phnom Penh, Cambodia
+                  items:
+                    - productId: d4e5f6a7-b8c9-0123-def1-234567890123
+                      name: Handmade Kampot Pepper Basket
+                      quantity: 2
+                      price: "25.00"
+                      total: "50.00"
+                      seller:
+                        storeId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                      category: handicrafts
+                  payment:
+                    method: COD
+                    status: pending
+                    amountDue: "52.50"
+                    collectedAmount: "0.00"
+                    refundedAmount: "0.00"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "409":
+          description: Stock shortage, empty cart, price mismatch, or duplicate checkout key with mismatched parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      operationId: post_api_marketplace_checkout
+  /api/storefront/{websiteId}/checkout:
+    post:
+      tags:
+        - Checkout & COD
+      summary: Storefront Cash on Delivery (COD) checkout
+      description: |
+        Executes atomic checkout on a merchant's hosted storefront under Cash On Delivery terms.
+        Resolves underlying `storeId` from `websiteId`, applies storefront delivery policies, locks stock, and commits order.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            pattern: ^[a-zA-Z0-9_-]{8,64}$
+            example: chk_stf_20261018_11223344
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - expectedTotalAmount
+                - customerInfo
+                - shippingInfo
+              properties:
+                expectedTotalAmount:
+                  $ref: "#/components/schemas/Money"
+                idempotencyKey:
+                  type: string
+                  example: chk_stf_20261018_11223344
+                customerInfo:
+                  type: object
+                  required:
+                    - name
+                    - phone
+                  properties:
+                    name:
+                      type: string
+                      maxLength: 120
+                      example: Sokha Mean
+                    phone:
+                      type: string
+                      maxLength: 40
+                      example: "+85598765432"
+                shippingInfo:
+                  type: object
+                  required:
+                    - address
+                  properties:
+                    address:
+                      type: string
+                      maxLength: 500
+                      example: Building 5, Russian Federation Blvd, Phnom Penh
+            example:
+              expectedTotalAmount: "32.00"
+              idempotencyKey: chk_stf_20261018_11223344
+              customerInfo:
+                name: Sokha Mean
+                phone: "+85598765432"
+              shippingInfo:
+                address: Building 5, Russian Federation Blvd, Phnom Penh
+      responses:
+        "201":
+          description: Order created successfully via Storefront COD
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - order
+                properties:
+                  order:
+                    $ref: "#/components/schemas/CODOrderView"
+              example:
+                order:
+                  id: e5f6a7b8-c9d0-1234-ef12-345678901234
+                  orderNumber: ORD-20261018-4412
+                  storeId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  websiteId: f6a7b8c9-d0e1-2345-f123-456789012345
+                  buyerId: c3d4e5f6-a7b8-9012-cdef-123456789012
+                  status: pending
+                  deliveryStatus: pending
+                  salesChannel: storefront
+                  subtotal: "30.00"
+                  deliveryFee: "2.00"
+                  totalAmount: "32.00"
+                  currency: USD
+                  customerInfo:
+                    name: Sokha Mean
+                    phone: "+85598765432"
+                  shippingInfo:
+                    address: Building 5, Russian Federation Blvd, Phnom Penh
+                  items:
+                    - productId: d4e5f6a7-b8c9-0123-def1-234567890123
+                      name: Artisan Silk Scarf
+                      quantity: 1
+                      price: "30.00"
+                      total: "30.00"
+                      seller:
+                        storeId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                      category: fashion
+                  payment:
+                    method: COD
+                    status: pending
+                    amountDue: "32.00"
+                    collectedAmount: "0.00"
+                    refundedAmount: "0.00"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_storefront_websiteId_checkout
+  /api/marketplace/my-orders:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get authenticated buyer marketplace order history
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of buyer orders
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - orders
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CODOrderView"
+      operationId: get_api_marketplace_my_orders
+  /api/marketplace/my-orders/{orderId}:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get details of a buyer marketplace order
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Buyer order details
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - order
+                properties:
+                  order:
+                    $ref: "#/components/schemas/CODOrderView"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_marketplace_my_orders_orderId
+  /api/marketplace/my-orders/{orderId}/reports/{type}:
+    post:
+      tags:
+        - Buyer Orders
+      summary: Report issue, return request, or dispute on marketplace order
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - damaged_item
+              - missing_item
+              - delivery_delay
+              - return_request
+              - complaint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - details
+              properties:
+                details:
+                  type: string
+                  maxLength: 2000
+                  example: Item arrived with cracked glaze.
+                idempotencyKey:
+                  type: string
+                  example: rep_20261018_98231
+      responses:
+        "201":
+          description: Dispute report recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: object
+      operationId: post_api_marketplace_my_orders_orderId_reports_type
+  /api/storefront/{websiteId}/my-orders:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get buyer orders on storefront
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Storefront buyer orders
+      operationId: get_api_storefront_websiteId_my_orders
+  /api/storefront/{websiteId}/my-orders/{orderId}:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get buyer order details on storefront
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order details
+      operationId: get_api_storefront_websiteId_my_orders_orderId
+  /api/storefront/{websiteId}/my-orders/{orderId}/reports/{type}:
+    post:
+      tags:
+        - Buyer Orders
+      summary: Report issue or return on storefront order
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Report submitted
+      operationId: post_api_storefront_websiteId_my_orders_orderId_reports_type
+  /api/stores/{storeId}/marketplace-delivery:
+    get:
+      tags:
+        - Store Delivery
+      summary: Get store marketplace delivery policy
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Store delivery policy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  policy:
+                    $ref: "#/components/schemas/StoreDeliveryPolicy"
+      operationId: get_api_stores_storeId_marketplace_delivery
+    put:
+      tags:
+        - Store Delivery
+      summary: Update store marketplace delivery flat fee
+      description: Sets flat delivery fee in USD (maximum $1000.00). Increments policy version.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - flatFee
+              properties:
+                flatFee:
+                  $ref: "#/components/schemas/Money"
+      responses:
+        "200":
+          description: Delivery policy updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  policy:
+                    $ref: "#/components/schemas/StoreDeliveryPolicy"
+      operationId: put_api_stores_storeId_marketplace_delivery
+  /api/stores/{storeId}/marketplace-orders:
+    get:
+      tags:
+        - Merchant Orders
+      summary: List marketplace orders for seller store
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Seller orders list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - orders
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CODOrderView"
+      operationId: get_api_stores_storeId_marketplace_orders
+  /api/stores/{storeId}/marketplace-orders/{orderId}:
+    get:
+      tags:
+        - Merchant Orders
+      summary: Get seller marketplace order detail
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: "#/components/schemas/CODOrderView"
+      operationId: get_api_stores_storeId_marketplace_orders_orderId
+  /api/stores/{storeId}/marketplace-orders/{orderId}/events:
+    get:
+      tags:
+        - Merchant Orders
+      summary: Get audit events for a marketplace order
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order events list
+      operationId: get_api_stores_storeId_marketplace_orders_orderId_events
+  /api/stores/{storeId}/marketplace-orders/{orderId}/actions/{action}:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Perform seller action on marketplace order
+      description: Advances order status or records merchant outcome (e.g., confirm, dispatch, deliver, cancel).
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - confirm
+              - dispatch
+              - mark_delivered
+              - cancel
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+                trackingNumber:
+                  type: string
+      responses:
+        "200":
+          description: Order action executed
+      operationId: post_api_stores_storeId_marketplace_orders_orderId_actions_action
+  /api/merchant/orders/{orderId}/confirm:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Confirm order
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order confirmed
+      operationId: post_api_merchant_orders_orderId_confirm
+  /api/merchant/orders/{orderId}/process:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Mark order as processing
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order processing
+      operationId: post_api_merchant_orders_orderId_process
+  /api/merchant/orders/{orderId}/complete:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Mark order as completed
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order completed
+      operationId: post_api_merchant_orders_orderId_complete
+  /api/merchant/orders/{orderId}/cancel:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Cancel order by merchant
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order cancelled
+      operationId: post_api_merchant_orders_orderId_cancel
+  /api/customer/orders/{orderId}/cancel-by-customer:
+    post:
+      tags:
+        - Buyer Orders
+      summary: Cancel order by customer
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Order cancelled by customer
+      operationId: post_api_customer_orders_orderId_cancel_by_customer
+  /api/order/orders/{orderId}:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get order by ID
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+      operationId: get_api_order_orders_orderId
+  /api/order/websites/{websiteId}/orders:
+    get:
+      tags:
+        - Merchant Orders
+      summary: List website orders for merchant
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order list
+      operationId: get_api_order_websites_websiteId_orders
+    post:
+      tags:
+        - Merchant Orders
+      summary: Create manual order on website
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Manual order created
+      operationId: post_api_order_websites_websiteId_orders
+  /api/order/websites/{websiteId}/orders/invoice:
+    post:
+      tags:
+        - Invoices
+      summary: Create order with invoice on website
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Order and invoice created
+      operationId: post_api_order_websites_websiteId_orders_invoice
+  /api/order/websites/{websiteId}/my-orders:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get website buyer orders
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Buyer orders list
+      operationId: get_api_order_websites_websiteId_my_orders
+  /api/order/websites/my-orders/{orderId}:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get website buyer order detail
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Buyer order detail
+      operationId: get_api_order_websites_my_orders_orderId
+  /api/order/websites/my-orders/{orderId}/payment:
+    get:
+      tags:
+        - Payments
+      summary: Get website buyer order payment status
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order payment status
+      operationId: get_api_order_websites_my_orders_orderId_payment
+  /api/stores/{storeId}/orders/pos:
+    get:
+      tags:
+        - Point of Sale (POS)
+      summary: Get POS orders for store
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of POS orders
+      operationId: get_api_stores_storeId_orders_pos
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Create POS order for store
+      description: Creates an in-person point of sale order (cash or card) directly deducting inventory stock. $0 delivery fee.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+                - paymentMethod
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - productId
+                      - quantity
+                      - price
+                    properties:
+                      productId:
+                        $ref: "#/components/schemas/UUID"
+                      variantId:
+                        $ref: "#/components/schemas/UUID"
+                      quantity:
+                        type: integer
+                        minimum: 1
+                      price:
+                        $ref: "#/components/schemas/Money"
+                paymentMethod:
+                  type: string
+                  enum:
+                    - cash
+                    - card
+                    - khqr
+                  example: cash
+                totalAmount:
+                  $ref: "#/components/schemas/Money"
+                amountPaid:
+                  $ref: "#/components/schemas/Money"
+      responses:
+        "201":
+          description: POS order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: "#/components/schemas/Order"
+      operationId: post_api_stores_storeId_orders_pos
+  /api/order/stores/{storeId}/orders/pos:
+    get:
+      tags:
+        - Point of Sale (POS)
+      summary: Get POS orders by store ID (order-scoped alias)
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: List of POS orders
+      operationId: get_api_order_stores_storeId_orders_pos
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Create POS order by store ID (order-scoped alias)
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: POS order created
+      operationId: post_api_order_stores_storeId_orders_pos
+  /api/order/websites/{websiteId}/orders/pos:
+    get:
+      tags:
+        - Point of Sale (POS)
+      summary: Get POS orders for website
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: List of POS orders
+      operationId: get_api_order_websites_websiteId_orders_pos
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Create POS order for website
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: POS order created
+      operationId: post_api_order_websites_websiteId_orders_pos
+  /api/invoice/websites/{websiteId}/invoices:
+    get:
+      tags:
+        - Invoices
+      summary: List invoices for website
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Invoices list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+      operationId: get_api_invoice_websites_websiteId_invoices
+  /api/invoice/invoices/{invoiceId}/pdf:
+    get:
+      tags:
+        - Invoices
+      summary: Download invoice PDF
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: PDF stream or binary document
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+      operationId: get_api_invoice_invoices_invoiceId_pdf
+  /api/payment/payments/{paymentId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment details by payment ID
+      description: Returns payment status and collected amount without revealing private merchant credentials.
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+      operationId: get_api_payment_payments_paymentId
+      security: []
+  /api/payment/payments/{paymentId}/check-status:
+    get:
+      tags:
+        - Payments
+      summary: Check live payment gateway status
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Live payment status from provider
+      operationId: get_api_payment_payments_paymentId_check_status
+      security: []
+  /api/payment/orders/{orderId}/link:
+    post:
+      tags:
+        - Payments
+      summary: Generate payment link for order
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Payment link generated
+      operationId: post_api_payment_orders_orderId_link
+  /api/payment/orders/{orderId}/confirm-payment:
+    post:
+      tags:
+        - Payments
+      summary: Manually confirm payment for an order
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Payment confirmed
+      operationId: post_api_payment_orders_orderId_confirm_payment
+  /api/payment-config/{websiteId}:
+    get:
+      tags:
+        - Payment Configuration
+      summary: Get storefront payment gateway configuration
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Configured payment gateways (credentials masked)
+      operationId: get_api_payment_config_websiteId
+    put:
+      tags:
+        - Payment Configuration
+      summary: Update storefront payment gateway configuration
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gateway:
+                  type: string
+                credentials:
+                  type: object
+      responses:
+        "200":
+          description: Payment configuration updated
+      operationId: put_api_payment_config_websiteId
+  /api/auth/signup:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Customer signup for storefront
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - confirmPassword
+              properties:
+                name:
+                  type: string
+                  example: Sreypov Chan
+                email:
+                  type: string
+                  format: email
+                  example: sreypov@example.com
+                phoneNumber:
+                  type: string
+                  example: "+85512345678"
+                password:
+                  type: string
+                  format: password
+                confirmPassword:
+                  type: string
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+                verificationMethod:
+                  type: string
+                  enum:
+                    - email
+                    - phone
+                  default: email
+      responses:
+        "201":
+          description: Customer registered, OTP issued
+      operationId: post_api_auth_signup
+      security: []
+  /api/auth/login:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Customer login for storefront
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: customerAccessToken=...; Path=/; HttpOnly; SameSite=Lax
+      operationId: post_api_auth_login
+      security: []
+  /api/auth/logout:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Customer logout
+      security:
+        - customerRefreshTokenCookie: []
+      responses:
+        "200":
+          description: Logout successful
+      operationId: post_api_auth_logout
+  /api/auth/refresh-token:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Refresh customer authentication token
+      security:
+        - customerRefreshTokenCookie: []
+      responses:
+        "200":
+          description: Access token refreshed
+      operationId: post_api_auth_refresh_token
+  /api/auth/verify-otp:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Verify customer signup OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                otp:
+                  type: string
+                  example: "123456"
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OTP verified successfully
+      operationId: post_api_auth_verify_otp
+      security: []
+  /api/auth/resend-otp:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Resend verification OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                verificationMethod:
+                  type: string
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OTP resent
+      operationId: post_api_auth_resend_otp
+      security: []
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Request password reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Password reset instructions sent
+      operationId: post_api_auth_forgot_password
+      security: []
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Password successfully updated
+      operationId: post_api_auth_reset_password
+      security: []
+  /api/auth/validate-token:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Validate customer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                AccessToken:
+                  type: string
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: Token validation result
+      operationId: post_api_auth_validate_token
+      security: []
+  /api/auth/check-telegram-link:
+    get:
+      tags:
+        - Customer Auth & Profile
+      summary: Check if customer phone is linked to Telegram
+      parameters:
+        - name: phoneNumber
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Telegram link status
+      operationId: get_api_auth_check_telegram_link
+      security: []
+  /api/customer:
+    get:
+      tags:
+        - Customer Auth & Profile
+      summary: Get customer profile
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Customer profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+      operationId: get_api_customer
+    patch:
+      tags:
+        - Customer Auth & Profile
+      summary: Update customer profile
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phoneNumber:
+                  type: string
+                address:
+                  type: string
+      responses:
+        "200":
+          description: Customer profile updated
+      operationId: patch_api_customer
+  /api/customer/change-password:
+    post:
+      tags:
+        - Customer Auth & Profile
+      summary: Change customer password
+      security:
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Password changed successfully
+      operationId: post_api_customer_change_password
+  /api/store-access/sync:
+    post:
+      tags:
+        - Store Access & Sync
+      summary: Synchronize store tenancy metadata from Core
+      description: Core-to-Commerce inter-service synchronization for store approval, category review, and pilot entitlement.
+      security:
+        - serviceTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - storeId
+              properties:
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+                websiteId:
+                  $ref: "#/components/schemas/UUID"
+                ownerUserId:
+                  $ref: "#/components/schemas/UUID"
+                status:
+                  type: string
+                  enum:
+                    - active
+                    - inactive
+                    - suspended
+                marketplaceEnabled:
+                  type: boolean
+                marketplaceApprovalStatus:
+                  type: string
+                  enum:
+                    - not_applied
+                    - pending
+                    - approved
+                    - rejected
+                    - suspended
+                marketplaceEntitlement:
+                  type: string
+                  enum:
+                    - none
+                    - pilot
+                    - full
+                needsCategoryReview:
+                  type: boolean
+                primaryCategory:
+                  type: string
+      responses:
+        "200":
+          description: Store tenancy synchronized
+      operationId: post_api_store_access_sync
+  /api/store-access/{storeId}:
+    get:
+      tags:
+        - Store Access & Sync
+      summary: Get store access record for merchant
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Store access details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreAccess"
+      operationId: get_api_store_access_storeId
+  /api/website-data:
+    get:
+      tags:
+        - Store Access & Sync
+      summary: Get website data projection for owner
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Website data details
+      operationId: get_api_website_data
+    post:
+      tags:
+        - Store Access & Sync
+      summary: Create website data projection from Core
+      security:
+        - serviceTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Website projection created
+      operationId: post_api_website_data
+  /api/website-data/{websiteId}:
+    put:
+      tags:
+        - Store Access & Sync
+      summary: Update website data projection from Core
+      security:
+        - serviceTokenHeader: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Website projection updated
+      operationId: put_api_website_data_websiteId
+  /api/admin/operations/overview:
+    get:
+      tags:
+        - Platform Operations
+      summary: Get administrative operations metrics overview
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Overview metrics
+      operationId: get_api_admin_operations_overview
+  /api/admin/operations/{resource}:
+    get:
+      tags:
+        - Platform Operations
+      summary: List operational entities for moderation
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: resource
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - products
+              - reviews
+              - reports
+      responses:
+        "200":
+          description: List of items for moderation
+      operationId: get_api_admin_operations_resource
+  /api/admin/operations/products/{id}:
+    patch:
+      tags:
+        - Platform Operations
+      summary: Moderate product listing
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - active
+                    - draft
+                    - archived
+      responses:
+        "200":
+          description: Product moderated
+      operationId: patch_api_admin_operations_products_id
+  /api/admin/operations/reviews/{id}:
+    patch:
+      tags:
+        - Platform Operations
+      summary: Moderate product review
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - published
+                    - hidden
+                    - flagged
+      responses:
+        "200":
+          description: Review status updated
+      operationId: patch_api_admin_operations_reviews_id
+    delete:
+      tags:
+        - Platform Operations
+      summary: Delete product review
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Review deleted
+      operationId: delete_api_admin_operations_reviews_id
+  /api/admin/operations/reports/{id}:
+    patch:
+      tags:
+        - Platform Operations
+      summary: Resolve buyer dispute or report
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - resolved
+                    - rejected
+                    - investigating
+                resolutionNotes:
+                  type: string
+      responses:
+        "200":
+          description: Report updated
+      operationId: patch_api_admin_operations_reports_id
+  /api/ops/invoices/reminder-candidates:
+    get:
+      tags:
+        - Operations Telemetry
+      summary: Query overdue invoices eligible for payment reminders
+      security:
+        - opsTokenHeader: []
+      responses:
+        "200":
+          description: Candidate overdue invoices
+      operationId: get_api_ops_invoices_reminder_candidates
+  /api/ops/invoices/facts:
+    get:
+      tags:
+        - Operations Telemetry
+      summary: Retrieve verified invoice ledger facts for reconciliation
+      security:
+        - opsTokenHeader: []
+      responses:
+        "200":
+          description: Invoice facts reconciliation report
+      operationId: get_api_ops_invoices_facts
+  /api/ops/invoices/{invoiceId}/send-reminder:
+    post:
+      tags:
+        - Operations Telemetry
+      summary: Trigger payment reminder dispatch for an invoice
+      security:
+        - opsTokenHeader: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Reminder dispatched
+      operationId: post_api_ops_invoices_invoiceId_send_reminder
+  /api/usage/store-view:
+    post:
+      tags:
+        - Usage Billing
+      summary: Track storefront page view telemetry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - websiteId
+              properties:
+                websiteId:
+                  $ref: "#/components/schemas/UUID"
+                path:
+                  type: string
+      responses:
+        "200":
+          description: View recorded
+      operationId: post_api_usage_store_view
+      security: []
+  /api/usage/summary:
+    get:
+      tags:
+        - Usage Billing
+      summary: Get merchant usage billing summary
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageSummary"
+      operationId: get_api_usage_summary
+  /api/usage/breakdown:
+    get:
+      tags:
+        - Usage Billing
+      summary: Get detailed usage event breakdown
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Usage events breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageBreakdown"
+      operationId: get_api_usage_breakdown
+  /api/usage/billing:
+    get:
+      tags:
+        - Usage Billing
+      summary: Get billing statement overview
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Billing statement
+      operationId: get_api_usage_billing
+  /ecommerce/stats/websites/{websiteId}:
+    get:
+      tags:
+        - Ecommerce Statistics
+      summary: Get website ecommerce sales and order statistics
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Website statistics
+      operationId: get_ecommerce_stats_websites_websiteId
+  /ecommerce/stats/admin:
+    get:
+      tags:
+        - Ecommerce Statistics
+      summary: Get platform-wide ecommerce statistics
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Administrative statistics
+      operationId: get_ecommerce_stats_admin
+  /api/telegram/webhook:
+    post:
+      tags:
+        - Notifications
+      summary: Telegram webhook handler for order notifications and buyer bot commands
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Webhook received
+      operationId: post_api_telegram_webhook
+      security: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Standard JWT bearer authentication for API calls.
+    customerAccessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: customerAccessToken
+      description: HTTP-only session cookie for storefront customers.
+    customerRefreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: customerRefreshToken
+      description: HTTP-only token refresh cookie for storefront customers.
+    userAccessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: userAccessToken
+      description: HTTP-only session cookie issued by Core API for merchants, platform admins, and verified marketplace buyers.
+    userRefreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: userRefreshToken
+      description: HTTP-only refresh cookie for Core user sessions.
+    staffAccessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: staffAccessToken
+      description: HTTP-only session cookie for store staff actors.
+    staffRefreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: staffRefreshToken
+      description: HTTP-only refresh cookie for store staff actors.
+    sessionIdCookie:
+      type: apiKey
+      in: cookie
+      name: sessionId
+      description: Anonymous session identifier for guest cart sessions.
+    serviceTokenHeader:
+      type: apiKey
+      in: header
+      name: x-rentify-service-token
+      description: Secret shared token for service-to-service calls from Core to Commerce.
+    opsTokenHeader:
+      type: apiKey
+      in: header
+      name: x-ops-token
+      description: Shared operational secret for ops invoice reconciliation and telemetry.
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    Money:
+      type: string
+      pattern: ^\d+(\.\d{2})?$
+      description: Monetary amount in USD formatted as a decimal string with two fractional places.
+      example: "25.00"
+    Currency:
+      type: string
+      enum:
+        - USD
+      default: USD
+      description: Release 1 standard currency is USD.
+      example: USD
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Field name or JSON path with invalid input
+          example: quantity
+        message:
+          type: string
+          description: Human-readable validation message for this field
+          example: Quantity must be greater than zero
+    StandardErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - fieldErrors
+        - retryable
+        - correlationId
+      properties:
+        code:
+          type: string
+          description: Machine-readable stable error code
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Safe human-readable error description
+          example: Invalid input parameters
+        fieldErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+        retryable:
+          type: boolean
+          description: Indicates whether the request can be safely retried
+          example: false
+        correlationId:
+          type: string
+          description: Unique correlation identifier matching response header
+          example: req-123e4567-e89b-12d3-a456-426614174000
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          oneOf:
+            - $ref: "#/components/schemas/StandardErrorDetail"
+            - type: string
+              description: Legacy human-readable error description
+              example: Insufficient stock
+        message:
+          type: string
+          description: Backward-compatible root error message
+          example: Insufficient stock
+        success:
+          type: boolean
+          description: Backward-compatible boolean success status
+          example: false
+        statusCode:
+          type: integer
+          description: Backward-compatible HTTP status code
+          example: 409
+        correlationId:
+          type: string
+          description: Backward-compatible root correlation identifier
+          example: req-123e4567-e89b-12d3-a456-426614174000
+    ErrorEnvelope:
+      $ref: "#/components/schemas/ErrorResponse"
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - status
+        - stockQuantity
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          maxLength: 255
+          example: Handmade Kampot Pepper Basket
+        description:
+          type: string
+          example: Handcrafted bamboo basket with organic black peppercorns.
+        shortDescription:
+          type: string
+          maxLength: 500
+        price:
+          $ref: "#/components/schemas/Money"
+        compareAtPrice:
+          nullable: true
+          type: string
+          pattern: ^\d+(\.\d{2})?$
+        categoryId:
+          nullable: true
+          type: string
+          format: uuid
+        images:
+          type: array
+          items:
+            type: object
+            required:
+              - url
+            properties:
+              url:
+                type: string
+                format: uri
+                example: https://res.cloudinary.com/rentify/image/upload/basket.jpg
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+        marketplaceCategory:
+          type: string
+          nullable: true
+          example: handicrafts
+        marketplaceVisibility:
+          type: boolean
+          nullable: true
+          example: true
+        productType:
+          type: string
+          example: physical
+        websiteNiche:
+          type: string
+          enum:
+            - restaurant
+            - ecommerce
+            - cafe
+            - blog
+            - fashion
+            - skincare
+            - electronics
+            - grocery
+          example: ecommerce
+        status:
+          type: string
+          enum:
+            - active
+            - draft
+            - archived
+            - out_of_stock
+            - inactive
+            - low_stock
+          example: active
+        trackInventory:
+          type: boolean
+          default: true
+        stockQuantity:
+          type: integer
+          minimum: 0
+          example: 18
+        lowStockThreshold:
+          type: integer
+          default: 5
+        allowBackorders:
+          type: boolean
+          default: false
+        slug:
+          type: string
+          example: handmade-kampot-pepper-basket
+        tags:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PublicProduct:
+      type: object
+      required:
+        - id
+        - storeId
+        - name
+        - slug
+        - price
+        - category
+        - stockQuantity
+        - status
+        - rating
+        - reviewCount
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        storeId:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: Handmade Kampot Pepper Basket
+        slug:
+          type: string
+          example: handmade-kampot-pepper-basket
+        description:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        compareAtPrice:
+          nullable: true
+          type: string
+          pattern: ^\d+(\.\d{2})?$
+        category:
+          type: string
+          example: handicrafts
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+        stockQuantity:
+          type: integer
+          example: 18
+        status:
+          type: string
+          example: active
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductVariant"
+        rating:
+          type: number
+          example: 4.8
+        reviewCount:
+          type: integer
+          example: 12
+    ProductVariant:
+      type: object
+      required:
+        - id
+        - productId
+        - price
+        - stockQuantity
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        productId:
+          $ref: "#/components/schemas/UUID"
+        sku:
+          type: string
+          example: VAR-D4E5F6A7-RED
+        price:
+          $ref: "#/components/schemas/Money"
+        compareAtPrice:
+          nullable: true
+          type: string
+          pattern: ^\d+(\.\d{2})?$
+        trackInventory:
+          type: boolean
+          default: true
+        stockQuantity:
+          type: integer
+          example: 10
+        optionValues:
+          type: object
+          example:
+            Color: Red
+            Size: M
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+          default: active
+        version:
+          type: integer
+          example: 0
+    ProductReview:
+      type: object
+      required:
+        - id
+        - productId
+        - rating
+        - status
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        productId:
+          $ref: "#/components/schemas/UUID"
+        customerId:
+          nullable: true
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+        status:
+          type: string
+          enum:
+            - published
+            - hidden
+            - flagged
+        createdAt:
+          type: string
+          format: date-time
+    StoreDeliveryPolicy:
+      type: object
+      required:
+        - storeId
+        - flatFee
+        - currency
+        - version
+      properties:
+        storeId:
+          $ref: "#/components/schemas/UUID"
+        flatFee:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        version:
+          type: integer
+          example: 1
+    MarketplaceCartItem:
+      type: object
+      required:
+        - id
+        - productId
+        - quantity
+        - unitPrice
+        - available
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        productId:
+          $ref: "#/components/schemas/UUID"
+        variantId:
+          nullable: true
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+          example: 2
+        unitPrice:
+          $ref: "#/components/schemas/Money"
+        currentPrice:
+          nullable: true
+          type: string
+          pattern: ^\d+(\.\d{2})?$
+        available:
+          type: boolean
+          example: true
+        product:
+          type: object
+          nullable: true
+        variant:
+          type: object
+          nullable: true
+    MarketplaceCart:
+      type: object
+      required:
+        - id
+        - storeId
+        - items
+        - subtotal
+        - currency
+        - checkoutReady
+        - issues
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        storeId:
+          $ref: "#/components/schemas/UUID"
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketplaceCartItem"
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        deliveryFee:
+          nullable: true
+          type: string
+          pattern: ^\d+(\.\d{2})?$
+        totalAmount:
+          nullable: true
+          type: string
+          pattern: ^\d+(\.\d{2})?$
+        currency:
+          $ref: "#/components/schemas/Currency"
+        deliveryPolicyVersion:
+          type: integer
+          nullable: true
+          example: 1
+        checkoutReady:
+          type: boolean
+          example: true
+        issues:
+          type: array
+          items:
+            type: string
+          example: []
+    Cart:
+      type: object
+      required:
+        - id
+        - subtotal
+        - total
+        - currency
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+        buyerId:
+          nullable: true
+          type: string
+          format: uuid
+        userId:
+          nullable: true
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          nullable: true
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        taxTotal:
+          $ref: "#/components/schemas/Money"
+        discountTotal:
+          $ref: "#/components/schemas/Money"
+        total:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        abandoned:
+          type: boolean
+          default: false
+        lastActiveAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          example: 0
+    CODOrderView:
+      type: object
+      required:
+        - id
+        - orderNumber
+        - storeId
+        - status
+        - deliveryStatus
+        - salesChannel
+        - subtotal
+        - deliveryFee
+        - totalAmount
+        - currency
+        - customerInfo
+        - shippingInfo
+        - items
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        orderNumber:
+          type: string
+          example: ORD-20261018-7821
+        storeId:
+          $ref: "#/components/schemas/UUID"
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        buyerId:
+          nullable: true
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - processing
+            - cancelled
+            - completed
+            - fulfilled
+            - refunded
+            - preparing
+            - ready_for_pickup
+            - out_for_delivery
+          example: pending
+        deliveryStatus:
+          type: string
+          example: pending
+        salesChannel:
+          type: string
+          enum:
+            - marketplace
+            - storefront
+            - pos
+          example: marketplace
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        deliveryFee:
+          $ref: "#/components/schemas/Money"
+        totalAmount:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        customerInfo:
+          type: object
+          properties:
+            name:
+              type: string
+              example: Jane Doe
+            phone:
+              type: string
+              example: "+85512345678"
+        shippingInfo:
+          type: object
+          properties:
+            address:
+              type: string
+              example: House 12, Street 345, Boeung Keng Kang 1, Phnom Penh, Cambodia
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - productId
+              - name
+              - quantity
+              - price
+              - total
+            properties:
+              productId:
+                $ref: "#/components/schemas/UUID"
+              name:
+                type: string
+                example: Handmade Kampot Pepper Basket
+              quantity:
+                type: integer
+                example: 2
+              price:
+                $ref: "#/components/schemas/Money"
+              total:
+                $ref: "#/components/schemas/Money"
+              seller:
+                type: object
+                properties:
+                  storeId:
+                    $ref: "#/components/schemas/UUID"
+              category:
+                type: string
+                example: handicrafts
+        payment:
+          type: object
+          nullable: true
+          properties:
+            method:
+              type: string
+              example: COD
+            status:
+              type: string
+              example: pending
+            amountDue:
+              $ref: "#/components/schemas/Money"
+            collectedAmount:
+              $ref: "#/components/schemas/Money"
+            refundedAmount:
+              $ref: "#/components/schemas/Money"
+    Order:
+      type: object
+      required:
+        - id
+        - orderNumber
+        - totalAmount
+        - currency
+        - status
+        - salesChannel
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        orderNumber:
+          type: string
+          example: ORD-20261018-7821
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+        buyerId:
+          nullable: true
+          type: string
+          format: uuid
+        checkoutKey:
+          type: string
+          nullable: true
+          example: chk_mkt_20261018_98765432
+        salesChannel:
+          type: string
+          enum:
+            - marketplace
+            - storefront
+            - pos
+          example: storefront
+        deliveryStatus:
+          type: string
+          example: pending
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        discountTotal:
+          $ref: "#/components/schemas/Money"
+        taxTotal:
+          $ref: "#/components/schemas/Money"
+        shippingFee:
+          $ref: "#/components/schemas/Money"
+        totalAmount:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - processing
+            - cancelled
+            - completed
+            - fulfilled
+            - refunded
+            - preparing
+            - ready_for_pickup
+            - out_for_delivery
+          example: pending
+        orderType:
+          type: string
+          enum:
+            - online
+            - pos
+            - manual
+            - delivery
+            - pickup
+          example: online
+        customerInfo:
+          type: object
+        shippingInfo:
+          type: object
+        stockDeducted:
+          type: boolean
+          default: false
+        version:
+          type: integer
+          example: 0
+    Payment:
+      type: object
+      required:
+        - id
+        - orderId
+        - amount
+        - paymentMethod
+        - status
+        - currency
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        orderId:
+          $ref: "#/components/schemas/UUID"
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+        amount:
+          $ref: "#/components/schemas/Money"
+        paymentMethod:
+          type: string
+          example: COD
+        status:
+          type: string
+          enum:
+            - pending
+            - completed
+            - failed
+            - refunded
+            - paid
+          example: pending
+        transactionId:
+          type: string
+          nullable: true
+        currency:
+          $ref: "#/components/schemas/Currency"
+        collectedAmount:
+          $ref: "#/components/schemas/Money"
+        refundedAmount:
+          $ref: "#/components/schemas/Money"
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          example: 0
+    Invoice:
+      type: object
+      required:
+        - id
+        - orderId
+        - status
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        invoiceNumber:
+          type: string
+          example: INV-20261018-001
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+        orderId:
+          $ref: "#/components/schemas/UUID"
+        paymentId:
+          nullable: true
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - overdue
+            - sent
+          example: pending
+        pdfUrl:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          example: 0
+    StoreAccess:
+      type: object
+      required:
+        - storeId
+        - ownerUserId
+        - status
+      properties:
+        storeId:
+          $ref: "#/components/schemas/UUID"
+        websiteId:
+          nullable: true
+          type: string
+          format: uuid
+        ownerUserId:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - suspended
+          example: active
+        marketplaceEnabled:
+          type: boolean
+          default: true
+        marketplaceApprovalStatus:
+          type: string
+          enum:
+            - not_applied
+            - pending
+            - approved
+            - rejected
+            - suspended
+          example: approved
+        marketplaceEntitlement:
+          type: string
+          enum:
+            - none
+            - pilot
+            - full
+          example: pilot
+        needsCategoryReview:
+          type: boolean
+          default: false
+        primaryCategory:
+          type: string
+          example: handicrafts
+    Customer:
+      type: object
+      required:
+        - id
+        - name
+        - email
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          example: Sreypov Chan
+        email:
+          type: string
+          format: email
+          example: sreypov@example.com
+        phoneNumber:
+          type: string
+          nullable: true
+          example: "+85512345678"
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+    UsageSummary:
+      type: object
+      required:
+        - totalPageViews
+        - totalOrders
+        - totalRevenue
+      properties:
+        totalPageViews:
+          type: integer
+          example: 1250
+        totalOrders:
+          type: integer
+          example: 48
+        totalRevenue:
+          $ref: "#/components/schemas/Money"
+    UsageBreakdown:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              eventType:
+                type: string
+              count:
+                type: integer
+              period:
+                type: string
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - service
+        - version
+        - checks
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - ready
+            - not_ready
+            - degraded
+          example: ready
+        service:
+          type: string
+          example: ecommerce-server
+        version:
+          type: string
+          example: 1.0.0
+        checks:
+          type: object
+          required:
+            - database
+            - migrations
+            - redis
+            - workers
+          properties:
+            database:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: true
+                latencyMs:
+                  type: number
+                  example: 1.25
+                message:
+                  type: string
+                  example: Database connection failed
+            migrations:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: true
+                pendingCount:
+                  type: integer
+                  example: 0
+                message:
+                  type: string
+                  example: Pending migrations not applied
+            redis:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Redis unavailable (pubsub fallback active)
+            workers:
+              type: object
+              required:
+                - status
+                - required
+              properties:
+                status:
+                  type: string
+                  example: up
+                required:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-19T02:00:00.000Z'
+  responses:
+    Error400:
+      description: Bad request or validation failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Error401:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Error403:
+      description: Forbidden - unverified buyer, insufficient permissions, or suspended seller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Error404:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Error409:
+      description: Business rule, version conflict, insufficient stock, or idempotency mismatch
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

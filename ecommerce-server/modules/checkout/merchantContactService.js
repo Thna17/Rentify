@@ -1,7 +1,5 @@
-// Looks up who owns a store or website, by calling Core's internal API —
-// merchant identity (name, email, phone) lives in Core's database, not here.
-// Used only to know who to notify when an order comes in.
-const { RENTIFY_API_BASE } = require('../../config/serviceUrls');
+const serviceUrls = require('../../config/serviceUrls');
+const { getCorrelationId } = require('../../utils/logger');
 
 const REQUEST_TIMEOUT_MS = 5000;
 
@@ -12,8 +10,13 @@ async function callInternal(path) {
     return null;
   }
   try {
-    const response = await fetch(`${RENTIFY_API_BASE}${path}`, {
-      headers: { 'x-internal-secret': secret },
+    const headers = { 'x-internal-secret': secret };
+    const correlationId = getCorrelationId();
+    if (correlationId) {
+      headers['x-correlation-id'] = correlationId;
+    }
+    const response = await fetch(`${serviceUrls.RENTIFY_API_BASE}${path}`, {
+      headers,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) return null;

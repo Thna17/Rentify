@@ -9,6 +9,7 @@ const verificationDefaults = {
   MARKETPLACE_URL: 'https://market.rentify.invalid',
   ADMIN_DASHBOARD_URL: 'https://admin.rentify.invalid',
   STOREFRONT_ORIGIN: 'https://store.rentify.invalid',
+  POS_URL: 'https://pos.rentify.invalid',
   VITE_RENTIFY_API_URL: 'https://api.rentify.invalid',
   VITE_ECOMMERCE_API_URL: 'https://commerce.rentify.invalid',
   VITE_AUTH_URL: 'https://auth.rentify.invalid',
@@ -17,6 +18,7 @@ const verificationDefaults = {
   VITE_MARKETPLACE_URL: 'https://market.rentify.invalid',
   VITE_ADMIN_DASHBOARD_URL: 'https://admin.rentify.invalid',
   VITE_STOREFRONT_ORIGIN: 'https://store.rentify.invalid',
+  VITE_POS_URL: 'https://pos.rentify.invalid',
   VITE_HOSTED_STOREFRONT_DOMAIN: 'stores.rentify.invalid',
 };
 

@@ -1,0 +1,182 @@
+/**
+ * Rentify Platform Design Tokens
+ * Framework-neutral semantic design tokens for React, Angular, and Tailwind CSS.
+ * Conforms to WCAG 2.1 AA accessibility contrast standards.
+ */
+
+:root {
+  /* ============================================================
+     1. Brand & Surface Colors
+     ============================================================ */
+  --rentify-color-brand-primary: #4f46e5;
+  --rentify-color-brand-primary-hover: #4338ca;
+  --rentify-color-brand-primary-active: #3730a3;
+  --rentify-color-brand-primary-subtle: rgba(79, 70, 229, 0.08);
+  --rentify-color-brand-secondary: #2563eb;
+  --rentify-color-brand-secondary-hover: #1d4ed8;
+
+  --rentify-color-surface-base: #ffffff;
+  --rentify-color-surface-subtle: #f8fafc;
+  --rentify-color-surface-muted: #f1f5f9;
+  --rentify-color-surface-raised: #ffffff;
+  --rentify-color-surface-hover: #f1f3f8;
+  --rentify-color-surface-overlay: rgba(15, 23, 42, 0.6);
+
+  /* ============================================================
+     2. Text Colors (WCAG AA Compliant on White & Subtle Surfaces)
+     ============================================================ */
+  --rentify-color-text-primary: #0f172a;       /* 17.4:1 contrast on white */
+  --rentify-color-text-secondary: #475569;     /* 7.4:1 contrast on white */
+  --rentify-color-text-muted: #64748b;         /* 4.6:1 contrast on white */
+  --rentify-color-text-inverse: #ffffff;       /* 6.7:1 contrast on primary */
+  --rentify-color-text-brand: #4338ca;         /* 8.9:1 contrast on white */
+  --rentify-color-text-disabled: #94a3b8;
+
+  /* ============================================================
+     3. Border Colors & Widths
+     ============================================================ */
+  --rentify-color-border-default: #e2e8f0;
+  --rentify-color-border-subtle: #f1f5f9;
+  --rentify-color-border-strong: #cbd5e1;
+  --rentify-color-border-interactive: #94a3b8;
+  --rentify-color-border-focus: #4f46e5;
+  --rentify-border-width-default: 1px;
+  --rentify-border-width-thick: 2px;
+
+  /* ============================================================
+     4. Status & Feedback (Accessible Color Pairs)
+     ============================================================ */
+  /* Success */
+  --rentify-color-success-base: #16a34a;
+  --rentify-color-success-text: #14532d;       /* 8.4:1 contrast on subtle */
+  --rentify-color-success-subtle: #f0fdf4;
+  --rentify-color-success-border: #bbf7d0;
+
+  /* Warning */
+  --rentify-color-warning-base: #d97706;
+  --rentify-color-warning-text: #78350f;       /* 9.3:1 contrast on subtle */
+  --rentify-color-warning-subtle: #fffbeb;
+  --rentify-color-warning-border: #fde68a;
+
+  /* Danger / Error */
+  --rentify-color-danger-base: #dc2626;
+  --rentify-color-danger-text: #7f1d1d;        /* 11.2:1 contrast on subtle */
+  --rentify-color-danger-subtle: #fef2f2;
+  --rentify-color-danger-border: #fecaca;
+
+  /* Info */
+  --rentify-color-info-base: #2563eb;
+  --rentify-color-info-text: #1e3a8a;          /* 9.7:1 contrast on subtle */
+  --rentify-color-info-subtle: #eff6ff;
+  --rentify-color-info-border: #bfdbfe;
+
+  /* ============================================================
+     5. Typography
+     ============================================================ */
+  --rentify-font-family-body: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rentify-font-family-heading: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rentify-font-family-mono: 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+
+  --rentify-font-size-xs: 0.75rem;
+  --rentify-line-height-xs: 1rem;
+  --rentify-font-size-sm: 0.875rem;
+  --rentify-line-height-sm: 1.25rem;
+  --rentify-font-size-base: 1rem;
+  --rentify-line-height-base: 1.5rem;
+  --rentify-font-size-lg: 1.125rem;
+  --rentify-line-height-lg: 1.75rem;
+  --rentify-font-size-xl: 1.25rem;
+  --rentify-line-height-xl: 1.75rem;
+  --rentify-font-size-2xl: 1.5rem;
+  --rentify-line-height-2xl: 2rem;
+  --rentify-font-size-3xl: 1.875rem;
+  --rentify-line-height-3xl: 2.25rem;
+
+  --rentify-font-weight-regular: 400;
+  --rentify-font-weight-medium: 500;
+  --rentify-font-weight-semibold: 600;
+  --rentify-font-weight-bold: 700;
+
+  /* ============================================================
+     6. Spacing Scale
+     ============================================================ */
+  --rentify-space-1: 0.25rem;
+  --rentify-space-2: 0.5rem;
+  --rentify-space-3: 0.75rem;
+  --rentify-space-4: 1rem;
+  --rentify-space-5: 1.25rem;
+  --rentify-space-6: 1.5rem;
+  --rentify-space-8: 2rem;
+  --rentify-space-10: 2.5rem;
+  --rentify-space-12: 3rem;
+  --rentify-space-16: 4rem;
+
+  /* ============================================================
+     7. Radii
+     ============================================================ */
+  --rentify-radius-xs: 4px;
+  --rentify-radius-sm: 6px;
+  --rentify-radius-md: 8px;
+  --rentify-radius-lg: 12px;
+  --rentify-radius-xl: 16px;
+  --rentify-radius-full: 9999px;
+
+  /* ============================================================
+     8. Shadows & Elevation
+     ============================================================ */
+  --rentify-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --rentify-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --rentify-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --rentify-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+  --rentify-shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+
+  /* ============================================================
+     9. Focus & Keyboard Accessibility
+     ============================================================ */
+  --rentify-focus-ring-color: #4f46e5;
+  --rentify-focus-ring-width: 2px;
+  --rentify-focus-ring-offset: 2px;
+  --rentify-focus-ring-offset-color: #ffffff;
+  --rentify-shadow-focus: 0 0 0 2px #ffffff, 0 0 0 4px #4f46e5;
+
+  /* ============================================================
+     10. Disabled States
+     ============================================================ */
+  --rentify-opacity-disabled: 0.5;
+  --rentify-color-disabled-text: #94a3b8;
+  --rentify-color-disabled-bg: #f1f5f9;
+  --rentify-color-disabled-border: #e2e8f0;
+
+  /* ============================================================
+     11. Breakpoints
+     ============================================================ */
+  --rentify-breakpoint-sm: 640px;
+  --rentify-breakpoint-md: 768px;
+  --rentify-breakpoint-lg: 1024px;
+  --rentify-breakpoint-xl: 1280px;
+  --rentify-breakpoint-2xl: 1536px;
+
+  /* ============================================================
+     12. Transitions & Motion
+     ============================================================ */
+  --rentify-transition-duration-fast: 150ms;
+  --rentify-transition-duration-base: 200ms;
+  --rentify-transition-duration-slow: 300ms;
+  --rentify-transition-timing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --rentify-transition-timing-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Accessible focus ring helper utility */
+.rentify-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--rentify-shadow-focus);
+}
+
+/* Reduced motion accessibility media query */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rentify-transition-duration-fast: 0.01ms;
+    --rentify-transition-duration-base: 0.01ms;
+    --rentify-transition-duration-slow: 0.01ms;
+  }
+}

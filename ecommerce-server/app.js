@@ -8,11 +8,14 @@ const helmetConfig = require('./config/helmetConfig');
 const corsOptions = require('./config/corsConfig');
 const sessionConfig = require('./config/sessionConfig');
 const sessionMiddleware = require('./middlewares/sessionMiddleware');
+const correlationMiddleware = require('./middlewares/correlation');
+const { logger, getCorrelationId } = require('./utils/logger');
 // const TelegramService = require('./modules/notifications/telegramService');
 
 const app = express();
 
 // Middleware
+app.use(correlationMiddleware);
 app.use(helmetConfig);
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
@@ -21,9 +24,17 @@ app.use(cookieParser(process.env.COOKIE_SECRET || 'default'));
 app.use(sessionConfig);
 app.use(sessionMiddleware);
 
-// Container and load-balancer health probe. It intentionally reveals no
-// tenant or payment-provider details.
+const { getReadinessReport } = require('./modules/health');
+
+// Container and load-balancer probes.
+// Liveness probe: lightweight signal answering whether the process is alive.
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+// Readiness probe: deep dependency check answering whether traffic can be served safely.
+app.get('/ready', async (_req, res) => {
+  const { statusCode, payload } = await getReadinessReport();
+  return res.status(statusCode).json(payload);
+});
 
 // Setup Telegram webhook
 // TelegramService.setupWebhook(app);
@@ -53,11 +64,7 @@ app.use("/api/ops", require("./modules/ops/opsRoutes"));
 app.use("/api/usage", require("./modules/billing/usageRoutes"));
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
-    message: err.message || 'Internal server error',
-  });
-});
+const errorHandler = require('./middlewares/errorHandler');
+app.use(errorHandler);
 
 module.exports = app;

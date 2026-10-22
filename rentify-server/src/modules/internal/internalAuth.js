@@ -1,4 +1,11 @@
 const crypto = require('crypto');
+const { ApiError, formatErrorEnvelope } = require('../../utils/errors');
+
+const sendError = (res, req, apiError) => {
+  const { statusCode, body } = formatErrorEnvelope(apiError, req);
+  res.setHeader?.('X-Correlation-ID', body.error.correlationId);
+  return res.status(statusCode).json(body);
+};
 
 // Compares in constant time so response timing does not reveal the secret.
 const sameSecret = (provided, expected) => {
@@ -15,10 +22,10 @@ const verifyInternalService = (req, res, next) => {
   const provided = req.headers['x-internal-secret'];
 
   if (!expected) {
-    return res.status(500).json({ message: 'INTERNAL_SERVICE_SECRET is not configured' });
+    return sendError(res, req, ApiError.internal('INTERNAL_SERVICE_SECRET is not configured'));
   }
   if (!provided || !sameSecret(provided, expected)) {
-    return res.status(401).json({ message: 'Invalid internal service secret' });
+    return sendError(res, req, ApiError.unauthorized('Invalid internal service secret'));
   }
   next();
 };

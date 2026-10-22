@@ -26,10 +26,13 @@ const paymentRoutes = require('./modules/billing/paymentRoutes');
 const packageRoutes = require('./modules/billing/packageRoutes');
 const opsRoutes = require('./modules/ops/opsRoutes');
 const internalRoutes = require('./modules/internal/internalRoutes');
+const correlationMiddleware = require('./middlewares/correlation');
+const { logger, getCorrelationId } = require('./utils/logger');
 dotenv.config();
 const app = express();
 
 // Global middleware
+app.use(correlationMiddleware);
 app.use(helmetConfig);
 // app.use(rateLimiter);
 app.use(cors(corsOptions));
@@ -41,9 +44,17 @@ app.use(passport.initialize());
 app.use(passport.session());
 // telegramService.setupWebhook(app);
 
-// Container and load-balancer health probe. It intentionally reveals no
-// tenant or dependency details.
+const { getReadinessReport } = require('./modules/health');
+
+// Container and load-balancer probes.
+// Liveness probe: lightweight signal answering whether the process is alive.
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+// Readiness probe: deep dependency check answering whether traffic can be served safely.
+app.get('/ready', async (_req, res) => {
+  const { statusCode, payload } = await getReadinessReport();
+  return res.status(statusCode).json(payload);
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -74,11 +85,7 @@ async function initializeRedis() {
 initializeRedis();
 
 // Error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
-    message: err.message || 'Internal server error',
-  });
-});
+const errorHandler = require('./middlewares/errorHandler');
+app.use(errorHandler);
 
 module.exports = app;
