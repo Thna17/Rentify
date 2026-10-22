@@ -69,9 +69,13 @@ class StoreService {
     const store = await Store.findOne({ where: { ownerUserId: userId } });
     if (store) return store;
 
-    // Check if user is staff belonging to a website or merchant
+    // Check if user is staff belonging to a store, website or merchant
     const staff = await Staff.findByPk(userId);
     if (staff) {
+      if (staff.storeId) {
+        const directStore = await Store.findByPk(staff.storeId);
+        if (directStore) return directStore;
+      }
       if (staff.websiteId) {
         const website = await Website.findByPk(staff.websiteId);
         if (website?.storeId) {

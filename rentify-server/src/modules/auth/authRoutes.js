@@ -118,11 +118,19 @@ router.post(
       result = await userAuthService.login(req.body, transaction);
     } catch (err) {
       if (err.statusCode === 404 || err.message?.toLowerCase().includes("not found")) {
-        const staff = await Staff.findOne({
-          where: req.body.email ? { email: req.body.email } : { phoneNumber: req.body.phoneNumber },
-          transaction,
-        });
-        if (staff && staff.isActive) {
+        const where = {
+          isActive: true,
+          ...(req.body.email ? { email: req.body.email } : { phoneNumber: req.body.phoneNumber }),
+          ...(req.body.storeId ? { storeId: req.body.storeId } : {}),
+        };
+        const activeStaffList = await Staff.findAll({ where, transaction });
+        if (activeStaffList.length === 1) {
+          result = await staffAuthService.login(req.body, transaction);
+          isStaff = true;
+        } else if (activeStaffList.length > 1) {
+          if (!req.body.storeId) {
+            throw new ApiError(400, "Multiple store memberships found. Please specify storeId.");
+          }
           result = await staffAuthService.login(req.body, transaction);
           isStaff = true;
         } else {

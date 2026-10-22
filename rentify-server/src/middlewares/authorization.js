@@ -46,7 +46,7 @@ const createRequireStoreAccess = ({ findStore = (id) => require('../models').Sto
     const isOwner = store.ownerUserId === req.user.id;
     const permissions = new Set(req.user.permissions || []);
     const isPermittedStaff = req.user.role === 'staff' &&
-      req.user.merchantId === store.ownerUserId &&
+      ((req.user.storeId && req.user.storeId === store.id) || req.user.merchantId === store.ownerUserId) &&
       (permissions.has('products') || permissions.has('manage_products'));
     const isAdmin = req.user.role === 'admin';
 

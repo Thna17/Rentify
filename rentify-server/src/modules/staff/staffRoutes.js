@@ -31,6 +31,8 @@ router.get(
   asyncHandler(staffController.getStaffProfile)
 );
 router.get("/:id", verifyToken, asyncHandler(staffController.getStaffById));
+router.patch("/:id", verifyToken, asyncHandler(staffController.updateStaff));
+router.delete("/:id", verifyToken, asyncHandler(staffController.deleteStaff));
 // Staff login
 router.post("/login", asyncHandler(staffController.staffLogin));
 

@@ -1,5 +1,5 @@
 const StaffAuthService = require("./staffAuthService");
-const { Staff } = require("../../models");
+const { Staff, Store, User, Website } = require("../../models");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const staffAuthService = new StaffAuthService();
@@ -9,13 +9,206 @@ const NotificationService = require("../notifications").notificationService;
 const notificationService = new NotificationService("staff");
 const staffInvitationEmail = require("./emails/staffInvitationEmail");
 const { Op } = require("sequelize");
-exports.createStaff = async (req, res) => {
-  // Merchant creates staff member
+
+const VALID_PERMISSIONS = [
+  "manage_products",
+  "manage_orders",
+  "manage_invoices",
+  "manage_pos",
+  "manage_analytics",
+  "manage_settings",
+  "manage_staff",
+];
+
+function validatePermissionDelegation(caller, targetPermissions) {
+  if (!targetPermissions) return;
+  if (!Array.isArray(targetPermissions)) {
+    throw new ApiError(400, "Permissions must be an array");
+  }
+  for (const perm of targetPermissions) {
+    if (!VALID_PERMISSIONS.includes(perm)) {
+      throw new ApiError(400, `Invalid permission specified: ${perm}`);
+    }
+  }
+  if (caller?.role === "staff") {
+    const callerPerms = new Set(caller.permissions || []);
+    const unheld = targetPermissions.filter((p) => !callerPerms.has(p));
+    if (unheld.length > 0) {
+      throw new ApiError(
+        403,
+        `Cannot grant permissions you do not hold: ${unheld.join(", ")}`
+      );
+    }
+  }
+}
+
+function validateNoRoleEscalation(caller, body) {
+  if (body.role && body.role !== "staff") {
+    throw new ApiError(
+      403,
+      "Staff cannot be promoted to owner or administrator"
+    );
+  }
+  if (body.merchantId && caller?.role !== "admin" && body.merchantId !== caller?.id) {
+    throw new ApiError(403, "Cannot invite staff for another merchant");
+  }
+  if (body.ownerUserId && caller?.role !== "admin" && body.ownerUserId !== caller?.id) {
+    throw new ApiError(403, "Cannot transfer store ownership or modify merchant identity");
+  }
+}
+
+async function resolveCallerAndStore(req, { write = false, targetStaff = null } = {}) {
   const transaction = req.transaction;
+  if (!req.user?.id) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  if (req.user.status === "suspended" || req.user.isActive === false) {
+    throw new ApiError(403, "Account is suspended");
+  }
+
+  let store = null;
+
+  if (targetStaff) {
+    let targetStoreId = targetStaff.storeId;
+    if (!targetStoreId && targetStaff.merchantId) {
+      const merchantStore = await Store.findOne({
+        where: { ownerUserId: targetStaff.merchantId },
+        transaction,
+      });
+      targetStoreId = merchantStore?.id;
+    }
+
+    if (!targetStoreId) {
+      throw new ApiError(404, "Staff not found");
+    }
+
+    store = await Store.findByPk(targetStoreId, { transaction });
+    if (!store) {
+      throw new ApiError(404, "Staff not found");
+    }
+
+    // Verify caller authority over target store
+    if (req.user.role === "admin") {
+      // Platform admin override
+    } else if (req.user.role === "staff") {
+      const callerBelongsToStore =
+        (req.user.storeId && req.user.storeId === store.id) ||
+        req.user.merchantId === store.ownerUserId;
+
+      if (!callerBelongsToStore) {
+        throw new ApiError(404, "Staff not found"); // Anti-enumeration!
+      }
+
+      const permissions = new Set(req.user.permissions || []);
+      if (!permissions.has("manage_staff")) {
+        throw new ApiError(403, "Staff management permission required");
+      }
+    } else {
+      // Store owner / merchant caller
+      if (store.ownerUserId !== req.user.id) {
+        throw new ApiError(404, "Staff not found"); // Anti-enumeration!
+      }
+    }
+  } else {
+    // Store-level actions (list, create, invite)
+    const requestedStoreId = req.query?.storeId || req.body?.storeId;
+
+    if (req.user.role === "admin") {
+      if (requestedStoreId) {
+        store = await Store.findByPk(requestedStoreId, { transaction });
+      } else if (req.body?.merchantId) {
+        store = await Store.findOne({
+          where: { ownerUserId: req.body.merchantId },
+          transaction,
+        });
+      }
+    } else if (req.user.role === "staff") {
+      const permissions = new Set(req.user.permissions || []);
+      if (!permissions.has("manage_staff")) {
+        throw new ApiError(403, "Staff management permission required");
+      }
+
+      let callerStoreId = req.user.storeId;
+      if (!callerStoreId) {
+        const callerRecord = await Staff.findByPk(req.user.id, { transaction });
+        callerStoreId = callerRecord?.storeId;
+      }
+      if (!callerStoreId && req.user.merchantId) {
+        const merchantStore = await Store.findOne({
+          where: { ownerUserId: req.user.merchantId },
+          transaction,
+        });
+        callerStoreId = merchantStore?.id;
+      }
+
+      if (!callerStoreId) {
+        throw new ApiError(404, "Store not found for this staff member");
+      }
+
+      if (requestedStoreId && requestedStoreId !== callerStoreId) {
+        throw new ApiError(403, "You do not have access to this store");
+      }
+
+      store = await Store.findByPk(callerStoreId, { transaction });
+      if (!store) {
+        throw new ApiError(404, "Store not found");
+      }
+    } else {
+      // Store owner caller
+      if (requestedStoreId) {
+        store = await Store.findByPk(requestedStoreId, { transaction });
+        if (!store || store.ownerUserId !== req.user.id) {
+          throw new ApiError(403, "You do not have access to this store");
+        }
+      } else {
+        store = await Store.findOne({
+          where: { ownerUserId: req.user.id },
+          transaction,
+        });
+        if (!store) {
+          throw new ApiError(404, "Store not found for this merchant");
+        }
+      }
+    }
+  }
+
+  if (store && write && store.status !== "active") {
+    throw new ApiError(403, "Store is suspended");
+  }
+
+  const websiteId = req.query?.websiteId || req.body?.websiteId;
+  if (websiteId && store) {
+    const website = await Website.findByPk(websiteId, { transaction });
+    if (!website || website.storeId !== store.id) {
+      throw new ApiError(400, "Website does not belong to the target store");
+    }
+  }
+
+  return { store };
+}
+
+exports.createStaff = async (req, res) => {
+  const transaction = req.transaction;
+  const { name, email, phoneNumber, password, permissions, websiteId: bodyWebsiteId } = req.body;
+
+  validateNoRoleEscalation(req.user, req.body);
+  const { store } = await resolveCallerAndStore(req, { write: true });
+  validatePermissionDelegation(req.user, permissions || []);
+
+  let website = null;
+  if (bodyWebsiteId) {
+    website = await Website.findByPk(bodyWebsiteId, { transaction });
+    if (!website || website.storeId !== store.id) {
+      throw new ApiError(400, "Website does not belong to the target store");
+    }
+  }
 
   const result = await staffAuthService.signup(
     {
-      merchantId: req.user.id,
+      merchantId: store.ownerUserId,
+      storeId: store.id,
+      websiteId: website?.id || null,
       ...req.body,
     },
     transaction
@@ -33,10 +226,17 @@ exports.createStaff = async (req, res) => {
 
 exports.listStaff = async (req, res) => {
   const transaction = req.transaction;
-  // List all staff for current merchant
+  const { store } = await resolveCallerAndStore(req, { write: false });
+
   const staff = await Staff.findAll({
-    where: { merchantId: req.user.id },
-    attributes: { exclude: ["password", "refreshToken"] },
+    where: {
+      [Op.or]: [
+        { storeId: store.id },
+        { merchantId: store.ownerUserId, storeId: null },
+      ],
+    },
+    attributes: { exclude: ["password", "refreshToken", "otp"] },
+    order: [["createdAt", "ASC"]],
     transaction,
   });
 
@@ -45,12 +245,13 @@ exports.listStaff = async (req, res) => {
 
 exports.staffLogin = async (req, res) => {
   const transaction = req.transaction;
-  const { email, phoneNumber, password } = req.body;
+  const { email, phoneNumber, password, storeId } = req.body;
 
   const result = await staffAuthService.login({
     email,
     phoneNumber,
     password,
+    storeId,
     transaction,
   });
 
@@ -88,9 +289,8 @@ exports.validateStaffToken = async (req, res) => {
     throw new ApiError(401, result.error);
   }
 
-  // Include permissions in the response
   const staff = await Staff.findByPk(result.entity.id, {
-    attributes: ["permissions", "merchantId", "websiteId", "isActive"],
+    attributes: ["permissions", "merchantId", "websiteId", "storeId", "isActive"],
     transaction,
   });
 
@@ -104,10 +304,12 @@ exports.validateStaffToken = async (req, res) => {
       ...result.entity,
       merchantId: staff.merchantId,
       websiteId: staff.websiteId,
+      storeId: staff.storeId,
     },
     permissions: staff.permissions,
   });
 };
+
 exports.resendOtp = async (req, res) => {
   const transaction = req.transaction;
   const { email, phoneNumber, verificationMethod } = req.body;
@@ -134,7 +336,6 @@ exports.verifyOtp = async (req, res) => {
     transaction,
   });
 
-  // Set authentication cookies
   staffAuthService.setAuthCookies(res, {
     accessToken: result.accessToken,
     refreshToken: result.refreshToken,
@@ -147,6 +348,7 @@ exports.verifyOtp = async (req, res) => {
       id: result.entity.id,
       name: result.entity.name,
       email: result.entity.email,
+      storeId: result.entity.storeId,
       permissions: result.entity.permissions,
     },
   });
@@ -187,7 +389,6 @@ exports.refreshToken = async (req, res) => {
     transaction,
   });
 
-  // Update cookies with new tokens
   staffAuthService.setAuthCookies(res, {
     accessToken: result.accessToken,
     refreshToken: result.refreshToken,
@@ -208,7 +409,6 @@ exports.logout = async (req, res) => {
     transaction,
   });
 
-  // Clear authentication cookies
   staffAuthService.clearAuthCookies(res);
 
   res.status(200).json({ message: "Logout successful" });
@@ -218,104 +418,118 @@ exports.getStaffById = async (req, res) => {
   const transaction = req.transaction;
   const staffId = req.params.id;
 
-  const staff = await Staff.findOne({
-    where: {
-      id: staffId,
-      merchantId: req.user.id, // Ensure merchant is only accessing their staff
-    },
-    attributes: { exclude: ["password", "refreshToken"] },
+  const staff = await Staff.findByPk(staffId, {
+    attributes: { exclude: ["password", "refreshToken", "otp"] },
     transaction,
   });
 
   if (!staff) {
     throw new ApiError(404, "Staff not found");
   }
+
+  // resolveCallerAndStore verifies caller authority and returns 404 for unrelated / cross-store callers
+  await resolveCallerAndStore(req, { write: false, targetStaff: staff });
 
   res.status(200).json(staff);
 };
 
 exports.getStaffProfile = async (req, res) => {
   const transaction = req.transaction;
-  const staffId = req.staff.id; // ✅ use ID from verified token
+  const staffId = req.staff?.id || req.user?.id;
 
   const staff = await Staff.findByPk(staffId, {
-    attributes: { exclude: ["password", "refreshToken"] },
+    attributes: { exclude: ["password", "refreshToken", "otp"] },
     transaction,
   });
 
-  if (!staff) {
-    throw new ApiError(404, "Staff not found");
+  if (!staff || !staff.isActive) {
+    throw new ApiError(403, "Staff access is inactive");
   }
 
   res.status(200).json(staff);
 };
 
-// Add to staffController
 exports.sendStaffInvitation = async (req, res) => {
   const transaction = req.transaction;
-  const { merchantId: bodyMerchantId, name, contact, contactMethod, permissions } = req.body;
+  const { name, contact, contactMethod, permissions, websiteId: bodyWebsiteId } = req.body;
 
-  // Identity is strictly derived from the verified session; non-admins cannot specify another merchantId
-  if (bodyMerchantId && req.user?.role !== 'admin' && bodyMerchantId !== req.user?.id) {
-    throw new ApiError(403, "Cannot invite staff for another merchant");
-  }
-  const merchantId = req.user?.role === 'admin' && bodyMerchantId ? bodyMerchantId : req.user?.id;
-
-  // Validate input
   if (!name || !contact || !contactMethod || !permissions) {
     throw new ApiError(400, "Missing required fields");
   }
 
-  // Validate contact method
   if (!["email", "phone"].includes(contactMethod)) {
     throw new ApiError(400, "Invalid contact method");
   }
 
-  // Check for existing staff
-  const where = {};
-  if (contactMethod === "email") where.email = contact;
-  if (contactMethod === "phone") where.phoneNumber = contact;
-  where.merchantId = merchantId;
+  if (contactMethod === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) {
+    throw new ApiError(400, "Invalid email format");
+  }
+
+  if (contactMethod === "phone" && !/^\+?[1-9]\d{1,14}$/.test(contact)) {
+    throw new ApiError(400, "Invalid phone number format");
+  }
+
+  validateNoRoleEscalation(req.user, req.body);
+  const { store } = await resolveCallerAndStore(req, { write: true });
+  validatePermissionDelegation(req.user, permissions);
+
+  let website = null;
+  if (bodyWebsiteId) {
+    website = await Website.findByPk(bodyWebsiteId, { transaction });
+    if (!website || website.storeId !== store.id) {
+      throw new ApiError(400, "Website does not belong to the target store");
+    }
+  }
+
+  const normContact = contactMethod === "email" ? contact.trim().toLowerCase() : contact.trim();
+  const where = {
+    storeId: store.id,
+    ...(contactMethod === "email" ? { email: normContact } : { phoneNumber: normContact }),
+  };
 
   const existingStaff = await Staff.findOne({ where, transaction });
   if (existingStaff) {
-    throw new ApiError(400, "Staff member already exists");
+    throw new ApiError(400, "Staff member already exists for this store");
   }
 
-  // Create staff with pending status
+  const invitationToken = crypto.randomBytes(32).toString("hex");
   const staff = await Staff.create(
     {
-      merchantId,
-      name,
-      [contactMethod === "email" ? "email" : "phoneNumber"]: contact,
+      merchantId: store.ownerUserId,
+      storeId: store.id,
+      websiteId: website?.id || null,
+      name: name.trim(),
+      [contactMethod === "email" ? "email" : "phoneNumber"]: normContact,
       permissions,
       isActive: false,
       isVerified: false,
-      invitationToken: crypto.randomBytes(32).toString("hex"),
+      invitationToken,
       invitationSentAt: new Date(),
       invitationMethod: contactMethod,
     },
     { transaction }
   );
 
-  // Send invitation
-  if (contactMethod === "email") {
-    await sendEmailInvitation(contact, staff.invitationToken, name);
-  } else {
-    await sendTelegramInvitation(contact, staff.invitationToken);
+  try {
+    if (contactMethod === "email") {
+      await sendEmailInvitation(normContact, invitationToken, name.trim());
+    } else {
+      await sendTelegramInvitation(normContact, invitationToken);
+    }
+  } catch (_notifErr) {
+    // Non-fatal if notification service is not reachable
   }
 
   responseHandler.success(
     res,
     200,
-    { staffId: staff.id },
+    { staffId: staff.id, invitationToken },
     "Invitation sent successfully"
   );
 };
 
-// Helper functions
 const sendEmailInvitation = async (email, token, name) => {
-  const invitationLink = `${process.env.FRONTEND_URL}/staff/accept-invitation?token=${token}`;
+  const invitationLink = `${process.env.FRONTEND_URL || "https://rentifymarket.com"}/staff/accept-invitation?token=${token}`;
   const html = staffInvitationEmail(name, invitationLink);
 
   await notificationService.send({
@@ -329,7 +543,6 @@ const sendEmailInvitation = async (email, token, name) => {
 const sendTelegramInvitation = async (phone, token) => {
   const botLink = "https://t.me/your_bot_name";
   const message = `You've been invited! Connect to our bot: ${botLink} and use code: ${token}`;
-  // await notificationService.send('telegram', phone, message);
 
   await notificationService.send({
     channel: "telegram",
@@ -341,14 +554,22 @@ const sendTelegramInvitation = async (phone, token) => {
 
 exports.acceptStaffInvitation = async (req, res) => {
   const transaction = req.transaction;
-  const { token, password } = req.body;
-  // Find staff by token
+  const { token, password, contact, email, phoneNumber } = req.body;
+
+  if (!token || typeof token !== "string") {
+    throw new ApiError(400, "Invalid or expired invitation token");
+  }
+
+  if (!password || password.length < 8) {
+    throw new ApiError(400, "Password must be at least 8 characters");
+  }
+
   const staff = await Staff.findOne({
     where: {
       invitationToken: token,
       invitationSentAt: {
-        [Op.gt]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      }, // 7 days expiry
+        [Op.gt]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days expiry
+      },
     },
     transaction,
   });
@@ -357,18 +578,33 @@ exports.acceptStaffInvitation = async (req, res) => {
     throw new ApiError(400, "Invalid or expired invitation token");
   }
 
-  // Set password and activate
+  // Intended contact verification
+  const providedContact = (contact || email || phoneNumber || "").trim().toLowerCase();
+  if (providedContact) {
+    const staffEmail = (staff.email || "").trim().toLowerCase();
+    const staffPhone = (staff.phoneNumber || "").trim().toLowerCase();
+    if (providedContact !== staffEmail && providedContact !== staffPhone) {
+      throw new ApiError(403, "Contact does not match invitation recipient");
+    }
+  }
+
+  // Store suspension check
+  if (staff.storeId) {
+    const store = await Store.findByPk(staff.storeId, { transaction });
+    if (store && store.status !== "active") {
+      throw new ApiError(403, "Store is suspended");
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
   staff.password = hashedPassword;
   staff.isActive = true;
   staff.isVerified = true;
-  staff.invitationToken = null;
+  staff.invitationToken = null; // Single-use!
   await staff.save({ transaction });
 
-  // Generate tokens
   const tokens = staffAuthService.generateTokens(staff);
 
-  // Return response
   responseHandler.success(
     res,
     200,
@@ -377,6 +613,7 @@ exports.acceptStaffInvitation = async (req, res) => {
         id: staff.id,
         name: staff.name,
         email: staff.email,
+        storeId: staff.storeId,
         permissions: staff.permissions,
       },
       accessToken: tokens.accessToken,
@@ -385,4 +622,74 @@ exports.acceptStaffInvitation = async (req, res) => {
   );
 };
 
-// Add updateStaff, deleteStaff, etc.
+exports.updateStaff = async (req, res) => {
+  const transaction = req.transaction;
+  const staffId = req.params.id;
+
+  const staff = await Staff.findByPk(staffId, { transaction });
+  if (!staff) {
+    throw new ApiError(404, "Staff not found");
+  }
+
+  await resolveCallerAndStore(req, { write: true, targetStaff: staff });
+
+  validateNoRoleEscalation(req.user, req.body);
+
+  if (req.body.permissions !== undefined) {
+    if (req.user.id === staff.id) {
+      throw new ApiError(403, "Staff cannot modify their own permissions");
+    }
+    validatePermissionDelegation(req.user, req.body.permissions);
+    staff.permissions = req.body.permissions;
+  }
+
+  if (req.body.name !== undefined) {
+    staff.name = req.body.name.trim();
+  }
+
+  if (req.body.isActive !== undefined) {
+    staff.isActive = Boolean(req.body.isActive);
+    if (!staff.isActive) {
+      // Session revocation: clear refresh tokens
+      staff.refreshToken = null;
+      staff.refreshTokenExpires = null;
+    }
+  }
+
+  await staff.save({ transaction });
+
+  const responseStaff = staff.toJSON();
+  delete responseStaff.password;
+  delete responseStaff.refreshToken;
+  delete responseStaff.otp;
+
+  responseHandler.success(res, 200, responseStaff, "Staff member updated successfully");
+};
+
+exports.deleteStaff = async (req, res) => {
+  const transaction = req.transaction;
+  const staffId = req.params.id;
+
+  const staff = await Staff.findByPk(staffId, { transaction });
+  if (!staff) {
+    throw new ApiError(404, "Staff not found");
+  }
+
+  await resolveCallerAndStore(req, { write: true, targetStaff: staff });
+
+  if (req.user.id === staff.id) {
+    throw new ApiError(403, "Staff cannot delete their own account");
+  }
+
+  staff.isActive = false;
+  staff.refreshToken = null;
+  staff.refreshTokenExpires = null;
+  await staff.destroy({ transaction });
+
+  responseHandler.success(
+    res,
+    200,
+    { message: "Staff member deleted successfully" },
+    "Staff member deleted successfully"
+  );
+};

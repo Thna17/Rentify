@@ -46,6 +46,22 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = verifyAccessToken(userAccessToken);
+    if (decoded.role === 'staff') {
+      const staff = await Staff.findByPk(decoded.id);
+      if (!staff || !staff.isActive) {
+        return res.status(403).json({ error: "Staff access is inactive" });
+      }
+      req.user = {
+        id: staff.id,
+        role: 'staff',
+        merchantId: staff.merchantId,
+        storeId: staff.storeId,
+        websiteId: staff.websiteId,
+        permissions: staff.permissions,
+      };
+      req.staff = staff;
+      return next();
+    }
     req.user = decoded;
     
     next();
@@ -74,11 +90,16 @@ const handleStaffAuth = async (req, res, next) => {
           id: staff.id,
           role: 'staff',
           merchantId: staff.merchantId,
+          storeId: staff.storeId,
           websiteId: staff.websiteId,
           permissions: staff.permissions,
         };
         req.staff = staff;
         return next();
+      } else if (staff && !staff.isActive) {
+        res.clearCookie("staffAccessToken", { ...cookieConfig });
+        res.clearCookie("staffRefreshToken", { ...cookieConfig });
+        return res.status(403).json({ error: "Staff access is inactive" });
       }
     } catch (_err) {
       // Access token expired, attempt refresh below
@@ -89,11 +110,16 @@ const handleStaffAuth = async (req, res, next) => {
     try {
       const decoded = verifyRefreshToken(staffRefreshToken);
       const staff = await Staff.findOne({ where: { id: decoded.id } });
+      if (staff && !staff.isActive) {
+        res.clearCookie("staffAccessToken", { ...cookieConfig });
+        res.clearCookie("staffRefreshToken", { ...cookieConfig });
+        return res.status(403).json({ error: "Staff access is inactive" });
+      }
       if (staff && staff.refreshToken && staff.isActive) {
         const isMatch = await compareRefreshToken(staffRefreshToken, staff.refreshToken);
         if (isMatch && !(staff.refreshTokenExpires < Date.now())) {
-          const newAccessToken = generateAccessToken({ id: staff.id });
-          const newRefreshToken = generateRefreshToken({ id: staff.id });
+          const newAccessToken = generateAccessToken({ id: staff.id, role: 'staff' });
+          const newRefreshToken = generateRefreshToken({ id: staff.id, role: 'staff' });
           staff.refreshToken = await hashRefreshToken(newRefreshToken);
           staff.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
           await staff.save();
@@ -111,6 +137,7 @@ const handleStaffAuth = async (req, res, next) => {
             id: staff.id,
             role: 'staff',
             merchantId: staff.merchantId,
+            storeId: staff.storeId,
             websiteId: staff.websiteId,
             permissions: staff.permissions,
           };

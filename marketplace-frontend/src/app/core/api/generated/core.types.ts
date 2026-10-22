@@ -1248,6 +1248,19 @@ export namespace Core {
         success?: boolean;
       };
     };
+    deleteStaff: {
+      method: 'DELETE';
+      path: '/api/staff/{id}';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      response: {
+        message?: string;
+        success?: boolean;
+      };
+    };
     getStaffById: {
       method: 'GET';
       path: '/api/staff/{id}';
@@ -1255,6 +1268,21 @@ export namespace Core {
         path: {
           id: string;
         };
+      };
+      response: Core.Staff;
+    };
+    updateStaff: {
+      method: 'PATCH';
+      path: '/api/staff/{id}';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      body: {
+        isActive?: boolean;
+        name?: string;
+        permissions?: Array<string>;
       };
       response: Core.Staff;
     };

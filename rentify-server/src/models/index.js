@@ -29,6 +29,8 @@ Payment.belongsTo(Website, { foreignKey: "websiteId" });
 
 Staff.belongsTo(User, { foreignKey: "merchantId", as: "merchant" });
 User.hasMany(Staff, { foreignKey: "merchantId", as: "staffs" });
+Staff.belongsTo(Store, { foreignKey: "storeId", as: "store" });
+Store.hasMany(Staff, { foreignKey: "storeId", as: "staffMembers" });
 // Website ↔ WebsiteTemplate
 Website.belongsTo(WebsiteTemplate, { foreignKey: "templateId" });
 WebsiteTemplate.hasMany(Website, { foreignKey: "templateId" });

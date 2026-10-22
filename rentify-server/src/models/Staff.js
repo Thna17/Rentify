@@ -18,9 +18,17 @@ const Staff = sequelize.define(
         key: "id",
       },
     },
+    storeId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "Stores",
+        key: "id",
+      },
+    },
     websiteId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "Websites",
         key: "id",
@@ -104,14 +112,6 @@ const Staff = sequelize.define(
     otpExpires: {
       type: DataTypes.DATE,
     },
-    refreshToken: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    refreshTokenExpires: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
     // Add to model definition
     invitationToken: {
       type: DataTypes.STRING,
@@ -129,8 +129,10 @@ const Staff = sequelize.define(
   {
     timestamps: true,
     indexes: [
-      { unique: true, fields: ["merchantId", "email"] },
-      { unique: true, fields: ["merchantId", "phoneNumber"] },
+      { unique: true, fields: ["storeId", "email"] },
+      { unique: true, fields: ["storeId", "phoneNumber"] },
+      { fields: ["merchantId"] },
+      { fields: ["invitationToken"] },
     ],
   }
 );

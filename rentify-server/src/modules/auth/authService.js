@@ -368,7 +368,7 @@ class AuthService {
     if (normalizedPhone) conditions.push({ phoneNumber: normalizedPhone });
 
     // Build where clause
-    const whereClause = this.storeIdRequired
+    const whereClause = (this.storeIdRequired || storeId)
       ? { [Op.and]: [{ [Op.or]: conditions }, { storeId }] }
       : { [Op.or]: conditions };
 

@@ -1437,6 +1437,34 @@ export class CoreApiClient {
   }
 
   /**
+   * Delete staff member and revoke access
+   * DELETE /api/staff/{id}
+   */
+  async deleteStaff(options: {
+    path: {
+      id: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      message?: string;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      message?: string;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/staff/{id}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Get staff member by ID
    * GET /api/staff/{id}
    */
@@ -1452,6 +1480,34 @@ export class CoreApiClient {
       method: 'GET',
       path: '/api/staff/{id}',
       pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Update staff member permissions or status
+   * PATCH /api/staff/{id}
+   */
+  async updateStaff(options: {
+    path: {
+      id: string;
+    };
+    body: {
+      isActive?: boolean;
+      name?: string;
+      permissions?: Array<string>;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Core.Staff>> {
+    return this.transport.request<Core.Staff>({
+      method: 'PATCH',
+      path: '/api/staff/{id}',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,

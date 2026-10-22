@@ -48,6 +48,10 @@ code so implementation work can proceed without relying on chat history.
 - [Media ownership audit](audits/media-ownership-audit.md) —
   Pre-upload authentication gates, Store-isolated namespaces, magic byte validation,
   path traversal defenses, cross-Store reference guessing prevention, and safe media deletions.
+- [Staff ownership and permission audit](audits/staff-ownership-audit.md) —
+  Store-bound staff membership, non-escalation permission delegation, single-use
+  expiring invitations, recipient contact verification, immediate session revocation,
+  cross-Store anti-enumeration (404), and multi-Store membership support.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —
