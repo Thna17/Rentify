@@ -98,16 +98,32 @@ exports.createOrder = async (req, res) => {
 exports.createInvoice = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const invoiceData = req.body.body;
+    const invoiceData = req.body.body || req.body;
 
     // Get website niche
     const website = await WebsiteData.findOne({ 
       where: { websiteId },
-      attributes: ['niche']
+      attributes: ['niche', 'storeId', 'websiteId']
     });
     
     if (!website) {
       return res.status(404).json({ error: "Website not found" });
+    }
+
+    // Verify store status
+    let store = req.store;
+    if (!store && website.storeId) {
+      const { StoreAccess } = require('../../models');
+      store = await StoreAccess.findByPk(website.storeId);
+    }
+    if (store && store.status !== 'active') {
+      return res.status(403).json({ error: "Store is not active" });
+    }
+
+    // Guard against cross-store body parameter override
+    const bodyStoreId = req.body?.storeId || invoiceData?.storeId;
+    if (bodyStoreId && website.storeId && bodyStoreId !== website.storeId) {
+      return res.status(403).json({ error: "Cross-store body selection prohibited" });
     }
 
     // Fetch payment config
@@ -130,6 +146,7 @@ exports.createInvoice = async (req, res) => {
 
     const result = await strategy.execute({
       websiteId,
+      storeId: website.storeId || null,
       invoiceData,
       merchantConfig,
     });
@@ -142,9 +159,9 @@ exports.createInvoice = async (req, res) => {
 
 exports.createPOSOrder = async (req, res) => {
   try {
-    const rawWebsiteId = req.params.websiteId || req.body?.websiteId || req.store?.websiteId;
-    const rawStoreId = req.params.storeId || req.body?.storeId || req.store?.storeId;
-    const { items, paymentMethod, cashierId, customerInfo, currency = 'USD' } = req.body || {};
+    const rawWebsiteId = req.params.websiteId || req.store?.websiteId;
+    const rawStoreId = req.params.storeId || req.store?.storeId;
+    const { items, paymentMethod, cashierId: bodyCashierId, customerInfo, currency = 'USD' } = req.body || {};
 
     let effectiveWebsiteId = null;
     let effectiveStoreId = rawStoreId || null;
@@ -182,6 +199,29 @@ exports.createPOSOrder = async (req, res) => {
       return res.status(404).json({ error: "Store or Website not found" });
     }
 
+    // Verify store status
+    let store = req.store;
+    if (!store && effectiveStoreId) {
+      const { StoreAccess } = require('../../models');
+      store = await StoreAccess.findByPk(effectiveStoreId);
+    }
+    if (store && store.status !== 'active') {
+      return res.status(403).json({ error: "Store is not active" });
+    }
+
+    // Guard against body-parameter cross-store / cross-merchant spoofing
+    const bodyStoreId = req.body?.storeId;
+    if (bodyStoreId && effectiveStoreId && bodyStoreId !== effectiveStoreId) {
+      return res.status(403).json({ error: "Cross-store body selection prohibited" });
+    }
+    const bodyMerchantId = req.body?.merchantId || req.body?.ownerId;
+    if (bodyMerchantId && store && bodyMerchantId !== store.ownerUserId) {
+      return res.status(403).json({ error: "Cross-merchant body selection prohibited" });
+    }
+
+    // Cashier identity derivation: bind to authenticated staff user when staff
+    const effectiveCashierId = req.user?.type === 'staff' ? req.user.id : (bodyCashierId || req.user?.id || 'POS-CASHIER');
+
     // Fetch payment config
     const { Op } = require('sequelize');
     const paymentConfigConditions = [];
@@ -212,7 +252,7 @@ exports.createPOSOrder = async (req, res) => {
       storeId: effectiveStoreId,
       items,
       paymentMethod,
-      cashierId,
+      cashierId: effectiveCashierId,
       customerInfo,
       merchantConfig,
       currency,

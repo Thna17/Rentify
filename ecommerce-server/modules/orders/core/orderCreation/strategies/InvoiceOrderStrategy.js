@@ -24,6 +24,7 @@ class InvoiceOrderStrategy extends OrderTypeStrategy {
     // Create order
     const order = await this.createOrderRecord({
       websiteId,
+      storeId: orderData.storeId || null,
       orderType: "manual",
       paymentMethod: invoiceData.paymentMethod,
       status: shouldDeductNow ? 'confirmed' : 'pending',
@@ -74,6 +75,7 @@ class InvoiceOrderStrategy extends OrderTypeStrategy {
     const invoice = await this.models.Invoice.create(
       {
         websiteId,
+        storeId: order.storeId || orderData.storeId || null,
         orderId: order.id,
         paymentId: payment.id,
         invoiceNumber: invoiceData.invoiceNumber || this.generateInvoiceNumber(),

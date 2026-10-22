@@ -42,6 +42,9 @@ code so implementation work can proceed without relying on chat history.
 - [Cart and order ownership audit](audits/cart-order-ownership-audit.md) —
   enforced Store ownership invariants, session-derived buyer identity, direct-ID
   guessing rejection, and safe public tracking projections for carts and orders.
+- [POS and invoice ownership audit](audits/pos-invoice-ownership-audit.md) —
+  Store-scoped POS access and checkout, explicit staff permissions, direct-ID
+  guessing prevention for invoice PDFs, public token barriers, and admin audit events.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

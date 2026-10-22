@@ -5,8 +5,13 @@ const { Op } = require('sequelize');
 class POSOrdersStrategy extends BaseRetrievalStrategy {
   async execute(req, res) {
     try {
-      const rawWebsiteId = req.params.websiteId || req.query?.websiteId || req.store?.websiteId;
-      const rawStoreId = req.params.storeId || req.query?.storeId || req.store?.storeId;
+      const rawWebsiteId = req.params.websiteId || req.store?.websiteId;
+      const rawStoreId = req.params.storeId || req.store?.storeId;
+      const queryStoreId = req.query?.storeId;
+
+      if (queryStoreId && rawStoreId && queryStoreId !== rawStoreId) {
+        return res.status(403).json({ error: "Store access denied" });
+      }
 
       let effectiveWebsiteId = null;
       let effectiveStoreId = rawStoreId || null;

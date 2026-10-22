@@ -233,6 +233,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     
     return await this.models.Invoice.create({
       websiteId: order.websiteId,
+      storeId: order.storeId || null,
       orderId: order.id,
       paymentId: payment.id,
       invoiceNumber,

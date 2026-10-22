@@ -13,7 +13,12 @@ module.exports = {
   getWebsiteStats: async (req, res) => {
     try {
       const { websiteId } = req.params;
-      const { period = "7d", orderType } = req.query;
+      const { period = "7d", orderType, storeId: queryStoreId } = req.query;
+
+      const authorizedStoreId = req.store?.storeId || req.website?.storeId;
+      if (queryStoreId && authorizedStoreId && queryStoreId !== authorizedStoreId) {
+        return res.status(403).json({ error: "Store access denied" });
+      }
 
       const dateRange = getDateRange(period);
 

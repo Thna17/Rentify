@@ -18,9 +18,21 @@ exports.getInvoices = async (req, res) => {
       status,
       sortBy = "createdAt",
       sortOrder = "DESC",
+      storeId: queryStoreId,
     } = req.query;
 
-    const where = { websiteId };
+    const authorizedStoreId = req.store?.storeId || req.website?.storeId;
+    if (queryStoreId && authorizedStoreId && queryStoreId !== authorizedStoreId) {
+      return res.status(403).json({ error: "Store access denied" });
+    }
+
+    const conditions = [];
+    if (websiteId) conditions.push({ websiteId });
+    if (authorizedStoreId) conditions.push({ storeId: authorizedStoreId });
+
+    const where = conditions.length > 1
+      ? { [Op.or]: conditions }
+      : (conditions[0] || { websiteId });
 
     // Add status filter
     if (status && status !== "all") {
