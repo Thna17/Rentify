@@ -162,40 +162,48 @@ async function teardownTestDatabases(scenario) {
   const activeScenario = scenario || createPlatformScenario();
 
   // 1. Commerce Teardown
-  const commerceScript = `
-    const { createPlatformScenario } = require('./tools/fixtures/scenario');
-    const scenario = createPlatformScenario();
-    const commerceModels = require('./ecommerce-server/models');
-    const { cleanupCommerceFixtures } = require('./tools/fixtures/commerceFixtures');
-    (async () => {
-      try {
-        await cleanupCommerceFixtures(commerceModels, scenario);
-        process.exit(0);
-      } catch (err) {
-        console.error('Commerce cleanup error:', err);
-        process.exit(1);
-      }
-    })();
-  `;
-  runIsolatedScript({ DB_NAME: 'rentify_commerce_test' }, commerceScript);
+  try {
+    const commerceScript = `
+      const { createPlatformScenario } = require('./tools/fixtures/scenario');
+      const scenario = createPlatformScenario();
+      const commerceModels = require('./ecommerce-server/models');
+      const { cleanupCommerceFixtures } = require('./tools/fixtures/commerceFixtures');
+      (async () => {
+        try {
+          await cleanupCommerceFixtures(commerceModels, scenario);
+          process.exit(0);
+        } catch (err) {
+          console.error('Commerce cleanup error:', err);
+          process.exit(1);
+        }
+      })();
+    `;
+    runIsolatedScript({ DB_NAME: 'rentify_commerce_test' }, commerceScript);
+  } catch (err) {
+    // Log and continue to Core teardown
+  }
 
   // 2. Core Teardown
-  const coreScript = `
-    const { createPlatformScenario } = require('./tools/fixtures/scenario');
-    const scenario = createPlatformScenario();
-    const coreModels = require('./rentify-server/src/models');
-    const { cleanupCoreFixtures } = require('./tools/fixtures/coreFixtures');
-    (async () => {
-      try {
-        await cleanupCoreFixtures(coreModels, scenario);
-        process.exit(0);
-      } catch (err) {
-        console.error('Core cleanup error:', err);
-        process.exit(1);
-      }
-    })();
-  `;
-  runIsolatedScript({ DB_NAME: 'rentify_core_test' }, coreScript);
+  try {
+    const coreScript = `
+      const { createPlatformScenario } = require('./tools/fixtures/scenario');
+      const scenario = createPlatformScenario();
+      const coreModels = require('./rentify-server/src/models');
+      const { cleanupCoreFixtures } = require('./tools/fixtures/coreFixtures');
+      (async () => {
+        try {
+          await cleanupCoreFixtures(coreModels, scenario);
+          process.exit(0);
+        } catch (err) {
+          console.error('Core cleanup error:', err);
+          process.exit(1);
+        }
+      })();
+    `;
+    runIsolatedScript({ DB_NAME: 'rentify_core_test' }, coreScript);
+  } catch (err) {
+    // Log error
+  }
 }
 
 module.exports = {

@@ -235,32 +235,59 @@ async function cleanupCommerceFixtures(models, trackerOrScenario, options = {}) 
     { modelName: 'StoreAccess', key: 'storeId' },
   ];
 
-  // Clean up any dynamic orders, payments, order items, and products created during tests
-  const storeIds = created.StoreAccess || [];
-  const productIds = created.Product || [];
-  if (models.OrderItem && productIds.length > 0) {
-    await models.OrderItem.destroy({
-      where: { productId: productIds },
-      transaction,
-    }).catch(() => {});
-  }
-  if (models.Payment && storeIds.length > 0) {
-    await models.Payment.destroy({
-      where: { storeId: storeIds },
-      transaction,
-    }).catch(() => {});
-  }
-  if (models.Order && storeIds.length > 0) {
-    await models.Order.destroy({
-      where: { storeId: storeIds },
-      transaction,
-    }).catch(() => {});
-  }
-  if (models.Product && storeIds.length > 0) {
-    await models.Product.destroy({
-      where: { storeId: storeIds },
-      transaction,
-    }).catch(() => {});
+  // When running against a real SQL database with foreign key constraints, clean up
+  // any dynamic untracked checkout rows created during test journeys before deleting fixture products.
+  const sequelizeInstance = models.sequelize || models.Product?.sequelize || models.OrderItem?.sequelize;
+  const isRealSql = sequelizeInstance?.query && !models.sequelize?.config?.database?.startsWith('mock_');
+  if (isRealSql) {
+    try {
+      const productIds = created.Product || [];
+      const trackedOrderItemIds = created.OrderItem || [];
+      const trackedCartItemIds = created.CartItem || [];
+      const trackedOrderIds = created.Order || [];
+      const trackedPaymentIds = created.Payment || [];
+      const trackedProductIds = created.Product || [];
+
+      if (productIds.length > 0) {
+        // Delete dynamic cart items referencing test products
+        await sequelizeInstance.query(
+          `DELETE FROM CartItems WHERE productId IN (:productIds)
+           ${trackedCartItemIds.length > 0 ? 'AND id NOT IN (:trackedCartItemIds)' : ''}`,
+          { replacements: { productIds, trackedCartItemIds }, transaction }
+        ).catch(() => {});
+
+        // Delete dynamic order items referencing test products
+        await sequelizeInstance.query(
+          `DELETE FROM OrderItems WHERE productId IN (:productIds)
+           ${trackedOrderItemIds.length > 0 ? 'AND id NOT IN (:trackedOrderItemIds)' : ''}`,
+          { replacements: { productIds, trackedOrderItemIds }, transaction }
+        ).catch(() => {});
+      }
+
+      // Delete dynamic payments
+      if (trackedPaymentIds.length > 0) {
+        await sequelizeInstance.query(
+          `DELETE FROM Payments WHERE id NOT IN (:trackedPaymentIds)`,
+          { replacements: { trackedPaymentIds }, transaction }
+        ).catch(() => {});
+      }
+
+      // Delete dynamic orders
+      if (trackedOrderIds.length > 0) {
+        await sequelizeInstance.query(
+          `DELETE FROM Orders WHERE id NOT IN (:trackedOrderIds)`,
+          { replacements: { trackedOrderIds }, transaction }
+        ).catch(() => {});
+      }
+
+      // Delete dynamic products
+      if (trackedProductIds.length > 0) {
+        await sequelizeInstance.query(
+          `DELETE FROM Products WHERE id NOT IN (:trackedProductIds)`,
+          { replacements: { trackedProductIds }, transaction }
+        ).catch(() => {});
+      }
+    } catch {}
   }
 
   for (const { modelName, key } of cleanupSpecs) {

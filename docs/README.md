@@ -27,6 +27,9 @@ code so implementation work can proceed without relying on chat history.
   accessibility contrast baselines, and multi-framework adapters for React and Angular.
 - [End-to-end contract & browser testing](e2e-testing.md) — CI-capable browser
   test harness, golden buyer and merchant journeys, and OpenAPI contract validation.
+- [Phase 1 verification report](audits/phase-1-verification.md) — complete
+  verification evidence, package checklist, test results, security audit, and
+  exit gate decision.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —
