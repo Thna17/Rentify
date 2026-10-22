@@ -36,6 +36,9 @@ code so implementation work can proceed without relying on chat history.
 - [Host & configuration validation](deployment-host-validation.md) —
   deterministic pre-deployment and startup validator for Release 1 domains,
   hosted storefront parent, HTTPS, CORS, cookie isolation, and feature flags.
+- [Authorization policy matrix](authorization-policy-matrix.md) —
+  machine-readable matrix classifying all 234 Core and Commerce operations
+  across 11 actor archetypes, deny-by-default rules, and gap remediation roadmap.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —
