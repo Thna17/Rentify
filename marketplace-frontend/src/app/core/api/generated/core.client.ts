@@ -1591,6 +1591,35 @@ export class CoreApiClient {
   }
 
   /**
+   * Delete store media asset
+   * DELETE /api/stores/mine/media
+   */
+  async deleteOwnStoreMedia(options: {
+    body: {
+      publicId?: string;
+      url?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/stores/mine/media',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Get own seller application status
    * GET /api/stores/mine/seller-application
    */
@@ -1684,6 +1713,39 @@ export class CoreApiClient {
       method: 'GET',
       path: '/api/stores/public/{storeId}',
       pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Delete store media asset by store ID
+   * DELETE /api/stores/{storeId}/media
+   */
+  async deleteStoreMedia(options: {
+    path: {
+      storeId: string;
+    };
+    body: {
+      publicId?: string;
+      url?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/stores/{storeId}/media',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -2144,6 +2206,39 @@ export class CoreApiClient {
     }>({
       method: 'PUT',
       path: '/api/websites/{websiteId}/color-palette',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Delete website media asset
+   * DELETE /api/websites/{websiteId}/media
+   */
+  async deleteWebsiteMedia(options: {
+    path: {
+      websiteId: string;
+    };
+    body: {
+      publicId?: string;
+      url?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/websites/{websiteId}/media',
       pathParams: (options as any)?.path,
       body: (options as any)?.body,
       headers: options?.headers,

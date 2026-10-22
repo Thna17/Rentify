@@ -61,4 +61,9 @@ const verifyConnection = async () => {
   await cloudinary.api.ping();
 };
 
-module.exports = { uploadBuffer, verifyConnection };
+const destroyPublicId = async (publicId, options = {}) => {
+  configure();
+  return cloudinary.uploader.destroy(publicId, options);
+};
+
+module.exports = { uploadBuffer, verifyConnection, destroyPublicId };

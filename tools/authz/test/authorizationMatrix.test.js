@@ -37,8 +37,8 @@ test('P2-AUTHZ-001 Acceptance: Matrix schema, operations count, and structural c
 
   assert.equal(result.valid, true, `Matrix should be valid: ${result.errors.join(', ')}`);
   assert.equal(result.errors.length, 0);
-  assert.equal(result.totalOperations, 234, 'Expected exactly 234 operations (96 Core + 138 Commerce)');
-  assert.equal(result.coreOperationsCount, 96, 'Core operations count must be 96');
+  assert.equal(result.totalOperations, 237, 'Expected exactly 237 operations (99 Core + 138 Commerce)');
+  assert.equal(result.coreOperationsCount, 99, 'Core operations count must be 99');
   assert.equal(result.commerceOperationsCount, 138, 'Commerce operations count must be 138');
 
   // Assert all 11 required actors are defined

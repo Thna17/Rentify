@@ -1318,6 +1318,20 @@ export namespace Core {
         success?: boolean;
       };
     };
+    deleteOwnStoreMedia: {
+      method: 'DELETE';
+      path: '/api/stores/mine/media';
+      parameters: {
+      };
+      body: {
+        publicId?: string;
+        url?: string;
+      };
+      response: {
+        result?: Record<string, any>;
+        success?: boolean;
+      };
+    };
     getOwnSellerApplication: {
       method: 'GET';
       path: '/api/stores/mine/seller-application';
@@ -1359,6 +1373,23 @@ export namespace Core {
       };
       response: {
         data?: Core.PublicStore;
+        success?: boolean;
+      };
+    };
+    deleteStoreMedia: {
+      method: 'DELETE';
+      path: '/api/stores/{storeId}/media';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      body: {
+        publicId?: string;
+        url?: string;
+      };
+      response: {
+        result?: Record<string, any>;
         success?: boolean;
       };
     };
@@ -1575,6 +1606,23 @@ export namespace Core {
       response: {
         data?: Core.Website;
         message?: string;
+        success?: boolean;
+      };
+    };
+    deleteWebsiteMedia: {
+      method: 'DELETE';
+      path: '/api/websites/{websiteId}/media';
+      parameters: {
+        path: {
+          websiteId: string;
+        };
+      };
+      body: {
+        publicId?: string;
+        url?: string;
+      };
+      response: {
+        result?: Record<string, any>;
         success?: boolean;
       };
     };

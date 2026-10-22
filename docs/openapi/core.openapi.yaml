@@ -985,6 +985,54 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailableError'
 
+  /api/stores/mine/media:
+    delete:
+      tags:
+        - Stores
+      summary: Delete store media asset
+      description: Deletes an owned store media asset from cloud storage. Enforces store ownership and namespace isolation.
+      operationId: deleteOwnStoreMedia
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1
+                url:
+                  type: string
+                  format: uri
+                  example: https://res.cloudinary.com/rentify/image/upload/rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1.jpg
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
   /api/stores/{storeId}/product-images:
     post:
       tags:
@@ -1030,6 +1078,62 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/UploadedImageMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/stores/{storeId}/media:
+    delete:
+      tags:
+        - Stores
+      summary: Delete store media asset by store ID
+      description: Deletes an owned store media asset. Requires store ownership or staff products permission.
+      operationId: deleteStoreMedia
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1
+                url:
+                  type: string
+                  format: uri
+                  example: https://res.cloudinary.com/rentify/image/upload/rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1.jpg
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -1750,6 +1854,61 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/websites/{websiteId}/media:
+    delete:
+      tags:
+        - Websites
+      summary: Delete website media asset
+      description: Deletes an owned website media asset from cloud storage. Enforces store ownership and namespace isolation.
+      operationId: deleteWebsiteMedia
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/website/banner_1
+                url:
+                  type: string
+                  format: uri
+                  example: https://res.cloudinary.com/rentify/image/upload/rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/website/banner_1.jpg
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
         '503':
           $ref: '#/components/responses/ServiceUnavailableError'
 

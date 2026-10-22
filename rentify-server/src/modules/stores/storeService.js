@@ -216,6 +216,10 @@ class StoreService {
         error.statusCode = 404;
         throw error;
       }
+      if (changes.logoUrl) {
+        const { validateMediaStoreOwnership } = require('../../utils/mediaSecurityValidator');
+        validateMediaStoreOwnership(changes.logoUrl, store.id);
+      }
       const owner = developmentApprovalEnabled()
         ? await User.findByPk(ownerUserId, { transaction }) : null;
       if (eligibleForDevelopmentApproval(approvalCandidate(store, changes), owner)) {

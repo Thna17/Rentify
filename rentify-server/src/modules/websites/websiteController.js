@@ -466,7 +466,8 @@ class WebsiteController {
    * rows are created, and the whole change is saved or nothing is.
    */
   updateStorefrontContent = asyncHandler(async (req, res) => {
-    const { values, errors } = validateStorefrontContent(req.body?.fields);
+    const storeId = req.website.storeId;
+    const { values, errors } = validateStorefrontContent(req.body?.fields, storeId);
     if (errors.length) return res.status(400).json({ error: "Some fields are invalid", fields: errors });
     if (!values.length) return res.status(400).json({ error: "Nothing to update" });
 

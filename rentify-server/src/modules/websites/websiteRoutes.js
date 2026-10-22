@@ -5,8 +5,8 @@ const websiteController = require('./websiteController');
 const { verifyToken } = require('../../middlewares/auth');
 const { validateCreateWebsite } = require('../../middlewares/validation');
 const { uploadImage } = require('./websiteImageController');
-const { uploadPDF, uploadProductImages } = require('../media').uploadController;
-const { imageUpload, productImagesUpload, pdfUpload } = require('../../middlewares/multer');
+const { uploadPDF, uploadProductImages, deleteMedia } = require('../media').uploadController;
+const { singleImageUpload, productImagesUpload, singlePdfUpload } = require('../../middlewares/multer');
 const { requireWebsiteOwner, requireContentOwner } = require('../../middlewares/authorization');
 
 router.get('/merchant', verifyToken, websiteController.getWebsiteForMerchant);
@@ -25,8 +25,9 @@ router.get('/', verifyToken, websiteController.getWebsite);
 router.get('/validate/:websiteId', websiteController.validateWebsite);
 router.get('/:websiteId/merchant-telegram', verifyToken, requireWebsiteOwner, websiteController.getMerchantTelegramInfo);
 router.put('/:websiteId/color-palette', verifyToken, requireWebsiteOwner, websiteController.updateColorPalette);
-router.post('/uploadImage/:websiteId', verifyToken, requireWebsiteOwner, imageUpload.single('image'), uploadImage);
+router.post('/uploadImage/:websiteId', verifyToken, requireWebsiteOwner, singleImageUpload('image'), uploadImage);
 router.post('/:websiteId/product-images', verifyToken, requireWebsiteOwner,
   productImagesUpload, uploadProductImages);
-router.post('/upload-pdf/:websiteId', verifyToken, requireWebsiteOwner, pdfUpload.single('pdf'), uploadPDF);
+router.post('/upload-pdf/:websiteId', verifyToken, requireWebsiteOwner, singlePdfUpload, uploadPDF);
+router.delete('/:websiteId/media', verifyToken, requireWebsiteOwner, deleteMedia);
 module.exports = router;
