@@ -7,6 +7,67 @@
  */
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
+const MANDATORY_RESERVED_SUBDOMAINS = [
+  'admin',
+  'api',
+  'auth',
+  'billing',
+  'checkout',
+  'mail',
+  'marketplace',
+  'support',
+  'www',
+  'app',
+  'apps',
+  'login',
+  'signin',
+  'signup',
+  'account',
+  'accounts',
+  'merchant',
+  'merchants',
+  'seller',
+  'sellers',
+  'market',
+  'dashboard',
+  'store',
+  'stores',
+  'shop',
+  'storefront',
+  'cart',
+  'pay',
+  'payment',
+  'payments',
+  'invoice',
+  'email',
+  'smtp',
+  'static',
+  'cdn',
+  'assets',
+  'media',
+  'images',
+  'help',
+  'status',
+  'docs',
+  'blog',
+  'news',
+  'rentify',
+  'official',
+  'security',
+  'test',
+  'dev',
+  'staging',
+  'demo',
+];
+
+const reservedHostedSubdomains = () => {
+  const custom = String(process.env.HOSTED_STOREFRONT_RESERVED || '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([...MANDATORY_RESERVED_SUBDOMAINS, ...custom]);
+};
+
 const isHostedStorefrontOrigin = (value) => {
   const domain = (process.env.HOSTED_STOREFRONT_DOMAIN || '').toLowerCase().trim();
   if (!domain) return false;
@@ -20,9 +81,8 @@ const isHostedStorefrontOrigin = (value) => {
     if (!parsed.hostname.endsWith(`.${domain}`)) return false;
     const label = parsed.hostname.slice(0, -(domain.length + 1));
     // Labels used by other sites on the same domain are never storefronts.
-    const reserved = String(process.env.HOSTED_STOREFRONT_RESERVED || '').split(',').map((item) => item.trim().toLowerCase());
-    return LABEL.test(label) && !reserved.includes(label);
+    return LABEL.test(label) && !reservedHostedSubdomains().has(label);
   } catch { return false; }
 };
 
-module.exports = { isHostedStorefrontOrigin };
+module.exports = { isHostedStorefrontOrigin, reservedHostedSubdomains, MANDATORY_RESERVED_SUBDOMAINS };

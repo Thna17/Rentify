@@ -33,6 +33,9 @@ code so implementation work can proceed without relying on chat history.
 - [Identity and authoritative subject model](identity-subject-model.md) —
   authoritative subject definition, token & session models, role coexistence,
   ambiguous-credential precedence, and security boundaries.
+- [Host & configuration validation](deployment-host-validation.md) —
+  deterministic pre-deployment and startup validator for Release 1 domains,
+  hosted storefront parent, HTTPS, CORS, cookie isolation, and feature flags.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

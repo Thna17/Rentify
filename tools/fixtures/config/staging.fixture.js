@@ -1,0 +1,33 @@
+// tools/fixtures/config/staging.fixture.js
+// Approved staging configuration fixture for Rentify platform validation.
+
+module.exports = {
+  NODE_ENV: 'staging',
+  MARKETPLACE_URL: 'https://staging.rentifymarket.com',
+  AUTH_URL: 'https://staging-auth.rentifymarket.com',
+  RENTIFY_API_URL: 'https://staging-core.rentifymarket.com',
+  ECOMMERCE_API_URL: 'https://staging-commerce.rentifymarket.com',
+  ADMIN_DASHBOARD_URL: 'https://staging-admin.rentifymarket.com',
+  MERCHANT_DASHBOARD_URL: 'https://staging-dashboard.rentifymarket.com',
+  MARKETING_URL: 'https://staging.rentifymarket.com',
+  STOREFRONT_ORIGIN: 'https://rentifystore.shop',
+  HOSTED_STOREFRONT_DOMAIN: 'rentifystore.shop',
+  HOSTED_STOREFRONT_RESERVED: 'admin,api,auth,billing,checkout,mail,marketplace,support',
+  COOKIE_DOMAIN: '',
+  COOKIE_SECURE: 'true',
+  COOKIE_HTTP_ONLY: 'true',
+  COOKIE_SAMESITE: 'Lax',
+  CORS_ALLOWED_ORIGINS: 'https://staging.rentifymarket.com,https://staging-auth.rentifymarket.com,https://staging-dashboard.rentifymarket.com,https://staging-admin.rentifymarket.com',
+  AUTH_RETURN_URL_ALLOWLIST: 'https://staging.rentifymarket.com,https://staging-dashboard.rentifymarket.com,https://staging-admin.rentifymarket.com',
+  CUTLUY_ENABLED: 'false',
+  DEV_MARKETPLACE_AUTO_APPROVAL: 'false',
+  CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'false',
+  MARKETPLACE_COD_CHECKOUT_ENABLED: 'true',
+  JWT_SECRET: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+  JWT_REFRESH_SECRET: '2345678901abcdef2345678901abcdef2345678901abcdef2345678901abcdef',
+  SESSION_SECRET: '3456789012abcdef3456789012abcdef3456789012abcdef3456789012abcdef',
+  COOKIE_SECRET: '4567890123abcdef4567890123abcdef4567890123abcdef4567890123abcdef',
+  INTERNAL_SERVICE_SECRET: '5678901234abcdef5678901234abcdef5678901234abcdef5678901234abcdef',
+  PAYMENT_CONFIG_ENCRYPTION_KEY: '6789012345abcdef6789012345abcdef6789012345abcdef6789012345abcdef',
+  DB_PASSWORD: 'staging_secure_db_pass_99887766',
+};
