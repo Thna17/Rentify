@@ -24,38 +24,57 @@ module.exports = {
     quantity: req.body.quantity,
   }) })),
   addToCart: wrap(async (req, res) => {
-    let storeId = req.body.storeId;
-    if (!storeId && req.body.productId) {
+    let storeId = req.body?.storeId;
+    if (req.body?.productId) {
       const product = await Product.findByPk(req.body.productId);
-      storeId = product?.storeId;
+      if (!product) {
+        const error = new Error('Product not found');
+        error.statusCode = 404;
+        throw error;
+      }
+      if (storeId && product.storeId !== storeId) {
+        const error = new Error('Product not found in specified store');
+        error.statusCode = 404;
+        throw error;
+      }
+      storeId = product.storeId;
     }
-    const quantity = typeof req.body.quantity === 'number' ? req.body.quantity : 1;
+    const quantity = typeof req.body?.quantity === 'number' ? req.body.quantity : 1;
     res.status(201).json({ carts: await service.setCartItem({
       ...getIdentifier(req),
       storeId,
-      productId: req.body.productId,
-      variantId: req.body.variantId,
+      productId: req.body?.productId,
+      variantId: req.body?.variantId,
       quantity,
       mode: 'add',
     }) });
   }),
   updateCartItem: wrap(async (req, res) => {
-    let storeId = req.params.storeId || req.body.storeId;
-    let productId = req.params.productId || req.body.productId;
-    const quantity = typeof req.body.quantity === 'number' ? req.body.quantity : req.body.quantity;
+    let storeId = req.params.storeId || req.body?.storeId;
+    let productId = req.params.productId || req.body?.productId;
+    const quantity = typeof req.body?.quantity === 'number' ? req.body.quantity : req.body?.quantity;
     if (req.params.itemId) {
       return res.json({ carts: await service.updateCartItem({
         ...getIdentifier(req),
         itemId: req.params.itemId,
+        storeId,
         quantity,
       }) });
+    }
+    if (storeId && productId) {
+      const product = await Product.findByPk(productId);
+      if (!product || product.storeId !== storeId) {
+        const error = new Error('Product not found in specified store');
+        error.statusCode = 404;
+        throw error;
+      }
     }
     res.json({ carts: await service.setCartItem({
       ...getIdentifier(req),
       storeId,
       productId,
-      variantId: req.body.variantId,
-      quantity: req.body.quantity,
+      variantId: req.body?.variantId,
+      quantity: req.body?.quantity,
     }) });
   }),
   removeCartItem: wrap(async (req, res) => {
@@ -106,4 +125,36 @@ module.exports = {
     eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
     action: req.params.action, details: req.body,
   }) })),
+  getPublicTracking: wrap(async (req, res) => {
+    const trackingNumber = req.params.trackingNumber || req.query?.trackingNumber;
+    if (!trackingNumber) {
+      const error = new Error('Tracking number is required');
+      error.statusCode = 400;
+      throw error;
+    }
+    const { Order } = require('../../models');
+    const { Op } = require('sequelize');
+    const cleanNum = trackingNumber.trim();
+    const order = await Order.findOne({
+      where: {
+        [Op.or]: [
+          { trackingNumber: cleanNum },
+          { orderNumber: cleanNum },
+        ],
+      },
+    });
+    if (!order) {
+      const error = new Error('Order not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    res.json({
+      orderNumber: order.orderNumber,
+      trackingNumber: order.trackingNumber || null,
+      status: order.status,
+      deliveryStatus: order.deliveryStatus,
+      createdAt: order.createdAt,
+      estimatedDelivery: order.estimatedDelivery || null,
+    });
+  }),
 };

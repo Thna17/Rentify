@@ -5,12 +5,15 @@ const createRequireStoreAccess = ({ findStore = (id) => StoreAccess.findByPk(id)
     if (!req.user || req.user.type === 'guest' || req.user.type === 'customer') {
       return res.status(401).json({ error: 'Merchant authentication required' });
     }
+    if (req.user.status === 'suspended') {
+      return res.status(403).json({ error: 'Account is suspended' });
+    }
     const storeId = req.params.storeId || req.body?.storeId || req.query?.storeId;
     if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
     const store = await findStore(storeId);
     if (!store) return res.status(404).json({ error: 'Store not found' });
     if (store.status !== 'active') return res.status(403).json({ error: 'Store is not active' });
-    if (req.user.type === 'user' && req.user.id === store.ownerUserId) {
+    if (req.user.type === 'user' && (req.user.id === store.ownerUserId || req.user.role === 'admin')) {
       req.store = store;
       return next();
     }

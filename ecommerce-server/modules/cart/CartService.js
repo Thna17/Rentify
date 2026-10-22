@@ -29,14 +29,27 @@ class CartService {
   }
 
   async getOrCreateCart(identifier, transaction = null) {
-    const { userId, sessionId } = identifier;
+    const { userId, sessionId, buyerId } = identifier;
+
+    // Resolve storeId from Website projection if available
+    if (!this.storeId && this.websiteId) {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: this.websiteId },
+        attributes: ['storeId', 'websiteId'],
+        transaction,
+      });
+      if (website?.storeId) this.storeId = website.storeId;
+    }
+
+    const idConditions = [];
+    if (buyerId) idConditions.push({ buyerId });
+    if (userId) idConditions.push({ userId });
+    if (sessionId) idConditions.push({ sessionId });
     
     let cart = await Cart.findOne({
       where: { 
         websiteId: this.websiteId,
-        [Op.or]: [
-          userId ? { userId } : { sessionId }
-        ]
+        ...(idConditions.length > 1 ? { [Op.or]: idConditions } : (idConditions[0] || {})),
       },
       transaction
     });
@@ -44,8 +57,10 @@ class CartService {
     if (!cart) {
       cart = await Cart.create({
         websiteId: this.websiteId,
-        userId,
-        sessionId,
+        storeId: this.storeId || null,
+        userId: userId || null,
+        buyerId: buyerId || null,
+        sessionId: (userId || buyerId) ? null : sessionId,
         version: 0,
         subtotal: 0,
         taxTotal: 0,
@@ -111,6 +126,21 @@ class CartService {
 
     if (!product) {
       throw new ApiError(404, 'Product not found');
+    }
+
+    // Verify product belongs to this storefront website/store
+    if (this.websiteId && product.websiteId !== this.websiteId) {
+      if (!this.storeId && this.websiteId) {
+        const website = await WebsiteData.findOne({
+          where: { websiteId: this.websiteId },
+          attributes: ['storeId'],
+          transaction,
+        });
+        if (website?.storeId) this.storeId = website.storeId;
+      }
+      if (!this.storeId || product.storeId !== this.storeId) {
+        throw new ApiError(404, 'Product not found');
+      }
     }
 
     let variant = null;

@@ -39,6 +39,9 @@ code so implementation work can proceed without relying on chat history.
 - [Authorization policy matrix](authorization-policy-matrix.md) —
   machine-readable matrix classifying all 234 Core and Commerce operations
   across 11 actor archetypes, deny-by-default rules, and gap remediation roadmap.
+- [Cart and order ownership audit](audits/cart-order-ownership-audit.md) —
+  enforced Store ownership invariants, session-derived buyer identity, direct-ID
+  guessing rejection, and safe public tracking projections for carts and orders.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

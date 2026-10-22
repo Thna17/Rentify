@@ -11,6 +11,14 @@ class OrderByIdStrategy extends BaseRetrievalStrategy {
 
       if (!order) return res.status(404).json({ error: 'Order not found' });
 
+      // Reject cross-store / cross-website order access
+      if (req.store && order.storeId && order.storeId !== req.store.storeId) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      if (req.website && order.websiteId && order.websiteId !== req.website.websiteId) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
       res.json({
         id: order.id,
         websiteId: order.websiteId,

@@ -43,6 +43,15 @@ exports.createOrder = async (req, res) => {
       return res.status(404).json({ error: "Website not found" });
     }
 
+    if (website.storeId) {
+      const { StoreAccess } = require('../../models');
+      const store = await StoreAccess.findByPk(website.storeId, { transaction });
+      if (store && store.status !== 'active') {
+        await transaction.rollback();
+        return res.status(403).json({ error: 'Store is not active' });
+      }
+    }
+
     // Fetch payment config
     const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
       where: { websiteId } ,
@@ -251,4 +260,37 @@ exports.getMyOrderPayment = async (req, res) => {
 exports.getPOSOrders = async (req, res) => {
   const strategy = OrderRetrievalFactory.createStrategy('posOrders');
   await strategy.execute(req, res);
+};
+
+exports.getPublicTracking = async (req, res) => {
+  try {
+    const identifier = req.params.trackingNumber || req.params.orderNumber || req.query?.trackingNumber || req.query?.orderNumber;
+    if (!identifier || typeof identifier !== 'string' || identifier.trim().length === 0) {
+      return res.status(400).json({ error: 'Tracking number or order number is required' });
+    }
+    const cleanId = identifier.trim();
+    const { Op } = require('sequelize');
+    const order = await models.Order.findOne({
+      where: {
+        [Op.or]: [
+          { trackingNumber: cleanId },
+          { orderNumber: cleanId },
+        ],
+      },
+    });
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    // Return ONLY approved minimal safe fields (NO PII, NO buyer address, NO phone/email, NO payment secrets)
+    return res.json({
+      orderNumber: order.orderNumber,
+      trackingNumber: order.trackingNumber || null,
+      status: order.status,
+      deliveryStatus: order.deliveryStatus,
+      createdAt: order.createdAt,
+      estimatedDelivery: order.estimatedDelivery || null,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to retrieve tracking information' });
+  }
 };

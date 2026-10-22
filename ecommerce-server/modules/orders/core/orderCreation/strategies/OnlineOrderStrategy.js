@@ -27,7 +27,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     // Get cart identifier
     const cartIdentifier = user.type === "customer" 
       ? { userId: user.id } 
-      : { sessionId: user.sessionId };
+      : (user.type === "user" ? { [this.models.Sequelize.Op.or]: [{ buyerId: user.id }, { userId: user.id }] } : { sessionId: user.sessionId });
 
     // Find cart with items
     const cart = await Cart.findOne({
@@ -125,6 +125,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
       deliveryStatus: 'pending',
       orderType: 'online',
       userId: user.type === "customer" ? user.id : null,
+      buyerId: user.type === "user" ? user.id : null,
       sessionId: user.type === "guest" ? user.sessionId : null,
       customerId: customer?.id,
       customerInfo: {

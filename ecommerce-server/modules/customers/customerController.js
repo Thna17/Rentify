@@ -113,6 +113,11 @@ exports.getCustomer = async (req, res) => {
 
 exports.cancelOrderByCustomer = async (req, res) => {
   const { orderId } = req.params;
+  const user = req.user;
+
+  if (!user || user.type === 'guest') {
+    return res.status(401).json({ error: "Authentication required" });
+  }
 
   try {
     await retryTransaction(async (t) => {
@@ -122,17 +127,42 @@ exports.cancelOrderByCustomer = async (req, res) => {
         lock: t.LOCK.UPDATE
       });
 
-      if (!order) throw new Error("Order not found");
-      
+      if (!order) {
+        const error = new Error("Order not found");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Verify buyer ownership: buyer may cancel only their own order
+      const isOwner = (user.type === 'customer' && order.userId === user.id) ||
+                      (user.type === 'user' && order.buyerId === user.id) ||
+                      (user.sessionId && order.sessionId === user.sessionId);
+
+      if (!isOwner) {
+        const error = new Error("Order not found");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Reject cross-store / cross-website cancellation if context was supplied
+      const targetStoreId = req.params.storeId || req.query?.storeId || req.body?.storeId;
+      if (targetStoreId && order.storeId && order.storeId !== targetStoreId) {
+        const error = new Error("Order not found");
+        error.statusCode = 404;
+        throw error;
+      }
+
       // Validate order can be cancelled
       const cancellableStatuses = [
         ORDER_STATUS.PENDING,
         ORDER_STATUS.CONFIRMED,
         ORDER_STATUS.PROCESSING
       ];
-      
+
       if (!cancellableStatuses.includes(order.status)) {
-        throw new Error("Order cannot be cancelled at this stage");
+        const error = new Error("Order cannot be cancelled at this stage");
+        error.statusCode = 400;
+        throw error;
       }
 
       // Restore stock if needed
@@ -150,6 +180,6 @@ exports.cancelOrderByCustomer = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Customer cancel error:", error);
-    res.status(400).json({ error: error.message });
+    res.status(error.statusCode || 400).json({ error: error.message });
   }
 };

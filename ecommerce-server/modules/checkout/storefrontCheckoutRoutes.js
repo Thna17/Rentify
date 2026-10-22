@@ -16,6 +16,7 @@ router.use('/storefront/:websiteId', verifyCoreBuyer, async (req, res, next) => 
     }
     const store = await StoreAccess.findOne({ where: { websiteId: req.params.websiteId } });
     if (!store) return res.status(404).json({ error: 'Storefront not found' });
+    if (store.status !== 'active') return res.status(403).json({ error: 'Store is not active' });
     req.storeId = store.storeId;
     return next();
   } catch (error) { return next(error); }
