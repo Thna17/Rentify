@@ -1,8 +1,8 @@
 # Production Host and Deployment Configuration Validation
 
-**Document ID:** P2-HOST-001  
-**Status:** Implemented and Enforced  
-**Release Target:** Rentify Production Release 1  
+**Document ID:** P2-HOST-001
+**Status:** Implemented and Enforced
+**Release Target:** Rentify Production Release 1
 **Companion Documents:** [`docs/decisions/release-1-register.md`](decisions/release-1-register.md), [`docs/platform-architecture.md`](platform-architecture.md), [`docs/identity-subject-model.md`](identity-subject-model.md)
 
 ---

@@ -348,4 +348,3 @@ test('storefront content media isolation: prevents referencing other store asset
   const externalResult = validateStorefrontContent(externalFields, STORE_A);
   assert.equal(externalResult.errors.length, 0);
 });
-

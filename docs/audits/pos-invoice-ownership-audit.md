@@ -1,10 +1,10 @@
 # POS and Invoice Store Ownership Audit (P2-AUTHZ-002)
 
-**Status**: Verified & Enforced  
-**Slice**: P2-AUTHZ-002 (POS and Invoices)  
-**Authority**: `ecommerce-server`  
-**Date**: October 23, 2026  
-**Target Invariant**: Strict Store-Scoping, Role & Permission Enforcement, Zero Direct-ID Guessing, Safe Public Access Boundaries  
+**Status**: Verified & Enforced
+**Slice**: P2-AUTHZ-002 (POS and Invoices)
+**Authority**: `ecommerce-server`
+**Date**: October 23, 2026
+**Target Invariant**: Strict Store-Scoping, Role & Permission Enforcement, Zero Direct-ID Guessing, Safe Public Access Boundaries
 
 ---
 

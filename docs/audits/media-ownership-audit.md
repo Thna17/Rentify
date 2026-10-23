@@ -1,10 +1,10 @@
 # Media Store Ownership Audit (P2-AUTHZ-002)
 
-**Status**: Verified & Enforced  
-**Slice**: P2-AUTHZ-002 (Media Slice)  
-**Authority**: `rentify-server` & `ecommerce-server`  
-**Date**: October 23, 2026  
-**Target Invariant**: Strict Pre-Upload Authentication, Canonical Store Isolation, Magic Byte Validation, Path Traversal Defense, Cross-Store Media Guessing Prevention, Safe Media Deletions  
+**Status**: Verified & Enforced
+**Slice**: P2-AUTHZ-002 (Media Slice)
+**Authority**: `rentify-server` & `ecommerce-server`
+**Date**: October 23, 2026
+**Target Invariant**: Strict Pre-Upload Authentication, Canonical Store Isolation, Magic Byte Validation, Path Traversal Defense, Cross-Store Media Guessing Prevention, Safe Media Deletions
 
 ---
 

@@ -1,9 +1,9 @@
 # Privileged Authentication and Session Controls Audit (P2-SEC-001)
 
-**Document ID:** AUD-P2-SEC-001  
-**Status:** Complete  
-**Date:** 2026-10-23  
-**Scope:** Core API (`rentify-server`), Admin Frontend (`admin-frontend`), Platform OpenAPI (`docs/openapi/core.openapi.yaml`), and Authorization Policy Matrix (`docs/security/authorization-matrix.json`)  
+**Document ID:** AUD-P2-SEC-001
+**Status:** Complete
+**Date:** 2026-10-23
+**Scope:** Core API (`rentify-server`), Admin Frontend (`admin-frontend`), Platform OpenAPI (`docs/openapi/core.openapi.yaml`), and Authorization Policy Matrix (`docs/security/authorization-matrix.json`)
 **Related Documents:** [`docs/identity-subject-model.md`](../identity-subject-model.md), [`docs/admin-operations.md`](../admin-operations.md), [`docs/authorization-policy-matrix.md`](../authorization-policy-matrix.md)
 
 ---

@@ -10,7 +10,7 @@ const STORE_B = '22222222-2222-4222-8222-222222222222';
 test('ProductController: CSV upload multer sanitizes path traversal in filenames', () => {
   const req = {};
   const file1 = { originalname: '../../../../etc/passwd.csv' };
-  
+
   let generatedFilename1 = null;
   ProductController.upload.storage.getFilename(req, file1, (err, filename) => {
     generatedFilename1 = filename;
@@ -33,7 +33,7 @@ test('ProductController: CSV upload multer sanitizes path traversal in filenames
 
 test('ProductController: CSV upload fileFilter rejects non-csv files', () => {
   const req = {};
-  
+
   // 1. Rejected extension: .php
   ProductController.upload.fileFilter(req, { originalname: 'shell.php', mimetype: 'application/x-php' }, (err, accept) => {
     assert.equal(accept, false);

@@ -5,4 +5,3 @@ module.exports = {
   get entitlementService() { return require('./entitlements').entitlementService; },
   get capabilityConfig() { return require('./entitlements'); },
 };
-

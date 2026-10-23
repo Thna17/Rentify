@@ -1,15 +1,15 @@
 # Release 1 Authorization Policy Matrix
 
-**Document ID:** P2-AUTHZ-001  
-**Status:** Canonical Release 1 Specification  
-**Canonical Machine-Readable Matrix:** [`docs/security/authorization-matrix.json`](security/authorization-matrix.json)  
+**Document ID:** P2-AUTHZ-001
+**Status:** Canonical Release 1 Specification
+**Canonical Machine-Readable Matrix:** [`docs/security/authorization-matrix.json`](security/authorization-matrix.json)
 **Dependencies:** [`docs/identity-subject-model.md`](identity-subject-model.md), [`docs/decisions/release-1-register.md`](decisions/release-1-register.md), [`docs/platform-architecture.md`](platform-architecture.md), [`docs/openapi/`](openapi/README.md)
 
 ---
 
 ## 1. Executive Summary
 
-This document establishes the canonical, version-controlled **Release 1 Authorization Policy Matrix** across the Rentify Core (`rentify-server`) and Commerce (`ecommerce-server`) platforms. 
+This document establishes the canonical, version-controlled **Release 1 Authorization Policy Matrix** across the Rentify Core (`rentify-server`) and Commerce (`ecommerce-server`) platforms.
 
 The machine-readable matrix at [`docs/security/authorization-matrix.json`](security/authorization-matrix.json) programmatically classifies **100% of the 234 active Release 1 HTTP operations** (96 Core operations and 138 Commerce operations) across 20 distinct resource domains.
 
@@ -19,19 +19,19 @@ The matrix is enforced via continuous repository verification (`npm run verify:a
 
 ## 2. Core Security & Governance Principles
 
-1. **Deny by Default:**  
+1. **Deny by Default:**
    Every endpoint, resource, and action is denied unless an explicit, matching permission rule is defined. If a request presents an unknown route, unmapped actor, or missing claim, access is strictly rejected (`401 Unauthorized` or `403 Forbidden`).
 
-2. **No Reliance on Frontend Hiding:**  
+2. **No Reliance on Frontend Hiding:**
    UI element disabling, hidden buttons, or route guards in `rentify-frontend`, `marketplace-frontend`, or `admin-frontend` are considered presentation conveniences only. All tenant isolation, ownership invariants, role checks, and permission gates are enforced authoritatively in backend Express middleware and service controllers.
 
-3. **Strict Separation of Store vs. Website Authorization:**  
+3. **Strict Separation of Store vs. Website Authorization:**
    As established in `AGENTS.md` and `P2-ID-001`, Store ownership governs products, inventory, orders, POS, and fulfillment; Website ownership governs templates, CMS components, and custom domains. Merchants who operate exclusively on the central marketplace interact with Store resources without ever creating a Website.
 
-4. **Contextual Role Derivation & Credential Precedence:**  
+4. **Contextual Role Derivation & Credential Precedence:**
    Identity and role context are derived strictly from cryptographically verified tokens and session cookies (`req.user.id`, `req.staff.id`, `req.staff.merchantId`). Mismatched or conflicting credentials (e.g. Bearer token belonging to user A sent with session cookie belonging to user B) are rejected with `401 Unauthorized`.
 
-5. **Integrity Preservation & Gap Tracking:**  
+5. **Integrity Preservation & Gap Tracking:**
    Per Phase 2 governance, existing route behaviors are not bulk-modified in P2-AUTHZ-001. Instead, existing legacy routes with authorization limitations are explicitly recorded as **gaps** in the matrix and slated for structured remediation slices in `P2-AUTHZ-002`. Existing security restrictions are never weakened.
 
 ---
@@ -90,24 +90,24 @@ All 234 operations are categorized across 20 canonical resource domains:
 
 The audit discovered 14 legacy routes in `ecommerce-server` where access is currently scoped by presentation constructs (`websiteId`) or lacks granular staff permission validation. These are documented directly in the matrix with `currentImplementationStatus: 'gap'` and slated for resolution in `P2-AUTHZ-002`:
 
-1. **Legacy Product Scoping by Website (`/api/product/{websiteId}*` — 10 operations):**  
-   - *Operations:* `post_api_product_websiteId`, `put_api_product_websiteId_productId`, `delete_api_product_websiteId_productId`, `patch_api_product_websiteId_productId_inventory`, `post_api_product_websiteId_bulk`, `patch_api_product_websiteId_bulk`, `post_api_product_websiteId_bulk_csv`, `get_api_product_websiteId_manage_config`, `get_api_product_websiteId_manage_products`, `get_api_product_websiteId_manage_products_productId`.  
-   - *Gap:* Endpoints authenticate merchant ownership via `userAccessToken` but do not support store staff permission tokens (`authStaff` with `products` permission) and operate on `websiteId` rather than canonical `storeId`.  
+1. **Legacy Product Scoping by Website (`/api/product/{websiteId}*` — 10 operations):**
+   - *Operations:* `post_api_product_websiteId`, `put_api_product_websiteId_productId`, `delete_api_product_websiteId_productId`, `patch_api_product_websiteId_productId_inventory`, `post_api_product_websiteId_bulk`, `patch_api_product_websiteId_bulk`, `post_api_product_websiteId_bulk_csv`, `get_api_product_websiteId_manage_config`, `get_api_product_websiteId_manage_products`, `get_api_product_websiteId_manage_products_productId`.
+   - *Gap:* Endpoints authenticate merchant ownership via `userAccessToken` but do not support store staff permission tokens (`authStaff` with `products` permission) and operate on `websiteId` rather than canonical `storeId`.
    - *Target:* P2-AUTHZ-002 slice for Store-Centric Catalog Authorization.
 
-2. **Legacy POS Orders by Website (`/api/order/websites/{websiteId}/orders/pos` — 2 operations):**  
-   - *Operations:* `get_api_order_websites_websiteId_orders_pos`, `post_api_order_websites_websiteId_orders_pos`.  
-   - *Gap:* Operates on `websiteId` instead of canonical `storeId`. Store-centric POS endpoints (`/api/stores/{storeId}/orders/pos`) already exist; the website-keyed aliases require deprecation/forwarding.  
+2. **Legacy POS Orders by Website (`/api/order/websites/{websiteId}/orders/pos` — 2 operations):**
+   - *Operations:* `get_api_order_websites_websiteId_orders_pos`, `post_api_order_websites_websiteId_orders_pos`.
+   - *Gap:* Operates on `websiteId` instead of canonical `storeId`. Store-centric POS endpoints (`/api/stores/{storeId}/orders/pos`) already exist; the website-keyed aliases require deprecation/forwarding.
    - *Target:* P2-AUTHZ-002 slice for POS Authorization Unification.
 
-3. **Legacy Invoices by Website (`/api/invoice/websites/{websiteId}/invoices` — 1 operation):**  
-   - *Operation:* `get_api_invoice_websites_websiteId_invoices`.  
-   - *Gap:* Scoped by `websiteId` rather than `storeId`.  
+3. **Legacy Invoices by Website (`/api/invoice/websites/{websiteId}/invoices` — 1 operation):**
+   - *Operation:* `get_api_invoice_websites_websiteId_invoices`.
+   - *Gap:* Scoped by `websiteId` rather than `storeId`.
    - *Target:* P2-AUTHZ-002 slice for Invoices and Settlement Authorization.
 
-4. **Website Analytics and Stats Scoping (`/ecommerce/stats/websites/{websiteId}` — 1 operation):**  
-   - *Operation:* `get_ecommerce_stats_websites_websiteId`.  
-   - *Gap:* Validates token presence but does not verify that the authenticated caller owns the referenced `websiteId`.  
+4. **Website Analytics and Stats Scoping (`/ecommerce/stats/websites/{websiteId}` — 1 operation):**
+   - *Operation:* `get_ecommerce_stats_websites_websiteId`.
+   - *Gap:* Validates token presence but does not verify that the authenticated caller owns the referenced `websiteId`.
    - *Target:* P2-AUTHZ-002 slice for Store Telemetry and Analytics Scoping.
 
 ---

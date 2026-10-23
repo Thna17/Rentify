@@ -460,5 +460,3 @@ test('P2-SEC-001: 12. Role-elevation protection and session revocation upon role
     sessionManager.revokeAllUserSessions = origRevokeAll;
   }
 });
-
-

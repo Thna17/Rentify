@@ -1,10 +1,10 @@
 # Cart and Order Store Ownership Audit (P2-AUTHZ-002)
 
-**Status**: Verified & Enforced  
-**Slice**: P2-AUTHZ-002 (Carts and Orders)  
-**Authority**: `ecommerce-server`  
-**Date**: October 23, 2026  
-**Target Reference**: Release 1 Invariant: Exactly One Store per Order, Session-Derived Buyer Identity, Strict Tenant Boundaries  
+**Status**: Verified & Enforced
+**Slice**: P2-AUTHZ-002 (Carts and Orders)
+**Authority**: `ecommerce-server`
+**Date**: October 23, 2026
+**Target Reference**: Release 1 Invariant: Exactly One Store per Order, Session-Derived Buyer Identity, Strict Tenant Boundaries
 
 ---
 

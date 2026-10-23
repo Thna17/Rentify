@@ -1,10 +1,10 @@
 # Versioned Entitlements and Capability Enforcement Audit (P2-ENT-001)
 
-**Status**: Verified & Enforced  
-**Slice**: P2-ENT-001 (Versioned Entitlements)  
-**Authority**: `rentify-server` (Authoritative Source of Truth) & `ecommerce-server` (Authoritative Consumer & Enforcement Boundary)  
-**Date**: October 23, 2026  
-**Target Invariant**: Decoupled Capabilities, Versioned Capability Schemas (`CAPABILITIES_VERSION = 1`), Tier Resolution, Race-Safe Atomic Quota Gating, Grace Period Mutation Locking, 90-Day Historical Read Retention, Multi-Channel Consumer Synchronization, Clear UI Explanatory Degradation  
+**Status**: Verified & Enforced
+**Slice**: P2-ENT-001 (Versioned Entitlements)
+**Authority**: `rentify-server` (Authoritative Source of Truth) & `ecommerce-server` (Authoritative Consumer & Enforcement Boundary)
+**Date**: October 23, 2026
+**Target Invariant**: Decoupled Capabilities, Versioned Capability Schemas (`CAPABILITIES_VERSION = 1`), Tier Resolution, Race-Safe Atomic Quota Gating, Grace Period Mutation Locking, 90-Day Historical Read Retention, Multi-Channel Consumer Synchronization, Clear UI Explanatory Degradation
 
 ---
 

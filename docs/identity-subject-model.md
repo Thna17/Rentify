@@ -1,8 +1,8 @@
 # Rentify Identity and Authoritative Subject Model
 
-**Status:** Authoritative Specification, 2026-10-22  
-**Work Package:** `P2-ID-001`  
-**Prerequisites:** `P1-QA-001`  
+**Status:** Authoritative Specification, 2026-10-22
+**Work Package:** `P2-ID-001`
+**Prerequisites:** `P1-QA-001`
 **Companion Documents:** [`platform-architecture.md`](platform-architecture.md), [`current-rentify-architecture.md`](current-rentify-architecture.md), [`decisions/release-1-register.md`](decisions/release-1-register.md), [`adr/0002-unified-buyer-identity.md`](adr/0002-unified-buyer-identity.md), [`../rentify-server/docs/adr/0001-identity-and-cross-domain-sso.md`](../rentify-server/docs/adr/0001-identity-and-cross-domain-sso.md)
 
 ---
@@ -50,7 +50,7 @@ flowchart TD
         Store["Store (UUID)\n- ownerUserId -> User.id\n- status: active | suspended\n- marketplaceApprovalStatus"]
         Staff["Staff (UUID)\n- merchantId -> User.id\n- websiteId -> Website.id\n- permissions: string[]\n- isActive: boolean"]
         Website["Website (UUID)\n- storeId -> Store.id\n- userId -> User.id\n- domain, status"]
-        
+
         User -->|"1 : 1 (owns)"| Store
         Store -->|"1 : 0..1 (links)"| Website
         User -->|"1 : N (employs)"| Staff
@@ -160,15 +160,15 @@ When incoming HTTP requests carry multiple credentials, middleware resolves iden
 ```mermaid
 flowchart TD
     Start["Incoming Request"] --> RouteType{"Route Class"}
-    
+
     RouteType -->|"Admin Route\n(verifyCoreAdmin)"| AdminCheck["Examine userAccessToken / Bearer\nRequire: role === 'admin'\nIgnore: staff / customer cookies"]
     RouteType -->|"Buyer Route\n(verifyCoreBuyer)"| BuyerCheck["Examine userAccessToken / Bearer\nRequire: Core User identity\nIgnore: staff / customer cookies"]
     RouteType -->|"Store Actor Route\n(verifyStoreActor)"| ActorCheck{"Has staffAccessToken?"}
     RouteType -->|"General Core Route\n(verifyToken)"| CoreCheck{"Has userAccessToken\nor userRefreshToken?"}
-    
+
     ActorCheck -->|"Yes & Valid"| ActorStaff["Authenticate as Staff\n(req.user.type = 'staff')"]
     ActorCheck -->|"No or Invalid"| ActorMerchant["Evaluate userAccessToken\n(req.user.type = 'user')"]
-    
+
     CoreCheck -->|"Yes"| CoreUser["Evaluate userAccessToken\n(Attempt refresh if expired)\nSet req.user = User"]
     CoreCheck -->|"No"| CoreStaffCheck{"Has staffAccessToken\nor staffRefreshToken?"}
     CoreStaffCheck -->|"Yes"| CoreStaff["Evaluate Staff Token\nSet req.user = Staff"]

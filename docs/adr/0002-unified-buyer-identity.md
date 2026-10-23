@@ -100,4 +100,3 @@ Under the approved Release 1 architecture, custom merchant domains are strictly
   - `CUSTOM_DOMAIN_CHECKOUT_DISABLED`
   - `CUSTOM_DOMAIN_CART_DISABLED`
 - Responses to blocked actions provide the verified hosted storefront URL for safe navigation without open-redirect vectors or credential leakage.
-

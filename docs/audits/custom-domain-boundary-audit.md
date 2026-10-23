@@ -1,16 +1,16 @@
 # Custom-Domain Boundary Audit (P2-HOST-003)
 
-**Document ID:** AUD-P2-HOST-003  
-**Status:** Complete  
-**Date:** 2026-10-23  
-**Scope:** Core API (`rentify-server`), Commerce API (`ecommerce-server`), Storefront Frontend (`rentify-frontend`), and Host Validator (`tools/host-validator`)  
+**Document ID:** AUD-P2-HOST-003
+**Status:** Complete
+**Date:** 2026-10-23
+**Scope:** Core API (`rentify-server`), Commerce API (`ecommerce-server`), Storefront Frontend (`rentify-frontend`), and Host Validator (`tools/host-validator`)
 **Related Documents:** [`docs/decisions/release-1-register.md`](../decisions/release-1-register.md) (DEC-003), [`docs/adr/0002-unified-buyer-identity.md`](../adr/0002-unified-buyer-identity.md), [`docs/deployment-host-validation.md`](../deployment-host-validation.md)
 
 ---
 
 ## 1. Executive Summary
 
-Under approved Release 1 architectural decisions (**DEC-003**), merchant custom domains (`store.merchantbrand.com`) are strictly **browse-only**. Central buyer authentication, cart mutations, checkout, order placement, order history lookups, and customer account modifications on custom domains are disabled. 
+Under approved Release 1 architectural decisions (**DEC-003**), merchant custom domains (`store.merchantbrand.com`) are strictly **browse-only**. Central buyer authentication, cart mutations, checkout, order placement, order history lookups, and customer account modifications on custom domains are disabled.
 
 All authenticated buyer flows and checkout transactions occur exclusively on verified hosted storefront subdomains under the platform parent domain:
 `https://<store-subdomain>.rentifystore.shop`
