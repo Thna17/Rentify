@@ -4,7 +4,9 @@ const controller = require('./storeController');
 const sellerReviewController = require('./sellerReviewController');
 const { productImagesUpload, storeLogoUpload } = require('../../middlewares/multer');
 const { uploadProductImages, deleteMedia } = require('../media').uploadController;
-const { requireStoreAccess } = require('../../middlewares/authorization');
+const { requireStoreAccess, createRequireStoreAccess } = require('../../middlewares/authorization');
+
+const requireStoreAccessForRead = createRequireStoreAccess({ allowSuspended: true });
 
 const requireOwnStoreOwner = async (req, res, next) => {
   if (!req.user?.id) return res.status(401).json({ error: 'Unauthorized' });
@@ -22,10 +24,12 @@ router.get('/public', controller.listPublicStores);
 router.get('/public/:storeId', controller.getPublicStore);
 router.use(verifyToken);
 router.get('/mine', controller.getOwnStore);
+router.get('/mine/entitlements', controller.getOwnStoreEntitlements);
 router.post('/', controller.createStore);
 router.patch('/mine', controller.updateOwnStore);
 router.post('/mine/logo', requireOwnStoreOwner, storeLogoUpload, controller.uploadOwnLogo);
 router.delete('/mine/media', requireOwnStoreOwner, deleteMedia);
+router.get('/:storeId/entitlements', requireStoreAccessForRead, controller.getStoreEntitlements);
 router.post('/:storeId/product-images', requireStoreAccess,
   productImagesUpload, uploadProductImages);
 router.delete('/:storeId/media', requireStoreAccess, deleteMedia);

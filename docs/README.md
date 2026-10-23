@@ -52,6 +52,10 @@ code so implementation work can proceed without relying on chat history.
   Store-bound staff membership, non-escalation permission delegation, single-use
   expiring invitations, recipient contact verification, immediate session revocation,
   cross-Store anti-enumeration (404), and multi-Store membership support.
+- [Versioned entitlements audit](audits/versioned-entitlements-audit.md) —
+  versioned capability keys (`CAPABILITIES_VERSION = 1`), tier resolution,
+  race-safe row-locked catalog and staff quotas, 7-day grace period mutation lock,
+  90-day post-suspension historical read retention, and explanatory UI degradation.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

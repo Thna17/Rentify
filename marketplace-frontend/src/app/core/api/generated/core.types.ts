@@ -462,6 +462,34 @@ export namespace Core {
     updatedAt?: string;
   }
 
+  export interface StoreEntitlements {
+    capabilities: {
+      customDomainBrowse?: boolean;
+      historicalOrderRead?: boolean;
+      hostedCheckout?: boolean;
+      invoices?: boolean;
+      marketplaceListing?: boolean;
+      pos?: boolean;
+      productLimit?: number;
+      staffLimit?: number;
+      website?: boolean;
+    };
+    dates?: Record<string, any>;
+    displayName: string;
+    isActive?: boolean;
+    isCancelled?: boolean;
+    isGracePeriod?: boolean;
+    isSuspended?: boolean;
+    isTrial?: boolean;
+    lifecycleState: "active" | "trial" | "grace_period" | "suspended" | "cancelled";
+    mutationsAllowed: boolean;
+    quotas?: Record<string, any>;
+    restrictionReason?: string | null;
+    storeId: string;
+    tier: string;
+    version: number;
+  }
+
   export interface Subscription {
     createdAt?: string;
     endDate?: string;
@@ -1336,6 +1364,16 @@ export namespace Core {
         success?: boolean;
       };
     };
+    getOwnStoreEntitlements: {
+      method: 'GET';
+      path: '/api/stores/mine/entitlements';
+      parameters: {
+      };
+      response: {
+        data?: Core.StoreEntitlements;
+        success?: boolean;
+      };
+    };
     uploadStoreLogo: {
       method: 'POST';
       path: '/api/stores/mine/logo';
@@ -1401,6 +1439,19 @@ export namespace Core {
       };
       response: {
         data?: Core.PublicStore;
+        success?: boolean;
+      };
+    };
+    getStoreEntitlements: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/entitlements';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      response: {
+        data?: Core.StoreEntitlements;
         success?: boolean;
       };
     };
@@ -1899,6 +1950,7 @@ export type CoreStandardError = Core.StandardError;
 export type CoreStandardErrorDetail = Core.StandardErrorDetail;
 export type CoreStandardSuccessResponse = Core.StandardSuccessResponse;
 export type CoreStore = Core.Store;
+export type CoreStoreEntitlements = Core.StoreEntitlements;
 export type CoreSubscription = Core.Subscription;
 export type CoreTemplateContent = Core.TemplateContent;
 export type CoreUploadedImageMetadata = Core.UploadedImageMetadata;

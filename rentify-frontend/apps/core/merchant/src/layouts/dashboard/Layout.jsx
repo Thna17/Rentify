@@ -145,6 +145,34 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
         />
         
         <main className="flex-1 overflow-auto bg-background scrollbar-subtle">
+          {store?.entitlements?.isGracePeriod && (
+            <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">⚠️ Grace Period Active:</span>
+                <span>Your storefront and marketplace sales remain live, but adding products, staff, and website edits are locked until subscription renewal.</span>
+              </div>
+              <a
+                href="/settings/billing"
+                className="underline font-semibold whitespace-nowrap hover:text-amber-950 dark:hover:text-amber-100"
+              >
+                Review Billing &rarr;
+              </a>
+            </div>
+          )}
+          {store?.entitlements?.isSuspended && (
+            <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-3 text-red-900 dark:text-red-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">⛔ Subscription Suspended:</span>
+                <span>{store?.entitlements?.restrictionReason || "Your subscription is suspended. Historical orders and invoices remain readable for 90 days."}</span>
+              </div>
+              <a
+                href="/settings/billing"
+                className="underline font-semibold whitespace-nowrap hover:text-red-950 dark:hover:text-red-100"
+              >
+                Settle Subscription &rarr;
+              </a>
+            </div>
+          )}
           {store?.needsCategoryReview && (
             <div className="p-4 md:p-6 max-w-7xl mx-auto">
               <StoreCategoryPrompt store={store} onStoreChange={setStore} />

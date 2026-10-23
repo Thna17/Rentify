@@ -1,6 +1,6 @@
 const { StoreAccess } = require('../models');
 
-const createRequireStoreAccess = ({ findStore = (id) => StoreAccess.findByPk(id), permissions = [] } = {}) =>
+const createRequireStoreAccess = ({ findStore = (id) => StoreAccess.findByPk(id), permissions = [], allowSuspended = false } = {}) =>
   async (req, res, next) => {
     if (!req.user || req.user.type === 'guest' || req.user.type === 'customer') {
       return res.status(401).json({ error: 'Merchant authentication required' });
@@ -12,7 +12,37 @@ const createRequireStoreAccess = ({ findStore = (id) => StoreAccess.findByPk(id)
     if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
     const store = await findStore(storeId);
     if (!store) return res.status(404).json({ error: 'Store not found' });
-    if (store.status !== 'active') return res.status(403).json({ error: 'Store is not active' });
+
+    const { getStoreEntitlements } = require('../modules/store-access/storeAccessService');
+    const entitlements = getStoreEntitlements(store);
+
+    if (store.status !== 'active') {
+      if (!allowSuspended) return res.status(403).json({ error: 'Store is not active' });
+      if (!entitlements.capabilities.historicalOrderRead && req.user.role !== 'admin') {
+        return res.status(403).json({
+          error: entitlements.restrictionReason || 'Historical read access has expired (90 days post-suspension limit reached)',
+          code: 'HISTORICAL_ACCESS_EXPIRED',
+        });
+      }
+    }
+
+    // Capability gating for POS and Invoices
+    const isPosAction = permissions.includes('pos') || permissions.includes('manage_pos');
+    if (isPosAction && !entitlements.capabilities.pos && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Point of Sale (POS) is not enabled for this store subscription plan',
+        code: 'CAPABILITY_UNAVAILABLE',
+      });
+    }
+
+    const isInvoiceAction = permissions.includes('invoices') || permissions.includes('invoice') || permissions.includes('manage_invoices');
+    if (isInvoiceAction && !entitlements.capabilities.invoices && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Invoicing is not enabled for this store subscription plan',
+        code: 'CAPABILITY_UNAVAILABLE',
+      });
+    }
+
     if (req.user.type === 'user' && (req.user.id === store.ownerUserId || req.user.role === 'admin')) {
       req.store = store;
       if (req.user.role === 'admin' && req.user.id !== store.ownerUserId) {

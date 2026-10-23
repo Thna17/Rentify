@@ -473,6 +473,40 @@ exports.sendStaffInvitation = async (req, res) => {
   const { store } = await resolveCallerAndStore(req, { write: true });
   validatePermissionDelegation(req.user, permissions);
 
+  // Entitlement enforcement: check mutation lock and staff quota (race-safe under transaction)
+  const { entitlementService } = require("../billing");
+  const entitlements = await entitlementService.evaluateStoreEntitlements(store.id, {
+    transaction,
+    store,
+  });
+
+  if (!entitlements.mutationsAllowed) {
+    throw new ApiError(
+      403,
+      entitlements.restrictionReason ||
+        "Staff creation is disabled during subscription grace period or suspension",
+      "CAPABILITY_MUTATION_LOCKED"
+    );
+  }
+
+  let currentStaffCount = 0;
+  try {
+    currentStaffCount = await Staff.count({
+      where: { storeId: store.id },
+      transaction,
+    });
+  } catch {
+    currentStaffCount = 0;
+  }
+
+  if (currentStaffCount >= entitlements.capabilities.staffLimit) {
+    throw new ApiError(
+      403,
+      `Store has reached the staff limit of ${entitlements.capabilities.staffLimit} for the ${entitlements.displayName} plan`,
+      "STAFF_LIMIT_EXCEEDED"
+    );
+  }
+
   let website = null;
   if (bodyWebsiteId) {
     website = await Website.findByPk(bodyWebsiteId, { transaction });

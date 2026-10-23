@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -20,64 +20,92 @@ import {
   Check,
   Minus,
   Sparkles,
+  AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { useChannels } from '../../context/ChannelContext';
-import { MARKETING_URL } from '@rentify/shared/config/urls';
+import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 const PLAN_TIERS = [
   {
-    key: 'free',
-    name: 'Free',
+    key: 'free_pilot',
+    name: 'Free Pilot',
     priceLabel: '$0/mo',
-    whoItsFor: 'Facebook seller, new seller',
+    trial: '6-Month Pilot',
+    whoItsFor: 'Marketplace-only seller, social seller',
     commission: 'Only on marketplace orders',
+    productLimit: 25,
+    staffLimit: 1,
     features: [
-      { label: 'Store and one catalog', included: true },
-      { label: 'Sell on Rentify Marketplace', included: true },
+      { label: 'Store and one canonical catalog', included: true },
+      { label: 'Sell on Rentify Marketplace (25 products)', included: true },
+      { label: '1 Staff user account', included: true },
+      { label: 'Counter POS & manual receipts', included: true },
       { label: 'Own storefront (subdomain + templates)', included: false },
-      { label: 'POS at the counter', included: false },
-      { label: 'Custom domain, staff accounts, analytics, marketing tools', included: false },
+      { label: 'Custom domain browse', included: false },
     ],
   },
   {
     key: 'starter',
-    name: 'Starter',
-    priceLabel: '≈$5/mo',
-    trial: '14-day free trial',
-    whoItsFor: 'Shop with a counter or brand',
+    name: 'Starter Storefront',
+    priceLabel: '$15/mo',
+    trial: '14-Day Free Trial',
+    whoItsFor: 'Shop with a brand or storefront counter',
     commission: 'Only on marketplace orders',
     recommended: true,
+    productLimit: 100,
+    staffLimit: 2,
     features: [
-      { label: 'Store and one catalog', included: true },
-      { label: 'Sell on Rentify Marketplace', included: true },
-      { label: 'Own storefront (subdomain + templates)', included: true },
-      { label: 'POS at the counter', included: true },
-      { label: 'Custom domain, staff accounts, analytics, marketing tools', included: false },
+      { label: 'Store and one canonical catalog', included: true },
+      { label: 'Sell on Rentify Marketplace (100 products)', included: true },
+      { label: 'Own storefront (*.rentifystore.shop)', included: true },
+      { label: '2 Staff user accounts', included: true },
+      { label: 'Counter POS & customer invoices', included: true },
+      { label: 'Custom domain browse', included: false },
     ],
   },
   {
-    key: 'pro',
-    name: 'Pro',
-    priceLabel: '≈$10/mo',
-    trial: '14-day free trial',
-    whoItsFor: 'Growing shop',
+    key: 'business',
+    name: 'Business Storefront',
+    priceLabel: '$35/mo',
+    trial: '14-Day Free Trial',
+    whoItsFor: 'Growing store with custom domain and team',
     commission: 'Only on marketplace orders',
+    productLimit: 500,
+    staffLimit: 5,
     features: [
-      { label: 'Store and one catalog', included: true },
-      { label: 'Sell on Rentify Marketplace', included: true },
-      { label: 'Own storefront (subdomain + templates)', included: true },
-      { label: 'POS at the counter', included: true },
-      { label: 'Custom domain, staff accounts, analytics, marketing tools', included: true },
+      { label: 'Store and one canonical catalog', included: true },
+      { label: 'Sell on Rentify Marketplace (500 products)', included: true },
+      { label: 'Own storefront (*.rentifystore.shop)', included: true },
+      { label: '5 Staff user accounts', included: true },
+      { label: 'Counter POS & customer invoices', included: true },
+      { label: 'Custom domain browse (DEC-003)', included: true },
     ],
   },
 ];
 
 export const BillingSetting = () => {
   const { hasStorefront } = useChannels();
-  const currentTierKey = hasStorefront ? 'starter' : 'free';
-  const currentTier = PLAN_TIERS.find((p) => p.key === currentTierKey) || PLAN_TIERS[0];
+  const [entitlements, setEntitlements] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine/entitlements`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res?.data) setEntitlements(res.data);
+      })
+      .catch((err) => {
+        console.warn('Failed to load store entitlements', err);
+      });
+  }, []);
+
+  const activeTierKey = entitlements?.tier || (hasStorefront ? 'starter' : 'free_pilot');
+  const currentTier = PLAN_TIERS.find((p) => p.key === activeTierKey) || PLAN_TIERS[0];
+  const isGracePeriod = entitlements?.isGracePeriod;
+  const isSuspended = entitlements?.isSuspended;
+  const isTrial = entitlements?.isTrial;
 
   const [paymentMethods] = useState([
     {
@@ -112,6 +140,30 @@ export const BillingSetting = () => {
       description="Manage your Rentify plan, storefront trial, and billing details"
       icon={<CreditCard />}
     >
+      {isGracePeriod && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-sm">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-sm">Subscription in Grace Period (7 Days)</h4>
+            <p className="mt-1 text-xs text-amber-800">
+              Your storefront and marketplace listings remain live and fully purchasable. However, adding new products, staff invitations, and template modifications are locked until renewal is settled.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isSuspended && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-red-900 shadow-sm">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-sm">Subscription Suspended</h4>
+            <p className="mt-1 text-xs text-red-800">
+              {entitlements?.restrictionReason || 'Your storefront is temporarily offline and marketplace listings are hidden. You retain read-only dashboard access to historical orders and invoices for 90 days.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Current Plan */}
       <Card className="shadow-sm border-0">
         <CardHeader>
@@ -127,8 +179,23 @@ export const BillingSetting = () => {
                 <h3 className="text-xl font-bold text-slate-900">
                   {currentTier.name} Plan ({currentTier.priceLabel})
                 </h3>
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
-                  {currentTier.trial || 'Active'}
+                <Badge
+                  variant="secondary"
+                  className={
+                    isSuspended
+                      ? 'bg-red-100 text-red-800'
+                      : isGracePeriod
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-emerald-100 text-emerald-800'
+                  }
+                >
+                  {isSuspended
+                    ? 'Suspended (90-Day Read Access)'
+                    : isGracePeriod
+                    ? 'Grace Period Active'
+                    : isTrial
+                    ? '14-Day Free Trial'
+                    : currentTier.trial || 'Active'}
                 </Badge>
               </div>
               <p className="text-slate-600 text-sm mt-1">
@@ -147,7 +214,7 @@ export const BillingSetting = () => {
           {/* 3-Tier Plan Comparison */}
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {PLAN_TIERS.map((plan) => {
-              const isCurrent = plan.key === currentTierKey;
+              const isCurrent = plan.key === activeTierKey;
               return (
                 <div
                   key={plan.key}

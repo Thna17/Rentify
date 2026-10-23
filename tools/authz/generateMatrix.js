@@ -297,8 +297,11 @@ function classifyOperation(svc, method, p, opObj) {
     requiredStoreRelationship = 'owner';
     ownershipRule = 'store.merchantId === user.id';
     actorMatrix.storeOwner = 'allow';
-    actorMatrix.permittedStaff = p.includes('/product-images') ? 'allow' : 'deny_403';
+    actorMatrix.permittedStaff = (p.includes('/product-images') || p.includes('/entitlements')) ? 'allow' : 'deny_403';
     actorMatrix.platformAdmin = 'allow';
+    if (p.includes('/entitlements')) {
+      actorMatrix.suspendedActor = 'allow';
+    }
   } else if (resource === 'Media') {
     subjectType = 'any';
     requiredRole = 'merchant';

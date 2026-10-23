@@ -20,6 +20,15 @@ const StoreAccess = sequelize.define('StoreAccess', {
   marketplaceEntitlement: {
     type: DataTypes.ENUM('pilot', 'none'), allowNull: false, defaultValue: 'pilot',
   },
+  entitlements: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
+  entitlementVersion: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+  },
 }, { indexes: [{ fields: ['ownerUserId'] }] });
 
 module.exports = StoreAccess;

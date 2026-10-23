@@ -2,4 +2,7 @@
 // not the files inside the module. Members load lazily when first read.
 module.exports = {
   get subscriptionService() { return require('./subscriptionService'); },
+  get entitlementService() { return require('./entitlements').entitlementService; },
+  get capabilityConfig() { return require('./entitlements'); },
 };
+

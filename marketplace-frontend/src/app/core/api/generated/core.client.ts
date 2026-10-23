@@ -1623,6 +1623,30 @@ export class CoreApiClient {
   }
 
   /**
+   * Get own store versioned entitlements
+   * GET /api/stores/mine/entitlements
+   */
+  async getOwnStoreEntitlements(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/stores/mine/entitlements',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Upload store logo image
    * POST /api/stores/mine/logo
    */
@@ -1768,6 +1792,34 @@ export class CoreApiClient {
     }>({
       method: 'GET',
       path: '/api/stores/public/{storeId}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Get store versioned entitlements by ID
+   * GET /api/stores/{storeId}/entitlements
+   */
+  async getStoreEntitlements(options: {
+    path: {
+      storeId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/entitlements',
       pathParams: (options as any)?.path,
       headers: options?.headers,
       correlationId: options?.correlationId,

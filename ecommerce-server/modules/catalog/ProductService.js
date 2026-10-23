@@ -362,10 +362,33 @@ async create(productData, transaction = null) {
   try {
     const storeCondition = await this.resolveStoreWhere(transaction);
     if (storeCondition?.storeId) {
-      const { StoreAccess } = require('../../models');
-      const store = await StoreAccess.findByPk(storeCondition.storeId, { transaction });
-      if (store?.primaryCategory) {
-        defaultMarketplaceCategory = inferMarketplaceCategory(store.primaryCategory, websiteNiche);
+      const { StoreAccess, Product } = require('../../models');
+      const store = await StoreAccess.findByPk(storeCondition.storeId, {
+        transaction,
+        lock: transaction ? transaction.LOCK.UPDATE : undefined,
+      });
+      if (store) {
+        const { getStoreEntitlements } = require('../store-access').storeAccessService;
+        const entitlements = getStoreEntitlements(store);
+        if (!entitlements.mutationsAllowed) {
+          throw new ApiError(
+            403,
+            entitlements.restrictionReason || 'Product creation is disabled during subscription grace period or suspension',
+            'CAPABILITY_MUTATION_LOCKED'
+          );
+        }
+        const currentCount = await Product.count({ where: { storeId: store.storeId }, transaction });
+        const productLimit = entitlements.capabilities?.productLimit ?? 25;
+        if (currentCount >= productLimit) {
+          throw new ApiError(
+            403,
+            `Store has reached the product limit of ${productLimit} for the ${entitlements.displayName || 'current'} plan`,
+            'PRODUCT_LIMIT_EXCEEDED'
+          );
+        }
+        if (store.primaryCategory) {
+          defaultMarketplaceCategory = inferMarketplaceCategory(store.primaryCategory, websiteNiche);
+        }
       }
     }
   } catch {
@@ -667,6 +690,39 @@ async create(productData, transaction = null) {
   async createBulkProducts(productsData, transaction = null) {
     if (!Array.isArray(productsData) || productsData.length === 0) {
       throw new ApiError(400, "Products array is required and cannot be empty");
+    }
+
+    try {
+      const storeCondition = await this.resolveStoreWhere(transaction);
+      if (storeCondition?.storeId) {
+        const { StoreAccess, Product } = require('../../models');
+        const store = await StoreAccess.findByPk(storeCondition.storeId, {
+          transaction,
+          lock: transaction ? transaction.LOCK.UPDATE : undefined,
+        });
+        if (store) {
+          const { getStoreEntitlements } = require('../store-access').storeAccessService;
+          const entitlements = getStoreEntitlements(store);
+          if (!entitlements.mutationsAllowed) {
+            throw new ApiError(
+              403,
+              entitlements.restrictionReason || 'Product creation is disabled during subscription grace period or suspension',
+              'CAPABILITY_MUTATION_LOCKED'
+            );
+          }
+          const currentCount = await Product.count({ where: { storeId: store.storeId }, transaction });
+          const productLimit = entitlements.capabilities?.productLimit ?? 25;
+          if (currentCount + productsData.length > productLimit) {
+            throw new ApiError(
+              403,
+              `Bulk product creation exceeds store limit of ${productLimit} products (${currentCount} existing + ${productsData.length} new)`,
+              'PRODUCT_LIMIT_EXCEEDED'
+            );
+          }
+        }
+      }
+    } catch (err) {
+      if (err.statusCode === 403) throw err;
     }
 
     const websiteNiche = await this.getWebsiteNiche();

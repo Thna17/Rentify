@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -10,8 +10,10 @@ import {
   Users,
   Filter,
   MoreHorizontal,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth, useTranslation } from '@rentify/utils';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import {
   useGetStaffListQuery,
   useUpdateStaffMutation,
@@ -147,6 +149,36 @@ const StaffSetting: React.FC = () => {
     }
   };
 
+  const [entitlements, setEntitlements] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine/entitlements`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res?.data) setEntitlements(res.data);
+      })
+      .catch((err) => {
+        console.warn('Failed to load store entitlements', err);
+      });
+  }, []);
+
+  const isGracePeriod = entitlements?.isGracePeriod;
+  const isSuspended = entitlements?.isSuspended;
+  const staffLimit = entitlements?.capabilities?.staffLimit ?? 5;
+  const currentStaffCount = staffList?.length || 0;
+  const isStaffLimitReached = currentStaffCount >= staffLimit;
+  const canAddStaff = entitlements ? entitlements.mutationsAllowed && !isStaffLimitReached : true;
+
+  const disabledReason = !canAddStaff
+    ? isGracePeriod
+      ? 'Staff invitations are locked during your subscription grace period.'
+      : isSuspended
+      ? 'Staff invitations are locked because the store subscription is suspended.'
+      : isStaffLimitReached
+      ? `Staff limit of ${staffLimit} reached for the ${entitlements?.displayName || 'current'} plan. Upgrade to invite more team members.`
+      : 'Staff invitations are unavailable.'
+    : null;
+
   const filteredStaff = staffList.filter((staff: StaffMember) => {
     const matchesSearch =
       staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,8 +212,16 @@ const StaffSetting: React.FC = () => {
               </CardDescription>
             </div>
             <Button 
-              onClick={() => handleOpenDialog()} 
-              className="gap-2 shadow-sm"
+              onClick={() => {
+                if (!canAddStaff) {
+                  toast.error(disabledReason || 'Action locked');
+                  return;
+                }
+                handleOpenDialog();
+              }}
+              disabled={!canAddStaff}
+              title={disabledReason || undefined}
+              className={`gap-2 shadow-sm ${!canAddStaff ? 'opacity-60 cursor-not-allowed bg-slate-400' : ''}`}
             >
               <Plus className="h-4 w-4" />
               Add Staff Member
@@ -190,6 +230,17 @@ const StaffSetting: React.FC = () => {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {disabledReason && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                <span>{disabledReason}</span>
+              </div>
+              <Button asChild size="sm" variant="outline" className="border-amber-400 bg-white hover:bg-amber-100 text-amber-900">
+                <a href="/settings/billing">Upgrade Plan</a>
+              </Button>
+            </div>
+          )}
           {/* Filters and Search */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">

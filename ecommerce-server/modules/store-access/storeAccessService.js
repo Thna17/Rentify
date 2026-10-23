@@ -85,6 +85,8 @@ async function applySnapshot(snapshot) {
       status: snapshot.status,
       version: snapshot.version,
       marketplaceEntitlement: snapshot.marketplaceEntitlement,
+      entitlements: snapshot.entitlements || existing?.entitlements || null,
+      entitlementVersion: snapshot.entitlementVersion || snapshot.entitlements?.version || 1,
     };
     if (existing) await existing.update(data, { transaction });
     else await StoreAccess.create(data, { transaction });
@@ -102,4 +104,43 @@ async function applySnapshot(snapshot) {
   });
 }
 
-module.exports = { applySnapshot, validateSnapshot, backfillWebsiteRows };
+function getStoreEntitlements(store) {
+  if (store?.entitlements && typeof store.entitlements === 'object') {
+    return store.entitlements;
+  }
+  // Safe deterministic fallback when snapshot lacks explicit entitlements object
+  const isSuspended = store?.status === 'suspended';
+  const isPilot = store?.marketplaceEntitlement === 'pilot';
+  const hasWebsite = Boolean(store?.websiteId);
+
+  return {
+    version: store?.entitlementVersion || 1,
+    tier: isPilot ? 'free_pilot' : (hasWebsite ? 'starter' : 'free_pilot'),
+    displayName: isPilot ? 'Free Pilot' : (hasWebsite ? 'Starter' : 'Free Pilot'),
+    lifecycleState: isSuspended ? 'suspended' : 'active',
+    isTrial: false,
+    isActive: !isSuspended,
+    isGracePeriod: false,
+    isSuspended,
+    isCancelled: false,
+    mutationsAllowed: !isSuspended,
+    capabilities: {
+      marketplaceListing: !isSuspended && Boolean(store?.marketplaceEnabled ?? true),
+      website: hasWebsite,
+      productLimit: isPilot ? 25 : (hasWebsite ? 100 : 25),
+      staffLimit: isPilot ? 1 : 2,
+      pos: !isSuspended,
+      invoices: !isSuspended,
+      customDomainBrowse: false,
+      hostedCheckout: !isSuspended && hasWebsite,
+      historicalOrderRead: true,
+    },
+    dates: {
+      gracePeriodEndsAt: null,
+      historicalAccessEndsAt: null,
+    },
+    restrictionReason: isSuspended ? 'Store is suspended' : null,
+  };
+}
+
+module.exports = { applySnapshot, validateSnapshot, backfillWebsiteRows, getStoreEntitlements };

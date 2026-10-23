@@ -1145,6 +1145,73 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailableError'
 
+  /api/stores/mine/entitlements:
+    get:
+      tags:
+        - Stores
+      summary: Get own store versioned entitlements
+      description: Returns the authoritative versioned capability and quota entitlements for the caller's store.
+      operationId: getOwnStoreEntitlements
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Authoritative store entitlements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/StoreEntitlements'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/stores/{storeId}/entitlements:
+    get:
+      tags:
+        - Stores
+      summary: Get store versioned entitlements by ID
+      description: Returns the authoritative versioned capability and quota entitlements for a specific store.
+      operationId: getStoreEntitlements
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Authoritative store entitlements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/StoreEntitlements'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /api/stores/mine/seller-application:
     get:
       tags:
@@ -4131,6 +4198,74 @@ components:
             message: Internal server error
 
   schemas:
+    StoreEntitlements:
+      type: object
+      required:
+        - version
+        - storeId
+        - tier
+        - displayName
+        - lifecycleState
+        - mutationsAllowed
+        - capabilities
+      properties:
+        version:
+          type: integer
+          example: 1
+        storeId:
+          type: string
+          format: uuid
+        tier:
+          type: string
+          example: starter
+        displayName:
+          type: string
+          example: Starter
+        lifecycleState:
+          type: string
+          enum: [active, trial, grace_period, suspended, cancelled]
+          example: active
+        isTrial:
+          type: boolean
+        isActive:
+          type: boolean
+        isGracePeriod:
+          type: boolean
+        isSuspended:
+          type: boolean
+        isCancelled:
+          type: boolean
+        mutationsAllowed:
+          type: boolean
+        capabilities:
+          type: object
+          properties:
+            marketplaceListing:
+              type: boolean
+            website:
+              type: boolean
+            productLimit:
+              type: integer
+            staffLimit:
+              type: integer
+            pos:
+              type: boolean
+            invoices:
+              type: boolean
+            customDomainBrowse:
+              type: boolean
+            hostedCheckout:
+              type: boolean
+            historicalOrderRead:
+              type: boolean
+        quotas:
+          type: object
+        dates:
+          type: object
+        restrictionReason:
+          type: string
+          nullable: true
+
     HealthResponse:
       type: object
       required:

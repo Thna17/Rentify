@@ -188,7 +188,19 @@ const requireOrderAccess = async (req, res, next) => {
     req.params.storeId = order.storeId;
     const store = await StoreAccess.findByPk(order.storeId);
     if (!store) return res.status(404).json({ error: "Store not found" });
-    if (store.status !== 'active') return res.status(403).json({ error: "Store is not active" });
+    if (store.status !== 'active') {
+      const { getStoreEntitlements } = require('../modules/store-access/storeAccessService');
+      const entitlements = getStoreEntitlements(store);
+      if (req.method !== 'GET' && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Store is not active" });
+      }
+      if (!entitlements.capabilities.historicalOrderRead && req.user?.role !== 'admin') {
+        return res.status(403).json({
+          error: entitlements.restrictionReason || "Historical order read access expired (90 days post-suspension limit reached)",
+          code: "HISTORICAL_ACCESS_EXPIRED"
+        });
+      }
+    }
     req.store = store;
 
     if (req.user?.type === "user" && store.ownerUserId === req.user.id) {
@@ -316,7 +328,17 @@ const requireInvoiceAccess = async (req, res, next) => {
       store = null;
     }
     if (store && store.status !== "active") {
-      return res.status(403).json({ error: "Store is not active" });
+      const { getStoreEntitlements } = require('../modules/store-access/storeAccessService');
+      const entitlements = getStoreEntitlements(store);
+      if (req.method !== 'GET' && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "Store is not active" });
+      }
+      if (!entitlements.capabilities.historicalOrderRead && req.user?.role !== 'admin') {
+        return res.status(403).json({
+          error: entitlements.restrictionReason || "Historical invoice read access expired (90 days post-suspension limit reached)",
+          code: "HISTORICAL_ACCESS_EXPIRED"
+        });
+      }
     }
   }
 

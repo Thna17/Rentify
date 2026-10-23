@@ -38,6 +38,7 @@ import { BulkCreateProductsModal } from './components/BulkCreateProductsModal';
 
 import { ConfirmDeleteDialog } from '@rentify/shared/ui/components/ConfirmDeleteDialog';
 import { InventoryDialog } from '@rentify/shared/ui/components/InventoryDialog';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 // Hooks and types
 import {
@@ -207,6 +208,36 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
     actionLoading,
     updateInventory,
   } = useProductManagement(websiteId || '');
+
+  const [entitlements, setEntitlements] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine/entitlements`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res?.data) setEntitlements(res.data);
+      })
+      .catch((err) => {
+        console.warn('Failed to load store entitlements', err);
+      });
+  }, []);
+
+  const isGracePeriod = entitlements?.isGracePeriod;
+  const isSuspended = entitlements?.isSuspended;
+  const productLimit = entitlements?.capabilities?.productLimit ?? 500;
+  const totalProducts = products?.length || 0;
+  const isLimitReached = totalProducts >= productLimit;
+  const canAddProduct = entitlements ? entitlements.mutationsAllowed && !isLimitReached : true;
+
+  const disabledReason = !canAddProduct
+    ? isGracePeriod
+      ? 'Product creation is locked during your subscription grace period. Renew to restore full editing access.'
+      : isSuspended
+      ? 'Product creation is locked because the store subscription is suspended.'
+      : isLimitReached
+      ? `Product limit of ${productLimit} reached for the ${entitlements?.displayName || 'current'} plan. Upgrade to add more products.`
+      : 'Product creation is unavailable.'
+    : null;
 
   // Clear all filters and reset to default state
   const handleClearFilters = useCallback((): void => {
@@ -664,9 +695,19 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
     <div className="flex flex-col sm:flex-row gap-3">
       <Button
         variant="outline"
-        onClick={() => state.setIsBulkCreateOpen(true)}
-        className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200"
-        >
+        onClick={() => {
+          if (!canAddProduct) {
+            showSnackbar(disabledReason || 'Action locked', 'error');
+            return;
+          }
+          state.setIsBulkCreateOpen(true);
+        }}
+        disabled={!canAddProduct}
+        title={disabledReason || undefined}
+        className={`flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200 ${
+          !canAddProduct ? 'opacity-60 cursor-not-allowed' : ''
+        }`}
+      >
         <Upload className="h-4 w-4" />
         <span className="hidden sm:inline">Bulk Create</span>
       </Button>
@@ -676,15 +717,27 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         onClick={handleBulkExport}
         disabled={selected.length === 0}
         className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200"
-        >
+      >
         <Download className="h-4 w-4" />
         <span className="hidden sm:inline">Export</span>
       </Button>
       
       <Button
-        onClick={() => navigate('/products/create')}
-        className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-        >
+        onClick={() => {
+          if (!canAddProduct) {
+            showSnackbar(disabledReason || 'Action locked', 'error');
+            return;
+          }
+          navigate('/products/create');
+        }}
+        disabled={!canAddProduct}
+        title={disabledReason || undefined}
+        className={`flex items-center gap-2 ${
+          !canAddProduct
+            ? 'opacity-60 cursor-not-allowed bg-slate-400'
+            : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+        }`}
+      >
         <Plus className="h-4 w-4" />
         <span>Add Product</span>
       </Button>
@@ -764,6 +817,17 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         ]}
       />
      <div className="p-6 md:p-8 space-y-6">
+        {disabledReason && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
+            <div className="flex items-center gap-2">
+              <IconAlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+              <span>{disabledReason}</span>
+            </div>
+            <Button asChild size="sm" variant="outline" className="border-amber-400 bg-white hover:bg-amber-100 text-amber-900">
+              <a href="/settings/billing">Upgrade Plan</a>
+            </Button>
+          </div>
+        )}
         {/* Optimistic Lock Alert */}
         {optimisticLockData && (
           <Alert variant="default" className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-600 dark:border-amber-500 [&>svg]:text-amber-600">

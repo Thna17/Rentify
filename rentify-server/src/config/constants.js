@@ -24,7 +24,7 @@ module.exports = {
       EXPIRED: 'expired',
       CANCELLED: 'cancelled'
     },
-    TRIAL_DURATION: 30 // days
+    TRIAL_DURATION: 14 // days (per DEC-016: 14-day storefront trial)
   },
   ERROR_CODES: {
     VALIDATION_ERROR: 'VALIDATION_ERROR',

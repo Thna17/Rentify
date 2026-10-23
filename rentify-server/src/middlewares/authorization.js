@@ -33,7 +33,7 @@ const createRequireWebsiteOwner = ({ findWebsite = (id) => require("../models").
 
 const requireWebsiteOwner = createRequireWebsiteOwner();
 
-const createRequireStoreAccess = ({ findStore = (id) => require('../models').Store.findByPk(id) } = {}) =>
+const createRequireStoreAccess = ({ findStore = (id) => require('../models').Store.findByPk(id), allowSuspended = false } = {}) =>
   async (req, res, next) => {
     if (!req.user?.id) return deny(res, 401, 'Unauthorized');
     const storeId = req.params.storeId || req.body?.storeId;
@@ -41,7 +41,7 @@ const createRequireStoreAccess = ({ findStore = (id) => require('../models').Sto
 
     const store = await findStore(storeId);
     if (!store) return deny(res, 404, 'Store not found');
-    if (store.status !== 'active') return deny(res, 403, 'Store is not active');
+    if (!allowSuspended && store.status !== 'active') return deny(res, 403, 'Store is not active');
 
     const isOwner = store.ownerUserId === req.user.id;
     const permissions = new Set(req.user.permissions || []);
