@@ -53,7 +53,7 @@ router.get(['/session', '/me'], verifyToken, async (req, res) => {
       });
     }
     const user = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'email', 'phoneNumber', 'role', 'isVerified'],
+      attributes: ['id', 'name', 'email', 'phoneNumber', 'role', 'isVerified', 'mfaEnabled'],
     });
     if (!user) return res.status(401).json({ error: 'Session is no longer valid' });
     return res.json({ user });
@@ -115,7 +115,7 @@ router.post(
     let result;
     let isStaff = false;
     try {
-      result = await userAuthService.login(req.body, transaction);
+      result = await userAuthService.login({ ...req.body, req }, transaction);
     } catch (err) {
       if (err.statusCode === 404 || err.message?.toLowerCase().includes("not found")) {
         const where = {
@@ -139,6 +139,18 @@ router.post(
       } else {
         throw err;
       }
+    }
+
+    if (result.mfaRequired) {
+      return responseHandler.success(
+        res,
+        200,
+        {
+          mfaRequired: true,
+          mfaChallengeToken: result.mfaChallengeToken,
+        },
+        "MFA verification required"
+      );
     }
 
     if (isStaff) {
@@ -183,6 +195,41 @@ router.post(
         hasStore,
       },
       "Login successful"
+    );
+  })
+);
+
+router.post(
+  "/mfa/challenge",
+  transactionHandler(async (req, res, transaction) => {
+    validateReturnUrl(req.body);
+    const { mfaChallengeToken, mfaToken, recoveryCode } = req.body;
+    const result = await userAuthService.verifyMfaChallenge({
+      mfaChallengeToken,
+      mfaToken,
+      recoveryCode,
+      req,
+      transaction,
+    });
+    const hasStore = Boolean(
+      await Store.count({
+        where: { ownerUserId: result.entity.id },
+        transaction,
+      })
+    );
+    userAuthService.setAuthCookies(res, {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+    responseHandler.success(
+      res,
+      200,
+      {
+        user: result.entity,
+        accessToken: result.accessToken,
+        hasStore,
+      },
+      "MFA verified successfully"
     );
   })
 );

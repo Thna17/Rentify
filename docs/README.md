@@ -60,6 +60,10 @@ code so implementation work can proceed without relying on chat history.
   browse-only enforcement on merchant custom domains, checkout and auth containment
   to verified hosted storefront subdomains (`rentifystore.shop`), fail-closed 403
   boundaries, and open redirect prevention.
+- [Privileged authentication and session audit](audits/privileged-auth-sessions-audit.md) —
+  administrator standards-based TOTP (RFC 6238), encrypted secrets at rest (AES-256-GCM),
+  recent-authentication enforcement, session inventory and revocation, safe recovery,
+  and privileged audit trail.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

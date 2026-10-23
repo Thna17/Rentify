@@ -62,6 +62,27 @@ const verifyToken = async (req, res, next) => {
       req.staff = staff;
       return next();
     }
+
+    if (decoded.role === 'admin') {
+      const user = await User.findByPk(decoded.id, { attributes: ['id', 'role'] });
+      if (!user || user.role !== 'admin') {
+        res.clearCookie("userAccessToken", cookieConfig);
+        res.clearCookie("userRefreshToken", cookieConfig);
+        return res.status(403).json({ error: "Administrator privileges have been revoked" });
+      }
+
+      if (decoded.sessionId) {
+        const { UserSession } = require('../models');
+        const session = await UserSession.findByPk(decoded.sessionId);
+        if (!session || session.revokedAt || session.expiresAt < new Date()) {
+          res.clearCookie("userAccessToken", cookieConfig);
+          res.clearCookie("userRefreshToken", cookieConfig);
+          return res.status(401).json({ error: "Session has been revoked or expired" });
+        }
+        decoded.recentAuthAt = session.recentAuthAt;
+      }
+    }
+
     req.user = decoded;
     
     next();
@@ -183,12 +204,33 @@ const refreshAccessToken = async (req, res, next) => {
         .json({ error: "Unauthorized: Invalid or expired refresh token" });
     }
 
+    if (user.role === 'admin') {
+      const crypto = require('crypto');
+      const tokenHash = crypto.createHash('sha256').update(String(userRefreshToken)).digest('hex');
+      const { UserSession } = require('../models');
+      const session = await UserSession.findOne({
+        where: { tokenHash, userId: user.id },
+      });
+      if (session && session.revokedAt) {
+        clearCookies(res);
+        return res.status(401).json({ error: "Unauthorized: Session has been revoked" });
+      }
+    }
+
     const newAccessToken = generateAccessToken({ id: user.id, role: user.role });
     const newRefreshToken = generateRefreshToken({ id: user.id, role: user.role });
     user.refreshToken = await hashRefreshToken(newRefreshToken);
     user.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await user.save();
     await rememberRotatedToken("user", userRefreshToken, user.id);
+
+    try {
+      const sessionManager = require('../utils/sessionManager');
+      await sessionManager.rotateSessionToken({
+        oldRefreshToken: userRefreshToken,
+        newRefreshToken,
+      });
+    } catch (_e) {}
     res.cookie("userAccessToken", newAccessToken, {
       ...cookieConfig,
       maxAge: 15 * 60 * 1000,

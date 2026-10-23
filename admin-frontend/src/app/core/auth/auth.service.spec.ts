@@ -63,8 +63,8 @@ describe('AuthService', () => {
     });
 
     const result = await loginPromise;
-    expect(result.user.id).toBe('admin-uuid-1');
-    expect(result.user.role).toBe('ADMIN');
+    expect(result.user?.id).toBe('admin-uuid-1');
+    expect(result.user?.role).toBe('ADMIN');
     expect(localStorage.getItem('rentify_token')).toBeNull();
     expect(service.isAuthenticated()).toBe(true);
     expect(service.isAdmin()).toBe(true);

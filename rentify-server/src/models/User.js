@@ -87,6 +87,38 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    mfaEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    mfaSecret: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    mfaRecoveryCodes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    mfaPendingSecret: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    mfaFailedAttempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    mfaLockUntil: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    mfaLastTimeStep: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+    },
+    pendingContact: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   { timestamps: true }
 );

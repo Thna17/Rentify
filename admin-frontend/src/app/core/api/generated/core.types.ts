@@ -606,6 +606,100 @@ export namespace Core {
   }
 
   export interface Operations {
+    adminStepUpAuth: {
+      method: 'POST';
+      path: '/admin/auth/step-up';
+      parameters: {
+      };
+      body: {
+        mfaToken?: string;
+        password: string;
+        recoveryCode?: string;
+      };
+      response: {
+        accessToken?: string;
+        recentAuthAt?: string;
+        success?: boolean;
+      };
+    };
+    requestAdminContactChange: {
+      method: 'POST';
+      path: '/admin/contact/change-request';
+      parameters: {
+      };
+      body: {
+        newEmail?: string;
+        newPhoneNumber?: string;
+      };
+      response: any;
+    };
+    verifyAdminContactChange: {
+      method: 'POST';
+      path: '/admin/contact/verify';
+      parameters: {
+      };
+      body: {
+        otp: string;
+      };
+      response: any;
+    };
+    confirmAdminMfa: {
+      method: 'POST';
+      path: '/admin/mfa/confirm';
+      parameters: {
+      };
+      body: {
+        code: string;
+      };
+      response: {
+        message?: string;
+        recoveryCodes?: Array<string>;
+        success?: boolean;
+      };
+    };
+    disableAdminMfa: {
+      method: 'POST';
+      path: '/admin/mfa/disable';
+      parameters: {
+      };
+      body: {
+        code?: string;
+        password: string;
+      };
+      response: any;
+    };
+    enrollAdminMfa: {
+      method: 'POST';
+      path: '/admin/mfa/enroll';
+      parameters: {
+      };
+      response: {
+        message?: string;
+        otpauthUrl?: string;
+        secret?: string;
+      };
+    };
+    regenerateAdminRecoveryCodes: {
+      method: 'POST';
+      path: '/admin/mfa/recovery-codes/regenerate';
+      parameters: {
+      };
+      response: {
+        recoveryCodes?: Array<string>;
+        success?: boolean;
+      };
+    };
+    getAdminMfaStatus: {
+      method: 'GET';
+      path: '/admin/mfa/status';
+      parameters: {
+      };
+      response: {
+        hasRecoveryCodes?: boolean;
+        mfaEnabled?: boolean;
+        recoveryCodesRemaining?: number;
+      };
+    };
     getAdminOverview: {
       method: 'GET';
       path: '/admin/operations/overview';
@@ -648,6 +742,41 @@ export namespace Core {
         };
       };
       response: Core.PaginatedAdminResourceResponse;
+    };
+    listAdminSessions: {
+      method: 'GET';
+      path: '/admin/sessions';
+      parameters: {
+      };
+      response: {
+        data?: Array<{
+          clientType?: string;
+          id?: string;
+          ipAddress?: string;
+          isCurrent?: boolean;
+          lastActiveAt?: string;
+        }>;
+      };
+    };
+    revokeOtherAdminSessions: {
+      method: 'POST';
+      path: '/admin/sessions/revoke-others';
+      parameters: {
+      };
+      response: {
+        revokedCount?: number;
+        success?: boolean;
+      };
+    };
+    revokeAdminSession: {
+      method: 'DELETE';
+      path: '/admin/sessions/{sessionId}';
+      parameters: {
+        path: {
+          sessionId: string;
+        };
+      };
+      response: any;
     };
     getSellerApplicationForAdmin: {
       method: 'GET';
@@ -734,6 +863,19 @@ export namespace Core {
       };
       response: Array<Core.WebsiteTemplate>;
     };
+    updateAdminUserRole: {
+      method: 'PATCH';
+      path: '/admin/users/{userId}/role';
+      parameters: {
+        path: {
+          userId: string;
+        };
+      };
+      body: {
+        role: "user" | "admin";
+      };
+      response: any;
+    };
     authCheckTelegramLink: {
       method: 'GET';
       path: '/api/auth/check-telegram-link';
@@ -798,6 +940,21 @@ export namespace Core {
       parameters: {
       };
       response: Core.SessionResponse;
+    };
+    authMfaChallenge: {
+      method: 'POST';
+      path: '/api/auth/mfa/challenge';
+      parameters: {
+      };
+      body: {
+        /** Short-lived challenge token issued during initial login */
+        mfaChallengeToken: string;
+        /** 6-digit TOTP code from authenticator app */
+        mfaToken?: string;
+        /** Single-use recovery code */
+        recoveryCode?: string;
+      };
+      response: Core.LoginResponse;
     };
     authRefreshToken: {
       method: 'POST';

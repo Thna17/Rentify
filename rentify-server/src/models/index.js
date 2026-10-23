@@ -14,6 +14,8 @@ const Store = require('./Store');
 const StoreSyncOutbox = require('./StoreSyncOutbox');
 const SellerApplication = require('./SellerApplication');
 const SellerReview = require('./SellerReview');
+const UserSession = require('./UserSession');
+const AuditLog = require('./AuditLog');
 
 Store.belongsTo(User, { foreignKey: 'ownerUserId', as: 'owner' });
 User.hasOne(Store, { foreignKey: 'ownerUserId', as: 'store' });
@@ -111,6 +113,11 @@ OutcomeContract.belongsTo(Website, { foreignKey: "websiteId" });
 Website.hasMany(ReminderLog, { foreignKey: "websiteId" });
 ReminderLog.belongsTo(Website, { foreignKey: "websiteId" });
 
+User.hasMany(UserSession, { foreignKey: "userId", as: "sessions" });
+UserSession.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+AuditLog.belongsTo(User, { foreignKey: "actorUserId", as: "actor" });
+
 
 module.exports = {
   Website,
@@ -128,5 +135,7 @@ module.exports = {
   Store,
   StoreSyncOutbox,
   SellerApplication,
-  SellerReview
+  SellerReview,
+  UserSession,
+  AuditLog,
 };

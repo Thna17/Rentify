@@ -63,11 +63,12 @@ class AuthService {
     }
   }
 
-  generateTokens(entity) {
+  generateTokens(entity, extraClaims = {}) {
     const payload = {
       id: entity.id,
       ...(entity.role && { role: entity.role }),
       ...(entity.permissions && { permissions: entity.permissions }),
+      ...extraClaims,
     };
 
     return {
@@ -86,6 +87,7 @@ class AuthService {
       ...(entity.role && { role: entity.role }),
       ...(entity.permissions && { permissions: entity.permissions }),
       ...(entity.storeId && { storeId: entity.storeId }),
+      ...(entity.mfaEnabled !== undefined && { mfaEnabled: Boolean(entity.mfaEnabled) }),
     };
   }
   async signup({
@@ -355,7 +357,7 @@ class AuthService {
     };
   }
 
-  async login({ email, phoneNumber, password, storeId, transaction }) {
+  async login({ email, phoneNumber, password, storeId, mfaToken, recoveryCode, req, transaction }) {
     this.validateInput({ email, phoneNumber, storeId });
 
     
@@ -408,7 +410,66 @@ class AuthService {
       );
     }
 
-    const tokens = this.generateTokens(entity);
+    // Administrator MFA Enforcement (P2-SEC-001)
+    if (entity.role === 'admin' && entity.mfaEnabled) {
+      if (entity.mfaLockUntil && entity.mfaLockUntil > Date.now()) {
+        throw new ApiError(429, "Account temporarily locked due to failed MFA attempts. Try again later.");
+      }
+
+      if (!mfaToken && !recoveryCode) {
+        const jwt = require('jsonwebtoken');
+        const mfaChallengeToken = jwt.sign(
+          { id: entity.id, purpose: 'mfa_challenge' },
+          process.env.JWT_SECRET,
+          { expiresIn: '5m' }
+        );
+        return {
+          mfaRequired: true,
+          mfaChallengeToken,
+        };
+      }
+
+      const totp = require('../../utils/totp');
+      const { decryptMfaSecret } = require('../../utils/mfaEncryption');
+      let mfaPassed = false;
+
+      if (recoveryCode) {
+        let storedCodes = [];
+        try {
+          storedCodes = JSON.parse(entity.mfaRecoveryCodes || '[]');
+        } catch (_e) {}
+        const recResult = totp.verifyRecoveryCode(recoveryCode, storedCodes);
+        if (recResult.valid) {
+          storedCodes[recResult.matchedIndex].usedAt = new Date().toISOString();
+          entity.mfaRecoveryCodes = JSON.stringify(storedCodes);
+          mfaPassed = true;
+        }
+      } else if (mfaToken) {
+        const plainSecret = decryptMfaSecret(entity.mfaSecret);
+        const totpResult = totp.verifyTotpCode(mfaToken, plainSecret, {
+          lastTimeStep: entity.mfaLastTimeStep,
+        });
+        if (totpResult.valid) {
+          entity.mfaLastTimeStep = totpResult.timeStep;
+          mfaPassed = true;
+        }
+      }
+
+      if (!mfaPassed) {
+        entity.mfaFailedAttempts = (entity.mfaFailedAttempts || 0) + 1;
+        if (entity.mfaFailedAttempts >= 5) {
+          entity.mfaLockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        }
+        await entity.save({ transaction });
+        throw new ApiError(401, "Invalid MFA verification code");
+      }
+
+      entity.mfaFailedAttempts = 0;
+      entity.mfaLockUntil = null;
+    }
+
+    const nowIso = new Date().toISOString();
+    const tokens = this.generateTokens(entity, { recentAuthAt: nowIso });
 
     // Update entity with new tokens
     entity.refreshToken = await hashRefreshToken(tokens.refreshToken);
@@ -419,6 +480,105 @@ class AuthService {
     entity.lockUntil = null;
 
     await entity.save({ transaction });
+
+    // Session inventory tracking for Core User
+    if (this.entityType === 'User') {
+      try {
+        const sessionManager = require('../../utils/sessionManager');
+        await sessionManager.createSession({
+          userId: entity.id,
+          refreshToken: tokens.refreshToken,
+          req,
+          isMfaVerified: Boolean(entity.mfaEnabled),
+          transaction,
+        });
+      } catch (_e) {}
+    }
+
+    return {
+      ...tokens,
+      entity: this.#formatEntityResponse(entity),
+    };
+  }
+
+  async verifyMfaChallenge({ mfaChallengeToken, mfaToken, recoveryCode, req, transaction }) {
+    if (!mfaChallengeToken) throw new ApiError(400, "MFA challenge token is required");
+    let decoded;
+    try {
+      const jwt = require('jsonwebtoken');
+      decoded = jwt.verify(mfaChallengeToken, process.env.JWT_SECRET);
+      if (decoded.purpose !== 'mfa_challenge') throw new Error();
+    } catch (_e) {
+      throw new ApiError(401, "Invalid or expired MFA challenge token");
+    }
+
+    const entity = await this.entityModel.findByPk(decoded.id, { transaction });
+    if (!entity || !entity.mfaEnabled) {
+      throw new ApiError(401, "Invalid MFA challenge");
+    }
+
+    if (entity.mfaLockUntil && entity.mfaLockUntil > Date.now()) {
+      throw new ApiError(429, "Account temporarily locked due to failed MFA attempts. Try again later.");
+    }
+
+    const totp = require('../../utils/totp');
+    const { decryptMfaSecret } = require('../../utils/mfaEncryption');
+    let mfaPassed = false;
+
+    if (recoveryCode) {
+      let stored = [];
+      try {
+        stored = JSON.parse(entity.mfaRecoveryCodes || '[]');
+      } catch (_e) {}
+      const recRes = totp.verifyRecoveryCode(recoveryCode, stored);
+      if (recRes.valid) {
+        stored[recRes.matchedIndex].usedAt = new Date().toISOString();
+        entity.mfaRecoveryCodes = JSON.stringify(stored);
+        mfaPassed = true;
+      }
+    } else if (mfaToken) {
+      const plainSecret = decryptMfaSecret(entity.mfaSecret);
+      const totpRes = totp.verifyTotpCode(mfaToken, plainSecret, {
+        lastTimeStep: entity.mfaLastTimeStep,
+      });
+      if (totpRes.valid) {
+        entity.mfaLastTimeStep = totpRes.timeStep;
+        mfaPassed = true;
+      }
+    } else {
+      throw new ApiError(400, "Either mfaToken or recoveryCode is required");
+    }
+
+    if (!mfaPassed) {
+      entity.mfaFailedAttempts = (entity.mfaFailedAttempts || 0) + 1;
+      if (entity.mfaFailedAttempts >= 5) {
+        entity.mfaLockUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      await entity.save({ transaction });
+      throw new ApiError(401, "Invalid MFA verification code");
+    }
+
+    entity.mfaFailedAttempts = 0;
+    entity.mfaLockUntil = null;
+
+    const nowIso = new Date().toISOString();
+    const tokens = this.generateTokens(entity, { recentAuthAt: nowIso });
+    entity.refreshToken = await hashRefreshToken(tokens.refreshToken);
+    entity.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await entity.save({ transaction });
+
+    if (this.entityType === 'User') {
+      try {
+        const sessionManager = require('../../utils/sessionManager');
+        await sessionManager.createSession({
+          userId: entity.id,
+          refreshToken: tokens.refreshToken,
+          req,
+          isMfaVerified: true,
+          transaction,
+        });
+      } catch (_e) {}
+    }
 
     return {
       ...tokens,
@@ -601,6 +761,16 @@ class AuthService {
           entity.refreshTokenExpires = null;
           await entity.save({ transaction });
         }
+
+        if (this.entityType === 'User') {
+          const sessionManager = require('../../utils/sessionManager');
+          const tokenHash = sessionManager.hashToken(refreshToken);
+          const { UserSession } = require('../../models');
+          await UserSession.update(
+            { revokedAt: new Date() },
+            { where: { tokenHash, revokedAt: null }, transaction }
+          );
+        }
       } catch (e) {
         // Token verification failed - proceed with logout
       }
@@ -644,6 +814,17 @@ class AuthService {
     );
     await entity.save({ transaction });
     await rememberRotatedToken(this.cookiePrefix, refreshToken, entity.id);
+
+    if (this.entityType === 'User') {
+      try {
+        const sessionManager = require('../../utils/sessionManager');
+        await sessionManager.rotateSessionToken({
+          oldRefreshToken: refreshToken,
+          newRefreshToken: tokens.refreshToken,
+          transaction,
+        });
+      } catch (_e) {}
+    }
 
     return { ...tokens };
   }
