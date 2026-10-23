@@ -564,13 +564,22 @@ function checkFeatureFlags(env, targetEnv, report) {
     });
   }
 
-  // Custom domains browse-only (DEC-003)
+  // Custom domains browse-only (DEC-003, ADR 0002)
   const customDomainCheckout = String(env.CUSTOM_DOMAIN_CHECKOUT_ENABLED || '').trim().toLowerCase() === 'true';
-  if (customDomainCheckout && targetEnv === 'production') {
+  if (customDomainCheckout && (targetEnv === 'production' || targetEnv === 'staging')) {
     report.errors.push({
       policy: 'Custom Domain Scope (DEC-003)',
       field: 'CUSTOM_DOMAIN_CHECKOUT_ENABLED',
       message: 'Custom domains are browse-only in Release 1; direct checkout on custom domains is prohibited (CUSTOM_DOMAIN_CHECKOUT_ENABLED=false)',
+    });
+  }
+
+  const customDomainAuth = String(env.CUSTOM_DOMAIN_AUTH_ENABLED || '').trim().toLowerCase() === 'true';
+  if (customDomainAuth && (targetEnv === 'production' || targetEnv === 'staging')) {
+    report.errors.push({
+      policy: 'Custom Domain Scope (DEC-003)',
+      field: 'CUSTOM_DOMAIN_AUTH_ENABLED',
+      message: 'Direct custom domain authentication is disabled in Release 1 (CUSTOM_DOMAIN_AUTH_ENABLED=false; DEC-003, ADR 0002)',
     });
   }
 

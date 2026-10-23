@@ -85,3 +85,19 @@ redirect enforcement, one-time code use, session rotation and logout,
 cross-Store order isolation, legacy account linking, and custom-domain
 cookie behavior in staging. Update ADR 0001 and this ADR to **Accepted** only
 when the protocol and hosting design are complete.
+
+## Release 1 Browse-Only Custom-Domain Boundary (P2-HOST-003)
+
+Under the approved Release 1 architecture, custom merchant domains are strictly
+**browse-only**:
+- Custom domains may only access approved public catalog browsing endpoints (products, categories, store details).
+- Direct buyer authentication and domain-local sessions on custom domains are disabled. Central cookies and refresh tokens are never issued or forwarded to custom domains.
+- Direct cart mutations and checkout on custom domains are disabled. Checkout occurs strictly on verified hosted storefront subdomains under `rentifystore.shop` (`<subdomain>.rentifystore.shop`).
+- The OAuth 2.0 / PKCE authorization-code handoff proposed in this document remains unimplemented until separately reviewed, proved, and approved in a post-Release 1 phase.
+- Host boundary enforcement in Core (`rentify-server`) and Commerce (`ecommerce-server`) strictly inspects trusted request headers (`Origin`, `Referer`, `Host`) and rejects unauthorized write, cart, checkout, order history, and auth requests with safe denial codes:
+  - `CUSTOM_DOMAIN_BROWSE_ONLY`
+  - `CUSTOM_DOMAIN_AUTH_DISABLED`
+  - `CUSTOM_DOMAIN_CHECKOUT_DISABLED`
+  - `CUSTOM_DOMAIN_CART_DISABLED`
+- Responses to blocked actions provide the verified hosted storefront URL for safe navigation without open-redirect vectors or credential leakage.
+

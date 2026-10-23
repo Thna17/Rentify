@@ -56,6 +56,10 @@ code so implementation work can proceed without relying on chat history.
   versioned capability keys (`CAPABILITIES_VERSION = 1`), tier resolution,
   race-safe row-locked catalog and staff quotas, 7-day grace period mutation lock,
   90-day post-suspension historical read retention, and explanatory UI degradation.
+- [Custom-domain boundary audit](audits/custom-domain-boundary-audit.md) —
+  browse-only enforcement on merchant custom domains, checkout and auth containment
+  to verified hosted storefront subdomains (`rentifystore.shop`), fail-closed 403
+  boundaries, and open redirect prevention.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

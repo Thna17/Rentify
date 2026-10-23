@@ -204,13 +204,27 @@ test('P2-HOST-001 Acceptance: Incompatible feature flags fail', () => {
   assert.equal(autoApproval.valid, false);
   assert.ok(autoApproval.errors.some((e) => e.policy === 'Seller Moderation Policy (DEC-007)'));
 
-  // 3. Custom domain checkout enabled in production (DEC-003)
+  // 3. Custom domain checkout enabled in production/staging (DEC-003, ADR 0002)
   const customDomainCheckout = validateHostConfig({ ...productionFixture, CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'true' }, {
     targetEnv: 'production',
     throwOnError: false,
   });
   assert.equal(customDomainCheckout.valid, false);
   assert.ok(customDomainCheckout.errors.some((e) => e.policy === 'Custom Domain Scope (DEC-003)'));
+
+  const customDomainCheckoutStaging = validateHostConfig({ ...stagingFixture, CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'true' }, {
+    targetEnv: 'staging',
+    throwOnError: false,
+  });
+  assert.equal(customDomainCheckoutStaging.valid, false);
+  assert.ok(customDomainCheckoutStaging.errors.some((e) => e.policy === 'Custom Domain Scope (DEC-003)'));
+
+  const customDomainAuth = validateHostConfig({ ...productionFixture, CUSTOM_DOMAIN_AUTH_ENABLED: 'true' }, {
+    targetEnv: 'production',
+    throwOnError: false,
+  });
+  assert.equal(customDomainAuth.valid, false);
+  assert.ok(customDomainAuth.errors.some((e) => e.policy === 'Custom Domain Scope (DEC-003)'));
 
   // 4. COD disabled in production (DEC-026)
   const codDisabled = validateHostConfig({ ...productionFixture, MARKETPLACE_COD_CHECKOUT_ENABLED: 'false' }, {

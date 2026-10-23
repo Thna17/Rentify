@@ -15,7 +15,7 @@ const {
   WebsiteContent,
 } = require("../../models");
 const { getMerchantCache } = require("../../utils/cache");
-const { hostedSubdomainFromHost } = require("../../utils/hostedStorefrontOrigin");
+const { hostedSubdomainFromHost, hostedStorefrontUrl } = require("../../utils/hostedStorefrontOrigin");
 const { validateStorefrontContent } = require("./storefrontContentFields");
 const cache = getMerchantCache();
 
@@ -222,12 +222,23 @@ class WebsiteController {
           value: item.value,
         })) || [];
 
+      const isHosted = Boolean(hostedSubdomain);
+      const isCustom = Boolean(!hostedSubdomain && website.domain);
+      const canonicalHostedUrl = website.subdomain ? hostedStorefrontUrl(website.subdomain) : null;
+
       const response = {
         websiteId: website.id,
         storeId: website.storeId,
         userId: website.userId,
         templateId: website.templateId,
         name: website.name || null,
+        domain: website.domain || null,
+        subdomain: website.subdomain || null,
+        storefrontUrl: canonicalHostedUrl,
+        hostedStorefrontUrl: canonicalHostedUrl,
+        isCustomDomain: isCustom,
+        isHostedStorefront: isHosted,
+        customDomainBrowseOnly: isCustom,
         content: content,
         selectedPalette:
           content.find(

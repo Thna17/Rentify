@@ -34,7 +34,7 @@ const hostedLine = (line) => ({
  * fee, the payable total and any issues blocking checkout.
  */
 export function useStorefrontCart() {
-  const { websiteId } = useStorefrontWebsite();
+  const { websiteId, isCustomDomain, hostedStorefrontUrl } = useStorefrontWebsite();
   const hosted = isHostedStorefrontBuyer();
 
   const standard = useGetCartQuery(websiteId, { skip: !websiteId || hosted });
@@ -86,6 +86,8 @@ export function useStorefrontCart() {
   return {
     websiteId,
     hosted,
+    isCustomDomain: Boolean(isCustomDomain),
+    hostedStorefrontUrl: hostedStorefrontUrl || null,
     /** Hosted mode only: delivery fee, payable total, readiness and blocking issues. */
     quote: quote
       ? {

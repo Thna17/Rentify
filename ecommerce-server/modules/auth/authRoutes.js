@@ -7,6 +7,9 @@ const axios = require("axios");
 const router = express.Router();
 const customerAuthService = new AuthService(Customer, "Customer", true);
 const storeValidationMiddleware = require("./storeValidationMiddleware");
+const { enforceCustomDomainBoundary } = require("../../middlewares/customDomainBoundary");
+
+router.use(enforceCustomDomainBoundary("auth"));
 
 // Error handling middleware
 const asyncHandler = (fn) => async (req, res, next) => {

@@ -1,5 +1,5 @@
 const normalize = (url) => url.trim().replace(/\/+$/, '');
-const { isHostedStorefrontOrigin } = require('../utils/hostedStorefrontOrigin');
+const { isHostedStorefrontOrigin, hostedStorefrontDomain } = require('../utils/hostedStorefrontOrigin');
 const local = [
   'http://localhost:4300',
   'http://localhost:4400',
@@ -19,18 +19,39 @@ const allowedOrigins = [...new Set([
   ...(process.env.CORS_ALLOWED_ORIGINS || '').split(','),
 ].filter(Boolean).map(normalize))];
 
+const isRegisteredCustomDomain = async (normalizedOrigin) => {
+  try {
+    const parsed = new URL(normalizedOrigin);
+    const host = parsed.hostname.toLowerCase();
+    const parent = hostedStorefrontDomain();
+    if (parent && host.endsWith(`.${parent}`)) return false;
+    const { WebsiteData } = require('../models');
+    if (!WebsiteData) return false;
+    const site = await WebsiteData.findOne({
+      where: { domain: host, status: 'active' },
+      attributes: ['id', 'domain', 'status'],
+    });
+    return Boolean(site);
+  } catch {
+    return false;
+  }
+};
+
 module.exports = {
-  origin: (origin, callback) => {
+  origin: async (origin, callback) => {
     if (!origin) return callback(null, true);
     const normalized = normalize(origin);
     const isAllowed = allowedOrigins.some(url =>
       url === normalized
     );
     if (isAllowed || isHostedStorefrontOrigin(normalized)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked: ${origin}`));
+      return callback(null, true);
     }
+    const isCustom = await isRegisteredCustomDomain(normalized);
+    if (isCustom) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Idempotency-Key', 'x-session-id', 'X-Session-Id'],

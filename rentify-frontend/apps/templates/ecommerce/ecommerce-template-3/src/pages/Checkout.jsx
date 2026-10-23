@@ -75,6 +75,31 @@ export default function Checkout() {
   const started = useRef(false);
   useDocumentTitle(t('checkout.title'));
 
+  if (cart.isCustomDomain) {
+    return (
+      <div className="store-container py-12 max-w-lg mx-auto text-center space-y-4">
+        <div className="p-6 rounded-xl border border-border bg-card space-y-3 shadow-sm">
+          <h1 className="text-xl font-bold text-foreground">Checkout Disabled on Custom Domain</h1>
+          <p className="text-sm text-muted-foreground">
+            Custom merchant domains are browse-only in Release 1. Direct checkout and buyer sessions occur securely on our verified hosted storefront.
+          </p>
+          {cart.hostedStorefrontUrl ? (
+            <div className="pt-2">
+              <a
+                href={`${cart.hostedStorefrontUrl}/checkout`}
+                className="btn-primary min-h-11 px-6 inline-flex items-center justify-center font-medium"
+              >
+                Continue to Verified Storefront Checkout
+              </a>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Please check back later or contact the store owner.</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (customer) setDetails((current) => prefillFromCustomer(current, customer));
   }, [customer]);

@@ -5,6 +5,7 @@ const { verifyToken } = require('../../middlewares/authMiddleware');
 const sessionMiddleware = require('../../middlewares/sessionMiddleware');
 const CartController = require("./CartController");
 const { requireWebsitePermission } = require("../../middlewares/requireWebsiteAccess");
+const { enforceCustomDomainBoundary } = require("../../middlewares/customDomainBoundary");
 
 const router = express.Router();
 
@@ -18,12 +19,12 @@ router.get("/:websiteId/summary", CartController.getCartSummary);
 router.get("/:websiteId/analytics", requireWebsitePermission(["analytics", "manage_analytics"]), CartController.getCartAnalytics);
 router.get("/:websiteId/validate-stock", CartController.validateCartStock);
 
-router.post("/:websiteId/items", CartController.addToCart);
-router.put("/:websiteId/items/:itemId", CartController.updateCartItem);
-router.put("/:websiteId/items/:itemId/variant", CartController.updateCartItemVariant);
-router.delete("/:websiteId/items/:itemId", CartController.removeFromCart);
+router.post("/:websiteId/items", enforceCustomDomainBoundary('cart'), CartController.addToCart);
+router.put("/:websiteId/items/:itemId", enforceCustomDomainBoundary('cart'), CartController.updateCartItem);
+router.put("/:websiteId/items/:itemId/variant", enforceCustomDomainBoundary('cart'), CartController.updateCartItemVariant);
+router.delete("/:websiteId/items/:itemId", enforceCustomDomainBoundary('cart'), CartController.removeFromCart);
 
-router.delete("/:websiteId", CartController.clearCart);
-router.post("/merge", CartController.mergeCarts);
+router.delete("/:websiteId", enforceCustomDomainBoundary('cart'), CartController.clearCart);
+router.post("/merge", enforceCustomDomainBoundary('cart'), CartController.mergeCarts);
 
 module.exports = router;

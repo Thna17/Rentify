@@ -68,21 +68,48 @@ const reservedHostedSubdomains = () => {
   return new Set([...MANDATORY_RESERVED_SUBDOMAINS, ...custom]);
 };
 
+const hostedStorefrontDomain = () => (process.env.HOSTED_STOREFRONT_DOMAIN || '').toLowerCase().trim();
+
+const hostedStorefrontDevPort = () =>
+  process.env.NODE_ENV === 'production' ? '' : String(process.env.HOSTED_STOREFRONT_DEV_PORT || '').trim();
+
+const hostedSubdomainFromHostname = (hostname) => {
+  const domain = hostedStorefrontDomain();
+  const host = String(hostname || '').toLowerCase().trim();
+  if (!domain || !host.endsWith(`.${domain}`)) return null;
+  const label = host.slice(0, -(domain.length + 1));
+  return LABEL.test(label) && !reservedHostedSubdomains().has(label) ? label : null;
+};
+
+const hostedSubdomainFromHost = (host) => hostedSubdomainFromHostname(String(host || '').replace(/:\d+$/, ''));
+
+const hostedStorefrontUrl = (subdomain) => {
+  const domain = hostedStorefrontDomain();
+  if (!domain || !LABEL.test(String(subdomain || '')) || reservedHostedSubdomains().has(subdomain)) return null;
+  const devPort = hostedStorefrontDevPort();
+  return devPort ? `http://${subdomain}.${domain}:${devPort}` : `https://${subdomain}.${domain}`;
+};
+
 const isHostedStorefrontOrigin = (value) => {
-  const domain = (process.env.HOSTED_STOREFRONT_DOMAIN || '').toLowerCase().trim();
+  const domain = hostedStorefrontDomain();
   if (!domain) return false;
-  const devPort = process.env.NODE_ENV === 'production' ? '' : String(process.env.HOSTED_STOREFRONT_DEV_PORT || '').trim();
+  const devPort = hostedStorefrontDevPort();
   try {
     const parsed = new URL(value);
     if (parsed.username || parsed.password) return false;
     const secure = parsed.protocol === 'https:' && !parsed.port;
     const local = Boolean(devPort) && parsed.protocol === 'http:' && parsed.port === devPort;
     if (!secure && !local) return false;
-    if (!parsed.hostname.endsWith(`.${domain}`)) return false;
-    const label = parsed.hostname.slice(0, -(domain.length + 1));
-    // Labels used by other sites on the same domain are never storefronts.
-    return LABEL.test(label) && !reservedHostedSubdomains().has(label);
+    return hostedSubdomainFromHostname(parsed.hostname) !== null;
   } catch { return false; }
 };
 
-module.exports = { isHostedStorefrontOrigin, reservedHostedSubdomains, MANDATORY_RESERVED_SUBDOMAINS };
+module.exports = {
+  isHostedStorefrontOrigin,
+  hostedStorefrontDomain,
+  hostedStorefrontUrl,
+  hostedSubdomainFromHost,
+  hostedSubdomainFromHostname,
+  reservedHostedSubdomains,
+  MANDATORY_RESERVED_SUBDOMAINS,
+};

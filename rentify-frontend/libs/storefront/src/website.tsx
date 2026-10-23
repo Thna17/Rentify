@@ -17,6 +17,11 @@ type WebsiteContextValue = Record<string, any> & {
   websiteId: string | null;
   content: WebsiteContentItem[];
   identity: StoreIdentity;
+  domain: string | null;
+  subdomain: string | null;
+  isCustomDomain: boolean;
+  isHostedStorefront: boolean;
+  hostedStorefrontUrl: string | null;
   getFilteredContent: (category: string) => WebsiteContentItem[];
 };
 
@@ -74,6 +79,11 @@ export function StorefrontWebsiteProvider({
   const value: WebsiteContextValue = {
     websiteId: data?.websiteId || data?.id || null,
     userId: data?.userId || null,
+    domain: data?.domain || null,
+    subdomain: data?.subdomain || null,
+    isCustomDomain: Boolean(data?.isCustomDomain),
+    isHostedStorefront: Boolean(data?.isHostedStorefront),
+    hostedStorefrontUrl: data?.hostedStorefrontUrl || null,
     content,
     identity,
     theme,
