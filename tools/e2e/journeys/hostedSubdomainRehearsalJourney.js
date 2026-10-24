@@ -151,14 +151,20 @@ async function runHostedSubdomainRehearsalJourney({ config, artifactCollector })
     try {
       await browser.init(`hosted-subdomain-${profile.browserType}`);
 
+      const stagingMarketplaceHost = config.stagingMarketplaceHost || process.env.STAGING_MARKETPLACE_HOST || 'staging.rentifymarket.com';
+      const stagingHostedParent = config.stagingHostedParent || process.env.STAGING_HOSTED_PARENT || 'rentifystore.shop';
+      const testStoreSubdomain = config.testStoreSubdomain || process.env.STAGING_TEST_STORE || 'demo-store';
+      const buyerEmail = config.buyerEmail || process.env.STAGING_BUYER_EMAIL;
+      const buyerPassword = config.buyerPassword || process.env.STAGING_BUYER_PASSWORD;
+
       // 1. Open Real Staging Marketplace Hostname
-      const marketplaceUrl = config.marketplaceUrl || `https://${config.stagingMarketplaceHost}`;
+      const marketplaceUrl = config.marketplaceUrl || process.env.STAGING_MARKETPLACE_URL || `https://${stagingMarketplaceHost}`;
       const marketplaceRes = await browser.goto(marketplaceUrl);
       assert.equal(marketplaceRes.ok, true, `Marketplace must return 200, got ${marketplaceRes.status}`);
       assert.ok(marketplaceUrl.startsWith('https://'), 'Marketplace connection must use HTTPS');
 
       // 2. Open Real One-Label Hosted Store Hostname under configured parent
-      const storeUrl = config.storeUrl || `https://${config.testStoreSubdomain}.${config.stagingHostedParent}`;
+      const storeUrl = config.storeUrl || `https://${testStoreSubdomain}.${stagingHostedParent}`;
       assert.ok(storeUrl.startsWith('https://'), 'Hosted storefront connection must use HTTPS');
 
       // Validate one-label rule
@@ -172,7 +178,7 @@ async function runHostedSubdomainRehearsalJourney({ config, artifactCollector })
       assert.equal(storeRes.ok, true, `Storefront must return 200, got ${storeRes.status}`);
 
       // 3. Begin Buyer Authentication & Validate Return URL
-      const authUrl = new URL(config.authUrl || `https://${config.stagingMarketplaceHost}/auth/signin`);
+      const authUrl = new URL(config.authUrl || process.env.STAGING_AUTH_URL || `https://${stagingMarketplaceHost}/auth/signin`);
       const returnUrl = `${storeUrl}/auth/callback`;
       authUrl.searchParams.set('returnUrl', returnUrl);
 
@@ -185,8 +191,8 @@ async function runHostedSubdomainRehearsalJourney({ config, artifactCollector })
       await browser.goto(authUrl.toString());
 
       // 4. Complete Login
-      await browser.fill('input[name="contact"]', config.buyerEmail);
-      await browser.fill('input[name="password"]', config.buyerPassword);
+      await browser.fill('input[name="contact"]', buyerEmail);
+      await browser.fill('input[name="password"]', buyerPassword);
       await browser.click('button[type="submit"]');
 
       // 5. Assert Session & Cookie Rotation
@@ -237,7 +243,7 @@ async function runHostedSubdomainRehearsalJourney({ config, artifactCollector })
       assert.ok(!staleCookie || staleCookie.value !== sessionCookie.value, 'Old session cookie must be cleared or rotated');
 
       // 11. Prove Sibling Hostname Cannot Access Session or Order Data
-      const siblingStoreUrl = `https://sibling-${config.testStoreSubdomain}.${config.stagingHostedParent}`;
+      const siblingStoreUrl = `https://sibling-${testStoreSubdomain}.${stagingHostedParent}`;
       await browser.goto(`${siblingStoreUrl}/account/orders`);
       const siblingOrdersContent = await browser.textContent('body');
       assert.ok(

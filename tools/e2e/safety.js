@@ -37,7 +37,9 @@ function assertSafeUrl(urlString) {
       const isStagingMatch =
         parsed.hostname === 'staging.rentifymarket.com' ||
         parsed.hostname.endsWith('.rentifystore.shop') ||
-        parsed.hostname.endsWith('.staging.rentifystore.shop');
+        parsed.hostname.endsWith('.staging.rentifystore.shop') ||
+        parsed.hostname.endsWith('.mekhla.digital') ||
+        parsed.hostname === 'rentify-market.mekhla.digital';
       if (isStagingMatch) {
         continue;
       }
@@ -56,7 +58,9 @@ function assertSafeUrl(urlString) {
     const isAllowedStagingHost =
       parsed.hostname === 'staging.rentifymarket.com' ||
       parsed.hostname.endsWith('.rentifystore.shop') ||
-      parsed.hostname.endsWith('.staging.rentifystore.shop');
+      parsed.hostname.endsWith('.staging.rentifystore.shop') ||
+      parsed.hostname.endsWith('.mekhla.digital') ||
+      parsed.hostname === 'rentify-market.mekhla.digital';
     if (isAllowedStagingHost) {
       return parsed;
     }
