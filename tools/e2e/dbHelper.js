@@ -27,12 +27,17 @@ async function ensureDatabasesAndMigrations() {
     database: 'rentify_commerce_test',
   });
 
+  const dbHost = process.env.DB_HOST || '127.0.0.1';
+  const dbPort = Number(process.env.DB_PORT || 3306);
+  const dbUser = process.env.DB_USER || 'root';
+  const dbPassword = process.env.DB_PASSWORD || 'root';
+
   const mysql = getMysqlDriver();
   const connection = await mysql.createConnection({
-    host: '127.0.0.1',
-    port: 3306,
-    user: 'root',
-    password: 'root',
+    host: dbHost,
+    port: dbPort,
+    user: dbUser,
+    password: dbPassword,
   });
 
   try {
@@ -45,10 +50,10 @@ async function ensureDatabasesAndMigrations() {
   const nodeBinary = process.execPath;
   const commonEnv = {
     ...process.env,
-    DB_HOST: '127.0.0.1',
-    DB_PORT: '3306',
-    DB_USER: 'root',
-    DB_PASSWORD: 'root',
+    DB_HOST: dbHost,
+    DB_PORT: String(dbPort),
+    DB_USER: dbUser,
+    DB_PASSWORD: dbPassword,
     NODE_ENV: 'test',
   };
 
@@ -82,10 +87,10 @@ function runIsolatedScript(env, code) {
   const fullEnv = {
     ...process.env,
     ...env,
-    DB_HOST: '127.0.0.1',
-    DB_PORT: '3306',
-    DB_USER: 'root',
-    DB_PASSWORD: 'root',
+    DB_HOST: process.env.DB_HOST || '127.0.0.1',
+    DB_PORT: String(process.env.DB_PORT || '3306'),
+    DB_USER: process.env.DB_USER || 'root',
+    DB_PASSWORD: process.env.DB_PASSWORD || 'root',
     NODE_ENV: 'test',
   };
 
