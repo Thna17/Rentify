@@ -84,7 +84,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
             { transaction }
           );
           await this.nicheStrategy.updateInventory(items, transaction);
-          await order.update({ status: 'completed', deliveryStatus: 'delivered', stockDeducted: true }, { transaction });
+          await order.update({ status: 'completed', deliveryStatus: 'delivered', stockDeducted: true }, { transaction, byStateMachine: true });
         } else {
           throw procErr;
         }
@@ -110,7 +110,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
         status: 'completed',
         deliveryStatus: 'delivered',
         stockDeducted: true 
-      }, { transaction });
+      }, { transaction, byStateMachine: true });
     }
 
     return {

@@ -107,6 +107,8 @@ function orderView(order, items, payment) {
   return {
     id: order.id, orderNumber: order.orderNumber, storeId: order.storeId, websiteId: order.websiteId,
     buyerId: order.buyerId, status: order.status, deliveryStatus: order.deliveryStatus,
+    fulfillmentStatus: order.fulfillmentStatus || 'unfulfilled',
+    returnStatus: order.returnStatus || 'none',
     salesChannel: order.salesChannel, subtotal: order.subtotal,
     deliveryFee: order.shippingFee, totalAmount: order.totalAmount, currency: order.currency,
     customerInfo: order.customerInfo, shippingInfo: order.shippingInfo,

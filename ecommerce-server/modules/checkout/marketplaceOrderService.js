@@ -72,7 +72,12 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
       let amount = null;
       if (action === 'delivered') {
         if (!['pending', 'retrying'].includes(order.deliveryStatus)) fail('Delivery cannot be completed', 409);
-        await order.update({ deliveryStatus: 'delivered', status: 'fulfilled' }, { transaction });
+        await order.update({
+          deliveryStatus: 'delivered',
+          fulfillmentStatus: 'delivered',
+          deliveredAt: new Date(),
+          status: 'fulfilled',
+        }, { transaction, byStateMachine: true });
       } else if (action === 'delivery_failed') {
         const reason = requiredText(details.reason, 'failure reason', 500);
         if (!['pending', 'retrying'].includes(order.deliveryStatus) || Number(payment.collectedAmount) > 0) {
@@ -85,15 +90,26 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
           for (const line of lines) {
             await changeStock(line.productId, line.quantity, transaction, line.variantId || line.itemMetadata?.variantId || null);
           }
-          await order.update({ deliveryStatus: 'failed', status: 'cancelled', stockDeducted: false }, { transaction });
+          await order.update({
+            deliveryStatus: 'failed',
+            fulfillmentStatus: 'failed',
+            status: 'cancelled',
+            stockDeducted: false,
+          }, { transaction, byStateMachine: true });
         } else {
-          await order.update({ deliveryStatus: 'failed' }, { transaction });
+          await order.update({
+            deliveryStatus: 'failed',
+            fulfillmentStatus: 'failed',
+          }, { transaction, byStateMachine: true });
         }
         details = { reason, resolution };
       } else if (action === 'retry_delivery') {
         if (order.deliveryStatus !== 'failed' || order.status === 'cancelled') fail('Delivery cannot be retried', 409);
         if (details.buyerAgreed !== true) fail('Buyer agreement is required');
-        await order.update({ deliveryStatus: 'retrying' }, { transaction });
+        await order.update({
+          deliveryStatus: 'retrying',
+          fulfillmentStatus: 'shipped',
+        }, { transaction, byStateMachine: true });
         details = { buyerAgreed: true };
       } else if (action === 'collect_cod') {
         if (order.deliveryStatus !== 'delivered' || payment.status !== 'pending') fail('COD cannot be collected', 409);

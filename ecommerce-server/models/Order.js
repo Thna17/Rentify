@@ -127,6 +127,43 @@ const Order = sequelize.define(
       allowNull: true,
       comment: "P3-MNY-001: Immutable order-level money and policy snapshot",
     },
+    fulfillmentStatus: {
+      type: DataTypes.STRING(32),
+      allowNull: false,
+      defaultValue: "unfulfilled",
+      comment: "P3-ORD-001: Explicit fulfillment state",
+    },
+    returnStatus: {
+      type: DataTypes.STRING(32),
+      allowNull: false,
+      defaultValue: "none",
+      comment: "P3-ORD-001: Explicit return state",
+    },
+    cancellationReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "P3-ORD-001: Cancellation reason",
+    },
+    cancelledAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "P3-ORD-001: Cancellation timestamp",
+    },
+    confirmedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "P3-ORD-001: Confirmation timestamp",
+    },
+    deliveredAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "P3-ORD-001: Physical delivery timestamp",
+    },
+    fulfillmentNotes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "P3-ORD-001: Fulfillment notes",
+    },
     version: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
@@ -136,6 +173,8 @@ const Order = sequelize.define(
   {
     indexes: [
       { fields: ["status"] },
+      { fields: ["fulfillmentStatus"] },
+      { fields: ["returnStatus"] },
       { fields: ["websiteId"] },
       { fields: ["buyerId", "createdAt"] },
       { fields: ["storeId", "createdAt"] },
@@ -146,8 +185,27 @@ const Order = sequelize.define(
       { fields: ["createdAt"] }
     ],
     hooks: {
-      beforeUpdate: (order) => {
+      beforeUpdate: (order, options) => {
+        if (order.changed('status') || order.changed('fulfillmentStatus') || order.changed('returnStatus')) {
+          if (!options?.byStateMachine && !options?.allowDirectStateAssignment) {
+            const err = new Error('Direct assignment of protected order state is prohibited. Use orderStateMachineService.');
+            err.name = 'OrderStateError';
+            err.code = 'DIRECT_ASSIGNMENT_PROHIBITED';
+            throw err;
+          }
+        }
         order.version = order.version + 1;
+      },
+      beforeBulkUpdate: (options) => {
+        const fields = options.attributes || options.fields || {};
+        const changedFields = Array.isArray(fields) ? fields : Object.keys(fields);
+        const touchesProtected = changedFields.some((f) => ['status', 'fulfillmentStatus', 'returnStatus'].includes(f));
+        if (touchesProtected && !options?.byStateMachine && !options?.allowDirectStateAssignment) {
+          const err = new Error('Direct assignment of protected order state is prohibited. Use orderStateMachineService.');
+          err.name = 'OrderStateError';
+          err.code = 'DIRECT_ASSIGNMENT_PROHIBITED';
+          throw err;
+        }
       },
       beforeCreate: async (order) => {
         let isUnique = false;
