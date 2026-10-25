@@ -4713,6 +4713,16 @@ components:
               category:
                 type: string
                 example: handicrafts
+              currency:
+                $ref: "#/components/schemas/Currency"
+              snapshot:
+                type: object
+                nullable: true
+                description: P3-MNY-001 line-level immutable snapshot
+        snapshot:
+          type: object
+          nullable: true
+          description: P3-MNY-001 order-level immutable snapshot
         payment:
           type: object
           nullable: true
@@ -4813,6 +4823,10 @@ components:
         stockDeducted:
           type: boolean
           default: false
+        orderSnapshot:
+          type: object
+          nullable: true
+          description: P3-MNY-001 immutable order-level money and policy snapshot
         version:
           type: integer
           example: 0

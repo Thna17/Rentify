@@ -17,6 +17,7 @@ export namespace Commerce {
     id: Commerce.UUID;
     items: Array<{
       category?: string;
+      currency?: Commerce.Currency;
       name: string;
       price: Commerce.Money;
       productId: Commerce.UUID;
@@ -24,6 +25,8 @@ export namespace Commerce {
       seller?: {
         storeId?: Commerce.UUID;
       };
+      /** P3-MNY-001 line-level immutable snapshot */
+      snapshot?: Record<string, any> | null;
       total: Commerce.Money;
     }>;
     orderNumber: string;
@@ -38,6 +41,8 @@ export namespace Commerce {
     shippingInfo: {
       address?: string;
     };
+    /** P3-MNY-001 order-level immutable snapshot */
+    snapshot?: Record<string, any> | null;
     status: "pending" | "confirmed" | "processing" | "cancelled" | "completed" | "fulfilled" | "refunded" | "preparing" | "ready_for_pickup" | "out_for_delivery";
     storeId: Commerce.UUID;
     subtotal: Commerce.Money;
@@ -145,6 +150,8 @@ export namespace Commerce {
     discountTotal?: Commerce.Money;
     id: Commerce.UUID;
     orderNumber: string;
+    /** P3-MNY-001 immutable order-level money and policy snapshot */
+    orderSnapshot?: Record<string, any> | null;
     orderType?: "online" | "pos" | "manual" | "delivery" | "pickup";
     salesChannel: "marketplace" | "storefront" | "pos";
     shippingFee?: Commerce.Money;

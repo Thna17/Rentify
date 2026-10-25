@@ -92,27 +92,29 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     // Validate products using niche strategy
     await this.validateOrderItems(items, transaction);
 
-    // Get exchange rate for KHR
-    const exchangeRate = currency === 'KHR' 
-      ? await this.getExchangeRate() 
-      : 1;
+    // Release 1 Policy: Online checkout is USD only. KHR checkout is disabled.
+    if (currency === 'KHR') {
+      const error = new Error('KHR online checkout is disabled in Release 1. Online checkout is USD only.');
+      error.statusCode = 400;
+      error.status = 400;
+      error.code = 'KHR_CHECKOUT_DISABLED';
+      throw error;
+    }
+    if (currency !== 'USD') {
+      const error = new Error(`Unsupported currency for online checkout: ${currency}`);
+      error.statusCode = 400;
+      error.status = 400;
+      error.code = 'UNSUPPORTED_CURRENCY';
+      throw error;
+    }
 
-    // Calculate order totals using niche strategy
+    // Calculate order totals using niche strategy (server calculations are authoritative)
     const totals = this.nicheStrategy.calculateOrderTotals(
       items, 
       'online', 
       shippingDetails, 
       currency
     );
-
-    // Adjust totals for currency conversion
-    if (currency === 'KHR') {
-      Object.keys(totals).forEach(key => {
-        if (typeof totals[key] === 'number') {
-          totals[key] = totals[key] * exchangeRate;
-        }
-      });
-    }
 
     // Create or find customer
     let customer = await this.findOrCreateCustomer(user, shippingDetails, websiteId, transaction);

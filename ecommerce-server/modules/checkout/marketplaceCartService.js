@@ -53,14 +53,22 @@ async function getCart(buyerOrOptions, storeId, channel = 'marketplace') {
     if (!store || store.status !== 'active' || !websiteReady || (channel === 'marketplace' &&
         (store.marketplaceApprovalStatus !== 'approved' || store.marketplaceEntitlement !== 'pilot' ||
          store.needsCategoryReview))) issues.push('Seller is not available for checkout');
-    if (!policy) issues.push('Seller has not posted a delivery fee');
+    if (!policy) {
+      issues.push('Seller has not posted a delivery fee');
+    } else if (policy.currency !== 'USD') {
+      issues.push('Seller has not posted a USD delivery fee');
+    }
     let subtotal = 0;
     const items = cart.CartItems.map((item) => {
       const product = byId.get(item.productId);
       const variant = item.variantId ? variantById.get(item.variantId) : null;
       let available = false;
       if (store && eligibleProduct(product, store, channel)) {
-        if (variant) {
+        const itemCurrency = String(variant?.currency || product?.currency || 'USD').toUpperCase();
+        if (itemCurrency === 'KHR') {
+          issues.push(`Product ${item.productId} uses KHR which is disabled for online checkout in Release 1`);
+          available = false;
+        } else if (variant) {
           available = variant.status === 'active' &&
             (!variant.trackInventory || variant.stockQuantity >= item.quantity);
         } else {

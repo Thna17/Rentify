@@ -2,7 +2,7 @@
 // transaction. Also re-exports the cart, delivery policy and order services, so
 // callers keep one entry for the whole buyer flow.
 const { sequelize } = require('../../config/db');
-const { Cart, CartItem, StoreDeliveryPolicy, Order, OrderItem, Payment } = require('../../models');
+const { Cart, CartItem, StoreDeliveryPolicy, Order, OrderItem, Payment, WebsiteData } = require('../../models');
 const { changeStock } = require('../inventory').sharedStockService;
 const { getStoreOwnerContact } = require('./merchantContactService');
 const NotificationService = require('../notifications').notificationService;
@@ -81,27 +81,124 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       if (!policy || policy.currency !== 'USD') fail('Seller has not posted a USD delivery fee', 409);
       const deliveryFee = cents(policy.flatFee);
       const total = subtotal + deliveryFee;
-      if (total !== expectedTotal) fail('Cart price or delivery fee changed; refresh before checkout', 409);
+      if (total !== expectedTotal) {
+        const mismatchError = new Error('Cart price or delivery fee changed; refresh before checkout');
+        mismatchError.statusCode = 409;
+        mismatchError.status = 409;
+        mismatchError.code = 'TOTAL_MISMATCH';
+        mismatchError.details = {
+          expectedTotal: dollars(expectedTotal),
+          calculatedTotal: dollars(total),
+          subtotal: dollars(subtotal),
+          deliveryFee: dollars(deliveryFee),
+          taxTotal: '0.00',
+          discountTotal: '0.00',
+          currency: 'USD',
+        };
+        throw mismatchError;
+      }
       if (total > 100_000_000) fail('Order total is too large');
+
+      let storeName = store.displayName;
+      if (!storeName && store.websiteId) {
+        const website = await WebsiteData.findOne({
+          where: { websiteId: store.websiteId },
+          transaction,
+          attributes: ['userData'],
+        });
+        storeName = website?.userData?.businessName || website?.userData?.name || null;
+      }
+      if (!storeName) storeName = `Store ${storeId.slice(0, 8)}`;
+
+      const lineSnapshots = [];
+      for (const { item, product, variant, price } of snapshots) {
+        const lineTotalMinor = price * item.quantity;
+        lineSnapshots.push({
+          productId: product.id,
+          productName: product.name,
+          variantId: variant?.id || null,
+          sku: variant?.sku || product.sku || product.slug,
+          barcode: variant?.barcode || product.barcode || null,
+          attributes: variant?.optionValues || {},
+          unitPrice: dollars(price),
+          unitPriceMinor: price,
+          quantity: item.quantity,
+          discount: '0.00',
+          discountMinor: 0,
+          tax: '0.00',
+          taxMinor: 0,
+          taxPolicyVersion: 'release-1-zero-tax',
+          deliveryFee: '0.00',
+          deliveryFeeMinor: 0,
+          commission: '0.00',
+          commissionMinor: 0,
+          total: dollars(lineTotalMinor),
+          totalMinor: lineTotalMinor,
+          currency: 'USD',
+          productVersion: product.version,
+        });
+      }
+
+      const orderSnapshot = {
+        storeId,
+        storeName,
+        salesChannel: channel,
+        currency: 'USD',
+        subtotal: dollars(subtotal),
+        subtotalMinor: subtotal,
+        deliveryFee: dollars(deliveryFee),
+        deliveryFeeMinor: deliveryFee,
+        taxTotal: '0.00',
+        taxTotalMinor: 0,
+        discountTotal: '0.00',
+        discountTotalMinor: 0,
+        commissionTotal: '0.00',
+        commissionTotalMinor: 0,
+        totalAmount: dollars(total),
+        totalAmountMinor: total,
+        deliveryPolicyVersion: policy.version,
+        policyVersions: {
+          delivery: policy.version,
+          tax: 'release-1-zero-tax',
+          pricing: 'v1',
+        },
+        calculatedAt: new Date().toISOString(),
+        itemCount: cartItems.length,
+        lines: lineSnapshots,
+      };
+
       const order = await Order.create({
         storeId, websiteId: channel === 'storefront' ? store.websiteId : null, buyerId, checkoutKey,
         salesChannel: channel, deliveryStatus: 'pending', orderType: 'delivery',
         status: 'pending', subtotal: dollars(subtotal), totalAmount: dollars(total),
         taxTotal: '0.00', shippingFee: dollars(deliveryFee), discountTotal: '0.00', currency: 'USD',
         customerInfo: { name, phone }, shippingInfo: { address }, stockDeducted: true,
-        metadata: { paymentMethod: 'cod', deliveryTerms: 'Seller delivers and collects cash directly',
-          deliveryPolicyVersion: policy.version, commission: '0.00' },
+        orderSnapshot,
+        metadata: {
+          paymentMethod: 'cod',
+          deliveryTerms: 'Seller delivers and collects cash directly',
+          deliveryPolicyVersion: policy.version,
+          commission: '0.00',
+          snapshot: orderSnapshot,
+        },
       }, { transaction });
       const items = [];
-      for (const { item, product, variant, price } of snapshots) {
+      for (let idx = 0; idx < snapshots.length; idx += 1) {
+        const { item, product, variant, price } = snapshots[idx];
+        const lineSnapshot = lineSnapshots[idx];
         const line = await OrderItem.create({
           orderId: order.id, productId: product.id, name: product.name,
-          sku: variant?.sku || product.slug, quantity: item.quantity, basePrice: dollars(price),
+          variantId: variant?.id || null,
+          sku: variant?.sku || product.sku || product.slug, quantity: item.quantity, basePrice: dollars(price),
           price: dollars(price), total: dollars(price * item.quantity),
           baseCurrency: 'USD', currency: 'USD',
-          itemMetadata: { seller: { storeId }, category: product.marketplaceCategory || product.categoryId,
+          lineSnapshot,
+          itemMetadata: {
+            seller: { storeId }, category: product.marketplaceCategory || product.categoryId,
             variantId: item.variantId || null,
-            tax: '0.00', shipping: '0.00', commission: '0.00', productVersion: product.version },
+            tax: '0.00', shipping: '0.00', commission: '0.00', productVersion: product.version,
+            snapshot: lineSnapshot,
+          },
         }, { transaction });
         items.push(line);
         await changeStock(product.id, -item.quantity, transaction, item.variantId || null);

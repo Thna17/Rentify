@@ -122,6 +122,11 @@ const Order = sequelize.define(
       type: DataTypes.JSON,
       defaultValue: {},
     },
+    orderSnapshot: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: "P3-MNY-001: Immutable order-level money and policy snapshot",
+    },
     version: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

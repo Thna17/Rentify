@@ -91,6 +91,11 @@ const OrderItem = sequelize.define('OrderItem', {
   specialInstructions: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  lineSnapshot: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: "P3-MNY-001: Immutable line-item money and identity snapshot",
   }
 }, {
   indexes: [
