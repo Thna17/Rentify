@@ -49,6 +49,7 @@ class CartService {
     let cart = await Cart.findOne({
       where: { 
         websiteId: this.websiteId,
+        channel: 'storefront',
         ...(idConditions.length > 1 ? { [Op.or]: idConditions } : (idConditions[0] || {})),
       },
       transaction
@@ -61,6 +62,7 @@ class CartService {
         userId: userId || null,
         buyerId: buyerId || null,
         sessionId: (userId || buyerId) ? null : sessionId,
+        channel: 'storefront',
         version: 0,
         subtotal: 0,
         taxTotal: 0,
@@ -129,15 +131,19 @@ class CartService {
     }
 
     // Verify product belongs to this storefront website/store
-    if (this.websiteId && product.websiteId !== this.websiteId) {
-      if (!this.storeId && this.websiteId) {
-        const website = await WebsiteData.findOne({
-          where: { websiteId: this.websiteId },
-          attributes: ['storeId'],
-          transaction,
-        });
-        if (website?.storeId) this.storeId = website.storeId;
-      }
+    if (!this.storeId && this.websiteId) {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: this.websiteId },
+        attributes: ['storeId'],
+        transaction,
+      });
+      if (website?.storeId) this.storeId = website.storeId;
+    }
+
+    if (this.storeId && product.storeId && product.storeId !== this.storeId) {
+      throw new ApiError(404, 'Product not found');
+    }
+    if (this.websiteId && product.websiteId && product.websiteId !== this.websiteId) {
       if (!this.storeId || product.storeId !== this.storeId) {
         throw new ApiError(404, 'Product not found');
       }
@@ -278,14 +284,17 @@ class CartService {
   async getCart(cartIdentifier, transaction = null) {
     await this.initialize();
     
-    const { userId, sessionId } = cartIdentifier;
+    const { userId, sessionId, buyerId } = cartIdentifier;
+    const idConditions = [];
+    if (buyerId) idConditions.push({ buyerId });
+    if (userId) idConditions.push({ userId });
+    if (sessionId) idConditions.push({ sessionId });
     
     const cart = await Cart.findOne({
       where: { 
         websiteId: this.websiteId,
-        [Op.or]: [
-          userId ? { userId } : { sessionId }
-        ]
+        channel: 'storefront',
+        ...(idConditions.length > 1 ? { [Op.or]: idConditions } : (idConditions[0] || {})),
       },
       include: [{
         model: CartItem,
@@ -453,16 +462,8 @@ class CartService {
                                     JSON.stringify(sourceItem.customizations);
 
           if (optionsMatch && customizationsMatch) {
-            // Merge quantities
-            const newQuantity = existingItem.quantity + sourceItem.quantity;
-            
-            // Validate stock for merged quantity
-            await this.validateStock(
-              sourceItem.Product, 
-              sourceItem.ProductVariant, 
-              newQuantity, 
-              transaction
-            );
+            // Merge quantities safely bounded
+            const newQuantity = Math.min(999, existingItem.quantity + sourceItem.quantity);
 
             await existingItem.update({
               quantity: newQuantity,
@@ -503,8 +504,7 @@ class CartService {
           mergedCount++;
         }
       } catch (error) {
-        // Skip items that can't be merged (e.g., stock issues)
-        logger.warn(`Skipping item during merge: ${error.message}`);
+        logger.warn(`Error during item merge: ${error.message}`);
         skippedCount++;
         continue;
       }

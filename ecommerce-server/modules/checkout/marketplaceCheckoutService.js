@@ -2,6 +2,7 @@
 // transaction. Also re-exports the cart, delivery policy and order services, so
 // callers keep one entry for the whole buyer flow.
 const { createHash } = require('node:crypto');
+const { Op } = require('sequelize');
 const { sequelize } = require('../../config/db');
 const { Cart, CartItem, StoreDeliveryPolicy, Order, OrderItem, Payment, WebsiteData, ProductVariant } = require('../../models');
 const { inventoryLedgerService, InsufficientStockError } = require('../inventory');
@@ -79,8 +80,17 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         if (!matchesRequest(committedReplay)) fail('Checkout key was already used for a different request', 409);
         return committedReplay;
       }
+      const cartWhere = {
+        buyerId,
+        storeId,
+        ...(channel === 'marketplace'
+          ? { [Op.or]: [{ channel: 'marketplace' }, { channel: null, websiteId: null }], websiteId: null }
+          : { [Op.or]: [{ channel: 'storefront' }, { channel: null, websiteId: { [Op.ne]: null } }] }),
+      };
       const cart = await Cart.findOne({
-        where: { buyerId, storeId, websiteId: null }, transaction, lock: transaction.LOCK.UPDATE,
+        where: cartWhere,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
       });
       if (!cart) fail('Cart is empty', 409);
       const cartItems = await CartItem.findAll({ where: { cartId: cart.id }, transaction });

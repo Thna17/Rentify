@@ -5,17 +5,18 @@
 const express = require("express");
 const { verifyToken, verifyOptionalCoreBuyer } = require('../../middlewares/authMiddleware');
 const sessionMiddleware = require('../../middlewares/sessionMiddleware');
+const { enforceCustomDomainBoundary } = require('../../middlewares/customDomainBoundary');
 const marketplaceController = require("./marketplaceCheckoutController");
 
 const router = express.Router();
 const buyer = [sessionMiddleware, verifyToken, verifyOptionalCoreBuyer];
 
 router.get("/", buyer, marketplaceController.getCart);
-router.post("/items", buyer, marketplaceController.addToCart);
-router.patch("/items/:itemId", buyer, marketplaceController.updateCartItem);
-router.put("/items/:itemId", buyer, marketplaceController.updateCartItem);
-router.delete("/items/:itemId", buyer, marketplaceController.removeCartItem);
-router.delete("/clear", buyer, marketplaceController.clearCart);
-router.delete("/", buyer, marketplaceController.clearCart);
+router.post("/items", buyer, enforceCustomDomainBoundary('cart'), marketplaceController.addToCart);
+router.patch("/items/:itemId", buyer, enforceCustomDomainBoundary('cart'), marketplaceController.updateCartItem);
+router.put("/items/:itemId", buyer, enforceCustomDomainBoundary('cart'), marketplaceController.updateCartItem);
+router.delete("/items/:itemId", buyer, enforceCustomDomainBoundary('cart'), marketplaceController.removeCartItem);
+router.delete("/clear", buyer, enforceCustomDomainBoundary('cart'), marketplaceController.clearCart);
+router.delete("/", buyer, enforceCustomDomainBoundary('cart'), marketplaceController.clearCart);
 
 module.exports = router;

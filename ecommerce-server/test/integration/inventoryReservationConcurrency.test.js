@@ -177,14 +177,15 @@ async function seedCatalog({
 /**
  * Seeds a buyer's cart with items in the real database for checkout testing.
  */
-async function seedBuyerCart({ buyerId, storeId, productId, variantId = null, quantity = 1, price = '25.00' }) {
-  let cart = await Cart.findOne({ where: { buyerId, storeId, websiteId: null } });
+async function seedBuyerCart({ buyerId, storeId, productId, variantId = null, quantity = 1, price = '25.00', channel = 'marketplace', websiteId = null }) {
+  let cart = await Cart.findOne({ where: { buyerId, storeId, channel, websiteId } });
   if (!cart) {
     cart = await Cart.create({
       id: randomUUID(),
       buyerId,
       storeId,
-      websiteId: null,
+      websiteId,
+      channel,
       status: 'active',
       currency: 'USD',
       itemCount: quantity,
@@ -309,8 +310,8 @@ test('P3-INV-003: 3. Hosted Storefront Checkout: Competing Concurrently for the 
 
   const buyer1 = randomUUID();
   const buyer2 = randomUUID();
-  await seedBuyerCart({ buyerId: buyer1, storeId, productId: skuId, variantId: skuId, quantity: 1 });
-  await seedBuyerCart({ buyerId: buyer2, storeId, productId: skuId, variantId: skuId, quantity: 1 });
+  await seedBuyerCart({ buyerId: buyer1, storeId, productId: skuId, variantId: skuId, quantity: 1, channel: 'storefront', websiteId });
+  await seedBuyerCart({ buyerId: buyer2, storeId, productId: skuId, variantId: skuId, quantity: 1, channel: 'storefront', websiteId });
 
   const barrier = new DeterministicBarrier(2);
   const results = [];
