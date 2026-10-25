@@ -799,6 +799,48 @@ export namespace Commerce {
       };
       response: any;
     };
+    patch_api_invoice_invoices_invoiceId: {
+      method: 'PATCH';
+      path: '/api/invoice/invoices/{invoiceId}';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      body: Record<string, any>;
+      response: any;
+    };
+    post_api_invoice_invoices_invoiceId_cancel: {
+      method: 'POST';
+      path: '/api/invoice/invoices/{invoiceId}/cancel';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      body?: Record<string, any>;
+      response: any;
+    };
+    post_api_invoice_invoices_invoiceId_fulfill: {
+      method: 'POST';
+      path: '/api/invoice/invoices/{invoiceId}/fulfill';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      response: any;
+    };
+    post_api_invoice_invoices_invoiceId_issue: {
+      method: 'POST';
+      path: '/api/invoice/invoices/{invoiceId}/issue';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      response: any;
+    };
     get_api_invoice_invoices_invoiceId_pdf: {
       method: 'GET';
       path: '/api/invoice/invoices/{invoiceId}/pdf';
@@ -818,6 +860,17 @@ export namespace Commerce {
         };
       };
       response: Array<Commerce.Invoice>;
+    };
+    post_api_invoice_websites_websiteId_invoices: {
+      method: 'POST';
+      path: '/api/invoice/websites/{websiteId}/invoices';
+      parameters: {
+        path: {
+          websiteId: string;
+        };
+      };
+      body: Record<string, any>;
+      response: any;
     };
     delete_api_marketplace_cart: {
       method: 'DELETE';

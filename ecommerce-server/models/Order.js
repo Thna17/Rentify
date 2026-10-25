@@ -114,6 +114,11 @@ const Order = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    stockReserved: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: "P3-INV-002: Whether order items currently hold an active stock reservation",
+    },
     currency: {
       type: DataTypes.STRING(3),
       defaultValue: "USD",

@@ -10,7 +10,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const targetPaths = process.argv.slice(2);
-const dirsToCheck = targetPaths.length > 0 ? targetPaths : ['modules/checkout', 'modules/orders'];
+const dirsToCheck = targetPaths.length > 0 ? targetPaths : ['modules/checkout', 'modules/orders', 'modules/invoices'];
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
 

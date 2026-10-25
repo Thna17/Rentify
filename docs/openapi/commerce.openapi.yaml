@@ -3244,6 +3244,112 @@ paths:
                 items:
                   $ref: "#/components/schemas/Invoice"
       operationId: get_api_invoice_websites_websiteId_invoices
+    post:
+      tags:
+        - Invoices
+      summary: Create invoice for website
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Invoice and order created
+      operationId: post_api_invoice_websites_websiteId_invoices
+  /api/invoice/invoices/{invoiceId}:
+    patch:
+      tags:
+        - Invoices
+      summary: Update invoice details and adjust reservations
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Invoice updated
+      operationId: patch_api_invoice_invoices_invoiceId
+  /api/invoice/invoices/{invoiceId}/fulfill:
+    post:
+      tags:
+        - Invoices
+      summary: Fulfill an invoice and deduct canonical stock
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Invoice fulfilled and stock deducted
+      operationId: post_api_invoice_invoices_invoiceId_fulfill
+  /api/invoice/invoices/{invoiceId}/cancel:
+    post:
+      tags:
+        - Invoices
+      summary: Cancel an invoice and release reservation or restore stock
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Invoice cancelled and stock compensated
+      operationId: post_api_invoice_invoices_invoiceId_cancel
+  /api/invoice/invoices/{invoiceId}/issue:
+    post:
+      tags:
+        - Invoices
+      summary: Issue a draft invoice and reserve canonical stock
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Draft invoice issued and stock reserved
+      operationId: post_api_invoice_invoices_invoiceId_issue
   /api/invoice/invoices/{invoiceId}/pdf:
     get:
       tags:

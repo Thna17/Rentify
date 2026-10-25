@@ -1,3 +1,6 @@
+// ecommerce-server/modules/invoices/invoiceController.js
+// P3-INV-002 Slice 5: Controller for invoice queries, creation, fulfillment, cancellation, and updates.
+
 const {
   Invoice,
   Product,
@@ -5,12 +8,16 @@ const {
   OrderItem,
   Payment,
   ShippingDetail,
+  WebsiteData,
+  StoreAccess,
 } = require("../../models");
 const { Op } = require("sequelize");
+const invoiceFulfillmentService = require("./invoiceFulfillmentService");
+const { INVOICE_ERROR_CODES } = require("./invoiceErrors");
 
 exports.getInvoices = async (req, res) => {
   try {
-    const { websiteId } = req.params;
+    const { websiteId, storeId: paramStoreId } = req.params;
     const {
       page = 1,
       limit = 10,
@@ -21,7 +28,7 @@ exports.getInvoices = async (req, res) => {
       storeId: queryStoreId,
     } = req.query;
 
-    const authorizedStoreId = req.store?.storeId || req.website?.storeId;
+    const authorizedStoreId = req.store?.storeId || req.website?.storeId || paramStoreId;
     if (queryStoreId && authorizedStoreId && queryStoreId !== authorizedStoreId) {
       return res.status(403).json({ error: "Store access denied" });
     }
@@ -32,14 +39,12 @@ exports.getInvoices = async (req, res) => {
 
     const where = conditions.length > 1
       ? { [Op.or]: conditions }
-      : (conditions[0] || { websiteId });
+      : (conditions[0] || (websiteId ? { websiteId } : {}));
 
-    // Add status filter
     if (status && status !== "all") {
       where.status = status;
     }
 
-    // Add search filter
     if (search) {
       where[Op.or] = [
         { customerName: { [Op.iLike]: `%${search}%` } },
@@ -47,7 +52,6 @@ exports.getInvoices = async (req, res) => {
       ];
     }
 
-    // Handle sorting
     let order = [[sortBy, sortOrder.toUpperCase()]];
     if (sortBy === "customerName") {
       order = [["customerName", sortOrder.toUpperCase()]];
@@ -55,7 +59,7 @@ exports.getInvoices = async (req, res) => {
 
     const invoices = await Invoice.findAndCountAll({
       where,
-      limit: parseInt(limit),
+      limit: parseInt(limit, 10),
       offset: (page - 1) * limit,
       order,
       include: [
@@ -64,7 +68,7 @@ exports.getInvoices = async (req, res) => {
           include: [
             { model: OrderItem, include: [Product] },
             { model: Payment },
-            { model: ShippingDetail, as: "shippingDetail" }, // ADD THIS
+            { model: ShippingDetail, as: "shippingDetail" },
           ],
         },
       ],
@@ -73,12 +77,42 @@ exports.getInvoices = async (req, res) => {
     res.json({
       totalItems: invoices.count,
       totalPages: Math.ceil(invoices.count / limit),
-      currentPage: parseInt(page),
+      currentPage: parseInt(page, 10),
       invoices: invoices.rows,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Get Invoices Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
+exports.getInvoiceById = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const invoice = await Invoice.findByPk(invoiceId, {
+      include: [
+        {
+          model: Order,
+          include: [
+            { model: OrderItem, include: [Product] },
+            { model: Payment },
+            { model: ShippingDetail, as: "shippingDetail" },
+          ],
+        },
+      ],
+    });
+
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    const authorizedStoreId = req.store?.storeId || req.website?.storeId;
+    if (authorizedStoreId && invoice.storeId && invoice.storeId !== authorizedStoreId) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    res.json(invoice);
+  } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -93,4 +127,146 @@ exports.getInvoicePdf = async (req, res) => {
   }
 };
 
-// controllers/invoiceController.js
+exports.createInvoice = async (req, res) => {
+  try {
+    const rawWebsiteId = req.params.websiteId || req.body?.websiteId || null;
+    const invoiceData = req.body.body || req.body || {};
+
+    let effectiveStoreId = req.params.storeId || req.store?.storeId || invoiceData.storeId || null;
+
+    if (!effectiveStoreId && rawWebsiteId) {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: rawWebsiteId },
+        attributes: ['storeId', 'websiteId'],
+      });
+      if (website?.storeId) {
+        effectiveStoreId = website.storeId;
+      }
+    }
+
+    if (!effectiveStoreId) {
+      return res.status(400).json({ error: "storeId is required" });
+    }
+
+    // Body parameter override protection
+    const bodyStoreId = req.body?.storeId || invoiceData.storeId;
+    if (bodyStoreId && effectiveStoreId && bodyStoreId !== effectiveStoreId) {
+      return res.status(403).json({ error: "Cross-store body selection prohibited" });
+    }
+
+    const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers['x-correlation-id'] || null;
+
+    const result = await invoiceFulfillmentService.createInvoiceOrder({
+      storeId: effectiveStoreId,
+      websiteId: rawWebsiteId,
+      invoiceData,
+      actor: req.user || { id: 'merchant', role: 'merchant' },
+      idempotencyKey,
+      correlationId,
+    });
+
+    const status = result.replayed ? 200 : 201;
+    res.status(status).json(result);
+  } catch (error) {
+    console.error("Create Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.fulfillInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers['x-correlation-id'] || null;
+
+    const result = await invoiceFulfillmentService.fulfillInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: 'merchant', role: 'merchant' },
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Fulfill Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.cancelInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers['x-correlation-id'] || null;
+    const reason = req.body?.reason || 'Invoice cancelled';
+
+    const result = await invoiceFulfillmentService.cancelInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: 'merchant', role: 'merchant' },
+      reason,
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Cancel Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.updateInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers['x-correlation-id'] || null;
+    const updateData = req.body || {};
+
+    const result = await invoiceFulfillmentService.updateInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: 'merchant', role: 'merchant' },
+      updateData,
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Update Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.issueDraftInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers['x-correlation-id'] || null;
+
+    const result = await invoiceFulfillmentService.issueDraftInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: 'merchant', role: 'merchant' },
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Issue Draft Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};

@@ -480,6 +480,29 @@ async function transitionFulfillment(orderId, {
       if (order.status === ORDER_STATES.PROCESSING || order.status === ORDER_STATES.CONFIRMED) {
         updateData.status = ORDER_STATES.COMPLETED;
       }
+      // Consume stock reservation on fulfillment delivery if held
+      if (order.stockReserved && !order.stockDeducted && order.OrderItems && order.OrderItems.length > 0) {
+        const sortedItems = [...order.OrderItems].sort((a, b) => a.productId.localeCompare(b.productId));
+        for (const item of sortedItems) {
+          const skuId = await resolveItemSkuId(item, tx);
+          const itemFulfillKey = `fulfill-stock-${order.id}-${item.id}-${idempotencyKey}`;
+          await inventoryLedgerService.mutateBalance({
+            storeId: order.storeId,
+            skuId,
+            changeOnHand: -item.quantity,
+            changeReserved: -item.quantity,
+            reasonCode: 'invoice_fulfillment',
+            sourceType: order.salesChannel === 'pos' ? 'pos_order' : (order.websiteId ? 'legacy_website_order' : 'order'),
+            sourceId: order.id,
+            actor: { id: actor.id, type: actor.role || actor.type || 'system' },
+            idempotencyKey: itemFulfillKey,
+            correlationId,
+            notes: 'Fulfillment delivery reservation consumption',
+          }, { transaction: tx });
+        }
+        updateData.stockDeducted = true;
+        updateData.stockReserved = false;
+      }
     } else if (targetFulfillment === FULFILLMENT_STATES.FAILED) {
       if (reason) updateData.fulfillmentNotes = reason;
     }
@@ -668,11 +691,49 @@ async function cancelOrder(orderId, {
       order.stockDeducted = false;
     }
 
+    // 5b. Exactly ONE inventory effect: release active stock reservation if not yet deducted
+    if (order.stockReserved && !order.stockDeducted && order.OrderItems && order.OrderItems.length > 0) {
+      const sortedItems = [...order.OrderItems].sort((a, b) => a.productId.localeCompare(b.productId));
+
+      let effectiveStoreId = order.storeId;
+      if (!effectiveStoreId && order.websiteId) {
+        const { WebsiteData, StoreAccess } = require('../../models');
+        const site = await WebsiteData.findOne({ where: { websiteId: order.websiteId }, transaction: tx }).catch(() => null);
+        effectiveStoreId = site?.storeId;
+        if (!effectiveStoreId) {
+          const store = await StoreAccess.findOne({ where: { websiteId: order.websiteId }, transaction: tx }).catch(() => null);
+          effectiveStoreId = store?.storeId;
+        }
+      }
+
+      for (const item of sortedItems) {
+        const skuId = await resolveItemSkuId(item, tx);
+        const itemStockKey = `cancel-res-stock-${order.id}-${item.id}-${idempotencyKey}`;
+
+        await inventoryLedgerService.mutateBalance({
+          storeId: effectiveStoreId || order.storeId,
+          skuId,
+          changeOnHand: 0,
+          changeReserved: -item.quantity,
+          reasonCode: 'reservation_release',
+          sourceType: isPOSOrder ? 'pos_order' : (order.websiteId ? 'legacy_website_order' : 'order'),
+          sourceId: order.id,
+          actor: { id: actor.id, type: actor.role || actor.type || 'system' },
+          idempotencyKey: itemStockKey,
+          correlationId,
+          notes: 'Reservation release on cancellation',
+        }, { transaction: tx });
+      }
+
+      order.stockReserved = false;
+    }
+
     const now = new Date();
     await order.update({
       status: ORDER_STATES.CANCELLED,
       cancellationReason: reason,
       cancelledAt: now,
+      stockReserved: false,
       stockDeducted: false,
     }, {
       transaction: tx,

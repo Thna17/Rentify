@@ -34,7 +34,7 @@ const Invoice = sequelize.define("Invoice", {
   },
   dueDate: DataTypes.DATEONLY,
   status: {
-    type: DataTypes.ENUM("pending", "paid", "overdue", "sent"),
+    type: DataTypes.ENUM("pending", "paid", "overdue", "sent", "draft", "cancelled"),
     defaultValue: "pending",
   },
   pdfUrl: DataTypes.STRING,

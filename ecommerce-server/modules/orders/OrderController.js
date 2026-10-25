@@ -139,7 +139,8 @@ exports.createInvoice = async (req, res) => {
 
     res.status(201).json(result);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
