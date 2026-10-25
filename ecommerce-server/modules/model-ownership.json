@@ -22,7 +22,10 @@
     "PricingRule": ["billing"],
     "StoreAccess": ["store-access"],
     "WebsiteData": ["websites"],
-    "WebsiteContent": ["websites"]
+    "WebsiteContent": ["websites"],
+    "EventOutbox": ["events", "checkout", "orders"],
+    "EventInbox": ["events", "store-access"],
+    "EventReplayAudit": ["events"]
   },
   "sharedTransactionDomain": {
     "reason": "AGENTS.md rule 6: checkout, stock reservation, orders, payments and invoices form one transaction domain. Placing an order writes the cart, order, items, events, payment and invoice in a single database transaction.",

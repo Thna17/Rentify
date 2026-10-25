@@ -16,6 +16,9 @@ const SellerApplication = require('./SellerApplication');
 const SellerReview = require('./SellerReview');
 const UserSession = require('./UserSession');
 const AuditLog = require('./AuditLog');
+const EventOutbox = require('./EventOutbox');
+const EventInbox = require('./EventInbox');
+const EventReplayAudit = require('./EventReplayAudit');
 
 Store.belongsTo(User, { foreignKey: 'ownerUserId', as: 'owner' });
 User.hasOne(Store, { foreignKey: 'ownerUserId', as: 'store' });
@@ -138,4 +141,7 @@ module.exports = {
   SellerReview,
   UserSession,
   AuditLog,
+  EventOutbox,
+  EventInbox,
+  EventReplayAudit,
 };

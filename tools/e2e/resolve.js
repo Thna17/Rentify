@@ -23,7 +23,14 @@ function findModule(subPath) {
 }
 
 function requireModule(subPath) {
-  return require(findModule(subPath));
+  try {
+    return require(findModule(subPath));
+  } catch (err) {
+    if (err.code === 'MODULE_NOT_FOUND') {
+      return null;
+    }
+    throw err;
+  }
 }
 
 module.exports = {
