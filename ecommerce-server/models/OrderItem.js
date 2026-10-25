@@ -96,6 +96,18 @@ const OrderItem = sequelize.define('OrderItem', {
     type: DataTypes.JSON,
     allowNull: true,
     comment: "P3-MNY-001: Immutable line-item money and identity snapshot",
+  },
+  returnCondition: {
+    type: DataTypes.STRING(32),
+    defaultValue: null,
+    allowNull: true,
+    comment: "P3-INV-002: Inspection outcome (resellable, damaged, non_resellable)",
+  },
+  restockedQuantity: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false,
+    comment: "P3-INV-002: Quantity restocked into sellable inventory",
   }
 }, {
   indexes: [

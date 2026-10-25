@@ -23,6 +23,39 @@ export class CommerceApiClient {
   }
 
   /**
+   * Privileged administrative inventory adjustment
+   * POST /api/admin/operations/inventory/adjust
+   */
+  async post_api_admin_operations_inventory_adjust(options: {
+    body: {
+      delta: number;
+      evidence?: string;
+      idempotencyKey?: string;
+      reason?: string;
+      reasonCode?: "manual_adjustment" | "restock" | "return" | "opening_balance";
+      skuId: string;
+      storeId: Commerce.UUID;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/admin/operations/inventory/adjust',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_operations_inventory_adjust */
+  async postApiAdminOperationsInventoryAdjust(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_admin_operations_inventory_adjust(options);
+  }
+
+  /**
    * Get administrative operations metrics overview
    * GET /api/admin/operations/overview
    */
@@ -54,7 +87,12 @@ export class CommerceApiClient {
       id: string;
     };
     body: {
+      delta?: number;
+      evidence?: string;
+      marketplaceVisibility?: boolean | null;
+      reason?: string;
       status?: "active" | "draft" | "archived";
+      stockQuantity?: number;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -2181,6 +2219,109 @@ export class CommerceApiClient {
   /** Alias for post_api_merchant_orders_orderId_process */
   async postApiMerchantOrdersOrderIdProcess(options: any): Promise<ApiResponse<any>> {
     return (this as any).post_api_merchant_orders_orderId_process(options);
+  }
+
+  /**
+   * Complete return after refund confirmation
+   * POST /api/merchant/orders/{orderId}/returns/complete
+   */
+  async post_api_merchant_orders_orderId_returns_complete(options: {
+    path: {
+      orderId: string;
+    };
+    body?: {
+      reason?: string;
+      refundTransactionId?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/merchant/orders/{orderId}/returns/complete',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_merchant_orders_orderId_returns_complete */
+  async postApiMerchantOrdersOrderIdReturnsComplete(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_merchant_orders_orderId_returns_complete(options);
+  }
+
+  /**
+   * Process return decision (approve or reject)
+   * POST /api/merchant/orders/{orderId}/returns/decision
+   */
+  async post_api_merchant_orders_orderId_returns_decision(options: {
+    path: {
+      orderId: string;
+    };
+    body: {
+      decision: "approve" | "reject";
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/merchant/orders/{orderId}/returns/decision',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_merchant_orders_orderId_returns_decision */
+  async postApiMerchantOrdersOrderIdReturnsDecision(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_merchant_orders_orderId_returns_decision(options);
+  }
+
+  /**
+   * Physical return receipt and inspection restock
+   * POST /api/merchant/orders/{orderId}/returns/receive
+   */
+  async post_api_merchant_orders_orderId_returns_receive(options: {
+    path: {
+      orderId: string;
+    };
+    body?: {
+      evidence?: string;
+      inspectionOutcome?: "resellable" | "damaged" | "non_resellable";
+      itemsToRestock?: Array<{
+        condition?: string;
+        itemId?: string;
+        quantity?: number;
+        restock?: boolean;
+      }>;
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/merchant/orders/{orderId}/returns/receive',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_merchant_orders_orderId_returns_receive */
+  async postApiMerchantOrdersOrderIdReturnsReceive(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_merchant_orders_orderId_returns_receive(options);
   }
 
   /**

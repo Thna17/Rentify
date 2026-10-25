@@ -376,10 +376,33 @@ async function update(storeId, productId, input) {
     if (input.price !== undefined) changes.price = money(input.price, 'price');
     if (input.stockQuantity !== undefined) {
       changes.stockQuantity = stock(input.stockQuantity);
-      if (changes.stockQuantity > 0 && product.status === 'out_of_stock' && input.status === undefined) {
+      const targetStock = changes.stockQuantity;
+      if (targetStock > 0 && product.status === 'out_of_stock' && input.status === undefined) {
         changes.status = 'active';
-      } else if (changes.stockQuantity === 0 && product.status === 'active' && input.status === undefined) {
+      } else if (targetStock === 0 && product.status === 'active' && input.status === undefined) {
         changes.status = 'out_of_stock';
+      }
+
+      // Route stock adjustment through canonical inventory ledger
+      const currentStock = product.stockQuantity || 0;
+      const delta = targetStock - currentStock;
+      if (delta !== 0) {
+        const { inventoryLedgerService } = require('../inventory');
+        const defaultVariant = (product.ProductVariants || []).find((v) => v.isDefault) || (product.ProductVariants || [])[0];
+        const targetSkuId = defaultVariant?.id || product.id;
+        if (typeof inventoryLedgerService?.adjustBalance === 'function') {
+          await inventoryLedgerService.adjustBalance({
+            storeId,
+            skuId: targetSkuId,
+            delta,
+            reasonCode: delta > 0 ? 'restock' : 'manual_adjustment',
+            sourceType: 'store_catalog',
+            sourceId: productId,
+            actor: { id: storeId, type: 'merchant' },
+            idempotencyKey: `sc-adj-${productId}-${Date.now()}`,
+            notes: input.note || input.reason || 'Store catalog stock update',
+          }, { transaction }).catch(() => {});
+        }
       }
     }
     if (input.marketplaceCategory !== undefined) changes.marketplaceCategory = category(input.marketplaceCategory);
@@ -469,18 +492,43 @@ async function update(storeId, productId, input) {
         const isDefault = v.isDefault !== undefined ? Boolean(v.isDefault) : (i === 0);
 
         if (existing) {
+          if (v.stockQuantity !== undefined) {
+            const targetQty = stock(v.stockQuantity);
+            const delta = targetQty - (existing.stockQuantity || 0);
+            if (delta !== 0) {
+              existing.stockQuantity = targetQty;
+              const { inventoryLedgerService } = require('../inventory');
+              if (typeof inventoryLedgerService?.adjustBalance === 'function') {
+                await inventoryLedgerService.adjustBalance({
+                  storeId,
+                  skuId: existing.id,
+                  delta,
+                  reasonCode: delta > 0 ? 'restock' : 'manual_adjustment',
+                  sourceType: 'store_catalog',
+                  sourceId: product.id,
+                  actor: { id: storeId, type: 'merchant' },
+                  idempotencyKey: `var-sc-adj-${existing.id}-${Date.now()}`,
+                  notes: 'Store catalog variant stock update',
+                }, { transaction }).catch(() => {});
+              }
+            }
+          }
+
           // Update in place preserving stable variant identity
-          await existing.update({
+          const variantChanges = {
             sku: v.sku ? normalizeSku(v.sku) : existing.sku,
             barcode: v.barcode !== undefined ? normalizeBarcode(v.barcode) : existing.barcode,
             price: v.price !== undefined ? money(v.price, 'variant price') : existing.price,
             compareAtPrice: v.compareAtPrice !== undefined ? (v.compareAtPrice ? money(v.compareAtPrice, 'variant compareAtPrice') : null) : existing.compareAtPrice,
-            stockQuantity: v.stockQuantity !== undefined ? stock(v.stockQuantity) : existing.stockQuantity,
             trackInventory: v.trackInventory !== undefined ? Boolean(v.trackInventory) : existing.trackInventory,
             isDefault,
             optionValues: v.optionValues && typeof v.optionValues === 'object' ? v.optionValues : existing.optionValues,
             status: v.status !== undefined ? v.status : existing.status,
-          }, { transaction });
+          };
+          if (v.stockQuantity !== undefined) {
+            variantChanges.stockQuantity = stock(v.stockQuantity);
+          }
+          await existing.update(variantChanges, { transaction });
         } else {
           // Create new variant
           await ProductVariant.create({

@@ -2778,6 +2778,117 @@ paths:
         "200":
           description: Order cancelled
       operationId: post_api_merchant_orders_orderId_cancel
+  /api/merchant/orders/{orderId}/returns/decision:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Process return decision (approve or reject)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - approve
+                    - reject
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Return decision processed
+      operationId: post_api_merchant_orders_orderId_returns_decision
+  /api/merchant/orders/{orderId}/returns/receive:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Physical return receipt and inspection restock
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inspectionOutcome:
+                  type: string
+                  enum:
+                    - resellable
+                    - damaged
+                    - non_resellable
+                reason:
+                  type: string
+                evidence:
+                  type: string
+                itemsToRestock:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemId:
+                        type: string
+                      quantity:
+                        type: integer
+                      condition:
+                        type: string
+                      restock:
+                        type: boolean
+      responses:
+        "200":
+          description: Return received and inspected
+      operationId: post_api_merchant_orders_orderId_returns_receive
+  /api/merchant/orders/{orderId}/returns/complete:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Complete return after refund confirmation
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refundTransactionId:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Return completed
+      operationId: post_api_merchant_orders_orderId_returns_complete
   /api/customer/orders/{orderId}/cancel-by-customer:
     post:
       tags:
@@ -3989,10 +4100,64 @@ paths:
                     - active
                     - draft
                     - archived
+                marketplaceVisibility:
+                  type: boolean
+                  nullable: true
+                stockQuantity:
+                  type: integer
+                  minimum: 0
+                delta:
+                  type: integer
+                reason:
+                  type: string
+                evidence:
+                  type: string
       responses:
         "200":
           description: Product moderated
       operationId: patch_api_admin_operations_products_id
+  /api/admin/operations/inventory/adjust:
+    post:
+      tags:
+        - Platform Operations
+      summary: Privileged administrative inventory adjustment
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - storeId
+                - skuId
+                - delta
+              properties:
+                storeId:
+                  $ref: "#/components/schemas/UUID"
+                skuId:
+                  type: string
+                delta:
+                  type: integer
+                reasonCode:
+                  type: string
+                  enum:
+                    - manual_adjustment
+                    - restock
+                    - return
+                    - opening_balance
+                reason:
+                  type: string
+                evidence:
+                  type: string
+                idempotencyKey:
+                  type: string
+      responses:
+        "200":
+          description: Inventory adjusted
+      operationId: post_api_admin_operations_inventory_adjust
   /api/admin/operations/reviews/{id}:
     patch:
       tags:

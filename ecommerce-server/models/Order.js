@@ -119,6 +119,11 @@ const Order = sequelize.define(
       defaultValue: false,
       comment: "P3-INV-002: Whether order items currently hold an active stock reservation",
     },
+    stockRestocked: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: "P3-INV-002: Whether return items have been physically restocked into inventory",
+    },
     currency: {
       type: DataTypes.STRING(3),
       defaultValue: "USD",

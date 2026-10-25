@@ -186,6 +186,7 @@ function mapFulfillmentToDeliveryStatus(fulfillmentStatus) {
  * Resolves canonical SKU ID for an order item to ensure exact ledger compensation.
  */
 async function resolveItemSkuId(item, transaction) {
+  if (item.skuId) return item.skuId;
   if (item.variantId) return item.variantId;
   if (item.productId) {
     const defaultVariant = await ProductVariant.findOne({
@@ -1010,12 +1011,17 @@ async function processReturnDecision(orderId, {
 
 /**
  * Merchant physically receives returned items.
+ * Accepted physical receipt and inspection outcome control whether items are restocked.
+ * Damaged/non-resellable returns do not increase sellable stock.
+ * Restock happens exactly once and duplicate replays cannot restore twice.
  * Triggers inventory restocking via inventoryLedgerService with reasonCode: 'return'.
  */
 async function receiveReturn(orderId, {
   actor,
   itemsToRestock = null,
+  inspectionOutcome = 'resellable',
   reason = 'Return received and inspected',
+  evidence = null,
   idempotencyKey,
   correlationId = null,
 }, { transaction: parentTx } = {}) {
@@ -1045,6 +1051,10 @@ async function receiveReturn(orderId, {
       return { duplicate: true, order, event: priorEvent };
     }
 
+    if (order.stockRestocked && order.returnStatus === RETURN_STATES.RETURN_RECEIVED) {
+      return { duplicate: true, order, event: null };
+    }
+
     await verifyActorAuthorization({ order, actor, action: 'receive_return', transaction: tx });
 
     const currentReturnStatus = order.returnStatus || RETURN_STATES.NONE;
@@ -1057,28 +1067,79 @@ async function receiveReturn(orderId, {
       );
     }
 
-    // Restock items in inventory ledger with reasonCode: 'return'
+    // Inspect and Restock items
+    // Inspection outcome: 'resellable' vs 'damaged' / 'non_resellable'
     const items = itemsToRestock || order.OrderItems || [];
-    for (const item of items) {
-      const skuId = await resolveItemSkuId(item, tx);
-      const stockKey = `return-stock-${order.id}-${item.id}-${idempotencyKey}`;
+    let restockedCount = 0;
+    let damagedCount = 0;
+    const inspectedItems = [];
 
-      await inventoryLedgerService.mutateBalance({
-        storeId: order.storeId,
-        skuId,
-        changeOnHand: item.quantity,
-        changeReserved: 0,
-        reasonCode: 'return',
-        sourceType: 'order',
-        sourceId: order.id,
-        actor: { id: actor.id, type: actor.role || actor.type || 'merchant' },
-        idempotencyKey: stockKey,
-        correlationId,
-      }, { transaction: tx });
+    for (const item of items) {
+      // Find matching OrderItem model if available
+      const orderItem = (order.OrderItems || []).find((oi) => oi.id === (item.id || item.itemId)) || item;
+      const skuId = await resolveItemSkuId(orderItem, tx);
+
+      // Evaluate inspection outcome for this item
+      const condition = item.condition || (item.resellable === false ? 'damaged' : (inspectionOutcome || 'resellable'));
+      const isDamaged = ['damaged', 'non_resellable', 'defective', 'discarded'].includes(condition) || item.resellable === false || item.restock === false;
+      const quantity = Number(item.quantity || orderItem.quantity || 1);
+
+      if (isDamaged) {
+        // Damaged/non-resellable returns MUST NOT increase sellable stock
+        damagedCount += quantity;
+        inspectedItems.push({
+          itemId: orderItem.id,
+          skuId,
+          quantity,
+          condition: 'damaged',
+          restocked: false,
+          notes: item.notes || 'Damaged or defective return item; excluded from sellable stock',
+        });
+
+        if (orderItem && typeof orderItem.update === 'function') {
+          await orderItem.update({
+            returnCondition: 'damaged',
+            restockedQuantity: 0,
+          }, { transaction: tx }).catch(() => {});
+        }
+      } else {
+        // Resellable items: restock into canonical inventory ledger
+        const stockKey = `return-stock-${order.id}-${orderItem.id || skuId}-${idempotencyKey}`;
+        await inventoryLedgerService.mutateBalance({
+          storeId: order.storeId,
+          skuId,
+          changeOnHand: quantity,
+          changeReserved: 0,
+          reasonCode: 'return',
+          sourceType: 'order',
+          sourceId: order.id,
+          actor: { id: actor.id, type: actor.role || actor.type || 'merchant' },
+          idempotencyKey: stockKey,
+          notes: item.notes || reason || 'Physical return receipt and restock',
+          correlationId,
+        }, { transaction: tx });
+
+        restockedCount += quantity;
+        inspectedItems.push({
+          itemId: orderItem.id,
+          skuId,
+          quantity,
+          condition: 'resellable',
+          restocked: true,
+        });
+
+        if (orderItem && typeof orderItem.update === 'function') {
+          await orderItem.update({
+            returnCondition: 'resellable',
+            restockedQuantity: quantity,
+          }, { transaction: tx }).catch(() => {});
+        }
+      }
     }
 
     await order.update({
       returnStatus: RETURN_STATES.RETURN_RECEIVED,
+      stockRestocked: true,
     }, {
       transaction: tx,
       byStateMachine: true,
@@ -1097,8 +1158,11 @@ async function receiveReturn(orderId, {
         previousReturn: currentReturnStatus,
         newReturn: RETURN_STATES.RETURN_RECEIVED,
         lifecycle: 'return',
-        restockedCount: items.length,
+        restockedCount,
+        damagedCount,
+        inspectedItems,
         reason,
+        evidence,
         correlationId,
         actorType: actor.role || actor.type || 'merchant',
         timestamp: now.toISOString(),

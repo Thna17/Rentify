@@ -343,6 +343,22 @@ export namespace Commerce {
   }
 
   export interface Operations {
+    post_api_admin_operations_inventory_adjust: {
+      method: 'POST';
+      path: '/api/admin/operations/inventory/adjust';
+      parameters: {
+      };
+      body: {
+        delta: number;
+        evidence?: string;
+        idempotencyKey?: string;
+        reason?: string;
+        reasonCode?: "manual_adjustment" | "restock" | "return" | "opening_balance";
+        skuId: string;
+        storeId: Commerce.UUID;
+      };
+      response: any;
+    };
     get_api_admin_operations_overview: {
       method: 'GET';
       path: '/api/admin/operations/overview';
@@ -359,7 +375,12 @@ export namespace Commerce {
         };
       };
       body: {
+        delta?: number;
+        evidence?: string;
+        marketplaceVisibility?: boolean | null;
+        reason?: string;
         status?: "active" | "draft" | "archived";
+        stockQuantity?: number;
       };
       response: any;
     };
@@ -1182,6 +1203,55 @@ export namespace Commerce {
         path: {
           orderId: string;
         };
+      };
+      response: any;
+    };
+    post_api_merchant_orders_orderId_returns_complete: {
+      method: 'POST';
+      path: '/api/merchant/orders/{orderId}/returns/complete';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      body?: {
+        reason?: string;
+        refundTransactionId?: string;
+      };
+      response: any;
+    };
+    post_api_merchant_orders_orderId_returns_decision: {
+      method: 'POST';
+      path: '/api/merchant/orders/{orderId}/returns/decision';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      body: {
+        decision: "approve" | "reject";
+        reason?: string;
+      };
+      response: any;
+    };
+    post_api_merchant_orders_orderId_returns_receive: {
+      method: 'POST';
+      path: '/api/merchant/orders/{orderId}/returns/receive';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      body?: {
+        evidence?: string;
+        inspectionOutcome?: "resellable" | "damaged" | "non_resellable";
+        itemsToRestock?: Array<{
+          condition?: string;
+          itemId?: string;
+          quantity?: number;
+          restock?: boolean;
+        }>;
+        reason?: string;
       };
       response: any;
     };

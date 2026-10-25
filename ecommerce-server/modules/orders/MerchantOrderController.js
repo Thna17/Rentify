@@ -279,7 +279,7 @@ exports.handleReturnDecision = async (req, res) => {
 exports.receiveReturnedItems = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { itemsToRestock, reason } = req.body;
+    const { itemsToRestock, inspectionOutcome, reason, evidence } = req.body || {};
     const actor = req.user || { id: req.body?.actorId || 'merchant', role: 'merchant' };
     const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || `return-rec-${orderId}-${Date.now()}`;
     const correlationId = req.headers['x-correlation-id'] || null;
@@ -291,7 +291,9 @@ exports.receiveReturnedItems = async (req, res) => {
         storeId: req.store?.storeId || actor.storeId,
       },
       itemsToRestock,
+      inspectionOutcome,
       reason,
+      evidence,
       idempotencyKey,
       correlationId,
     });
@@ -299,7 +301,9 @@ exports.receiveReturnedItems = async (req, res) => {
     res.json({
       success: true,
       returnStatus: result.order.returnStatus,
+      stockRestocked: result.order.stockRestocked,
       order: result.order,
+      event: result.event,
     });
   } catch (error) {
     const status = error.statusCode || 400;
