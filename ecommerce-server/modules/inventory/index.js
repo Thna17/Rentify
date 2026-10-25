@@ -8,6 +8,7 @@ module.exports = {
   get sharedStockService() { return require('./sharedStockService'); },
   get stockService() { return require('./stockService'); },
   get inventoryLedgerService() { return require('./inventoryLedgerService'); },
+  get legacyWebsiteReconciliationService() { return require('./legacyWebsiteReconciliationService'); },
   ALLOWED_REASON_CODES,
   ...inventoryErrors,
 };

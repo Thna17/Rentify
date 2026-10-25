@@ -46,7 +46,15 @@ class POSOrderStrategy extends OrderTypeStrategy {
 
     // Update inventory for immediate payments
     if (isImmediatePayment) {
-      await this.nicheStrategy.updateInventory(items, transaction);
+      await this.nicheStrategy.updateInventory(items, transaction, {
+        orderId: order.id,
+        storeId,
+        websiteId,
+        reasonCode: 'pos_sale',
+        sourceType: 'legacy_website_pos_order',
+        sourceId: order.id,
+        currency,
+      });
     }
 
     // Process payment
@@ -83,7 +91,15 @@ class POSOrderStrategy extends OrderTypeStrategy {
             },
             { transaction }
           );
-          await this.nicheStrategy.updateInventory(items, transaction);
+          await this.nicheStrategy.updateInventory(items, transaction, {
+            orderId: order.id,
+            storeId,
+            websiteId,
+            reasonCode: 'pos_sale',
+            sourceType: 'legacy_website_pos_order',
+            sourceId: order.id,
+            currency,
+          });
           await order.update({ status: 'completed', deliveryStatus: 'delivered', stockDeducted: true }, { transaction, byStateMachine: true });
         } else {
           throw procErr;

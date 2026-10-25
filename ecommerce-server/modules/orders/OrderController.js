@@ -31,26 +31,11 @@ exports.createOrder = async (req, res) => {
     }
     const user = req.user;
 
-    // Get website niche
-    const website = await WebsiteData.findOne({ 
-      where: { websiteId, status: 'active' },
-      attributes: ['niche', 'storeId'],
-      transaction
-    });
-    
-    if (!website) {
-      await transaction.rollback();
-      return res.status(404).json({ error: "Website not found" });
-    }
-
-    if (website.storeId) {
-      const { StoreAccess } = require('../../models');
-      const store = await StoreAccess.findByPk(website.storeId, { transaction });
-      if (store && store.status !== 'active') {
-        await transaction.rollback();
-        return res.status(403).json({ error: 'Store is not active' });
-      }
-    }
+    // Resolve website to store safely and reject ambiguous/inactive mappings
+    const { resolveWebsiteToStore } = require("./services/legacyWebsiteCompatibilityService");
+    const resolved = await resolveWebsiteToStore(websiteId, { transaction });
+    const storeId = resolved.storeId;
+    const website = resolved.website || { niche: 'ecommerce' };
 
     // Fetch payment config
     const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
@@ -68,13 +53,13 @@ exports.createOrder = async (req, res) => {
       models,
       paymentProcessor,
       NotificationService,
-      website.niche,
+      website.niche || 'ecommerce',
     );
     
     const result = await strategy.execute({
       user,
       websiteId,
-      storeId: website.storeId || null,
+      storeId,
       shippingDetails,
       paymentMethod,
       merchantConfig,
@@ -89,7 +74,8 @@ exports.createOrder = async (req, res) => {
       await transaction.rollback();
     }
         console.error("Create Order Error:", error);
-    res.status(400).json({ error: error.message });
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   } finally {
     console.timeEnd("Factory createOrder Time");
   }

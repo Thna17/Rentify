@@ -628,21 +628,39 @@ async function cancelOrder(orderId, {
     if (order.stockDeducted && order.OrderItems && order.OrderItems.length > 0) {
       const sortedItems = [...order.OrderItems].sort((a, b) => a.productId.localeCompare(b.productId));
 
+      let effectiveStoreId = order.storeId;
+      if (!effectiveStoreId && order.websiteId) {
+        const { WebsiteData, StoreAccess } = require('../../models');
+        const site = await WebsiteData.findOne({ where: { websiteId: order.websiteId }, transaction: tx }).catch(() => null);
+        effectiveStoreId = site?.storeId;
+        if (!effectiveStoreId) {
+          const store = await StoreAccess.findOne({ where: { websiteId: order.websiteId }, transaction: tx }).catch(() => null);
+          effectiveStoreId = store?.storeId;
+        }
+      }
+
       for (const item of sortedItems) {
         const skuId = await resolveItemSkuId(item, tx);
         const itemStockKey = `cancel-stock-${order.id}-${item.id}-${idempotencyKey}`;
 
         await inventoryLedgerService.mutateBalance({
-          storeId: order.storeId,
+          storeId: effectiveStoreId || order.storeId,
           skuId,
           changeOnHand: item.quantity,
           changeReserved: 0,
           reasonCode: 'cancellation',
-          sourceType: 'order',
+          sourceType: order.websiteId ? 'legacy_website_order' : 'order',
           sourceId: order.id,
           actor: { id: actor.id, type: actor.role || actor.type || 'system' },
           idempotencyKey: itemStockKey,
           correlationId,
+          monetaryContext: order.websiteId ? {
+            legacyWebsiteId: order.websiteId,
+            legacyOrderId: order.id,
+          } : null,
+          notes: order.websiteId
+            ? `Legacy Website order cancellation compensation (websiteId: ${order.websiteId})`
+            : null,
         }, { transaction: tx });
       }
 

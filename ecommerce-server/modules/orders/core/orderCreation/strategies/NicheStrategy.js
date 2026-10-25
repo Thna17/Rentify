@@ -149,15 +149,13 @@ class NicheStrategy {
   }
 
   // Inventory management for this niche
-  async updateInventory(items, transaction = null) {
-    for (const item of [...items].sort((a, b) => a.productId.localeCompare(b.productId))) {
-      await this.updateItemInventory(item, transaction);
-    }
+  async updateInventory(items, transaction = null, context = {}) {
+    const { deductOrderInventory } = require('../../../services/legacyWebsiteCompatibilityService');
+    return await deductOrderInventory(items, transaction, context);
   }
 
-  async updateItemInventory(item, transaction = null) {
-    const { changeStock } = require('../../../../inventory').sharedStockService;
-    await changeStock(item.productId, -item.quantity, transaction, item.variantId || null);
+  async updateItemInventory(item, transaction = null, context = {}) {
+    return await this.updateInventory([item], transaction, context);
   }
 
   // Order metadata for this niche

@@ -9,13 +9,10 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     const { Cart, CartItem, Customer, Product, ProductVariant, WebsiteData } = this.models;
     const { Op } = require('sequelize');
 
-    if (!storeId && websiteId && WebsiteData) {
-      const site = await WebsiteData.findOne({
-        where: { websiteId },
-        attributes: ['storeId'],
-        transaction,
-      });
-      if (site) storeId = site.storeId;
+    if (!storeId && websiteId) {
+      const { resolveWebsiteToStore } = require('../../../services/legacyWebsiteCompatibilityService');
+      const resolved = await resolveWebsiteToStore(websiteId, { transaction });
+      storeId = resolved.storeId;
     }
 
     // Validate payment method
@@ -73,14 +70,17 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
         lock: transaction.LOCK.UPDATE
       });
       if (!product) throw new Error('Product is not available on this Website');
-      const variant = item.variantId ? await ProductVariant.findOne({
-        where: { id: item.variantId, productId: product.id, status: 'active' },
-        transaction, lock: transaction.LOCK.UPDATE,
-      }) : null;
-      if (item.variantId && !variant) throw new Error('Product variant is not available');
+      const { resolveLegacyItemToSku } = require('../../../services/legacyWebsiteCompatibilityService');
+      const resolvedSku = await resolveLegacyItemToSku({
+        productId: product.id,
+        variantId: item.variantId || null,
+        storeId,
+      }, { transaction });
+      const variant = resolvedSku.variant;
       if (!Number.isSafeInteger(item.quantity) || item.quantity < 1) throw new Error('Invalid quantity');
       items.push({
-        productId: product.id, variantId: item.variantId,
+        productId: product.id,
+        variantId: resolvedSku.isVariant ? resolvedSku.skuId : null,
         quantity: item.quantity,
         price: this.nicheStrategy.calculateItemPrice(product, variant, item.selectedOptions, item.customizations),
         selectedOptions: item.selectedOptions,
@@ -146,8 +146,17 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     // Create order items
     const orderItems = await this.createOrderItems(order.id, items, transaction);
 
-    // Update inventory using niche strategy
-    await this.nicheStrategy.updateInventory(items, transaction);
+    // Update inventory using canonical inventory via niche strategy
+    await this.nicheStrategy.updateInventory(items, transaction, {
+      orderId: order.id,
+      storeId,
+      websiteId,
+      actor: { id: user?.id || 'storefront_buyer', type: user?.type || 'customer' },
+      idempotencyKey: `legacy-order-${order.id}`,
+      sourceType: 'legacy_website_order',
+      sourceId: order.id,
+      currency,
+    });
 
     // Process payment
     const payment = await this.paymentProcessor.process(

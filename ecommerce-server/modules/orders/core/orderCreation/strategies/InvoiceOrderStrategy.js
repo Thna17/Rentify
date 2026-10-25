@@ -56,7 +56,15 @@ class InvoiceOrderStrategy extends OrderTypeStrategy {
 
     // Update inventory if immediate payment
     if (shouldDeductNow) {
-      await this.nicheStrategy.updateInventory(items, transaction);
+      await this.nicheStrategy.updateInventory(items, transaction, {
+        orderId: order.id,
+        storeId: order.storeId || orderData.storeId,
+        websiteId,
+        reasonCode: 'invoice_fulfillment',
+        sourceType: 'legacy_website_invoice_order',
+        sourceId: order.id,
+        currency,
+      });
     }
 
     // Process payment
