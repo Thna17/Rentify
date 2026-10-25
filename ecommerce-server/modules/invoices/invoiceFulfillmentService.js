@@ -3,7 +3,7 @@
 // Enforces explicit reservation policies, single-effect stock mutations, fulfilled invoice immutability,
 // store ownership isolation, and single-source mutual exclusion with POS.
 
-const { randomUUID } = require('node:crypto');
+const { randomUUID, createHash } = require('node:crypto');
 const { sequelize } = require('../../config/db');
 const {
   Invoice,
@@ -209,13 +209,16 @@ async function createInvoiceOrder(params, options = {}) {
 
   // 3. Replay detection: check existing invoice/order by checkoutKey or invoiceNumber
   const resolvedInvoiceNumber = invoiceData.invoiceNumber || `INV-${Date.now()}`;
-  const checkoutKey = idempotencyKey ? `inv-${storeId}-${idempotencyKey}` : `inv-${storeId}-${resolvedInvoiceNumber}`;
+  const rawCheckoutKey = idempotencyKey ? `inv-${storeId}-${idempotencyKey}` : `inv-${storeId}-${resolvedInvoiceNumber}`;
+  const checkoutKey = rawCheckoutKey.length > 64
+    ? `inv-${createHash('sha256').update(rawCheckoutKey).digest('hex').slice(0, 56)}`
+    : rawCheckoutKey;
 
   const existingOrder = await Order.findOne({
     where: { checkoutKey },
     include: [
-      { model: OrderItem },
-      { model: Payment },
+      { model: OrderItem, as: 'OrderItems' },
+      { model: Payment, as: 'Payment' },
       { model: Invoice, as: 'Invoice' },
       { model: ShippingDetail, as: 'shippingDetail' },
     ],
@@ -409,8 +412,10 @@ async function createInvoiceOrder(params, options = {}) {
         productId: item.productId,
         variantId: item.variantId,
         quantity: item.quantity,
+        basePrice: item.price,
         price: item.price,
         unitPrice: item.price,
+        total: item.price * item.quantity,
         itemTotal: item.price * item.quantity,
       },
       txOption
@@ -486,7 +491,10 @@ async function fulfillInvoice(params, options = {}) {
   const invoice = await Invoice.findByPk(invoiceId, {
     include: [{
       model: Order,
-      include: [{ model: OrderItem }, { model: Payment }],
+      include: [
+        { model: OrderItem, as: 'OrderItems' },
+        { model: Payment, as: 'Payment' },
+      ],
     }],
     ...txOption,
   });
@@ -614,7 +622,10 @@ async function fulfillInvoice(params, options = {}) {
       fulfillmentStatus: 'delivered',
       status: 'completed',
     },
-    txOption
+    {
+      ...txOption,
+      byStateMachine: true,
+    }
   );
 
   await invoice.update(

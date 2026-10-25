@@ -3,7 +3,7 @@
 // Enforces valid transitions, actor authorization, idempotency, append-only order events,
 // single-effect inventory compensation on cancellation, and stock restocking on return receipt.
 
-const { randomUUID } = require('node:crypto');
+const { randomUUID, createHash } = require('node:crypto');
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/db');
 const {
@@ -82,7 +82,8 @@ async function safeFindPriorEvent(eventKey, tx) {
 
 async function safeCreateEvent(data, tx) {
   try {
-    const txOption = (tx && (tx.uuid || tx.id)) ? { transaction: tx } : {};
+    const rawTx = (tx && tx.transaction) ? tx.transaction : tx;
+    const txOption = (rawTx && (rawTx.uuid || rawTx.id || rawTx.LOCK || typeof rawTx.commit === 'function')) ? { transaction: rawTx } : {};
     return await OrderEvent.create(data, txOption);
   } catch (err) {
     if (isDbConnectionError(err)) {
@@ -666,7 +667,10 @@ async function cancelOrder(orderId, {
 
       for (const item of sortedItems) {
         const skuId = await resolveItemSkuId(item, tx);
-        const itemStockKey = `cancel-stock-${order.id}-${item.id}-${idempotencyKey}`;
+        const rawStockKey = `cancel-stock-${order.id}-${item.id}-${idempotencyKey}`;
+        const itemStockKey = rawStockKey.length > 128
+          ? `cancel-${createHash('sha256').update(rawStockKey).digest('hex').slice(0, 40)}`
+          : rawStockKey;
 
         await inventoryLedgerService.mutateBalance({
           storeId: effectiveStoreId || order.storeId,
@@ -709,7 +713,10 @@ async function cancelOrder(orderId, {
 
       for (const item of sortedItems) {
         const skuId = await resolveItemSkuId(item, tx);
-        const itemStockKey = `cancel-res-stock-${order.id}-${item.id}-${idempotencyKey}`;
+        const rawResKey = `cancel-res-stock-${order.id}-${item.id}-${idempotencyKey}`;
+        const itemStockKey = rawResKey.length > 128
+          ? `c-res-${createHash('sha256').update(rawResKey).digest('hex').slice(0, 40)}`
+          : rawResKey;
 
         await inventoryLedgerService.mutateBalance({
           storeId: effectiveStoreId || order.storeId,
@@ -1104,7 +1111,10 @@ async function receiveReturn(orderId, {
         }
       } else {
         // Resellable items: restock into canonical inventory ledger
-        const stockKey = `return-stock-${order.id}-${orderItem.id || skuId}-${idempotencyKey}`;
+        const rawStockKey = `return-stock-${order.id}-${orderItem.id || skuId}-${idempotencyKey}`;
+        const stockKey = rawStockKey.length > 128
+          ? `ret-${createHash('sha256').update(rawStockKey).digest('hex').slice(0, 40)}`
+          : rawStockKey;
         await inventoryLedgerService.mutateBalance({
           storeId: order.storeId,
           skuId,
