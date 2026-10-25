@@ -105,6 +105,24 @@ const Product = sequelize.define(
     stockQuantity: { type: DataTypes.INTEGER, defaultValue: 0, validate: { min: 0 } },
     lowStockThreshold: { type: DataTypes.INTEGER, defaultValue: 5 },
     allowBackorders: { type: DataTypes.BOOLEAN, defaultValue: false },
+    currency: {
+      type: DataTypes.STRING(3),
+      allowNull: false,
+      defaultValue: "USD",
+    },
+    barcode: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    sku: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    hasVariants: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
 
     // SEO
     seoTitle: DataTypes.STRING,
@@ -140,10 +158,23 @@ const Product = sequelize.define(
       { fields: ["productType"] },
       { fields: ["websiteId", "status"] },
       { fields: ["websiteId", "categoryId"] },
+      { fields: ["storeId", "sku"], unique: true, name: "uq_products_store_sku" },
+      { fields: ["storeId", "barcode"], unique: true, name: "uq_products_store_barcode" },
       { fields: ["name", "description"], type: "FULLTEXT" },
     ],
     hooks: {
       beforeValidate: async (product) => {
+        if (product.barcode !== undefined) {
+          product.barcode = (typeof product.barcode === 'string' && product.barcode.trim()) ? product.barcode.trim() : null;
+        }
+        if (product.sku !== undefined) {
+          product.sku = (typeof product.sku === 'string' && product.sku.trim()) ? product.sku.trim() : null;
+        }
+        if (product.currency) {
+          product.currency = String(product.currency).trim().toUpperCase();
+        } else {
+          product.currency = 'USD';
+        }
         if (!product.websiteId && product.storeId && !product.websiteNiche) {
           product.websiteNiche = 'ecommerce';
         }

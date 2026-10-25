@@ -16,8 +16,16 @@ const ProductVariant = sequelize.define(
       allowNull: false,
       references: { model: "Products", key: "id" }
     },
+    storeId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
     sku: {
       type: DataTypes.STRING,
+      allowNull: false,
+    },
+    barcode: {
+      type: DataTypes.STRING(100),
       allowNull: true,
     },
     price: {
@@ -33,6 +41,11 @@ const ProductVariant = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
+    currency: {
+      type: DataTypes.STRING(3),
+      allowNull: false,
+      defaultValue: "USD",
+    },
     trackInventory: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -41,6 +54,11 @@ const ProductVariant = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
       validate: { min: 0 }
+    },
+    isDefault: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     weight: {
       type: DataTypes.DECIMAL(8, 2),
@@ -80,11 +98,37 @@ const ProductVariant = sequelize.define(
   {
     indexes: [
       { fields: ["productId"] },
-      { fields: ["sku"], unique: true },
+      { fields: ["storeId"] },
+      { fields: ["storeId", "sku"], unique: true, name: "uq_product_variants_store_sku" },
+      { fields: ["storeId", "barcode"], unique: true, name: "uq_product_variants_store_barcode" },
+      { fields: ["productId", "isDefault"] },
       { fields: ["status"] },
     ],
     hooks: {
-      beforeValidate: (variant) => {
+      beforeValidate: async (variant, options) => {
+        if ((!variant.storeId || !variant.currency) && variant.productId) {
+          const Product = require('./Product');
+          const product = await Product.findByPk(variant.productId, {
+            attributes: ['storeId', 'currency'],
+            transaction: options?.transaction,
+          });
+          if (product) {
+            if (!variant.storeId && product.storeId) {
+              variant.storeId = product.storeId;
+            }
+            if (!variant.currency && product.currency) {
+              variant.currency = product.currency;
+            }
+          }
+        }
+        if (variant.barcode !== undefined) {
+          variant.barcode = (typeof variant.barcode === 'string' && variant.barcode.trim()) ? variant.barcode.trim() : null;
+        }
+        if (variant.currency) {
+          variant.currency = String(variant.currency).trim().toUpperCase();
+        } else {
+          variant.currency = 'USD';
+        }
         if (!variant.sku && variant.productId) {
           const optionString = Object.values(variant.optionValues || {})
             .filter(val => val && val !== '')

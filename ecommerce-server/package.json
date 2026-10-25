@@ -20,6 +20,7 @@
     "db:migrate": "node migrations/runner.js migrate",
     "db:migrate:verify": "node migrations/runner.js verify",
     "db:audit-stores": "node scripts/auditStoreMapping.js",
+    "db:audit-skus": "node scripts/auditProductSkus.js",
     "db:smoke-catalog": "node scripts/smokeStoreCatalog.js",
     "db:smoke-marketplace-checkout": "node scripts/smokeMarketplaceCheckout.js",
     "db:audit-marketplace-cod": "node scripts/auditMarketplaceCod.js",

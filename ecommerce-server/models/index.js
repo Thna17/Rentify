@@ -25,6 +25,9 @@ const ProductReview = require('./ProductReview');
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
 });
+ProductVariant.belongsTo(StoreAccess, {
+  as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
+});
 StoreAccess.hasOne(StoreDeliveryPolicy, {
   as: 'deliveryPolicy', foreignKey: 'storeId', sourceKey: 'storeId', constraints: false,
 });
@@ -75,6 +78,17 @@ Customer.addHook('beforeValidate', 'assignCanonicalStore', async (customer, opti
   customer.tenantStoreId = website.storeId;
 });
 
+ProductVariant.addHook('beforeValidate', 'assignCanonicalStore', async (variant, options) => {
+  if (variant.storeId) return;
+  if (!variant.productId) return;
+  const product = await Product.findByPk(variant.productId, {
+    attributes: ['storeId'], transaction: options?.transaction,
+  });
+  if (product?.storeId) {
+    variant.storeId = product.storeId;
+  }
+});
+
 // Cart associations
 Cart.hasMany(CartItem, { foreignKey: "cartId", as: "CartItems" });
 CartItem.belongsTo(Cart, { foreignKey: "cartId" });
@@ -83,6 +97,8 @@ CartItem.belongsTo(ProductVariant, { foreignKey: "variantId", onDelete: "CASCADE
 
 // Product associations
 Product.hasMany(ProductVariant, { foreignKey: "productId", as: "ProductVariants" });
+Product.hasMany(ProductVariant, { foreignKey: "productId", as: "variants" });
+ProductVariant.belongsTo(Product, { foreignKey: "productId" });
 Product.hasMany(ProductOption, { foreignKey: "productId", as: "ProductOptions" });
 Product.belongsTo(Category, { foreignKey: "categoryId" });
 Category.hasMany(Product, { foreignKey: "categoryId" });

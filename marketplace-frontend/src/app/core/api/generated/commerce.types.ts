@@ -176,10 +176,13 @@ export namespace Commerce {
 
   export interface Product {
     allowBackorders?: boolean;
+    barcode?: string | null;
     categoryId?: string | null;
     compareAtPrice?: string | null;
     createdAt?: string;
+    currency?: string;
     description?: string;
+    hasVariants?: boolean;
     id: Commerce.UUID;
     images?: Array<{
       url: string;
@@ -191,6 +194,7 @@ export namespace Commerce {
     price: Commerce.Money;
     productType?: string;
     shortDescription?: string;
+    sku?: string | null;
     slug?: string;
     status: "active" | "draft" | "archived" | "out_of_stock" | "inactive" | "low_stock";
     stockQuantity: number;
@@ -214,22 +218,29 @@ export namespace Commerce {
   }
 
   export interface ProductVariant {
+    barcode?: string | null;
     compareAtPrice?: string | null;
+    currency?: string;
     id: Commerce.UUID;
+    isDefault?: boolean;
     optionValues?: Record<string, any>;
     price: Commerce.Money;
     productId: Commerce.UUID;
     sku?: string;
     status?: "active" | "disabled";
     stockQuantity: number;
+    storeId?: Commerce.UUID;
     trackInventory?: boolean;
     version: number;
   }
 
   export interface PublicProduct {
+    barcode?: string | null;
     category: string;
     compareAtPrice?: string | null;
+    currency?: string;
     description?: string;
+    hasVariants?: boolean;
     id: Commerce.UUID;
     images?: Array<{
       url?: string;
@@ -238,6 +249,7 @@ export namespace Commerce {
     price: Commerce.Money;
     rating: number;
     reviewCount: number;
+    sku?: string | null;
     slug: string;
     status: string;
     stockQuantity: number;

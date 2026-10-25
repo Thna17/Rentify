@@ -150,7 +150,7 @@ class ProductService {
       {
         model: ProductVariant,
         as: "ProductVariants",
-        where: { status: "active" },
+        where: status === "all" ? undefined : { status: "active" },
         required: false,
       },
       {
@@ -267,9 +267,10 @@ class ProductService {
     return orderMap[sort] || [["createdAt", "DESC"]];
   }
 
-  async findById(productId, transaction = null) {
+  async findById(productId, transaction = null, options = {}) {
     try {
       const storeCondition = await this.resolveStoreWhere(transaction);
+      const variantWhere = options.activeOnly ? { status: "active" } : undefined;
       const queryOptions = {
         where: {
           id: productId,
@@ -283,7 +284,7 @@ class ProductService {
         {
           model: ProductVariant,
           as: "ProductVariants",
-          where: { status: "active" },
+          where: variantWhere,
           required: false,
         },
         {
@@ -412,6 +413,7 @@ async create(productData, transaction = null) {
         validMarketplaceVisibility(productData.marketplaceVisibility))
       .setImages(productData.images)
       .setTags(productData.tags)
+      .setCanonicalIdentity(productData)
       .setNicheAttributes(productData.nicheAttributes || {});
 
     if (productData.variants) {
@@ -529,21 +531,68 @@ async create(productData, transaction = null) {
         }
       }
 
-      // Handle variants update
-      if (updates.variants !== undefined) {
-        await ProductVariant.destroy({
-          where: { productId },
-          transaction,
-        });
+      // Handle variants update preserving stable variant IDs
+      if (updates.variants !== undefined && Array.isArray(updates.variants)) {
+        const existingVariants = await ProductVariant.findAll({ where: { productId }, transaction });
+        const existingById = new Map(existingVariants.map((v) => [v.id, v]));
+        const existingBySku = new Map(existingVariants.map((v) => [v.sku?.toLowerCase(), v]));
 
-        if (updates.variants.length > 0) {
-          await ProductVariant.bulkCreate(
-            updates.variants.map((variant) => ({
-              ...variant,
+        for (let i = 0; i < updates.variants.length; i += 1) {
+          const v = updates.variants[i];
+          let existing = null;
+          if (v.id && existingById.has(v.id)) {
+            existing = existingById.get(v.id);
+          } else if (v.sku && existingBySku.has(v.sku.toLowerCase())) {
+            existing = existingBySku.get(v.sku.toLowerCase());
+          }
+
+          if (existing) {
+            await existing.update({
+              sku: v.sku ? v.sku.trim() : existing.sku,
+              barcode: v.barcode !== undefined ? (typeof v.barcode === 'string' && v.barcode.trim() ? v.barcode.trim() : null) : existing.barcode,
+              price: v.price !== undefined ? parseFloat(v.price) : existing.price,
+              compareAtPrice: v.compareAtPrice !== undefined ? (v.compareAtPrice ? parseFloat(v.compareAtPrice) : null) : existing.compareAtPrice,
+              stockQuantity: v.stockQuantity !== undefined ? parseInt(v.stockQuantity, 10) : existing.stockQuantity,
+              trackInventory: v.trackInventory !== undefined ? Boolean(v.trackInventory) : existing.trackInventory,
+              isDefault: v.isDefault !== undefined ? Boolean(v.isDefault) : (i === 0),
+              optionValues: v.optionValues && typeof v.optionValues === 'object' ? v.optionValues : existing.optionValues,
+              status: v.status !== undefined ? v.status : existing.status,
+            }, { transaction });
+          } else {
+            await ProductVariant.create({
               productId,
-            })),
-            { transaction }
-          );
+              storeId: product.storeId,
+              sku: v.sku ? v.sku.trim() : `VAR-${productId.slice(0, 8).toUpperCase()}-${i + 1}`,
+              barcode: typeof v.barcode === 'string' && v.barcode.trim() ? v.barcode.trim() : null,
+              price: v.price !== undefined ? parseFloat(v.price) : product.price,
+              compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) : null,
+              currency: product.currency || 'USD',
+              trackInventory: v.trackInventory !== false,
+              stockQuantity: v.stockQuantity !== undefined ? parseInt(v.stockQuantity, 10) : 0,
+              isDefault: v.isDefault !== undefined ? Boolean(v.isDefault) : (i === 0),
+              optionValues: v.optionValues || {},
+              status: v.status || 'active',
+              version: 0,
+            }, { transaction });
+          }
+        }
+      } else if (!product.hasVariants) {
+        // Simple product: synchronize default SKU when price, stock, sku, barcode change
+        const defaultVariant = await ProductVariant.findOne({ where: { productId, isDefault: true }, transaction });
+        if (defaultVariant) {
+          const varChanges = {};
+          if (updateData.price !== undefined) varChanges.price = parseFloat(updateData.price);
+          if (updateData.stockQuantity !== undefined) varChanges.stockQuantity = parseInt(updateData.stockQuantity, 10);
+          if (updateData.trackInventory !== undefined) varChanges.trackInventory = Boolean(updateData.trackInventory);
+          if (updateData.sku !== undefined) varChanges.sku = updateData.sku;
+          if (updateData.barcode !== undefined) varChanges.barcode = updateData.barcode;
+          if (updateData.currency !== undefined) varChanges.currency = updateData.currency;
+          if (updateData.status !== undefined) {
+            varChanges.status = (updateData.status === 'archived' || updateData.status === 'draft') ? 'disabled' : 'active';
+          }
+          if (Object.keys(varChanges).length > 0) {
+            await defaultVariant.update(varChanges, { transaction });
+          }
         }
       }
 
