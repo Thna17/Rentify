@@ -4,9 +4,13 @@ const { Website, Staff } = require('../models');
 const limitMiddleware = (resource) => {
   return async (req, res, next) => {
     try {
-      const website = await Website.findByPk(req.website.id);
-      
-      if (!website.limits || website.limits[resource] === undefined) {
+      const websiteId = req.website?.id || req.body?.websiteId;
+      if (!websiteId) {
+        return next();
+      }
+
+      const website = await Website.findByPk(websiteId);
+      if (!website || !website.limits || website.limits[resource] === undefined) {
         return next();
       }
 

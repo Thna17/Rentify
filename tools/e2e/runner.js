@@ -11,11 +11,13 @@ const { OpenAPIContractValidator } = require('./contractValidator');
 const { runBuyerJourney, tags: buyerTags } = require('./journeys/buyerJourney');
 const { runMerchantJourney, tags: merchantTags } = require('./journeys/merchantJourney');
 const { runSafetyAndFailureJourney, tags: safetyTags } = require('./journeys/safetyAndFailureJourney');
+const { runHostedSubdomainRehearsalJourney, tags: hostTags } = require('./journeys/hostedSubdomainRehearsalJourney');
 
 const ALL_JOURNEYS = [
   { name: 'Public Buyer Journey', fn: runBuyerJourney, tags: buyerTags },
   { name: 'Authenticated Merchant Read Journey', fn: runMerchantJourney, tags: merchantTags },
   { name: 'Safety & Failure Artifacts Validation', fn: runSafetyAndFailureJourney, tags: safetyTags },
+  { name: 'Hosted-Subdomain Session Isolation Rehearsal', fn: (ctx) => runHostedSubdomainRehearsalJourney({ ...ctx, config: {} }), tags: hostTags },
 ];
 
 function printHelp() {
@@ -72,22 +74,26 @@ async function main() {
     process.exit(1);
   }
 
+  const isStagingRehearsal = filterTag === '@rehearsal' || filterTag === '@staging' || args.includes('--staging');
   const serverManager = new E2EServerManager({ artifactCollector });
   const results = [];
   let overallPassed = true;
 
   try {
-    // 1. Start test servers and fixtures
-    await serverManager.start();
-
-    // 2. Filter journeys
+    // 1. Filter journeys
     const selectedJourneys = filterTag
       ? ALL_JOURNEYS.filter((j) => j.tags.includes(filterTag))
       : ALL_JOURNEYS;
 
     if (selectedJourneys.length === 0) {
-      console.warn(`⚠️  No journeys matched tag: "${filterTag}". Available tags: @buyer, @merchant, @golden, @contract, @safety, @artifacts`);
+      console.warn(`⚠️  No journeys matched tag: "${filterTag}". Available tags: @buyer, @merchant, @golden, @contract, @safety, @artifacts, @rehearsal`);
       process.exit(0);
+    }
+
+    // 2. Start local test servers and fixtures only if running local journeys
+    const requiresLocalServers = selectedJourneys.some((j) => !j.tags.includes('@rehearsal') && !j.tags.includes('@staging'));
+    if (requiresLocalServers) {
+      await serverManager.start();
     }
 
     console.log(`\nExecuting ${selectedJourneys.length} test journeys...\n`);
@@ -114,14 +120,26 @@ async function main() {
       } catch (err) {
         const duration = Date.now() - startTime;
         console.log(`❌ FAIL (${duration}ms)`);
-        console.error(`   Error: ${err.message}`);
+        if (err.code === 'REAL_STAGING_HOST_UNAVAILABLE') {
+          console.error(`\n=================================================================`);
+          console.error(`P2-HOST-002 BLOCKED — REAL STAGING HOST UNAVAILABLE`);
+          console.error(`=================================================================`);
+          console.error(`Exact missing infrastructure:`);
+          for (const item of err.missingInfrastructure || []) {
+            console.error(`  - ${item}`);
+          }
+          console.error(`=================================================================\n`);
+        } else {
+          console.error(`   Error: ${err.message}`);
+        }
         overallPassed = false;
         results.push({
           name: journey.name,
           tags: journey.tags,
-          status: 'FAIL',
+          status: 'BLOCKED',
           durationMs: duration,
           error: err.message,
+          missingInfrastructure: err.missingInfrastructure,
         });
       }
     }

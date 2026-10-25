@@ -21,7 +21,20 @@ const verifyStaffToken = async (req, res, next) => {
 
   try {
     const decoded = verifyAccessToken(staffAccessToken);
-    req.staff = decoded;
+    const staff = await Staff.findByPk(decoded.id);
+    if (!staff || !staff.isActive) {
+      clearStaffCookies(res);
+      return res.status(403).json({ error: "Staff access is inactive" });
+    }
+    req.staff = staff;
+    req.user = {
+      id: staff.id,
+      role: 'staff',
+      merchantId: staff.merchantId,
+      storeId: staff.storeId,
+      websiteId: staff.websiteId,
+      permissions: staff.permissions,
+    };
     next();
   } catch (err) {
     if (!staffRefreshToken) {
@@ -39,7 +52,12 @@ const refreshStaffAccessToken = async (req, res, next) => {
     const decoded = verifyRefreshToken(staffRefreshToken);
     const staff = await Staff.findOne({ where: { id: decoded.id } });
 
-    if (!staff || !staff.refreshToken) {
+    if (!staff || !staff.isActive) {
+      clearStaffCookies(res);
+      return res.status(403).json({ error: "Staff access is inactive" });
+    }
+
+    if (!staff.refreshToken) {
       clearStaffCookies(res);
       return res.status(401).json({ error: "Unauthorized: Invalid refresh token" });
     }
@@ -50,8 +68,8 @@ const refreshStaffAccessToken = async (req, res, next) => {
       return res.status(401).json({ error: "Unauthorized: Invalid or expired refresh token" });
     }
 
-    const newAccessToken = generateAccessToken({id: staff.id});
-    const newRefreshToken = generateRefreshToken({ id: staff.id });
+    const newAccessToken = generateAccessToken({ id: staff.id, role: 'staff' });
+    const newRefreshToken = generateRefreshToken({ id: staff.id, role: 'staff' });
     staff.refreshToken = await hashRefreshToken(newRefreshToken);
     staff.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await staff.save();
@@ -64,7 +82,15 @@ const refreshStaffAccessToken = async (req, res, next) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    req.staff = { id: staff.id };
+    req.staff = staff;
+    req.user = {
+      id: staff.id,
+      role: 'staff',
+      merchantId: staff.merchantId,
+      storeId: staff.storeId,
+      websiteId: staff.websiteId,
+      permissions: staff.permissions,
+    };
     next();
   } catch (err) {
     clearStaffCookies(res);

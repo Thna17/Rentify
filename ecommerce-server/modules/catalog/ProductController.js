@@ -8,6 +8,7 @@ const { Product } = require('../../models');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
+const path = require('path');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -15,19 +16,25 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, `products-${Date.now()}-${file.originalname}`);
+    // Sanitize filename against path traversal and dangerous characters
+    const raw = (file.originalname || 'upload.csv').replace(/\0/g, '').replace(/\\/g, '/');
+    const base = path.basename(raw);
+    const ext = path.extname(base).toLowerCase();
+    const cleanStem = path.basename(base, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+    cb(null, `products-${Date.now()}-${cleanStem || 'data'}.csv`);
   }
 });
-
 
 const upload = multer({ 
   storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only CSV files are allowed'), false);
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (ext !== '.csv') {
+      const err = new Error('Only CSV files are allowed');
+      err.statusCode = 400;
+      return cb(err, false);
     }
+    cb(null, true);
   },
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit

@@ -5,11 +5,35 @@ class MyOrderDetailsStrategy extends BaseRetrievalStrategy {
   async execute(req, res) {
     try {
       const { orderId } = req.params;
+
+      // Public tracking endpoint mode: exposes only approved minimal safe fields (NO PII, NO address, NO secrets)
+      if (req.query?.tracking === 'true' || req.query?.public === 'true') {
+        const order = await this.models.Order.findByPk(orderId);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        return res.json({
+          orderNumber: order.orderNumber,
+          trackingNumber: order.trackingNumber || null,
+          status: order.status,
+          deliveryStatus: order.deliveryStatus,
+          createdAt: order.createdAt,
+          estimatedDelivery: order.estimatedDelivery || null,
+        });
+      }
+
       const user = req.user;
 
+      if (!user) return res.status(401).json({ error: 'Identification required' });
+
       const where = { id: orderId };
-      if (user.type === 'customer') where.userId = user.id;
-      else where.sessionId = user.sessionId;
+      if (user.type === 'customer' && user.id) {
+        where.userId = user.id;
+      } else if (user.type === 'user' && user.id) {
+        where.buyerId = user.id;
+      } else if (user.sessionId) {
+        where.sessionId = user.sessionId;
+      } else {
+        return res.status(401).json({ error: 'Identification required' });
+      }
 
       const order = await this.models.Order.findOne({
         where,

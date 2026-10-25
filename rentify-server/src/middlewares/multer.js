@@ -1,4 +1,5 @@
 const multer = require('multer');
+const { validateImageFile, validatePdfFile } = require('../utils/mediaSecurityValidator');
 
 // Use memory storage for both cases
 const storage = multer.memoryStorage();
@@ -39,14 +40,26 @@ const imageUpload = multer({
 
 const productImagesUpload = (req, res, next) => {
   imageUpload.array('images', 10)(req, res, (error) => {
-    if (!error) return next();
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'Each image must be 5 MB or smaller' });
+    if (error) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Each image must be 5 MB or smaller' });
+      }
+      if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Upload up to 10 product images' });
+      }
+      return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid image upload' });
     }
-    if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({ error: 'Upload up to 10 product images' });
+
+    if (Array.isArray(req.files)) {
+      for (const file of req.files) {
+        try {
+          validateImageFile(file);
+        } catch (valErr) {
+          return res.status(valErr.statusCode || 400).json({ error: valErr.message });
+        }
+      }
     }
-    return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid image upload' });
+    return next();
   });
 };
 
@@ -57,17 +70,66 @@ const pdfUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB (adjust as needed)
 });
 
+const singlePdfUpload = (req, res, next) => {
+  pdfUpload.single('pdf')(req, res, (error) => {
+    if (error) {
+      return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid PDF upload' });
+    }
+    if (req.file) {
+      try {
+        validatePdfFile(req.file);
+      } catch (valErr) {
+        return res.status(valErr.statusCode || 400).json({ error: valErr.message });
+      }
+    }
+    return next();
+  });
+};
+
 // One store logo image, same types and size limit as product images.
 const storeLogoUpload = (req, res, next) => {
   imageUpload.single('logo')(req, res, (error) => {
-    if (!error) return next();
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'The logo must be 5 MB or smaller' });
+    if (error) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'The logo must be 5 MB or smaller' });
+      }
+      if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Upload one logo image' });
+      }
+      return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid image upload' });
     }
-    if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({ error: 'Upload one logo image' });
+
+    if (req.file) {
+      try {
+        validateImageFile(req.file);
+      } catch (valErr) {
+        return res.status(valErr.statusCode || 400).json({ error: valErr.message });
+      }
     }
-    return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid image upload' });
+    return next();
+  });
+};
+
+const singleImageUpload = (fieldName = 'image') => (req, res, next) => {
+  imageUpload.single(fieldName)(req, res, (error) => {
+    if (error) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'The image must be 5 MB or smaller' });
+      }
+      if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Upload one image' });
+      }
+      return res.status(error.statusCode || 400).json({ error: error.message || 'Invalid image upload' });
+    }
+
+    if (req.file) {
+      try {
+        validateImageFile(req.file);
+      } catch (valErr) {
+        return res.status(valErr.statusCode || 400).json({ error: valErr.message });
+      }
+    }
+    return next();
   });
 };
 
@@ -75,5 +137,7 @@ module.exports = {
   imageUpload,
   productImagesUpload,
   storeLogoUpload,
-  pdfUpload
+  singleImageUpload,
+  pdfUpload,
+  singlePdfUpload,
 };

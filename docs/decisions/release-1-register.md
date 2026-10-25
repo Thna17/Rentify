@@ -96,17 +96,17 @@ Formal human approval is conferred when the pull request introducing this regist
 
 ### DEC-003: Custom-Domain Browse vs Checkout Scope
 - **Topic:** Scope of merchant custom domains (`store.merchantbrand.com`) in Release 1.
-- **Current Verified Repository Behavior:** Core `Website` model supports `domain`. However, unified buyer authentication across third-party origins is drafted in ADR 0002 but not implemented.
-- **Release 1 Decision:** In Release 1, custom domains are **Browse-Only**. If a buyer clicks "Checkout" on a merchant's custom domain, the application securely redirects them to `<subdomain>.rentifystore.shop/checkout` with a temporary cart reference. Direct checkout on custom domains is disabled until ADR 0002 authorization-code handoff is delivered in Phase P2.
+- **Current Verified Repository Behavior:** Core `Website` model supports `domain`. Custom domains are strictly browse-only per P2-HOST-003. Unified buyer authentication across third-party origins is drafted in ADR 0002 but remains unimplemented until separately approved.
+- **Release 1 Decision:** In Release 1, custom domains are **Browse-Only**. Direct authentication, cart mutations, checkout, order history, and account management on custom domains are disabled. Public catalog browsing (products, categories, store details) is allowed. All checkout actions and buyer account sessions occur exclusively on verified hosted storefront subdomains under `rentifystore.shop` (`<subdomain>.rentifystore.shop`). Custom domain requests attempting sensitive or state-mutating actions fail closed with safe denial codes (`CUSTOM_DOMAIN_BROWSE_ONLY`, `CUSTOM_DOMAIN_AUTH_DISABLED`, `CUSTOM_DOMAIN_CHECKOUT_DISABLED`, `CUSTOM_DOMAIN_CART_DISABLED`) and canonical hosted storefront links. Open redirect vectors, central cookie leakage, and cross-domain token handoffs are strictly prevented.
 - **Status:** Proposed for approval in this PR.
 - **Named Human Approver:** Product Security Lead.
-- **Approval / Effective Date:** Effective upon PR merge.
-- **Rationale:** Enforcing checkout on the verified `rentifystore.shop` domain eliminates phishing risks, avoids third-party cookie blocking on modern iOS Safari/Android browsers, and prevents session hijacking.
-- **Affected Systems / Schemas / Contracts:** `docs/adr/0002-unified-buyer-identity.md`, `rentify-frontend/apps/storefront/`, Commerce checkout router.
+- **Approval / Effective Date:** Effective upon PR merge; enforced in P2-HOST-003.
+- **Rationale:** Enforcing checkout on the verified `rentifystore.shop` domain eliminates phishing risks, avoids third-party cookie blocking on modern iOS Safari/Android browsers, prevents session hijacking, and protects buyer credentials from arbitrary third-party merchant DNS origins.
+- **Affected Systems / Schemas / Contracts:** `docs/adr/0002-unified-buyer-identity.md`, `rentify-frontend/apps/storefront/`, `rentify-frontend/apps/templates/ecommerce/`, `rentify-frontend/apps/core/merchant/`, Core `rentify-server/src/utils/hostBoundary.js`, Core `rentify-server/src/modules/auth/returnUrlPolicy.js`, Commerce `ecommerce-server/middlewares/customDomainBoundary.js`, `tools/host-validator/policies.js`.
 - **Safe Behavior When Deferred:** Custom domain linking is disabled in the merchant dashboard; merchants only publish via `*.rentifystore.shop`.
 - **Review Date:** 2026-11-15.
-- **Evidence Links:** [`docs/adr/0002-unified-buyer-identity.md`](../adr/0002-unified-buyer-identity.md), [`docs/platform-architecture.md#buyer-identity-target`](../platform-architecture.md#buyer-identity-target).
-- **Follow-up Work Package ID:** `P2-HOST-002`.
+- **Evidence Links:** [`docs/adr/0002-unified-buyer-identity.md`](../adr/0002-unified-buyer-identity.md), [`docs/platform-architecture.md#buyer-identity-target`](../platform-architecture.md#buyer-identity-target), [`docs/audits/custom-domain-boundary-audit.md`](../audits/custom-domain-boundary-audit.md).
+- **Follow-up Work Package ID:** `P2-HOST-003` (implemented), `P3-CHK-001` (future phase).
 
 ---
 

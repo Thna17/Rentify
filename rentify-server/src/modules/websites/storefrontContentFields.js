@@ -52,13 +52,20 @@ const MAX_URL_LENGTH = 2048;
 // Control characters other than tab and newline never belong in store copy.
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 
-const safeImageUrl = (value) => {
+const safeImageUrl = (value, storeId) => {
   if (typeof value !== 'string') return null;
   const url = value.trim();
   if (!url || url.length > MAX_URL_LENGTH) return null;
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' && !parsed.username && !parsed.password ? parsed.toString() : null;
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) return null;
+    if (storeId) {
+      const match = url.match(/rentify\/stores\/([a-zA-Z0-9-]+)\//i);
+      if (match && match[1] !== storeId) {
+        return false;
+      }
+    }
+    return parsed.toString();
   } catch {
     return null;
   }
@@ -68,7 +75,7 @@ const safeImageUrl = (value) => {
  * Validates `{ label: value }` from the storefront editor. Returns
  * `{ values: [{ label, category, type, value }], errors: [{ label, message }] }`.
  */
-const validateStorefrontContent = (fields) => {
+const validateStorefrontContent = (fields, storeId) => {
   const values = [];
   const errors = [];
   if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
@@ -98,7 +105,11 @@ const validateStorefrontContent = (fields) => {
 
     const list = Array.isArray(raw) ? raw : [raw];
     const urls = list.filter((item) => item !== '' && item !== null && item !== undefined);
-    const clean = urls.map(safeImageUrl);
+    const clean = urls.map((u) => safeImageUrl(u, storeId));
+    if (clean.some((url) => url === false)) {
+      errors.push({ label, message: 'Cross-store media reference prohibited' });
+      continue;
+    }
     if (clean.some((url) => !url)) {
       errors.push({ label, message: 'Images must be https:// links' });
       continue;

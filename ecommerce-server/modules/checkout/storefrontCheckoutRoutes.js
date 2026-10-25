@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { StoreAccess } = require('../../models');
 const { verifyCoreBuyer } = require('../../middlewares/authMiddleware');
 const { requireStorefrontCheckoutEnabled } = require('./marketplaceCheckoutGate');
+const { enforceCustomDomainBoundary } = require('../../middlewares/customDomainBoundary');
 const service = require('./marketplaceCheckoutService');
 
 const wrap = (handler) => async (req, res, next) => {
@@ -16,20 +17,29 @@ router.use('/storefront/:websiteId', verifyCoreBuyer, async (req, res, next) => 
     }
     const store = await StoreAccess.findOne({ where: { websiteId: req.params.websiteId } });
     if (!store) return res.status(404).json({ error: 'Storefront not found' });
+    if (store.status !== 'active') return res.status(403).json({ error: 'Store is not active' });
+    const { getStoreEntitlements } = require('../store-access').storeAccessService;
+    const entitlements = getStoreEntitlements(store);
+    if (!entitlements.capabilities.hostedCheckout) {
+      return res.status(403).json({
+        error: 'Hosted storefront checkout is unavailable for this store',
+        code: 'CAPABILITY_UNAVAILABLE',
+      });
+    }
     req.storeId = store.storeId;
     return next();
   } catch (error) { return next(error); }
 });
 
-router.get('/storefront/:websiteId/cart', wrap(async (req, res) => res.json({
+router.get('/storefront/:websiteId/cart', enforceCustomDomainBoundary('cart'), wrap(async (req, res) => res.json({
   carts: await service.getCart(req.user.id, req.storeId, 'storefront'),
 })));
-router.put('/storefront/:websiteId/cart/items/:productId', requireStorefrontCheckoutEnabled,
+router.put('/storefront/:websiteId/cart/items/:productId', enforceCustomDomainBoundary('cart'), requireStorefrontCheckoutEnabled,
   wrap(async (req, res) => res.json({ carts: await service.setCartItem({
     buyerId: req.user.id, storeId: req.storeId, productId: req.params.productId,
     quantity: req.body.quantity, channel: 'storefront',
   }) })));
-router.post('/storefront/:websiteId/checkout', requireStorefrontCheckoutEnabled,
+router.post('/storefront/:websiteId/checkout', enforceCustomDomainBoundary('checkout'), requireStorefrontCheckoutEnabled,
   wrap(async (req, res) => res.status(201).json({ order: await service.checkout({
     buyerId: req.user.id, storeId: req.storeId,
     checkoutKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
@@ -37,14 +47,14 @@ router.post('/storefront/:websiteId/checkout', requireStorefrontCheckoutEnabled,
     customerInfo: req.body.customerInfo, shippingInfo: req.body.shippingInfo,
     channel: 'storefront',
   }) })));
-router.get('/storefront/:websiteId/my-orders', wrap(async (req, res) => res.json({
+router.get('/storefront/:websiteId/my-orders', enforceCustomDomainBoundary('customer'), wrap(async (req, res) => res.json({
   orders: await service.buyerOrders(req.user.id, { storeId: req.storeId, channel: 'storefront' }),
 })));
-router.get('/storefront/:websiteId/my-orders/:orderId', wrap(async (req, res) => res.json({
+router.get('/storefront/:websiteId/my-orders/:orderId', enforceCustomDomainBoundary('customer'), wrap(async (req, res) => res.json({
   order: await service.buyerOrder(req.user.id, req.params.orderId,
     { storeId: req.storeId, channel: 'storefront' }),
 })));
-router.post('/storefront/:websiteId/my-orders/:orderId/reports/:type', wrap(async (req, res) =>
+router.post('/storefront/:websiteId/my-orders/:orderId/reports/:type', enforceCustomDomainBoundary('customer'), wrap(async (req, res) =>
   res.status(201).json({ event: await service.buyerReport({
     buyerId: req.user.id, storeId: req.storeId, orderId: req.params.orderId,
     eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,

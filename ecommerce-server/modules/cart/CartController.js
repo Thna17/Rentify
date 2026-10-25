@@ -7,9 +7,26 @@ const { logger } = require('../../utils/logger');
 
 class CartController {
   static getCartIdentifier(req) {
-    return req.user && req.user.id ? 
-      { userId: req.user.id } : 
-      { sessionId: req.sessionId };
+    if (req.user && req.user.id) {
+      return {
+        userId: req.user.id,
+        buyerId: req.user.type === 'user' ? req.user.id : null,
+        userType: req.user.type,
+      };
+    }
+    return { sessionId: req.sessionId };
+  }
+
+  static sanitizeBody(body) {
+    if (!body || typeof body !== 'object') return body;
+    const sanitized = { ...body };
+    delete sanitized.buyerId;
+    delete sanitized.ownerId;
+    delete sanitized.customerId;
+    delete sanitized.userId;
+    delete sanitized.storeId;
+    delete sanitized.websiteId;
+    return sanitized;
   }
 
   static async addToCart(req, res) {
@@ -17,15 +34,16 @@ class CartController {
     try {
       const { websiteId } = req.params;
       const cartIdentifier = CartController.getCartIdentifier(req);
+      const cleanBody = CartController.sanitizeBody(req.body);
       
       const cartService = new CartService(websiteId);
-      const { cart, cartItem } = await cartService.addItem(cartIdentifier, req.body, transaction);
+      const { cart, cartItem } = await cartService.addItem(cartIdentifier, cleanBody, transaction);
       
       await transaction.commit();
       
       logger.cartAction('add', cart.id, websiteId, {
-        productId: req.body.productId,
-        quantity: req.body.quantity
+        productId: cleanBody.productId,
+        quantity: cleanBody.quantity
       });
 
       res.status(201).json(cartItem);
@@ -54,15 +72,16 @@ class CartController {
     try {
       const { websiteId, itemId } = req.params;
       const cartIdentifier = CartController.getCartIdentifier(req);
+      const cleanBody = CartController.sanitizeBody(req.body);
       
       const cartService = new CartService(websiteId);
-      const cartItem = await cartService.updateItem(cartIdentifier, itemId, req.body, transaction);
+      const cartItem = await cartService.updateItem(cartIdentifier, itemId, cleanBody, transaction);
       
       await transaction.commit();
       
       logger.cartAction('update', cartItem.cartId, websiteId, {
         itemId,
-        quantity: req.body.quantity
+        quantity: cleanBody.quantity
       });
 
       res.json(cartItem);
@@ -137,12 +156,13 @@ class CartController {
     try {
       const { websiteId, itemId } = req.params;
       const cartIdentifier = CartController.getCartIdentifier(req);
+      const cleanBody = CartController.sanitizeBody(req.body);
       
       const cartService = new CartService(websiteId);
       const updatedItem = await cartService.updateItemVariant(
-        cartIdentifier, 
-        itemId, 
-        req.body, 
+        cartIdentifier,
+        itemId,
+        cleanBody,
         transaction
       );
       
@@ -150,7 +170,7 @@ class CartController {
       
       logger.cartAction('update_variant', updatedItem.cartId, websiteId, {
         itemId,
-        variantId: req.body.variantId
+        variantId: cleanBody.variantId
       });
 
       res.json(updatedItem);
@@ -163,7 +183,7 @@ class CartController {
   static async mergeCarts(req, res) {
     const transaction = await sequelize.transaction();
     try {
-      const { userId } = req.user;
+      const userId = req.user?.id || req.user?.userId;
       const sessionId = req.sessionId;
 
       if (!userId) {
@@ -199,7 +219,7 @@ class CartController {
       
       const mergeResult = await cartService.mergeCarts(
         { sessionId }, // source (guest cart)
-        { userId },    // target (user cart)
+        { userId, buyerId: req.user?.type === 'user' ? userId : null, userType: req.user?.type }, // target (user cart)
         transaction
       );
       

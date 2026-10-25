@@ -33,11 +33,36 @@ function assertSafeUrl(urlString) {
   }
 
   for (const pattern of FORBIDDEN_URL_PATTERNS) {
+    if (process.env.ALLOW_STAGING_REHEARSAL === 'true') {
+      const isStagingMatch =
+        parsed.hostname === 'staging.rentifymarket.com' ||
+        parsed.hostname.endsWith('.rentifystore.shop') ||
+        parsed.hostname.endsWith('.staging.rentifystore.shop') ||
+        parsed.hostname.endsWith('.mekhla.digital') ||
+        parsed.hostname === 'rentify-market.mekhla.digital';
+      if (isStagingMatch) {
+        continue;
+      }
+    }
+
     if (pattern.test(parsed.hostname)) {
       throw new UnsafeEnvironmentError(
         `Refusing to execute E2E test against production or public host: "${parsed.hostname}". Tests must target local loopback addresses (127.0.0.1 or localhost).`,
         { hostname: parsed.hostname, url: urlString }
       );
+    }
+  }
+
+  // Allow authorized staging hostnames during explicit staging rehearsal
+  if (process.env.ALLOW_STAGING_REHEARSAL === 'true') {
+    const isAllowedStagingHost =
+      parsed.hostname === 'staging.rentifymarket.com' ||
+      parsed.hostname.endsWith('.rentifystore.shop') ||
+      parsed.hostname.endsWith('.staging.rentifystore.shop') ||
+      parsed.hostname.endsWith('.mekhla.digital') ||
+      parsed.hostname === 'rentify-market.mekhla.digital';
+    if (isAllowedStagingHost) {
+      return parsed;
     }
   }
 

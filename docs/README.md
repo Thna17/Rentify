@@ -30,6 +30,43 @@ code so implementation work can proceed without relying on chat history.
 - [Phase 1 verification report](audits/phase-1-verification.md) — complete
   verification evidence, package checklist, test results, security audit, and
   exit gate decision.
+- [Phase 2 verification report](audits/phase-2-verification.md) — complete
+  verification evidence, package checklist, test results, security audit, and
+  exit gate decision.
+- [Identity and authoritative subject model](identity-subject-model.md) —
+  authoritative subject definition, token & session models, role coexistence,
+  ambiguous-credential precedence, and security boundaries.
+- [Host & configuration validation](deployment-host-validation.md) —
+  deterministic pre-deployment and startup validator for Release 1 domains,
+  hosted storefront parent, HTTPS, CORS, cookie isolation, and feature flags.
+- [Authorization policy matrix](authorization-policy-matrix.md) —
+  machine-readable matrix classifying all 234 Core and Commerce operations
+  across 11 actor archetypes, deny-by-default rules, and gap remediation roadmap.
+- [Cart and order ownership audit](audits/cart-order-ownership-audit.md) —
+  enforced Store ownership invariants, session-derived buyer identity, direct-ID
+  guessing rejection, and safe public tracking projections for carts and orders.
+- [POS and invoice ownership audit](audits/pos-invoice-ownership-audit.md) —
+  Store-scoped POS access and checkout, explicit staff permissions, direct-ID
+  guessing prevention for invoice PDFs, public token barriers, and admin audit events.
+- [Media ownership audit](audits/media-ownership-audit.md) —
+  Pre-upload authentication gates, Store-isolated namespaces, magic byte validation,
+  path traversal defenses, cross-Store reference guessing prevention, and safe media deletions.
+- [Staff ownership and permission audit](audits/staff-ownership-audit.md) —
+  Store-bound staff membership, non-escalation permission delegation, single-use
+  expiring invitations, recipient contact verification, immediate session revocation,
+  cross-Store anti-enumeration (404), and multi-Store membership support.
+- [Versioned entitlements audit](audits/versioned-entitlements-audit.md) —
+  versioned capability keys (`CAPABILITIES_VERSION = 1`), tier resolution,
+  race-safe row-locked catalog and staff quotas, 7-day grace period mutation lock,
+  90-day post-suspension historical read retention, and explanatory UI degradation.
+- [Custom-domain boundary audit](audits/custom-domain-boundary-audit.md) —
+  browse-only enforcement on merchant custom domains, checkout and auth containment
+  to verified hosted storefront subdomains (`rentifystore.shop`), fail-closed 403
+  boundaries, and open redirect prevention.
+- [Privileged authentication and session audit](audits/privileged-auth-sessions-audit.md) —
+  administrator standards-based TOTP (RFC 6238), encrypted secrets at rest (AES-256-GCM),
+  recent-authentication enforcement, session inventory and revocation, safe recovery,
+  and privileged audit trail.
 - [COD checkout contract](checkout-migration-contract.md) — Phase 4 Commerce
   API, stock and cash state, and remaining client cutover gates.
 - [Marketplace development rehearsal](marketplace-cutover-rehearsal.md) —

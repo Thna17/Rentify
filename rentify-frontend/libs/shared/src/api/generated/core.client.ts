@@ -23,6 +23,212 @@ export class CoreApiClient {
   }
 
   /**
+   * Step-up re-authentication for high-risk administrator actions
+   * POST /admin/auth/step-up
+   */
+  async adminStepUpAuth(options: {
+    body: {
+      mfaToken?: string;
+      password: string;
+      recoveryCode?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      accessToken?: string;
+      recentAuthAt?: string;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      accessToken?: string;
+      recentAuthAt?: string;
+      success?: boolean;
+    }>({
+      method: 'POST',
+      path: '/admin/auth/step-up',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Request administrator contact change with OTP verification (requires recent auth)
+   * POST /admin/contact/change-request
+   */
+  async requestAdminContactChange(options: {
+    body: {
+      newEmail?: string;
+      newPhoneNumber?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/contact/change-request',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Verify OTP and apply contact change (requires recent auth)
+   * POST /admin/contact/verify
+   */
+  async verifyAdminContactChange(options: {
+    body: {
+      otp: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/contact/verify',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Confirm TOTP challenge and activate MFA
+   * POST /admin/mfa/confirm
+   */
+  async confirmAdminMfa(options: {
+    body: {
+      code: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      message?: string;
+      recoveryCodes?: Array<string>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      message?: string;
+      recoveryCodes?: Array<string>;
+      success?: boolean;
+    }>({
+      method: 'POST',
+      path: '/admin/mfa/confirm',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Disable MFA for administrator (requires recent auth)
+   * POST /admin/mfa/disable
+   */
+  async disableAdminMfa(options: {
+    body: {
+      code?: string;
+      password: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/mfa/disable',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Initiate TOTP MFA enrollment
+   * POST /admin/mfa/enroll
+   */
+  async enrollAdminMfa(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      message?: string;
+      otpauthUrl?: string;
+      secret?: string;
+    }>> {
+    return this.transport.request<{
+      message?: string;
+      otpauthUrl?: string;
+      secret?: string;
+    }>({
+      method: 'POST',
+      path: '/admin/mfa/enroll',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Regenerate single-use recovery codes (requires recent auth)
+   * POST /admin/mfa/recovery-codes/regenerate
+   */
+  async regenerateAdminRecoveryCodes(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      recoveryCodes?: Array<string>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      recoveryCodes?: Array<string>;
+      success?: boolean;
+    }>({
+      method: 'POST',
+      path: '/admin/mfa/recovery-codes/regenerate',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Get administrator MFA enrollment and recovery code status
+   * GET /admin/mfa/status
+   */
+  async getAdminMfaStatus(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      hasRecoveryCodes?: boolean;
+      mfaEnabled?: boolean;
+      recoveryCodesRemaining?: number;
+    }>> {
+    return this.transport.request<{
+      hasRecoveryCodes?: boolean;
+      mfaEnabled?: boolean;
+      recoveryCodesRemaining?: number;
+    }>({
+      method: 'GET',
+      path: '/admin/mfa/status',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Platform administrator overview counts
    * GET /admin/operations/overview
    */
@@ -99,6 +305,86 @@ export class CoreApiClient {
       path: '/admin/operations/{resource}',
       pathParams: (options as any)?.path,
       query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List active administrator sessions (Session Inventory)
+   * GET /admin/sessions
+   */
+  async listAdminSessions(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Array<{
+        clientType?: string;
+        id?: string;
+        ipAddress?: string;
+        isCurrent?: boolean;
+        lastActiveAt?: string;
+      }>;
+    }>> {
+    return this.transport.request<{
+      data?: Array<{
+        clientType?: string;
+        id?: string;
+        ipAddress?: string;
+        isCurrent?: boolean;
+        lastActiveAt?: string;
+      }>;
+    }>({
+      method: 'GET',
+      path: '/admin/sessions',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Revoke all other administrator sessions (requires recent auth)
+   * POST /admin/sessions/revoke-others
+   */
+  async revokeOtherAdminSessions(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      revokedCount?: number;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      revokedCount?: number;
+      success?: boolean;
+    }>({
+      method: 'POST',
+      path: '/admin/sessions/revoke-others',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Revoke a specific administrator session
+   * DELETE /admin/sessions/{sessionId}
+   */
+  async revokeAdminSession(options: {
+    path: {
+      sessionId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'DELETE',
+      path: '/admin/sessions/{sessionId}',
+      pathParams: (options as any)?.path,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -294,6 +580,32 @@ export class CoreApiClient {
   }
 
   /**
+   * Update user platform role with immediate session revocation upon demotion (requires recent auth)
+   * PATCH /admin/users/{userId}/role
+   */
+  async updateAdminUserRole(options: {
+    path: {
+      userId: string;
+    };
+    body: {
+      role: "user" | "admin";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'PATCH',
+      path: '/admin/users/{userId}/role',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Check if a user's phone number is linked to Telegram
    * GET /api/auth/check-telegram-link
    */
@@ -427,6 +739,33 @@ export class CoreApiClient {
     return this.transport.request<Core.SessionResponse>({
       method: 'GET',
       path: '/api/auth/me',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Verify MFA challenge during login
+   * POST /api/auth/mfa/challenge
+   */
+  async authMfaChallenge(options: {
+    body: {
+      /** Short-lived challenge token issued during initial login */
+      mfaChallengeToken: string;
+      /** 6-digit TOTP code from authenticator app */
+      mfaToken?: string;
+      /** Single-use recovery code */
+      recoveryCode?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Core.LoginResponse>> {
+    return this.transport.request<Core.LoginResponse>({
+      method: 'POST',
+      path: '/api/auth/mfa/challenge',
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -1437,6 +1776,34 @@ export class CoreApiClient {
   }
 
   /**
+   * Delete staff member and revoke access
+   * DELETE /api/staff/{id}
+   */
+  async deleteStaff(options: {
+    path: {
+      id: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      message?: string;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      message?: string;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/staff/{id}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Get staff member by ID
    * GET /api/staff/{id}
    */
@@ -1452,6 +1819,34 @@ export class CoreApiClient {
       method: 'GET',
       path: '/api/staff/{id}',
       pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Update staff member permissions or status
+   * PATCH /api/staff/{id}
+   */
+  async updateStaff(options: {
+    path: {
+      id: string;
+    };
+    body: {
+      isActive?: boolean;
+      name?: string;
+      permissions?: Array<string>;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Core.Staff>> {
+    return this.transport.request<Core.Staff>({
+      method: 'PATCH',
+      path: '/api/staff/{id}',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -1567,6 +1962,30 @@ export class CoreApiClient {
   }
 
   /**
+   * Get own store versioned entitlements
+   * GET /api/stores/mine/entitlements
+   */
+  async getOwnStoreEntitlements(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/stores/mine/entitlements',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Upload store logo image
    * POST /api/stores/mine/logo
    */
@@ -1584,6 +2003,35 @@ export class CoreApiClient {
     }>({
       method: 'POST',
       path: '/api/stores/mine/logo',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Delete store media asset
+   * DELETE /api/stores/mine/media
+   */
+  async deleteOwnStoreMedia(options: {
+    body: {
+      publicId?: string;
+      url?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/stores/mine/media',
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -1684,6 +2132,67 @@ export class CoreApiClient {
       method: 'GET',
       path: '/api/stores/public/{storeId}',
       pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Get store versioned entitlements by ID
+   * GET /api/stores/{storeId}/entitlements
+   */
+  async getStoreEntitlements(options: {
+    path: {
+      storeId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Core.StoreEntitlements;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/entitlements',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Delete store media asset by store ID
+   * DELETE /api/stores/{storeId}/media
+   */
+  async deleteStoreMedia(options: {
+    path: {
+      storeId: string;
+    };
+    body: {
+      publicId?: string;
+      url?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/stores/{storeId}/media',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -2144,6 +2653,39 @@ export class CoreApiClient {
     }>({
       method: 'PUT',
       path: '/api/websites/{websiteId}/color-palette',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Delete website media asset
+   * DELETE /api/websites/{websiteId}/media
+   */
+  async deleteWebsiteMedia(options: {
+    path: {
+      websiteId: string;
+    };
+    body: {
+      publicId?: string;
+      url?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      result?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'DELETE',
+      path: '/api/websites/{websiteId}/media',
       pathParams: (options as any)?.path,
       body: (options as any)?.body,
       headers: options?.headers,

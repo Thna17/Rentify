@@ -120,7 +120,7 @@ export function CartSummary({ totals, quote, currency, leading, children }) {
 }
 
 /** Cart lines and summary, or the empty state. */
-export function CartView({ lines, totals, quote, currency = 'USD', onQuantityChange, onRemove, busyLineId }) {
+export function CartView({ lines, totals, quote, currency = 'USD', onQuantityChange, onRemove, busyLineId, isCustomDomain, hostedStorefrontUrl }) {
   const { t } = useI18n();
 
   if (!lines.length) {
@@ -149,9 +149,32 @@ export function CartView({ lines, totals, quote, currency = 'USD', onQuantityCha
       </ul>
       <div className="lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]">
         <CartSummary totals={totals} quote={quote} currency={currency}>
-          <Link to={PATHS.CHECKOUT} className="btn-primary min-h-12 w-full text-base">
-            {t('cart.checkout')}
-          </Link>
+          {isCustomDomain ? (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+                <p className="font-medium">Browse-Only Custom Domain</p>
+                <p className="mt-1">
+                  Direct checkout on custom domains is disabled in Release 1. To place an order, please visit our verified storefront.
+                </p>
+              </div>
+              {hostedStorefrontUrl ? (
+                <a
+                  href={`${hostedStorefrontUrl}/checkout`}
+                  className="btn-primary min-h-12 w-full text-base inline-flex items-center justify-center text-center"
+                >
+                  Checkout on Verified Storefront
+                </a>
+              ) : (
+                <button disabled className="btn-primary min-h-12 w-full text-base opacity-50 cursor-not-allowed">
+                  Checkout Disabled (Browse-Only)
+                </button>
+              )}
+            </div>
+          ) : (
+            <Link to={PATHS.CHECKOUT} className="btn-primary min-h-12 w-full text-base">
+              {t('cart.checkout')}
+            </Link>
+          )}
           <Link to={PATHS.PRODUCTS} className="btn-ghost mt-2 w-full">
             {t('cart.continue')}
           </Link>

@@ -25,7 +25,16 @@ exports.processOrder = async (req, res) => {
         transaction: t,
         lock: t.LOCK.UPDATE,
       });
-      if (!order) throw new Error("Order not found");
+      if (!order) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      if (req.store && order.storeId && order.storeId !== req.store.storeId) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
       if (!statusMap[action]) throw new Error("Invalid order action");
       const allowed = {
         confirm: [ORDER_STATUS.PENDING],
@@ -95,7 +104,16 @@ exports.confirmOrder = async (req, res) => {
         lock: t.LOCK.UPDATE,
       });
 
-      if (!order) throw new Error("Order not found");
+      if (!order) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      if (req.store && order.storeId && order.storeId !== req.store.storeId) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
       if (order.status !== "pending") {
         throw new Error(
           `Order cannot be confirmed from ${order.status} status`
@@ -145,7 +163,16 @@ exports.cancelOrder = async (req, res) => {
         transaction: t,
       });
 
-      if (!order) throw new Error("Order not found");
+      if (!order) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      if (req.store && order.storeId && order.storeId !== req.store.storeId) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
       if (!["pending", "confirmed", "processing"].includes(order.status)) {
         throw new Error(
           `Order cannot be cancelled from ${order.status} status`
@@ -212,7 +239,16 @@ exports.markAsComplete = async (req, res) => {
         include: [{ model: Payment }],
         transaction: t,
       });
-      if (!order) throw new Error("Order not found");
+      if (!order) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
+      if (req.store && order.storeId && order.storeId !== req.store.storeId) {
+        const err = new Error("Order not found");
+        err.statusCode = 404;
+        throw err;
+      }
       if (!["confirmed", "processing"].includes(order.status)) throw new Error(`Order cannot be completed from ${order.status}`);
 
       // Update order with version check

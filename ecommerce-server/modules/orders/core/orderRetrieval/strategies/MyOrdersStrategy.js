@@ -8,9 +8,18 @@ class MyOrdersStrategy extends BaseRetrievalStrategy {
       const { page = 1, limit = 10, status } = req.query;
       const user = req.user;
 
+      if (!user) return res.status(401).json({ error: 'Identification required' });
+
       const where = { websiteId };
-      if (user.type === 'customer') where.userId = user.id;
-      else where.sessionId = user.sessionId;
+      if (user.type === 'customer' && user.id) {
+        where.userId = user.id;
+      } else if (user.type === 'user' && user.id) {
+        where.buyerId = user.id;
+      } else if (user.sessionId) {
+        where.sessionId = user.sessionId;
+      } else {
+        return res.status(401).json({ error: 'Identification required' });
+      }
       if (status) where.status = status;
 
       const orders = await this.models.Order.findAndCountAll({

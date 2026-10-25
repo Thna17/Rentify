@@ -12,6 +12,10 @@ const WebsiteData = sequelize.define('WebsiteData', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  subdomain: {
+    type: DataTypes.STRING(63),
+    allowNull: true
+  },
   websiteId: {
     type: DataTypes.UUID,
     // This is the Core API website UUID and is the commerce tenant key.

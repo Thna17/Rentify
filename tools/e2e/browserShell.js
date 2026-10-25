@@ -2,7 +2,8 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { chromium } = require('playwright');
+const { requireModule } = require('./resolve');
+const pw = requireModule('playwright');
 const { ROOT_DIR, TIMEOUTS } = require('./config');
 const { assertSafeUrl } = require('./safety');
 
@@ -24,6 +25,12 @@ class BrowserSession {
   /**
    * @param {object} [options]
    * @param {import('./artifactCollector').ArtifactCollector} [options.artifactCollector]
+   * @param {'chromium' | 'webkit'} [options.browserType]
+   * @param {object} [options.viewport]
+   * @param {string} [options.device]
+   * @param {boolean} [options.isMobile]
+   * @param {boolean} [options.hasTouch]
+   * @param {string} [options.userAgent]
    */
   constructor(options = {}) {
     this.collector = options.artifactCollector || null;
@@ -31,6 +38,12 @@ class BrowserSession {
     this.browser = null;
     this.context = null;
     this.page = null;
+    this.browserType = options.browserType || 'chromium';
+    this.viewport = options.viewport || { width: 1280, height: 720 };
+    this.device = options.device || null;
+    this.isMobile = options.isMobile;
+    this.hasTouch = options.hasTouch;
+    this.userAgent = options.userAgent;
     this.chromeBin = findChromeBinary();
     this.isInitialized = false;
   }
@@ -38,16 +51,34 @@ class BrowserSession {
   async init(journeyName = 'journey') {
     if (this.isInitialized) return;
 
-    this.browser = await chromium.launch({
+    const engine = this.browserType === 'webkit' ? pw.webkit : pw.chromium;
+    const launchOptions = {
       headless: true,
-      executablePath: this.chromeBin,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
+      args: this.browserType === 'chromium' ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] : [],
+    };
+    if (this.browserType === 'chromium' && this.chromeBin) {
+      launchOptions.executablePath = this.chromeBin;
+    }
 
-    this.context = await this.browser.newContext({
-      viewport: { width: 1280, height: 720 },
+    this.browser = await engine.launch(launchOptions);
+
+    let contextOptions = {
+      viewport: this.viewport,
       ignoreHTTPSErrors: true,
-    });
+    };
+
+    if (this.device && pw.devices[this.device]) {
+      contextOptions = {
+        ...contextOptions,
+        ...pw.devices[this.device],
+      };
+    }
+    if (this.viewport) contextOptions.viewport = this.viewport;
+    if (this.isMobile !== undefined) contextOptions.isMobile = this.isMobile;
+    if (this.hasTouch !== undefined) contextOptions.hasTouch = this.hasTouch;
+    if (this.userAgent) contextOptions.userAgent = this.userAgent;
+
+    this.context = await this.browser.newContext(contextOptions);
 
     // Start native Playwright tracing
     await this.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
@@ -147,6 +178,16 @@ class BrowserSession {
     if (this.context) {
       await this.context.clearCookies();
     }
+  }
+
+  async cookies(urls) {
+    if (!this.context) return [];
+    return this.context.cookies(urls);
+  }
+
+  async getCookie(name, url) {
+    const all = await this.cookies(url ? [url] : undefined);
+    return all.find((c) => c.name === name) || null;
   }
 
   async screenshot(name) {

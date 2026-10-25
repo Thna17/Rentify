@@ -84,6 +84,17 @@ export const StoreInfoSection: React.FC<StoreInfoSectionProps> = ({
                 <span className="shrink-0 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">{t('dashboard.store_management.store_not_published')}</span>
               )}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {storeData.shop.domain && !storeData.shop.domain.includes('rentifystore.shop') ? (
+                <span className="text-amber-600 dark:text-amber-400 font-medium">
+                  Custom Domain (DEC-003): Custom merchant domains are browse-only in Release 1. Direct shopper sign-in and checkout occur securely on your verified hosted domain (*.rentifystore.shop).
+                </span>
+              ) : (
+                <span>
+                  Shoppers browse and checkout on your verified hosted domain (<code className="bg-muted px-1 rounded">*.rentifystore.shop</code>). Connected custom domains are browse-only in Release 1.
+                </span>
+              )}
+            </p>
           </div>
 
           <EditableField

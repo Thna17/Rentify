@@ -16,7 +16,9 @@
     "StoreSyncOutbox": ["commerce-sync"],
     "WebsiteSyncOutbox": ["commerce-sync"],
     "OutcomeContract": ["ops"],
-    "ReminderLog": ["ops"]
+    "ReminderLog": ["ops"],
+    "UserSession": ["auth", "admin"],
+    "AuditLog": ["auth", "admin", "ops"]
   },
   "exceptions": []
 }

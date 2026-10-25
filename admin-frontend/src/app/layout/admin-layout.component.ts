@@ -48,6 +48,10 @@ export class AdminLayoutComponent {
       { path: '/billing', icon: 'wallet', label: 'Usage statements' },
       { path: '/payments', icon: 'swap', label: 'Customer payments' },
     ] },
+    { label: 'Security & access', items: [
+      { path: '/security', icon: 'shield', label: 'MFA & Recovery' },
+      { path: '/sessions', icon: 'monitor', label: 'Active sessions' },
+    ] },
   ];
   refresh() { window.location.reload(); }
   logout() { this.auth.logout().subscribe(); }

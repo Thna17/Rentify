@@ -462,6 +462,34 @@ export namespace Core {
     updatedAt?: string;
   }
 
+  export interface StoreEntitlements {
+    capabilities: {
+      customDomainBrowse?: boolean;
+      historicalOrderRead?: boolean;
+      hostedCheckout?: boolean;
+      invoices?: boolean;
+      marketplaceListing?: boolean;
+      pos?: boolean;
+      productLimit?: number;
+      staffLimit?: number;
+      website?: boolean;
+    };
+    dates?: Record<string, any>;
+    displayName: string;
+    isActive?: boolean;
+    isCancelled?: boolean;
+    isGracePeriod?: boolean;
+    isSuspended?: boolean;
+    isTrial?: boolean;
+    lifecycleState: "active" | "trial" | "grace_period" | "suspended" | "cancelled";
+    mutationsAllowed: boolean;
+    quotas?: Record<string, any>;
+    restrictionReason?: string | null;
+    storeId: string;
+    tier: string;
+    version: number;
+  }
+
   export interface Subscription {
     createdAt?: string;
     endDate?: string;
@@ -578,6 +606,100 @@ export namespace Core {
   }
 
   export interface Operations {
+    adminStepUpAuth: {
+      method: 'POST';
+      path: '/admin/auth/step-up';
+      parameters: {
+      };
+      body: {
+        mfaToken?: string;
+        password: string;
+        recoveryCode?: string;
+      };
+      response: {
+        accessToken?: string;
+        recentAuthAt?: string;
+        success?: boolean;
+      };
+    };
+    requestAdminContactChange: {
+      method: 'POST';
+      path: '/admin/contact/change-request';
+      parameters: {
+      };
+      body: {
+        newEmail?: string;
+        newPhoneNumber?: string;
+      };
+      response: any;
+    };
+    verifyAdminContactChange: {
+      method: 'POST';
+      path: '/admin/contact/verify';
+      parameters: {
+      };
+      body: {
+        otp: string;
+      };
+      response: any;
+    };
+    confirmAdminMfa: {
+      method: 'POST';
+      path: '/admin/mfa/confirm';
+      parameters: {
+      };
+      body: {
+        code: string;
+      };
+      response: {
+        message?: string;
+        recoveryCodes?: Array<string>;
+        success?: boolean;
+      };
+    };
+    disableAdminMfa: {
+      method: 'POST';
+      path: '/admin/mfa/disable';
+      parameters: {
+      };
+      body: {
+        code?: string;
+        password: string;
+      };
+      response: any;
+    };
+    enrollAdminMfa: {
+      method: 'POST';
+      path: '/admin/mfa/enroll';
+      parameters: {
+      };
+      response: {
+        message?: string;
+        otpauthUrl?: string;
+        secret?: string;
+      };
+    };
+    regenerateAdminRecoveryCodes: {
+      method: 'POST';
+      path: '/admin/mfa/recovery-codes/regenerate';
+      parameters: {
+      };
+      response: {
+        recoveryCodes?: Array<string>;
+        success?: boolean;
+      };
+    };
+    getAdminMfaStatus: {
+      method: 'GET';
+      path: '/admin/mfa/status';
+      parameters: {
+      };
+      response: {
+        hasRecoveryCodes?: boolean;
+        mfaEnabled?: boolean;
+        recoveryCodesRemaining?: number;
+      };
+    };
     getAdminOverview: {
       method: 'GET';
       path: '/admin/operations/overview';
@@ -620,6 +742,41 @@ export namespace Core {
         };
       };
       response: Core.PaginatedAdminResourceResponse;
+    };
+    listAdminSessions: {
+      method: 'GET';
+      path: '/admin/sessions';
+      parameters: {
+      };
+      response: {
+        data?: Array<{
+          clientType?: string;
+          id?: string;
+          ipAddress?: string;
+          isCurrent?: boolean;
+          lastActiveAt?: string;
+        }>;
+      };
+    };
+    revokeOtherAdminSessions: {
+      method: 'POST';
+      path: '/admin/sessions/revoke-others';
+      parameters: {
+      };
+      response: {
+        revokedCount?: number;
+        success?: boolean;
+      };
+    };
+    revokeAdminSession: {
+      method: 'DELETE';
+      path: '/admin/sessions/{sessionId}';
+      parameters: {
+        path: {
+          sessionId: string;
+        };
+      };
+      response: any;
     };
     getSellerApplicationForAdmin: {
       method: 'GET';
@@ -706,6 +863,19 @@ export namespace Core {
       };
       response: Array<Core.WebsiteTemplate>;
     };
+    updateAdminUserRole: {
+      method: 'PATCH';
+      path: '/admin/users/{userId}/role';
+      parameters: {
+        path: {
+          userId: string;
+        };
+      };
+      body: {
+        role: "user" | "admin";
+      };
+      response: any;
+    };
     authCheckTelegramLink: {
       method: 'GET';
       path: '/api/auth/check-telegram-link';
@@ -770,6 +940,21 @@ export namespace Core {
       parameters: {
       };
       response: Core.SessionResponse;
+    };
+    authMfaChallenge: {
+      method: 'POST';
+      path: '/api/auth/mfa/challenge';
+      parameters: {
+      };
+      body: {
+        /** Short-lived challenge token issued during initial login */
+        mfaChallengeToken: string;
+        /** 6-digit TOTP code from authenticator app */
+        mfaToken?: string;
+        /** Single-use recovery code */
+        recoveryCode?: string;
+      };
+      response: Core.LoginResponse;
     };
     authRefreshToken: {
       method: 'POST';
@@ -1248,6 +1433,19 @@ export namespace Core {
         success?: boolean;
       };
     };
+    deleteStaff: {
+      method: 'DELETE';
+      path: '/api/staff/{id}';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      response: {
+        message?: string;
+        success?: boolean;
+      };
+    };
     getStaffById: {
       method: 'GET';
       path: '/api/staff/{id}';
@@ -1255,6 +1453,21 @@ export namespace Core {
         path: {
           id: string;
         };
+      };
+      response: Core.Staff;
+    };
+    updateStaff: {
+      method: 'PATCH';
+      path: '/api/staff/{id}';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      body: {
+        isActive?: boolean;
+        name?: string;
+        permissions?: Array<string>;
       };
       response: Core.Staff;
     };
@@ -1308,6 +1521,16 @@ export namespace Core {
         success?: boolean;
       };
     };
+    getOwnStoreEntitlements: {
+      method: 'GET';
+      path: '/api/stores/mine/entitlements';
+      parameters: {
+      };
+      response: {
+        data?: Core.StoreEntitlements;
+        success?: boolean;
+      };
+    };
     uploadStoreLogo: {
       method: 'POST';
       path: '/api/stores/mine/logo';
@@ -1315,6 +1538,20 @@ export namespace Core {
       };
       response: {
         data?: Core.Store;
+        success?: boolean;
+      };
+    };
+    deleteOwnStoreMedia: {
+      method: 'DELETE';
+      path: '/api/stores/mine/media';
+      parameters: {
+      };
+      body: {
+        publicId?: string;
+        url?: string;
+      };
+      response: {
+        result?: Record<string, any>;
         success?: boolean;
       };
     };
@@ -1359,6 +1596,36 @@ export namespace Core {
       };
       response: {
         data?: Core.PublicStore;
+        success?: boolean;
+      };
+    };
+    getStoreEntitlements: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/entitlements';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      response: {
+        data?: Core.StoreEntitlements;
+        success?: boolean;
+      };
+    };
+    deleteStoreMedia: {
+      method: 'DELETE';
+      path: '/api/stores/{storeId}/media';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      body: {
+        publicId?: string;
+        url?: string;
+      };
+      response: {
+        result?: Record<string, any>;
         success?: boolean;
       };
     };
@@ -1575,6 +1842,23 @@ export namespace Core {
       response: {
         data?: Core.Website;
         message?: string;
+        success?: boolean;
+      };
+    };
+    deleteWebsiteMedia: {
+      method: 'DELETE';
+      path: '/api/websites/{websiteId}/media';
+      parameters: {
+        path: {
+          websiteId: string;
+        };
+      };
+      body: {
+        publicId?: string;
+        url?: string;
+      };
+      response: {
+        result?: Record<string, any>;
         success?: boolean;
       };
     };
@@ -1823,6 +2107,7 @@ export type CoreStandardError = Core.StandardError;
 export type CoreStandardErrorDetail = Core.StandardErrorDetail;
 export type CoreStandardSuccessResponse = Core.StandardSuccessResponse;
 export type CoreStore = Core.Store;
+export type CoreStoreEntitlements = Core.StoreEntitlements;
 export type CoreSubscription = Core.Subscription;
 export type CoreTemplateContent = Core.TemplateContent;
 export type CoreUploadedImageMetadata = Core.UploadedImageMetadata;

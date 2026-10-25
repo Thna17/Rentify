@@ -57,6 +57,8 @@ export default function Cart() {
           quote={cart.quote}
           currency={cart.currency}
           busyLineId={busyLineId}
+          isCustomDomain={cart.isCustomDomain}
+          hostedStorefrontUrl={cart.hostedStorefrontUrl}
           onQuantityChange={onQuantityChange}
           onRemove={onRemove}
         />

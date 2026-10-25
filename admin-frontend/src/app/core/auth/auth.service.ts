@@ -1,7 +1,16 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { catchError, finalize, map, Observable, of, tap } from 'rxjs';
-import { ApiError, AuthResponse, AuthUser, UserRole } from './auth.models';
+import { catchError, finalize, map, Observable, of } from 'rxjs';
+import {
+  ApiError,
+  AuthResponse,
+  AuthUser,
+  MfaConfirmResponse,
+  MfaEnrollResponse,
+  MfaStatusResponse,
+  SessionItem,
+  UserRole,
+} from './auth.models';
 import { RentifyAdminService } from '../rentify/rentify-admin.service';
 
 @Injectable({ providedIn: 'root' })
@@ -30,14 +39,21 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
+  login(email: string, password: string, mfaToken?: string, recoveryCode?: string): Observable<AuthResponse> {
     return this.http
-      .post<{ data: { user: any; accessToken: string }; message?: string }>(
+      .post<{ data: { user?: any; accessToken?: string; mfaRequired?: boolean; mfaChallengeToken?: string }; message?: string }>(
         `${this.rentify.core}/api/auth/login`,
-        { email, password, expectedRole: 'ADMIN' },
+        { email, password, expectedRole: 'ADMIN', mfaToken, recoveryCode },
       )
       .pipe(
         map((res) => {
+          if (res?.data?.mfaRequired) {
+            return {
+              message: res.message || 'MFA verification required',
+              mfaRequired: true,
+              mfaChallengeToken: res.data.mfaChallengeToken,
+            };
+          }
           const u = res?.data?.user;
           const authUser: AuthUser = {
             id: u?.id || '',
@@ -46,11 +62,38 @@ export class AuthService {
             phone: u?.phoneNumber || undefined,
             role: (u?.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : u?.role || 'ADMIN') as UserRole,
             status: 'ACTIVE',
+            mfaEnabled: Boolean(u?.mfaEnabled),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
           this.setUser(authUser);
           return { message: res.message || 'Login successful', user: authUser };
+        }),
+      );
+  }
+
+  verifyMfaChallenge(mfaChallengeToken: string, mfaToken?: string, recoveryCode?: string): Observable<AuthResponse> {
+    return this.http
+      .post<{ data: { user: any; accessToken: string }; message?: string }>(
+        `${this.rentify.core}/api/auth/mfa/challenge`,
+        { mfaChallengeToken, mfaToken, recoveryCode },
+      )
+      .pipe(
+        map((res) => {
+          const u = res?.data?.user;
+          const authUser: AuthUser = {
+            id: u?.id || '',
+            name: u?.name || 'Administrator',
+            email: u?.email || '',
+            phone: u?.phoneNumber || undefined,
+            role: (u?.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : u?.role || 'ADMIN') as UserRole,
+            status: 'ACTIVE',
+            mfaEnabled: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          this.setUser(authUser);
+          return { message: res.message || 'MFA verified successfully', user: authUser };
         }),
       );
   }
@@ -90,6 +133,7 @@ export class AuthService {
           phone: user.phoneNumber || undefined,
           role: (user.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : user.role) as UserRole,
           status: 'ACTIVE',
+          mfaEnabled: Boolean(user.mfaEnabled),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -112,6 +156,67 @@ export class AuthService {
   setUser(user: AuthUser | null) {
     this.userState.set(user);
     this.checkedState.set(true);
+  }
+
+  // --- Privileged Security & Session Controls (P2-SEC-001) ---
+
+  getMfaStatus(): Observable<MfaStatusResponse> {
+    return this.http.get<MfaStatusResponse>(`${this.rentify.core}/admin/mfa/status`);
+  }
+
+  enrollMfa(): Observable<MfaEnrollResponse> {
+    return this.http.post<MfaEnrollResponse>(`${this.rentify.core}/admin/mfa/enroll`, {});
+  }
+
+  confirmMfa(code: string): Observable<MfaConfirmResponse> {
+    return this.http.post<MfaConfirmResponse>(`${this.rentify.core}/admin/mfa/confirm`, { code });
+  }
+
+  disableMfa(password: string, code?: string): Observable<any> {
+    return this.http.post(`${this.rentify.core}/admin/mfa/disable`, { password, code });
+  }
+
+  regenerateRecoveryCodes(): Observable<{ recoveryCodes: string[] }> {
+    return this.http.post<{ recoveryCodes: string[] }>(
+      `${this.rentify.core}/admin/mfa/recovery-codes/regenerate`,
+      {},
+    );
+  }
+
+  stepUpAuth(password: string, mfaToken?: string, recoveryCode?: string): Observable<any> {
+    return this.http.post(`${this.rentify.core}/admin/auth/step-up`, {
+      password,
+      mfaToken,
+      recoveryCode,
+    });
+  }
+
+  listSessions(): Observable<SessionItem[]> {
+    return this.http
+      .get<{ data: SessionItem[] }>(`${this.rentify.core}/admin/sessions`)
+      .pipe(map((res) => res.data || []));
+  }
+
+  revokeSession(sessionId: string): Observable<any> {
+    return this.http.delete(`${this.rentify.core}/admin/sessions/${sessionId}`);
+  }
+
+  revokeOtherSessions(): Observable<{ revokedCount: number }> {
+    return this.http.post<{ revokedCount: number }>(
+      `${this.rentify.core}/admin/sessions/revoke-others`,
+      {},
+    );
+  }
+
+  requestContactChange(newEmail?: string, newPhoneNumber?: string): Observable<any> {
+    return this.http.post(`${this.rentify.core}/admin/contact/change-request`, {
+      newEmail,
+      newPhoneNumber,
+    });
+  }
+
+  verifyContactChange(otp: string): Observable<any> {
+    return this.http.post(`${this.rentify.core}/admin/contact/verify`, { otp });
   }
 }
 

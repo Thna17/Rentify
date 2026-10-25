@@ -22,7 +22,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-const snapshot = (store, websiteId = null) => ({
+const snapshot = (store, websiteId = null, entitlements = null) => ({
   storeId: store.id,
   ownerUserId: store.ownerUserId,
   websiteId,
@@ -33,11 +33,26 @@ const snapshot = (store, websiteId = null) => ({
   status: store.status,
   marketplaceEntitlement: store.marketplaceEntitlement,
   version: store.projectionVersion,
+  entitlements: entitlements || null,
+  entitlementVersion: entitlements?.version || 1,
   _correlationId: getCorrelationId(),
 });
 
-async function queueStore(store, { websiteId = null, transaction } = {}) {
-  const payload = snapshot(store, websiteId);
+async function queueStore(store, { websiteId = null, transaction, entitlements = null } = {}) {
+  let storeEntitlements = entitlements;
+  if (!storeEntitlements) {
+    try {
+      const { entitlementService } = require('../billing');
+      storeEntitlements = await entitlementService.evaluateStoreEntitlements(store.id, {
+        transaction,
+        store,
+        website: websiteId ? { id: websiteId, storeId: store.id } : undefined,
+      });
+    } catch {
+      // Fallback in lightweight test fixtures
+    }
+  }
+  const payload = snapshot(store, websiteId, storeEntitlements);
   const existing = await StoreSyncOutbox.findByPk(store.id, { transaction });
   if (existing) {
     await existing.update({ payload, version: payload.version, status: 'pending', syncedAt: null }, { transaction });

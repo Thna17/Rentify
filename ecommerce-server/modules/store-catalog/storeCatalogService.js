@@ -31,9 +31,10 @@ async function ratingSummariesFor(productIds) {
   return map;
 }
 
-function fail(message, statusCode = 400) {
+function fail(message, statusCode = 400, code = null) {
   const error = new Error(message);
   error.statusCode = statusCode;
+  if (code) error.code = code;
   throw error;
 }
 
@@ -76,11 +77,19 @@ async function uniqueSlug(storeId, name, transaction) {
   fail('Could not allocate a product slug', 409);
 }
 
-function validateImages(value) {
+function validateImages(value, storeId) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 10 || value.some((image) =>
     !image || typeof image.url !== 'string' || !/^https:\/\//i.test(image.url) || image.url.length > 2048)) {
     fail('Images must be up to 10 HTTPS URLs');
+  }
+  if (storeId) {
+    for (const image of value) {
+      const match = image.url.match(/rentify\/stores\/([a-zA-Z0-9-]+)\//i);
+      if (match && match[1] !== storeId) {
+        fail('Cross-store media reference prohibited', 403);
+      }
+    }
   }
   return value.map((image) => ({ url: image.url }));
 }
@@ -100,8 +109,40 @@ async function create(store, input) {
   if (!['active', 'draft'].includes(status)) fail('Invalid product status');
   if (status === 'active' && stockQuantity === 0) fail('Add stock before publishing the product');
   const description = typeof input.description === 'string' ? input.description.trim().slice(0, 4000) : '';
-  const images = validateImages(input.images);
+  const images = validateImages(input.images, store.storeId);
   return sequelize.transaction(async (transaction) => {
+    // 1. Atomically lock store record to serialize concurrent product creations
+    const storeAccess = await StoreAccess.findByPk(store.storeId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    const { getStoreEntitlements } = require('../store-access').storeAccessService;
+    const entitlements = getStoreEntitlements(storeAccess || store);
+
+    // 2. Enforce mutation lock during grace period or suspension
+    if (!entitlements.mutationsAllowed) {
+      fail(
+        entitlements.restrictionReason ||
+          'Product creation is disabled during subscription grace period or suspension',
+        403,
+        'CAPABILITY_MUTATION_LOCKED'
+      );
+    }
+
+    // 3. Atomically enforce product limit
+    const currentProductCount = await Product.count({
+      where: { storeId: store.storeId },
+      transaction,
+    });
+    const productLimit = entitlements.capabilities?.productLimit ?? 25;
+    if (currentProductCount >= productLimit) {
+      fail(
+        `Store has reached the product limit of ${productLimit} for the ${entitlements.displayName || 'current'} plan`,
+        403,
+        'PRODUCT_LIMIT_EXCEEDED'
+      );
+    }
+
     const website = store.websiteId ? await WebsiteData.findOne({
       where: { websiteId: store.websiteId, storeId: store.storeId }, transaction,
     }) : null;
@@ -163,7 +204,7 @@ async function update(storeId, productId, input) {
     }
     if (input.marketplaceCategory !== undefined) changes.marketplaceCategory = category(input.marketplaceCategory);
     if (input.marketplaceVisibility !== undefined) changes.marketplaceVisibility = visibility(input.marketplaceVisibility);
-    if (input.images !== undefined) changes.images = validateImages(input.images);
+    if (input.images !== undefined) changes.images = validateImages(input.images, store.storeId);
     if (input.status !== undefined) {
       if (!['active', 'draft', 'archived', 'out_of_stock'].includes(input.status)) fail('Invalid product status');
       changes.status = input.status;

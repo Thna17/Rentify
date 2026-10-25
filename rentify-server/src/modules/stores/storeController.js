@@ -31,6 +31,13 @@ exports.getOwnStore = asyncHandler(async (req, res) => {
   } catch {
     // Ignore if Website lookup fails in isolated test contexts
   }
+  let entitlements = null;
+  try {
+    const { entitlementService } = require('../billing');
+    entitlements = await entitlementService.evaluateStoreEntitlements(store.id, { store, website });
+  } catch {
+    // Fallback in isolated test contexts
+  }
   const plain = typeof store.toJSON === 'function' ? store.toJSON() : { ...store };
   return res.json({
     success: true,
@@ -39,8 +46,24 @@ exports.getOwnStore = asyncHandler(async (req, res) => {
       websiteId: website?.id || plain.websiteId || null,
       websiteDomain: website?.domain || null,
       websiteStatus: website?.status || null,
+      entitlements,
     },
   });
+});
+
+exports.getStoreEntitlements = asyncHandler(async (req, res) => {
+  const storeId = req.params.storeId;
+  const { entitlementService } = require('../billing');
+  const entitlements = await entitlementService.evaluateStoreEntitlements(storeId);
+  return res.json({ success: true, data: entitlements });
+});
+
+exports.getOwnStoreEntitlements = asyncHandler(async (req, res) => {
+  const store = await storeService.getOwnStore(req.user.id);
+  if (!store) return res.status(404).json({ message: 'Store not found' });
+  const { entitlementService } = require('../billing');
+  const entitlements = await entitlementService.evaluateStoreEntitlements(store.id, { store });
+  return res.json({ success: true, data: entitlements });
 });
 
 exports.createStore = asyncHandler(async (req, res) => {

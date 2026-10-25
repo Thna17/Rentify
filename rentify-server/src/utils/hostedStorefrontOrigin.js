@@ -13,18 +13,71 @@ const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const hostedStorefrontDomain = () => (process.env.HOSTED_STOREFRONT_DOMAIN || '').toLowerCase().trim();
 
+const MANDATORY_RESERVED_SUBDOMAINS = [
+  'admin',
+  'api',
+  'auth',
+  'billing',
+  'checkout',
+  'mail',
+  'marketplace',
+  'support',
+  'www',
+  'app',
+  'apps',
+  'login',
+  'signin',
+  'signup',
+  'account',
+  'accounts',
+  'merchant',
+  'merchants',
+  'seller',
+  'sellers',
+  'market',
+  'dashboard',
+  'store',
+  'stores',
+  'shop',
+  'storefront',
+  'cart',
+  'pay',
+  'payment',
+  'payments',
+  'invoice',
+  'email',
+  'smtp',
+  'static',
+  'cdn',
+  'assets',
+  'media',
+  'images',
+  'help',
+  'status',
+  'docs',
+  'blog',
+  'news',
+  'rentify',
+  'official',
+  'security',
+  'test',
+  'dev',
+  'staging',
+  'demo',
+];
+
 /**
  * Labels under the hosted domain that belong to something else (for example
  * other sites on the same domain). They are never assigned to a store, never
  * resolved to one, and never accepted as a storefront origin.
  */
-const reservedHostedSubdomains = () =>
-  new Set(
-    String(process.env.HOSTED_STOREFRONT_RESERVED || '')
-      .split(',')
-      .map((label) => label.trim().toLowerCase())
-      .filter(Boolean)
-  );
+const reservedHostedSubdomains = () => {
+  const custom = String(process.env.HOSTED_STOREFRONT_RESERVED || '')
+    .split(',')
+    .map((label) => label.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([...MANDATORY_RESERVED_SUBDOMAINS, ...custom]);
+};
 
 const hostedStorefrontDevPort = () =>
   process.env.NODE_ENV === 'production' ? '' : String(process.env.HOSTED_STOREFRONT_DEV_PORT || '').trim();
@@ -71,4 +124,5 @@ module.exports = {
   hostedSubdomainFromHost,
   hostedSubdomainFromHostname,
   reservedHostedSubdomains,
+  MANDATORY_RESERVED_SUBDOMAINS,
 };

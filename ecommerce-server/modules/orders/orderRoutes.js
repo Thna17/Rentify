@@ -18,6 +18,7 @@ const router = express.Router();
 const checkPermissions = require("../../middlewares/checkPermissions");
 const { requireWebsiteAccess, requireWebsitePermission, requireOrderAccess } = require("../../middlewares/requireWebsiteAccess");
 const { createRequireStoreAccess } = require("../../middlewares/requireStoreAccess");
+const { enforceCustomDomainBoundary } = require("../../middlewares/customDomainBoundary");
 
 // Apply middlewares
 router.use(sessionMiddleware);
@@ -36,15 +37,15 @@ router.get(
 );
 
 // Order routes
-router.post("/websites/:websiteId/orders", OrderController.createOrder);
+router.post("/websites/:websiteId/orders", enforceCustomDomainBoundary('checkout'), OrderController.createOrder);
 router.post("/websites/:websiteId/orders/pos", requireWebsitePermission(["pos"]), createPOSOrder);
 router.post("/websites/:websiteId/orders/invoice", requireWebsitePermission(["invoice", "invoices"]), createInvoice);
 
 router.get("/orders/:orderId", requireOrderAccess, getOrderById);
 router.get("/websites/:websiteId/orders", requireWebsitePermission(["orders", "manage_orders"]), getOrderHistory);
-router.get("/websites/:websiteId/my-orders", getMyOrders);
-router.get("/websites/my-orders/:orderId", getMyOrderDetails);
-router.get("/websites/my-orders/:orderId/payment", getMyOrderPayment);
+router.get("/websites/:websiteId/my-orders", enforceCustomDomainBoundary('customer'), getMyOrders);
+router.get("/websites/my-orders/:orderId", enforceCustomDomainBoundary('customer'), getMyOrderDetails);
+router.get("/websites/my-orders/:orderId/payment", enforceCustomDomainBoundary('customer'), getMyOrderPayment);
 
 router.get(
   "/websites/:websiteId/orders/pos",

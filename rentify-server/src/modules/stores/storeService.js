@@ -69,9 +69,13 @@ class StoreService {
     const store = await Store.findOne({ where: { ownerUserId: userId } });
     if (store) return store;
 
-    // Check if user is staff belonging to a website or merchant
+    // Check if user is staff belonging to a store, website or merchant
     const staff = await Staff.findByPk(userId);
     if (staff) {
+      if (staff.storeId) {
+        const directStore = await Store.findByPk(staff.storeId);
+        if (directStore) return directStore;
+      }
       if (staff.websiteId) {
         const website = await Website.findByPk(staff.websiteId);
         if (website?.storeId) {
@@ -215,6 +219,10 @@ class StoreService {
         const error = new Error('Store not found');
         error.statusCode = 404;
         throw error;
+      }
+      if (changes.logoUrl) {
+        const { validateMediaStoreOwnership } = require('../../utils/mediaSecurityValidator');
+        validateMediaStoreOwnership(changes.logoUrl, store.id);
       }
       const owner = developmentApprovalEnabled()
         ? await User.findByPk(ownerUserId, { transaction }) : null;

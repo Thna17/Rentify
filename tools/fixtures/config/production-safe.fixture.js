@@ -1,0 +1,33 @@
+// tools/fixtures/config/production-safe.fixture.js
+// Approved production-safe configuration fixture for Rentify Release 1 validation.
+
+module.exports = {
+  NODE_ENV: 'production',
+  MARKETPLACE_URL: 'https://rentifymarket.com',
+  AUTH_URL: 'https://auth.rentifymarket.com',
+  RENTIFY_API_URL: 'https://api.rentifymarket.com',
+  ECOMMERCE_API_URL: 'https://commerce.rentifymarket.com',
+  ADMIN_DASHBOARD_URL: 'https://admin.rentifymarket.com',
+  MERCHANT_DASHBOARD_URL: 'https://dashboard.rentifymarket.com',
+  MARKETING_URL: 'https://rentifymarket.com',
+  STOREFRONT_ORIGIN: 'https://rentifystore.shop',
+  HOSTED_STOREFRONT_DOMAIN: 'rentifystore.shop',
+  HOSTED_STOREFRONT_RESERVED: 'admin,api,auth,billing,checkout,mail,marketplace,support',
+  COOKIE_DOMAIN: '',
+  COOKIE_SECURE: 'true',
+  COOKIE_HTTP_ONLY: 'true',
+  COOKIE_SAMESITE: 'Lax',
+  CORS_ALLOWED_ORIGINS: 'https://rentifymarket.com,https://auth.rentifymarket.com,https://dashboard.rentifymarket.com,https://admin.rentifymarket.com',
+  AUTH_RETURN_URL_ALLOWLIST: 'https://rentifymarket.com,https://dashboard.rentifymarket.com,https://admin.rentifymarket.com',
+  CUTLUY_ENABLED: 'false',
+  DEV_MARKETPLACE_AUTO_APPROVAL: 'false',
+  CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'false',
+  MARKETPLACE_COD_CHECKOUT_ENABLED: 'true',
+  JWT_SECRET: 'prod_secret_jwt_key_99887766554433221100aabbccddeeff',
+  JWT_REFRESH_SECRET: 'prod_secret_jwt_refresh_99887766554433221100aabbccddeeff',
+  SESSION_SECRET: 'prod_secret_session_key_99887766554433221100aabbccddeeff',
+  COOKIE_SECRET: 'prod_secret_cookie_key_99887766554433221100aabbccddeeff',
+  INTERNAL_SERVICE_SECRET: 'prod_secret_internal_svc_99887766554433221100aabbccddeeff',
+  PAYMENT_CONFIG_ENCRYPTION_KEY: 'prod_secret_encryption_99887766554433221100aabbccddeeff',
+  DB_PASSWORD: 'prod_db_strong_pass_112233445566778899',
+};

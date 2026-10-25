@@ -241,6 +241,50 @@ paths:
           $ref: '#/components/responses/ServerError'
       security: []
 
+  /api/auth/mfa/challenge:
+    post:
+      tags:
+        - Auth
+      summary: Verify MFA challenge during login
+      description: |
+        Verifies a 6-digit TOTP code or single-use recovery code against an admin user's account
+        following a successful password challenge that returned `mfaRequired: true`.
+      operationId: authMfaChallenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mfaChallengeToken
+              properties:
+                mfaChallengeToken:
+                  type: string
+                  description: Short-lived challenge token issued during initial login
+                mfaToken:
+                  type: string
+                  description: 6-digit TOTP code from authenticator app
+                  example: "123456"
+                recoveryCode:
+                  type: string
+                  description: Single-use recovery code
+                  example: "ABCD-EFGH-JKMN"
+      responses:
+        '200':
+          description: MFA verification successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/BadRequestError'
+      security: []
+
   /api/auth/logout:
     post:
       tags:
@@ -985,6 +1029,54 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailableError'
 
+  /api/stores/mine/media:
+    delete:
+      tags:
+        - Stores
+      summary: Delete store media asset
+      description: Deletes an owned store media asset from cloud storage. Enforces store ownership and namespace isolation.
+      operationId: deleteOwnStoreMedia
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1
+                url:
+                  type: string
+                  format: uri
+                  example: https://res.cloudinary.com/rentify/image/upload/rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1.jpg
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
   /api/stores/{storeId}/product-images:
     post:
       tags:
@@ -1040,6 +1132,129 @@ paths:
           $ref: '#/components/responses/BadGatewayError'
         '503':
           $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/stores/{storeId}/media:
+    delete:
+      tags:
+        - Stores
+      summary: Delete store media asset by store ID
+      description: Deletes an owned store media asset. Requires store ownership or staff products permission.
+      operationId: deleteStoreMedia
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1
+                url:
+                  type: string
+                  format: uri
+                  example: https://res.cloudinary.com/rentify/image/upload/rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/products/prod_1.jpg
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
+  /api/stores/mine/entitlements:
+    get:
+      tags:
+        - Stores
+      summary: Get own store versioned entitlements
+      description: Returns the authoritative versioned capability and quota entitlements for the caller's store.
+      operationId: getOwnStoreEntitlements
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Authoritative store entitlements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/StoreEntitlements'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/stores/{storeId}/entitlements:
+    get:
+      tags:
+        - Stores
+      summary: Get store versioned entitlements by ID
+      description: Returns the authoritative versioned capability and quota entitlements for a specific store.
+      operationId: getStoreEntitlements
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Authoritative store entitlements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/StoreEntitlements'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /api/stores/mine/seller-application:
     get:
@@ -1753,6 +1968,61 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailableError'
 
+  /api/websites/{websiteId}/media:
+    delete:
+      tags:
+        - Websites
+      summary: Delete website media asset
+      description: Deletes an owned website media asset from cloud storage. Enforces store ownership and namespace isolation.
+      operationId: deleteWebsiteMedia
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  example: rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/website/banner_1
+                url:
+                  type: string
+                  format: uri
+                  example: https://res.cloudinary.com/rentify/image/upload/rentify/stores/018d34b1-827c-74a9-a9c1-5827c9b83701/website/banner_1.jpg
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '502':
+          $ref: '#/components/responses/BadGatewayError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailableError'
+
   /api/websites/cache/stats:
     get:
       tags:
@@ -2241,6 +2511,84 @@ paths:
                 $ref: '#/components/schemas/Staff'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    patch:
+      tags:
+        - Staff
+      summary: Update staff member permissions or status
+      operationId: updateStaff
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Staff member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Staff
+      summary: Delete staff member and revoke access
+      operationId: deleteStaff
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Staff member deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
 
@@ -3268,6 +3616,403 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /admin/mfa/status:
+    get:
+      tags:
+        - Admin Security
+      summary: Get administrator MFA enrollment and recovery code status
+      operationId: getAdminMfaStatus
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: MFA status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mfaEnabled:
+                    type: boolean
+                  hasRecoveryCodes:
+                    type: boolean
+                  recoveryCodesRemaining:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/mfa/enroll:
+    post:
+      tags:
+        - Admin Security
+      summary: Initiate TOTP MFA enrollment
+      operationId: enrollAdminMfa
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Pending MFA secret generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  secret:
+                    type: string
+                  otpauthUrl:
+                    type: string
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/mfa/confirm:
+    post:
+      tags:
+        - Admin Security
+      summary: Confirm TOTP challenge and activate MFA
+      operationId: confirmAdminMfa
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: MFA activated and recovery codes issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  recoveryCodes:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/mfa/disable:
+    post:
+      tags:
+        - Admin Security
+      summary: Disable MFA for administrator (requires recent auth)
+      operationId: disableAdminMfa
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: MFA disabled successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/mfa/recovery-codes/regenerate:
+    post:
+      tags:
+        - Admin Security
+      summary: Regenerate single-use recovery codes (requires recent auth)
+      operationId: regenerateAdminRecoveryCodes
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: New recovery codes generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  recoveryCodes:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/auth/step-up:
+    post:
+      tags:
+        - Admin Security
+      summary: Step-up re-authentication for high-risk administrator actions
+      operationId: adminStepUpAuth
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                mfaToken:
+                  type: string
+                recoveryCode:
+                  type: string
+      responses:
+        '200':
+          description: Step-up authentication verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  recentAuthAt:
+                    type: string
+                  accessToken:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/BadRequestError'
+
+  /admin/sessions:
+    get:
+      tags:
+        - Admin Security
+      summary: List active administrator sessions (Session Inventory)
+      operationId: listAdminSessions
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Active sessions inventory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        clientType:
+                          type: string
+                        ipAddress:
+                          type: string
+                        lastActiveAt:
+                          type: string
+                        isCurrent:
+                          type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/sessions/{sessionId}:
+    delete:
+      tags:
+        - Admin Security
+      summary: Revoke a specific administrator session
+      operationId: revokeAdminSession
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session revoked
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/sessions/revoke-others:
+    post:
+      tags:
+        - Admin Security
+      summary: Revoke all other administrator sessions (requires recent auth)
+      operationId: revokeOtherAdminSessions
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200':
+          description: Other sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  revokedCount:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/contact/change-request:
+    post:
+      tags:
+        - Admin Security
+      summary: Request administrator contact change with OTP verification (requires recent auth)
+      operationId: requestAdminContactChange
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newEmail:
+                  type: string
+                  format: email
+                newPhoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Verification code sent
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/contact/verify:
+    post:
+      tags:
+        - Admin Security
+      summary: Verify OTP and apply contact change (requires recent auth)
+      operationId: verifyAdminContactChange
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - otp
+              properties:
+                otp:
+                  type: string
+      responses:
+        '200':
+          description: Contact updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/users/{userId}/role:
+    patch:
+      tags:
+        - Admin Security
+      summary: Update user platform role with immediate session revocation upon demotion (requires recent auth)
+      operationId: updateAdminUserRole
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum: [user, admin]
+      responses:
+        '200':
+          description: Role updated
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /ops/reminders:
     get:
       tags:
@@ -3894,6 +4639,74 @@ components:
             message: Internal server error
 
   schemas:
+    StoreEntitlements:
+      type: object
+      required:
+        - version
+        - storeId
+        - tier
+        - displayName
+        - lifecycleState
+        - mutationsAllowed
+        - capabilities
+      properties:
+        version:
+          type: integer
+          example: 1
+        storeId:
+          type: string
+          format: uuid
+        tier:
+          type: string
+          example: starter
+        displayName:
+          type: string
+          example: Starter
+        lifecycleState:
+          type: string
+          enum: [active, trial, grace_period, suspended, cancelled]
+          example: active
+        isTrial:
+          type: boolean
+        isActive:
+          type: boolean
+        isGracePeriod:
+          type: boolean
+        isSuspended:
+          type: boolean
+        isCancelled:
+          type: boolean
+        mutationsAllowed:
+          type: boolean
+        capabilities:
+          type: object
+          properties:
+            marketplaceListing:
+              type: boolean
+            website:
+              type: boolean
+            productLimit:
+              type: integer
+            staffLimit:
+              type: integer
+            pos:
+              type: boolean
+            invoices:
+              type: boolean
+            customDomainBrowse:
+              type: boolean
+            hostedCheckout:
+              type: boolean
+            historicalOrderRead:
+              type: boolean
+        quotas:
+          type: object
+        dates:
+          type: object
+        restrictionReason:
+          type: string
+          nullable: true
+
     HealthResponse:
       type: object
       required:

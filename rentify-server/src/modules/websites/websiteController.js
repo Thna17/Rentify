@@ -15,7 +15,7 @@ const {
   WebsiteContent,
 } = require("../../models");
 const { getMerchantCache } = require("../../utils/cache");
-const { hostedSubdomainFromHost } = require("../../utils/hostedStorefrontOrigin");
+const { hostedSubdomainFromHost, hostedStorefrontUrl } = require("../../utils/hostedStorefrontOrigin");
 const { validateStorefrontContent } = require("./storefrontContentFields");
 const cache = getMerchantCache();
 
@@ -222,12 +222,23 @@ class WebsiteController {
           value: item.value,
         })) || [];
 
+      const isHosted = Boolean(hostedSubdomain);
+      const isCustom = Boolean(!hostedSubdomain && website.domain);
+      const canonicalHostedUrl = website.subdomain ? hostedStorefrontUrl(website.subdomain) : null;
+
       const response = {
         websiteId: website.id,
         storeId: website.storeId,
         userId: website.userId,
         templateId: website.templateId,
         name: website.name || null,
+        domain: website.domain || null,
+        subdomain: website.subdomain || null,
+        storefrontUrl: canonicalHostedUrl,
+        hostedStorefrontUrl: canonicalHostedUrl,
+        isCustomDomain: isCustom,
+        isHostedStorefront: isHosted,
+        customDomainBrowseOnly: isCustom,
         content: content,
         selectedPalette:
           content.find(
@@ -466,7 +477,8 @@ class WebsiteController {
    * rows are created, and the whole change is saved or nothing is.
    */
   updateStorefrontContent = asyncHandler(async (req, res) => {
-    const { values, errors } = validateStorefrontContent(req.body?.fields);
+    const storeId = req.website.storeId;
+    const { values, errors } = validateStorefrontContent(req.body?.fields, storeId);
     if (errors.length) return res.status(400).json({ error: "Some fields are invalid", fields: errors });
     if (!values.length) return res.status(400).json({ error: "Nothing to update" });
 
@@ -550,12 +562,29 @@ class WebsiteController {
       let clearedCount = 0;
 
       if (websiteId) {
+        if (req.user?.role !== 'admin') {
+          const { Website } = require('../../models');
+          const website = await Website.findByPk(websiteId);
+          if (!website || website.userId !== req.user?.id) {
+            return res.status(403).json({ error: "You do not have access to this website" });
+          }
+        }
         clearedCount = await cache.invalidateWebsiteCache(websiteId);
         message = `Cleared ${clearedCount} cache entries for website: ${websiteId}`;
       } else if (userId) {
+        if (req.user?.role !== 'admin' && req.user?.id !== userId) {
+          return res.status(403).json({ error: "Cannot clear cache for another user" });
+        }
         await cache.invalidateDashboardCache(userId);
         message = `Cleared dashboard cache for user: ${userId}`;
       } else if (domain) {
+        if (req.user?.role !== 'admin') {
+          const { Website } = require('../../models');
+          const website = await Website.findOne({ where: { domain } });
+          if (!website || website.userId !== req.user?.id) {
+            return res.status(403).json({ error: "You do not have access to this domain" });
+          }
+        }
         await cache.invalidatePublicCache(domain);
         message = `Cleared public cache for domain: ${domain}`;
       } else {
