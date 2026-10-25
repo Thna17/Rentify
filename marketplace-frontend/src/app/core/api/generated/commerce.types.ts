@@ -1821,6 +1821,48 @@ export namespace Commerce {
         order?: Commerce.Order;
       };
     };
+    get_api_stores_storeId_orders_pos_lookup: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/orders/pos/lookup';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+        query?: {
+          barcode: string;
+        };
+      };
+      response: any;
+    };
+    post_api_stores_storeId_orders_pos_orderId_manual_khqr: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/manual-khqr';
+      parameters: {
+        path: {
+          orderId: string;
+          storeId: string;
+        };
+      };
+      body?: {
+        idempotencyKey?: string;
+      };
+      response: any;
+    };
+    post_api_stores_storeId_orders_pos_orderId_void: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/void';
+      parameters: {
+        path: {
+          orderId: string;
+          storeId: string;
+        };
+      };
+      body?: {
+        idempotencyKey?: string;
+        reason?: string;
+      };
+      response: any;
+    };
     get_api_stores_storeId_products: {
       method: 'GET';
       path: '/api/stores/{storeId}/products';

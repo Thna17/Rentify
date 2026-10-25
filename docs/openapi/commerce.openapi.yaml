@@ -3040,6 +3040,100 @@ paths:
                   order:
                     $ref: "#/components/schemas/Order"
       operationId: post_api_stores_storeId_orders_pos
+  /api/stores/{storeId}/orders/pos/lookup:
+    get:
+      tags:
+        - Point of Sale (POS)
+      summary: Lookup product and stock by barcode for store POS
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: barcode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product and stock details for barcode
+        "404":
+          description: Product not found with barcode in this store
+      operationId: get_api_stores_storeId_orders_pos_lookup
+  /api/stores/{storeId}/orders/pos/{orderId}/void:
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Void POS order and restore stock
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                idempotencyKey:
+                  type: string
+      responses:
+        "200":
+          description: POS order voided and stock restored
+      operationId: post_api_stores_storeId_orders_pos_orderId_void
+  /api/stores/{storeId}/orders/pos/{orderId}/manual-khqr:
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Record manual KHQR payment and deduct stock for POS order
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+      responses:
+        "200":
+          description: Manual KHQR recorded and stock deducted
+      operationId: post_api_stores_storeId_orders_pos_orderId_manual_khqr
   /api/order/stores/{storeId}/orders/pos:
     get:
       tags:

@@ -208,6 +208,26 @@ exports.createPOSOrder = async (req, res) => {
     // Cashier identity derivation: bind to authenticated staff user when staff
     const effectiveCashierId = req.user?.type === 'staff' ? req.user.id : (bodyCashierId || req.user?.id || 'POS-CASHIER');
 
+    // Idempotency check: if receipt/checkout key was already processed for this store, replay without duplicating
+    const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || req.body?.receiptId;
+    if (idempotencyKey && effectiveStoreId) {
+      const existingOrder = await models.Order.findOne({
+        where: { checkoutKey: idempotencyKey, storeId: effectiveStoreId },
+        include: [{ model: models.OrderItem, as: 'OrderItems' }]
+      });
+      if (existingOrder) {
+        const existingPayment = await models.Payment.findOne({ where: { orderId: existingOrder.id } });
+        const existingInvoice = await models.Invoice.findOne({ where: { orderId: existingOrder.id } });
+        return res.status(200).json({
+          success: true,
+          order: existingOrder.toJSON(),
+          payment: existingPayment ? existingPayment.toJSON() : null,
+          invoice: existingInvoice ? existingInvoice.toJSON() : null,
+          idempotentReplay: true,
+        });
+      }
+    }
+
     // Fetch payment config
     const { Op } = require('sequelize');
     const paymentConfigConditions = [];
@@ -236,6 +256,7 @@ exports.createPOSOrder = async (req, res) => {
     const result = await strategy.execute({
       websiteId: effectiveWebsiteId,
       storeId: effectiveStoreId,
+      checkoutKey: idempotencyKey || null,
       items,
       paymentMethod,
       cashierId: effectiveCashierId,
@@ -253,6 +274,12 @@ exports.createPOSOrder = async (req, res) => {
       khqrData: result.khqrData,
     });
   } catch (error) {
+    if (error.name === 'InsufficientStockError' || error.code === 'INSUFFICIENT_STOCK' || error.statusCode === 409) {
+      return res.status(409).json({ success: false, error: error.message, code: 'INSUFFICIENT_STOCK' });
+    }
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, error: error.message, code: error.code });
+    }
     res.status(400).json({ success: false, error: error.message });
   }
 };
@@ -318,5 +345,340 @@ exports.getPublicTracking = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to retrieve tracking information' });
+  }
+};
+
+/**
+ * P3-INV-002: Store-scoped barcode lookup for POS.
+ * Resolves barcode strictly within the authorized Store scope.
+ */
+exports.lookupPOSBarcode = async (req, res) => {
+  try {
+    const rawStoreId = req.params.storeId || req.store?.storeId;
+    const barcode = req.query.barcode || req.params.barcode;
+    if (!barcode || typeof barcode !== 'string' || !barcode.trim()) {
+      return res.status(400).json({ error: 'Barcode parameter is required' });
+    }
+    const cleanBarcode = barcode.trim();
+    if (!rawStoreId) {
+      return res.status(400).json({ error: 'Store ID is required' });
+    }
+
+    const { Product, ProductVariant } = models;
+    const { inventoryLedgerService } = require('../inventory');
+
+    // 1. Look up variant with this barcode in store
+    let variant = await ProductVariant.findOne({
+      where: { storeId: rawStoreId, barcode: cleanBarcode },
+      include: [{ model: Product, as: 'Product' }]
+    });
+
+    let product = null;
+    if (variant) {
+      product = variant.Product || await Product.findByPk(variant.productId);
+    } else {
+      // 2. Look up product with this barcode in store
+      product = await Product.findOne({
+        where: { storeId: rawStoreId, barcode: cleanBarcode }
+      });
+      if (product) {
+        variant = await ProductVariant.findOne({
+          where: { productId: product.id, isDefault: true }
+        }) || await ProductVariant.findOne({
+          where: { productId: product.id }
+        });
+      }
+    }
+
+    if (!product) {
+      return res.status(404).json({ error: `Product with barcode "${cleanBarcode}" not found in this store` });
+    }
+
+    const skuId = variant?.id || product.defaultSkuId || product.id;
+    let balance = null;
+    try {
+      balance = await inventoryLedgerService.getBalance(rawStoreId, skuId);
+    } catch (e) {
+      balance = { onHand: 0, reserved: 0, available: 0 };
+    }
+
+    return res.json({
+      success: true,
+      product: {
+        id: product.id,
+        name: product.name,
+        status: product.status,
+        barcode: variant?.barcode || product.barcode,
+        sku: variant?.sku || product.sku,
+      },
+      variant: variant ? {
+        id: variant.id,
+        sku: variant.sku,
+        barcode: variant.barcode,
+        price: variant.price,
+        title: variant.title,
+        optionValues: variant.optionValues,
+      } : null,
+      skuId,
+      price: variant?.price || product.price,
+      currency: product.currency || 'USD',
+      stockOnHand: balance?.onHand ?? 0,
+      stockAvailable: balance?.available ?? 0,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to lookup barcode' });
+  }
+};
+
+/**
+ * P3-INV-002: POS order void endpoint.
+ * Restores deducted stock exactly once via canonical inventory ledger.
+ * Retries are idempotent.
+ */
+exports.voidPOSOrder = async (req, res) => {
+  const { storeId, orderId } = req.params;
+  const reason = req.body?.reason || 'POS Cashier Void';
+  const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || `void-${orderId}`;
+
+  try {
+    const { Order, OrderItem, Payment, Invoice, Product, ProductVariant } = models;
+    const { inventoryLedgerService } = require('../inventory');
+
+    const order = await Order.findOne({
+      where: { id: orderId, storeId },
+      include: [{ model: OrderItem, as: 'OrderItems' }]
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'POS order not found in this store' });
+    }
+
+    // Idempotent replay: if already cancelled/voided
+    if (order.status === 'cancelled') {
+      return res.status(200).json({
+        success: true,
+        order: order.toJSON(),
+        alreadyVoided: true,
+        message: 'Order already voided'
+      });
+    }
+
+    await sequelize.transaction(async (tx) => {
+      // Lock order
+      const lockedOrder = await Order.findByPk(orderId, {
+        include: [{ model: OrderItem, as: 'OrderItems' }],
+        transaction: tx,
+        lock: tx.LOCK.UPDATE,
+      });
+
+      if (lockedOrder.status === 'cancelled') {
+        return;
+      }
+
+      // Restore inventory exactly once if stock was deducted
+      if (lockedOrder.stockDeducted && lockedOrder.OrderItems && lockedOrder.OrderItems.length > 0) {
+        const sortedItems = [...lockedOrder.OrderItems].sort((a, b) =>
+          String(a.productId).localeCompare(String(b.productId))
+        );
+
+        for (const item of sortedItems) {
+          let variant = item.variantId ? await ProductVariant.findByPk(item.variantId, { transaction: tx }).catch(() => null) : null;
+          let product = item.productId ? await Product.findByPk(item.productId, { transaction: tx }).catch(() => null) : null;
+          if (!variant && product) {
+            variant = await ProductVariant.findOne({ where: { productId: product.id, isDefault: true }, transaction: tx }).catch(() => null) ||
+                      await ProductVariant.findOne({ where: { productId: product.id }, transaction: tx }).catch(() => null);
+          }
+
+          const skuId = variant?.id || item.variantId || product?.defaultSkuId || item.productId;
+          const itemVoidKey = `pos-void-${lockedOrder.id}-${skuId}-${idempotencyKey}`;
+
+          await inventoryLedgerService.mutateBalance({
+            storeId,
+            skuId,
+            changeOnHand: Number(item.quantity || 1),
+            changeReserved: 0,
+            reasonCode: 'cancellation',
+            sourceType: 'pos_order',
+            sourceId: lockedOrder.id,
+            actor: { id: req.user?.id || 'pos-cashier', type: req.user?.type || 'staff' },
+            idempotencyKey: itemVoidKey,
+            monetaryContext: {
+              orderId: lockedOrder.id,
+              storeId,
+              salesChannel: 'pos',
+              action: 'void',
+            },
+            notes: `POS order void compensation (orderId: ${lockedOrder.id})`,
+          }, { transaction: tx });
+        }
+
+        lockedOrder.stockDeducted = false;
+      }
+
+      await lockedOrder.update({
+        status: 'cancelled',
+        deliveryStatus: 'cancelled',
+        cancellationReason: reason,
+        cancelledAt: new Date(),
+        stockDeducted: false,
+      }, { transaction: tx, byStateMachine: true });
+
+      // Update associated payment and invoice if present
+      await Payment.update(
+        { status: 'voided' },
+        { where: { orderId: lockedOrder.id }, transaction: tx }
+      );
+      await Invoice.update(
+        { status: 'voided' },
+        { where: { orderId: lockedOrder.id }, transaction: tx }
+      );
+    });
+
+    const refreshedOrder = await Order.findByPk(orderId, {
+      include: [{ model: OrderItem, as: 'OrderItems' }]
+    });
+
+    return res.status(200).json({
+      success: true,
+      order: refreshedOrder.toJSON(),
+      message: 'POS order successfully voided'
+    });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * P3-INV-002: Offline / manual KHQR payment recording endpoint.
+ * Deducts stock exactly once if not already deducted.
+ * Retries are idempotent and do not double deduct.
+ */
+exports.recordManualKHQR = async (req, res) => {
+  const { storeId, orderId } = req.params;
+  const idempotencyKey = req.headers['idempotency-key'] || req.body?.idempotencyKey || `manual-khqr-${orderId}`;
+
+  try {
+    const { Order, OrderItem, Payment, Product, ProductVariant } = models;
+    const { inventoryLedgerService } = require('../inventory');
+
+    const order = await Order.findOne({
+      where: { id: orderId, storeId },
+      include: [{ model: OrderItem, as: 'OrderItems' }]
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'POS order not found in this store' });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.status(409).json({ error: 'Cannot record payment on cancelled order' });
+    }
+
+    await sequelize.transaction(async (tx) => {
+      const lockedOrder = await Order.findByPk(orderId, {
+        include: [{ model: OrderItem, as: 'OrderItems' }],
+        transaction: tx,
+        lock: tx.LOCK.UPDATE,
+      });
+
+      // Deduct stock exactly once if not already deducted
+      if (!lockedOrder.stockDeducted && lockedOrder.OrderItems && lockedOrder.OrderItems.length > 0) {
+        const sortedItems = [...lockedOrder.OrderItems].sort((a, b) =>
+          String(a.productId).localeCompare(String(b.productId))
+        );
+
+        for (const item of sortedItems) {
+          let variant = item.variantId ? await ProductVariant.findByPk(item.variantId, { transaction: tx }).catch(() => null) : null;
+          let product = item.productId ? await Product.findByPk(item.productId, { transaction: tx }).catch(() => null) : null;
+          if (!variant && product) {
+            variant = await ProductVariant.findOne({ where: { productId: product.id, isDefault: true }, transaction: tx }).catch(() => null) ||
+                      await ProductVariant.findOne({ where: { productId: product.id }, transaction: tx }).catch(() => null);
+          }
+
+          const skuId = variant?.id || item.variantId || product?.defaultSkuId || item.productId;
+          const itemDeductKey = `pos-deduct-${lockedOrder.id}-${skuId}`;
+
+          await inventoryLedgerService.ensureBalance(
+            { storeId, skuId, variant, product },
+            { transaction: tx }
+          );
+
+          await inventoryLedgerService.mutateBalance({
+            storeId,
+            skuId,
+            changeOnHand: -Number(item.quantity || 1),
+            changeReserved: 0,
+            reasonCode: 'pos_sale',
+            sourceType: 'pos_order',
+            sourceId: lockedOrder.id,
+            actor: { id: req.user?.id || 'pos-cashier', type: req.user?.type || 'staff' },
+            idempotencyKey: itemDeductKey,
+            monetaryContext: {
+              orderId: lockedOrder.id,
+              storeId,
+              salesChannel: 'pos',
+              action: 'manual_khqr',
+            },
+            notes: `POS manual KHQR payment deduction (orderId: ${lockedOrder.id})`,
+          }, { transaction: tx });
+        }
+
+        lockedOrder.stockDeducted = true;
+      }
+
+      await lockedOrder.update({
+        status: 'completed',
+        deliveryStatus: 'delivered',
+        stockDeducted: true,
+      }, { transaction: tx, byStateMachine: true });
+
+      // Update or create payment
+      let payment = await Payment.findOne({ where: { orderId: lockedOrder.id }, transaction: tx });
+      if (payment) {
+        await payment.update({
+          status: 'completed',
+          transactionData: {
+            ...payment.transactionData,
+            posData: {
+              method: 'KHQR_COUNTER_MANUAL',
+              recordedBy: req.user?.id || 'pos-cashier',
+              timestamp: new Date(),
+            }
+          }
+        }, { transaction: tx });
+      } else {
+        await Payment.create({
+          orderId: lockedOrder.id,
+          amount: lockedOrder.totalAmount,
+          paymentMethod: 'WALLET',
+          status: 'completed',
+          currency: lockedOrder.currency || 'USD',
+          transactionData: {
+            posData: {
+              method: 'KHQR_COUNTER_MANUAL',
+              recordedBy: req.user?.id || 'pos-cashier',
+              timestamp: new Date(),
+            }
+          }
+        }, { transaction: tx });
+      }
+    });
+
+    const refreshedOrder = await Order.findByPk(orderId, {
+      include: [{ model: OrderItem, as: 'OrderItems' }]
+    });
+    const refreshedPayment = await Payment.findOne({ where: { orderId } });
+
+    return res.status(200).json({
+      success: true,
+      order: refreshedOrder.toJSON(),
+      payment: refreshedPayment ? refreshedPayment.toJSON() : null,
+      message: 'Manual KHQR payment successfully recorded'
+    });
+  } catch (error) {
+    if (error.name === 'InsufficientStockError' || error.statusCode === 409 || error.code === 'INSUFFICIENT_STOCK') {
+      return res.status(409).json({ success: false, error: error.message, code: 'INSUFFICIENT_STOCK' });
+    }
+    return res.status(400).json({ success: false, error: error.message });
   }
 };

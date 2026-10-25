@@ -3757,6 +3757,102 @@ export class CommerceApiClient {
   }
 
   /**
+   * Lookup product and stock by barcode for store POS
+   * GET /api/stores/{storeId}/orders/pos/lookup
+   */
+  async get_api_stores_storeId_orders_pos_lookup(options: {
+    path: {
+      storeId: string;
+    };
+    query?: {
+      barcode: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/orders/pos/lookup',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_stores_storeId_orders_pos_lookup */
+  async getApiStoresStoreIdOrdersPosLookup(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_stores_storeId_orders_pos_lookup(options);
+  }
+
+  /**
+   * Record manual KHQR payment and deduct stock for POS order
+   * POST /api/stores/{storeId}/orders/pos/{orderId}/manual-khqr
+   */
+  async post_api_stores_storeId_orders_pos_orderId_manual_khqr(options: {
+    path: {
+      orderId: string;
+      storeId: string;
+    };
+    body?: {
+      idempotencyKey?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/manual-khqr',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_orders_pos_orderId_manual_khqr */
+  async postApiStoresStoreIdOrdersPosOrderIdManualKhqr(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_stores_storeId_orders_pos_orderId_manual_khqr(options);
+  }
+
+  /**
+   * Void POS order and restore stock
+   * POST /api/stores/{storeId}/orders/pos/{orderId}/void
+   */
+  async post_api_stores_storeId_orders_pos_orderId_void(options: {
+    path: {
+      orderId: string;
+      storeId: string;
+    };
+    body?: {
+      idempotencyKey?: string;
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/void',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_orders_pos_orderId_void */
+  async postApiStoresStoreIdOrdersPosOrderIdVoid(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_stores_storeId_orders_pos_orderId_void(options);
+  }
+
+  /**
    * List merchant store products
    * GET /api/stores/{storeId}/products
    */

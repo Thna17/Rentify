@@ -593,7 +593,8 @@ async function cancelOrder(orderId, {
     await verifyActorAuthorization({ order, actor, action, transaction: tx });
 
     // 4. Cancellability Checks
-    if (order.status === ORDER_STATES.COMPLETED) {
+    const isPOSOrder = order.salesChannel === 'pos' || order.orderType === 'pos';
+    if (order.status === ORDER_STATES.COMPLETED && !(isPOSOrder && !isBuyerActor)) {
       throw new OrderStateError(
         ORDER_ERROR_CODES.ORDER_NOT_CANCELLABLE,
         'Completed orders cannot be cancelled; initiate a return instead',
@@ -601,13 +602,13 @@ async function cancelOrder(orderId, {
       );
     }
 
-    // Shipped, out for delivery, delivered orders cannot be cancelled
+    // Shipped, out for delivery, delivered orders cannot be cancelled (except POS register voids by merchant)
     const uncancelableFulfillments = [
       FULFILLMENT_STATES.SHIPPED,
       FULFILLMENT_STATES.OUT_FOR_DELIVERY,
       FULFILLMENT_STATES.DELIVERED,
     ];
-    if (uncancelableFulfillments.includes(order.fulfillmentStatus)) {
+    if (!isPOSOrder && uncancelableFulfillments.includes(order.fulfillmentStatus)) {
       throw new OrderStateError(
         ORDER_ERROR_CODES.ORDER_NOT_CANCELLABLE,
         `Order cannot be cancelled after fulfillment status "${order.fulfillmentStatus}"`,
@@ -649,7 +650,7 @@ async function cancelOrder(orderId, {
           changeOnHand: item.quantity,
           changeReserved: 0,
           reasonCode: 'cancellation',
-          sourceType: order.websiteId ? 'legacy_website_order' : 'order',
+          sourceType: isPOSOrder ? 'pos_order' : (order.websiteId ? 'legacy_website_order' : 'order'),
           sourceId: order.id,
           actor: { id: actor.id, type: actor.role || actor.type || 'system' },
           idempotencyKey: itemStockKey,
