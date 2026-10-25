@@ -90,6 +90,7 @@ export class CommerceApiClient {
       delta?: number;
       evidence?: string;
       marketplaceVisibility?: boolean | null;
+      moderationStatus?: "approved" | "pending" | "flagged" | "rejected";
       reason?: string;
       status?: "active" | "draft" | "archived";
       stockQuantity?: number;
@@ -112,6 +113,46 @@ export class CommerceApiClient {
   /** Alias for patch_api_admin_operations_products_id */
   async patchApiAdminOperationsProductsId(options: any): Promise<ApiResponse<any>> {
     return (this as any).patch_api_admin_operations_products_id(options);
+  }
+
+  /**
+   * Inspect product publication and moderation eligibility
+   * GET /api/admin/operations/products/{id}/publication-status
+   */
+  async get_api_admin_operations_products_id_publication_status(options: {
+    path: {
+      id: string;
+    };
+    query?: {
+      channel?: "marketplace" | "storefront" | "pos" | "all";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      data?: Commerce.PublicationExplanation;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Commerce.PublicationExplanation;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/admin/operations/products/{id}/publication-status',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_products_id_publication_status */
+  async getApiAdminOperationsProductsIdPublicationStatus(options: any): Promise<ApiResponse<{
+      data?: Commerce.PublicationExplanation;
+      success?: boolean;
+    }>> {
+    return (this as any).get_api_admin_operations_products_id_publication_status(options);
   }
 
   /**
@@ -4262,6 +4303,38 @@ export class CommerceApiClient {
   /** Alias for patch_api_stores_storeId_products_productId */
   async patchApiStoresStoreIdProductsProductId(options: any): Promise<ApiResponse<Commerce.Product>> {
     return (this as any).patch_api_stores_storeId_products_productId(options);
+  }
+
+  /**
+   * Get product publication eligibility and visibility explanation
+   * GET /api/stores/{storeId}/products/{productId}/publication-status
+   */
+  async get_api_stores_storeId_products_productId_publication_status(options: {
+    path: {
+      productId: string;
+      storeId: string;
+    };
+    query?: {
+      channel?: "marketplace" | "storefront" | "pos" | "all";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Commerce.PublicationExplanation>> {
+    return this.transport.request<Commerce.PublicationExplanation>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/products/{productId}/publication-status',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_stores_storeId_products_productId_publication_status */
+  async getApiStoresStoreIdProductsProductIdPublicationStatus(options: any): Promise<ApiResponse<Commerce.PublicationExplanation>> {
+    return (this as any).get_api_stores_storeId_products_productId_publication_status(options);
   }
 
   /**

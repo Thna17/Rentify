@@ -68,6 +68,19 @@ async function eligibleStore(storeId, transaction, channel = 'marketplace') {
 }
 
 function eligibleProduct(product, store, channel = 'marketplace') {
+  const { publicationEligibilityService } = require('../catalog');
+  if (typeof publicationEligibilityService?.evaluateChannel === 'function') {
+    const deliveryPolicy = store?.deliveryPolicy || { flatFee: '0.00' };
+    const website = store?.websiteId ? { status: 'active', websiteId: store.websiteId } : undefined;
+    const res = publicationEligibilityService.evaluateChannel({
+      product,
+      store,
+      website,
+      deliveryPolicy,
+      channel,
+    });
+    return res.eligible;
+  }
   if (channel === 'storefront') {
     return product && product.storeId === store.storeId && product.websiteId === store.websiteId &&
       product.status === 'active';

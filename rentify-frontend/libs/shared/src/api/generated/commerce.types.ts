@@ -67,6 +67,16 @@ export namespace Commerce {
     websiteId?: string | null;
   }
 
+  export interface ChannelEligibility {
+    channel: "marketplace" | "storefront" | "pos";
+    /** Whether the product is visible and browsable on this channel */
+    eligible: boolean;
+    primaryBlocker?: (Commerce.EligibilityReason) | null;
+    /** Whether the product can be added to cart and purchased on this channel */
+    purchasable: boolean;
+    reasons: Array<Commerce.EligibilityReason>;
+  }
+
   /** Release 1 standard currency is USD. */
   export type Currency = "USD";
 
@@ -76,6 +86,13 @@ export namespace Commerce {
     name: string;
     phoneNumber?: string | null;
     storeId?: string | null;
+  }
+
+  export interface EligibilityReason {
+    blocking: boolean;
+    code: string;
+    message: string;
+    nextAction: string;
   }
 
   export type ErrorEnvelope = ErrorResponse;
@@ -264,6 +281,25 @@ export namespace Commerce {
     variants?: Array<Commerce.ProductVariant>;
   }
 
+  export interface PublicationExplanation {
+    channels: {
+      marketplace: Commerce.ChannelEligibility;
+      pos: Commerce.ChannelEligibility;
+      storefront: Commerce.ChannelEligibility;
+    };
+    isPublished: boolean;
+    moderationStatus?: "approved" | "pending" | "flagged" | "rejected";
+    productId?: string | null;
+    status?: string | null;
+    storeId?: string | null;
+    summary: Commerce.PublicationSummary;
+  }
+
+  export interface PublicationSummary {
+    isPublishedOnAnyChannel: boolean;
+    primaryBlocker?: (Commerce.EligibilityReason) | null;
+  }
+
   export interface ReadinessResponse {
     checks: {
       database: {
@@ -378,11 +414,28 @@ export namespace Commerce {
         delta?: number;
         evidence?: string;
         marketplaceVisibility?: boolean | null;
+        moderationStatus?: "approved" | "pending" | "flagged" | "rejected";
         reason?: string;
         status?: "active" | "draft" | "archived";
         stockQuantity?: number;
       };
       response: any;
+    };
+    get_api_admin_operations_products_id_publication_status: {
+      method: 'GET';
+      path: '/api/admin/operations/products/{id}/publication-status';
+      parameters: {
+        path: {
+          id: string;
+        };
+        query?: {
+          channel?: "marketplace" | "storefront" | "pos" | "all";
+        };
+      };
+      response: {
+        data?: Commerce.PublicationExplanation;
+        success?: boolean;
+      };
     };
     patch_api_admin_operations_reports_id: {
       method: 'PATCH';
@@ -2052,6 +2105,20 @@ export namespace Commerce {
       };
       response: Commerce.Product;
     };
+    get_api_stores_storeId_products_productId_publication_status: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/products/{productId}/publication-status';
+      parameters: {
+        path: {
+          productId: string;
+          storeId: string;
+        };
+        query?: {
+          channel?: "marketplace" | "storefront" | "pos" | "all";
+        };
+      };
+      response: Commerce.PublicationExplanation;
+    };
     post_api_telegram_webhook: {
       method: 'POST';
       path: '/api/telegram/webhook';
@@ -2156,8 +2223,10 @@ export namespace Commerce {
 
 export type CommerceCODOrderView = Commerce.CODOrderView;
 export type CommerceCart = Commerce.Cart;
+export type CommerceChannelEligibility = Commerce.ChannelEligibility;
 export type CommerceCurrency = Commerce.Currency;
 export type CommerceCustomer = Commerce.Customer;
+export type CommerceEligibilityReason = Commerce.EligibilityReason;
 export type CommerceErrorEnvelope = Commerce.ErrorEnvelope;
 export type CommerceErrorResponse = Commerce.ErrorResponse;
 export type CommerceFieldError = Commerce.FieldError;
@@ -2171,6 +2240,8 @@ export type CommerceProduct = Commerce.Product;
 export type CommerceProductReview = Commerce.ProductReview;
 export type CommerceProductVariant = Commerce.ProductVariant;
 export type CommercePublicProduct = Commerce.PublicProduct;
+export type CommercePublicationExplanation = Commerce.PublicationExplanation;
+export type CommercePublicationSummary = Commerce.PublicationSummary;
 export type CommerceReadinessResponse = Commerce.ReadinessResponse;
 export type CommerceStandardErrorDetail = Commerce.StandardErrorDetail;
 export type CommerceStoreAccess = Commerce.StoreAccess;

@@ -5,9 +5,15 @@ const categories = Object.freeze([
   'Food & Beverage', 'Groceries', 'Local Produce', 'Other',
 ]);
 
+const SYNONYMS = {
+  ceramics: 'Pottery',
+};
+
 const canonicalCategory = (value) => {
-  const text = typeof value === 'string' ? value.trim() : '';
-  return categories.find((category) => category.toLowerCase() === text.toLowerCase()) || null;
+  const text = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!text) return null;
+  if (SYNONYMS[text]) return SYNONYMS[text];
+  return categories.find((category) => category.toLowerCase() === text) || null;
 };
 
 module.exports = { categories, canonicalCategory };

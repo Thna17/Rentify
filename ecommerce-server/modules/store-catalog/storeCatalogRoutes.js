@@ -18,6 +18,8 @@ router.get('/stores/:storeId/products', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.listOwn);
 router.post('/stores/:storeId/products', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.create);
+router.get('/stores/:storeId/products/:productId/publication-status', verifyStoreActor,
+  createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.getPublicationStatus);
 router.patch('/stores/:storeId/products/:productId', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.update);
 

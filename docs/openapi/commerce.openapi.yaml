@@ -541,6 +541,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
       operationId: patch_api_stores_storeId_products_productId
+  /api/stores/{storeId}/products/{productId}/publication-status:
+    get:
+      tags:
+        - Store Catalog
+      summary: Get product publication eligibility and visibility explanation
+      description: Returns centralized channel publication eligibility breakdown and safe reason codes with actionable next steps.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: channel
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - marketplace
+              - storefront
+              - pos
+              - all
+      responses:
+        "200":
+          description: Publication eligibility explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicationExplanation"
+        "404":
+          description: Product not found
+      operationId: get_api_stores_storeId_products_productId_publication_status
   /api/product/stores/{storeId}:
     get:
       tags:
@@ -4103,6 +4144,13 @@ paths:
                 marketplaceVisibility:
                   type: boolean
                   nullable: true
+                moderationStatus:
+                  type: string
+                  enum:
+                    - approved
+                    - pending
+                    - flagged
+                    - rejected
                 stockQuantity:
                   type: integer
                   minimum: 0
@@ -4116,6 +4164,46 @@ paths:
         "200":
           description: Product moderated
       operationId: patch_api_admin_operations_products_id
+  /api/admin/operations/products/{id}/publication-status:
+    get:
+      tags:
+        - Platform Operations
+      summary: Inspect product publication and moderation eligibility
+      description: Privileged administrative inspection of all channel eligibility blockers and moderation details.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: channel
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - marketplace
+              - storefront
+              - pos
+              - all
+      responses:
+        "200":
+          description: Publication eligibility explanation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PublicationExplanation"
+        "404":
+          description: Product not found
+      operationId: get_api_admin_operations_products_id_publication_status
   /api/admin/operations/inventory/adjust:
     post:
       tags:
@@ -5489,6 +5577,116 @@ components:
           type: string
           format: date-time
           example: '2026-10-19T02:00:00.000Z'
+    EligibilityReason:
+      type: object
+      required:
+        - code
+        - message
+        - nextAction
+        - blocking
+      properties:
+        code:
+          type: string
+          example: SELLER_APPROVAL_PENDING
+        message:
+          type: string
+          example: Marketplace seller approval is pending platform review.
+        nextAction:
+          type: string
+          example: Complete seller verification checklist and await platform approval.
+        blocking:
+          type: boolean
+          example: true
+    ChannelEligibility:
+      type: object
+      required:
+        - channel
+        - eligible
+        - purchasable
+        - reasons
+      properties:
+        channel:
+          type: string
+          enum:
+            - marketplace
+            - storefront
+            - pos
+          example: marketplace
+        eligible:
+          type: boolean
+          description: Whether the product is visible and browsable on this channel
+          example: false
+        purchasable:
+          type: boolean
+          description: Whether the product can be added to cart and purchased on this channel
+          example: false
+        reasons:
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibilityReason"
+        primaryBlocker:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/EligibilityReason"
+    PublicationSummary:
+      type: object
+      required:
+        - isPublishedOnAnyChannel
+      properties:
+        isPublishedOnAnyChannel:
+          type: boolean
+          example: true
+        primaryBlocker:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/EligibilityReason"
+    PublicationExplanation:
+      type: object
+      required:
+        - isPublished
+        - channels
+        - summary
+      properties:
+        productId:
+          nullable: true
+          type: string
+          format: uuid
+        storeId:
+          nullable: true
+          type: string
+          format: uuid
+        status:
+          nullable: true
+          type: string
+          example: active
+        moderationStatus:
+          type: string
+          enum:
+            - approved
+            - pending
+            - flagged
+            - rejected
+          example: approved
+        isPublished:
+          type: boolean
+          example: true
+        channels:
+          type: object
+          required:
+            - marketplace
+            - storefront
+            - pos
+          properties:
+            marketplace:
+              $ref: "#/components/schemas/ChannelEligibility"
+            storefront:
+              $ref: "#/components/schemas/ChannelEligibility"
+            pos:
+              $ref: "#/components/schemas/ChannelEligibility"
+        summary:
+          $ref: "#/components/schemas/PublicationSummary"
   responses:
     Error400:
       description: Bad request or validation failure

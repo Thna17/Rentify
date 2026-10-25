@@ -88,7 +88,7 @@ exports.overview = async (_req, res) => {
 
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { marketplaceVisibility, status, stockQuantity, delta, reason, evidence } = req.body || {};
+  const { marketplaceVisibility, status, moderationStatus, stockQuantity, delta, reason, evidence } = req.body || {};
   const product = await Product.findByPk(id);
   if (!product) throw ApiError.notFound('Product not found');
   const updates = {};
@@ -97,6 +97,9 @@ exports.updateProduct = async (req, res) => {
   }
   if (status && ['active', 'draft', 'archived', 'out_of_stock', 'inactive', 'low_stock'].includes(status)) {
     updates.status = status;
+  }
+  if (moderationStatus && ['approved', 'pending', 'flagged', 'rejected'].includes(moderationStatus)) {
+    updates.moderationStatus = moderationStatus;
   }
 
   // Handle stock adjustment via canonical inventory ledger
@@ -244,4 +247,16 @@ exports.updateReport = async (req, res) => {
   };
   await report.update({ details: updatedDetails });
   res.json({ success: true, data: report });
+};
+
+exports.productPublicationStatus = async (req, res) => {
+  const { id } = req.params;
+  const { publicationEligibilityService } = require('../catalog');
+  const explanation = await publicationEligibilityService.getPublicationExplanation({
+    productId: id,
+    channel: req.query?.channel,
+    isPrivileged: true,
+  });
+  if (!explanation) throw ApiError.notFound('Product not found');
+  res.json({ success: true, data: explanation });
 };

@@ -50,7 +50,7 @@ const recordOrderPaidEvent = async (orderId, occurredAt = new Date()) => {
 
 const recordInvoicePaidEvent = async (invoiceId, occurredAt = new Date()) => {
   const invoice = await Invoice.findByPk(invoiceId);
-  if (!invoice) return null;
+  if (!invoice || !invoice.websiteId) return null;
   const idempotencyKey = `${invoice.websiteId}|INVOICE_PAID|${invoice.id}`;
   return recordUsageEvent({
     websiteId: invoice.websiteId,

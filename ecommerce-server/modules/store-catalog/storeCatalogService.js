@@ -346,7 +346,30 @@ async function listOwn(storeId, query = {}) {
     offset: (page - 1) * limit, limit,
     distinct: true,
   });
-  return { products: rows, total: count, page, limit };
+
+  const { publicationEligibilityService } = require('../catalog');
+  const [store, website, deliveryPolicy] = await Promise.all([
+    StoreAccess.findByPk(storeId).catch(() => null),
+    WebsiteData.findOne({ where: { storeId } }).catch(() => null),
+    StoreDeliveryPolicy.findByPk(storeId).catch(() => null),
+  ]);
+
+  const products = rows.map((product) => {
+    const plain = typeof product.toJSON === 'function' ? product.toJSON() : { ...product };
+    if (typeof publicationEligibilityService?.evaluatePublicationEligibility === 'function') {
+      plain.publicationEligibility = publicationEligibilityService.evaluatePublicationEligibility({
+        product,
+        variants: product.ProductVariants || [],
+        store,
+        website,
+        deliveryPolicy,
+        isPrivileged: true,
+      });
+    }
+    return plain;
+  });
+
+  return { products, total: count, page, limit };
 }
 
 async function update(storeId, productId, input) {
@@ -558,7 +581,9 @@ async function update(storeId, productId, input) {
 
 function eligibleProductWhere(query = {}) {
   const where = {
-    status: 'active', marketplaceCategory: { [Op.ne]: null },
+    status: 'active',
+    moderationStatus: 'approved',
+    marketplaceCategory: { [Op.ne]: null },
     [Op.or]: [
       { marketplaceVisibility: true },
       { marketplaceVisibility: null, '$storeAccess.marketplaceEnabled$': true },
@@ -656,12 +681,31 @@ async function getPublic(productId) {
   return publicProduct(product, ratings.get(product.id));
 }
 
+async function getPublicationStatus(storeId, productId, options = {}) {
+  const product = await Product.findByPk(productId);
+  if (!product || (storeId && product.storeId !== storeId)) {
+    const error = new Error('Product not found for this store');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const { publicationEligibilityService } = require('../catalog');
+  return publicationEligibilityService.getPublicationExplanation({
+    productId,
+    storeId,
+    channel: options.channel,
+    hostContext: options.hostContext,
+    isPrivileged: options.isPrivileged !== false,
+  });
+}
+
 module.exports = {
   create,
   listOwn,
   update,
   listPublic,
   getPublic,
+  getPublicationStatus,
   eligibleProductWhere,
   publicProduct,
   checkSkuUniqueness,

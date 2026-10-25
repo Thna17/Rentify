@@ -255,7 +255,24 @@ function classifyOperation(svc, method, p, opObj) {
       gapDetails = 'Legacy POS route is keyed by websiteId rather than storeId';
       remediationPackage = 'P2-AUTHZ-002';
     }
-  } else if (resource === 'Orders' || resource === 'Invoices') {
+  } else if (resource === 'Invoices') {
+    subjectType = 'any';
+    requiredRole = 'merchant';
+    requiredStoreRelationship = 'owner';
+    requiredPermission = 'invoices';
+    ownershipRule = 'user.id === store.merchantId || staff.storeId === store.id';
+    actorMatrix.storeOwner = 'allow';
+    actorMatrix.permittedStaff = 'allow';
+    actorMatrix.unpermittedStaff = 'deny_403';
+    actorMatrix.platformAdmin = 'allow';
+
+    if (method === 'GET' && p.includes('/websites/{websiteId}/invoices')) {
+      actorMatrix.permittedStaff = 'deny_403';
+      currentImplementationStatus = 'gap';
+      gapDetails = 'Legacy invoices endpoint is keyed by websiteId rather than storeId';
+      remediationPackage = 'P2-AUTHZ-002';
+    }
+  } else if (resource === 'Orders') {
     if (p.includes('/merchant') || p.includes('/stores/')) {
       subjectType = 'any';
       requiredRole = 'merchant';
@@ -266,14 +283,6 @@ function classifyOperation(svc, method, p, opObj) {
       actorMatrix.permittedStaff = 'allow';
       actorMatrix.unpermittedStaff = 'deny_403';
       actorMatrix.platformAdmin = 'allow';
-    } else if (p.includes('/websites/{websiteId}/invoices')) {
-      subjectType = 'user';
-      requiredRole = 'merchant';
-      requiredStoreRelationship = 'owner';
-      actorMatrix.storeOwner = 'allow';
-      currentImplementationStatus = 'gap';
-      gapDetails = 'Legacy invoices endpoint is keyed by websiteId rather than storeId';
-      remediationPackage = 'P2-AUTHZ-002';
     }
   } else if (resource === 'Websites' || resource === 'Deployments and domains') {
     subjectType = 'user';

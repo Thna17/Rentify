@@ -88,6 +88,11 @@ const Product = sequelize.define(
       type: DataTypes.ENUM('active', 'draft', 'archived', 'out_of_stock', 'inactive', 'low_stock'),
       defaultValue: "active",
     },
+    moderationStatus: {
+      type: DataTypes.ENUM('approved', 'pending', 'flagged', 'rejected'),
+      defaultValue: 'approved',
+      allowNull: false,
+    },
     // Niche-specific fields
     nicheAttributes: {
       type: DataTypes.JSON,
@@ -160,6 +165,9 @@ const Product = sequelize.define(
       { fields: ["websiteId", "categoryId"] },
       { fields: ["storeId", "sku"], unique: true, name: "uq_products_store_sku" },
       { fields: ["storeId", "barcode"], unique: true, name: "uq_products_store_barcode" },
+      { fields: ["moderationStatus"] },
+      { fields: ["storeId", "moderationStatus"] },
+      { fields: ["marketplaceCategory", "status", "moderationStatus"] },
       { fields: ["name", "description"], type: "FULLTEXT" },
     ],
     hooks: {

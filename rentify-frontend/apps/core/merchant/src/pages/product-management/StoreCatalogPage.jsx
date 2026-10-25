@@ -346,6 +346,12 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                         {product.status}
                       </Badge>
                     </div>
+                    {product.publicationEligibility?.summary?.primaryBlocker && (
+                      <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.08] p-2 text-xs text-amber-900 dark:text-amber-200" data-testid="publication-blocker">
+                        <span className="font-semibold">{product.publicationEligibility.summary.primaryBlocker.message}</span>
+                        <p className="mt-0.5 text-muted-foreground">Next action: {product.publicationEligibility.summary.primaryBlocker.nextAction}</p>
+                      </div>
+                    )}
                   </div>
 
                   <Select

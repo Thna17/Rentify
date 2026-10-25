@@ -18,3 +18,14 @@ exports.create = respond(async (req, res) =>
   res.status(201).json(await storeCatalog.create(req.store, req.body || {})));
 exports.update = respond(async (req, res) =>
   res.json(await storeCatalog.update(req.store.storeId, req.params.productId, req.body || {})));
+exports.getPublicationStatus = respond(async (req, res) => {
+  const explanation = await storeCatalog.getPublicationStatus(req.store.storeId, req.params.productId, {
+    channel: req.query.channel,
+    hostContext: {
+      isCustomDomain: req.isCustomDomain || false,
+    },
+    isPrivileged: true,
+  });
+  if (!explanation) return res.status(404).json({ error: 'Product not found' });
+  return res.json(explanation);
+});

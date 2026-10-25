@@ -4,7 +4,9 @@
 
 const { parseMinor, formatDecimal } = require('../utils/money');
 
-exports.up = async (queryInterface, Sequelize) => {
+exports.up = async (contextOrQueryInterface, maybeSequelize) => {
+    const queryInterface = contextOrQueryInterface.queryInterface || contextOrQueryInterface;
+    const Sequelize = maybeSequelize || (contextOrQueryInterface.sequelize ? contextOrQueryInterface.sequelize.constructor : require('sequelize'));
     // 1. Add orderSnapshot to Orders if not present
     const orderTableInfo = await queryInterface.describeTable('Orders').catch(() => ({}));
     if (!orderTableInfo.orderSnapshot) {
