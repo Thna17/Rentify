@@ -3,8 +3,8 @@
 const { sequelize } = require('../../config/db');
 const { createHash } = require('node:crypto');
 const { Op } = require('sequelize');
-const { Order, OrderItem, Payment, OrderEvent } = require('../../models');
-const { changeStock } = require('../inventory').sharedStockService;
+const { Order, OrderItem, Payment, OrderEvent, ProductVariant } = require('../../models');
+const { inventoryLedgerService } = require('../inventory');
 const { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, orderView } = require('./marketplaceRules');
 
 function actionFingerprint(action, input) {
@@ -86,9 +86,39 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         const resolution = details.resolution;
         if (!['retry', 'cancel'].includes(resolution)) fail('Choose retry or cancel');
         if (resolution === 'cancel') {
-          const lines = await OrderItem.findAll({ where: { orderId }, transaction, order: [['productId', 'ASC']] });
-          for (const line of lines) {
-            await changeStock(line.productId, line.quantity, transaction, line.variantId || line.itemMetadata?.variantId || null);
+          if (order.stockDeducted) {
+            const lines = await OrderItem.findAll({ where: { orderId }, transaction, order: [['productId', 'ASC']] });
+            for (const line of lines) {
+              let skuId = line.variantId || line.itemMetadata?.variantId || line.itemMetadata?.snapshot?.variantId;
+              if (!skuId) {
+                try {
+                  const txOpt = (transaction && (transaction.id || transaction.uuid))
+                    ? { transaction, ...(transaction.LOCK?.UPDATE ? { lock: transaction.LOCK.UPDATE } : {}) }
+                    : {};
+                  const defaultVariant = await ProductVariant.findOne({
+                    where: { productId: line.productId, isDefault: true },
+                    ...txOpt,
+                  });
+                  skuId = defaultVariant ? defaultVariant.id : line.productId;
+                } catch {
+                  skuId = line.productId;
+                }
+              }
+              const itemCancelKey = `cancel-stock-${order.id}-${line.id}-${eventKey}`;
+              await inventoryLedgerService.mutateBalance({
+                storeId: order.storeId,
+                skuId,
+                changeOnHand: line.quantity,
+                changeReserved: 0,
+                reasonCode: 'cancellation',
+                sourceType: 'order',
+                sourceId: order.id,
+                actor: { id: actorId, type: 'merchant' },
+                idempotencyKey: itemCancelKey,
+                correlationId: eventKey,
+              }, { transaction });
+            }
+            order.stockDeducted = false;
           }
           await order.update({
             deliveryStatus: 'failed',

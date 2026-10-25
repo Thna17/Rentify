@@ -146,11 +146,21 @@ async function mutateBalance({
       // Balance record doesn't exist yet; verify variant ownership
       variant = await ProductVariant.findByPk(skuId, { transaction: tx });
       if (!variant) {
+        variant = await ProductVariant.findOne({ where: { productId: skuId, isDefault: true }, transaction: tx }) ||
+                  await ProductVariant.findOne({ where: { productId: skuId }, transaction: tx });
+      }
+
+      if (variant) {
+        product = await Product.findByPk(variant.productId, { transaction: tx });
+      } else {
+        product = await Product.findByPk(skuId, { transaction: tx });
+      }
+
+      if (!variant && !product) {
         throw new InventoryError(`ProductVariant (SKU) not found: ${skuId}`);
       }
 
-      product = await Product.findByPk(variant.productId, { transaction: tx });
-      const effectiveStoreId = variant.storeId || product?.storeId;
+      const effectiveStoreId = variant?.storeId || product?.storeId;
 
       if (effectiveStoreId !== storeId) {
         throw new InventoryStoreMismatchError(`SKU ${skuId} belongs to Store ${effectiveStoreId}, not ${storeId}`);
@@ -161,12 +171,15 @@ async function mutateBalance({
         throw new InventoryError(`Cannot mutate non-existent balance for SKU ${skuId} with reason "${reasonCode}"`);
       }
 
+      const effectiveSku = variant?.sku || product?.sku || `SKU-${skuId.slice(0, 8)}`;
+      const effectiveProductId = variant ? variant.productId : product.id;
+
       balance = await InventoryBalance.create({
         id: randomUUID(),
         storeId,
         skuId,
-        sku: variant.sku || `SKU-${skuId.slice(0, 8)}`,
-        productId: variant.productId,
+        sku: effectiveSku,
+        productId: effectiveProductId,
         onHand: 0,
         reserved: 0,
         available: 0,
@@ -550,6 +563,80 @@ async function expireStaleReservations({ limit = 50, actor = { id: 'system', typ
 }
 
 /**
+ * Ensures an InventoryBalance record exists for the given storeId and skuId.
+ * If not present, initializes it with reasonCode 'opening_balance' using current variant/product stock.
+ */
+async function ensureBalance({ storeId, skuId, variant = null, product = null }, { transaction = null } = {}) {
+  if (!storeId || !skuId) throw new InventoryError('storeId and skuId are required');
+
+  const execute = async (tx) => {
+    let balance = await InventoryBalance.findOne({
+      where: { storeId, skuId },
+      transaction: tx,
+      lock: tx.LOCK.UPDATE,
+    });
+
+    if (balance) return balance;
+
+    // Fetch variant if not provided
+    let effectiveVariant = variant;
+    if (!effectiveVariant) {
+      effectiveVariant = await ProductVariant.findByPk(skuId, { transaction: tx });
+    }
+
+    if (!effectiveVariant) {
+      // If skuId might be productId for simple legacy product without variant
+      const defaultVariant = await ProductVariant.findOne({
+        where: { productId: skuId, isDefault: true },
+        transaction: tx,
+      }) || await ProductVariant.findOne({
+        where: { productId: skuId },
+        transaction: tx,
+      });
+      if (defaultVariant) {
+        effectiveVariant = defaultVariant;
+      }
+    }
+
+    let effectiveProduct = product;
+    if (!effectiveProduct) {
+      effectiveProduct = await Product.findByPk(effectiveVariant ? effectiveVariant.productId : skuId, { transaction: tx });
+    }
+
+    if (!effectiveVariant && !effectiveProduct) {
+      throw new InventoryError(`ProductVariant (SKU) not found: ${skuId}`);
+    }
+
+    const effectiveStoreId = effectiveVariant?.storeId || effectiveProduct?.storeId;
+    if (effectiveStoreId !== storeId) {
+      throw new InventoryStoreMismatchError(`SKU ${skuId} belongs to Store ${effectiveStoreId}, not ${storeId}`);
+    }
+
+    const initialStock = Number.isInteger(effectiveVariant?.stockQuantity)
+      ? effectiveVariant.stockQuantity
+      : (Number.isInteger(effectiveProduct?.stockQuantity) ? effectiveProduct.stockQuantity : 0);
+
+    const mutation = await mutateBalance({
+      storeId,
+      skuId,
+      changeOnHand: initialStock,
+      changeReserved: 0,
+      reasonCode: 'opening_balance',
+      sourceType: effectiveVariant ? 'product_variant' : 'product',
+      sourceId: effectiveVariant ? effectiveVariant.id : effectiveProduct.id,
+      actor: { id: storeId, type: 'system' },
+      idempotencyKey: `init-balance-${storeId}-${skuId}`,
+      notes: 'Initial opening balance',
+    }, { transaction: tx });
+
+    return mutation.balance;
+  };
+
+  if (transaction) return execute(transaction);
+  return sequelize.transaction(execute);
+}
+
+/**
  * Appends a compensating manual adjustment or restock entry.
  */
 async function adjustBalance({
@@ -652,6 +739,7 @@ module.exports = {
   fulfillReservation,
   expireStaleReservations,
   adjustBalance,
+  ensureBalance,
   getBalance,
   reconstructBalance,
 };
