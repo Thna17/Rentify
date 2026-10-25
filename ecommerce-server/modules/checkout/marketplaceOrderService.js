@@ -149,7 +149,7 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         await payment.update({ collectedAmount: amount, collectedAt: new Date(), collectorId: actorId,
           paidAt: new Date(), status: 'paid' }, { transaction });
       } else if (action === 'confirm_refund') {
-        if (payment.status !== 'paid') fail('Uncollected COD cannot be refunded', 409);
+        if (!['paid', 'collected', 'partially_refunded'].includes(payment.status)) fail('Uncollected COD cannot be refunded', 409);
         const method = requiredText(details.method, 'refund method', 80);
         const confirmation = requiredText(details.confirmation, 'refund confirmation', 500);
         const refundCents = cents(details.amount);

@@ -57,9 +57,14 @@ async function audit({ storeId } = {}) {
     }
     if (refundedAmount > collectedAmount || collectedAmount > due) problem('Cash amounts exceed collected or due');
     if (payment.status === 'pending' && collectedAmount !== 0) problem('Pending COD has collected cash');
-    if (payment.status === 'paid' && collectedAmount !== due) problem('Paid COD is not fully collected');
-    if (payment.status === 'paid' && refundedAmount === collectedAmount && collectedAmount > 0) {
-      problem('Fully refunded COD remains marked paid');
+    if ((payment.status === 'paid' || payment.status === 'collected') && collectedAmount !== due) {
+      problem('Paid/Collected COD is not fully collected');
+    }
+    if (payment.status === 'partially_refunded' && (refundedAmount <= 0 || refundedAmount >= collectedAmount)) {
+      problem('Partially refunded COD must have 0 < refundedAmount < collectedAmount');
+    }
+    if ((payment.status === 'paid' || payment.status === 'collected') && refundedAmount === collectedAmount && collectedAmount > 0) {
+      problem('Fully refunded COD remains marked paid/collected');
     }
     if (payment.status === 'refunded' && refundedAmount !== collectedAmount) problem('Refunded COD is not fully refunded');
     if (order.status === 'cancelled' && (order.stockDeducted || collectedAmount)) {
