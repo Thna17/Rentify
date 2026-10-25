@@ -25,7 +25,10 @@
     "WebsiteContent": ["websites"],
     "EventOutbox": ["events", "checkout", "orders"],
     "EventInbox": ["events", "store-access"],
-    "EventReplayAudit": ["events"]
+    "EventReplayAudit": ["events"],
+    "InventoryBalance": ["inventory"],
+    "InventoryLedgerEntry": ["inventory"],
+    "InventoryReservation": ["inventory"]
   },
   "sharedTransactionDomain": {
     "reason": "AGENTS.md rule 6: checkout, stock reservation, orders, payments and invoices form one transaction domain. Placing an order writes the cart, order, items, events, payment and invoice in a single database transaction.",
@@ -47,6 +50,16 @@
       "module": "store-access",
       "model": "StoreDeliveryPolicy",
       "reason": "When a Store snapshot is projected from Core, a default delivery policy is provisioned if none exists."
+    },
+    {
+      "module": "inventory",
+      "model": "ProductVariant",
+      "reason": "Compatibility stock projection updates legacy stockQuantity when canonical inventory ledger balance mutates."
+    },
+    {
+      "module": "inventory",
+      "model": "Product",
+      "reason": "Compatibility stock projection updates legacy stockQuantity on simple products when canonical inventory ledger balance mutates."
     }
   ]
 }

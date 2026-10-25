@@ -24,6 +24,9 @@ const ProductReview = require('./ProductReview');
 const EventOutbox = require('./EventOutbox');
 const EventInbox = require('./EventInbox');
 const EventReplayAudit = require('./EventReplayAudit');
+const InventoryBalance = require('./InventoryBalance');
+const InventoryLedgerEntry = require('./InventoryLedgerEntry');
+const InventoryReservation = require('./InventoryReservation');
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -174,4 +177,7 @@ module.exports = {
   EventOutbox,
   EventInbox,
   EventReplayAudit,
+  InventoryBalance,
+  InventoryLedgerEntry,
+  InventoryReservation,
 };
