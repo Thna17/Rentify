@@ -8,4 +8,3 @@ module.exports = {
   get CodStateError() { return require('./codErrors').CodStateError; },
   get COD_ERROR_CODES() { return require('./codErrors').COD_ERROR_CODES; },
 };
-

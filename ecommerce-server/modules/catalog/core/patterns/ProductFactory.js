@@ -26,9 +26,9 @@ class ProductFactory {
       currency: productData.currency || 'USD',
       barcode: productData.barcode || null,
     }, transaction);
-    
+
     if (hasVariants) {
-      const variantPromises = variants.map((variant, index) => 
+      const variantPromises = variants.map((variant, index) =>
         this.createVariant({
           ...variant,
           productId: product.id,

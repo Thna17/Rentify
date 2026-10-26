@@ -19,7 +19,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
 
     // 3. Calculate totals using niche strategy
     const totals = this.nicheStrategy.calculateOrderTotals(
-      resolvedItems, 
+      resolvedItems,
       'pos', 
       {}, 
       currency
