@@ -19,6 +19,11 @@ const AuditLog = require('./AuditLog');
 const EventOutbox = require('./EventOutbox');
 const EventInbox = require('./EventInbox');
 const EventReplayAudit = require('./EventReplayAudit');
+const PaymentAttempt = require('./PaymentAttempt');
+const ProviderEvent = require('./ProviderEvent');
+
+PaymentAttempt.hasMany(ProviderEvent, { foreignKey: 'paymentAttemptId', as: 'providerEvents' });
+ProviderEvent.belongsTo(PaymentAttempt, { foreignKey: 'paymentAttemptId', as: 'paymentAttempt' });
 
 Store.belongsTo(User, { foreignKey: 'ownerUserId', as: 'owner' });
 User.hasOne(Store, { foreignKey: 'ownerUserId', as: 'store' });
@@ -144,4 +149,6 @@ module.exports = {
   EventOutbox,
   EventInbox,
   EventReplayAudit,
+  PaymentAttempt,
+  ProviderEvent,
 };
