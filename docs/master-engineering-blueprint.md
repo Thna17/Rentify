@@ -1,7 +1,7 @@
 # Rentify master engineering blueprint
 
-**Status:** Proposed execution blueprint, 2026-10-17  
-**Audience:** Product, design, engineering, QA, security, data, operations, and business owners  
+**Status:** Proposed execution blueprint, 2026-10-17
+**Audience:** Product, design, engineering, QA, security, data, operations, and business owners
 **Purpose:** Turn the current Rentify codebase into a dependable, easy-to-use,
 production commerce platform for Cambodian SMEs without discarding working
 capabilities or creating a second commerce system.
@@ -526,12 +526,12 @@ Critical invariants:
 
 Model separate state machines instead of one overloaded order status.
 
-**Order:** `draft -> placed -> accepted -> completed | cancelled`  
+**Order:** `draft -> placed -> accepted -> completed | cancelled`
 **Fulfillment:** `unfulfilled -> preparing -> out_for_delivery -> delivered`
-with `delivery_failed -> retry_scheduled | cancelled`  
+with `delivery_failed -> retry_scheduled | cancelled`
 **Payment:** `pending -> collected -> partially_refunded | refunded`, with
-`failed` only for a real collection attempt  
-**Return:** `requested -> reviewing -> approved | rejected -> received -> closed`  
+`failed` only for a real collection attempt
+**Return:** `requested -> reviewing -> approved | rejected -> received -> closed`
 **Seller:** `draft -> submitted -> needs_changes | approved | rejected`, plus
 an independently auditable `suspended` operational state.
 

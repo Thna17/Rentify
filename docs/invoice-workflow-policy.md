@@ -46,15 +46,15 @@ flowchart TD
     Start([Order Creation]) --> ChannelCheck{Channel / Terms?}
     ChannelCheck -- "POS Cash / Immediate Payment" --> ImmediateStock["Deduct Stock Immediately<br/>order.stockDeducted = true<br/>Invoice status: paid"]
     ChannelCheck -- "Deferred Invoice / Bank Transfer" --> Deferred["Do NOT Deduct Stock<br/>order.stockDeducted = false<br/>Invoice status: sent"]
-    
+
     Deferred --> Settle["Record Payment on Invoice"]
     Settle --> DeductCheck{order.stockDeducted == true?}
     DeductCheck -- "Yes (Already Deducted)" --> SkipDeduction["SKIP stock deduction<br/>(Prevents Double Deduction)"]
     DeductCheck -- "No" --> DeductOnce["Deduct Stock Once via changeStock<br/>order.stockDeducted = true"]
-    
+
     SkipDeduction --> MarkPaid["Invoice status: paid<br/>Payment status: completed"]
     DeductOnce --> MarkPaid
-    
+
     MarkPaid --> RefundAction["Refund Invoice"]
     RefundAction --> RestoreCheck{order.stockDeducted == true?}
     RestoreCheck -- "Yes" --> RestoreStock["Replenish Stock (+qty) via changeStock<br/>order.stockDeducted = false"]

@@ -1,7 +1,7 @@
 # Rentify AI implementation plan
 
-**Status:** Proposed execution plan, 2026-10-18  
-**Companion:** [`master-engineering-blueprint.md`](master-engineering-blueprint.md)  
+**Status:** Proposed execution plan, 2026-10-18
+**Companion:** [`master-engineering-blueprint.md`](master-engineering-blueprint.md)
 **Goal:** Give AI coding agents a safe, dependency-ordered, testable path from
 the current repository to a production-ready Release 1.
 
@@ -216,7 +216,7 @@ time.
 
 ## 4. Phase P0 — decisions, inventory, and frozen Release 1 contract
 
-**Purpose:** prevent AI from implementing contradictory assumptions.  
+**Purpose:** prevent AI from implementing contradictory assumptions.
 **Code posture:** read-only analysis and documentation except for safe audit
 scripts or tests that characterize existing behavior.
 
@@ -224,7 +224,7 @@ scripts or tests that characterize existing behavior.
 
 #### P0-001 — Release 1 decision register
 
-**Owner:** human product/business lead with AI drafting support  
+**Owner:** human product/business lead with AI drafting support
 **Depends on:** none
 
 Create `docs/decisions/release-1-register.md` containing owner, status, chosen
@@ -247,8 +247,8 @@ functionality.
 
 #### P0-002 — Current capability and route inventory
 
-**Owner:** architecture/QA  
-**AI-safe:** yes  
+**Owner:** architecture/QA
+**AI-safe:** yes
 **Depends on:** none
 
 Generate and review an inventory of:
@@ -269,8 +269,8 @@ Release 1 journey maps from UI to API to authoritative tables.
 
 #### P0-003 — Baseline evidence run
 
-**Owner:** QA/platform  
-**AI-safe:** yes  
+**Owner:** QA/platform
+**AI-safe:** yes
 **Depends on:** P0-002
 
 Run and record:
@@ -288,8 +288,8 @@ environment, commands, results, failures, and owners.
 
 #### P0-004 — Five golden-journey specifications
 
-**Owner:** product/design/QA  
-**AI-safe:** draft only; human accepts  
+**Owner:** product/design/QA
+**AI-safe:** draft only; human accepts
 **Depends on:** P0-001, P0-002
 
 Write Given/When/Then specifications for:
@@ -325,8 +325,8 @@ offline/timeout, and recovery behavior in English and Khmer.
 errors, pagination, versions, and examples. Add schema validation/compatibility
 checking to CI without changing runtime behavior first.
 
-**Likely areas:** `rentify-server/`, `tools/`, `.github/workflows/`, `docs/`  
-**Depends on:** P0-002  
+**Likely areas:** `rentify-server/`, `tools/`, `.github/workflows/`, `docs/`
+**Depends on:** P0-002
 **Acceptance:** spec matches characterized routes; CI detects an undocumented
 breaking response/request change; secret fields are absent.
 
@@ -335,7 +335,7 @@ breaking response/request change; secret fields are absent.
 Same contract standard as P1-API-001 for catalog, cart, checkout, order, POS,
 invoice, payment, admin, and reconciliation-facing Release 1 routes.
 
-**Depends on:** P0-002  
+**Depends on:** P0-002
 **Acceptance:** marketplace and storefront COD examples validate; money,
 timestamps, IDs, versions, and idempotency requirements are explicit.
 
@@ -358,7 +358,7 @@ Introduce a backward-compatible error envelope:
 Migrate one module per follow-up package rather than rewriting all controllers
 in one diff. Preserve old fields until every consumer changes.
 
-**Depends on:** P1-API-001, P1-API-002  
+**Depends on:** P1-API-001, P1-API-002
 **Acceptance:** centralized safe error mapping, production stack traces hidden,
 frontend compatibility tests, and documented retirement point for legacy
 fields.
@@ -369,7 +369,7 @@ Create or consolidate typed clients from accepted contracts for React and
 Angular. Generated code, if used, must be deterministic and separated from
 handwritten domain adapters.
 
-**Depends on:** P1-API-001, P1-API-002  
+**Depends on:** P1-API-001, P1-API-002
 **Acceptance:** all new Release 1 UI work imports approved clients; CI compiles
 clients against both specs; credentials and origins are configured centrally.
 
@@ -379,7 +379,7 @@ Add incoming/generation rules for correlation IDs, safe propagation between
 Core and Commerce, JSON production logs, route templates, duration, status,
 service version, and redaction tests.
 
-**Depends on:** P0-002  
+**Depends on:** P0-002
 **Acceptance:** one signup-to-projection and one checkout request can be traced
 across services by correlation ID; tokens, cookies, passwords, addresses, and
 payment credentials never appear in test-captured logs.
@@ -390,7 +390,7 @@ Keep `/health` as a liveness probe. Add safe readiness checks for database,
 required migrations, Redis where required, and worker readiness without
 exposing configuration.
 
-**Depends on:** P1-OBS-001  
+**Depends on:** P1-OBS-001
 **Acceptance:** orchestrator can distinguish process alive from service ready;
 dependency loss changes readiness predictably; tests cover degraded states.
 
@@ -400,7 +400,7 @@ Create deterministic test builders for two Stores, Websites, owner/staff/buyer
 roles, categories, simple and variant Products, carts, orders, COD, returns,
 subscriptions, and projections. Builders must work only in test databases.
 
-**Depends on:** P0-003  
+**Depends on:** P0-003
 **Acceptance:** Core and Commerce integration tests reuse stable fixtures;
 tenant IDs are clearly distinct; cleanup is deterministic.
 
@@ -410,7 +410,7 @@ Create a production-like E2E harness capable of starting migrated APIs and UIs,
 seeding via supported test interfaces, retaining screenshots/traces on failure,
 and running tagged golden journeys.
 
-**Depends on:** P1-QA-001, P1-API-001, P1-API-002  
+**Depends on:** P1-QA-001, P1-API-001, P1-API-002
 **Acceptance:** one read-only buyer browse test and one authenticated merchant
 read test run in CI; production credentials/hosts are rejected.
 
@@ -420,7 +420,7 @@ Inventory React/Angular colors, type, spacing, radius, status, breakpoints, and
 focus styles. Publish framework-neutral tokens and implement adapters without a
 component rewrite.
 
-**Depends on:** P0-004  
+**Depends on:** P0-004
 **Acceptance:** one representative React and Angular page render from the same
 semantic tokens; accessibility/contrast tests pass; legacy screens remain
 visually stable unless an approved change exists.
@@ -449,7 +449,7 @@ Characterize merchant, staff, buyer, admin, and legacy Customer identities,
 session types, refresh/revocation, contact verification, and role collisions.
 Add tests for one person with multiple legitimate roles.
 
-**Depends on:** P1-QA-001  
+**Depends on:** P1-QA-001
 **Acceptance:** one documented subject model; no request selects identity from
 untrusted body/query data; ambiguous-cookie behavior is deterministic.
 
@@ -458,7 +458,7 @@ untrusted body/query data; ambiguous-cookie behavior is deterministic.
 Create a version-controlled matrix for every Release 1 resource/action and
 actor. Convert it into table-driven security tests for both APIs.
 
-**Depends on:** P0-002, P2-ID-001  
+**Depends on:** P0-002, P2-ID-001
 **Acceptance:** owner, permitted staff, unpermitted staff, unrelated merchant,
 buyer owner, other buyer, public, suspended actor, and admin cases are covered.
 
@@ -470,7 +470,7 @@ where required.
 
 Split by module: catalog, cart/order, POS/invoice, media, staff, admin.
 
-**Depends on:** P2-AUTHZ-001  
+**Depends on:** P2-AUTHZ-001
 **Acceptance:** every mutable commerce record resolves to exactly one Store;
 direct identifier guessing fails; Store audit reports zero unexplained rows.
 
@@ -481,7 +481,7 @@ Website, product/staff limits, POS, invoices, and future capabilities. Define
 trial, active, grace, suspended, cancelled, and historical-read behavior from
 P0-001.
 
-**Depends on:** accepted subscription decisions, P1 API contracts  
+**Depends on:** accepted subscription decisions, P1 API contracts
 **Acceptance:** APIs enforce entitlements server-side; UI explains disabled
 actions; historical orders remain readable according to accepted policy.
 
@@ -491,7 +491,7 @@ Implement a startup/deployment validation command for public origins, owned
 hosted parent, cookie domain/flags, exact CORS origins, auth return allowlist,
 reserved subdomains, HTTPS, and incompatible feature-flag combinations.
 
-**Depends on:** accepted launch-domain decision  
+**Depends on:** accepted launch-domain decision
 **Acceptance:** unsafe wildcard/HTTP production configuration fails before
 traffic; staging configuration passes and is captured as evidence.
 
@@ -501,7 +501,7 @@ Automate buyer login, return URL, session rotation, cart, checkout-readiness,
 order history, logout, and cross-Store isolation on the real staging hostname
 pattern.
 
-**Depends on:** P2-HOST-001, P1-QA-002  
+**Depends on:** P2-HOST-001, P1-QA-002
 **Acceptance:** supported browsers pass; cookie/CORS attributes are asserted;
 arbitrary sibling/subdomain access is not possible.
 
@@ -512,7 +512,7 @@ If checkout is accepted, implement ADR 0002 as separate packages: registered
 redirects, authorization transaction, one-time code, PKCE/state, domain-local
 callback, host session, revocation/logout, and legacy linking.
 
-**Depends on:** accepted ADR and hosting decision  
+**Depends on:** accepted ADR and hosting decision
 **Acceptance:** custom-domain checkout is either securely proven or impossible
 to enable accidentally.
 
@@ -522,7 +522,7 @@ Implement MFA for administrators, recent-auth requirements for high-risk
 actions, session inventory/revocation, secure recovery/contact change, and
 privileged audit events.
 
-**Depends on:** P2-ID-001  
+**Depends on:** P2-ID-001
 **Acceptance:** recovery cannot bypass verification; role elevation and session
 revocation are tested; admin login meets the accepted security policy.
 
@@ -550,7 +550,7 @@ Define Product versus SKU/variant identity, attributes, price, barcode, status,
 and channel eligibility. Backfill simple Products to one default SKU without
 breaking current API consumers.
 
-**Depends on:** P1-API-002, P0 policies  
+**Depends on:** P1-API-002, P0 policies
 **Acceptance:** simple and variant Products have stable purchasable IDs; old
 Product routes remain compatible during migration; duplicate SKU identifiers
 within a Store are rejected.
@@ -560,7 +560,7 @@ within a Store are rejected.
 Centralize the effective marketplace/storefront eligibility decision and
 return safe reason codes to merchant/admin clients.
 
-**Depends on:** P3-CAT-001, P2-ENT-001  
+**Depends on:** P3-CAT-001, P2-ENT-001
 **Acceptance:** one function/policy evaluates Store status, seller approval,
 entitlement, categories, Product state, moderation, visibility, Website state,
 stock, and delivery readiness; public reads fail closed.
@@ -570,7 +570,7 @@ stock, and delivery readiness; public reads fail closed.
 Add immutable reasoned inventory entries and a balance/reservation invariant.
 Map `sale`, `cancel`, `return`, `restock`, `adjustment`, and POS/invoice reasons.
 
-**Depends on:** P3-CAT-001  
+**Depends on:** P3-CAT-001
 **Acceptance:** every change is attributed and linked; balance cannot be
 negative; replay cannot apply twice; audit reconstructs expected balance.
 
@@ -585,7 +585,7 @@ Inventory and migrate writers in small packages:
 5. invoice fulfillment;
 6. return/restock and admin adjustment.
 
-**Depends on:** P3-INV-001  
+**Depends on:** P3-INV-001
 **Acceptance:** no route/model hook mutates stock outside the canonical service;
 static ownership check and integration tests enforce the rule.
 
@@ -594,7 +594,7 @@ static ownership check and integration tests enforce the rule.
 Add database-backed tests for last unit across marketplace, storefront, POS,
 invoice, retry, cancellation, timeout, deadlock retry, and variant selections.
 
-**Depends on:** each P3-INV-002 slice  
+**Depends on:** each P3-INV-002 slice
 **Acceptance:** one winner for the last unit, no negative balance, no duplicate
 deduction/restoration, and deterministic conflict response.
 
@@ -603,7 +603,7 @@ deduction/restoration, and deterministic conflict response.
 Move legal transitions into domain services. Preserve compatible response
 fields while clients migrate. Record actor/reason/idempotency and append events.
 
-**Depends on:** accepted delivery/return decisions, P3-INV-001  
+**Depends on:** accepted delivery/return decisions, P3-INV-001
 **Acceptance:** controllers cannot assign protected states directly; invalid
 transitions fail with stable codes; cancellation has one stock effect.
 
@@ -613,7 +613,7 @@ Audit floating-point use and normalize transaction calculations to currency
 plus exact minor units/fixed decimals. Snapshot product/SKU, price, discounts,
 tax, commission, delivery, Store, and policy versions on order lines/order.
 
-**Depends on:** accepted tax/delivery decisions, P1-API-002  
+**Depends on:** accepted tax/delivery decisions, P1-API-002
 **Acceptance:** server recalculates totals; changed totals require buyer review;
 rounding tests cover USD/KHR policy; historical orders do not change when the
 catalog or policy changes.
@@ -623,7 +623,7 @@ catalog or policy changes.
 Centralize `pending -> collected -> partially_refunded/refunded` transitions,
 collection evidence, refund limits, actor, time, method, and reconciliation.
 
-**Depends on:** P3-ORD-001, P3-MNY-001, accepted refund policy  
+**Depends on:** P3-ORD-001, P3-MNY-001, accepted refund policy
 **Acceptance:** delivery never implies payment; request never implies refund;
 collected/refunded amounts reconcile to event history; replay is safe.
 
@@ -641,7 +641,7 @@ seller-owned account. Never expose API keys, webhook secrets, QR payloads, or
 prohibited metadata in logs or clients.
 
 **Depends on:** P1-API-002, P1-OBS-001, P3-MNY-001, P3-EVT-001, accepted ADR
-0003  
+0003
 **Acceptance:** duplicate creation and duplicate/out-of-order events have one
 effect; HMAC verification uses the raw body, timestamp freshness, and
 constant-time comparison; paid/expired/failed/invalid-signature/quota/outage
@@ -654,7 +654,7 @@ Resolve the current shared Store cart/channel eligibility ambiguity. Implement
 the accepted model—prefer separate carts by Store and channel unless P0 chooses
 a different explicit rule.
 
-**Depends on:** P3-CAT-002, accepted cart UX  
+**Depends on:** P3-CAT-002, accepted cart UX
 **Acceptance:** marketplace and storefront additions cannot create a confusing
 ineligible checkout; multi-Store carts remain independently recoverable.
 
@@ -663,7 +663,7 @@ ineligible checkout; multi-Store carts remain independently recoverable.
 Standardize schema version, aggregate version, event ID, trace ID, retries,
 processed-event inbox, dead-letter state, operator inspection, and safe replay.
 
-**Depends on:** P1-OBS-001  
+**Depends on:** P1-OBS-001
 **Acceptance:** duplicate/out-of-order/delayed events are tested; poison events
 are visible; replay cannot duplicate authoritative effects.
 
@@ -673,7 +673,7 @@ Unify or orchestrate audits for Store projections, Website mapping, published
 catalog, SKU balances, carts/orders, COD, refunds, and subscriptions. Produce
 machine-readable and human summaries.
 
-**Depends on:** relevant P3 packages  
+**Depends on:** relevant P3 packages
 **Acceptance:** command exits nonzero for unexplained differences, distinguishes
 zero-data from proven behavior, and never mutates production records.
 
@@ -704,7 +704,7 @@ Implement Store-first onboarding with marketplace-only and storefront paths,
 saved progress, contact verification, primary category, Store details, and an
 honest final status.
 
-**Depends on:** P2 identity/entitlements, P0 decisions  
+**Depends on:** P2 identity/entitlements, P0 decisions
 **Acceptance:** retries create no duplicate Store/Website/subscription; a
 marketplace-only merchant reaches a useful workspace without a Website.
 
@@ -713,7 +713,7 @@ marketplace-only merchant reaches a useful workspace without a Website.
 Drive Store details, delivery/return policy, first product, seller application,
 preview, approval, and publish from one action-oriented home.
 
-**Depends on:** P4-MER-001, P3-CAT-002  
+**Depends on:** P4-MER-001, P3-CAT-002
 **Acceptance:** every blocked item states reason and next action; activation
 events measure progression and completion.
 
@@ -722,7 +722,7 @@ events measure progression and completion.
 Build quick simple-product creation and advanced variants, images/alt text,
 category, price, stock, visibility, preview, conflict handling, and archive.
 
-**Depends on:** P3-CAT-001, P3-INV-001  
+**Depends on:** P3-CAT-001, P3-INV-001
 **Acceptance:** one published Product appears with the same ID/price/stock on
 eligible marketplace and storefront surfaces.
 
@@ -732,7 +732,7 @@ Add asynchronous CSV template, preview, per-row validation, idempotent job,
 result report, and safe retry. Do not let import bypass authorization,
 categories, SKU uniqueness, or publication rules.
 
-**Depends on:** P4-MER-003  
+**Depends on:** P4-MER-003
 **Acceptance:** partial invalid data does not silently publish; job history and
 correction report are available.
 
@@ -742,7 +742,7 @@ Present marketplace, storefront, POS, and invoice orders with channel label,
 next action, buyer-safe contact, amount due, fulfillment, COD, returns, reports,
 and event timeline.
 
-**Depends on:** P3-ORD-001, P3-COD-001  
+**Depends on:** P3-ORD-001, P3-COD-001
 **Acceptance:** permitted merchant/staff completes every legal action; high-risk
 actions summarize consequences and require reason/evidence.
 
@@ -753,7 +753,7 @@ actions summarize consequences and require reason/evidence.
 Implement responsive home, category, search, filter/sort, Store, product, empty,
 error, and unavailable states with public-safe data and SEO metadata.
 
-**Depends on:** P3-CAT-002, P1-UX-001  
+**Depends on:** P3-CAT-002, P1-UX-001
 **Acceptance:** only eligible products appear; search zero-result recovery and
 latency telemetry exist; product selection resolves an available SKU.
 
@@ -762,7 +762,7 @@ latency telemetry exist; product selection resolves an available SKU.
 Show separate Store/channel groups, stock changes, delivery fee, exact subtotal,
 readiness reasons, preserved unselected carts, and clear separate-order copy.
 
-**Depends on:** P3-CART-001, accepted multi-merchant UX  
+**Depends on:** P3-CART-001, accepted multi-merchant UX
 **Acceptance:** buyer can check out one Store without losing another; totals
 come from Commerce; stale quote requires review.
 
@@ -771,7 +771,7 @@ come from Commerce; stale quote requires review.
 Implement verified sign-in return, contact/address, policy acknowledgement,
 exact review, idempotent place-order, safe retry, and refresh-safe confirmation.
 
-**Depends on:** P2-HOST-002, P3-MNY-001, P3-COD-001, P4-BUY-002  
+**Depends on:** P2-HOST-002, P3-MNY-001, P3-COD-001, P4-BUY-002
 **Acceptance:** double click/reload/network retry creates one order; confirmation
 shows order reference, Store, items, address, amount due, and next step.
 
@@ -780,7 +780,7 @@ shows order reference, Store, items, address, amount due, and next step.
 Render an event-derived timeline and policy-valid actions with evidence upload
 where accepted.
 
-**Depends on:** P3-ORD-001, P5 support contract can be additive  
+**Depends on:** P3-ORD-001, P5 support contract can be additive
 **Acceptance:** buyer sees only own orders; request status and service deadline
 are visible; a request does not change payment/refund facts.
 
@@ -791,7 +791,7 @@ are visible; a request does not change payment/refund facts.
 Make each template use shared catalog/SKU/cart/checkout/order adapters and the
 same failure semantics. Remove template-specific transaction logic.
 
-**Depends on:** P2-HOST-002, P4-BUY-002/003  
+**Depends on:** P2-HOST-002, P4-BUY-002/003
 **Acceptance:** all templates pass the same contract/browser suite; Website and
 Store suspension behavior is consistent; hosted flag is cohort-controlled.
 
@@ -801,7 +801,7 @@ Implement SKU selection/barcode where supported, cart, exact totals, sale,
 receipt, offline/timeout guidance, cancellation/return boundaries, and staff
 permission checks.
 
-**Depends on:** P3-INV-002 POS slice, P3-ORD-001  
+**Depends on:** P3-INV-002 POS slice, P3-ORD-001
 **Acceptance:** POS and online final-unit competition passes; retry creates one
 sale; unauthorized staff cannot transact.
 
@@ -810,7 +810,7 @@ sale; unauthorized staff cannot transact.
 Clarify quote/invoice/order semantics and when stock changes. Implement legal
 state transitions, exact totals, receipt/payment evidence, and cancellation.
 
-**Depends on:** accepted invoice policy, P3 inventory/order/money packages  
+**Depends on:** accepted invoice policy, P3 inventory/order/money packages
 **Acceptance:** invoice never silently double-deducts stock; financial and stock
 effects reconcile and are documented.
 
@@ -822,7 +822,7 @@ Move Release 1 customer text into stable English/Khmer catalogs, add missing-key
 CI checks, locale formatting, long-text layout tests, and plain-language error
 mapping.
 
-**Depends on:** P1-UX-001, P1-API-003  
+**Depends on:** P1-UX-001, P1-API-003
 **Acceptance:** critical journeys contain no unintended hard-coded customer
 strings; both locales pass browser tests.
 
@@ -831,7 +831,7 @@ strings; both locales pass browser tests.
 Add automated accessibility gates and manually verify keyboard, screen reader,
 200% zoom, reduced motion, slow network, image failure, and touch targets.
 
-**Depends on:** P4 journey pages  
+**Depends on:** P4 journey pages
 **Acceptance:** no critical/serious automated issues on golden journeys; manual
 findings are resolved or accepted with owner/date.
 
@@ -858,7 +858,7 @@ Encode the accepted restricted-product taxonomy, seller guidance, product hold,
 moderator reason/evidence, appeal state, and audit event. Rules must be
 versioned and explainable.
 
-**Depends on:** accepted P0 policy, P3-CAT-002  
+**Depends on:** accepted P0 policy, P3-CAT-002
 **Acceptance:** prohibited items cannot become purchasable; moderator action is
 tenant-safe and auditable; merchant sees safe actionable reasons.
 
@@ -868,7 +868,7 @@ Create cases with type, priority, status, assignee, service deadline, linked
 subject IDs, safe notes, attachments, events, and resolution. Cases reference
 authoritative records instead of copying their mutable facts.
 
-**Depends on:** accepted response deadlines, P1 API rules  
+**Depends on:** accepted response deadlines, P1 API rules
 **Acceptance:** buyer report can open/link a case idempotently; assignment,
 notes, escalation, resolution, and audit are tested.
 
@@ -878,7 +878,7 @@ Build queues, filters, case detail, linked Store/Product/Order evidence,
 communications, actions, deadlines, and audit history using server-enforced
 permissions.
 
-**Depends on:** P5-SUP-001  
+**Depends on:** P5-SUP-001
 **Acceptance:** support agent cannot perform seller-review/finance actions
 without permission; actions link back to the case and reason.
 
@@ -888,7 +888,7 @@ Replace the single broad admin authority for Release 1 operations with support,
 seller reviewer, catalog moderator, finance/reconciliation, and platform admin
 permissions. Add dual approval for accepted high-risk actions.
 
-**Depends on:** P2-SEC-001  
+**Depends on:** P2-SEC-001
 **Acceptance:** privilege matrix tests pass; high-risk action cannot be approved
 by its initiator; break-glass use is time-bound and audited.
 
@@ -898,7 +898,7 @@ Define in-app source-of-truth notifications, templates, recipient resolution,
 provider adapters, retry/delivery state, dedupe, preferences, and mandatory
 security/transaction exceptions.
 
-**Depends on:** P3-EVT-001, approved content  
+**Depends on:** P3-EVT-001, approved content
 **Acceptance:** seller review, order, delivery, return, refund, support, and
 security events notify correct recipients once; provider failure is visible and
 retryable.
@@ -909,7 +909,7 @@ Implement the accepted trial, plan payment, activation, renewal, grace, failed
 payment, cancellation, suspension, downgrade, and historical-read behavior.
 Entitlements change through one audited service.
 
-**Depends on:** P2-ENT-001, P3-PAY-002, accepted P0 pricing/lifecycle  
+**Depends on:** P2-ENT-001, P3-PAY-002, accepted P0 pricing/lifecycle
 **Acceptance:** retry and callback dedupe are safe; plan display and enforcement
 match; subscription revenue reconciles independently of COD GMV; CutLuy rollout
 is feature-flagged and can return to the prior provider without corrupting
@@ -920,7 +920,7 @@ payment or entitlement state.
 Instrument activation, search, cart, checkout, fulfillment, COD, return,
 support, reliability, and subscription events using a reviewed event catalog.
 
-**Depends on:** P1-OBS-001 and relevant journeys  
+**Depends on:** P1-OBS-001 and relevant journeys
 **Acceptance:** event names/properties are versioned; personal data is excluded
 or minimized; dashboards distinguish GMV, COD, refunds, and Rentify revenue.
 
@@ -948,7 +948,7 @@ Provision staging and production definitions for networking, services, SQL,
 Redis, media/CDN, DNS/TLS, WAF/rate limits, secrets, telemetry, backups, and
 alerts. Select the smallest managed platform the team can operate reliably.
 
-**Human input:** provider/account/budget/region  
+**Human input:** provider/account/budget/region
 **Acceptance:** clean staging can be created reproducibly; drift and secret
 handling are documented; production changes require review.
 
@@ -958,7 +958,7 @@ Extend CI/CD with immutable images, SBOM, vulnerability policy, migration
 checks from empty and prior schema, contract compatibility, browser journeys,
 accessibility, staging smoke, deployment approval, and post-deploy probes.
 
-**Depends on:** P1-QA-002, P6-INF-001  
+**Depends on:** P1-QA-002, P6-INF-001
 **Acceptance:** failed required gate cannot deploy; artifact and commit are
 traceable; rollback uses a known prior compatible artifact.
 
@@ -967,7 +967,7 @@ traceable; rollback uses a known prior compatible artifact.
 Implement the blueprint SLO indicators for APIs, browser errors, SQL, Redis,
 outbox, auth, catalog, checkout, stock, COD, support, and subscriptions.
 
-**Depends on:** P1-OBS packages, journey instrumentation  
+**Depends on:** P1-OBS packages, journey instrumentation
 **Acceptance:** alerts are symptom-based, tested, owned, and linked to runbooks;
 no personal data is used as a metric label.
 
@@ -976,7 +976,7 @@ no personal data is used as a metric label.
 Automate encrypted backups and perform isolated Core, Commerce, and media
 restore. Run P3-REC-001 after restore and record observed RPO/RTO.
 
-**Depends on:** P6-INF-001, P3-REC-001  
+**Depends on:** P6-INF-001, P3-REC-001
 **Acceptance:** restored identities, Stores, Products, stock, orders, COD, and
 subscriptions reconcile; evidence identifies backup and restored environment.
 
@@ -985,7 +985,7 @@ subscriptions reconcile; evidence identifies backup and restored environment.
 Test additive migration, API/UI deployment order, feature flag cohort, smoke,
 intentional failure, rollback, and preservation of in-flight orders.
 
-**Depends on:** P6-CICD-001  
+**Depends on:** P6-CICD-001
 **Acceptance:** timed runbook succeeds; rollback never reactivates KhmerCraft or
 transfers an in-flight transaction to another authority.
 
@@ -995,7 +995,7 @@ Review identity, tenant access, media, checkout, admin, exports, callbacks,
 secrets, dependencies, and infrastructure. Add automated negative tests and
 close critical/high findings.
 
-**Depends on:** P2, P3, P5, P6-INF-001  
+**Depends on:** P2, P3, P5, P6-INF-001
 **Acceptance:** no unresolved critical/high issue; accepted medium risks have
 owner/date/mitigation; incident contacts and evidence preservation exist.
 
@@ -1005,7 +1005,7 @@ Use production-like data volumes to test browse/search, login, checkout bursts,
 last-unit contention, admin queues, imports, outbox backlog recovery, Redis
 loss, dependency timeout, and database pool saturation.
 
-**Depends on:** stable golden journeys, P6-OBS-001  
+**Depends on:** stable golden journeys, P6-OBS-001
 **Acceptance:** SLO targets pass at agreed beta load with headroom; overload
 fails safely; scaling thresholds and bottlenecks are documented.
 
@@ -1015,7 +1015,7 @@ Finalize on-call, incident levels, communication templates, seller review,
 restricted products, returns/refunds, support cases, reconciliation, privacy
 requests, deploy, rollback, restore, and emergency suspension runbooks.
 
-**Depends on:** accepted policies and implemented admin capabilities  
+**Depends on:** accepted policies and implemented admin capabilities
 **Acceptance:** tabletop exercises are completed by the humans who will operate
 the product; every alert/action has a named owner.
 
@@ -1181,9 +1181,9 @@ non-production provider environment exists. Record unknowns explicitly.
 **Human input:** CutLuy accounts, commercial approval, credentials placed in
 the approved secret manager, production domain, and authorization for any real
 money test. AI must never create accounts, copy live secrets into files, or
-invent provider capabilities.  
+invent provider capabilities.
 **Verification:** documentation review, secret scan, and an environment-variable
-contract test using placeholders.  
+contract test using placeholders.
 **Acceptance:** subscription and seller account purposes cannot be confused;
 every credential has owner, environment, rotation, and revocation procedure;
 unsupported capabilities are recorded.
@@ -1205,10 +1205,10 @@ replay; document retention.
 
 **Primary areas:** `rentify-server/migrations/`, Core billing models;
 `ecommerce-server/migrations/`, Commerce payment models when seller payments
-begin.  
-**Depends on:** P9-000, P3-MNY-001  
+begin.
+**Depends on:** P9-000, P3-MNY-001
 **Verification:** empty-database migration, prior-schema upgrade, model tests,
-uniqueness/race tests, migration policy, rollback/compatibility rehearsal.  
+uniqueness/race tests, migration policy, rollback/compatibility rehearsal.
 **Acceptance:** old code continues to read old payments; duplicate provider IDs
 or idempotency keys cannot create two attempts; purpose/account ownership and
 currency are mandatory; down/forward strategy is documented.
@@ -1227,11 +1227,11 @@ responses. Do not log authorization headers, QR strings, checkout URLs with
 sensitive parameters, webhook bodies, or metadata containing personal data.
 
 **Primary areas:** a new provider module under Core billing first; a matching
-adapter behind the Commerce payment boundary only when P9-MER-001 begins.  
-**Depends on:** P9-DATA-001  
+adapter behind the Commerce payment boundary only when P9-MER-001 begins.
+**Depends on:** P9-DATA-001
 **Verification:** fixture-based contract tests for 201, 400, 401/403, 402, 404,
 409/idempotent replay if returned, 422, 429, 5xx, timeout, malformed body, and
-connection reset. No test requires a production key.  
+connection reset. No test requires a production key.
 **Acceptance:** repeated create returns or resolves to one logical attempt;
 errors are stable and secret-free; transport retries cannot create a second
 business effect.
@@ -1256,10 +1256,10 @@ Canonical mapping is `pending -> pending`, `scanned -> customer_action`,
 event may change an expired attempt only through an explicitly tested provider
 truth rule; never guess this behavior.
 
-**Depends on:** P9-ADP-001, P3-EVT-001  
+**Depends on:** P9-ADP-001, P3-EVT-001
 **Verification:** raw-body mutation, stale/future timestamp, wrong secret,
 wrong account, amount/currency/reference mismatch, duplicate, out-of-order,
-concurrent delivery, unknown event, and replay tests.  
+concurrent delivery, unknown event, and replay tests.
 **Acceptance:** only an authenticated and matched `paid` event produces one
 financial effect; the endpoint acknowledges safe duplicates quickly; event
 processing is recoverable after a crash between receipt and domain handling.
@@ -1278,10 +1278,10 @@ status age, expiry, duplicate rate, mismatch, reconciliation repair, 402/429,
 and provider availability. Labels must not contain payment IDs, user IDs,
 references, URLs, or other high-cardinality/personal values.
 
-**Depends on:** P9-WEB-001, P6-OBS-001  
+**Depends on:** P9-WEB-001, P6-OBS-001
 **Verification:** missing-webhook repair, duplicate replay, provider outage,
 quota exhaustion, partial batch failure, authorization, audit, and dry-run
-tests.  
+tests.
 **Acceptance:** support can locate and explain a payment without secrets;
 reconciliation has zero unexplained amount/currency/account differences before
 rollout; alerts link to a tested runbook.
@@ -1301,10 +1301,10 @@ being authoritative; status reads expose stored canonical state and may trigger
 only bounded reconciliation. Update onboarding copy and recovery for pending,
 scanned, expired, failed, already-paid, and provider-unavailable states.
 
-**Depends on:** P9-REC-001, P5-SUB-001  
+**Depends on:** P9-REC-001, P5-SUB-001
 **Verification:** package-price tampering, other-user access, double click,
 network timeout, duplicate paid webhook, payment for wrong package/user,
-expiry, retry with a new attempt, entitlement idempotency, and rollback tests.  
+expiry, retry with a new attempt, entitlement idempotency, and rollback tests.
 **Acceptance:** one paid attempt activates one intended subscription; unpaid
 attempts never grant access; revenue and entitlements reconcile; the cohort can
 return to the previous path without changing completed CutLuy facts.
@@ -1326,14 +1326,14 @@ QR attempts but preserves existing orders, attempts, and event processing.
 
 **Primary areas:** Core owns seller connection/authorization; Commerce receives
 only the minimum encrypted/provider-account projection or obtains a narrowly
-scoped server-to-server capability. Choose one active writer and document it.  
-**Depends on:** P9-SUB-001 observation gate, P2-AUTHZ-002, P2-SEC-001  
+scoped server-to-server capability. Choose one active writer and document it.
+**Depends on:** P9-SUB-001 observation gate, P2-AUTHZ-002, P2-SEC-001
 **Verification:** owner/staff/other-tenant/admin matrix, encryption/key rotation,
 secret redaction, projection replay, disconnect with pending payments, and
-audit tests.  
+audit tests.
 **Acceptance:** one seller cannot use, inspect, replace, or trigger another
 seller's account; no credential reaches a frontend, log, export, analytics, or
-error response; revoked credentials stop new attempts.  
+error response; revoked credentials stop new attempts.
 **Status:** Completed with 17/17 security tests, AES-256-GCM encryption at rest,
 strict owner recent-auth gating, staff deny-by-default, duplicate store prevention,
 safe Commerce projection with zero secrets, and complete immutable audit trail.
@@ -1353,10 +1353,10 @@ commission, platform fee deduction, escrow, automatic refund, or payout state.
 COD remains a separately selectable and reversible fallback while approved.
 
 **Depends on:** P9-MER-001, P3 order/inventory gates, accepted reservation and
-expiry policy  
+expiry policy
 **Verification:** wrong Store/account, mixed Store, KHR, last-unit concurrency,
 price change, seller disconnect/suspension, provider failure, duplicate create,
-expiry/retry, paid-after-cancel race, and COD isolation tests.  
+expiry/retry, paid-after-cancel race, and COD isolation tests.
 **Acceptance:** funds route to the intended seller-owned account; one buyer
 commitment creates one order/payment effect; no oversell occurs; disabling the
 flag stops new QR attempts without breaking existing orders.
@@ -1374,10 +1374,10 @@ last safe verification time, rotation/disconnect, payment timeline, and support
 path. Admin UI shows read-only provider evidence, mismatch/replay tools with
 least privilege, and complete audit history.
 
-**Depends on:** P9-CHK-001 and stable APIs  
+**Depends on:** P9-CHK-001 and stable APIs
 **Verification:** 360 px and desktop browsers, Khmer expansion, keyboard/screen
 reader, refresh/back/multiple-tab, expired link, delayed webhook, provider
-outage, and browser journey tests.  
+outage, and browser journey tests.
 **Acceptance:** users always know whether to pay, wait, retry, use COD, or seek
 help; no UI invents financial state; sensitive provider data is absent.
 
@@ -1399,10 +1399,10 @@ dead UI only after no active cohort or pending attempt needs them, the agreed
 observation period passes, dependency/secret scans are clean, and historical
 payments remain readable.
 
-**Depends on:** P9-UX-001, security review, runbook drill, human rollout approval  
+**Depends on:** P9-UX-001, security review, runbook drill, human rollout approval
 **Verification:** production-like canary, intentional stop, rollback, delayed
 event after rollback, restore/reconciliation, dependency scan, and historical
-read tests.  
+read tests.
 **Acceptance:** all enabled cohorts meet payment SLO and reconciliation gates;
 support handles a real drill; retirement evidence proves no live Bakong writer
 or credential remains while historical records still work.

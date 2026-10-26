@@ -391,3 +391,34 @@ flowchart LR
 3. **Milestone 3 (`P4-SF-001`)**: Storefront template unification (Templates 1, 2, 3), canonical adapters, variant SKU purchase panel, and graceful store suspension.
 4. **Milestone 4 (`P4-POS-001`, `P4-INV-001`)**: POS ESLint cleanup, canonical barcode/SKU resolution, last-unit concurrency handling (`409`), receipt printer, and invoice lifecycle state machine.
 5. **Milestone 5 (`P4-UX-002`, `P4-UX-003`, Quality Tooling)**: Complete English/Khmer parity in Angular and POS, Axe-core automated a11y tests, 360px mobile touch targets, and full Playwright Golden Journeys 1–5 suite.
+
+---
+
+## 8. Completion Verification & Delivery Gate Status (2026-10-26)
+
+**Workstream Status:** **CUSTOMER-JOURNEY WORKSTREAM COMPLETE**
+*(Declaration boundary: Gemini work packages P4-BUY-001 through P4-BUY-004, P4-SF-001, P4-POS-001, P4-INV-001, P4-UX-002, and P4-UX-003 are complete. Codex-owned merchant dashboard and P4-MER-000 through P4-MER-005 remain separate and untouched.)*
+
+### 8.1. Verified 11-Journey Test Matrix (`tools/verify-phase4-customer-journeys.mjs`)
+
+| # | Customer Journey | Verification Suite / Mechanism | Result |
+| :-: | :--- | :--- | :---: |
+| 1 | **Marketplace search to available SKU** | `products.component.spec.ts`, `product-detail.component.spec.ts`, `variant-picker.component.spec.ts` | **PASS** |
+| 2 | **Two-Store grouped cart** | `cart.component.spec.ts`, `cart.service.spec.ts` | **PASS** |
+| 3 | **One-Store COD checkout without losing 2nd Store cart** | `checkout.component.spec.ts`, `marketplaceCart.test.js` | **PASS** |
+| 4 | **Double-click and timeout-safe order creation** | `checkout.component.spec.ts` (`isSubmitting` lock, recovery mode, `Idempotency-Key`) | **PASS** |
+| 5 | **Buyer order tracking and return request** | `order-detail.component.spec.ts`, `orders.spec.ts` (timeline, COD facts, return form, upload) | **PASS** |
+| 6 | **Every hosted storefront template completing COD** | `storefrontTemplateMatrix.test.jsx` across Templates 1, 2, and 3 | **PASS** |
+| 7 | **POS vs online competition for final unit** | `posConcurrencyAndIdempotency.test.js` (row locks, exactly 1 allocation, 409 Conflict) | **PASS** |
+| 8 | **Invoice without double stock deduction** | `invoiceLifecycleAndStock.test.js` (Quote non-reservation, deferred invoice single deduction) | **PASS** |
+| 9 | **English and Khmer bilingual enforcement** | `i18n-enforcement.spec.ts` & `i18nEnforcement.test.js` (100% key parity, Cambodian vocabulary) | **PASS** |
+| 10 | **Mobile and desktop responsive layouts** | `products.component.spec.ts`, `cart.component.spec.ts`, `checkout.component.spec.ts`, styles | **PASS** |
+| 11 | **Keyboard, 200% zoom, reduced motion, slow network** | `accessibility-resilience.spec.ts`, `styles.css` (`:focus-visible`, live announcer, zoom reflow) | **PASS** |
+
+### 8.2. Clean Boundary Confirmation
+
+- `apps/core/merchant/` in `rentify-frontend`: **Zero edits** (Preserved untouched for Codex ownership).
+- `admin-frontend/`: **Zero edits** (Preserved untouched).
+- `CutLuy`: **Not implemented** (Phase 4 checkout remains strictly Cash on Delivery / COD).
+- Secret and policy scans: Clean pass (`tools/secret-scan.mjs` and `tools/repository-policy.mjs`).
+- Whitespace validation: `git diff --check origin/develop` passes with 0 errors.

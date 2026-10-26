@@ -1,10 +1,10 @@
 # Accessibility and Resilience Audit (P4-UX-003)
 
-**Specification**: P4-UX-003  
-**Target Standard**: Web Content Accessibility Guidelines (WCAG) 2.1 Level AA  
-**Audit Scope**: Gemini-Owned Customer Surfaces (Rentify Marketplace UI & Hosted Storefront/POS Buyer Channels)  
-**Date**: October 26, 2026  
-**Auditor / Owner**: Gemini Coding Assistant  
+**Specification**: P4-UX-003
+**Target Standard**: Web Content Accessibility Guidelines (WCAG) 2.1 Level AA
+**Audit Scope**: Gemini-Owned Customer Surfaces (Rentify Marketplace UI & Hosted Storefront/POS Buyer Channels)
+**Date**: October 26, 2026
+**Auditor / Owner**: Gemini Coding Assistant
 
 ---
 

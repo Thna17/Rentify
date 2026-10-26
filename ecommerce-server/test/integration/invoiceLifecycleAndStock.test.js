@@ -797,4 +797,3 @@ test('P4-INV-001: Staff Authorization: staff with invoice permission allowed; st
   assert.equal(nextUnpermitted, false, 'Unpermitted staff must be rejected');
   assert.equal(resUnpermitted.statusCode, 403);
 });
-

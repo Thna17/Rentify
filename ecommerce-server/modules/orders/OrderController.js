@@ -32,12 +32,12 @@ exports.createOrder = async (req, res) => {
     const user = req.user;
 
     // Get website niche
-    const website = await WebsiteData.findOne({ 
+    const website = await WebsiteData.findOne({
       where: { websiteId, status: 'active' },
       attributes: ['niche', 'storeId'],
       transaction
     });
-    
+
     if (!website) {
       await transaction.rollback();
       return res.status(404).json({ error: "Website not found" });
@@ -53,7 +53,7 @@ exports.createOrder = async (req, res) => {
     }
 
     // Fetch payment config
-    const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
+    const paymentConfigs = await models.PaymentGatewayConfig.findAll({
       where: { websiteId } ,
       transaction
     });
@@ -70,7 +70,7 @@ exports.createOrder = async (req, res) => {
       NotificationService,
       website.niche,
     );
-    
+
     const result = await strategy.execute({
       user,
       websiteId,
@@ -101,11 +101,11 @@ exports.createInvoice = async (req, res) => {
     const invoiceData = req.body.body || req.body;
 
     // Get website niche
-    const website = await WebsiteData.findOne({ 
+    const website = await WebsiteData.findOne({
       where: { websiteId },
       attributes: ['niche', 'storeId', 'websiteId']
     });
-    
+
     if (!website) {
       return res.status(404).json({ error: "Website not found" });
     }
@@ -127,8 +127,8 @@ exports.createInvoice = async (req, res) => {
     }
 
     // Fetch payment config
-    const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
-      where: { websiteId } 
+    const paymentConfigs = await models.PaymentGatewayConfig.findAll({
+      where: { websiteId }
     });
 
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
@@ -170,7 +170,7 @@ exports.createPOSOrder = async (req, res) => {
     let effectiveNiche = 'ecommerce';
 
     if (rawWebsiteId) {
-      const website = await WebsiteData.findOne({ 
+      const website = await WebsiteData.findOne({
         where: { websiteId: rawWebsiteId },
         attributes: ['niche', 'storeId', 'websiteId'],
       });
@@ -261,12 +261,12 @@ exports.createPOSOrder = async (req, res) => {
     if (effectiveWebsiteId) paymentConfigConditions.push({ websiteId: effectiveWebsiteId });
     if (effectiveStoreId) paymentConfigConditions.push({ storeId: effectiveStoreId });
 
-    const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
+    const paymentConfigs = await models.PaymentGatewayConfig.findAll({
       where: paymentConfigConditions.length > 1
         ? { [Op.or]: paymentConfigConditions }
         : paymentConfigConditions[0] || {},
     });
-    
+
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
       (cfg) => cfg.gateway === "khqr" && cfg.enabled
     ));

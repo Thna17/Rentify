@@ -335,7 +335,7 @@ interface CategoryShelf {
       gap: 20px;
       align-items: stretch;
     }
-    
+
     @media (max-width: 900px) {
       .phones { grid-template-columns: 1fr; }
       .phones-promo { height: auto; min-height: 380px; }
