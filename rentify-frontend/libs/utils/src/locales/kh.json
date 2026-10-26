@@ -123,6 +123,8 @@
     "cash_on_delivery_subtitle": "ទូទាត់នៅពេលទំនិញមកដល់ទីតាំងរបស់អ្នក។ សាមញ្ញ និងសុវត្ថិភាព។",
     "khqr_payment": "ការទូទាត់ KHQR",
     "khqr_payment_subtitle": "ផ្ទេរប្រាក់ភ្លាមៗតាមរយៈ QR code។ ការទូទាត់ឌីជីថលរហ័ស និងងាយស្រួល។",
+    "card_payment": "កាតឥណទាន / ឥណពន្ធ",
+    "card_payment_subtitle": "ទូទាត់ប្រកបដោយសុវត្ថិភាពជាមួយ Visa, Mastercard ឬ UnionPay។",
     "no_fees": "គ្មានថ្លៃសេវា",
     "secure": "សុវត្ថិភាព",
     "instant": "ភ្លាមៗ",
