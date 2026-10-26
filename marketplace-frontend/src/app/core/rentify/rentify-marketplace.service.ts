@@ -110,6 +110,20 @@ export interface MarketplaceOrder {
   payment: { status: string; amountDue: string; collectedAmount: string; refundedAmount: string } | null;
 }
 
+export interface MarketplaceOrderEvent {
+  id: string;
+  type: string;
+  amount: string | null;
+  createdAt: string;
+  details: {
+    reason?: string;
+    resolution?: string;
+    method?: string;
+    refundedAt?: string;
+    evidence?: string[];
+  };
+}
+
 export interface ProductQueryOptions {
   page?: number;
   limit?: number;
@@ -280,6 +294,10 @@ export class RentifyMarketplaceService {
     return this.http.get<{ order: MarketplaceOrder }>(`${this.commerce}/api/marketplace/my-orders/${orderId}`);
   }
 
+  orderEvents(orderId: string): Observable<{ events: MarketplaceOrderEvent[] }> {
+    return this.http.get<{ events: MarketplaceOrderEvent[] }>(`${this.commerce}/api/marketplace/my-orders/${orderId}/events`);
+  }
+
   reviews(productId: string): Observable<ProductReviewsResponse> {
     return this.http.get<ProductReviewsResponse>(
       `${this.commerce}/api/marketplace/products/${productId}/reviews`,
@@ -297,10 +315,16 @@ export class RentifyMarketplaceService {
     );
   }
 
-  report(orderId: string, type: 'complaint' | 'return_requested', reason: string, key: string) {
-    return this.http.post(
+  report(
+    orderId: string,
+    type: 'complaint' | 'return_requested',
+    reason: string,
+    key: string,
+    evidence?: string[],
+  ): Observable<{ event: { id: string; type: string } }> {
+    return this.http.post<{ event: { id: string; type: string } }>(
       `${this.commerce}/api/marketplace/my-orders/${orderId}/reports/${type}`,
-      { reason },
+      { reason, ...(evidence && evidence.length ? { evidence } : {}) },
       { headers: { 'Idempotency-Key': key } },
     );
   }
