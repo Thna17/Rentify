@@ -158,8 +158,8 @@ exports.up = async ({ queryInterface, sequelize }) => {
   let simpleProductsBackfilled = 0;
   for (const p of productsWithoutVariants) {
     const defaultVariantId = require('node:crypto').randomUUID();
-    const cleanId = String(p.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
-    const resolvedSku = p.sku || `SKU-${cleanId || 'DEFAULT'}`;
+    const cleanId = String(p.id).replace(/-/g, '').toUpperCase();
+    const resolvedSku = p.sku || `SKU-${cleanId.slice(0, 8)}-${cleanId.slice(-4)}`;
     const resolvedPrice = Number(p.price) || 0.01;
     const resolvedStock = Number.isInteger(p.stockQuantity) ? p.stockQuantity : 0;
     const resolvedCurrency = p.currency || 'USD';
@@ -246,6 +246,91 @@ exports.up = async ({ queryInterface, sequelize }) => {
             \`barcode\` = COALESCE(\`barcode\`, ?)
         WHERE \`id\` = ?
       `, { replacements: [first.sku, first.barcode || null, productId] });
+    }
+  }
+
+  // Disambiguate any duplicate (storeId, sku) in ProductVariants and Products before adding unique index
+  await sequelize.query(`UPDATE \`${variantTable}\` SET \`sku\` = NULL WHERE \`sku\` = ''`);
+  await sequelize.query(`UPDATE \`${variantTable}\` SET \`barcode\` = NULL WHERE \`barcode\` = ''`);
+  await sequelize.query(`UPDATE \`${productTable}\` SET \`sku\` = NULL WHERE \`sku\` = ''`);
+  await sequelize.query(`UPDATE \`${productTable}\` SET \`barcode\` = NULL WHERE \`barcode\` = ''`);
+
+  const [dupVariants] = await sequelize.query(`
+    SELECT storeId, sku, COUNT(*) as cnt
+    FROM \`${variantTable}\`
+    WHERE storeId IS NOT NULL AND sku IS NOT NULL
+    GROUP BY storeId, sku
+    HAVING cnt > 1
+  `);
+  for (const dup of dupVariants) {
+    const [rows] = await sequelize.query(`
+      SELECT id, productId FROM \`${variantTable}\`
+      WHERE storeId = ? AND sku = ?
+      ORDER BY createdAt ASC
+    `, { replacements: [dup.storeId, dup.sku] });
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const cleanProdId = String(row.productId).replace(/-/g, '').slice(-4).toUpperCase();
+      const newSku = `${dup.sku}-${cleanProdId || i}`;
+      await sequelize.query(`UPDATE \`${variantTable}\` SET \`sku\` = ? WHERE \`id\` = ?`, { replacements: [newSku, row.id] });
+      await sequelize.query(`UPDATE \`${productTable}\` SET \`sku\` = ? WHERE \`id\` = ? AND \`sku\` = ?`, { replacements: [newSku, row.productId, dup.sku] });
+    }
+  }
+
+  const [dupProducts] = await sequelize.query(`
+    SELECT storeId, sku, COUNT(*) as cnt
+    FROM \`${productTable}\`
+    WHERE storeId IS NOT NULL AND sku IS NOT NULL
+    GROUP BY storeId, sku
+    HAVING cnt > 1
+  `);
+  for (const dup of dupProducts) {
+    const [rows] = await sequelize.query(`
+      SELECT id FROM \`${productTable}\`
+      WHERE storeId = ? AND sku = ?
+      ORDER BY createdAt ASC
+    `, { replacements: [dup.storeId, dup.sku] });
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const cleanProdId = String(row.id).replace(/-/g, '').slice(-4).toUpperCase();
+      const newSku = `${dup.sku}-${cleanProdId || i}`;
+      await sequelize.query(`UPDATE \`${productTable}\` SET \`sku\` = ? WHERE \`id\` = ?`, { replacements: [newSku, row.id] });
+    }
+  }
+
+  const [dupBarcodes] = await sequelize.query(`
+    SELECT storeId, barcode, COUNT(*) as cnt
+    FROM \`${variantTable}\`
+    WHERE storeId IS NOT NULL AND barcode IS NOT NULL
+    GROUP BY storeId, barcode
+    HAVING cnt > 1
+  `);
+  for (const dup of dupBarcodes) {
+    const [rows] = await sequelize.query(`
+      SELECT id FROM \`${variantTable}\`
+      WHERE storeId = ? AND barcode = ?
+      ORDER BY createdAt ASC
+    `, { replacements: [dup.storeId, dup.barcode] });
+    for (let i = 1; i < rows.length; i++) {
+      await sequelize.query(`UPDATE \`${variantTable}\` SET \`barcode\` = NULL WHERE \`id\` = ?`, { replacements: [rows[i].id] });
+    }
+  }
+
+  const [dupProdBarcodes] = await sequelize.query(`
+    SELECT storeId, barcode, COUNT(*) as cnt
+    FROM \`${productTable}\`
+    WHERE storeId IS NOT NULL AND barcode IS NOT NULL
+    GROUP BY storeId, barcode
+    HAVING cnt > 1
+  `);
+  for (const dup of dupProdBarcodes) {
+    const [rows] = await sequelize.query(`
+      SELECT id FROM \`${productTable}\`
+      WHERE storeId = ? AND barcode = ?
+      ORDER BY createdAt ASC
+    `, { replacements: [dup.storeId, dup.barcode] });
+    for (let i = 1; i < rows.length; i++) {
+      await sequelize.query(`UPDATE \`${productTable}\` SET \`barcode\` = NULL WHERE \`id\` = ?`, { replacements: [rows[i].id] });
     }
   }
 

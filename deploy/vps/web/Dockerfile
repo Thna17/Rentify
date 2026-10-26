@@ -27,6 +27,8 @@ WORKDIR /src
 COPY marketplace-frontend/package*.json ./
 RUN npm ci --ignore-scripts
 COPY marketplace-frontend/ ./
+COPY packages/ /packages/
+COPY packages/ /src/packages/
 RUN npx ng build --configuration production
 
 FROM node:22-bookworm-slim AS admin
