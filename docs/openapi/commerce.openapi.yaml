@@ -3655,6 +3655,38 @@ paths:
         "200":
           description: Store tenancy synchronized
       operationId: post_api_store_access_sync
+  /api/store-access/internal/{storeId}/launch-facts:
+    get:
+      tags:
+        - Store Access & Sync
+      summary: Get server-authoritative launch facts for Core
+      description: Internal read-only catalog, SKU, delivery-policy, and Store projection facts used by the Core launch-checklist composer.
+      x-client-generation: false
+      security:
+        - serviceTokenHeader: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Launch readiness facts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        "401":
+          description: Service token missing or invalid
+        "404":
+          description: Store projection not found
+      operationId: get_api_store_access_internal_storeId_launch_facts
   /api/store-access/{storeId}:
     get:
       tags:

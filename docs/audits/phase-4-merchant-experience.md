@@ -1,9 +1,29 @@
 # Phase 4 merchant experience audit and implementation map
 
-**Status:** Current-state audit and proposed implementation map, 2026-10-26
+**Status:** Current-state audit, implementation map, and P4-MER-002 contract note, 2026-10-26
 **Workstream:** `P4-MER-000` through `P4-MER-005`
 **Scope:** Merchant onboarding and the React merchant workspace only. This
-package changes documentation, not runtime behavior.
+document began as the P4-MER-000 audit; implementation notes are added only
+when the corresponding package is complete.
+
+## P4-MER-002 implementation note
+
+The launch checklist is now designed as a server-composed read model rather
+than a browser calculation. Core owns the response and combines authoritative
+identity, Store, seller-review, and optional Website state with a read-only,
+service-authenticated Commerce facts endpoint for delivery-policy, Product,
+SKU, marketplace visibility, and projection version. Responses expose only
+stable statuses, safe reason codes, exact next-action codes, aggregate counts,
+channel applicability, an observation time, and stale state.
+
+Marketplace-only Stores omit storefront readiness and publication items, so a
+missing Website cannot block marketplace activation. A Store linked to a
+Website receives separate marketplace and storefront publication checks.
+Commerce timeout, unavailability, or an older Store projection blocks the
+dependent checks and returns a retry action; Core never infers a positive fact
+from missing data. The merchant Overview maps those codes to reviewed English
+and Khmer explanations, uses completed-item counts rather than percentages,
+and emits identifier-free activation events.
 
 ## Guardrails
 

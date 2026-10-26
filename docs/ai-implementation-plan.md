@@ -770,8 +770,33 @@ Drive Store details, delivery/return policy, first product, seller application,
 preview, approval, and publish from one action-oriented home.
 
 **Depends on:** P4-MER-001, P3-CAT-002
-**Acceptance:** every blocked item states reason and next action; activation
-events measure progression and completion.
+**Acceptance:**
+
+- Core composes verified contact, Store details/category, seller application,
+  Website readiness, approval, and publication state with read-only Commerce
+  facts for delivery policy and the first valid Product/SKU; the browser never
+  decides authoritative readiness;
+- every item uses exactly `complete`, `incomplete`, `blocked`, `pending`, or
+  `failed`, and every blocked/failed state carries a safe reason code and exact
+  next-action code;
+- marketplace-only Stores omit storefront requirements, while Stores with a
+  Website receive separate marketplace and storefront publication readiness;
+- progress is an honest completed-item count, never an invented percentage,
+  and stale or unavailable Commerce facts prevent a positive readiness guess;
+- the merchant Overview provides keyboard-operable actions, semantic status
+  text, visible focus, reduced-motion loading, 200% zoom-safe layouts, 360 px
+  mobile behavior, and complete English/Khmer checklist and recovery copy;
+- loading, empty, forbidden, offline, timeout, stale-data, error, and safe
+  retry states are covered; activation events contain only event/action/status,
+  path, booleans, and aggregate counts—never IDs, secrets, contacts, or free
+  text;
+- focused Core/Commerce service tests cover marketplace-only, storefront,
+  all five statuses, missing Product/SKU, policy, review, approval,
+  publication, stale projection, timeout, and recovery; merchant tests cover
+  both locales, reason/action mappings, and both channel paths;
+- focused lint, typecheck, API/authorization contract validation, backend
+  tests, merchant tests/build, and representative desktop/mobile visual checks
+  pass before the P4-MER-002 commit.
 
 #### P4-MER-003 — Product/SKU editor and media
 
