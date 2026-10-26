@@ -73,12 +73,13 @@ export default function OrderConfirmation() {
 
   const currency = order.currency || 'USD';
   const payment = order.payment;
+  const paymentMethodName = payment?.paymentMethod || payment?.method || 'COD';
   const paymentStatus = settledPaymentStatus || payment?.status || 'pending';
   const paid = PAID_STATUSES.includes(paymentStatus);
   const closed = CLOSED_ORDER_STATUSES.includes(order.status);
-  const awaitingKhqr = payment?.paymentMethod === 'KHQR' && paymentStatus === 'pending' && !closed;
-  const shipping = order.shippingDetail || {};
-  const items = Array.isArray(order.OrderItems) ? order.OrderItems : [];
+  const awaitingKhqr = paymentMethodName === 'KHQR' && paymentStatus === 'pending' && !closed;
+  const shipping = order.shippingDetail || order.shippingInfo || {};
+  const items = Array.isArray(order.OrderItems) ? order.OrderItems : (Array.isArray(order.items) ? order.items : []);
   // The receipt endpoint only returns the total; the breakdown is available
   // right after checkout from the order-creation response.
   const breakdown = placedTotals && toAmount(placedTotals.totalAmount) === toAmount(order.totalAmount) ? placedTotals : null;
@@ -146,17 +147,19 @@ export default function OrderConfirmation() {
         </h2>
         <ul className="mt-2 divide-y divide-border">
           {items.map((item) => {
-            const name = item.Product?.name || '';
+            const name = item.Product?.name || item.name || '';
             const image = getProductImages(item.Product, name)[0];
+            const qty = item.quantity || 1;
+            const lineTotal = item.total != null ? toAmount(item.total) : toAmount(item.price) * qty;
             return (
-              <li key={item.id} className="flex items-center gap-3 py-3">
+              <li key={item.id || item.productId} className="flex items-center gap-3 py-3">
                 <ProductImage src={image?.url} alt="" className="h-14 w-14 shrink-0 rounded-lg" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">{name}</p>
-                  <p className="text-xs text-muted-foreground">{t('order.quantity', { count: item.quantity })}</p>
+                  <p className="text-xs text-muted-foreground">{t('order.quantity', { count: qty })}</p>
                 </div>
                 <p className="text-sm font-medium tabular-nums text-foreground">
-                  {formatMoney(toAmount(item.price) * toAmount(item.quantity), currency)}
+                  {formatMoney(lineTotal, currency)}
                 </p>
               </li>
             );
@@ -190,15 +193,15 @@ export default function OrderConfirmation() {
         </dl>
       </section>
 
-      {(shipping.name || shipping.phone) && (
+      {(shipping.name || shipping.phone || shipping.address) && (
         <section aria-labelledby="delivery-details" className="mt-6 rounded-xl border border-border bg-card p-5 sm:p-6">
           <h2 id="delivery-details" className="text-base font-semibold text-foreground">
             {t('order.deliverTo')}
           </h2>
           <address className="mt-2 space-y-0.5 text-sm not-italic text-foreground/85">
-            <p className="font-medium text-foreground">{shipping.name}</p>
+            {shipping.name && <p className="font-medium text-foreground">{shipping.name}</p>}
             {shipping.phone && <p>{shipping.phone}</p>}
-            <p>{[shipping.street, shipping.commune, shipping.district, shipping.province].filter(Boolean).join(', ')}</p>
+            <p>{shipping.address || [shipping.street, shipping.commune, shipping.district, shipping.province].filter(Boolean).join(', ')}</p>
             {shipping.note && <p className="text-muted-foreground">{shipping.note}</p>}
           </address>
         </section>
