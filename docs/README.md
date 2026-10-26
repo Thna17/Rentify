@@ -33,6 +33,9 @@ code so implementation work can proceed without relying on chat history.
 - [Phase 2 verification report](audits/phase-2-verification.md) — complete
   verification evidence, package checklist, test results, security audit, and
   exit gate decision.
+- [Phase 3 verification report](audits/phase-3-verification.md) — complete
+  verification evidence, package checklist, test results, security audit, and
+  exit gate decision.
 - [Identity and authoritative subject model](identity-subject-model.md) —
   authoritative subject definition, token & session models, role coexistence,
   ambiguous-credential precedence, and security boundaries.
