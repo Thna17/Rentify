@@ -1229,6 +1229,24 @@ export namespace Core {
       body: Record<string, any>;
       response: Core.Package;
     };
+    ingestCutLuyWebhook: {
+      method: 'POST';
+      path: '/api/payment/cutluy/webhook';
+      parameters: {
+      };
+      body: {
+        amount?: string;
+        currency?: "USD";
+        event_id?: string;
+        payment_id?: string;
+        reference_id?: string;
+        status?: "pending" | "scanned" | "paid" | "expired" | "failed";
+      };
+      response: {
+        acknowledged?: boolean;
+        duplicate?: boolean;
+      };
+    };
     initiateKHQRPayment: {
       method: 'POST';
       path: '/api/payment/khqr';
