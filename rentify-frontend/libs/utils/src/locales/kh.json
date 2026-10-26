@@ -279,6 +279,11 @@
     "delivery_note": "កំណត់សម្គាល់ដឹកជញ្ជូន",
     "invoice": "វិក្កយបត្រ",
     "invoice_number": "លេខវិក្កយបត្រ",
+    "quote": "ការប៉ាន់ស្មានតម្លៃ",
+    "quote_number": "លេខការប៉ាន់ស្មាន",
+    "convert_to_invoice": "បម្លែងទៅជាវិក្កយបត្រ",
+    "stock_status_deducted": "បានកាត់ស្តុក",
+    "stock_status_awaiting_payment": "រង់ចាំការទូទាត់ (មិនទាន់កាត់ស្តុក)",
     "status": "ស្ថានភាព",
     "total": "សរុប",
     "download_pdf": "ទាញយក PDF"

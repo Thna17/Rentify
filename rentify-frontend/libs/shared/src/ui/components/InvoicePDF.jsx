@@ -115,8 +115,9 @@ const styles = StyleSheet.create({
 
 export const InvoicePDF = ({
   order,
-  websiteName,
-  phoneNumber,
+  invoiceData,
+  websiteName = 'Rentify Store',
+  phoneNumber = '',
   billTo,
   customerTel,
   street,
@@ -124,17 +125,59 @@ export const InvoicePDF = ({
   province,
   paymentStatus,
 }) => {
-  console.log(paymentStatus, 3);
+  const data = order || invoiceData || {};
+  const items = data.OrderItems || data.items || data.lineItems || [];
 
-  const invoiceDate = format(new Date(order.createdAt), 'dd/MM/yyyy');
-  const dueDate = format(new Date(order.createdAt), 'dd/MM/yyyy');
+  const invoiceDate = data.createdAt
+    ? format(new Date(data.createdAt), 'dd/MM/yyyy')
+    : format(new Date(), 'dd/MM/yyyy');
+  const dueDate = data.dueDate
+    ? format(new Date(data.dueDate), 'dd/MM/yyyy')
+    : invoiceDate;
 
-  // Calculate order totals
-  const subtotal = order.OrderItems.reduce(
-    (sum, item) => sum + parseFloat(item.price) * item.quantity,
-    0
-  );
-  const discount = subtotal - parseFloat(order.totalAmount);
+  const invoiceNum =
+    data.invoiceNumber ||
+    data.Invoice?.invoiceNumber ||
+    data.orderNumber ||
+    data.id ||
+    'INV-0001';
+
+  const effectiveBillTo =
+    billTo ||
+    data.customer?.name ||
+    data.customerInfo?.name ||
+    data.customerName ||
+    'Valued Customer';
+  const effectiveTel =
+    customerTel ||
+    data.customer?.phone ||
+    data.customerInfo?.phone ||
+    phoneNumber ||
+    '';
+
+  const subtotal =
+    data.totals?.subtotal !== undefined
+      ? parseFloat(data.totals.subtotal)
+      : data.subtotal !== undefined
+      ? parseFloat(data.subtotal)
+      : items.reduce(
+          (sum, item) =>
+            sum + parseFloat(item.price || item.unitPrice || 0) * (item.quantity || 1),
+          0
+        );
+
+  const totalAmount =
+    data.totals?.total !== undefined
+      ? parseFloat(data.totals.total)
+      : data.totalAmount !== undefined
+      ? parseFloat(data.totalAmount)
+      : data.total !== undefined
+      ? parseFloat(data.total)
+      : subtotal;
+
+  const discount = Math.max(0, subtotal - totalAmount);
+  const effectiveStatus =
+    paymentStatus || data.status || (data.stockState?.stockDeducted ? 'paid' : 'pending');
 
   return (
     <Document>
@@ -187,10 +230,10 @@ export const InvoicePDF = ({
             BILL TO
           </Text>
           <View>
-            <Text>{billTo}</Text>
-            {customerTel && <Text>{customerTel}</Text>}
+            <Text>{effectiveBillTo}</Text>
+            {effectiveTel ? <Text>{effectiveTel}</Text> : null}
             <Text>
-              {street}
+              {street || ''}
               {district || province
                 ? `, ${[district, province].filter(Boolean).join(', ')}`
                 : ''}
@@ -202,13 +245,13 @@ export const InvoicePDF = ({
         <View style={styles.row}>
           <View>
             <Text>Date (DD/MM/YYYY): {invoiceDate}</Text>
-            <Text>Terms: {order.paymentMethod}</Text>
+            <Text>Terms: {data.paymentMethod || data.totals?.currency || 'Cash / COD'}</Text>
             <Text>
-              Payment Status: {paymentStatus === 'pending' ? 'Pending' : 'Paid'}
+              Payment Status: {effectiveStatus === 'paid' || effectiveStatus === 'completed' ? 'Paid' : 'Pending'}
             </Text>
           </View>
           <View>
-            <Text>Invoice No.: {order.id}</Text>
+            <Text>Invoice No.: {invoiceNum}</Text>
             <Text>Due Date: {dueDate}</Text>
           </View>
         </View>
@@ -222,18 +265,20 @@ export const InvoicePDF = ({
             <Text style={styles.colAmount}>Amount</Text>
           </View>
 
-          {order.OrderItems.map((item) => (
-            <View style={styles.tableRow} key={item.id}>
-              <Text style={styles.colDescription}>{item.Product.name}</Text>
-              <Text style={styles.colQty}>{item.quantity}</Text>
-              <Text style={styles.colRate}>
-                ${parseFloat(item.price).toFixed(2)}
-              </Text>
-              <Text style={styles.colAmount}>
-                ${(item.quantity * item.price).toFixed(2)}
-              </Text>
-            </View>
-          ))}
+          {items.map((item, idx) => {
+            const price = parseFloat(item.price || item.unitPrice || 0);
+            const qty = item.quantity || 1;
+            const lineTotal = item.total || item.totalPrice || price * qty;
+            const name = item.name || item.Product?.name || 'Line Item';
+            return (
+              <View style={styles.tableRow} key={item.id || idx}>
+                <Text style={styles.colDescription}>{name}</Text>
+                <Text style={styles.colQty}>{qty}</Text>
+                <Text style={styles.colRate}>${price.toFixed(2)}</Text>
+                <Text style={styles.colAmount}>${parseFloat(lineTotal).toFixed(2)}</Text>
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.totalSection}>
@@ -250,21 +295,22 @@ export const InvoicePDF = ({
           <View style={styles.totalRow}>
             <Text style={[styles.totalLabel, { fontSize: 12 }]}>Total</Text>
             <Text style={[styles.totalValue, { fontSize: 12 }]}>
-              ${order.totalAmount}
+              ${totalAmount.toFixed(2)}
             </Text>
           </View>
         </View>
 
         {/* KHQR */}
         {/* KHQR Section */}
-        {order.paymentMethod === 'KHQR' &&
-          order.payment?.qrRaw &&
-          paymentStatus !== 'completed' && (
+        {(data.paymentMethod === 'KHQR' || order?.paymentMethod === 'KHQR') &&
+          (order?.payment?.qrRaw || data.paymentEvidence?.transactionData?.qrRaw) &&
+          effectiveStatus !== 'completed' &&
+          effectiveStatus !== 'paid' && (
             <View style={styles.khqrContainer}>
               <Image
                 style={styles.khqrImage}
                 src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
-                  order.payment.qrRaw
+                  order?.payment?.qrRaw || data.paymentEvidence?.transactionData?.qrRaw
                 )}&size=100x100`}
               />
               <Text style={styles.khqrLabel}>Scan to Pay (KHQR)</Text>
