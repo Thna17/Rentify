@@ -4,6 +4,13 @@ This directory is the shared source of truth for Rentify's platform direction.
 It separates decisions and planned architecture from the behavior of today's
 code so implementation work can proceed without relying on chat history.
 
+- [Master engineering blueprint](master-engineering-blueprint.md) — Release 1
+  customer outcomes, target architecture, delivery roadmap, and quality gates.
+- [AI implementation plan](ai-implementation-plan.md) — dependency-ordered,
+  testable work packages and AI execution rules for the Release 1 program.
+- [Phase 4 merchant experience audit](audits/phase-4-merchant-experience.md) —
+  current and proposed merchant information architecture, reusable UI,
+  contract gaps, compatibility risks, and the P4-MER implementation file map.
 - [Platform architecture](platform-architecture.md) — product model, service
   boundaries, data ownership, and main user flows.
 - [Current Rentify architecture](current-rentify-architecture.md) — verified
