@@ -25,6 +25,9 @@ code so implementation work can proceed without relying on chat history.
   safety guards against production databases, and multi-tenant test fixtures.
 - [Shared design tokens](design-tokens.md) — framework-neutral semantic tokens,
   accessibility contrast baselines, and multi-framework adapters for React and Angular.
+- [Experience renovation pack](experience/00_README.md) — **Proposed** brand,
+  screen, state and edge-case spec with renovation task packets
+  ([packets](experience/packets/)).
 - [End-to-end contract & browser testing](e2e-testing.md) — CI-capable browser
   test harness, golden buyer and merchant journeys, and OpenAPI contract validation.
 - [Phase 1 verification report](audits/phase-1-verification.md) — complete

@@ -12,12 +12,18 @@ module.exports = {
             subtle: 'var(--rentify-color-brand-primary-subtle)',
             secondary: 'var(--rentify-color-brand-secondary)',
           },
+          accent: {
+            DEFAULT: 'var(--rentify-color-brand-accent)',
+            subtle: 'var(--rentify-color-brand-accent-subtle)',
+          },
           surface: {
             base: 'var(--rentify-color-surface-base)',
+            canvas: 'var(--rentify-color-surface-canvas)',
             subtle: 'var(--rentify-color-surface-subtle)',
             muted: 'var(--rentify-color-surface-muted)',
             raised: 'var(--rentify-color-surface-raised)',
             hover: 'var(--rentify-color-surface-hover)',
+            inverse: 'var(--rentify-color-surface-inverse)',
             overlay: 'var(--rentify-color-surface-overlay)',
           },
           text: {
@@ -26,12 +32,14 @@ module.exports = {
             muted: 'var(--rentify-color-text-muted)',
             inverse: 'var(--rentify-color-text-inverse)',
             brand: 'var(--rentify-color-text-brand)',
+            'on-accent': 'var(--rentify-color-text-on-accent)',
             disabled: 'var(--rentify-color-text-disabled)',
           },
           border: {
             DEFAULT: 'var(--rentify-color-border-default)',
             subtle: 'var(--rentify-color-border-subtle)',
             strong: 'var(--rentify-color-border-strong)',
+            input: 'var(--rentify-color-border-input)',
             interactive: 'var(--rentify-color-border-interactive)',
             focus: 'var(--rentify-color-border-focus)',
           },
@@ -59,6 +67,15 @@ module.exports = {
             subtle: 'var(--rentify-color-info-subtle)',
             border: 'var(--rentify-color-info-border)',
           },
+          neutral: {
+            DEFAULT: 'var(--rentify-color-neutral-base)',
+            text: 'var(--rentify-color-neutral-text)',
+            subtle: 'var(--rentify-color-neutral-subtle)',
+            border: 'var(--rentify-color-neutral-border)',
+          },
+          price: {
+            sale: 'var(--rentify-color-price-sale)',
+          },
         },
       },
       borderRadius: {
@@ -75,6 +92,56 @@ module.exports = {
         'rentify-md': 'var(--rentify-shadow-md)',
         'rentify-lg': 'var(--rentify-shadow-lg)',
         'rentify-focus': 'var(--rentify-shadow-focus)',
+      },
+      fontSize: {
+        'rentify-display': [
+          'var(--rentify-text-display-size)',
+          { lineHeight: 'var(--rentify-text-display-line-height)', fontWeight: 'var(--rentify-text-display-weight)' },
+        ],
+        'rentify-h1': [
+          'var(--rentify-text-h1-size)',
+          { lineHeight: 'var(--rentify-text-h1-line-height)', fontWeight: 'var(--rentify-text-h1-weight)' },
+        ],
+        'rentify-h2': [
+          'var(--rentify-text-h2-size)',
+          { lineHeight: 'var(--rentify-text-h2-line-height)', fontWeight: 'var(--rentify-text-h2-weight)' },
+        ],
+        'rentify-h3': [
+          'var(--rentify-text-h3-size)',
+          { lineHeight: 'var(--rentify-text-h3-line-height)', fontWeight: 'var(--rentify-text-h3-weight)' },
+        ],
+        'rentify-body': [
+          'var(--rentify-text-body-size)',
+          { lineHeight: 'var(--rentify-text-body-line-height)', fontWeight: 'var(--rentify-text-body-weight)' },
+        ],
+        'rentify-body-sm': [
+          'var(--rentify-text-body-sm-size)',
+          { lineHeight: 'var(--rentify-text-body-sm-line-height)', fontWeight: 'var(--rentify-text-body-sm-weight)' },
+        ],
+        'rentify-label': [
+          'var(--rentify-text-label-size)',
+          { lineHeight: 'var(--rentify-text-label-line-height)', fontWeight: 'var(--rentify-text-label-weight)' },
+        ],
+        'rentify-caption': [
+          'var(--rentify-text-caption-size)',
+          { lineHeight: 'var(--rentify-text-caption-line-height)', fontWeight: 'var(--rentify-text-caption-weight)' },
+        ],
+        'rentify-price-lg': [
+          'var(--rentify-text-price-lg-size)',
+          { lineHeight: 'var(--rentify-text-price-lg-line-height)', fontWeight: 'var(--rentify-text-price-lg-weight)' },
+        ],
+        'rentify-price': [
+          'var(--rentify-text-price-size)',
+          { lineHeight: 'var(--rentify-text-price-line-height)', fontWeight: 'var(--rentify-text-price-weight)' },
+        ],
+      },
+      maxWidth: {
+        'rentify-content': 'var(--rentify-layout-content-max)',
+      },
+      transitionDuration: {
+        'rentify-fast': 'var(--rentify-transition-duration-fast)',
+        'rentify-base': 'var(--rentify-transition-duration-base)',
+        'rentify-slow': 'var(--rentify-transition-duration-slow)',
       },
       fontFamily: {
         rentify: ['var(--rentify-font-family-body)'],

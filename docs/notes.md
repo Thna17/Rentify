@@ -649,3 +649,26 @@ Progress:
     it (both would fail only at runtime).
 - **Next:** controllers that still query other domains' models directly
   (reads are allowed, but some would be clearer behind the owning service).
+
+## 2026-10-27 RX-F01 design tokens "Jade & Saffron"
+
+- **Current:** `@rentify/design-tokens` 1.1.0 carries the brand values and
+  new tokens from [the brand spec](experience/02_BRAND_AND_DESIGN_SYSTEM.md)
+  §2–4. Existing names are unchanged. `npm run verify:tokens` checks 60
+  contrast pairs (light and dark) and that `index.css` matches `tokens.json`
+  ([audit](design-tokens.md)). Only `marketplace-frontend/src/styles.css`
+  imports `index.css` today, so the marketplace is the only app whose token
+  values change visually.
+- **Current:** dark theme is opt-in (`data-theme="dark"` or `"system"`); the
+  package never darkens `:root` on its own.
+- **Open:** the pack says "ship as v1.0.0", but the package was already
+  1.0.0. It ships as 1.1.0 because no name is removed or renamed.
+- **Open (design review):** 02 does not give values for `brand.primaryActive`,
+  `surface.muted`/`hover`, `text.disabled`, the status `border` tokens, or
+  the dark status colors ("lightened to pass AA"). The chosen values pass the
+  validator and are listed in `packages/design-tokens/tokens.json`.
+  `text.onAccent` was added so saffron always carries dark ink, also in dark.
+- **Open (RX-F02/RX-F03):** the package names Kantumruy Pro and JetBrains
+  Mono but does not load them. Apps still hard-code colors; four indigo hex
+  fallbacks remain in `rentify-frontend/libs`, `marketplace-frontend/src` and
+  `admin-frontend/src`.
