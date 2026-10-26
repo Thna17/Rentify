@@ -41,7 +41,7 @@ function ContextPill({ icon: Icon, label, value }) {
 export default function POSEntry() {
   const navigate = useNavigate();
   const deviceId = useMemo(() => getPosDeviceId(), []);
-  const { activeStore, user, isLoading, activeStoreName } = useStorePOS();
+  const { activeStore, user, isLoading, hasPosPermission, activeStoreName } = useStorePOS();
 
   const [unlockPin, setUnlockPin] = useState("");
   const [setupPin, setSetupPin] = useState("");
@@ -74,6 +74,27 @@ export default function POSEntry() {
     return (
       <EntryShell>
         <LoadingState title="Loading POS Workspace" description="Connecting to Rentify unified session..." />
+      </EntryShell>
+    );
+  }
+
+  if (user?.type === "staff" && !hasPosPermission) {
+    return (
+      <EntryShell>
+        <div className="rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-lg space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100">
+            <LockKeyhole className="h-7 w-7 text-amber-600" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-bold text-slate-900">Access Denied: POS Terminal</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your staff account ({user.name || user.email}) does not have permission to access the Point of Sale terminal. Please contact your store administrator to enable POS permissions.
+            </p>
+          </div>
+          <Button variant="outline" className="w-full rounded-xl text-xs font-semibold" onClick={() => window.location.reload()}>
+            Refresh Session
+          </Button>
+        </div>
       </EntryShell>
     );
   }
