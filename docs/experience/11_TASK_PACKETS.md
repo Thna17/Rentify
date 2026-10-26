@@ -8,6 +8,8 @@ acceptance · tests · verification · rollout/rollback · docs). Compressed her
 no new authoritative record types without a contract packet · every string EN+KM · tokens only (no hex in components) · 5 states per screen ·
 360px first · WCAG 2.2 AA.
 
+**Every UI packet also reads `12_PAGE_WIREFRAMES.md`** for its pages (B01–B09 → Part A, M01–M09 → Part B, S01/P01/A02 → Part C).
+
 **Global verification:** `npm run verify:tokens` · `npm run verify:frontend` · `npm run verify:marketplace` · `npm run verify:admin` ·
 `npm run verify:core` / `verify:commerce` when backend touched · Playwright suites in `tests-playwright/` + `tools/e2e/` for listed cases.
 

@@ -33,6 +33,7 @@ exact definition of every screen, state and edge case for buyers, merchants, sta
 | 09 | `09_STATES_COPY_NOTIFICATIONS.md` | Status vocabulary EN/KM, badge tones, error envelope → copy, Telegram/email/in‑app templates |
 | 10 | `10_EDGE_CASES.md` | ~180 numbered cases mapped to golden journeys → tests |
 | 11 | `11_TASK_PACKETS.md` | Renovation work packages in the repo's task‑packet format, lanes, order, acceptance |
+| 12 | `12_PAGE_WIREFRAMES.md` | Exactly what every key page shows: mobile + desktop wireframes with numbered elements (wins on layout) |
 | — | `CLAUDE.md` | Short rules for Claude Code at repo root |
 
 ---
