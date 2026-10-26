@@ -103,6 +103,9 @@ export interface MarketplaceOrder {
   subtotal: string;
   deliveryFee: string;
   totalAmount: string;
+  customerInfo?: { name?: string; phone?: string } | null;
+  shippingInfo?: { address?: string } | null;
+  createdAt?: string;
   items: { productId: string; name: string; quantity: number; total: string }[];
   payment: { status: string; amountDue: string; collectedAmount: string; refundedAmount: string } | null;
 }
@@ -271,6 +274,10 @@ export class RentifyMarketplaceService {
 
   orders(): Observable<{ orders: MarketplaceOrder[] }> {
     return this.http.get<{ orders: MarketplaceOrder[] }>(`${this.commerce}/api/marketplace/my-orders`);
+  }
+
+  order(orderId: string): Observable<{ order: MarketplaceOrder }> {
+    return this.http.get<{ order: MarketplaceOrder }>(`${this.commerce}/api/marketplace/my-orders/${orderId}`);
   }
 
   reviews(productId: string): Observable<ProductReviewsResponse> {
