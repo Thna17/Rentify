@@ -3,27 +3,31 @@ import React from 'react';
 
 // Section ordering to match clean domain hierarchy
 const SECTION_ORDER = [
-  'overview',
-  'sell',
-  'customers',
+  'workspace',
+  'catalog',
+  'operations',
+  'channels',
   'insights',
-  'money',
-  'settings',
+  'manage',
 ];
 
 // Fallback section headers if not translated
 const DEFAULT_SECTION_TITLES = {
-  sell: 'Sell',
-  customers: 'Customers',
+  catalog: 'Catalog',
+  operations: 'Operations',
+  channels: 'Sales channels',
   insights: 'Insights',
-  money: 'Money',
-  settings: 'Settings',
+  manage: 'Manage',
 };
 
 export function NavMain({ items, currentTab, onTabChange }) {
   const { t } = useTranslation();
 
   const handleItemClick = (item) => {
+    if (item.externalHref) {
+      window.open(item.externalHref, '_blank', 'noopener,noreferrer');
+      return;
+    }
     onTabChange(item.path);
   };
 
@@ -61,9 +65,9 @@ export function NavMain({ items, currentTab, onTabChange }) {
   }));
 
   return (
-    <nav className="flex flex-col text-sm" aria-label="Sidebar Navigation">
+    <nav className="flex flex-col text-sm" aria-label={t('dashboard.shell.primary_navigation')}>
       {orderedSections.map(({ key, items: sectionItems }, sectionIdx) => {
-        const isOverviewSection = key === 'overview';
+        const isOverviewSection = key === 'workspace';
         const sectionTitle = getSectionTitle(key);
 
         return (
@@ -108,7 +112,10 @@ export function NavMain({ items, currentTab, onTabChange }) {
                         />
                       )}
 
-                      <span className="flex-1 truncate">{label}</span>
+                      <span className="flex-1 whitespace-normal break-words leading-5">{label}</span>
+                      {item.externalHref && (
+                        <span className="sr-only"> ({t('dashboard.shell.opens_new_window')})</span>
+                      )}
                     </button>
                   </li>
                 );

@@ -33,6 +33,8 @@ export const dashboardRoutes = {
   children: [
     { index: true, element: <Navigate to="overview" replace /> },
     { path: 'overview', element: <Overview /> },
+    { path: 'inventory', element: <ProductManagement /> },
+    { path: 'reports', element: <PlatformAnalytics /> },
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
     { path: 'customization', element: <Navigate to="/store-management" replace /> },
@@ -54,6 +56,7 @@ export const dashboardRoutes = {
     { path: 'settings/account', element: <AccountSettings /> },
     { path: 'settings/security', element: <SecuritySetting /> },
     { path: 'settings/staff', element: <StaffSetting /> },
+    { path: 'staff', element: <StaffSetting /> },
     { path: 'settings/payments', element: < PaymentSetting /> },
     { path: 'settings/billing', element: < BillingSetting />},
     { path: 'settings/preferences', element: < PreferencesSetting />},

@@ -37,6 +37,7 @@ export function TranslationProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem('appLanguage', language);
+    document.documentElement.lang = language === 'kh' ? 'km' : 'en';
   }, [language]);
 
   return (

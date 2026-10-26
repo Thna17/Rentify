@@ -1,5 +1,5 @@
-import { useMediaQuery } from '@rentify/utils';
-import { Menu, Search, X } from 'lucide-react';
+import { useMediaQuery, useTranslation } from '@rentify/utils';
+import { Languages, Menu, Search, X } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { NotificationDropdown } from './NotificationDropdown';
@@ -12,8 +12,11 @@ export function SiteHeader({
   onTabChange,
   searchFilter = '',
   setSearchFilter,
+  currentTab,
+  store,
 }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const { t, language, setLanguage } = useTranslation();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchContainerRef = useRef(null);
 
@@ -39,8 +42,12 @@ export function SiteHeader({
     };
   }, []);
 
-  const handleSelectTab = (tabPath) => {
-    onTabChange?.(tabPath);
+  const handleSelectTab = (tab) => {
+    if (tab.externalHref) {
+      window.open(tab.externalHref, '_blank', 'noopener,noreferrer');
+    } else {
+      onTabChange?.(tab.path);
+    }
     setSearchFilter?.('');
     setIsSearchFocused(false);
   };
@@ -50,13 +57,13 @@ export function SiteHeader({
       setIsSearchFocused(false);
       e.target.blur();
     } else if (e.key === 'Enter' && filteredTabs.length > 0) {
-      handleSelectTab(filteredTabs[0].path);
+      handleSelectTab(filteredTabs[0]);
       e.target.blur();
     }
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-4 bg-background/80 backdrop-blur-md text-foreground px-4 md:px-8">
+    <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/95 px-3 py-2 text-foreground backdrop-blur-md sm:px-4 md:px-6">
       <div className="flex items-center gap-3 flex-1 max-w-xl min-w-0">
         {(!isSidebarOpen || isMobile) && (
           <Button
@@ -64,17 +71,23 @@ export function SiteHeader({
             size="icon"
             onClick={onSidebarToggle}
             className="h-9 w-9 rounded-md shrink-0"
-            aria-label="Expand sidebar"
-            title="Expand sidebar"
+            aria-label={t('dashboard.shell.open_navigation')}
+            title={t('dashboard.shell.open_navigation')}
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
 
-        {/* Search Bar on the Left (over the former overview text area) */}
-        <div className="relative w-full max-w-md sm:max-w-lg" ref={searchContainerRef}>
+        <div className="min-w-0 sm:hidden">
+          <p className="truncate text-sm font-semibold">{currentTab?.displayName || currentTab?.label}</p>
+          <p className="truncate text-xs text-muted-foreground">{store?.name || t('dashboard.shell.your_store')}</p>
+        </div>
+
+        <div className="relative hidden w-full max-w-md sm:block sm:max-w-lg" ref={searchContainerRef}>
+          <label htmlFor="merchant-navigation-search" className="sr-only">{t('dashboard.shell.search_navigation')}</label>
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
           <Input
+            id="merchant-navigation-search"
             type="search"
             value={searchFilter}
             onChange={(e) => {
@@ -83,7 +96,7 @@ export function SiteHeader({
             }}
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search menu..."
+            placeholder={t('dashboard.shell.search_navigation')}
             className="w-full bg-card pl-10 pr-9 h-10 rounded-xl border-transparent [box-shadow:var(--shadow-soft)] text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
           />
           {searchFilter && (
@@ -94,7 +107,7 @@ export function SiteHeader({
                 setIsSearchFocused(false);
               }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
-              aria-label="Clear search"
+              aria-label={t('dashboard.shell.clear_search')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -113,7 +126,7 @@ export function SiteHeader({
                       className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs sm:text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        handleSelectTab(item.path);
+                        handleSelectTab(item);
                       }}
                     >
                       {Icon && (
@@ -134,7 +147,7 @@ export function SiteHeader({
                 })
               ) : (
                 <div className="px-3 py-3 text-center text-xs text-muted-foreground">
-                  No menu found
+                  {t('dashboard.shell.no_navigation_results')}
                 </div>
               )}
             </div>
@@ -142,7 +155,18 @@ export function SiteHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLanguage(language === 'en' ? 'kh' : 'en')}
+          className="min-h-10 min-w-10 gap-1.5 rounded-lg px-2"
+          aria-label={t('dashboard.shell.change_language')}
+          title={t('dashboard.shell.change_language')}
+        >
+          <Languages className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden text-xs font-semibold md:inline">{language === 'en' ? 'ខ្មែរ' : 'EN'}</span>
+        </Button>
         <NotificationDropdown onTabChange={onTabChange} />
       </div>
     </header>
