@@ -817,6 +817,23 @@ categories, SKU uniqueness, or publication rules.
 **Acceptance:** partial invalid data does not silently publish; job history and
 correction report are available.
 
+**Implemented on `feature/p4-merchant-experience`:** Commerce now owns a
+durable, Store-scoped `ProductImportJob` lifecycle with a versioned 1.0
+template, bounded server-side CSV parsing (5 MB/5,000 rows), authoritative
+preview, separate warning/error reason codes, idempotent creation, asynchronous
+row checkpoints, exact progress, 25-job history, safe resume, correction CSV,
+and Store-scoped Product/SKU export. Every accepted row is written through the
+existing Store catalog entitlement/category/product-limit rules and the
+canonical globally unique SKU constraint; Product, SKU, and row checkpoint are
+one transaction. Imports always create marketplace-hidden drafts, so import
+cannot publish a listing. Formula-leading input is rejected and all generated
+CSV cells are spreadsheet-safe. The merchant workspace supplies responsive
+table/card previews, explicit partial-import behavior, English/Khmer copy,
+permission, timeout, offline, conflict, and recovery states. This package does
+not add a distributed queue or user-requested cancellation: work is scheduled
+by the Commerce process, and an interrupted job is intentionally resumed from
+its durable checkpoint through the retry operation.
+
 #### P4-MER-005 — Unified order operations
 
 Present marketplace, storefront, POS, and invoice orders with channel label,

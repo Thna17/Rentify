@@ -37,9 +37,9 @@ test('P2-AUTHZ-001 Acceptance: Matrix schema, operations count, and structural c
 
   assert.equal(result.valid, true, `Matrix should be valid: ${result.errors.join(', ')}`);
   assert.equal(result.errors.length, 0);
-  assert.equal(result.totalOperations, 256, 'Expected exactly 256 operations (117 Core + 139 Commerce)');
+  assert.equal(result.totalOperations, 264, 'Expected exactly 264 operations (117 Core + 147 Commerce)');
   assert.equal(result.coreOperationsCount, 117, 'Core operations count must be 117');
-  assert.equal(result.commerceOperationsCount, 139, 'Commerce operations count must be 139');
+  assert.equal(result.commerceOperationsCount, 147, 'Commerce operations count must be 147');
 
   // Assert all 11 required actors are defined
   for (const actor of REQUIRED_ACTORS) {
@@ -119,6 +119,8 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 2 & 3 — Permitted vs Unpermi
   const testTable = [
     { opId: 'get_api_stores_storeId_products', permitted: 'allow', unpermitted: 'deny_403', desc: 'Catalog viewing with products permission' },
     { opId: 'post_api_stores_storeId_products', permitted: 'allow', unpermitted: 'deny_403', desc: 'Catalog creation with products permission' },
+    { opId: 'post_api_stores_storeId_product_imports', permitted: 'allow', unpermitted: 'deny_403', desc: 'CSV preview with products permission' },
+    { opId: 'post_api_stores_storeId_product_imports_jobId_retry', permitted: 'allow', unpermitted: 'deny_403', desc: 'Import retry with products permission' },
     { opId: 'post_api_stores_storeId_orders_pos', permitted: 'allow', unpermitted: 'deny_403', desc: 'POS order with orders permission' },
     { opId: 'uploadStoreProductImages', permitted: 'allow', unpermitted: 'deny_403', desc: 'Upload product media with products permission' },
     { opId: 'sendStaffInvitation', permitted: 'deny_403', unpermitted: 'deny_403', desc: 'Owner-only: staff cannot invite other staff' },
@@ -140,6 +142,7 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 4 — Unrelated Merchant', () 
     'getOwnStore',
     'updateOwnStore',
     'post_api_stores_storeId_products',
+    'post_api_stores_storeId_product_imports',
     'patch_api_stores_storeId_products_productId',
     'post_api_stores_storeId_orders_pos',
     'publishWebsite',
@@ -182,6 +185,7 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 7 — Public User', () => {
     { opId: 'authSignup', expected: 'allow', desc: 'Signup endpoint' },
     { opId: 'getOwnStore', expected: 'deny_401', desc: 'Merchant store requires auth' },
     { opId: 'post_api_stores_storeId_products', expected: 'deny_401', desc: 'Product creation requires auth' },
+    { opId: 'get_api_stores_storeId_product_imports_export', expected: 'deny_401', desc: 'Product export requires auth' },
     { opId: 'getAdminOverview', expected: 'deny_401', desc: 'Admin overview requires auth' },
   ];
 

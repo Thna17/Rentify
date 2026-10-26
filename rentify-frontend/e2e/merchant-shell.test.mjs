@@ -52,7 +52,7 @@ test('shell and page heading provide keyboard and semantic landmarks', () => {
   assert.match(layout, /id="merchant-main-content" tabIndex="-1"/);
   assert.match(nav, /<nav/);
   assert.match(pageHeader, /<header/);
-  assert.match(pageHeader, /aria-label="Breadcrumb"/);
+  assert.match(pageHeader, /aria-label=\{breadcrumbAriaLabel\}/);
   assert.match(styles, /:focus-visible/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
 });

@@ -458,6 +458,119 @@ paths:
         "409":
           $ref: "#/components/responses/Error409"
       operationId: post_api_stores_storeId_products
+  /api/stores/{storeId}/product-imports/template:
+    get:
+      tags: [Store Catalog]
+      summary: Download the versioned product CSV template
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "200": { description: Versioned UTF-8 CSV template, content: { text/csv: { schema: { type: string } } } }
+        "403": { $ref: "#/components/responses/Error403" }
+      operationId: get_api_stores_storeId_product_imports_template
+  /api/stores/{storeId}/product-imports/export:
+    get:
+      tags: [Store Catalog]
+      summary: Export authorized Store Product and SKU data
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "200": { description: Formula-safe UTF-8 CSV export, content: { text/csv: { schema: { type: string } } } }
+        "403": { $ref: "#/components/responses/Error403" }
+      operationId: get_api_stores_storeId_product_imports_export
+  /api/stores/{storeId}/product-imports:
+    get:
+      tags: [Store Catalog]
+      summary: List recent product import jobs
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "200": { description: Store-scoped import job history }
+        "403": { $ref: "#/components/responses/Error403" }
+      operationId: get_api_stores_storeId_product_imports
+    post:
+      tags: [Store Catalog]
+      summary: Upload CSV and create an idempotent pre-import preview
+      description: Parses and validates at most 5 MB or 5000 rows on the server. The Idempotency-Key and file hash identify a preview job; no Product is written until the job is started.
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: Authoritative row preview and durable job }
+        "400": { $ref: "#/components/responses/Error400" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "409": { $ref: "#/components/responses/Error409" }
+      operationId: post_api_stores_storeId_product_imports
+  /api/stores/{storeId}/product-imports/{jobId}:
+    get:
+      tags: [Store Catalog]
+      summary: Get Store-scoped import progress and result summary
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: jobId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "200": { description: Import job with at most 100 preview rows }
+        "404": { $ref: "#/components/responses/Error404" }
+      operationId: get_api_stores_storeId_product_imports_jobId
+  /api/stores/{storeId}/product-imports/{jobId}/start:
+    post:
+      tags: [Store Catalog]
+      summary: Start or resume an import job
+      description: Queues valid rows. Products are always created as marketplace-hidden drafts; invalid rows are never written.
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: jobId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "202": { description: "Job queued, resumed, or already completed" }
+        "409": { $ref: "#/components/responses/Error409" }
+      operationId: post_api_stores_storeId_product_imports_jobId_start
+  /api/stores/{storeId}/product-imports/{jobId}/retry:
+    post:
+      tags: [Store Catalog]
+      summary: Safely retry an interrupted import from its durable checkpoint
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: jobId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "202": { description: Job retry accepted or completed result replayed }
+        "409": { $ref: "#/components/responses/Error409" }
+      operationId: post_api_stores_storeId_product_imports_jobId_retry
+  /api/stores/{storeId}/product-imports/{jobId}/report:
+    get:
+      tags: [Store Catalog]
+      summary: Download a formula-safe correction report
+      x-client-generation: false
+      security: [{ userAccessTokenCookie: [] }, { staffAccessTokenCookie: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: jobId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "200": { description: CSV containing rejected rows and safe reason codes, content: { text/csv: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/Error404" }
+      operationId: get_api_stores_storeId_product_imports_jobId_report
   /api/stores/{storeId}/products/{productId}:
     patch:
       tags:

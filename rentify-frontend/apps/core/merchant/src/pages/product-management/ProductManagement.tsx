@@ -33,9 +33,6 @@ import { BulkPriceUpdateModal } from './components/BulkPriceUpdateModal';
 // @ts-expect-error Legacy JavaScript component has no declaration file yet.
 import { BulkStatusChangeModal } from './components/BulkStatusChangeModal';
 
-// @ts-expect-error Legacy JavaScript component has no declaration file yet.
-import { BulkCreateProductsModal } from './components/BulkCreateProductsModal';
-
 import { ConfirmDeleteDialog } from '@rentify/shared/ui/components/ConfirmDeleteDialog';
 import { InventoryDialog } from '@rentify/shared/ui/components/InventoryDialog';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
@@ -54,11 +51,6 @@ import { Card } from '@rentify/shared/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@rentify/shared/ui/alert';
 import { Download, Package, Plus, Upload } from 'lucide-react';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
-import { useCreateBulkProductsMutation } from '@rentify/apis';
-// @ts-expect-error JavaScript helper has no declaration file yet.
-import { uploadProductImages } from '../../services/productImages';
-// @ts-expect-error Legacy JavaScript hook has no declaration file yet.
-import { useShopCategories } from '../../hooks/useShopCategories';
 // @ts-expect-error Legacy JavaScript page has no declaration file yet.
 import StoreCatalogPage from './StoreCatalogPage';
 
@@ -165,8 +157,6 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
   const showSnackbar = useSnackbar();
-  const [createBulkProducts, { isLoading: isBulkCreating }] = useCreateBulkProductsMutation();
-  const { categories: shopCategories } = useShopCategories();
 
   // State management hooks
   const state = useProductManagementState();
@@ -275,13 +265,8 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
 
   // Handle export of selected products
   const handleBulkExport = useCallback((): void => {
-    const selectedProducts = products.filter((p: any) => selected.includes(p.id));
-    if (selectedProducts.length === 0) {
-      showSnackbar(t('dashboard.product.no_products_selected'), 'warning');
-      return;
-    }
-    showSnackbar(`Exported ${selectedProducts.length} products`, 'success');
-  }, [selected, products, showSnackbar, t]);
+    navigate('/products/import');
+  }, [navigate]);
 
   // Handle inventory quantity updates
   const handleInventoryUpdate = useCallback(async (): Promise<void> => {
@@ -700,7 +685,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
             showSnackbar(disabledReason || 'Action locked', 'error');
             return;
           }
-          state.setIsBulkCreateOpen(true);
+          navigate('/products/import');
         }}
         disabled={!canAddProduct}
         title={disabledReason || undefined}
@@ -709,17 +694,16 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         }`}
       >
         <Upload className="h-4 w-4" />
-        <span className="hidden sm:inline">Bulk Create</span>
+        <span className="hidden sm:inline">{t('dashboard.product.bulk_import')}</span>
       </Button>
       
       <Button
         variant="outline"
         onClick={handleBulkExport}
-        disabled={selected.length === 0}
         className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200"
       >
         <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">Export</span>
+        <span className="hidden sm:inline">{t('dashboard.imports.export')}</span>
       </Button>
       
       <Button
@@ -966,37 +950,6 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
       />
 
       {/* Modals and Dialogs */}
-      <BulkCreateProductsModal
-        open={state.isBulkCreateOpen}
-        onOpenChange={state.setIsBulkCreateOpen}
-        onSubmit={async (products: Product[]) => {
-          const preparedProducts = [];
-          for (const rawProduct of products as any[]) {
-            const files = (rawProduct.images || [])
-              .map((image: any) => image.file)
-              .filter(Boolean);
-            const images = await uploadProductImages({ files, websiteId });
-            const product = { ...rawProduct };
-            delete product.id;
-            delete product.images;
-            preparedProducts.push({
-              ...product,
-              price: Number(product.price),
-              stockQuantity: Number(product.stockQuantity || 0),
-              images,
-            });
-          }
-          await createBulkProducts({ websiteId, products: preparedProducts }).unwrap();
-          await refetch();
-          showSnackbar(
-            `Successfully created ${products.length} products`,
-            'success'
-          );
-        }}
-        categories={shopCategories}
-        isLoading={isBulkCreating}
-      />
-
       <ConfirmDeleteDialog
         open={state.openDeleteDialog}
         onClose={() => state.setOpenDeleteDialog(false)}

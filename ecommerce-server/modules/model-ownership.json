@@ -2,10 +2,11 @@
   "description": "Which module may write each model. Other modules may read any model through the shared registry, but must ask the owning module to create, update or delete rows. Checked by scripts/quality/check-model-ownership.js.",
   "owners": {
     "Product": ["catalog", "store-catalog"],
-    "ProductVariant": ["catalog"],
+    "ProductVariant": ["catalog", "store-catalog"],
     "ProductOption": ["catalog"],
     "Category": ["catalog"],
     "ProductReview": ["store-catalog"],
+    "ProductImportJob": ["store-catalog"],
     "StoreDeliveryPolicy": ["checkout"],
     "Cart": ["cart"],
     "CartItem": ["cart"],

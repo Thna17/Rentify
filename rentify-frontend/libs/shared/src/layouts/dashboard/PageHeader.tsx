@@ -6,16 +6,17 @@ interface PageHeaderProps {
   icon?: LucideIcon;
   actions?: React.ReactNode;
   breadcrumb?: { label: string; href?: string }[];
+  breadcrumbAriaLabel?: string;
 }
 
 /** Merchant page heading shared by operational screens. */
 export const PageHeader: React.FC<PageHeaderProps> = ({
-  title, description, icon: Icon, actions, breadcrumb,
+  title, description, icon: Icon, actions, breadcrumb, breadcrumbAriaLabel = 'Breadcrumb',
 }) => (
   <header className="w-full border-b border-border/70 bg-background px-4 py-5 sm:px-6 md:px-8 md:py-7">
     <div className="mx-auto max-w-[1400px]">
       {breadcrumb?.length ? (
-        <nav aria-label="Breadcrumb" className="mb-3">
+        <nav aria-label={breadcrumbAriaLabel} className="mb-3">
           <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
             {breadcrumb.map((item, index) => {
               const current = index === breadcrumb.length - 1;

@@ -100,7 +100,8 @@ The Commerce OpenAPI contract covers all 137 active mounted Express operations a
 | **Marketplace Catalog** | `/api/marketplace/products`, `/api/marketplace/search`, `/api/marketplace/stores/:storeId/products` | Public marketplace product listing, filtering by category and store, keyword search, detailed product inspection with stock availability. |
 | **Marketplace Categories** | `/api/marketplace/categories` | Public marketplace product categories with active product counts. |
 | **Store Catalog Management** | `/api/stores/:storeId/products*` | Merchant omnichannel product catalog management, barcode scanning lookup, variant management, stock updates, marketplace visibility toggle. |
-| **Storefront Catalog** | `/api/product/*` | Website-scoped product discovery, product details with variants, CSV bulk import, inventory adjustments. |
+| **Storefront Catalog** | `/api/product/*` | Website-scoped compatibility product discovery, product details with variants, legacy CSV bulk import, and inventory adjustments. |
+| **Merchant Product Jobs** | `/api/stores/{storeId}/product-imports/*` | Store-scoped versioned CSV preview, asynchronous draft import, progress/history, correction reports, safe retry, and authorized Product/SKU export. |
 | **Storefront Categories** | `/api/categories/*` | Website-scoped category CRUD and tree listing. |
 | **Marketplace Shopping Carts** | `/api/marketplace/cart*`, `/api/cart*` | Guest session and authenticated buyer carts, item addition, quantity updates, item removal, cart clearing, and guest-to-buyer cart merge upon sign-in. |
 | **Storefront Shopping Carts** | `/api/storefront/:websiteId/cart*`, `/api/cart/:websiteId*` | Website-scoped shopping cart operations and quick-add support. |

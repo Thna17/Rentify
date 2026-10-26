@@ -9,6 +9,7 @@ const StoreManagement = lazy(() => import('../pages/store-management/StoreManage
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
 const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
+const ProductImports = lazy(() => import('../pages/product-imports/ProductImports'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
 const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
@@ -43,6 +44,7 @@ export const dashboardRoutes = {
     { path: 'products', element: <ProductManagement /> },
     { path: 'catalog', element: <StoreCatalogPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
+    { path: 'products/import', element: <ProductImports /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },
     { path: 'orders', element: <OrderManagement /> },

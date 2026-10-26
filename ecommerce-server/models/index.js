@@ -21,6 +21,7 @@ const StoreAccess = require('./StoreAccess');
 const OrderEvent = require('./OrderEvent');
 const StoreDeliveryPolicy = require('./StoreDeliveryPolicy');
 const ProductReview = require('./ProductReview');
+const ProductImportJob = require('./ProductImportJob');
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -152,4 +153,5 @@ module.exports = {
   OrderEvent,
   StoreDeliveryPolicy,
   ProductReview,
+  ProductImportJob,
 };

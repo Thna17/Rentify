@@ -100,7 +100,7 @@ function category(value) {
   return result;
 }
 
-async function create(store, input) {
+function prepareCreate(store, input) {
   const name = text(input.name, 200, 'Name');
   const price = money(input.price, 'price');
   const marketplaceCategory = category(input.marketplaceCategory);
@@ -110,8 +110,15 @@ async function create(store, input) {
   if (status === 'active' && stockQuantity === 0) fail('Add stock before publishing the product');
   const description = typeof input.description === 'string' ? input.description.trim().slice(0, 4000) : '';
   const images = validateImages(input.images, store.storeId);
-  return sequelize.transaction(async (transaction) => {
-    // 1. Atomically lock store record to serialize concurrent product creations
+  return {
+    name, price, marketplaceCategory, stockQuantity, status, description, images,
+    marketplaceVisibility: visibility(input.marketplaceVisibility),
+  };
+}
+
+async function createInsideTransaction(store, input, transaction) {
+  const { name, price, marketplaceCategory, stockQuantity, status, description, images } = input;
+  // 1. Atomically lock store record to serialize concurrent product creations
     const storeAccess = await StoreAccess.findByPk(store.storeId, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -158,11 +165,18 @@ async function create(store, input) {
     websiteNiche,
     productType,
     name, description, price, marketplaceCategory, images,
-    marketplaceVisibility: visibility(input.marketplaceVisibility),
+    marketplaceVisibility: input.marketplaceVisibility,
     stockQuantity, status,
     slug: await uniqueSlug(store.storeId, name, transaction),
     }, { transaction });
-  });
+}
+
+async function create(store, input, options = {}) {
+  // Keep request validation outside the transaction so malformed or
+  // cross-Store input is rejected before a database connection is acquired.
+  const prepared = prepareCreate(store, input);
+  if (options.transaction) return createInsideTransaction(store, prepared, options.transaction);
+  return sequelize.transaction((transaction) => createInsideTransaction(store, prepared, transaction));
 }
 
 async function listOwn(storeId, query = {}) {

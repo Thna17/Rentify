@@ -21,6 +21,10 @@ export const ALL_TABS = [
     roles: ['admin', 'user', 'staff'], permission: 'manage_products', section: 'catalog',
   },
   {
+    name: 'dashboard.imports.title', label: 'Product import & export', icon: Package, path: 'products/import',
+    roles: ['admin', 'user', 'staff'], permission: 'manage_products', hideInSidebar: true,
+  },
+  {
     name: 'dashboard.product.detail', label: 'Product Detail', icon: Package, path: 'products/:id',
     roles: ['admin', 'user', 'staff'], permission: 'manage_products', hideInSidebar: true,
   },
