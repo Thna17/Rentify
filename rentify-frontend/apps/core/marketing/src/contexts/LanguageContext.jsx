@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import enTranslations from '../locales/en.json';
 import khTranslations from '../locales/kh.json';
 
@@ -10,11 +10,26 @@ const translations = {
 const LanguageContext = createContext(undefined);
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('EN');
+  const [language, setLanguage] = useState(() => {
+    try {
+      return localStorage.getItem('rentify-language') === 'KH' ? 'KH' : 'EN';
+    } catch {
+      return 'EN';
+    }
+  });
 
   const toggleLanguage = () => {
-    setLanguage(language === 'EN' ? 'KH' : 'EN');
+    setLanguage((current) => (current === 'EN' ? 'KH' : 'EN'));
   };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rentify-language', language);
+    } catch {
+      // Language still works for the current page when storage is unavailable.
+    }
+    document.documentElement.lang = language === 'KH' ? 'km' : 'en';
+  }, [language]);
 
   const t = (key) => {
     const dictionary = translations[language];

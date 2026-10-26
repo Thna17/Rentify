@@ -737,8 +737,32 @@ saved progress, contact verification, primary category, Store details, and an
 honest final status.
 
 **Depends on:** P2 identity/entitlements, P0 decisions
-**Acceptance:** retries create no duplicate Store/Website/subscription; a
-marketplace-only merchant reaches a useful workspace without a Website.
+**Acceptance:**
+
+- a merchant explicitly chooses marketplace-only or marketplace plus
+  storefront, and only the storefront path asks for a template;
+- refresh, browser back, authentication return, and a later visit restore the
+  safe local draft while authenticated Store, Website, approval, and contact
+  verification responses remain authoritative;
+- verified contact, Store name, and a reviewed primary category are required
+  before completion; validation, loading, offline, timeout, forbidden,
+  conflict, server-error, and retry states explain a safe next action;
+- repeated and concurrent submission creates at most one Store, one Website,
+  and one linked subscription, with integration coverage for replay and the
+  unique-constraint race;
+- a marketplace-only merchant reaches the unified merchant workspace without
+  a Website or storefront subscription and sees the real seller-approval
+  status rather than a claim that the Store is live;
+- an existing marketplace-only Store can add a Website later without changing
+  its Store identity or recreating Product data, and `websiteId` is never used
+  as merchant or Store identity;
+- desktop and 360 px mobile flows support keyboard focus, semantic landmarks,
+  labelled fields, reduced motion, 200% zoom, and complete English/Khmer copy;
+- analytics events contain only path, step, result, status, and boolean entity
+  presence—never contact details, entity IDs, secrets, or free-form input;
+- focused frontend state/localization tests, Core Store/Website idempotency
+  integration tests, lint, typecheck, marketing build, and representative
+  desktop/mobile visual checks pass.
 
 #### P4-MER-002 — Merchant launch checklist
 
