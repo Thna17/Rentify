@@ -626,8 +626,14 @@ function publicProduct(product, ratingSummary) {
         optionValues: v.optionValues || {},
         isDefault: Boolean(v.isDefault),
         status: v.status,
+        version: v.version ?? 0,
       }))
-    : (Array.isArray(product.nicheAttributes?.variants) ? product.nicheAttributes.variants : []);
+    : (Array.isArray(product.nicheAttributes?.variants)
+        ? product.nicheAttributes.variants.map((v) => ({
+            ...v,
+            version: v.version ?? 0,
+          }))
+        : []);
 
   return {
     id: product.id, storeId: product.storeId, name: product.name,
@@ -658,7 +664,7 @@ async function listPublic(query = {}) {
     ],
     distinct: true, subQuery: false,
     order: [
-      [sequelize.literal("(JSON_EXTRACT(images, '$[0].url') LIKE '%res.cloudinary.com%')"), 'DESC'],
+      [sequelize.literal("(JSON_EXTRACT(`Product`.`images`, '$[0].url') LIKE '%res.cloudinary.com%')"), 'DESC'],
       ['createdAt', 'DESC'],
     ],
     offset: (page - 1) * limit, limit,

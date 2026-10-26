@@ -66,7 +66,26 @@ async function auditSubscriptionsEntitlements({ coreModels = {}, storeId = null,
 
     // 2. Subscription lifecycle checks
     if (Subscription) {
-      const sub = await Subscription.findOne({ where: { storeId: store.id } });
+      let sub = null;
+      try {
+        sub = await Subscription.findOne({ where: { storeId: store.id } });
+      } catch {
+        sub = null;
+      }
+      if (!sub && store.ownerUserId) {
+        try {
+          sub = await Subscription.findOne({ where: { userId: store.ownerUserId } });
+        } catch {
+          sub = null;
+        }
+      }
+      if (!sub && store.websiteId) {
+        try {
+          sub = await Subscription.findOne({ where: { websiteId: store.websiteId } });
+        } catch {
+          sub = null;
+        }
+      }
       if (sub) {
         if (sub.status === 'expired' || sub.status === 'past_due' || sub.status === 'cancelled') {
           const endDateMs = sub.endDate ? new Date(sub.endDate).getTime() : 0;

@@ -7,6 +7,8 @@ const categories = Object.freeze([
 
 const SYNONYMS = {
   ceramics: 'Pottery',
+  'handicrafts & pottery': 'Pottery',
+  'fashion & textiles': 'Clothing',
 };
 
 const canonicalCategory = (value) => {

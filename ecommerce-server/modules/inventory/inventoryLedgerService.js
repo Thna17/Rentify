@@ -277,6 +277,20 @@ async function mutateBalance({
             transaction: tx,
           });
         }
+      } else if (balance.productId) {
+        const productRec = await Product.findByPk(balance.productId, { transaction: tx, attributes: ['id', 'status'] });
+        if (productRec) {
+          const nextStatus = newOnHand === 0 && productRec.status === 'active'
+            ? 'out_of_stock'
+            : (newOnHand > 0 && productRec.status === 'out_of_stock' ? 'active' : productRec.status);
+          await Product.update({
+            stockQuantity: newOnHand,
+            status: nextStatus,
+          }, {
+            where: { id: balance.productId },
+            transaction: tx,
+          });
+        }
       }
     } catch (projectionErr) {
       logger.warn(`Failed to update compatibility stock projection for SKU ${skuId}: ${projectionErr.message}`, {
