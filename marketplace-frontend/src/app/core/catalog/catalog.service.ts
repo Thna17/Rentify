@@ -441,10 +441,58 @@ const toProductFromRentify = (
   const subcategory = explicitSub || classification.subcategory;
   const subcategorySlugVal = explicitSub ? subcategorySlug(explicitSub) : classification.subcategorySlug;
 
+  const rawVariants = (api as any).productVariants || (api as any).variants || [];
+  const productVariants = rawVariants.map((v: any, idx: number) => {
+    const vPrice = typeof v.price === 'string' ? parseFloat(v.price) || price : Number(v.price) || price;
+    const vStock = v.stockQuantity !== undefined ? Number(v.stockQuantity) : stock;
+    const vOptions =
+      v.optionValues && typeof v.optionValues === 'object'
+        ? v.optionValues
+        : v.label
+          ? { Option: v.label }
+          : {};
+    return {
+      id: v.id || `${api.id}-v${idx + 1}`,
+      productId: api.id,
+      sku: v.sku || `${api.id}-SKU-${idx + 1}`,
+      barcode: v.barcode || null,
+      price: vPrice,
+      compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : undefined,
+      stockQuantity: vStock,
+      isDefault: Boolean(v.isDefault ?? idx === 0),
+      optionValues: vOptions,
+      image: v.image || v.url || null,
+      label: v.label || Object.values(vOptions).join(' / ') || `Option ${idx + 1}`,
+      status: (vStock === 0 ? 'out-of-stock' : 'active') as 'out-of-stock' | 'active',
+    };
+  });
+
+  const optionMap = new Map<string, Set<string>>();
+  for (const pv of productVariants) {
+    for (const [k, val] of Object.entries(pv.optionValues)) {
+      if (!optionMap.has(k)) optionMap.set(k, new Set());
+      optionMap.get(k)!.add(val as string);
+    }
+  }
+  const options =
+    (api as any).options ||
+    Array.from(optionMap.entries()).map(([name, set]) => ({
+      name,
+      values: Array.from(set),
+    }));
+
+  const hasVariants = (api as any).hasVariants ?? productVariants.length > 1;
+  const sku = (api as any).sku || productVariants[0]?.sku || `SKU-${api.id.slice(0, 8).toUpperCase()}`;
+
   return {
     id: api.id,
     name: api.name,
     slug: (api as any).slug || api.id,
+    sku,
+    barcode: (api as any).barcode || null,
+    hasVariants,
+    productVariants,
+    options,
     image,
     images,
     variants: ((api as any).variants ?? []).map(

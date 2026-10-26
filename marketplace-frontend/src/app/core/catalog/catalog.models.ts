@@ -8,10 +8,35 @@
 
 export type StockStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
 
+export interface ProductVariantView {
+  id: string;
+  productId: string;
+  sku: string;
+  barcode?: string | null;
+  price: number;
+  compareAtPrice?: number;
+  stockQuantity: number;
+  isDefault?: boolean;
+  optionValues: Record<string, string>;
+  image?: string | null;
+  label?: string;
+  status?: 'active' | 'archived' | 'out-of-stock';
+}
+
+export interface ProductOptionView {
+  name: string;
+  values: string[];
+}
+
 export interface Product {
   id: string;
   name: string;
   slug: string;
+  sku?: string;
+  barcode?: string | null;
+  hasVariants?: boolean;
+  productVariants?: ProductVariantView[];
+  options?: ProductOptionView[];
   /** Null until real imagery exists; the UI renders a labelled placeholder. */
   image: string | null;
   /**

@@ -20,6 +20,7 @@ import { PROMO_SLOTS } from '../core/promos/promos.data';
 import { HomeHeroComponent } from '../components/user/home/home-hero/home-hero.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
 import { Category, Product, isCuratedProduct, isCuratedStore } from '../core/catalog/catalog.models';
+import { SeoService } from '../core/seo/seo.service';
 
 interface CategoryShelf {
   slug: string;
@@ -919,8 +920,10 @@ interface CategoryShelf {
 })
 export class HomeComponent {
   protected readonly catalog = inject(CatalogService);
+  private readonly seo = inject(SeoService);
 
   constructor() {
+    this.seo.setDefaultMetadata();
     // Categories arrive asynchronously, so the rail's scroll width is not known
     // at construction. Re-measure once the list lands (after the DOM has caught
     // up), and again whenever the viewport changes how many cards fit.
