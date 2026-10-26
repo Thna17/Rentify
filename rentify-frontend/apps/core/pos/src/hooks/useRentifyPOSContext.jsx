@@ -204,6 +204,13 @@ export function RentifyPOSProvider({ children }) {
 
   const exchangeRate = 4100;
 
+  const hasPosPermission = useMemo(() => {
+    if (!user) return false;
+    if (user.type !== 'staff') return true;
+    const permissions = Array.isArray(user.permissions) ? user.permissions : [];
+    return permissions.includes('pos') || permissions.includes('manage_pos');
+  }, [user]);
+
   const filterProductsForStore = useCallback((products) => {
     if (!Array.isArray(products)) return [];
     if (!activeStore?.id) return products;
@@ -214,6 +221,7 @@ export function RentifyPOSProvider({ children }) {
     isLoading: loading,
     error,
     user,
+    hasPosPermission,
     store,
     stores,
     activeStore,

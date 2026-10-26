@@ -5,143 +5,322 @@ import { CartService } from '../core/cart/cart.service';
 import { CatalogService } from '../core/catalog/catalog.service';
 import { ProductRailComponent } from '../components/user/catalog/product-rail/product-rail.component';
 import { WishlistService } from '../core/wishlist/wishlist.service';
-import { CartLine } from '../core/catalog/catalog.models';
+import { CartLine, StoreCartGroup, StoreCartGroupLine } from '../core/catalog/catalog.models';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { TranslateService } from '../core/i18n/translate.service';
+import { SeoService } from '../core/seo/seo.service';
 
 @Component({
   selector: 'app-cart',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductRailComponent],
+  imports: [
+    RouterLink,
+    NavbarComponent,
+    FooterComponent,
+    IconComponent,
+    ProductRailComponent,
+    TranslatePipe,
+  ],
   template: `
     <app-navbar />
 
     @if (!cart.isEmpty()) {
       <section class="container cart-layout">
         <header class="cart-header">
-          <h1>Your cart</h1>
+          <h1>{{ 'cart.title' | translate }}</h1>
           <p class="sub">
-            {{ cart.count() }} {{ cart.count() === 1 ? 'item' : 'items' }} from
-            {{ storeCount() }}
-            {{ storeCount() === 1 ? 'seller' : 'sellers' }}
+            {{ 'cart.itemsFromSellers' | translate:{
+              count: cart.count(),
+              stores: storeCount(),
+              itemWord: cart.count() === 1 ? 'item' : 'items',
+              sellerWord: storeCount() === 1 ? 'seller' : 'sellers'
+            } }}
           </p>
         </header>
 
+        <!-- Multi-vendor marketplace educational banner -->
+        <div class="multi-vendor-banner" role="note">
+          <ui-icon name="truck" [size]="18" />
+          <div class="banner-text">
+            <strong>{{ 'cart.multiVendorBanner' | translate }}</strong>
+            <p>{{ 'cart.separateShipmentNotice' | translate }}</p>
+          </div>
+        </div>
+
+        @if (cart.error()) {
+          <div class="cart-error-banner" role="alert">
+            <ui-icon name="info" [size]="18" />
+            <span>{{ cart.error() }}</span>
+            <button type="button" class="btn btn-outline btn-sm" (click)="cart.retry()">
+              {{ 'cart.retry' | translate }}
+            </button>
+          </div>
+        }
+
         <div class="cart-items">
-          <!-- Grouped by seller: this is a multi-vendor marketplace, and items
-               from different artisans ship separately. -->
-          @for (group of groups(); track group.storeId) {
-            <div class="store-group card">
-              <a class="store-label" [routerLink]="['/stores', group.storeId]">
-                <ui-icon name="store" [size]="14" /> {{ group.sellerName }}
-                <span>Separate shipment</span>
-              </a>
+          <!-- Distinct Store & Channel Groups -->
+          @for (group of cart.groups(); track group.storeId) {
+            <div
+              class="store-group card"
+              [class.not-ready]="!group.checkoutReady"
+              [attr.aria-labelledby]="'store-heading-' + group.storeId"
+            >
+              <header class="group-header">
+                <div class="group-brand">
+                  <a
+                    class="store-label"
+                    [routerLink]="['/stores', group.storeId]"
+                    [id]="'store-heading-' + group.storeId"
+                  >
+                    <ui-icon name="store" [size]="16" />
+                    <span class="seller-title">{{ group.sellerName }}</span>
+                  </a>
+                  <span
+                    class="channel-badge"
+                    [class.storefront]="group.channel === 'storefront'"
+                  >
+                    {{
+                      (group.channel === 'storefront'
+                        ? 'cart.channelStorefront'
+                        : 'cart.channelMarketplace'
+                      ) | translate
+                    }}
+                  </span>
+                </div>
+                <span class="shipment-badge">
+                  <ui-icon name="package" [size]="12" />
+                  {{ 'cart.separateShipment' | translate }}
+                </span>
+              </header>
 
-              @for (line of group.lines; track line.product.id) {
-                <div class="cart-item">
-                  <div class="item-row">
-                    <a class="item-thumb img-placeholder" [routerLink]="['/product', line.product.id]">
-                      @if (line.product.image) {
-                        <img [src]="line.product.image" [alt]="line.product.name" />
-                      } @else {
-                        {{ line.product.name }}
-                      }
-                    </a>
-                    <div class="item-main">
-                      <a
-                        class="item-name"
-                        [routerLink]="['/product', line.product.id]"
-                        >{{ line.product.name }}</a
-                      >
-                      <span class="item-cat">{{ line.product.categoryName }}</span>
-                      <span class="unit"
-                        >\${{ line.product.price.toFixed(2) }} each</span
-                      >
-
-                      <div class="qty-stepper">
-                        <button
-                          type="button"
-                          (click)="cart.changeQuantity(line.product.id, -1)"
-                          aria-label="Decrease quantity"
-                        >
-                          <ui-icon name="minus" [size]="13" />
-                        </button>
-                        <span aria-live="polite">{{ line.quantity }}</span>
-                        <button
-                          type="button"
-                          (click)="cart.changeQuantity(line.product.id, 1)"
-                          [disabled]="line.quantity >= line.product.stock"
-                          aria-label="Increase quantity"
-                        >
-                          <ui-icon name="plus" [size]="13" />
-                        </button>
-                      </div>
-                      @if (line.quantity >= line.product.stock) {
-                        <small class="max-note"
-                          >Only {{ line.product.stock }} in stock</small
-                        >
-                      }
-                    </div>
-                    <div class="item-side">
-                      <span class="line-total"
-                        >\${{ line.lineTotal.toFixed(2) }}</span
-                      >
-                      <button
-                        type="button"
-                        class="move"
-                        (click)="moveToWishlist(line)"
-                      >
-                        <ui-icon name="heart" [size]="13" /> Save for later
-                      </button>
-                      <button
-                        type="button"
-                        class="remove"
-                        (click)="cart.remove(line.product.id)"
-                      >
-                        <ui-icon name="trash" [size]="13" /> Remove
-                      </button>
-                    </div>
-                  </div>
+              @if (group.hasStalePrices) {
+                <div class="stale-alert" role="alert">
+                  <ui-icon name="info" [size]="15" />
+                  <span>{{ 'cart.priceStaleReview' | translate }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs acknowledge-btn"
+                    (click)="cart.acknowledgeStalePrices(group.storeId)"
+                  >
+                    {{ 'cart.acknowledgePrice' | translate }}
+                  </button>
                 </div>
               }
+
+              <div class="group-items">
+                @for (line of group.lines; track line.product.id) {
+                  <div class="cart-item" [class.unavailable]="!line.available">
+                    <div class="item-row">
+                      <a
+                        class="item-thumb img-placeholder"
+                        [routerLink]="['/product', line.product.id]"
+                      >
+                        @if (line.product.image) {
+                          <img [src]="line.product.image" [alt]="line.product.name" />
+                        } @else {
+                          <span>{{ line.product.name }}</span>
+                        }
+                      </a>
+                      <div class="item-main">
+                        <a
+                          class="item-name"
+                          [routerLink]="['/product', line.product.id]"
+                        >
+                          {{ line.product.name }}
+                        </a>
+
+                        <div class="item-sub-meta">
+                          <span class="item-cat">{{ line.product.categoryName }}</span>
+                          @if (line.sku) {
+                            <span class="sku-tag">SKU: {{ line.sku }}</span>
+                          }
+                          @if (line.optionValues) {
+                            @for (entry of optionEntries(line.optionValues); track entry[0]) {
+                              <span class="opt-tag">{{ entry[0] }}: {{ entry[1] }}</span>
+                            }
+                          }
+                        </div>
+
+                        @if (line.isPriceStale) {
+                          <span class="price-stale-tag">
+                            {{
+                              'cart.priceChanged'
+                                | translate
+                                  : { was: line.unitPrice.toFixed(2), now: line.currentPrice.toFixed(2) }
+                            }}
+                          </span>
+                        } @else {
+                          <span class="unit">\${{ line.currentPrice.toFixed(2) }} each</span>
+                        }
+
+                        @if (!line.available) {
+                          <span class="stock-badge oos">{{ 'cart.outOfStock' | translate }}</span>
+                        } @else if (line.stockWarning) {
+                          <span class="stock-badge low">{{ line.stockWarning }}</span>
+                        }
+
+                        <div class="qty-stepper">
+                          <button
+                            type="button"
+                            (click)="cart.changeQuantity(line.product.id, -1)"
+                            aria-label="Decrease quantity"
+                          >
+                            <ui-icon name="minus" [size]="13" />
+                          </button>
+                          <span aria-live="polite">{{ line.quantity }}</span>
+                          <button
+                            type="button"
+                            (click)="cart.changeQuantity(line.product.id, 1)"
+                            [disabled]="
+                              !line.available ||
+                              (line.stockLimit !== undefined &&
+                                line.quantity >= line.stockLimit)
+                            "
+                            aria-label="Increase quantity"
+                          >
+                            <ui-icon name="plus" [size]="13" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="item-side">
+                        <span class="line-total">\${{ line.lineTotal.toFixed(2) }}</span>
+                        <button
+                          type="button"
+                          class="move"
+                          (click)="moveToWishlist(line)"
+                        >
+                          <ui-icon name="heart" [size]="13" /> {{ 'cart.saveForLater' | translate }}
+                        </button>
+                        <button
+                          type="button"
+                          class="remove"
+                          (click)="cart.remove(line.product.id)"
+                        >
+                          <ui-icon name="trash" [size]="13" /> {{ 'cart.remove' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Authoritative Commerce Store Financials & Independent Checkout Button -->
+              <footer class="group-footer">
+                <div class="financial-breakdown">
+                  <div class="fin-row">
+                    <span>{{ 'cart.subtotal' | translate }}</span>
+                    <strong>\${{ group.subtotal }}</strong>
+                  </div>
+                  <div class="fin-row">
+                    <span>{{ 'cart.deliveryFee' | translate }}</span>
+                    <span>{{
+                      group.deliveryFee
+                        ? '\$' + group.deliveryFee
+                        : ('cart.freeDelivery' | translate)
+                    }}</span>
+                  </div>
+                  <div class="fin-row fin-total">
+                    <span>{{ 'cart.exactTotal' | translate }}</span>
+                    <strong>\${{ group.totalAmount || group.subtotal }}</strong>
+                  </div>
+                </div>
+
+                <div class="group-actions">
+                  @if (group.checkoutReady) {
+                    <div class="ready-pill">
+                      <ui-icon name="check" [size]="14" />
+                      <span>{{ 'cart.readyForCheckout' | translate }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-primary checkout-store-btn"
+                      (click)="checkoutStore(group.storeId)"
+                    >
+                      {{ 'cart.checkoutStore' | translate:{ name: group.sellerName } }}
+                      <ui-icon name="arrow-right" [size]="14" color="#fff" />
+                    </button>
+                    <small class="preserved-hint">{{ 'cart.preservedNotice' | translate }}</small>
+                  } @else {
+                    <div class="issues-box" role="alert">
+                      <div class="issues-title">
+                        <ui-icon name="info" [size]="14" />
+                        <span>{{ 'cart.notReady' | translate }}</span>
+                      </div>
+                      <ul>
+                        @for (issue of group.issues; track issue) {
+                          <li>{{ formatIssue(issue) }}</li>
+                        }
+                        @if (group.hasStalePrices) {
+                          <li>{{ 'cart.priceStaleReview' | translate }}</li>
+                        }
+                      </ul>
+                      @if (group.hasStalePrices) {
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-xs ack-btn"
+                          (click)="cart.acknowledgeStalePrices(group.storeId)"
+                        >
+                          {{ 'cart.acknowledgePrice' | translate }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </footer>
             </div>
           }
 
           <button class="btn btn-ghost btn-sm continue" routerLink="/products">
-            <ui-icon name="arrow-left" [size]="14" /> Continue shopping
+            <ui-icon name="arrow-left" [size]="14" /> {{ 'cart.continueShopping' | translate }}
           </button>
         </div>
 
         <aside class="summary card">
-          <h2>Order summary</h2>
+          <h2>{{ 'cart.orderSummary' | translate }}</h2>
           <div class="row">
-            <span>Subtotal ({{ cart.count() }} items)</span>
+            <span>{{ 'cart.subtotal' | translate }} ({{ cart.count() }} items)</span>
             <span>\${{ cart.subtotal().toFixed(2) }}</span>
           </div>
           <div class="row">
-            <span>Current delivery estimate</span>
+            <span>{{ 'cart.deliveryFee' | translate }}</span>
             @if (cart.shipping() === 0) {
-              <span class="free">Free</span>
+              <span class="free">{{ 'cart.freeDelivery' | translate }}</span>
             } @else {
               <span>\${{ cart.shipping().toFixed(2) }}</span>
             }
           </div>
 
-          <p class="ship-hint">
-            Final shipping will be confirmed for each seller shipment at checkout.
-          </p>
+          <div class="stores-summary-box">
+            <span class="stores-count-label">
+              <ui-icon name="store" [size]="14" />
+              {{ storeCount() }} {{ storeCount() === 1 ? 'store cart' : 'store carts' }}
+            </span>
+            <p class="ship-hint">
+              {{ 'cart.independentOrdersNotice' | translate }}
+            </p>
+          </div>
 
           <div class="row total">
-            <span>Total</span>
+            <span>{{ 'cart.exactTotal' | translate }}</span>
             <span>\${{ cart.total().toFixed(2) }}</span>
           </div>
 
-          <button
-            class="btn btn-primary btn-block btn-lg"
-            (click)="goToCheckout()"
-          >
-            Proceed to Checkout <ui-icon name="arrow-right" [size]="16" color="#fff" />
-          </button>
+          @if (readyStores().length > 0) {
+            <button
+              class="btn btn-primary btn-block btn-lg"
+              (click)="goToCheckout()"
+            >
+              {{ 'cart.checkoutSelectedStore' | translate }}
+              <ui-icon name="arrow-right" [size]="16" color="#fff" />
+            </button>
+          } @else {
+            <button class="btn btn-secondary btn-block btn-lg" disabled>
+              {{ 'cart.notReady' | translate }}
+            </button>
+          }
 
           @if (!isAuthenticated()) {
             <p class="login-note">
@@ -152,7 +331,8 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
           <div class="trust-list">
             <div><ui-icon name="package" [size]="14" /> Items stay grouped by seller</div>
-            <div><ui-icon name="info" [size]="14" /> Totals are checked before ordering</div>
+            <div><ui-icon name="check" [size]="14" /> Authoritative totals calculated by Commerce</div>
+            <div><ui-icon name="shield" [size]="14" /> Cash on Delivery (COD) payment</div>
           </div>
         </aside>
       </section>
@@ -161,14 +341,11 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
         <div class="empty-image img-placeholder">
           <ui-icon name="cart" [size]="40" />
         </div>
-        <h1>Your cart is empty</h1>
-        <p>
-          Explore products from Cambodian stores across fashion, food,
-          electronics, home, beauty and more.
-        </p>
+        <h1>{{ 'cart.emptyTitle' | translate }}</h1>
+        <p>{{ 'cart.emptySubtitle' | translate }}</p>
         <div class="empty-actions">
           <button class="btn btn-primary btn-lg" routerLink="/products">
-            Browse Products
+            {{ 'state.browseProducts' | translate }}
           </button>
           @if (!wishlist.isEmpty()) {
             <button class="btn btn-outline btn-lg" routerLink="/wishlist">
@@ -196,7 +373,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
     `
       .cart-layout {
         display: grid;
-        grid-template-columns: 1fr 340px;
+        grid-template-columns: 1fr 360px;
         column-gap: 32px;
         row-gap: 22px;
         padding: 32px 32px 44px;
@@ -206,40 +383,130 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
         grid-column: 1 / -1;
       }
       .cart-header h1 {
-        font-size: 25px;
+        font-size: 26px;
         margin-bottom: 6px;
       }
       .sub {
         color: var(--color-muted);
-        font-size: 13.5px;
+        font-size: 14px;
         margin-bottom: 0;
       }
-      .store-group {
-        padding: 16px 18px;
-        margin-bottom: 14px;
-      }
-      .store-label {
-        font-size: 12.5px;
-        color: var(--color-muted);
-        margin-bottom: 12px;
+      .multi-vendor-banner {
+        grid-column: 1 / -1;
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-weight: 600;
+        gap: 14px;
+        padding: 12px 18px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: var(--radius-md, 8px);
+        color: #166534;
+        font-size: 13.5px;
+      }
+      .multi-vendor-banner strong {
+        display: block;
+        font-weight: 650;
+      }
+      .multi-vendor-banner p {
+        margin: 2px 0 0;
+        color: #15803d;
+        font-size: 12.5px;
+      }
+      .cart-error-banner {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: var(--radius-md, 8px);
+        color: #991b1b;
+        font-size: 13.5px;
+      }
+      .cart-error-banner button {
+        margin-left: auto;
+      }
+      .store-group {
+        padding: 20px;
+        margin-bottom: 18px;
+        border-radius: var(--radius-md, 8px);
+        transition: border-color 0.2s;
+      }
+      .store-group.not-ready {
+        border-color: #fde68a;
+      }
+      .group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--color-border, #e5e7eb);
+        margin-bottom: 16px;
+      }
+      .group-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .store-label {
+        font-size: 15px;
+        color: var(--color-text-primary, #111827);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        text-decoration: none;
       }
       .store-label:hover {
-        color: var(--color-accent);
+        color: var(--color-accent, #2563eb);
       }
-      .store-label span {
-        margin-left: auto;
-        color: var(--color-muted-2);
-        font-size: 10.5px;
+      .channel-badge {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .channel-badge.storefront {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .shipment-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--color-muted-2, #6b7280);
+        font-size: 12px;
         font-weight: 600;
       }
+      .stale-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: #fffbeb;
+        border: 1px solid #fef3c7;
+        border-radius: var(--radius-sm, 6px);
+        color: #92400e;
+        font-size: 12.5px;
+        margin-bottom: 14px;
+      }
+      .acknowledge-btn {
+        margin-left: auto;
+        font-weight: 600;
+        text-decoration: underline;
+      }
       .cart-item + .cart-item {
-        border-top: 1px solid var(--color-border);
+        border-top: 1px solid var(--color-border, #e5e7eb);
         margin-top: 14px;
         padding-top: 14px;
+      }
+      .cart-item.unavailable {
+        opacity: 0.75;
       }
       .item-row {
         display: flex;
@@ -247,58 +514,99 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
         gap: 16px;
       }
       .item-thumb {
-        width: 92px;
-        height: 92px;
-        border-radius: var(--radius-sm);
+        width: 88px;
+        height: 88px;
+        border-radius: var(--radius-sm, 6px);
         flex-shrink: 0;
-        font-size: 10px;
+        font-size: 11px;
         text-align: center;
+        overflow: hidden;
+      }
+      .item-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
       .item-main {
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        gap: 4px;
         flex: 1;
       }
       .item-name {
-        font-size: 14.5px;
+        font-size: 15px;
         font-weight: 650;
+        color: var(--color-text-primary, #111827);
+        text-decoration: none;
       }
       .item-name:hover {
-        color: var(--color-accent);
+        color: var(--color-accent, #2563eb);
       }
-      .item-cat {
-        color: var(--color-muted);
+      .item-sub-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
         font-size: 12px;
+        color: var(--color-muted, #6b7280);
+      }
+      .sku-tag,
+      .opt-tag {
+        background: var(--color-bg-subtle, #f3f4f6);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+      .price-stale-tag {
+        color: #b45309;
+        font-weight: 600;
+        font-size: 12.5px;
       }
       .unit {
-        color: var(--color-text-secondary);
-        font-size: 12.5px;
+        color: var(--color-text-secondary, #4b5563);
+        font-size: 13px;
+      }
+      .stock-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        align-self: flex-start;
+      }
+      .stock-badge.oos {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .stock-badge.low {
+        background: #fef3c7;
+        color: #b45309;
       }
       .qty-stepper {
         display: flex;
         align-items: center;
-        gap: 13px;
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-xs);
-        padding: 5px 11px;
-        width: fit-content;
+        gap: 6px;
         margin-top: 6px;
       }
       .qty-stepper button {
-        background: none;
-        border: 0;
-        display: flex;
-        color: var(--color-text-secondary);
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-sm, 6px);
+        border: 1px solid var(--color-border, #d1d5db);
+        background: var(--color-bg, #fff);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
       }
       .qty-stepper button:disabled {
-        color: var(--color-muted-2);
+        opacity: 0.4;
         cursor: not-allowed;
       }
-      .max-note {
-        color: var(--color-gold);
-        font-size: 11.5px;
-        margin-top: 3px;
+      .qty-stepper span {
+        min-width: 28px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 13.5px;
       }
       .item-side {
         display: flex;
@@ -306,142 +614,239 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
         align-items: flex-end;
         gap: 8px;
       }
-      .item-thumb { overflow: hidden; }
-      .item-thumb img { height: 100%; object-fit: cover; width: 100%; }
       .line-total {
         font-size: 16px;
         font-weight: 700;
+        color: var(--color-text-primary, #111827);
       }
       .move,
       .remove {
-        display: inline-flex;
+        background: transparent;
+        border: none;
+        color: var(--color-muted, #6b7280);
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
         align-items: center;
         gap: 5px;
-        border: 0;
-        background: none;
-        font-size: 12px;
         padding: 0;
       }
-      .move {
-        color: var(--color-muted);
-      }
       .move:hover {
-        color: var(--color-danger);
-      }
-      .remove {
-        color: var(--color-danger);
+        color: var(--color-accent, #2563eb);
       }
       .remove:hover {
-        text-decoration: underline;
+        color: #dc2626;
       }
-      .continue {
-        margin-top: 6px;
-      }
-      .summary {
-        padding: 20px 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 11px;
-        position: sticky;
-        top: 100px;
-      }
-      .summary h2 {
-        font-size: 16px;
-        margin-bottom: 4px;
-      }
-      .row {
+      .group-footer {
         display: flex;
         justify-content: space-between;
+        align-items: flex-end;
+        border-top: 1px solid var(--color-border, #e5e7eb);
+        margin-top: 18px;
+        padding-top: 16px;
+        gap: 16px;
+      }
+      .financial-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 200px;
+      }
+      .fin-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--color-text-secondary, #4b5563);
+      }
+      .fin-total {
+        font-size: 15px;
+        color: var(--color-text-primary, #111827);
+        border-top: 1px dashed var(--color-border, #d1d5db);
+        padding-top: 5px;
+        margin-top: 2px;
+      }
+      .group-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+      }
+      .ready-pill {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #16a34a;
+        font-weight: 600;
+      }
+      .checkout-store-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         font-size: 13.5px;
-        color: var(--color-text-secondary);
+        padding: 9px 18px;
+      }
+      .preserved-hint {
+        font-size: 11px;
+        color: var(--color-muted-2, #6b7280);
+      }
+      .issues-box {
+        background: #fef2f2;
+        border: 1px solid #fee2e2;
+        border-radius: var(--radius-sm, 6px);
+        padding: 10px 14px;
+        font-size: 12px;
+        color: #991b1b;
+        max-width: 320px;
+      }
+      .issues-title {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .issues-box ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .ack-btn {
+        margin-top: 8px;
+      }
+      .continue {
+        margin-top: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .summary {
+        padding: 22px;
+        border-radius: var(--radius-md, 8px);
+        position: sticky;
+        top: 20px;
+      }
+      .summary h2 {
+        font-size: 18px;
+        margin-bottom: 14px;
+      }
+      .summary .row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 13.5px;
+        color: var(--color-text-secondary, #4b5563);
+      }
+      .summary .row.total {
+        border-top: 1px solid var(--color-border, #e5e7eb);
+        padding-top: 12px;
+        margin-top: 12px;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--color-text-primary, #111827);
       }
       .free {
-        color: var(--color-success);
-        font-weight: 650;
+        color: #16a34a;
+        font-weight: 600;
       }
-      .ship-hint {
-        color: var(--color-muted);
-        font-size: 12px;
-        line-height: 1.5;
+      .stores-summary-box {
+        background: var(--color-bg-subtle, #f9fafb);
+        border: 1px solid var(--color-border, #e5e7eb);
+        border-radius: var(--radius-sm, 6px);
+        padding: 10px 12px;
+        margin: 12px 0;
       }
-      .row.total {
-        color: var(--color-text);
-        font-weight: 700;
-        font-size: 18px;
-        border-top: 1px solid var(--color-border);
-        padding-top: 14px;
-        margin-top: 4px;
-      }
-      .login-note {
+      .stores-count-label {
         display: flex;
         align-items: center;
         gap: 6px;
-        color: var(--color-muted);
+        font-size: 12.5px;
+        font-weight: 650;
+      }
+      .ship-hint {
+        font-size: 11.5px;
+        color: var(--color-muted, #6b7280);
+        margin: 4px 0 0;
+      }
+      .btn-block {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .login-note {
         font-size: 12px;
+        color: var(--color-muted, #6b7280);
+        margin: 12px 0 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        line-height: 1.4;
       }
       .trust-list {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border, #e5e7eb);
         display: flex;
         flex-direction: column;
-        gap: 7px;
-        margin-top: 6px;
-        padding-top: 14px;
-        border-top: 1px solid var(--color-border);
-        color: var(--color-muted);
-        font-size: 12.5px;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--color-muted-2, #6b7280);
       }
       .trust-list div {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
       }
       .empty-cart {
         text-align: center;
-        padding: 70px 32px 90px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        padding: 64px 20px;
+        max-width: 520px;
+        margin: 0 auto;
       }
       .empty-image {
-        width: 180px;
-        height: 180px;
+        width: 72px;
+        height: 72px;
         border-radius: 50%;
-        margin-bottom: 28px;
-        color: var(--color-muted-2);
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-bg-subtle, #f3f4f6);
+        color: var(--color-muted, #9ca3af);
       }
       .empty-cart h1 {
-        font-size: 27px;
-        margin-bottom: 12px;
+        font-size: 24px;
+        margin-bottom: 8px;
       }
       .empty-cart p {
-        color: var(--color-muted);
+        color: var(--color-muted, #6b7280);
         font-size: 14px;
-        max-width: 420px;
-        margin-bottom: 26px;
-        line-height: 1.6;
+        line-height: 1.5;
+        margin-bottom: 24px;
       }
       .empty-actions {
         display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
         justify-content: center;
+        gap: 12px;
       }
+      .cart-suggestions {
+        margin-top: 32px;
+      }
+
       @media (max-width: 900px) {
         .cart-layout {
           grid-template-columns: 1fr;
         }
-        .summary {
-          position: static;
+        .group-footer {
+          flex-direction: column;
+          align-items: stretch;
         }
-      }
-      @media (max-width: 560px) {
-        .item-row {
-          flex-wrap: wrap;
+        .group-actions {
+          align-items: stretch;
         }
-        .item-side {
-          align-items: flex-start;
-          flex-direction: row;
-          gap: 14px;
-          width: 100%;
+        .checkout-store-btn {
+          justify-content: center;
         }
       }
     `,
@@ -453,19 +858,21 @@ export class CartComponent {
   protected readonly wishlist = inject(WishlistService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly translate = inject(TranslateService);
+  private readonly seo = inject(SeoService);
 
   protected readonly isAuthenticated = this.auth.isAuthenticated;
 
-  /**
-   * Something to look at after adding to the cart, rather than a dead end.
-   *
-   * Related, not random: products from the same categories as what is already
-   * in the cart, and from the same sellers — so the suggestion is plausibly
-   * something they would add to the same order, and often ships together.
-   * Anything already in the cart is excluded, since suggesting it back is
-   * noise. An empty cart has nothing to relate to, so it falls back to the
-   * genuinely best-selling products.
-   */
+  constructor() {
+    this.seo.setPageTitle(this.translate.t('cart.title'));
+  }
+
+  protected readonly storeCount = computed(() => this.cart.groups().length);
+
+  protected readonly readyStores = computed(() =>
+    this.cart.groups().filter((g) => g.checkoutReady),
+  );
+
   protected readonly recommended = computed(() => {
     const all = this.catalog.allProducts();
     if (!all.length) return [];
@@ -483,8 +890,6 @@ export class CartComponent {
     return [...candidates]
       .map((product) => ({
         product,
-        // Same seller counts for more than same category: it is the one that
-        // actually saves the shopper a second delivery.
         score:
           (stores.has(product.storeId) ? 2 : 0) +
           (categories.has(product.categorySlug) ? 1 : 0),
@@ -495,42 +900,46 @@ export class CartComponent {
       .map((entry) => entry.product);
   });
 
-  /** Cart lines bucketed by seller, preserving first-seen store order. */
-  protected readonly groups = computed(() => {
-    const buckets = new Map<
-      string,
-      { storeId: string; sellerName: string; lines: CartLine[] }
-    >();
+  protected optionEntries(options?: Record<string, string>): Array<[string, string]> {
+    return options ? Object.entries(options) : [];
+  }
 
-    for (const line of this.cart.lines()) {
-      const key = line.product.storeId;
-      const bucket = buckets.get(key);
-      if (bucket) {
-        bucket.lines.push(line);
-      } else {
-        buckets.set(key, {
-          storeId: key,
-          sellerName: line.product.sellerName,
-          lines: [line],
-        });
-      }
+  protected formatIssue(issue: string): string {
+    if (issue.includes('Seller is not available')) {
+      return this.translate.t('cart.issueSellerUnavailable');
     }
+    if (issue.includes('delivery fee')) {
+      return this.translate.t('cart.issueNoDeliveryPolicy');
+    }
+    if (issue.includes('unavailable or has insufficient stock')) {
+      return this.translate.t('cart.issueStockInsufficient');
+    }
+    if (issue.includes('empty')) {
+      return this.translate.t('cart.issueEmpty');
+    }
+    return issue;
+  }
 
-    return [...buckets.values()];
-  });
-
-  protected readonly storeCount = computed(() => this.groups().length);
-
-  protected moveToWishlist(line: CartLine): void {
+  protected moveToWishlist(line: StoreCartGroupLine): void {
     if (!this.wishlist.isWishlisted(line.product.id)) {
       this.wishlist.toggle(line.product.id);
     }
     this.cart.remove(line.product.id);
   }
 
+  protected checkoutStore(storeId: string): void {
+    this.cart.selectStoreForCheckout(storeId);
+    void this.router.navigate(['/checkout'], {
+      queryParams: { storeId },
+    });
+  }
+
   protected goToCheckout(): void {
-    // The route guard also enforces this, but redirecting here keeps the
-    // returnUrl pointing at checkout rather than the cart.
-    this.router.navigate(['/checkout']);
+    const ready = this.readyStores();
+    if (ready.length > 0) {
+      this.checkoutStore(ready[0].storeId);
+    } else {
+      void this.router.navigate(['/checkout']);
+    }
   }
 }

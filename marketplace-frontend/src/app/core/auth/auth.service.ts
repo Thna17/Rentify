@@ -204,12 +204,30 @@ export class AuthService {
   }
 }
 
+const TECHNICAL_ERROR_REGEX =
+  /sequelize|connectionrefused|econnrefused|etimedout|syntaxerror|typeerror|referenceerror|sql|select\s+.*from|insert\s+into|table\s+.*doesn't exist|\bat\s+.*\(|node_modules/i;
+
 export const apiErrorMessage = (
   error: unknown,
   fallback = 'Something went wrong. Please try again.',
 ) => {
   if (error instanceof HttpErrorResponse) {
-    return (error.error as ApiError | undefined)?.error?.message ?? (error.error as any)?.message ?? fallback;
+    if (error.status === 0) {
+      return 'Network connection lost. Please check your internet connection and try again.';
+    }
+    if (error.status >= 500) {
+      return 'Our services are temporarily busy. Please wait a moment and try again.';
+    }
+    const rawMsg =
+      (error.error as ApiError | undefined)?.error?.message ??
+      (error.error as any)?.message ??
+      (typeof error.error === 'string' ? error.error : null);
+
+    if (rawMsg && typeof rawMsg === 'string' && !TECHNICAL_ERROR_REGEX.test(rawMsg)) {
+      return rawMsg;
+    }
+    return fallback;
   }
+
   return fallback;
 };

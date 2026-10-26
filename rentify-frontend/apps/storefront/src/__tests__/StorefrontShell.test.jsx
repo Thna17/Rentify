@@ -45,4 +45,22 @@ describe('StorefrontShell', () => {
     render(<StorefrontShell host="odd.localhost:4900" />);
     expect(screen.getByRole('heading', { name: 'This store isn’t available' })).toBeTruthy();
   });
+
+  test('treats a suspended or inactive store as unavailable', () => {
+    query.mockReturnValue({
+      data: { websiteId: 'w-susp', websiteTemplateId: 2, status: 'suspended' },
+      isLoading: false,
+    });
+    render(<StorefrontShell host="suspended.localhost:4900" />);
+    expect(screen.getByRole('heading', { name: 'This store isn’t available' })).toBeTruthy();
+  });
+
+  test('treats a suspended merchant store projection as unavailable', () => {
+    query.mockReturnValue({
+      data: { websiteId: 'w-store-susp', websiteTemplateId: 2, status: 'active', storeStatus: 'suspended' },
+      isLoading: false,
+    });
+    render(<StorefrontShell host="storesusp.localhost:4900" />);
+    expect(screen.getByRole('heading', { name: 'This store isn’t available' })).toBeTruthy();
+  });
 });

@@ -44,6 +44,7 @@ app.use('/api/website-data', require('./modules/websites/websiteRoutes'));
 app.use('/api/store-access', require('./modules/store-access/storeAccessRoutes'));
 app.use('/api', require('./modules/store-catalog/storeCatalogRoutes'));
 app.use('/api', require('./modules/orders/storePosRoutes'));
+app.use('/api', require('./modules/invoices/invoiceRoutes'));
 app.use('/api', require('./modules/checkout/marketplaceCheckoutRoutes'));
 app.use('/api', require('./modules/checkout/storefrontCheckoutRoutes'));
 app.use('/api/admin/operations', require('./modules/admin/platformOperationsRoutes'));

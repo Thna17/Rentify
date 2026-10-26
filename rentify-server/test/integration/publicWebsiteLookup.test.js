@@ -50,3 +50,37 @@ test('the public storefront lookup never includes owner or staff contact details
   }
   assert.equal(query.include.some((item) => item.model?.name === 'User' || item.as === 'staffs'), false);
 });
+
+test('the public storefront lookup returns 404 when the store is suspended', async (t) => {
+  const { Store } = require('../../src/models');
+  const cache = getMerchantCache();
+  t.mock.method(cache, 'get', async () => null);
+  t.mock.method(Subscription, 'findOne', async () => null);
+  t.mock.method(Website, 'findOne', async () => ({
+    id: 'website-susp',
+    storeId: 'store-susp',
+    status: 'active',
+    WebsiteContents: [],
+  }));
+  t.mock.method(Store, 'findByPk', async () => ({
+    id: 'store-susp',
+    status: 'suspended',
+  }));
+
+  let resolveResponse;
+  const completed = new Promise((resolve) => { resolveResponse = resolve; });
+  const response = {
+    statusCode: 200,
+    status(code) { this.statusCode = code; return this; },
+    json(body) { this.body = body; resolveResponse(); return this; },
+  };
+  websiteController.getWebsiteByDomain(
+    { query: { domain: 'suspended.example.com' }, headers: {} },
+    response,
+    () => resolveResponse(),
+  );
+  await completed;
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.body.error, 'Website not found');
+});

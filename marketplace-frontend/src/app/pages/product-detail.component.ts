@@ -7,6 +7,9 @@ import { FlyToCartService } from '../core/cart/fly-to-cart.service';
 import { CatalogService } from '../core/catalog/catalog.service';
 import { WishlistService } from '../core/wishlist/wishlist.service';
 import { AuthService } from '../core/auth/auth.service';
+import { SeoService } from '../core/seo/seo.service';
+import { TranslateService } from '../core/i18n/translate.service';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 import {
   RentifyMarketplaceService,
   ProductReview,
@@ -16,7 +19,8 @@ import { NavbarComponent } from '../components/shared/layout/navbar/navbar.compo
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductRailComponent } from '../components/user/catalog/product-rail/product-rail.component';
-import { Product } from '../core/catalog/catalog.models';
+import { VariantPickerComponent } from '../components/user/catalog/variant-picker/variant-picker.component';
+import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalog.models';
 
 @Component({
   selector: 'app-product-detail',
@@ -26,27 +30,32 @@ import { Product } from '../core/catalog/catalog.models';
     FooterComponent,
     IconComponent,
     ProductRailComponent,
+    VariantPickerComponent,
+    TranslatePipe,
   ],
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+  },
   template: `
     <app-navbar />
 
     @if (!catalog.loaded()) {
       <section class="container missing" aria-live="polite">
         <ui-icon class="spin" name="loader" [size]="30" />
-        <h1>Loading product</h1>
+        <h1>{{ 'state.loadingProduct' | translate }}</h1>
       </section>
     } @else if (catalog.productError()) {
       <section class="container missing" role="alert">
         <ui-icon name="alert-circle" [size]="32" />
-        <h1>We couldn’t load this product</h1>
+        <h1>{{ 'state.couldNotLoadProduct' | translate }}</h1>
         <p>{{ catalog.productError() }}</p>
-        <button class="btn btn-primary" type="button" (click)="catalog.load()">Try again</button>
+        <button class="btn btn-primary" type="button" (click)="catalog.load()">{{ 'state.tryAgain' | translate }}</button>
       </section>
     } @else if (product(); as p) {
       <section class="container detail">
         <nav class="crumbs">
-          <a routerLink="/">Home</a> <span>›</span>
-          <a routerLink="/products">Products</a> <span>›</span>
+          <a routerLink="/">{{ 'nav.home' | translate }}</a> <span>›</span>
+          <a routerLink="/products">{{ 'nav.products' | translate }}</a> <span>›</span>
           <a routerLink="/products" [queryParams]="{ category: p.categorySlug }">{{
             p.categoryName
           }}</a>
@@ -72,7 +81,25 @@ import { Product } from '../core/catalog/catalog.models';
             }
 
             @if (shownImage(p); as image) {
-              <img class="main-image product-photo" [src]="image" [alt]="p.name" />
+              @if (!imageError()) {
+                <img
+                  class="main-image product-photo"
+                  [src]="image"
+                  [alt]="p.name"
+                  (error)="onMainImageError()"
+                  (click)="zoomOpen.set(true)"
+                  tabindex="0"
+                  (keydown.enter)="zoomOpen.set(true)"
+                  title="Click to zoom photo"
+                  aria-label="Product photo, click to zoom"
+                />
+              } @else {
+                <div class="main-image img-placeholder error-img">
+                  <ui-icon name="image" [size]="40" />
+                  <span>{{ p.name }}</span>
+                  <small>{{ 'state.imageLoadFailed' | translate }}</small>
+                </div>
+              }
             } @else {
               <div class="main-image img-placeholder">{{ p.name }}</div>
             }
@@ -82,72 +109,55 @@ import { Product } from '../core/catalog/catalog.models';
             <span class="badge badge-soft">{{ p.categoryName }}</span>
             <h1>{{ p.name }}</h1>
 
-            @if (p.variants?.length) {
-              <div class="variant-picker">
-                <span class="variant-label">
-                  Colour<span class="variant-chosen">{{ chosenVariantLabel(p) }}</span>
-                </span>
-                <div class="swatches" role="group" aria-label="Choose a colour">
-                  @for (variant of p.variants; track variant.label) {
-                    <button
-                      type="button"
-                      class="swatch"
-                      [class.active]="chosenVariantLabel(p) === variant.label"
-                      (click)="pickVariant(variant)"
-                      [attr.aria-label]="variant.label"
-                      [attr.aria-pressed]="chosenVariantLabel(p) === variant.label"
-                      [title]="variant.label"
-                    >
-                      <span class="swatch-dot" [style.background]="swatchColor(variant.label)"></span>
-                    </button>
-                  }
-                </div>
-              </div>
-            }
+            <app-variant-picker
+              [product]="p"
+              (variantChange)="onVariantChange($event)"
+              (skuChange)="onSkuChange($event)"
+            />
 
             @if (effectiveReviewCount() > 0) {
               <a class="rating-row rating-link" href="#reviews">
                 <ui-icon name="star" [size]="15" [filled]="true" class="stars" />
                 <span>{{ effectiveRating().toFixed(1) }}</span>
-                <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? 'review' : 'reviews' }})</span>
+                <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? ('product.verifiedReview' | translate) : ('product.verifiedReviews' | translate) }})</span>
               </a>
             } @else {
-              <a class="rating-row no-reviews rating-link" href="#reviews">No customer reviews yet — be first</a>
+              <a class="rating-row no-reviews rating-link" href="#reviews">{{ 'product.noReviewsYet' | translate }}</a>
             }
 
             <a class="store-row card" [routerLink]="['/stores', p.storeId]">
               <div class="store-avatar img-placeholder"></div>
               <div>
-                <small>Store</small>
+                <small>{{ 'nav.stores' | translate }}</small>
                 <strong>{{ p.sellerName }}</strong>
               </div>
-              <span class="visit">Visit <ui-icon name="arrow-right" [size]="13" /></span>
+              <span class="visit">{{ 'product.visitStore' | translate }} <ui-icon name="arrow-right" [size]="13" /></span>
             </a>
 
             <div class="price-block">
-              <span class="price">\${{ p.price.toFixed(2) }}</span>
-              @if (p.compareAtPrice; as was) {
+              <span class="price">\${{ effectivePrice().toFixed(2) }}</span>
+              @if (effectiveCompareAt(); as was) {
                 <span class="was">\${{ was.toFixed(2) }}</span>
-                <span class="badge badge-gold">-{{ discount() }}%</span>
+                <span class="badge badge-gold">-{{ effectiveDiscount() }}%</span>
               }
             </div>
 
             <p class="desc">{{ p.description }}</p>
 
             <div class="purchase-info" aria-label="Order information">
-              <div><ui-icon name="store" [size]="16" /><span><strong>Ships from this seller</strong><small>Items from other stores may arrive separately.</small></span></div>
-              <div><ui-icon name="credit-card" [size]="16" /><span><strong>Total confirmed at checkout</strong><small>Availability and pricing are checked again before ordering.</small></span></div>
+              <div><ui-icon name="store" [size]="16" /><span><strong>{{ 'product.shipsFromSeller' | translate }}</strong><small>{{ 'product.shipsFromSellerSub' | translate }}</small></span></div>
+              <div><ui-icon name="credit-card" [size]="16" /><span><strong>{{ 'product.totalConfirmed' | translate }}</strong><small>{{ 'product.totalConfirmedSub' | translate }}</small></span></div>
             </div>
 
             <div class="qty-avail-row">
               <div>
-                <strong>Quantity</strong>
+                <strong>{{ 'product.quantity' | translate }}</strong>
                 <div class="qty-stepper">
                   <button
                     type="button"
                     (click)="step(-1)"
-                    [disabled]="quantity() <= 1 || p.status === 'out-of-stock'"
-                    aria-label="Decrease quantity"
+                    [disabled]="quantity() <= 1 || effectiveStatus() === 'out-of-stock'"
+                    [attr.aria-label]="'product.decreaseQty' | translate"
                   >
                     <ui-icon name="minus" [size]="14" />
                   </button>
@@ -155,20 +165,20 @@ import { Product } from '../core/catalog/catalog.models';
                   <button
                     type="button"
                     (click)="step(1)"
-                    [disabled]="quantity() >= p.stock"
-                    aria-label="Increase quantity"
+                    [disabled]="quantity() >= effectiveStock()"
+                    [attr.aria-label]="'product.increaseQty' | translate"
                   >
                     <ui-icon name="plus" [size]="14" />
                   </button>
                 </div>
               </div>
               <div>
-                <strong>Availability</strong>
-                @if (p.status === 'out-of-stock') {
-                  <div class="avail out">Out of stock</div>
+                <strong>{{ 'catalog.availability' | translate }}</strong>
+                @if (effectiveStatus() === 'out-of-stock') {
+                  <div class="avail out">{{ 'catalog.outOfStock' | translate }}</div>
                 } @else {
                   <div class="avail">
-                    <span class="dot"></span> {{ p.stock }} items in stock
+                    <span class="dot"></span> {{ effectiveStock() }} {{ 'product.inStockItems' | translate:{ count: effectiveStock() } }}
                   </div>
                 }
               </div>
@@ -177,11 +187,11 @@ import { Product } from '../core/catalog/catalog.models';
             <div class="buy-row">
               <button
                 class="btn btn-primary btn-lg btn-block"
-                [disabled]="p.status === 'out-of-stock'"
+                [disabled]="effectiveStatus() === 'out-of-stock'"
                 (click)="addToCart($event)"
               >
                 <ui-icon name="cart" [size]="16" color="#fff" />
-                {{ p.status === 'out-of-stock' ? 'Out of stock' : 'Add to Cart' }}
+                {{ effectiveStatus() === 'out-of-stock' ? ('catalog.outOfStock' | translate) : ('product.addToCart' | translate) }}
               </button>
               <button
                 class="btn btn-outline btn-lg wish"
@@ -189,7 +199,7 @@ import { Product } from '../core/catalog/catalog.models';
                 (click)="toggleWishlist()"
                 [attr.aria-pressed]="saved()"
                 [attr.aria-label]="
-                  saved() ? 'Remove from wishlist' : 'Save to wishlist'
+                  saved() ? ('product.removeFromWishlist' | translate) : ('product.saveToWishlist' | translate)
                 "
               >
                 <ui-icon name="heart" [size]="16" [filled]="saved()" />
@@ -376,13 +386,41 @@ import { Product } from '../core/catalog/catalog.models';
         </section>
       }
     } @else {
-      <section class="container missing">
-        <h1>Product not found</h1>
-        <p>This item may have been delisted by its seller.</p>
-        <button class="btn btn-primary" routerLink="/products">
-          Browse products
-        </button>
+      <section class="container missing" role="alert">
+        <ui-icon name="package" [size]="42" />
+        <h1>{{ 'state.productNotFound' | translate }}</h1>
+        <p>{{ 'state.productDelisted' | translate }}</p>
+        <div class="missing-actions">
+          <button class="btn btn-primary" routerLink="/products">
+            {{ 'state.browseProducts' | translate }}
+          </button>
+          <button class="btn btn-outline" type="button" (click)="catalog.load()">
+            {{ 'state.tryAgain' | translate }}
+          </button>
+        </div>
       </section>
+    }
+
+    @if (zoomOpen() && shownImage(product()!)) {
+      <div
+        class="lightbox"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Enlarged product image"
+        (click)="zoomOpen.set(false)"
+      >
+        <div class="lightbox-content" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="lightbox-close"
+            (click)="zoomOpen.set(false)"
+            aria-label="Close zoom"
+          >
+            <ui-icon name="x" [size]="20" />
+          </button>
+          <img [src]="shownImage(product()!)" [alt]="product()?.name || ''" />
+        </div>
+      </div>
     }
 
     <app-footer />
@@ -624,6 +662,60 @@ import { Product } from '../core/catalog/catalog.models';
         flex-direction: column;
         align-items: center;
         gap: 14px;
+      }
+      .missing-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .main-image {
+        cursor: zoom-in;
+      }
+      .error-img {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--color-muted);
+        text-align: center;
+        padding: 20px;
+      }
+      .lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.88);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        backdrop-filter: blur(6px);
+      }
+      .lightbox-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+      }
+      .lightbox-content img {
+        max-width: 100%;
+        max-height: 85vh;
+        object-fit: contain;
+        border-radius: var(--radius-md);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .lightbox-close {
+        position: absolute;
+        top: -42px;
+        right: 0;
+        background: none;
+        border: 0;
+        color: #fff;
+        cursor: pointer;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .missing > ui-icon { color: var(--color-accent); }
       .spin { animation: spin 900ms linear infinite; }
@@ -1070,7 +1162,15 @@ export class ProductDetailComponent {
   private readonly wishlist = inject(WishlistService);
   protected readonly auth = inject(AuthService);
   private readonly rentify = inject(RentifyMarketplaceService);
+  private readonly seo = inject(SeoService);
+  protected readonly translate = inject(TranslateService);
   protected readonly Math = Math;
+
+  // Variant & SKU resolution
+  readonly currentVariant = signal<ProductVariantView | null>(null);
+  readonly currentSku = signal<string>('');
+  readonly imageError = signal(false);
+  readonly zoomOpen = signal(false);
 
   // Reviews state
   protected readonly reviews = signal<ProductReview[]>([]);
@@ -1091,7 +1191,21 @@ export class ProductDetailComponent {
     { initialValue: this.route.snapshot.paramMap.get('id') ?? '' },
   );
 
-  protected readonly product = computed(() => this.catalog.productById(this.id()));
+  readonly product = computed(() => this.catalog.productById(this.id()));
+
+  readonly effectivePrice = computed(() => this.currentVariant()?.price ?? this.product()?.price ?? 0);
+  readonly effectiveCompareAt = computed(() => this.currentVariant()?.compareAtPrice ?? this.product()?.compareAtPrice);
+  readonly effectiveStock = computed(() => this.currentVariant()?.stockQuantity ?? this.product()?.stock ?? 0);
+  readonly effectiveStatus = computed<StockStatus>(() => {
+    const s = this.effectiveStock();
+    return s === 0 ? 'out-of-stock' : s <= 5 ? 'low-stock' : 'in-stock';
+  });
+  readonly effectiveDiscount = computed(() => {
+    const compare = this.effectiveCompareAt();
+    const price = this.effectivePrice();
+    if (!compare || compare <= price) return 0;
+    return Math.round(((compare - price) / compare) * 100);
+  });
 
   protected readonly effectiveRating = computed(() => {
     const summary = this.reviewSummary();
@@ -1110,6 +1224,9 @@ export class ProductDetailComponent {
     this.id();
     this.pinnedImage.set(null);
     this.pinnedVariant.set(null);
+    this.currentVariant.set(null);
+    this.imageError.set(false);
+    this.zoomOpen.set(false);
   });
   protected readonly related = computed(() => {
     const current = this.product();
@@ -1146,6 +1263,15 @@ export class ProductDetailComponent {
       }
     });
     effect(() => {
+      const p = this.product();
+      if (p) {
+        this.seo.setProductMetadata(p);
+        this.imageError.set(false);
+      } else if (this.catalog.loaded()) {
+        this.seo.setPageTitle(this.translate.t('state.productNotFound'));
+      }
+    });
+    effect(() => {
       const currentId = this.id();
       if (currentId) {
         this.reviewFeedback.set('');
@@ -1157,13 +1283,30 @@ export class ProductDetailComponent {
     });
   }
 
-  protected step(delta: number): void {
-    const current = this.product();
-    if (!current) {
-      return;
+  protected onVariantChange(variant: ProductVariantView): void {
+    this.currentVariant.set(variant);
+    if (variant.image) {
+      this.pinnedImage.set(variant.image);
     }
+  }
+
+  protected onSkuChange(sku: string): void {
+    this.currentSku.set(sku);
+  }
+
+  protected onMainImageError(): void {
+    this.imageError.set(true);
+  }
+
+  protected onEscape(): void {
+    this.zoomOpen.set(false);
+  }
+
+  protected step(delta: number): void {
+    const stock = this.effectiveStock();
+    if (stock <= 0) return;
     this.quantity.update((value) =>
-      Math.max(1, Math.min(value + delta, current.stock)),
+      Math.max(1, Math.min(value + delta, stock)),
     );
   }
 
@@ -1173,16 +1316,20 @@ export class ProductDetailComponent {
       return;
     }
     const units = this.quantity();
+    const variant = this.currentVariant();
 
-    /*
-     * Same flight the product cards fire. Without it, adding from this page
-     * bumped the cart count silently while adding from anywhere else threw
-     * the product into the bag — the same action appearing to do two
-     * different things depending on which screen you were on.
-     *
-     * Fired before the await, like the card does, so the click feels instant
-     * rather than waiting on the server round-trip.
-     */
+    const effectiveProduct: Product = {
+      ...current,
+      price: this.effectivePrice(),
+      compareAtPrice: this.effectiveCompareAt(),
+      stock: this.effectiveStock(),
+      status: this.effectiveStatus(),
+      sku: this.currentSku() || current.sku,
+    };
+    if (variant) {
+      (effectiveProduct as any).variantId = variant.id;
+    }
+
     const image = this.host.nativeElement.querySelector('.main-image') as HTMLElement | null;
     const trigger = event?.currentTarget as HTMLElement | undefined;
     const rect = image?.getBoundingClientRect();
@@ -1198,12 +1345,16 @@ export class ProductDetailComponent {
       this.flyToCart.fly(current.image, source, current.name);
     }
 
-    if (!(await this.cart.add(current, units))) {
+    if (!(await this.cart.add(effectiveProduct, units))) {
       // cart.error carries the server's reason, e.g. "Only 3 left in stock".
       this.feedback.set('');
       return;
     }
     this.feedback.set(`${units} × ${current.name} added to your cart.`);
+  }
+
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.translate.t(key, params);
   }
 
   protected toggleWishlist(): void {

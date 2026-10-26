@@ -8,10 +8,35 @@
 
 export type StockStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
 
+export interface ProductVariantView {
+  id: string;
+  productId: string;
+  sku: string;
+  barcode?: string | null;
+  price: number;
+  compareAtPrice?: number;
+  stockQuantity: number;
+  isDefault?: boolean;
+  optionValues: Record<string, string>;
+  image?: string | null;
+  label?: string;
+  status?: 'active' | 'archived' | 'out-of-stock';
+}
+
+export interface ProductOptionView {
+  name: string;
+  values: string[];
+}
+
 export interface Product {
   id: string;
   name: string;
   slug: string;
+  sku?: string;
+  barcode?: string | null;
+  hasVariants?: boolean;
+  productVariants?: ProductVariantView[];
+  options?: ProductOptionView[];
   /** Null until real imagery exists; the UI renders a labelled placeholder. */
   image: string | null;
   /**
@@ -97,6 +122,40 @@ export interface CartLine {
   product: Product;
   quantity: number;
   lineTotal: number;
+}
+
+export interface StoreCartGroupLine {
+  id?: string;
+  product: Product;
+  variantId?: string | null;
+  sku?: string | null;
+  quantity: number;
+  unitPrice: number;
+  currentPrice: number;
+  isPriceStale: boolean;
+  available: boolean;
+  stockLimit?: number;
+  stockWarning?: string;
+  lineTotal: number;
+  optionValues?: Record<string, string>;
+}
+
+export interface StoreCartGroup {
+  cartId: string;
+  storeId: string;
+  sellerName: string;
+  storeSlug?: string;
+  channel: 'marketplace' | 'storefront';
+  websiteId?: string | null;
+  lines: StoreCartGroupLine[];
+  subtotal: string;
+  deliveryFee: string | null;
+  totalAmount: string | null;
+  currency: string;
+  deliveryPolicyVersion?: number | null;
+  checkoutReady: boolean;
+  issues: string[];
+  hasStalePrices: boolean;
 }
 
 export type ProductSort =

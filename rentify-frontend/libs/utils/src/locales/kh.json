@@ -123,6 +123,8 @@
     "cash_on_delivery_subtitle": "ទូទាត់នៅពេលទំនិញមកដល់ទីតាំងរបស់អ្នក។ សាមញ្ញ និងសុវត្ថិភាព។",
     "khqr_payment": "ការទូទាត់ KHQR",
     "khqr_payment_subtitle": "ផ្ទេរប្រាក់ភ្លាមៗតាមរយៈ QR code។ ការទូទាត់ឌីជីថលរហ័ស និងងាយស្រួល។",
+    "card_payment": "កាតឥណទាន / ឥណពន្ធ",
+    "card_payment_subtitle": "ទូទាត់ប្រកបដោយសុវត្ថិភាពជាមួយ Visa, Mastercard ឬ UnionPay។",
     "no_fees": "គ្មានថ្លៃសេវា",
     "secure": "សុវត្ថិភាព",
     "instant": "ភ្លាមៗ",
@@ -231,7 +233,7 @@
     "payment_date": "កាលបរិច្ឆេទបង់ប្រាក់",
     "amount": "ចំនួនទឹកប្រាក់"
   },
-  
+
   "orders": {
     "order_history": "ប្រវត្តិការបញ្ជាទិញ",
     "track_manage": "តាមដាន និងគ្រប់គ្រងការបញ្ជាទិញរបស់អ្នក",
@@ -279,6 +281,11 @@
     "delivery_note": "កំណត់សម្គាល់ដឹកជញ្ជូន",
     "invoice": "វិក្កយបត្រ",
     "invoice_number": "លេខវិក្កយបត្រ",
+    "quote": "ការប៉ាន់ស្មានតម្លៃ",
+    "quote_number": "លេខការប៉ាន់ស្មាន",
+    "convert_to_invoice": "បម្លែងទៅជាវិក្កយបត្រ",
+    "stock_status_deducted": "បានកាត់ស្តុក",
+    "stock_status_awaiting_payment": "រង់ចាំការទូទាត់ (មិនទាន់កាត់ស្តុក)",
     "status": "ស្ថានភាព",
     "total": "សរុប",
     "download_pdf": "ទាញយក PDF"

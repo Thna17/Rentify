@@ -32,12 +32,12 @@ exports.createOrder = async (req, res) => {
     const user = req.user;
 
     // Get website niche
-    const website = await WebsiteData.findOne({ 
+    const website = await WebsiteData.findOne({
       where: { websiteId, status: 'active' },
       attributes: ['niche', 'storeId'],
       transaction
     });
-    
+
     if (!website) {
       await transaction.rollback();
       return res.status(404).json({ error: "Website not found" });
@@ -53,7 +53,7 @@ exports.createOrder = async (req, res) => {
     }
 
     // Fetch payment config
-    const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
+    const paymentConfigs = await models.PaymentGatewayConfig.findAll({
       where: { websiteId } ,
       transaction
     });
@@ -70,7 +70,7 @@ exports.createOrder = async (req, res) => {
       NotificationService,
       website.niche,
     );
-    
+
     const result = await strategy.execute({
       user,
       websiteId,
@@ -101,11 +101,11 @@ exports.createInvoice = async (req, res) => {
     const invoiceData = req.body.body || req.body;
 
     // Get website niche
-    const website = await WebsiteData.findOne({ 
+    const website = await WebsiteData.findOne({
       where: { websiteId },
       attributes: ['niche', 'storeId', 'websiteId']
     });
-    
+
     if (!website) {
       return res.status(404).json({ error: "Website not found" });
     }
@@ -127,8 +127,8 @@ exports.createInvoice = async (req, res) => {
     }
 
     // Fetch payment config
-    const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
-      where: { websiteId } 
+    const paymentConfigs = await models.PaymentGatewayConfig.findAll({
+      where: { websiteId }
     });
 
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
@@ -158,6 +158,8 @@ exports.createInvoice = async (req, res) => {
 };
 
 exports.createPOSOrder = async (req, res) => {
+  const checkoutKey = req.get('Idempotency-Key') || req.body?.idempotencyKey || req.body?.checkoutKey || null;
+
   try {
     const rawWebsiteId = req.params.websiteId || req.store?.websiteId;
     const rawStoreId = req.params.storeId || req.store?.storeId;
@@ -168,7 +170,7 @@ exports.createPOSOrder = async (req, res) => {
     let effectiveNiche = 'ecommerce';
 
     if (rawWebsiteId) {
-      const website = await WebsiteData.findOne({ 
+      const website = await WebsiteData.findOne({
         where: { websiteId: rawWebsiteId },
         attributes: ['niche', 'storeId', 'websiteId'],
       });
@@ -197,6 +199,37 @@ exports.createPOSOrder = async (req, res) => {
 
     if (!effectiveWebsiteId && !effectiveStoreId) {
       return res.status(404).json({ error: "Store or Website not found" });
+    }
+
+    // Idempotency check: if sale already committed with this checkoutKey, return idempotent replay
+    if (checkoutKey) {
+      const existingOrder = await models.Order.findOne({
+        where: { checkoutKey }
+      });
+      if (existingOrder) {
+        if (effectiveStoreId && existingOrder.storeId && existingOrder.storeId !== effectiveStoreId) {
+          return res.status(409).json({ error: "Idempotency key already used for a different store" });
+        }
+        const payment = await models.Payment.findOne({ where: { orderId: existingOrder.id } });
+        const invoice = await models.Invoice.findOne({ where: { orderId: existingOrder.id } });
+        return res.status(200).json({
+          success: true,
+          idempotentReplay: true,
+          order: existingOrder.toJSON ? existingOrder.toJSON() : existingOrder,
+          payment: payment ? (payment.toJSON ? payment.toJSON() : payment) : null,
+          invoice: invoice ? (invoice.toJSON ? invoice.toJSON() : invoice) : null,
+          khqr: payment?.transactionData?.rawQR ? {
+            rawQR: payment.transactionData.rawQR,
+            md5Hash: payment.transactionData.md5Hash,
+            deeplink: payment.transactionData.qrCodeUrl,
+          } : null,
+          khqrData: payment?.transactionData?.rawQR ? {
+            rawQR: payment.transactionData.rawQR,
+            md5Hash: payment.transactionData.md5Hash,
+            deeplink: payment.transactionData.qrCodeUrl,
+          } : null,
+        });
+      }
     }
 
     // Verify store status
@@ -228,12 +261,12 @@ exports.createPOSOrder = async (req, res) => {
     if (effectiveWebsiteId) paymentConfigConditions.push({ websiteId: effectiveWebsiteId });
     if (effectiveStoreId) paymentConfigConditions.push({ storeId: effectiveStoreId });
 
-    const paymentConfigs = await models.PaymentGatewayConfig.findAll({ 
+    const paymentConfigs = await models.PaymentGatewayConfig.findAll({
       where: paymentConfigConditions.length > 1
         ? { [Op.or]: paymentConfigConditions }
         : paymentConfigConditions[0] || {},
     });
-    
+
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
       (cfg) => cfg.gateway === "khqr" && cfg.enabled
     ));
@@ -250,6 +283,7 @@ exports.createPOSOrder = async (req, res) => {
     const result = await strategy.execute({
       websiteId: effectiveWebsiteId,
       storeId: effectiveStoreId,
+      checkoutKey,
       items,
       paymentMethod,
       cashierId: effectiveCashierId,
@@ -267,7 +301,36 @@ exports.createPOSOrder = async (req, res) => {
       khqrData: result.khqrData,
     });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    if (checkoutKey && (error.name === 'SequelizeUniqueConstraintError' || String(error.message).includes('checkoutKey') || String(error.message).includes('uq_orders_checkout_key'))) {
+      const existingOrder = await models.Order.findOne({
+        where: { checkoutKey }
+      });
+      if (existingOrder) {
+        const payment = await models.Payment.findOne({ where: { orderId: existingOrder.id } });
+        const invoice = await models.Invoice.findOne({ where: { orderId: existingOrder.id } });
+        return res.status(200).json({
+          success: true,
+          idempotentReplay: true,
+          order: existingOrder.toJSON ? existingOrder.toJSON() : existingOrder,
+          payment: payment ? (payment.toJSON ? payment.toJSON() : payment) : null,
+          invoice: invoice ? (invoice.toJSON ? invoice.toJSON() : invoice) : null,
+          khqr: payment?.transactionData?.rawQR ? {
+            rawQR: payment.transactionData.rawQR,
+            md5Hash: payment.transactionData.md5Hash,
+            deeplink: payment.transactionData.qrCodeUrl,
+          } : null,
+          khqrData: payment?.transactionData?.rawQR ? {
+            rawQR: payment.transactionData.rawQR,
+            md5Hash: payment.transactionData.md5Hash,
+            deeplink: payment.transactionData.qrCodeUrl,
+          } : null,
+        });
+      }
+    }
+
+    const isStockConflict = error.message?.includes('left in stock') || error.message?.includes('out of stock') || error.statusCode === 409;
+    const statusCode = isStockConflict ? 409 : (error.statusCode || 400);
+    res.status(statusCode).json({ success: false, error: error.message });
   }
 };
 
@@ -300,6 +363,110 @@ exports.getMyOrderPayment = async (req, res) => {
 exports.getPOSOrders = async (req, res) => {
   const strategy = OrderRetrievalFactory.createStrategy('posOrders');
   await strategy.execute(req, res);
+};
+
+exports.processPOSReturn = async (req, res) => {
+  let transaction = null;
+  try {
+    const rawStoreId = req.params.storeId || req.store?.storeId;
+    const orderId = req.params.orderId;
+    const { reason = 'Customer Return' } = req.body || {};
+
+    if (!orderId) {
+      return res.status(400).json({ error: "Order ID is required" });
+    }
+
+    let effectiveStoreId = rawStoreId || null;
+    if (!effectiveStoreId && req.params.websiteId) {
+      const { StoreAccess, WebsiteData } = require('../../models');
+      const ws = await WebsiteData.findOne({ where: { websiteId: req.params.websiteId } });
+      if (ws) effectiveStoreId = ws.storeId;
+      else {
+        const sa = await StoreAccess.findByPk(req.params.websiteId);
+        if (sa) effectiveStoreId = sa.storeId;
+      }
+    }
+
+    transaction = await sequelize.transaction();
+
+    const order = await models.Order.findOne({
+      where: {
+        id: orderId,
+        orderType: 'pos',
+        ...(effectiveStoreId ? { storeId: effectiveStoreId } : {}),
+      },
+      include: [
+        { model: models.OrderItem, as: 'OrderItems' },
+        { model: models.Payment, as: 'Payment' },
+        { model: models.Invoice, as: 'Invoice' },
+      ],
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!order) {
+      await transaction.rollback();
+      return res.status(404).json({ error: "POS Order not found" });
+    }
+
+    // Boundary checks: only completed POS orders can be returned once
+    if (order.status === 'refunded' || order.status === 'cancelled') {
+      await transaction.rollback();
+      return res.status(409).json({ error: "Order has already been refunded or returned" });
+    }
+
+    if (order.status !== 'completed') {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Only completed POS orders can be returned" });
+    }
+
+    // Restore canonical stock using sharedStockService
+    const { changeStock } = require('../inventory').sharedStockService;
+    if (order.stockDeducted && Array.isArray(order.OrderItems)) {
+      for (const item of order.OrderItems) {
+        if (item.productId && item.quantity > 0) {
+          await changeStock(item.productId, item.quantity, transaction, item.variantId || null);
+        }
+      }
+    }
+
+    // Mark order as refunded
+    await order.update({
+      status: 'refunded',
+      deliveryStatus: 'cancelled',
+      notes: reason ? `POS Return: ${reason}` : order.notes,
+    }, { transaction });
+
+    // Mark associated payment as refunded
+    if (order.Payment) {
+      await order.Payment.update({
+        status: 'refunded',
+        refundedAmount: order.totalAmount,
+        refundedAt: new Date(),
+      }, { transaction });
+    }
+
+    // Mark associated invoice as refunded
+    if (order.Invoice) {
+      await order.Invoice.update({
+        status: 'refunded',
+      }, { transaction });
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "POS order successfully returned and inventory restored to store catalog",
+      order: order.toJSON ? order.toJSON() : order,
+    });
+  } catch (error) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch {}
+    }
+    const statusCode = error.statusCode || 400;
+    return res.status(statusCode).json({ success: false, error: error.message });
+  }
 };
 
 exports.getPublicTracking = async (req, res) => {

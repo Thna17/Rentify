@@ -31,6 +31,8 @@ import {
   X,
   ArrowRight,
   AlertCircle,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button.jsx";
@@ -83,6 +85,7 @@ export default function POS() {
     secondaryCurrency,
     exchangeRate,
     user,
+    hasPosPermission,
     isLoading: loadingStore,
   } = useStorePOS();
 
@@ -91,6 +94,20 @@ export default function POS() {
     const seg = location.pathname.replace(/^\/pos\/?/, "").replace(/^\//, "");
     return seg || "sell";
   }, [location.pathname]);
+
+  // Idempotency Attempt Key & Uncertain Network State
+  const [saleAttemptKey, setSaleAttemptKey] = useState(() =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `pos-attempt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  );
+  const [uncertainOutcome, setUncertainOutcome] = useState(null); // { key: string, payload: any, error: string }
+
+  // Returns & Refund Modal State
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [selectedOrderForReturn, setSelectedOrderForReturn] = useState(null);
+  const [returnReason, setReturnReason] = useState("");
+  const [processingReturn, setProcessingReturn] = useState(false);
 
   // Catalog State
   const [products, setProducts] = useState([]);
@@ -271,52 +288,69 @@ export default function POS() {
   }, [products, selectedCategory, searchQuery]);
 
   // ── 2. Cart Operations ────────────────────────────────────────────────────
-  const addToCart = useCallback((product, qty = 1) => {
-    if (product.trackInventory && (product.stockQuantity ?? 0) <= 0) {
-      alert(`"${product.name}" is out of stock.`);
+  const addToCart = useCallback((product, qty = 1, variantId = null) => {
+    const selectedVariant = variantId
+      ? (product.variants || []).find((v) => v.id === variantId)
+      : null;
+    const effectiveStock = selectedVariant
+      ? (selectedVariant.stockQuantity ?? product.stockQuantity)
+      : (product.stockQuantity ?? 0);
+    const trackInventory = selectedVariant
+      ? (selectedVariant.trackInventory ?? product.trackInventory)
+      : product.trackInventory;
+
+    if (trackInventory && effectiveStock <= 0) {
+      alert(`"${product.name}${selectedVariant?.title ? ' - ' + selectedVariant.title : ''}" is out of stock.`);
       return;
     }
+
+    const cartItemId = variantId ? `${product.id}__${variantId}` : product.id;
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product.id);
+      const existing = prev.find((item) => (item.cartItemId || item.productId) === cartItemId);
       const currentQty = existing ? existing.quantity : 0;
       if (
-        product.trackInventory &&
-        product.stockQuantity !== undefined &&
-        product.stockQuantity !== null &&
-        currentQty + qty > product.stockQuantity
+        trackInventory &&
+        effectiveStock !== undefined &&
+        effectiveStock !== null &&
+        currentQty + qty > effectiveStock
       ) {
-        alert(`Cannot add more than available stock (${product.stockQuantity} in stock).`);
+        alert(`Cannot add more than available stock (${effectiveStock} in stock).`);
         return prev;
       }
       if (existing) {
         return prev.map((item) =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + qty } : item
+          (item.cartItemId || item.productId) === cartItemId ? { ...item, quantity: item.quantity + qty } : item
         );
       }
       return [
         ...prev,
         {
+          cartItemId,
           productId: product.id,
-          name: product.name,
-          price: parseDecimal(product.basePrice ?? product.price ?? 0),
+          variantId: variantId || null,
+          variantName: selectedVariant?.title || null,
+          name: selectedVariant?.title ? `${product.name} (${selectedVariant.title})` : product.name,
+          price: parseDecimal(selectedVariant?.price ?? product.basePrice ?? product.price ?? 0),
           quantity: qty,
-          sku: product.sku || "",
-          barcode: product.barcode || "",
-          image: product.image || product.images?.[0]?.url || product.imageUrl || "",
+          sku: selectedVariant?.sku || product.sku || "",
+          barcode: selectedVariant?.barcode || product.barcode || "",
+          image: selectedVariant?.image || product.image || product.images?.[0]?.url || product.imageUrl || "",
           taxRate: product.taxRate || 0,
-          stockQuantity: product.stockQuantity,
-          trackInventory: product.trackInventory,
+          stockQuantity: effectiveStock,
+          trackInventory,
           productType: product.productType || "physical",
         },
       ];
     });
   }, []);
 
-  const updateCartQuantity = useCallback((productId, delta) => {
+  const updateCartQuantity = useCallback((cartKey, delta) => {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.productId === productId) {
+          const key = item.cartItemId || item.productId;
+          if (key === cartKey) {
             const nextQty = item.quantity + delta;
             if (
               delta > 0 &&
@@ -336,14 +370,20 @@ export default function POS() {
     );
   }, []);
 
-  const removeFromCart = useCallback((productId) => {
-    setCart((prev) => prev.filter((item) => item.productId !== productId));
+  const removeFromCart = useCallback((cartKey) => {
+    setCart((prev) => prev.filter((item) => (item.cartItemId || item.productId) !== cartKey));
   }, []);
 
   const clearCart = useCallback(() => {
     setCart([]);
     setDiscountPercent(0);
     setCustomer(DEFAULT_WALK_IN);
+    const nextKey =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `pos-attempt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setSaleAttemptKey(nextKey);
+    setUncertainOutcome(null);
   }, []);
 
   // ── 3. Totals Calculation ────────────────────────────────────────────────
@@ -368,7 +408,7 @@ export default function POS() {
     (code) => {
       const match = resolveExactProductLookupFromIndex(code, productLookupIndex);
       if (match?.product) {
-        addToCart(match.product, 1);
+        addToCart(match.product, 1, match.variantId || null);
         setSearchQuery("");
         return true;
       }
@@ -443,14 +483,21 @@ export default function POS() {
 
   const finalizePOSOrder = async () => {
     if (cart.length === 0 || !activeStoreId) return;
+    if (user?.type === "staff" && !hasPosPermission) {
+      alert("Unauthorized: You do not have permission to process POS transactions.");
+      return;
+    }
     setProcessingPayment(true);
 
     const isUuid = (id) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     const payload = {
       storeId: activeStoreId,
+      checkoutKey: saleAttemptKey,
+      idempotencyKey: saleAttemptKey,
       items: cart.map((item) => ({
         productId: item.productId,
+        variantId: item.variantId || null,
         quantity: item.quantity,
         price: item.price,
         productType: item.productType || "physical",
@@ -466,13 +513,22 @@ export default function POS() {
       },
     };
 
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 15000) : null;
+
     try {
       const res = await fetch(`${ECOMMERCE_API_BASE}/api/stores/${activeStoreId}/orders/pos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": saleAttemptKey,
+        },
         credentials: "include",
         body: JSON.stringify(payload),
+        signal: controller?.signal,
       });
+
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -508,6 +564,7 @@ export default function POS() {
 
       setCompletedOrder({
         ...orderRecord,
+        isIdempotentReplay: Boolean(result.idempotentReplay),
         items: cart,
         subtotal,
         discountAmount,
@@ -528,36 +585,70 @@ export default function POS() {
       // Omnichannel sync: Refresh products to update shelf inventory immediately!
       fetchProducts();
     } catch (err) {
+      if (timeoutId) clearTimeout(timeoutId);
       console.error("POS Checkout error:", err);
-      const isNetworkError = !window.navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError");
+      const isAbort = err.name === "AbortError";
+      const isNetworkError = isAbort || !window.navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError");
       if (isNetworkError) {
-        const shouldQueueOffline = window.confirm(
-          `Network connection interrupted.\n\nWould you like to save this order to the Offline Recovery Queue for later sync?`
-        );
-        if (shouldQueueOffline) {
-          const offlineOrder = {
-            id: `offline-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            payload,
-            summary: {
-              itemsCount: cart.reduce((s, i) => s + i.quantity, 0),
-              totalUSD,
-              paymentMethod,
-              customerName: customer.name || "Walk-In Customer",
-            },
-          };
-          const nextQueue = [offlineOrder, ...offlineQueue];
-          setOfflineQueue(nextQueue);
-          localStorage.setItem(`rentify.pos.offlineQueue.${activeStoreId}`, JSON.stringify(nextQueue));
-          setPaymentModalOpen(false);
-          clearCart();
-          alert("Transaction safely queued in Offline Recovery. You can sync it once reconnected.");
-        }
+        setUncertainOutcome({
+          key: saleAttemptKey,
+          payload,
+          error: isAbort ? "Transaction timed out after 15 seconds." : err.message || "Network connection interrupted.",
+        });
       } else {
         alert(err.message || "Failed to process POS transaction on server.");
+        if (err.message?.includes("stock") || err.message?.includes("Stock")) {
+          fetchProducts();
+        }
       }
     } finally {
       setProcessingPayment(false);
+    }
+  };
+
+  // Return submission handler
+  const handleConfirmReturn = async () => {
+    if (!selectedOrderForReturn || !activeStoreId) return;
+    if (user?.type === "staff" && !hasPosPermission) {
+      alert("Unauthorized: You do not have permission to process POS returns.");
+      return;
+    }
+    setProcessingReturn(true);
+    try {
+      const res = await fetch(`${ECOMMERCE_API_BASE}/api/stores/${activeStoreId}/orders/pos/${selectedOrderForReturn.id}/return`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason: returnReason }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || "Failed to process return.");
+      }
+
+      // If cash sale, log till payout
+      if (selectedOrderForReturn.paymentMethod?.toLowerCase().includes("cash")) {
+        const refundEvent = {
+          id: `till-${Date.now()}`,
+          type: "cash_out_refund",
+          amount: selectedOrderForReturn.totalAmount,
+          reason: `POS Return #${selectedOrderForReturn.id.slice(0, 8)}`,
+          timestamp: new Date().toISOString(),
+        };
+        const nextTill = [refundEvent, ...tillEvents];
+        setTillEvents(nextTill);
+        localStorage.setItem(`rentify.pos.till.${activeStoreId}`, JSON.stringify(nextTill));
+      }
+
+      alert("Return completed successfully. Inventory restored to store catalog.");
+      setReturnModalOpen(false);
+      setSelectedOrderForReturn(null);
+      fetchPastOrders();
+      fetchProducts();
+    } catch (err) {
+      alert(err.message || "Failed to process return.");
+    } finally {
+      setProcessingReturn(false);
     }
   };
 
@@ -624,7 +715,10 @@ export default function POS() {
       try {
         const res = await fetch(`${ECOMMERCE_API_BASE}/api/stores/${activeStoreId}/orders/pos`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(item.payload?.checkoutKey ? { "Idempotency-Key": item.payload.checkoutKey } : {}),
+          },
           credentials: "include",
           body: JSON.stringify(item.payload),
         });
@@ -677,6 +771,27 @@ export default function POS() {
   // ── 7. Render Views ───────────────────────────────────────────────────────
   if (loadingStore) {
     return <LoadingState title="Connecting to Register" description="Loading merchant session and products..." />;
+  }
+
+  if (user?.type === "staff" && !hasPosPermission) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center p-8 text-center bg-slate-50/60">
+        <div className="rounded-3xl border border-amber-200 bg-white p-8 max-w-md shadow-sm space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100">
+            <ShieldAlert className="h-7 w-7 text-amber-600" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-bold text-slate-900">Access Denied: POS Terminal</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your staff account does not have permission to access the Point of Sale terminal. Please contact your store administrator to request POS access.
+            </p>
+          </div>
+          <Button variant="outline" className="w-full rounded-xl text-xs font-semibold" onClick={() => navigate("/")}>
+            Return to Terminal Entry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -952,15 +1067,37 @@ export default function POS() {
                           {formatCurrency(order.totalAmount * (exchangeRate || 4100), "KHR")}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 rounded-xl text-xs font-semibold"
-                        onClick={() => handleViewPastOrderReceipt(order)}
-                      >
-                        <Receipt className="mr-1.5 h-3.5 w-3.5" />
-                        View / Print Receipt
-                      </Button>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl text-xs font-semibold"
+                          onClick={() => handleViewPastOrderReceipt(order)}
+                        >
+                          <Receipt className="mr-1.5 h-3.5 w-3.5" />
+                          Receipt
+                        </Button>
+                        {order.status === "completed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl text-xs font-semibold text-amber-700 border-amber-200 hover:bg-amber-50"
+                            onClick={() => {
+                              setSelectedOrderForReturn(order);
+                              setReturnReason("Customer Return");
+                              setReturnModalOpen(true);
+                            }}
+                          >
+                            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                            Return
+                          </Button>
+                        )}
+                        {order.status === "refunded" && (
+                          <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200 text-[10px] font-bold uppercase self-center">
+                            Refunded & Stock Restored
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1240,7 +1377,7 @@ export default function POS() {
               ) : (
                 cart.map((item) => (
                   <div
-                    key={item.productId}
+                    key={item.cartItemId || item.productId}
                     className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm"
                   >
                     <div className="min-w-0 flex-1 pr-2">
@@ -1254,7 +1391,7 @@ export default function POS() {
                       <button
                         type="button"
                         className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-                        onClick={() => updateCartQuantity(item.productId, -1)}
+                        onClick={() => updateCartQuantity(item.cartItemId || item.productId, -1)}
                       >
                         <Minus className="h-3 w-3" />
                       </button>
@@ -1262,7 +1399,7 @@ export default function POS() {
                       <button
                         type="button"
                         className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-                        onClick={() => updateCartQuantity(item.productId, 1)}
+                        onClick={() => updateCartQuantity(item.cartItemId || item.productId, 1)}
                       >
                         <Plus className="h-3 w-3" />
                       </button>
@@ -1512,6 +1649,13 @@ export default function POS() {
             id="pos-receipt-print-area"
             className="rounded-2xl border border-slate-200 bg-white p-5 font-mono text-xs space-y-3 shadow-inner max-h-96 overflow-y-auto"
           >
+            {completedOrder?.isIdempotentReplay && (
+              <div className="flex justify-center pb-1">
+                <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-300 text-[10px] font-bold uppercase">
+                  Verified Replay (Idempotent)
+                </Badge>
+              </div>
+            )}
             <div className="text-center space-y-0.5 border-b pb-2">
               <h4 className="font-bold text-sm uppercase text-slate-900">{activeStoreName || "Rentify Store"}</h4>
               <p className="text-[10px] text-muted-foreground">Official Sales Receipt</p>
@@ -1678,6 +1822,123 @@ export default function POS() {
               }}
             >
               Apply Discount
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── RETURN CONFIRMATION MODAL ─────────────────────────────────────── */}
+      <Dialog open={returnModalOpen} onOpenChange={setReturnModalOpen}>
+        <DialogContent className="max-w-md rounded-[28px] p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <RotateCcw className="h-5 w-5 text-amber-600" />
+              Process POS Return
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Order #{selectedOrderForReturn?.id?.slice(0, 8).toUpperCase()} • Total {formatCurrency(selectedOrderForReturn?.totalAmount || 0)}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-1.5">
+              <p className="font-semibold text-slate-800">Return Policy & Inventory Effect:</p>
+              <p className="text-slate-600">• All line items will be restored to store inventory.</p>
+              <p className="text-slate-600">• Order and payment records will be marked as refunded.</p>
+              {selectedOrderForReturn?.paymentMethod?.toLowerCase().includes("cash") && (
+                <p className="text-slate-600 font-medium text-amber-800">• Cash refund will be recorded in the register till float.</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="return-reason-input" className="text-xs font-semibold">Reason for Return</Label>
+              <Input
+                id="return-reason-input"
+                placeholder="e.g. Defective, wrong size, customer change of mind..."
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button variant="outline" onClick={() => setReturnModalOpen(false)} disabled={processingReturn}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+              onClick={handleConfirmReturn}
+              disabled={processingReturn}
+            >
+              {processingReturn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-1.5 h-4 w-4" />}
+              Confirm Return & Restore Stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── UNCERTAIN NETWORK OUTCOME MODAL ─────────────────────────────────── */}
+      <Dialog open={Boolean(uncertainOutcome)} onOpenChange={(open) => { if (!open) setUncertainOutcome(null); }}>
+        <DialogContent className="max-w-md rounded-[28px] p-6 border-amber-300">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-amber-900">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Uncertain Network Outcome
+            </DialogTitle>
+            <DialogDescription className="text-xs text-amber-800">
+              Connection timed out or network was interrupted during checkout.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-xs text-slate-700">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 space-y-2">
+              <p className="font-semibold text-amber-950">Safety Guidance:</p>
+              <p>• Do NOT create another sale — retrying will safely verify the transaction without duplicate charges or stock deduction.</p>
+              <p>• Retrying with the same key will either confirm the committed order or safely place it once.</p>
+            </div>
+            <p className="font-mono text-[11px] text-muted-foreground break-all">
+              Attempt Key: {uncertainOutcome?.key}
+            </p>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (uncertainOutcome?.payload) {
+                  const offlineOrder = {
+                    id: `offline-${Date.now()}`,
+                    createdAt: new Date().toISOString(),
+                    payload: uncertainOutcome.payload,
+                    summary: {
+                      itemsCount: cart.reduce((s, i) => s + i.quantity, 0),
+                      totalUSD,
+                      paymentMethod,
+                      customerName: customer.name || "Walk-In Customer",
+                    },
+                  };
+                  const nextQueue = [offlineOrder, ...offlineQueue];
+                  setOfflineQueue(nextQueue);
+                  localStorage.setItem(`rentify.pos.offlineQueue.${activeStoreId}`, JSON.stringify(nextQueue));
+                  setUncertainOutcome(null);
+                  setPaymentModalOpen(false);
+                  clearCart();
+                  alert("Transaction safely queued in Offline Recovery with original idempotency key.");
+                }
+              }}
+            >
+              Queue for Offline Sync
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              onClick={() => {
+                setUncertainOutcome(null);
+                finalizePOSOrder();
+              }}
+            >
+              <RefreshCw className="mr-1.5 h-4 w-4" />
+              Retry Safe Confirmation
             </Button>
           </DialogFooter>
         </DialogContent>

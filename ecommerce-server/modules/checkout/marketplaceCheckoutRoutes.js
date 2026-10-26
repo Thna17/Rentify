@@ -28,6 +28,7 @@ router.post('/marketplace/cart/merge', verifyCoreBuyer, requireBuyer, controller
 router.post('/marketplace/checkout', verifyCoreBuyer, requireBuyer, requireMarketplaceCheckoutEnabled, controller.checkout);
 router.get('/marketplace/my-orders', verifyCoreBuyer, requireBuyer, controller.buyerOrders);
 router.get('/marketplace/my-orders/:orderId', verifyCoreBuyer, requireBuyer, controller.buyerOrder);
+router.get('/marketplace/my-orders/:orderId/events', verifyCoreBuyer, requireBuyer, controller.buyerOrderEvents);
 router.post('/marketplace/my-orders/:orderId/reports/:type', verifyCoreBuyer, requireBuyer, controller.buyerReport);
 // This router is mounted at /api ahead of the storefront, product, category and
 // cart routers, so merchant authentication must stay scoped to /stores.

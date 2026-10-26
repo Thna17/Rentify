@@ -17,6 +17,7 @@ import { CartService } from '../../../../core/cart/cart.service';
 import { FlyToCartService } from '../../../../core/cart/fly-to-cart.service';
 import { WishlistService } from '../../../../core/wishlist/wishlist.service';
 import { RentifyMarketplaceService } from '../../../../core/rentify/rentify-marketplace.service';
+import { TranslateService } from '../../../../core/i18n/translate.service';
 import { IconComponent } from '../../ui/icon/icon.component';
 import { CategoryMenuComponent } from '../category-menu/category-menu.component';
 import { SearchOverlayComponent } from '../../../user/search/search-overlay/search-overlay.component';
@@ -104,10 +105,10 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                 </button>
                 <button
                   type="button"
-                  disabled
-                  title="Khmer translation is being prepared"
+                  [class.active]="language() === 'km'"
+                  (click)="selectLanguage('km')"
                 >
-                  ភាសាខ្មែរ · Coming soon
+                  ភាសាខ្មែរ
                 </button>
               </div>
             }
@@ -334,6 +335,11 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                 <a routerLink="/products" [queryParams]="{ collection: 'best-sellers' }" (click)="menuOpen.set(false)">Best Sellers</a>
                 <a routerLink="/categories/arts-culture" [queryParams]="{ sub: 'souvenirs-gifts' }" (click)="menuOpen.set(false)">Gifts</a>
                 <a class="sale" routerLink="/products" [queryParams]="{ sale: '1' }" (click)="menuOpen.set(false)">Sale</a>
+                <p class="menu-section">Language / ភាសា</p>
+                <div class="mobile-lang-row">
+                  <button type="button" class="mobile-lang-btn" [class.active]="language() === 'en'" (click)="selectLanguage('en')">English</button>
+                  <button type="button" class="mobile-lang-btn" [class.active]="language() === 'km'" (click)="selectLanguage('km')">ភាសាខ្មែរ</button>
+                </div>
               </nav>
             }
           </div>
@@ -875,6 +881,27 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
       .mobile-menu a.sale:hover {
         color: var(--color-danger, #b92a2a);
       }
+      .mobile-lang-row {
+        display: flex;
+        gap: 6px;
+        padding: 6px 8px 8px;
+      }
+      .mobile-lang-btn {
+        flex: 1;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xs, 6px);
+        background: var(--color-surface);
+        color: var(--color-text);
+        cursor: pointer;
+      }
+      .mobile-lang-btn.active {
+        background: var(--color-accent);
+        color: #fff;
+        border-color: var(--color-accent);
+      }
       @media (max-width: 1380px) {
         .navbar-inner {
           gap: 14px;
@@ -1000,7 +1027,8 @@ export class NavbarComponent implements AfterViewInit {
   protected readonly categories = inject(CatalogService).categories;
   protected readonly langMenuOpen = signal(false);
   protected readonly accountOpen = signal(false);
-  protected readonly language = signal<'en' | 'km'>('en');
+  private readonly translate = inject(TranslateService);
+  protected readonly language = computed(() => this.translate.currentLang());
 
   /**
    * The signed-in seller's own store, used for the "View my store" link so
@@ -1152,9 +1180,8 @@ export class NavbarComponent implements AfterViewInit {
     this.auth.logout().subscribe(() => void this.router.navigateByUrl('/'));
   }
 
-  /** No translation system yet — this just remembers the choice for the badge. */
   protected selectLanguage(lang: 'en' | 'km'): void {
-    this.language.set(lang);
+    this.translate.setLanguage(lang);
     this.langMenuOpen.set(false);
   }
 
