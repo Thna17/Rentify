@@ -1,8 +1,8 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { CatalogService } from '../catalog/catalog.service';
-import { CartItem, CartLine, Product } from '../catalog/catalog.models';
+import { CartItem, CartLine, Product, StoreCartGroup, StoreCartGroupLine } from '../catalog/catalog.models';
 import {
   RentifyMarketplaceService,
   StoreCart,
@@ -23,7 +23,11 @@ export interface EnhancedCartItem extends CartItem {
  *   Signed in  → Rentify Commerce API store-grouped cart (/api/marketplace/cart).
  *   Guest      → Local memory & localStorage, synced with Rentify session cart.
  *
- * On sign-in the guest basket is merged and pushed to Rentify.
+ * Store isolation & multi-store guarantees:
+ *   - Products are grouped strictly by Store and sales channel.
+ *   - Totals, delivery fees, and subtotals are authoritative from Commerce.
+ *   - Stale prices and unavailable stock are surfaced with review requirements.
+ *   - Single-store checkout does not destroy or drop items from other stores.
  */
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -40,37 +44,67 @@ export class CartService {
   /** Store carts from Rentify Commerce API. */
   private readonly storeCarts = signal<StoreCart[]>([]);
 
+  /** Acknowledged stale price reviews per storeId. */
+  readonly acknowledgedStores = signal<Set<string>>(new Set());
+
+  /** Selected single storeId for checkout. */
+  readonly activeCheckoutStoreId = signal<string | null>(null);
+
   private readonly signedIn = this.auth.isAuthenticated;
 
   readonly loading = signal(false);
-  /** Last error from a cart mutation. */
+  /** Last error from a cart mutation or network timeout. */
   readonly error = signal('');
 
-  readonly lines = computed<CartLine[]>(() => {
+  /** Authoritative store-grouped carts from Commerce or local session projection. */
+  readonly groups = computed<StoreCartGroup[]>(() => {
     if (this.signedIn()) {
-      const allLines: CartLine[] = [];
+      const result: StoreCartGroup[] = [];
       for (const cart of this.storeCarts()) {
+        const activeItems = (cart.items || []).filter((it) => it.quantity > 0);
+        if (activeItems.length === 0) continue;
+
         const store = this.catalog.storeById(cart.storeId);
         const sellerName = store?.name || 'Local Merchant';
-        for (const item of cart.items) {
+        const channel: 'marketplace' | 'storefront' =
+          cart.channel || (cart.websiteId ? 'storefront' : 'marketplace');
+
+        const lines: StoreCartGroupLine[] = activeItems.map((it) => {
           const known =
-            this.catalog.productById(item.productId) ||
-            this.localProductCache.get(item.productId);
-          const backendProd = (item as any).product;
-          const img = backendProd?.images?.[0]?.url || backendProd?.images?.[0] || null;
+            this.catalog.productById(it.productId) ||
+            this.localProductCache.get(it.productId);
+          const backendProd = (it as any).product;
+          const backendVar = (it as any).variant;
+          const img =
+            backendProd?.images?.[0]?.url ||
+            backendProd?.images?.[0] ||
+            known?.image ||
+            null;
           const effectiveName = known?.name || backendProd?.name || 'Product';
-          const effectivePrice = item.currentPrice
-            ? parseFloat(item.currentPrice) || 0
-            : known?.price || (backendProd?.price ? parseFloat(backendProd.price) : 0);
+          const unitPrice = it.unitPrice
+            ? parseFloat(it.unitPrice) || 0
+            : it.currentPrice
+              ? parseFloat(it.currentPrice) || 0
+              : known?.price || 0;
+          const currentPrice = it.currentPrice
+            ? parseFloat(it.currentPrice) || 0
+            : unitPrice;
+          const isPriceStale = Boolean(
+            it.unitPrice &&
+              it.currentPrice &&
+              Math.abs(parseFloat(it.unitPrice) - parseFloat(it.currentPrice)) > 0.001,
+          );
+          const stockLimit =
+            backendVar?.stockQuantity ?? backendProd?.stockQuantity ?? known?.stock;
           const product: Product = known
-            ? { ...known, price: effectivePrice, sellerName: store?.name || known.sellerName || 'Local Merchant' }
+            ? { ...known, price: currentPrice, sellerName }
             : {
-                id: item.productId,
+                id: it.productId,
                 name: effectiveName,
-                slug: backendProd?.slug || item.productId,
+                slug: backendProd?.slug || it.productId,
                 image: img,
                 images: img ? [img] : [],
-                price: effectivePrice,
+                price: currentPrice,
                 categorySlug: 'general',
                 categoryName: 'General',
                 subcategory: null,
@@ -79,46 +113,108 @@ export class CartService {
                 storeId: cart.storeId,
                 rating: 5,
                 reviewCount: 0,
-                stock: backendProd?.stockQuantity ?? 99,
-                status: item.available ? 'in-stock' : 'out-of-stock',
+                stock: stockLimit ?? 99,
+                status: it.available ? 'in-stock' : 'out-of-stock',
                 description: '',
                 soldCount: 0,
                 createdAt: new Date().toISOString(),
                 collections: [],
               };
           if (!known && backendProd) {
-            this.localProductCache.set(item.productId, product);
+            this.localProductCache.set(it.productId, product);
           }
-          allLines.push({
+          return {
+            id: it.id,
             product,
-            quantity: item.quantity,
-            lineTotal: round(effectivePrice * item.quantity),
-          });
-        }
+            variantId: it.variantId || null,
+            sku: backendVar?.sku || product.sku,
+            quantity: it.quantity,
+            unitPrice: round(unitPrice),
+            currentPrice: round(currentPrice),
+            isPriceStale,
+            available: it.available,
+            stockLimit,
+            stockWarning: !it.available
+              ? 'Out of stock'
+              : stockLimit !== undefined && stockLimit < it.quantity
+                ? `Only ${stockLimit} available`
+                : undefined,
+            lineTotal: round(currentPrice * it.quantity),
+            optionValues: backendVar?.optionValues,
+          };
+        });
+
+        const hasStalePrices =
+          lines.some((l) => l.isPriceStale) &&
+          !this.acknowledgedStores().has(cart.storeId);
+        const checkoutReady = Boolean(cart.checkoutReady && !hasStalePrices);
+
+        result.push({
+          cartId: cart.id,
+          storeId: cart.storeId,
+          sellerName,
+          storeSlug: store?.slug,
+          channel,
+          websiteId: cart.websiteId || null,
+          lines,
+          subtotal: cart.subtotal,
+          deliveryFee: cart.deliveryFee,
+          totalAmount: cart.totalAmount,
+          currency: cart.currency || 'USD',
+          deliveryPolicyVersion: cart.deliveryPolicyVersion ?? null,
+          checkoutReady,
+          issues: cart.issues || [],
+          hasStalePrices,
+        });
       }
-      return allLines;
+      return result;
     }
 
-    return this.guestItems().map((item) => {
+    // Guest basket: group guestItems by storeId
+    const guestBuckets = new Map<string, EnhancedCartItem[]>();
+    for (const item of this.guestItems()) {
+      if (item.quantity <= 0) continue;
       const known =
         this.catalog.productById(item.productId) ||
         this.localProductCache.get(item.productId) ||
         item.product;
-      const product: Product = known
-        ? known
-        : {
-            id: item.productId,
-            name: (item as any).name || 'Product',
-            slug: item.productId,
-            image: (item as any).image || null,
-            images: (item as any).image ? [(item as any).image] : [],
-            price: (item as any).price || 0,
+      const storeId = known?.storeId || (item as any).storeId || 'store-guest-001';
+      const bucket = guestBuckets.get(storeId);
+      if (bucket) bucket.push(item);
+      else guestBuckets.set(storeId, [item]);
+    }
+
+    return [...guestBuckets.entries()].map(([storeId, items]) => {
+      const store = this.catalog.storeById(storeId);
+      const sellerName =
+        store?.name || (items[0] as any)?.product?.sellerName || 'Local Merchant';
+      const serverCart = this.storeCarts().find((c) => c.storeId === storeId);
+      let storeSubtotal = 0;
+
+      const lines: StoreCartGroupLine[] = items.map((it) => {
+        const known =
+          this.catalog.productById(it.productId) ||
+          this.localProductCache.get(it.productId) ||
+          it.product;
+        const serverItem = serverCart?.items?.find((i) => i.productId === it.productId);
+        const price = known?.price || (it as any).price || 0;
+        const lineTotal = round(price * it.quantity);
+        storeSubtotal += lineTotal;
+        return {
+          id: serverItem?.id,
+          product: known || {
+            id: it.productId,
+            name: (it as any).name || 'Product',
+            slug: it.productId,
+            image: (it as any).image || null,
+            images: [],
+            price,
             categorySlug: 'general',
             categoryName: 'General',
             subcategory: null,
             subcategorySlug: null,
-            sellerName: (item as any).sellerName || 'Local Merchant',
-            storeId: (item as any).storeId || '',
+            sellerName,
+            storeId,
             rating: 5,
             reviewCount: 0,
             stock: 99,
@@ -127,45 +223,74 @@ export class CartService {
             soldCount: 0,
             createdAt: new Date().toISOString(),
             collections: [],
-          };
+          },
+          variantId: serverItem?.variantId || null,
+          quantity: it.quantity,
+          unitPrice: price,
+          currentPrice: price,
+          isPriceStale: false,
+          available: (known?.status ?? 'in-stock') !== 'out-of-stock',
+          stockLimit: known?.stock ?? 99,
+          lineTotal,
+        };
+      });
+
+      const freeDelivery = storeSubtotal >= FREE_SHIPPING_THRESHOLD;
+      const deliveryFee = freeDelivery ? '0.00' : (serverCart?.deliveryFee || SHIPPING_FLAT_RATE.toFixed(2));
+      const feeNum = parseFloat(deliveryFee) || 0;
+      const totalAmount = (storeSubtotal + feeNum).toFixed(2);
+
       return {
-        product,
-        quantity: item.quantity,
-        lineTotal: round(product.price * item.quantity),
+        cartId: serverCart?.id || `guest-cart-${storeId}`,
+        storeId,
+        sellerName,
+        storeSlug: store?.slug,
+        channel: serverCart?.channel || 'marketplace',
+        websiteId: serverCart?.websiteId || null,
+        lines,
+        subtotal: storeSubtotal.toFixed(2),
+        deliveryFee,
+        totalAmount,
+        currency: 'USD',
+        deliveryPolicyVersion: serverCart?.deliveryPolicyVersion ?? 1,
+        checkoutReady: lines.every((l) => l.available),
+        issues: lines.some((l) => !l.available) ? ['Item unavailable'] : [],
+        hasStalePrices: false,
       };
     });
   });
 
+  /** Flattened lines view for quick legacy consumers. */
+  readonly lines = computed<CartLine[]>(() => {
+    return this.groups().flatMap((group) =>
+      group.lines.map((line) => ({
+        product: line.product,
+        quantity: line.quantity,
+        lineTotal: line.lineTotal,
+      })),
+    );
+  });
+
   readonly count = computed(() => {
-    if (this.signedIn()) {
-      return this.storeCarts().reduce(
-        (sum, cart) => sum + cart.items.reduce((s, it) => s + it.quantity, 0),
-        0,
-      );
-    }
-    return this.guestItems().reduce((total, item) => total + item.quantity, 0);
+    return this.groups().reduce(
+      (sum, group) => sum + group.lines.reduce((s, it) => s + it.quantity, 0),
+      0,
+    );
   });
 
   readonly subtotal = computed(() => {
-    if (this.signedIn()) {
-      return round(
-        this.storeCarts()
-          .filter((cart) => cart.items && cart.items.length > 0)
-          .reduce((sum, cart) => sum + (parseFloat(cart.subtotal) || 0), 0),
-      );
-    }
-    return round(this.lines().reduce((total, line) => total + line.lineTotal, 0));
+    return round(
+      this.groups().reduce((sum, g) => sum + (parseFloat(g.subtotal) || 0), 0),
+    );
   });
 
   readonly shipping = computed(() => {
     if (this.signedIn()) {
       return round(
-        this.storeCarts()
-          .filter((cart) => cart.items && cart.items.length > 0)
-          .reduce(
-            (sum, cart) => sum + (parseFloat(cart.deliveryFee || '0') || 0),
-            0,
-          ),
+        this.groups().reduce(
+          (sum, g) => sum + (parseFloat(g.deliveryFee || '0') || 0),
+          0,
+        ),
       );
     }
     const subtotal = this.subtotal();
@@ -177,19 +302,16 @@ export class CartService {
   readonly total = computed(() => {
     if (this.signedIn()) {
       return round(
-        this.storeCarts()
-          .filter((cart) => cart.items && cart.items.length > 0)
-          .reduce(
-            (sum, cart) =>
-              sum + (parseFloat(cart.totalAmount || cart.subtotal) || 0),
-            0,
-          ),
+        this.groups().reduce(
+          (sum, g) => sum + (parseFloat(g.totalAmount || g.subtotal) || 0),
+          0,
+        ),
       );
     }
     return round(this.subtotal() + this.shipping());
   });
 
-  readonly isEmpty = computed(() => this.lines().length === 0);
+  readonly isEmpty = computed(() => this.count() === 0);
 
   readonly freeShippingRemaining = computed(() =>
     this.subtotal() >= FREE_SHIPPING_THRESHOLD
@@ -225,10 +347,25 @@ export class CartService {
     return this.storeCarts();
   }
 
+  storeCart(storeId: string): StoreCartGroup | undefined {
+    return this.groups().find((g) => g.storeId === storeId);
+  }
+
+  selectStoreForCheckout(storeId: string | null): void {
+    this.activeCheckoutStoreId.set(storeId);
+  }
+
+  acknowledgeStalePrices(storeId: string): void {
+    this.acknowledgedStores.update((set) => {
+      const next = new Set(set);
+      next.add(storeId);
+      return next;
+    });
+  }
+
   private async adoptGuestCart(): Promise<void> {
     this.loading.set(true);
     try {
-      // First attempt server-side merge of session cart if available
       const mergedProductIds = new Set<string>();
       try {
         const mergeRes = await firstValueFrom(this.rentify.mergeCart());
@@ -280,12 +417,11 @@ export class CartService {
     }
   }
 
-  async refresh(): Promise<void> {
+  async refresh(timeoutMs = 8000): Promise<void> {
     try {
-      const res = await firstValueFrom(this.rentify.carts());
+      const res = await firstValueFrom(this.rentify.carts().pipe(timeout(timeoutMs)));
       if (res?.carts) {
         this.storeCarts.set(res.carts);
-        // Cache products returned by server
         for (const c of res.carts) {
           for (const it of c.items) {
             const bp = (it as any).product;
@@ -316,7 +452,6 @@ export class CartService {
             }
           }
         }
-        // If guest has no local items but server has session cart items, restore them into guestItems
         if (!this.signedIn() && this.guestItems().length === 0) {
           const restored: EnhancedCartItem[] = [];
           for (const c of res.carts) {
@@ -330,12 +465,20 @@ export class CartService {
           }
         }
       }
-    } catch {
-      // Leave previous in place
+    } catch (err: unknown) {
+      const isTimeout = (err as any)?.name === 'TimeoutError';
+      if (isTimeout) {
+        this.error.set('Network timeout: could not refresh cart. Please retry.');
+      }
     }
   }
 
-  async add(product: Product, quantity = 1): Promise<boolean> {
+  async retry(): Promise<void> {
+    this.error.set('');
+    await this.refresh();
+  }
+
+  async add(product: Product, quantity = 1, variantId?: string): Promise<boolean> {
     this.error.set('');
 
     if (product.status === 'out-of-stock' || quantity < 1) {
@@ -343,7 +486,6 @@ export class CartService {
       return false;
     }
 
-    // Always cache the product reference in memory
     this.localProductCache.set(product.id, product);
 
     if (!this.signedIn()) {
@@ -363,11 +505,10 @@ export class CartService {
         );
       });
 
-      // Also persist to backend session cart asynchronously
       const targetQty = this.quantityOf(product.id);
       const persist$ = product.storeId
         ? this.rentify.setQuantity(product.storeId, product.id, targetQty)
-        : this.rentify.addItem(product.id, quantity);
+        : this.rentify.addItem(product.id, quantity, product.storeId, variantId);
       await firstValueFrom(persist$).then((res) => {
         if (res?.carts) this.storeCarts.set(res.carts);
       }).catch(() => {});
@@ -381,7 +522,7 @@ export class CartService {
       const currentQty = existingItem?.quantity || 0;
       const mutation$ = product.storeId
         ? this.rentify.setQuantity(product.storeId, product.id, currentQty + quantity)
-        : this.rentify.addItem(product.id, quantity);
+        : this.rentify.addItem(product.id, quantity, product.storeId, variantId);
       const res = await firstValueFrom(mutation$);
       this.storeCarts.set(res.carts || []);
       return true;
@@ -504,7 +645,26 @@ export class CartService {
     }
   }
 
-  async clear(): Promise<void> {
+  async clear(storeId?: string): Promise<void> {
+    if (storeId) {
+      this.guestItems.update((items) =>
+        items.filter((item) => {
+          const product = this.catalog.productById(item.productId) || this.localProductCache.get(item.productId) || item.product;
+          return product?.storeId !== storeId && (item as any).storeId !== storeId;
+        }),
+      );
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.guestItems()));
+      } catch {}
+      try {
+        const res = await firstValueFrom(this.rentify.clearCart(storeId));
+        this.storeCarts.set(res?.carts || []);
+      } catch {
+        this.storeCarts.update((carts) => carts.filter((c) => c.storeId !== storeId));
+      }
+      return;
+    }
+
     this.guestItems.set([]);
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -518,25 +678,51 @@ export class CartService {
   }
 
   quantityOf(productId: string): number {
-    if (this.signedIn()) {
-      for (const cart of this.storeCarts()) {
-        const item = cart.items.find((i) => i.productId === productId);
-        if (item) return item.quantity;
-      }
-      return 0;
+    for (const group of this.groups()) {
+      const item = group.lines.find((i) => i.product.id === productId);
+      if (item) return item.quantity;
     }
-    const guestItem = this.guestItems().find((item) => item.productId === productId);
-    return guestItem?.quantity ?? 0;
+    return 0;
   }
 
   contains(productId: string): boolean {
     return this.quantityOf(productId) > 0;
   }
 
-  /** Called after checkout: mirrors emptied state. */
-  markEmptied(): void {
+  /**
+   * Called after checkout: mirrors emptied state for a specific Store or all Stores.
+   * If storeId is provided, preserves carts from all other stores.
+   */
+  markEmptied(storeId?: string): void {
+    if (storeId) {
+      this.storeCarts.update((carts) => carts.filter((c) => c.storeId !== storeId));
+      this.guestItems.update((items) =>
+        items.filter((item) => {
+          const product =
+            this.catalog.productById(item.productId) ||
+            this.localProductCache.get(item.productId) ||
+            item.product;
+          return product?.storeId !== storeId && (item as any).storeId !== storeId;
+        }),
+      );
+      this.acknowledgedStores.update((set) => {
+        const next = new Set(set);
+        next.delete(storeId);
+        return next;
+      });
+      if (this.activeCheckoutStoreId() === storeId) {
+        this.activeCheckoutStoreId.set(null);
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.guestItems()));
+      } catch {}
+      return;
+    }
+
     this.storeCarts.set([]);
     this.guestItems.set([]);
+    this.acknowledgedStores.set(new Set());
+    this.activeCheckoutStoreId.set(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}

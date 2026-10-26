@@ -124,6 +124,40 @@ export interface CartLine {
   lineTotal: number;
 }
 
+export interface StoreCartGroupLine {
+  id?: string;
+  product: Product;
+  variantId?: string | null;
+  sku?: string | null;
+  quantity: number;
+  unitPrice: number;
+  currentPrice: number;
+  isPriceStale: boolean;
+  available: boolean;
+  stockLimit?: number;
+  stockWarning?: string;
+  lineTotal: number;
+  optionValues?: Record<string, string>;
+}
+
+export interface StoreCartGroup {
+  cartId: string;
+  storeId: string;
+  sellerName: string;
+  storeSlug?: string;
+  channel: 'marketplace' | 'storefront';
+  websiteId?: string | null;
+  lines: StoreCartGroupLine[];
+  subtotal: string;
+  deliveryFee: string | null;
+  totalAmount: string | null;
+  currency: string;
+  deliveryPolicyVersion?: number | null;
+  checkoutReady: boolean;
+  issues: string[];
+  hasStalePrices: boolean;
+}
+
 export type ProductSort =
   | 'featured'
   | 'price-asc'

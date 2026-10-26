@@ -5,8 +5,10 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { CommerceApiService } from '../core/api/commerce-api.service';
 import { PaymentMethod } from '../core/api/api.models';
 import { AuthService } from '../core/auth/auth.service';
@@ -203,6 +205,17 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
           <aside class="summary card">
             <h2>Order summary</h2>
 
+            @if (activeStoreId()) {
+              <div class="single-store-banner">
+                <ui-icon name="store" [size]="14" />
+                <div class="single-store-banner-text">
+                  <strong>Checking out with this seller</strong>
+                  <p>Items from other stores remain saved in your cart.</p>
+                </div>
+                <a routerLink="/cart" class="back-cart-link">All stores</a>
+              </div>
+            }
+
             <div class="shipments">
               @for (group of shipmentGroups(); track group.storeId) {
                 <section class="shipment">
@@ -221,18 +234,18 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             </div>
 
             <div class="row">
-              <span>Subtotal</span><span>\${{ cart.subtotal().toFixed(2) }}</span>
+              <span>Subtotal</span><span>\${{ checkoutSubtotal().toFixed(2) }}</span>
             </div>
             <div class="row">
               <span>Delivery</span>
-              @if (cart.shipping() === 0) {
+              @if (checkoutShipping() === 0) {
                 <span class="free">Free</span>
               } @else {
-                <span>\${{ cart.shipping().toFixed(2) }}</span>
+                <span>\${{ checkoutShipping().toFixed(2) }}</span>
               }
             </div>
             <div class="row total">
-              <span>Total</span><span>\${{ cart.total().toFixed(2) }}</span>
+              <span>Total</span><span>\${{ checkoutTotal().toFixed(2) }}</span>
             </div>
 
             @if (error(); as message) {
@@ -444,6 +457,34 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
         border-bottom: 1px solid var(--color-border);
       }
       .shipments { display: grid; gap: 11px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
+      .single-store-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: var(--radius-sm, 6px);
+        margin-bottom: 14px;
+        font-size: 12px;
+        color: #166534;
+      }
+      .single-store-banner-text strong {
+        display: block;
+        font-weight: 650;
+      }
+      .single-store-banner-text p {
+        margin: 2px 0 0;
+        color: #15803d;
+        font-size: 11px;
+      }
+      .back-cart-link {
+        margin-left: auto;
+        font-weight: 600;
+        color: #166534;
+        text-decoration: underline;
+        white-space: nowrap;
+      }
       .shipment { display: grid; gap: 6px; }
       .shipment header { align-items: center; color: var(--color-text); display: flex; font-size: 11.5px; font-weight: 700; gap: 6px; }
       .shipment header span { color: var(--color-muted); font-size: 9.5px; font-weight: 500; margin-left: auto; }
@@ -540,18 +581,60 @@ export class CheckoutComponent {
       this.method.set(option.value as PaymentMethod);
     }
   }
+  private readonly route = inject(ActivatedRoute);
+
+  protected readonly requestedStoreId = toSignal(
+    this.route.queryParamMap.pipe(map((params) => params.get('storeId'))),
+    { initialValue: this.route.snapshot.queryParamMap.get('storeId') },
+  );
+
+  protected readonly activeStoreId = computed(() =>
+    this.requestedStoreId() || this.cart.activeCheckoutStoreId(),
+  );
+
   protected readonly shipmentGroups = computed(() => {
-    const groups = new Map<string, { storeId: string; sellerName: string; lines: CartLine[] }>();
-    for (const line of this.cart.lines()) {
-      const key = line.product.storeId;
-      const existing = groups.get(key);
-      if (existing) {
-        existing.lines.push(line);
-      } else {
-        groups.set(key, { storeId: key, sellerName: line.product.sellerName, lines: [line] });
-      }
+    const filterStoreId = this.activeStoreId();
+    const allGroups = this.cart.groups();
+    const targeted = filterStoreId
+      ? allGroups.filter((g) => g.storeId === filterStoreId)
+      : allGroups;
+
+    return targeted.map((g) => ({
+      storeId: g.storeId,
+      sellerName: g.sellerName,
+      lines: g.lines.map((l) => ({
+        product: l.product,
+        quantity: l.quantity,
+        lineTotal: l.lineTotal,
+      })),
+    }));
+  });
+
+  protected readonly checkoutSubtotal = computed(() => {
+    const filterStoreId = this.activeStoreId();
+    if (filterStoreId) {
+      const g = this.cart.storeCart(filterStoreId);
+      return g ? parseFloat(g.subtotal) || 0 : this.cart.subtotal();
     }
-    return [...groups.values()];
+    return this.cart.subtotal();
+  });
+
+  protected readonly checkoutShipping = computed(() => {
+    const filterStoreId = this.activeStoreId();
+    if (filterStoreId) {
+      const g = this.cart.storeCart(filterStoreId);
+      return g ? parseFloat(g.deliveryFee || '0') || 0 : this.cart.shipping();
+    }
+    return this.cart.shipping();
+  });
+
+  protected readonly checkoutTotal = computed(() => {
+    const filterStoreId = this.activeStoreId();
+    if (filterStoreId) {
+      const g = this.cart.storeCart(filterStoreId);
+      return g ? parseFloat(g.totalAmount || g.subtotal) || 0 : this.cart.total();
+    }
+    return this.cart.total();
   });
 
   protected readonly form = new FormGroup({
@@ -607,7 +690,11 @@ export class CheckoutComponent {
         items: Array<{ name: string; quantity: number; price: number }>;
       }> = [];
 
-      const storeCarts = this.cart.getStoreCarts().filter((c) => c.items.length > 0);
+      const targetStoreId = this.activeStoreId();
+      let storeCarts = this.cart.getStoreCarts().filter((c) => c.items.length > 0);
+      if (targetStoreId) {
+        storeCarts = storeCarts.filter((c) => c.storeId === targetStoreId);
+      }
 
       if (storeCarts.length > 0) {
         for (const cart of storeCarts) {
@@ -679,7 +766,11 @@ export class CheckoutComponent {
         } catch {}
       }
 
-      this.cart.markEmptied();
+      if (targetStoreId) {
+        this.cart.markEmptied(targetStoreId);
+      } else {
+        this.cart.markEmptied();
+      }
 
       const orderNums = placedOrders.map((o) => o.orderNumber).join(',');
       await this.router.navigate(['/order-success'], {

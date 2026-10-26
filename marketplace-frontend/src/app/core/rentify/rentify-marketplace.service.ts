@@ -51,10 +51,42 @@ export interface BuyerSession {
   isVerified: boolean;
 }
 
+export interface StoreCartItem {
+  id?: string;
+  productId: string;
+  variantId?: string | null;
+  quantity: number;
+  unitPrice?: string | null;
+  currentPrice: string | null;
+  available: boolean;
+  product?: {
+    id: string;
+    name: string;
+    slug?: string;
+    images?: Array<{ url: string } | string>;
+    price?: number | string;
+    trackInventory?: boolean;
+    allowBackorders?: boolean;
+    stockQuantity?: number;
+    productType?: string;
+  } | null;
+  variant?: {
+    id: string;
+    sku: string;
+    price: number | string;
+    stockQuantity: number;
+    optionValues?: Record<string, string>;
+  } | null;
+}
+
 export interface StoreCart {
   id: string;
   storeId: string;
-  items: { productId: string; quantity: number; currentPrice: string | null; available: boolean }[];
+  channel?: 'marketplace' | 'storefront';
+  websiteId?: string | null;
+  currency?: string;
+  deliveryPolicyVersion?: number | null;
+  items: StoreCartItem[];
   subtotal: string;
   deliveryFee: string | null;
   totalAmount: string | null;
