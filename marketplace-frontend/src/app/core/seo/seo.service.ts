@@ -123,14 +123,14 @@ export class SeoService {
 
     this.jsonLdScript = this.document.createElement('script');
     this.jsonLdScript.type = 'application/ld+json';
+    this.jsonLdScript.id = 'kc-seo-jsonld';
     this.jsonLdScript.text = JSON.stringify(data);
     this.document.head.appendChild(this.jsonLdScript);
   }
 
   clearJsonLd(): void {
-    if (this.jsonLdScript && this.document?.head?.contains(this.jsonLdScript)) {
-      this.document.head.removeChild(this.jsonLdScript);
-      this.jsonLdScript = null;
-    }
+    const scripts = this.document?.head?.querySelectorAll('script[type="application/ld+json"]');
+    scripts?.forEach((s) => s.remove());
+    this.jsonLdScript = null;
   }
 }

@@ -84,6 +84,8 @@ describe('OrderSuccessComponent (P4-BUY-003 Refresh-safe confirmation)', () => {
         SeoService,
       ],
     }).compileComponents();
+
+    TestBed.inject(TranslateService).setLanguage('en');
   });
 
   afterEach(() => {
