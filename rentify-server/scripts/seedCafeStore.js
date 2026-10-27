@@ -4,7 +4,7 @@
 // ecommerce-server/scripts/seedCafeStore.js. Called from seed.js.
 const bcrypt = require('bcrypt');
 const { User, Website, WebsiteContent, Subscription, Store, SellerApplication } = require('../src/models');
-const storeSyncService = require('../src/services/storeSyncService');
+const storeSyncService = require('../src/modules/commerce-sync/storeSyncService');
 const {
   TEMPLATE_3_ID,
   TEMPLATE_3_SECTION_FIELDS,
