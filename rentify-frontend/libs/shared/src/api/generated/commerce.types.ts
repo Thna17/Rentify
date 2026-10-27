@@ -175,6 +175,7 @@ export namespace Commerce {
   }
 
   export interface Product {
+    ProductVariants?: Array<Commerce.ProductVariant>;
     allowBackorders?: boolean;
     categoryId?: string | null;
     compareAtPrice?: string | null;
@@ -182,6 +183,7 @@ export namespace Commerce {
     description?: string;
     id: Commerce.UUID;
     images?: Array<{
+      alt?: string;
       url: string;
     }>;
     lowStockThreshold?: number;
@@ -226,6 +228,16 @@ export namespace Commerce {
     version: number;
   }
 
+  export interface ProductVariantInput {
+    expectedVersion?: number;
+    id?: Commerce.UUID;
+    optionValues?: Record<string, string>;
+    price: Commerce.Money;
+    sku: string;
+    status?: "active" | "disabled";
+    stockQuantity: number;
+  }
+
   export interface PublicProduct {
     category: string;
     compareAtPrice?: string | null;
@@ -236,6 +248,8 @@ export namespace Commerce {
     }>;
     name: string;
     price: Commerce.Money;
+    /** Canonical sellable SKU rows. The legacy variants field remains reserved for image swatches. */
+    productVariants?: Array<Commerce.ProductVariant>;
     rating: number;
     reviewCount: number;
     slug: string;
@@ -1832,14 +1846,18 @@ export namespace Commerce {
       body: {
         description?: string;
         images?: Array<{
+          alt?: string;
           url: string;
         }>;
         marketplaceCategory: string;
         marketplaceVisibility?: boolean | null;
         name: string;
         price: Commerce.Money;
+        /** Required for a simple Product when variants are omitted. */
+        sku?: string;
         status?: "active" | "draft";
         stockQuantity: number;
+        variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
     };
@@ -1857,14 +1875,18 @@ export namespace Commerce {
         /** Current version of the product for optimistic locking */
         expectedVersion: number;
         images?: Array<{
+          alt?: string;
           url: string;
         }>;
         marketplaceCategory?: string;
         marketplaceVisibility?: boolean | null;
         name?: string;
         price?: Commerce.Money;
+        /** When true, SKU rows omitted from variants are removed atomically. */
+        replaceVariants?: boolean;
         status?: "active" | "draft" | "archived" | "out_of_stock";
         stockQuantity?: number;
+        variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
     };
@@ -1986,6 +2008,7 @@ export type CommercePayment = Commerce.Payment;
 export type CommerceProduct = Commerce.Product;
 export type CommerceProductReview = Commerce.ProductReview;
 export type CommerceProductVariant = Commerce.ProductVariant;
+export type CommerceProductVariantInput = Commerce.ProductVariantInput;
 export type CommercePublicProduct = Commerce.PublicProduct;
 export type CommerceReadinessResponse = Commerce.ReadinessResponse;
 export type CommerceStandardErrorDetail = Commerce.StandardErrorDetail;

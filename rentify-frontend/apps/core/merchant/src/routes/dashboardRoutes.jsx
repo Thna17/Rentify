@@ -7,13 +7,11 @@ const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
-const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
-const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
+const ProductEditor = lazy(() => import('../pages/product-editor/ProductEditor'));
 const ProductImports = lazy(() => import('../pages/product-imports/ProductImports'));
 const OrderOperations = lazy(() => import('../pages/order-management/OrderOperations'));
 const InvoiceManual = lazy(() => import('../pages/invoice-manual/InvoiceManual'));
 // const Setting = lazy(() => import('@rentify/setting/ui/Setting'));
-const ProductForm = lazy(() => import('../pages/product-form/ProductForm'));
 const AccountSettings = lazy(() => import('../pages/setting/AccountSettings'));
 const BillingSetting = lazy(() => import('../pages/setting/BillingSetting'));
 const SecuritySetting = lazy(() => import('../pages/setting/SecuritySetting'));
@@ -40,11 +38,11 @@ export const dashboardRoutes = {
     { path: 'customization', element: <Navigate to="/store-management" replace /> },
     { path: 'customization/:id', element: <Navigate to="/store-management" replace /> },
     { path: 'products', element: <ProductManagement /> },
-    { path: 'catalog', element: <StoreCatalogPage /> },
-    { path: 'products/:id', element: <ProductDetailView /> },
+    { path: 'catalog', element: <Navigate to="/products" replace /> },
+    { path: 'products/:id', element: <ProductEditor /> },
     { path: 'products/import', element: <ProductImports /> },
-    { path: 'products/create', element: <ProductForm /> },
-    { path: 'products/edit/:id', element: <ProductForm /> },
+    { path: 'products/create', element: <ProductEditor /> },
+    { path: 'products/edit/:id', element: <ProductEditor /> },
     { path: 'orders', element: <OrderOperations /> },
     { path: 'marketplace-orders', element: <Navigate to="/orders" replace /> },
     { path: 'marketplace-readiness', element: <MarketplaceStoreOverview /> },

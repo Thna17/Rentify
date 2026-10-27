@@ -17,6 +17,8 @@ router.get('/marketplace/products/:productId/reviews', controller.getProductRevi
 router.post('/marketplace/products/:productId/reviews', verifyCoreBuyer, requireBuyer, controller.addProductReview);
 router.get('/stores/:storeId/products', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.listOwn);
+router.get('/stores/:storeId/products/:productId', verifyStoreActor,
+  createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.getOwn);
 router.post('/stores/:storeId/products', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.create);
 router.patch('/stores/:storeId/products/:productId', verifyStoreActor,

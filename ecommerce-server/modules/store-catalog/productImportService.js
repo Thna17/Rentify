@@ -308,6 +308,7 @@ async function processOne(jobId) {
       const { product, variant } = await sequelize.transaction({ transaction }, async (rowTransaction) => {
         const createdProduct = await storeCatalog.create(store, {
           name: row.values.name,
+          sku: row.values.sku,
           description: row.values.description,
           price: Number(row.values.price),
           marketplaceCategory: row.values.marketplace_category,
@@ -315,7 +316,7 @@ async function processOne(jobId) {
           status: 'draft',
           marketplaceVisibility: false,
           images: [],
-        }, { transaction: rowTransaction });
+        }, { transaction: rowTransaction, skipVariantCreation: true });
         const createdVariant = await ProductVariant.create({
           productId: createdProduct.id,
           sku: row.values.sku,

@@ -1,10 +1,42 @@
 # Phase 4 merchant experience audit and implementation map
 
-**Status:** Current-state audit, implementation map, and P4-MER-002 contract note, 2026-10-26
+**Status:** Baseline audit plus implemented merchant workstream notes, 2026-10-27
 **Workstream:** `P4-MER-000` through `P4-MER-005`
 **Scope:** Merchant onboarding and the React merchant workspace only. This
 document began as the P4-MER-000 audit; implementation notes are added only
 when the corresponding package is complete.
+
+The tables under “Audit summary” and “Current merchant information
+architecture” preserve the pre-implementation baseline used to plan the work.
+The implementation record below is authoritative for the branch result.
+
+## Implemented merchant workstream record
+
+- P4-MER-000 supplies the responsive, Store-aware shell, role/entitlement-aware
+  navigation presentation, shared page header and feedback states, semantic
+  tokens, English/Khmer labels, and compatibility aliases. API authorization
+  remains authoritative; hiding a link never grants or removes permission.
+- P4-MER-001 supplies server-resumable Store-first onboarding for
+  marketplace-only and optional storefront paths. Website creation is
+  conditional and can be added later without recreating Store or Product data.
+- P4-MER-002 supplies a server-composed launch checklist with exact counts,
+  five explicit states, safe reason/next-action codes, and channel-specific
+  applicability. Marketplace-only Stores are not blocked by Website tasks.
+- P4-MER-003 supplies one Store-first Product catalog/editor, atomic canonical
+  SKU creation and variant edits, image alternative text, version conflicts,
+  archive and marketplace visibility. Supported Product URLs resolve to this
+  workspace; `/catalog` redirects to `/products`.
+- P4-MER-004 supplies Store-scoped, asynchronous, idempotent CSV preview,
+  validation, durable processing/history/resume, correction reports, and
+  formula-safe export. Accepted rows remain hidden drafts.
+- P4-MER-005 supplies one Store-scoped merchant order queue/detail projection
+  across marketplace, hosted storefront, POS, and invoice-linked orders, with
+  server-permitted actions and buyer-safe detail.
+
+This record declares only the Codex Phase 4 merchant workstream implemented.
+It does not declare the whole Phase 4 program complete. Buyer, marketplace,
+storefront, POS, and invoice packages owned by other workstreams retain their
+own completion gates.
 
 ## P4-MER-002 implementation note
 
@@ -49,7 +81,7 @@ and emits identifier-free activation events.
 | P4-MER-000 dashboard foundation | Grouped merchant sidebar, responsive sheet, overview cards, shared UI primitives, and a merchant CSS layer exist. The Admin app demonstrates a denser operational hierarchy, action queue, toolbars, horizontal tables, drawers, and semantic badges. | Partial. The merchant shell and pages use a different token layer, many hard-coded strings/colors, duplicated page patterns, and inconsistent Store/Website behavior. |
 | P4-MER-001 onboarding | `/start` creates a Store and first product and saves Store name/category in `sessionStorage`; `/onboarding/:packageId` saves a separate Website flow in `localStorage`. | Partial. Progress is browser-local, not server-owned or cross-device; the two flows use different state models; no explicit durable path selection or honest resumable completion contract exists. |
 | P4-MER-002 launch checklist | Overview has a two-item “growth checklist” for Website/POS; seller application, Store category, delivery fee, product creation, visibility, and approval are distributed across other pages. | Missing as a launch checklist. There is no API-composed checklist with blocked reason/next action, activation events, or one action-oriented home. |
-| P4-MER-003 Product/SKU editor | Website merchants have a large product manager, form, detail editor, optimistic versions, media upload, SKU fields, and variant editing. Marketplace-only merchants get the separate Store catalog quick-add/list. Commerce models variants and variant stock. | Partial and split. Marketplace-only edit/detail paths still depend on Website queries, Store routes expose only a smaller Product shape, variant/SKU parity is incomplete, image alt text is absent, and archive/visibility/conflict handling is inconsistent. |
+| P4-MER-003 Product/SKU editor | Baseline: Website merchants had a large product manager/form/detail editor while marketplace-only merchants received a separate quick-add catalog. Implemented: one Store-first catalog/editor now serves both paths and Commerce creates/edits canonical SKU rows atomically with Product/SKU versions. | Implemented for the merchant workstream. Simple and variant Products, category, SKU price/stock/status, image alt text, visibility, preview, conflicts, archive, English/Khmer, and compatibility URLs are covered. |
 | P4-MER-004 bulk import/export | Website routes expose synchronous bulk JSON and CSV import. The UI parses CSV by splitting lines, previews rows, and submits bulk products. The selected-product “export” only shows a success toast. | Prototype only. It is Website-keyed, not asynchronous, not robust CSV parsing, has no job/idempotency/status/history/result report, can partially import rows, and provides no real export artifact. |
 | P4-MER-005 unified order operations | Implemented on this branch. One additive Store-scoped `/api/stores/{storeId}/orders` projection and merchant workspace now cover marketplace, hosted storefront, POS, and invoice-linked orders with validated search/channel/status/date filters, buyer-safe detail, amount due/COD facts, item snapshots, reports, timeline, document links, and server-calculated actions. The existing marketplace API contract remains available and the former UI URL redirects to `/orders`. | Evidence file upload/storage and external refund/carrier execution are deferred; existing report evidence metadata is visible without changing payment facts. The list is intentionally capped at the latest 250 rows and exposes that condition so merchants can narrow date filters. |
 

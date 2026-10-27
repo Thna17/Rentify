@@ -804,8 +804,41 @@ Build quick simple-product creation and advanced variants, images/alt text,
 category, price, stock, visibility, preview, conflict handling, and archive.
 
 **Depends on:** P3-CAT-001, P3-INV-001
-**Acceptance:** one published Product appears with the same ID/price/stock on
-eligible marketplace and storefront surfaces.
+**Acceptance:**
+
+- one Store-first catalog and editor serves marketplace-only and storefront
+  merchants without treating `websiteId` as Product or merchant identity;
+- simple creation writes exactly one canonical SKU, while variant creation
+  writes 1–100 independently priced, stocked, enabled/disabled SKU rows in the
+  same transaction as the Product;
+- Commerce derives Product price and aggregate available stock from canonical
+  SKU input, enforces global SKU uniqueness and Store authorization, and uses
+  Product/SKU versions to reject stale edits;
+- category, publication, Store-level marketplace visibility inheritance,
+  archive, media upload, per-image alternative text, and a value-only channel
+  preview are available in responsive English and Khmer UI;
+- `/products`, `/products/create`, `/products/edit/:id`, and `/products/:id`
+  remain supported, while `/catalog` safely redirects to the single catalog;
+- loading, empty, forbidden, conflict, timeout, offline, failed-image, and
+  recovery behavior are keyboard-operable, focus-visible, reduced-motion safe,
+  and usable at 360 px and 200% zoom;
+- focused tests prove simple and variant payloads, duplicate-SKU rejection,
+  optimistic versions, Store-scoped reads, locale parity, and the same
+  Product/SKU identifiers, price, and stock on eligible marketplace and
+  storefront projections.
+
+**Implemented on `feature/p4-merchant-experience`:** The merchant workspace
+now uses one Store-scoped catalog and progressive Product/SKU editor for both
+selling paths. Commerce creates the Product and canonical SKU rows atomically,
+returns Store-owned detail snapshots, derives Product price and sellable stock
+from variants, preserves SKU versions during edits, and exposes allowlisted
+SKU facts on marketplace projections. The editor supports simple and variant
+Products, categories, draft/publish/archive, inherited or explicit marketplace
+visibility, image upload with alternative text, honest preview, and explicit
+forbidden/conflict/timeout/offline recovery in English and Khmer. The former
+Website-only form, detail editor, duplicate quick-add catalog, and their dead
+route implementations were removed; compatibility URLs now resolve to the
+single editor.
 
 #### P4-MER-004 — Bulk import/export
 

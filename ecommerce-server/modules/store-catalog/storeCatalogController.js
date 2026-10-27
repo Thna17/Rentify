@@ -4,7 +4,13 @@ const { categories } = require('../../config/marketplaceTaxonomy');
 
 const respond = (handler) => async (req, res) => {
   try { return await handler(req, res); }
-  catch (error) { return res.status(error.statusCode || 500).json({ error: error.message }); }
+  catch (error) {
+    const duplicate = error.name === 'SequelizeUniqueConstraintError';
+    return res.status(duplicate ? 409 : (error.statusCode || 500)).json({
+      error: duplicate ? 'A SKU with this value already exists' : error.message,
+      ...(duplicate || error.code ? { code: duplicate ? 'SKU_DUPLICATE' : error.code } : {}),
+    });
+  }
 };
 
 exports.categories = (_req, res) => res.json({ categories });
@@ -14,6 +20,7 @@ exports.getProductReviews = respond(async (req, res) => res.json(await reviewSer
 exports.addProductReview = respond(async (req, res) =>
   res.status(201).json(await reviewService.addProductReview(req.params.productId, req.user, req.body || {})));
 exports.listOwn = respond(async (req, res) => res.json(await storeCatalog.listOwn(req.store.storeId, req.query)));
+exports.getOwn = respond(async (req, res) => res.json(await storeCatalog.getOwn(req.store.storeId, req.params.productId)));
 exports.create = respond(async (req, res) =>
   res.status(201).json(await storeCatalog.create(req.store, req.body || {})));
 exports.update = respond(async (req, res) =>

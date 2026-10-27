@@ -444,6 +444,19 @@ paths:
                         type: string
                         format: uri
                         example: https://res.cloudinary.com/rentify/image/upload/v1/silk-scarf.jpg
+                      alt:
+                        type: string
+                        maxLength: 240
+                sku:
+                  type: string
+                  maxLength: 120
+                  description: Required for a simple Product when variants are omitted.
+                variants:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    $ref: "#/components/schemas/ProductVariantInput"
       responses:
         "201":
           description: Product created
@@ -572,6 +585,39 @@ paths:
         "404": { $ref: "#/components/responses/Error404" }
       operationId: get_api_stores_storeId_product_imports_jobId_report
   /api/stores/{storeId}/products/{productId}:
+    get:
+      tags:
+        - Store Catalog
+      summary: Get one merchant Store product and its SKUs
+      description: Returns a Product only when it belongs to the authorized Store, including canonical SKU versions for safe editing.
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Store-owned Product and SKU snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_stores_storeId_products_productId
     patch:
       tags:
         - Store Catalog
@@ -638,6 +684,18 @@ paths:
                       url:
                         type: string
                         format: uri
+                      alt:
+                        type: string
+                        maxLength: 240
+                replaceVariants:
+                  type: boolean
+                  description: When true, SKU rows omitted from variants are removed atomically.
+                variants:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    $ref: "#/components/schemas/ProductVariantInput"
       responses:
         "200":
           description: Updated product
@@ -4444,6 +4502,9 @@ components:
                 type: string
                 format: uri
                 example: https://res.cloudinary.com/rentify/image/upload/basket.jpg
+              alt:
+                type: string
+                maxLength: 240
         websiteId:
           nullable: true
           type: string
@@ -4508,6 +4569,10 @@ components:
         version:
           type: integer
           example: 1
+        ProductVariants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductVariant"
         createdAt:
           type: string
           format: date-time
@@ -4567,6 +4632,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProductVariant"
+        productVariants:
+          type: array
+          description: Canonical sellable SKU rows. The legacy variants field remains reserved for image swatches.
+          items:
+            $ref: "#/components/schemas/ProductVariant"
         rating:
           type: number
           example: 4.8
@@ -4615,6 +4685,37 @@ components:
         version:
           type: integer
           example: 0
+    ProductVariantInput:
+      type: object
+      required:
+        - sku
+        - price
+        - stockQuantity
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        expectedVersion:
+          type: integer
+          minimum: 0
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 120
+        price:
+          $ref: "#/components/schemas/Money"
+        stockQuantity:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        optionValues:
+          type: object
+          additionalProperties:
+            type: string
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
     ProductReview:
       type: object
       required:

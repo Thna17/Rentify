@@ -43,6 +43,9 @@ code so implementation work can proceed without relying on chat history.
 - [Phase 4 customer journeys implementation map](audits/phase-4-customer-journeys-map.md) —
   Gemini workstream implementation map, ownership boundaries, cross-channel stock
   risks, accessibility, localization audit, and test plan.
+- [Phase 4 merchant experience audit and implementation map](audits/phase-4-merchant-experience.md) —
+  baseline merchant IA audit plus implemented P4-MER-000–005 boundaries,
+  compatibility decisions, deferred platform work, and verification scope.
 - [Identity and authoritative subject model](identity-subject-model.md) —
   authoritative subject definition, token & session models, role coexistence,
   ambiguous-credential precedence, and security boundaries.
@@ -50,7 +53,7 @@ code so implementation work can proceed without relying on chat history.
   deterministic pre-deployment and startup validator for Release 1 domains,
   hosted storefront parent, HTTPS, CORS, cookie isolation, and feature flags.
 - [Authorization policy matrix](authorization-policy-matrix.md) —
-  machine-readable matrix classifying all 234 Core and Commerce operations
+  machine-readable matrix classifying all 268 Core and Commerce operations
   across 11 actor archetypes, deny-by-default rules, and gap remediation roadmap.
 - [Cart and order ownership audit](audits/cart-order-ownership-audit.md) —
   enforced Store ownership invariants, session-derived buyer identity, direct-ID
