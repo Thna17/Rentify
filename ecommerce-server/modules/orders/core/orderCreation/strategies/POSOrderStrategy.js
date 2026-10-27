@@ -20,8 +20,8 @@ class POSOrderStrategy extends OrderTypeStrategy {
     // 3. Calculate totals using niche strategy
     const totals = this.nicheStrategy.calculateOrderTotals(
       resolvedItems,
-      'pos', 
-      {}, 
+      'pos',
+      {},
       currency
     );
 
@@ -128,11 +128,21 @@ class POSOrderStrategy extends OrderTypeStrategy {
     // 9. Process niche-specific logic
     await this.nicheStrategy.processNicheSpecific(order, orderItems, transaction);
 
+    // Ensure inventory deduction and status alignment if payment is completed
+    if (!order.stockDeducted && payment && (payment.status === 'completed' || isImmediatePayment)) {
+      await this.deductPosInventory(order, resolvedItems, cashierId, transaction);
+      await order.update({
+        status: 'completed',
+        deliveryStatus: 'delivered',
+        stockDeducted: true,
+      }, { ...txOption, byStateMachine: true });
+    }
+
     // 10. Create invoice
     const invoice = await this.createInvoice(
-      order, 
-      payment, 
-      transaction, 
+      order,
+      payment,
+      transaction,
       customerInfo
     );
 

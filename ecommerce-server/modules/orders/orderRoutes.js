@@ -37,6 +37,11 @@ router.get(
   createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
   getPOSOrders
 );
+router.post(
+  "/stores/:storeId/orders/pos/:orderId/return",
+  createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
+  OrderController.processPOSReturn
+);
 
 // Order routes
 router.post("/websites/:websiteId/orders", enforceCustomDomainBoundary('checkout'), OrderController.createOrder);

@@ -23,10 +23,19 @@ function ScrollToTop() {
 
 export function StoreLayout() {
   const { t } = useI18n();
-  const { websiteId, isLoading, error, refetch, identity } =
+  const { websiteId, status, storeStatus, isLoading, error, refetch, identity } =
     useStorefrontWebsite();
   const scenic = identity?.headerStyle !== 'classic';
   const cart = useStorefrontCart();
+
+  const isSuspendedOrInactive =
+    status === 'suspended' ||
+    status === 'inactive' ||
+    status === 'expired' ||
+    status === 'archived' ||
+    status === 'deleted' ||
+    storeStatus === 'suspended' ||
+    storeStatus === 'closed';
 
   if (isLoading) {
     return (
@@ -37,8 +46,8 @@ export function StoreLayout() {
     );
   }
 
-  if (!websiteId) {
-    const notFound = error?.status === 404 || !error;
+  if (!websiteId || isSuspendedOrInactive) {
+    const notFound = error?.status === 404 || !error || isSuspendedOrInactive;
     return (
       <main className="store-container flex min-h-screen items-center justify-center py-16">
         {notFound ? (

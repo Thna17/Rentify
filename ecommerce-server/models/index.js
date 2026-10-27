@@ -125,6 +125,8 @@ Payment.belongsTo(Order, { foreignKey: "orderId" });
 
 Order.hasOne(Invoice, { foreignKey: "orderId", as: "Invoice" });
 Invoice.belongsTo(Order, { foreignKey: "orderId" });
+Invoice.belongsTo(Payment, { foreignKey: "paymentId" });
+Payment.hasOne(Invoice, { foreignKey: "paymentId" });
 
 Order.hasOne(ShippingDetail, { foreignKey: "orderId", as: "ShippingDetail" });
 ShippingDetail.belongsTo(Order, { foreignKey: "orderId" });

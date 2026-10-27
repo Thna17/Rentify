@@ -36,6 +36,9 @@ code so implementation work can proceed without relying on chat history.
 - [Phase 3 verification report](audits/phase-3-verification.md) — complete
   verification evidence, package checklist, test results, security audit, and
   exit gate decision.
+- [Phase 4 customer journeys implementation map](audits/phase-4-customer-journeys-map.md) —
+  Gemini workstream implementation map, ownership boundaries, cross-channel stock
+  risks, accessibility, localization audit, and test plan.
 - [Identity and authoritative subject model](identity-subject-model.md) —
   authoritative subject definition, token & session models, role coexistence,
   ambiguous-credential precedence, and security boundaries.

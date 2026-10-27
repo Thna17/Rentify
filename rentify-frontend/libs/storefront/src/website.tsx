@@ -81,6 +81,8 @@ export function StorefrontWebsiteProvider({
     userId: data?.userId || null,
     domain: data?.domain || null,
     subdomain: data?.subdomain || null,
+    status: data?.status || 'active',
+    storeStatus: data?.storeStatus || data?.store?.status || 'active',
     isCustomDomain: Boolean(data?.isCustomDomain),
     isHostedStorefront: Boolean(data?.isHostedStorefront),
     hostedStorefrontUrl: data?.hostedStorefrontUrl || null,

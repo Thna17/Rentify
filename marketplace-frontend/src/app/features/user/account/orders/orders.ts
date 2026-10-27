@@ -1,8 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
-import { DatePipe, LowerCasePipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe, LowerCasePipe, CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { CommerceApiService } from '../../../../core/api/commerce-api.service';
 import { ApiOrder } from '../../../../core/api/api.models';
 import { cartErrorMessage } from '../../../../core/cart/cart.service';
 import { CatalogService } from '../../../../core/catalog/catalog.service';
@@ -11,49 +10,146 @@ import { NavbarComponent } from '../../../../components/shared/layout/navbar/nav
 import { FooterComponent } from '../../../../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../../../../components/shared/ui/icon/icon.component';
 import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/order-status-badge/order-status-badge.component';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslateService } from '../../../../core/i18n/translate.service';
+import { SeoService } from '../../../../core/seo/seo.service';
 
-/** Buyer order history, read from the API. */
+type FilterTab = 'all' | 'pending' | 'delivered' | 'completed' | 'issues';
+
+/** Buyer order history and filters. */
 @Component({
   selector: 'app-orders',
+  standalone: true,
   imports: [
+    CommonModule,
     DatePipe,
-    LowerCasePipe,
     RouterLink,
     NavbarComponent,
     FooterComponent,
     IconComponent,
     OrderStatusBadgeComponent,
+    TranslatePipe,
   ],
   template: `
     <app-navbar />
 
     <section class="container orders">
-      <h1>My orders</h1>
+      <header class="page-header">
+        <div>
+          <h1>{{ 'orders.title' | translate }}</h1>
+          <p class="subtitle">{{ 'orders.subtitle' | translate }}</p>
+        </div>
+
+        <div class="search-box">
+          <ui-icon name="search" [size]="15" />
+          <input
+            type="search"
+            [placeholder]="'orders.searchPlaceholder' | translate"
+            [value]="searchQuery()"
+            (input)="onSearchInput($event)"
+            aria-label="Filter orders"
+          />
+        </div>
+      </header>
+
+      <!-- Filter Tabs -->
+      <nav class="filter-tabs" role="tablist" aria-label="Order status filters">
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'all'"
+          (click)="setTab('all')"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'all'"
+        >
+          {{ 'orders.all' | translate }}
+          <span class="count">{{ orders().length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'pending'"
+          (click)="setTab('pending')"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'pending'"
+        >
+          {{ 'orders.pending' | translate }}
+          <span class="count">{{ pendingCount() }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'delivered'"
+          (click)="setTab('delivered')"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'delivered'"
+        >
+          {{ 'orders.delivered' | translate }}
+          <span class="count">{{ deliveredCount() }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'completed'"
+          (click)="setTab('completed')"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'completed'"
+        >
+          {{ 'orders.completed' | translate }}
+          <span class="count">{{ completedCount() }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'issues'"
+          (click)="setTab('issues')"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'issues'"
+        >
+          {{ 'orders.issues' | translate }}
+          @if (issuesCount() > 0) {
+            <span class="count badge-warn">{{ issuesCount() }}</span>
+          }
+        </button>
+      </nav>
 
       @if (loading()) {
-        <p class="muted">Loading your orders…</p>
+        <div class="card state-card">
+          <ui-icon name="loader" [size]="24" class="spin" />
+          <p class="muted">Loading your orders…</p>
+        </div>
       } @else if (error(); as message) {
-        <p class="error" role="alert">
-          <ui-icon name="alert-circle" [size]="14" /> {{ message }}
-        </p>
-      } @else if (orders().length === 0) {
-        <div class="empty card">
+        <div class="card state-card error" role="alert">
+          <ui-icon name="alert-circle" [size]="24" />
+          <p>{{ message }}</p>
+          <button class="btn btn-outline btn-sm" (click)="load()">
+            Retry
+          </button>
+        </div>
+      } @else if (filteredOrders().length === 0) {
+        <div class="empty card" role="region" aria-label="No orders">
           <div class="empty-image img-placeholder">
             <ui-icon name="package" [size]="34" />
           </div>
-          <h2>No orders yet</h2>
-          <p>Once you place an order it will appear here with its status.</p>
+          <h2>{{ 'orders.emptyTitle' | translate }}</h2>
+          <p>{{ 'orders.emptyDesc' | translate }}</p>
           <button class="btn btn-primary" routerLink="/products">
             Start shopping
           </button>
         </div>
       } @else {
-        <div class="list">
-          @for (order of orders(); track order.id) {
-            <article class="card order">
+        <div class="list" role="feed" aria-label="Orders list">
+          @for (order of filteredOrders(); track order.id) {
+            <article class="card order" [attr.aria-label]="'Order ' + order.orderNumber">
               <header>
-                <div>
-                  <strong class="number">{{ order.orderNumber }}</strong>
+                <div class="order-primary-meta">
+                  <a [routerLink]="['/orders', order.id]" class="number">
+                    #{{ order.orderNumber }}
+                  </a>
                   <span class="placed">{{
                     order.createdAt | date: 'd MMM y, HH:mm'
                   }}</span>
@@ -102,30 +198,24 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
                 </div>
 
                 <div class="actions">
-                  <!-- Only offered while PENDING: after the seller accepts,
-                       the server refuses a buyer cancellation. -->
+                  <a class="btn btn-outline btn-sm" [routerLink]="['/orders', order.id]">
+                    <ui-icon name="eye" [size]="14" />
+                    {{ 'orders.viewDetails' | translate }}
+                  </a>
+
+                  <!-- Only offered while PENDING: after seller dispatch, server refuses cancellation -->
                   @if (order.orderStatus === 'PENDING') {
                     <button
                       class="btn btn-ghost btn-sm"
                       (click)="cancel(order)"
                       [disabled]="busyId() === order.id"
+                      type="button"
                     >
-                      {{ busyId() === order.id ? 'Cancelling…' : 'Cancel order' }}
+                      {{ busyId() === order.id ? ('orders.cancelling' | translate) : ('orders.cancelOrder' | translate) }}
                     </button>
                   }
                 </div>
               </footer>
-
-              @if (order.statusHistory.length > 1) {
-                <div class="history">
-                  @for (event of order.statusHistory; track $index) {
-                    <span class="event">
-                      {{ event.status | lowercase }}
-                      <small>{{ event.at | date: 'd MMM HH:mm' }}</small>
-                    </span>
-                  }
-                </div>
-              }
             </article>
           }
         </div>
@@ -137,23 +227,100 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
   styles: [
     `
       .orders {
-        padding: 30px 32px 64px;
+        padding: 26px 32px 64px;
+        max-width: 1040px;
+        margin: 0 auto;
+      }
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
       }
       h1 {
-        font-size: 27px;
-        margin-bottom: 22px;
+        font-size: 26px;
+        margin: 0 0 4px;
+      }
+      .subtitle {
+        color: var(--color-muted);
+        font-size: 13.5px;
+        margin: 0;
+      }
+      .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        height: 38px;
+        background: #fff;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-sm);
+        width: 280px;
+      }
+      .search-box input {
+        border: 0;
+        outline: 0;
+        font-size: 13px;
+        width: 100%;
+        background: transparent;
+      }
+      .filter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--color-border);
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+      .tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border: 0;
+        background: transparent;
+        color: var(--color-muted);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+      }
+      .tab:hover {
+        color: var(--color-text);
+      }
+      .tab.active {
+        color: var(--color-accent);
+        border-bottom-color: var(--color-accent);
+      }
+      .count {
+        font-size: 11px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #4b5563;
+      }
+      .count.badge-warn {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .state-card {
+        padding: 48px 32px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .state-card.error {
+        color: var(--color-danger);
       }
       .muted {
         color: var(--color-muted);
         font-size: 14px;
-      }
-      .error {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        color: var(--color-danger);
-        font-size: 13px;
-        font-weight: 600;
       }
       .list {
         display: grid;
@@ -171,17 +338,29 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
         gap: 14px;
         flex-wrap: wrap;
       }
+      .order-primary-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
       .number {
-        display: block;
         font-size: 15px;
+        font-weight: 700;
+        color: var(--color-text);
+        text-decoration: none;
+      }
+      .number:hover {
+        color: var(--color-accent);
+        text-decoration: underline;
       }
       .placed {
         color: var(--color-muted);
-        font-size: 12.5px;
+        font-size: 12px;
       }
       .badges {
         display: flex;
         gap: 7px;
+        flex-wrap: wrap;
       }
       .items {
         display: grid;
@@ -195,15 +374,19 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
         gap: 13px;
       }
       .thumb {
-        width: 60px;
-        height: 60px;
+        width: 54px;
+        height: 54px;
         border-radius: var(--radius-sm);
         flex-shrink: 0;
         font-size: 9px;
         text-align: center;
+        overflow: hidden;
       }
-      .thumb { overflow: hidden; }
-      .thumb img { height: 100%; object-fit: cover; width: 100%; }
+      .thumb img {
+        height: 100%;
+        object-fit: cover;
+        width: 100%;
+      }
       .item-main {
         display: flex;
         flex-direction: column;
@@ -211,8 +394,10 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
         flex: 1;
       }
       .item-name {
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 600;
+        color: var(--color-text);
+        text-decoration: none;
       }
       .item-name:hover {
         color: var(--color-accent);
@@ -224,6 +409,7 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
       }
       .line-total {
         font-weight: 700;
+        font-size: 13.5px;
       }
       .order footer {
         display: flex;
@@ -245,17 +431,10 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
         color: var(--color-text);
         font-size: 16px;
       }
-      .history {
+      .actions {
         display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-        color: var(--color-muted);
-        font-size: 11.5px;
-      }
-      .event {
-        display: inline-flex;
-        gap: 5px;
-        text-transform: capitalize;
+        align-items: center;
+        gap: 8px;
       }
       .empty {
         display: flex;
@@ -266,77 +445,172 @@ import { OrderStatusBadgeComponent } from '../../../../components/shared/orders/
         gap: 12px;
       }
       .empty-image {
-        width: 130px;
-        height: 130px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        color: var(--color-muted-2);
+        color: var(--color-muted);
+        display: grid;
+        place-items: center;
+        background: #f3f4f6;
+      }
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @media (max-width: 700px) {
+        .search-box {
+          width: 100%;
+        }
       }
     `,
   ],
 })
-export class Orders {
+export class Orders implements OnInit {
   private readonly rentify = inject(RentifyMarketplaceService);
   private readonly catalog = inject(CatalogService);
+  protected readonly translate = inject(TranslateService);
+  private readonly seo = inject(SeoService);
 
-  protected readonly orders = signal<ApiOrder[]>([]);
-  protected readonly loading = signal(true);
-  protected readonly error = signal('');
-  protected readonly busyId = signal('');
+  readonly orders = signal<ApiOrder[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal('');
+  readonly busyId = signal('');
+  readonly activeTab = signal<FilterTab>('all');
+  readonly searchQuery = signal('');
 
-  constructor() {
-    void this.load();
+  loadPromise?: Promise<void>;
+
+  ngOnInit(): void {
+    this.seo.setPageTitle(`${this.translate.t('orders.title')} | Rentify Marketplace`);
+    this.loadPromise = this.load();
   }
 
-  private async load(): Promise<void> {
+  setTab(tab: FilterTab): void {
+    this.activeTab.set(tab);
+  }
+
+  onSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchQuery.set(input.value || '');
+  }
+
+  readonly pendingCount = computed(() =>
+    this.orders().filter((o) => o.orderStatus === 'PENDING').length,
+  );
+
+  readonly deliveredCount = computed(() =>
+    this.orders().filter((o) => o.orderStatus === 'DELIVERED').length,
+  );
+
+  readonly completedCount = computed(() =>
+    this.orders().filter((o) => o.paymentStatus === 'PAID').length,
+  );
+
+  readonly issuesCount = computed(() =>
+    this.orders().filter(
+      (o) =>
+        o.orderStatus === 'CANCELLED' ||
+        o.paymentStatus === 'FAILED' ||
+        o.paymentStatus === 'REFUNDED' ||
+        (o as any).statusHistory?.some(
+          (h: any) => h.status === 'return_requested' || h.status === 'complaint',
+        ),
+    ).length,
+  );
+
+  readonly filteredOrders = computed(() => {
+    const list = this.orders();
+    const tab = this.activeTab();
+    const query = this.searchQuery().toLowerCase().trim();
+
+    return list.filter((ord) => {
+      // Tab filter
+      if (tab === 'pending' && ord.orderStatus !== 'PENDING') return false;
+      if (tab === 'delivered' && ord.orderStatus !== 'DELIVERED') return false;
+      if (tab === 'completed' && ord.paymentStatus !== 'PAID') return false;
+      if (tab === 'issues') {
+        const isIssue =
+          ord.orderStatus === 'CANCELLED' ||
+          ord.paymentStatus === 'FAILED' ||
+          ord.paymentStatus === 'REFUNDED';
+        if (!isIssue) return false;
+      }
+
+      // Query filter
+      if (query) {
+        const matchesNumber = ord.orderNumber.toLowerCase().includes(query);
+        const matchesProduct = ord.items.some((it) =>
+          it.productName.toLowerCase().includes(query),
+        );
+        const matchesSeller = ord.items.some((it) =>
+          it.sellerName?.toLowerCase().includes(query),
+        );
+        if (!matchesNumber && !matchesProduct && !matchesSeller) return false;
+      }
+
+      return true;
+    });
+  });
+
+  async load(): Promise<void> {
     this.loading.set(true);
     try {
       const response = await firstValueFrom(this.rentify.orders());
       const marketplaceOrders = response.orders || [];
-      this.orders.set(marketplaceOrders.map((ord) => {
-        const store = this.catalog.store(ord.storeId);
-        return {
-          id: ord.id,
-          orderNumber: ord.orderNumber,
-          buyerId: '',
-          buyerName: (ord as any).customerInfo?.name || '',
-          buyerPhone: (ord as any).customerInfo?.phone || '',
-          hasPaymentTranId: false,
-          statusHistory: [],
-          orderStatus: (ord.status?.toUpperCase() || 'PENDING') as any,
-          paymentStatus: (ord.payment?.status?.toUpperCase() || 'UNPAID') as any,
-          deliveryInfo: {
-            fullName: (ord as any).customerInfo?.name || '',
-            phone: (ord as any).customerInfo?.phone || '',
-            address: (ord as any).shippingInfo?.address || '',
-            city: (ord as any).shippingInfo?.city || '',
-            province: (ord as any).shippingInfo?.province || '',
-          },
-          paymentMethod: 'COD' as any,
-          items: (ord.items || []).map((it) => {
-            const product = this.catalog.productById(it.productId);
-            return {
-              productId: it.productId,
-              productName: it.name || product?.name || 'Item',
-              quantity: it.quantity,
-              price: it.quantity ? Math.round((parseFloat(it.total) / it.quantity) * 100) / 100 : 0,
-              subtotal: parseFloat(it.total) || 0,
-              sellerName: product?.sellerName || store?.name || 'Seller',
-              sellerId: ord.storeId || null,
-              sellerUserId: null,
-              storeName: store?.name || null,
-              productImage: product?.images?.[0] || null,
-            };
-          }),
-        itemCount: (ord.items || []).reduce((sum, it) => sum + it.quantity, 0),
-        subtotal: parseFloat(ord.subtotal) || 0,
-        deliveryFee: parseFloat(ord.deliveryFee) || 0,
-        discount: 0,
-        totalAmount: parseFloat(ord.totalAmount) || 0,
-        timeline: [],
-        createdAt: (ord as any).createdAt || new Date().toISOString(),
-        updatedAt: (ord as any).updatedAt || new Date().toISOString(),
-      };
-    }));
+      this.orders.set(
+        marketplaceOrders.map((ord) => {
+          const store = this.catalog.store(ord.storeId);
+          return {
+            id: ord.id,
+            orderNumber: ord.orderNumber,
+            buyerId: '',
+            buyerName: ord.customerInfo?.name || '',
+            buyerPhone: ord.customerInfo?.phone || '',
+            hasPaymentTranId: false,
+            statusHistory: [],
+            orderStatus: (ord.deliveryStatus?.toUpperCase() === 'DELIVERED'
+              ? 'DELIVERED'
+              : ord.status?.toUpperCase() || 'PENDING') as any,
+            paymentStatus: (ord.payment?.status?.toUpperCase() || 'PENDING') as any,
+            deliveryInfo: {
+              fullName: ord.customerInfo?.name || '',
+              phone: ord.customerInfo?.phone || '',
+              address: ord.shippingInfo?.address || '',
+              city: '',
+              province: '',
+            },
+            paymentMethod: 'COD' as any,
+            items: (ord.items || []).map((it) => {
+              const product = this.catalog.productById(it.productId);
+              return {
+                productId: it.productId,
+                productName: it.name || product?.name || 'Item',
+                quantity: it.quantity,
+                price: it.quantity
+                  ? Math.round((parseFloat(it.total) / it.quantity) * 100) / 100
+                  : 0,
+                subtotal: parseFloat(it.total) || 0,
+                sellerName: product?.sellerName || store?.name || 'Seller',
+                sellerId: ord.storeId || null,
+                sellerUserId: null,
+                storeName: store?.name || null,
+                productImage: product?.images?.[0] || null,
+              };
+            }),
+            itemCount: (ord.items || []).reduce((sum, it) => sum + it.quantity, 0),
+            subtotal: parseFloat(ord.subtotal) || 0,
+            deliveryFee: parseFloat(ord.deliveryFee) || 0,
+            discount: 0,
+            totalAmount: parseFloat(ord.totalAmount) || 0,
+            timeline: [],
+            createdAt: ord.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        }),
+      );
       this.error.set('');
     } catch (error: unknown) {
       this.error.set(cartErrorMessage(error));
@@ -345,10 +619,10 @@ export class Orders {
     }
   }
 
-  protected async cancel(order: ApiOrder): Promise<void> {
+  async cancel(order: ApiOrder): Promise<void> {
     this.busyId.set(order.id);
     try {
-      const key = `rpt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const key = `rpt-cnl-${order.id}-${Date.now()}`;
       await firstValueFrom(
         this.rentify.report(order.id, 'complaint', 'Customer requested cancellation', key),
       );

@@ -51,10 +51,42 @@ export interface BuyerSession {
   isVerified: boolean;
 }
 
+export interface StoreCartItem {
+  id?: string;
+  productId: string;
+  variantId?: string | null;
+  quantity: number;
+  unitPrice?: string | null;
+  currentPrice: string | null;
+  available: boolean;
+  product?: {
+    id: string;
+    name: string;
+    slug?: string;
+    images?: Array<{ url: string } | string>;
+    price?: number | string;
+    trackInventory?: boolean;
+    allowBackorders?: boolean;
+    stockQuantity?: number;
+    productType?: string;
+  } | null;
+  variant?: {
+    id: string;
+    sku: string;
+    price: number | string;
+    stockQuantity: number;
+    optionValues?: Record<string, string>;
+  } | null;
+}
+
 export interface StoreCart {
   id: string;
   storeId: string;
-  items: { productId: string; quantity: number; currentPrice: string | null; available: boolean }[];
+  channel?: 'marketplace' | 'storefront';
+  websiteId?: string | null;
+  currency?: string;
+  deliveryPolicyVersion?: number | null;
+  items: StoreCartItem[];
   subtotal: string;
   deliveryFee: string | null;
   totalAmount: string | null;
@@ -71,8 +103,25 @@ export interface MarketplaceOrder {
   subtotal: string;
   deliveryFee: string;
   totalAmount: string;
+  customerInfo?: { name?: string; phone?: string } | null;
+  shippingInfo?: { address?: string } | null;
+  createdAt?: string;
   items: { productId: string; name: string; quantity: number; total: string }[];
   payment: { status: string; amountDue: string; collectedAmount: string; refundedAmount: string } | null;
+}
+
+export interface MarketplaceOrderEvent {
+  id: string;
+  type: string;
+  amount: string | null;
+  createdAt: string;
+  details: {
+    reason?: string;
+    resolution?: string;
+    method?: string;
+    refundedAt?: string;
+    evidence?: string[];
+  };
 }
 
 export interface ProductQueryOptions {
@@ -241,6 +290,14 @@ export class RentifyMarketplaceService {
     return this.http.get<{ orders: MarketplaceOrder[] }>(`${this.commerce}/api/marketplace/my-orders`);
   }
 
+  order(orderId: string): Observable<{ order: MarketplaceOrder }> {
+    return this.http.get<{ order: MarketplaceOrder }>(`${this.commerce}/api/marketplace/my-orders/${orderId}`);
+  }
+
+  orderEvents(orderId: string): Observable<{ events: MarketplaceOrderEvent[] }> {
+    return this.http.get<{ events: MarketplaceOrderEvent[] }>(`${this.commerce}/api/marketplace/my-orders/${orderId}/events`);
+  }
+
   reviews(productId: string): Observable<ProductReviewsResponse> {
     return this.http.get<ProductReviewsResponse>(
       `${this.commerce}/api/marketplace/products/${productId}/reviews`,
@@ -258,10 +315,16 @@ export class RentifyMarketplaceService {
     );
   }
 
-  report(orderId: string, type: 'complaint' | 'return_requested', reason: string, key: string) {
-    return this.http.post(
+  report(
+    orderId: string,
+    type: 'complaint' | 'return_requested',
+    reason: string,
+    key: string,
+    evidence?: string[],
+  ): Observable<{ event: { id: string; type: string } }> {
+    return this.http.post<{ event: { id: string; type: string } }>(
       `${this.commerce}/api/marketplace/my-orders/${orderId}/reports/${type}`,
-      { reason },
+      { reason, ...(evidence && evidence.length ? { evidence } : {}) },
       { headers: { 'Idempotency-Key': key } },
     );
   }

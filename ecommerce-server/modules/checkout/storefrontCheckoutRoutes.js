@@ -54,6 +54,10 @@ router.get('/storefront/:websiteId/my-orders/:orderId', enforceCustomDomainBound
   order: await service.buyerOrder(req.user.id, req.params.orderId,
     { storeId: req.storeId, channel: 'storefront' }),
 })));
+router.get('/storefront/:websiteId/my-orders/:orderId/events', enforceCustomDomainBoundary('customer'), wrap(async (req, res) => res.json({
+  events: await service.buyerOrderEvents(req.user.id, req.params.orderId,
+    { storeId: req.storeId, channel: 'storefront' }),
+})));
 router.post('/storefront/:websiteId/my-orders/:orderId/reports/:type', enforceCustomDomainBoundary('customer'), wrap(async (req, res) =>
   res.status(201).json({ event: await service.buyerReport({
     buyerId: req.user.id, storeId: req.storeId, orderId: req.params.orderId,

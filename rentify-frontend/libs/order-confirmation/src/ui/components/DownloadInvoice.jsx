@@ -26,7 +26,7 @@ export const DownloadInvoiceButton = ({
           totalPages={1}
         />
       }
-      fileName={`invoice_${invoiceData.invoiceNumber}.pdf`}
+      fileName={`invoice_${invoiceData?.invoiceNumber || invoiceData?.orderNumber || invoiceData?.id || 'document'}.pdf`}
       onClick={() => setLoading(true)}
     >
       {({ loading: pdfLoading }) => (

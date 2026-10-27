@@ -6,18 +6,21 @@ import { SellerService } from '../core/api/seller.service';
 import { AuthService } from '../core/auth/auth.service';
 import { CatalogService } from '../core/catalog/catalog.service';
 import { RentifyMarketplaceService } from '../core/rentify/rentify-marketplace.service';
+import { SeoService } from '../core/seo/seo.service';
+import { TranslateService } from '../core/i18n/translate.service';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 import { Product, ProductSort } from '../core/catalog/catalog.models';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
 
-const SORTS: { value: ProductSort; label: string }[] = [
-  { value: 'featured', label: 'Featured' },
-  { value: 'newest', label: 'Newest' },
-  { value: 'price-asc', label: 'Price: low to high' },
-  { value: 'price-desc', label: 'Price: high to low' },
-  { value: 'rating', label: 'Top rated' },
+const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = [
+  { value: 'featured', labelKey: 'catalog.sortFeatured', defaultLabel: 'Featured' },
+  { value: 'newest', labelKey: 'catalog.sortNewest', defaultLabel: 'Newest' },
+  { value: 'price-asc', labelKey: 'catalog.sortPriceAsc', defaultLabel: 'Price: low to high' },
+  { value: 'price-desc', labelKey: 'catalog.sortPriceDesc', defaultLabel: 'Price: high to low' },
+  { value: 'rating', labelKey: 'catalog.sortRating', defaultLabel: 'Top rated' },
 ];
 
 const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
@@ -38,21 +41,21 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
 
 @Component({
   selector: 'app-store-detail',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductCardComponent],
+  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductCardComponent, TranslatePipe],
   template: `
     <app-navbar />
 
     @if (!catalog.storesLoaded()) {
       <section class="container missing" aria-live="polite">
         <ui-icon class="spin" name="loader" [size]="30" />
-        <h1>Loading store</h1>
+        <h1>{{ 'state.loadingStore' | translate }}</h1>
       </section>
     } @else if (catalog.storeError()) {
       <section class="container missing" role="alert">
         <ui-icon name="alert-circle" [size]="32" />
-        <h1>We couldn’t load this store</h1>
+        <h1>{{ 'state.couldNotLoadStore' | translate }}</h1>
         <p>{{ catalog.storeError() }}</p>
-        <button class="btn btn-primary" type="button" (click)="catalog.loadStores()">Try again</button>
+        <button class="btn btn-primary" type="button" (click)="catalog.loadStores()">{{ 'state.tryAgain' | translate }}</button>
       </section>
     } @else if (store(); as s) {
       <main class="store-theme" [class.theme-clay]="s.theme === 'CLAY'" [class.theme-gold]="s.theme === 'GOLD'" [class.theme-midnight]="s.theme === 'MIDNIGHT'">
@@ -61,10 +64,10 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
              two they were looking at. -->
         @if (isOwnStore()) {
           <div class="owner-bar">
-            <span class="owner-tag"><ui-icon name="store" [size]="13" /> Your store</span>
-            <span class="owner-copy">This is how shoppers see it.</span>
+            <span class="owner-tag"><ui-icon name="store" [size]="13" /> {{ 'store.yourStore' | translate }}</span>
+            <span class="owner-copy">{{ 'store.howShoppersSee' | translate }}</span>
             <a class="owner-action" [href]="merchantDashboardUrl">
-              Edit in dashboard <ui-icon name="arrow-right" [size]="14" />
+              {{ 'store.editInDashboard' | translate }} <ui-icon name="arrow-right" [size]="14" />
             </a>
           </div>
         }
@@ -74,8 +77,8 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
         <section class="store-intro">
           <div class="container">
             <nav class="crumbs">
-              <a routerLink="/">Home</a><span>/</span>
-              <a routerLink="/stores">Stores</a><span>/</span>
+              <a routerLink="/">{{ 'nav.home' | translate }}</a><span>/</span>
+              <a routerLink="/stores">{{ 'nav.stores' | translate }}</a><span>/</span>
               <span>{{ s.name }}</span>
             </nav>
 
@@ -85,23 +88,23 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
                   @if (s.logoUrl) { <img [src]="s.logoUrl" [alt]="s.name + ' logo'" /> } @else { {{ initials(s.name) }} }
                 </div>
                 <div class="identity-copy">
-                  <span class="verified"><ui-icon name="store" [size]="13" /> Marketplace store</span>
+                  <span class="verified"><ui-icon name="store" [size]="13" /> {{ 'store.marketplaceStore' | translate }}</span>
                   <h1>{{ s.name }}</h1>
                   <p class="store-tagline">{{ s.tagline || s.description }}</p>
                   <div class="meta">
                     <span><ui-icon name="map-pin" [size]="14" /> {{ s.location }}</span>
                     @if (s.reviewCount > 0) {
-                      <span><ui-icon name="star" [size]="14" [filled]="true" /> {{ s.rating }} · {{ s.reviewCount }} reviews</span>
+                      <span><ui-icon name="star" [size]="14" [filled]="true" /> {{ s.rating }} · {{ s.reviewCount }} {{ 'product.verifiedReviews' | translate }}</span>
                     } @else {
-                      <span>No customer reviews yet</span>
+                      <span>{{ 'product.noReviewsYet' | translate }}</span>
                     }
-                    <span><ui-icon name="package" [size]="14" /> {{ products().length }} products</span>
+                    <span><ui-icon name="package" [size]="14" /> {{ 'category.productCount' | translate:{ count: products().length } }}</span>
                   </div>
                 </div>
               </div>
 
               <div class="store-actions">
-                <a class="btn btn-primary" href="#products" (click)="scrollToSection('products', $event)">Shop store</a>
+                <a class="btn btn-primary" href="#products" (click)="scrollToSection('products', $event)">{{ 'store.shopStore' | translate:{ name: s.name } }}</a>
                 <button type="button" class="btn btn-outline" disabled title="Store following will be available when account sync is ready"><ui-icon name="heart" [size]="15" /> Follow soon</button>
               </div>
             </div>
@@ -132,16 +135,16 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
         <section class="container products-section" id="products">
           <header class="products-head">
             <div>
-              <span class="eyebrow">Store collection</span>
-              <h2>Shop {{ s.name }}</h2>
+              <span class="eyebrow">{{ 'store.storeCollection' | translate }}</span>
+              <h2>{{ 'store.shopStore' | translate:{ name: s.name } }}</h2>
             </div>
             <div class="products-head-controls">
-              <span class="item-count">{{ filteredProducts().length }} items</span>
+              <span class="item-count">{{ 'store.itemsCount' | translate:{ count: filteredProducts().length } }}</span>
               <label class="sort">
-                <span>Sort</span>
+                <span>{{ 'catalog.sort' | translate }}</span>
                 <select [value]="sort()" (change)="setSort($event)">
                   @for (option of sorts; track option.value) {
-                    <option [value]="option.value">{{ option.label }}</option>
+                    <option [value]="option.value">{{ option.labelKey | translate }}</option>
                   }
                 </select>
               </label>
@@ -150,7 +153,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
 
           @if (categories().length > 1) {
             <div class="category-tabs" aria-label="Product categories">
-              <button [class.active]="!activeCategory()" (click)="activeCategory.set(null)">All products <span>{{ products().length }}</span></button>
+              <button [class.active]="!activeCategory()" (click)="activeCategory.set(null)">{{ 'store.allProducts' | translate }} <span>{{ products().length }}</span></button>
               @for (category of categories(); track category) {
                 <button [class.active]="activeCategory() === category" (click)="activeCategory.set(category)">
                   {{ category }} <span>{{ countCategory(category) }}</span>
@@ -177,23 +180,23 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
               </div>
             }
           } @else {
-            <div class="empty"><ui-icon name="package" [size]="28" /><p>No products are listed in this category yet.</p></div>
+            <div class="empty"><ui-icon name="package" [size]="28" /><p>{{ 'store.noProductsListed' | translate }}</p></div>
           }
         </section>
 
         <section class="container about-section" id="about">
           <div class="story">
-            <span class="eyebrow">Behind the store</span>
-            <h2>About {{ s.name }}</h2>
+            <span class="eyebrow">{{ 'store.behindStore' | translate }}</span>
+            <h2>{{ 'store.aboutStore' | translate:{ name: s.name } }}</h2>
             <p>{{ s.description || 'This seller has not added a full store story yet.' }}</p>
           </div>
           <div class="facts">
-            <div><span>01</span><strong>Store-owned listings</strong><small>Products on this page are listed under this seller.</small></div>
-            <div><span>02</span><strong>Clear order records</strong><small>Signed-in purchases appear in My Orders.</small></div>
+            <div><span>01</span><strong>{{ 'store.storeOwnedListings' | translate }}</strong><small>{{ 'store.storeOwnedListingsSub' | translate }}</small></div>
+            <div><span>02</span><strong>{{ 'store.clearOrderRecords' | translate }}</strong><small>{{ 'store.clearOrderRecordsSub' | translate }}</small></div>
             @if (s.showContact && s.phoneNumber) {
-              <div><span>03</span><strong>Contact this store</strong><small>{{ s.phoneNumber }} · Seller chose to make this number public.</small></div>
+              <div><span>03</span><strong>{{ 'store.contactStore' | translate }}</strong><small>{{ s.phoneNumber }} · Seller chose to make this number public.</small></div>
             } @else {
-              <div><span>03</span><strong>Marketplace support</strong><small>Contact Rentify Marketplace when an order needs attention.</small></div>
+              <div><span>03</span><strong>{{ 'store.marketplaceSupport' | translate }}</strong><small>{{ 'store.marketplaceSupportSub' | translate }}</small></div>
             }
           </div>
         </section>
@@ -209,10 +212,11 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
         </section>
       </main>
     } @else {
-      <section class="container missing">
-        <h1>Store not found</h1>
-        <p>That store may have closed or the link may be out of date.</p>
-        <a class="btn btn-primary" routerLink="/stores">Browse all stores</a>
+      <section class="container missing" role="alert">
+        <ui-icon name="store" [size]="42" />
+        <h1>{{ 'store.storeNotFound' | translate }}</h1>
+        <p>{{ 'store.storeNotFoundSub' | translate }}</p>
+        <a class="btn btn-primary" routerLink="/stores">{{ 'store.browseAllStores' | translate }}</a>
       </section>
     }
 
@@ -352,6 +356,9 @@ export class StoreDetailComponent {
   private readonly auth = inject(AuthService);
   private readonly sellers = inject(SellerService);
   private readonly rentify = inject(RentifyMarketplaceService);
+  private readonly seo = inject(SeoService);
+  protected readonly translate = inject(TranslateService);
+
   protected readonly merchantDashboardUrl = this.rentify.merchantDashboard;
   protected readonly activeCategory = signal<string | null>(null);
   protected readonly activeSection = signal<'products' | 'about' | 'reviews'>('products');
@@ -417,6 +424,15 @@ export class StoreDetailComponent {
       const id = this.storeId();
       if (id && !this.catalog.store(id)) {
         void this.catalog.loadStore(id);
+      }
+    });
+
+    effect(() => {
+      const s = this.store();
+      if (s) {
+        this.seo.setStoreMetadata(s);
+      } else if (this.catalog.storesLoaded()) {
+        this.seo.setPageTitle(this.translate.t('store.storeNotFound'));
       }
     });
 

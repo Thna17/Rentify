@@ -252,6 +252,20 @@ API.
 
 ## Phase 4 — shared checkout, inventory, and fulfillment
 
+**Customer Journeys Workstream Completion (2026-10-26):** Gemini Phase 4
+customer-journey packages (`P4-BUY-001` through `P4-BUY-004`, `P4-SF-001`,
+`P4-POS-001`, `P4-INV-001`, `P4-UX-002`, and `P4-UX-003`) are complete and verified
+across all 11 target customer journeys. This includes responsive marketplace buyer discovery
+with variant SKU resolution, Store-grouped and channel-safe carts with separate order
+notices, single-page Cash on Delivery checkout with idempotent keying and network retry
+recovery, authoritative order event tracking and dispute/return submission, canonical
+pipeline adapters across all hosted storefront templates (Templates 1, 2, and 3), physical-store
+POS with canonical inventory and race-safe stock allocation, invoice lifecycle formalization
+preventing double stock deduction, 100% English/Khmer catalog parity with Cambodian
+commerce vocabulary, and WCAG 2.1 AA accessibility and weak-network resilience.
+*Note: This completes solely the customer-journey workstream; Codex separately owns the
+merchant dashboard and work packages P4-MER-000 through P4-MER-005.*
+
 **Progress (2026-09-24):** Commerce has an additive Website-optional
 Cart/Order schema and Core-buyer-linked one-Store COD checkout for marketplace
 and hosted storefront channels, server-side eligibility and price checks,

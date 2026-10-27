@@ -279,6 +279,11 @@
     "delivery_note": "Delivery Note",
     "invoice": "Invoice",
     "invoice_number": "Invoice Number",
+    "quote": "Quote",
+    "quote_number": "Quote Number",
+    "convert_to_invoice": "Convert to Invoice",
+    "stock_status_deducted": "Stock Deducted",
+    "stock_status_awaiting_payment": "Awaiting Payment (Stock Unreserved)",
     "status": "Status",
     "total": "Total",
     "download_pdf": "Download PDF"

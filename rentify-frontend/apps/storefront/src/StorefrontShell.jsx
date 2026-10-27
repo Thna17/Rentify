@@ -99,7 +99,16 @@ export function StorefrontShell({ host = window.location.host }) {
     );
   }
 
-  const Template = templateFor(data);
+  const isSuspendedOrInactive =
+    data?.status === 'suspended' ||
+    data?.status === 'inactive' ||
+    data?.status === 'expired' ||
+    data?.status === 'archived' ||
+    data?.status === 'deleted' ||
+    data?.storeStatus === 'suspended' ||
+    data?.storeStatus === 'closed';
+
+  const Template = !isSuspendedOrInactive ? templateFor(data) : null;
   if (!Template) return <Notice title={t.missingTitle} body={t.missingBody} />;
 
   return (
