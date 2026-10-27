@@ -2556,6 +2556,41 @@ paths:
         "404":
           $ref: "#/components/responses/Error404"
       operationId: get_api_marketplace_my_orders_orderId
+  /api/marketplace/my-orders/{orderId}/events:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get order events timeline for buyer marketplace order
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order event timeline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_marketplace_my_orders_orderId_events
   /api/marketplace/my-orders/{orderId}/reports/{type}:
     post:
       tags:
@@ -2649,6 +2684,46 @@ paths:
         "200":
           description: Order details
       operationId: get_api_storefront_websiteId_my_orders_orderId
+  /api/storefront/{websiteId}/my-orders/{orderId}/events:
+    get:
+      tags:
+        - Buyer Orders
+      summary: Get order events timeline for storefront order
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - customerAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order event timeline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_storefront_websiteId_my_orders_orderId_events
   /api/storefront/{websiteId}/my-orders/{orderId}/reports/{type}:
     post:
       tags:
@@ -3300,6 +3375,51 @@ paths:
                   order:
                     $ref: "#/components/schemas/Order"
       operationId: post_api_stores_storeId_orders_pos
+  /api/stores/{storeId}/orders/pos/{orderId}/return:
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Process POS order return and inventory restoration
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Customer Return
+      responses:
+        "200":
+          description: Returned POS order
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_stores_storeId_orders_pos_orderId_return
   /api/order/stores/{storeId}/orders/pos:
     get:
       tags:
@@ -3343,6 +3463,51 @@ paths:
         "201":
           description: POS order created
       operationId: post_api_order_stores_storeId_orders_pos
+  /api/order/stores/{storeId}/orders/pos/{orderId}/return:
+    post:
+      tags:
+        - Point of Sale (POS)
+      summary: Process POS order return (order-scoped alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Customer Return
+      responses:
+        "200":
+          description: Returned POS order
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_order_stores_storeId_orders_pos_orderId_return
   /api/order/websites/{websiteId}/orders/pos:
     get:
       tags:
@@ -3386,6 +3551,630 @@ paths:
         "201":
           description: POS order created
       operationId: post_api_order_websites_websiteId_orders_pos
+  /api/websites/{websiteId}/invoices:
+    get:
+      tags:
+        - Invoices
+      summary: List invoices for website (canonical REST path)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invoices list
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: get_api_websites_websiteId_invoices
+    post:
+      tags:
+        - Invoices
+      summary: Create commercial invoice for website (canonical REST path)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created invoice
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: post_api_websites_websiteId_invoices
+  /api/stores/{storeId}/invoices:
+    get:
+      tags:
+        - Invoices
+      summary: List invoices for store
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invoices list
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: get_api_stores_storeId_invoices
+    post:
+      tags:
+        - Invoices
+      summary: Create commercial invoice for store
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created invoice
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: post_api_stores_storeId_invoices
+  /api/stores/{storeId}/quotes:
+    post:
+      tags:
+        - Invoices
+      summary: Create commercial quote (non-binding estimate) for store
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created quote
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: post_api_stores_storeId_quotes
+  /api/stores/{storeId}/quotes/convert:
+    post:
+      tags:
+        - Invoices
+      summary: Convert quote to binding commercial invoice
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Converted invoice
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_stores_storeId_quotes_convert
+  /api/invoices/{invoiceId}:
+    get:
+      tags:
+        - Invoices
+      summary: Get invoice snapshot by ID
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Invoice snapshot
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_invoices_invoiceId
+  /api/invoices/{invoiceId}/pdf:
+    get:
+      tags:
+        - Invoices
+      summary: Download invoice PDF
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: PDF stream or binary document
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_invoices_invoiceId_pdf
+  /api/invoices/{invoiceId}/pay:
+    post:
+      tags:
+        - Invoices
+      summary: Record payment on invoice
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Payment recorded
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_invoices_invoiceId_pay
+  /api/invoices/{invoiceId}/cancel:
+    post:
+      tags:
+        - Invoices
+      summary: Cancel unpaid commercial invoice
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Invoice cancelled
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_invoices_invoiceId_cancel
+  /api/invoices/{invoiceId}/refund:
+    post:
+      tags:
+        - Invoices
+      summary: Refund paid commercial invoice and restore stock
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Invoice refunded
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_invoices_invoiceId_refund
+  /api/invoices/public/{invoiceNumber}:
+    get:
+      tags:
+        - Invoices
+      summary: Public lookup for sanitized customer invoice
+      x-client-generation: false
+      security: []
+      parameters:
+        - name: invoiceNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sanitized customer invoice
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_invoices_public_invoiceNumber
+  /api/invoice/stores/{storeId}/invoices:
+    get:
+      tags:
+        - Invoices
+      summary: List invoices for store (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Invoices list
+      operationId: get_api_invoice_stores_storeId_invoices
+    post:
+      tags:
+        - Invoices
+      summary: Create commercial invoice for store (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created invoice
+      operationId: post_api_invoice_stores_storeId_invoices
+  /api/invoice/stores/{storeId}/quotes:
+    post:
+      tags:
+        - Invoices
+      summary: Create quote for store (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created quote
+      operationId: post_api_invoice_stores_storeId_quotes
+  /api/invoice/stores/{storeId}/quotes/convert:
+    post:
+      tags:
+        - Invoices
+      summary: Convert quote to invoice (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Converted invoice
+      operationId: post_api_invoice_stores_storeId_quotes_convert
+  /api/invoice/invoices/{invoiceId}:
+    get:
+      tags:
+        - Invoices
+      summary: Get invoice by ID (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Invoice snapshot
+      operationId: get_api_invoice_invoices_invoiceId
+  /api/invoice/invoices/{invoiceId}/pay:
+    post:
+      tags:
+        - Invoices
+      summary: Record payment on invoice (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Payment recorded
+      operationId: post_api_invoice_invoices_invoiceId_pay
+  /api/invoice/invoices/{invoiceId}/cancel:
+    post:
+      tags:
+        - Invoices
+      summary: Cancel invoice (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Invoice cancelled
+      operationId: post_api_invoice_invoices_invoiceId_cancel
+  /api/invoice/invoices/{invoiceId}/refund:
+    post:
+      tags:
+        - Invoices
+      summary: Refund invoice (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Invoice refunded
+      operationId: post_api_invoice_invoices_invoiceId_refund
+  /api/invoice/invoices/public/{invoiceNumber}:
+    get:
+      tags:
+        - Invoices
+      summary: Public invoice lookup (compatibility alias)
+      x-client-generation: false
+      security: []
+      parameters:
+        - name: invoiceNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sanitized customer invoice
+      operationId: get_api_invoice_invoices_public_invoiceNumber
   /api/invoice/websites/{websiteId}/invoices:
     get:
       tags:
@@ -3410,6 +4199,32 @@ paths:
                 items:
                   $ref: "#/components/schemas/Invoice"
       operationId: get_api_invoice_websites_websiteId_invoices
+    post:
+      tags:
+        - Invoices
+      summary: Create invoice for website (compatibility alias)
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created invoice
+      operationId: post_api_invoice_websites_websiteId_invoices
+
   /api/invoice/invoices/{invoiceId}/pdf:
     get:
       tags:

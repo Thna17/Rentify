@@ -56,13 +56,14 @@ class WebsiteService {
       // Create the website first because Subscription.websiteId is required.
       // Both rows stay in the same transaction so a failed trial rolls back
       // the website as well.
+      // Paid plans are paid by KHQR before this point; free plans and un-prepaid plans start a trial
+      const isPaid = Number(packageData.price) > 0 && Boolean(paymentId);
       const website = await Website.create({
         userId,
         storeId: store.id,
         templateId,
         businessDetails: businessData,
-        // Paid plans are paid by KHQR before this point; free plans start a trial
-        pricing: { totalPrice: Number(packageData.price) > 0 ? Number(packageData.price) : 0 },
+        pricing: { totalPrice: isPaid ? Number(packageData.price) : 0 },
         limits: packageData.limits,
         name: businessData.name,
         status: DEPLOYMENT.STATUS.CUSTOMIZATION,
@@ -85,7 +86,7 @@ class WebsiteService {
       await store.update({ projectionVersion: store.projectionVersion + 1 }, { transaction });
       await storeSyncService.queueStore(store, { websiteId: website.id, transaction });
 
-      const subscription = Number(packageData.price) > 0
+      const subscription = isPaid
         ? await subscriptionService.createPaidSubscriptionForWebsite({
           userId,
           pkg: packageData,

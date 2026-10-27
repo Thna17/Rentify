@@ -98,6 +98,16 @@ test('website and required trial subscription commit together in dependency orde
   assert.equal(result._ecommerceData.storeId, 'store-1');
 });
 
+test('website creation without paymentId creates a trial subscription even for a package with a listed price', async (t) => {
+  const { calls, website } = setupCreation(t);
+  Package.findByPk.mock.mockImplementation(async () => ({ id: 'starter-pkg', name: 'Starter', price: 5.0, limits: {}, features: {}, get() { return this; } }));
+  const result = await websiteService.createWebsiteWithTrial({
+    userId: 'user-1', templateId: 'template-1', packageId: 'starter-pkg', businessData,
+  });
+  assert.equal(result, website);
+  assert.ok(calls.includes('create subscription'));
+});
+
 test('failed trial creation rolls back the website', async (t) => {
   const { calls } = setupCreation(t, { failSubscription: true });
   await assert.rejects(

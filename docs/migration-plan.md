@@ -346,10 +346,17 @@ Store-keyed checkout; remaining Website/POS/invoice paths still need review.
   Follow the draft buyer identity decision in
   [ADR 0002](adr/0002-unified-buyer-identity.md).
 
+**Phase 4 Integration and Release Gate (2026-10-27): COMPLETE.** Both customer journeys
+and merchant experience workstreams have merged into `develop` and passed comprehensive integration
+verification on `feature/p4-integration-release-gate`. The full repository verification suite (`npm run verify`),
+11 Phase 4 customer journeys (`tools/verify-phase4-customer-journeys.mjs`), and reconciliation commands
+pass code 0 with zero test weakenings. See full evidence in
+[Phase 4 Integration Release Evidence](audits/phase-4-integration-release-gate.md).
+
 **Exit gate:** concurrent purchases on both channels cannot oversell;
 retries create one order and one COD collection effect; sellers cannot change
 other sellers' fulfillment; COD collection records reconcile with completed
-orders. Online payment methods are absent from buyer checkout.
+orders. Online payment methods are absent from buyer checkout. — **ALL CRITERIA PASSED.**
 
 ## Later phase — bank online payments (outside launch scope)
 
