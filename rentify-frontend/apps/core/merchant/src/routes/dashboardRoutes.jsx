@@ -10,9 +10,7 @@ const ProductManagement = lazy(() => import('../pages/product-management/Product
 const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
 const ProductImports = lazy(() => import('../pages/product-imports/ProductImports'));
-const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
-const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
-const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
+const OrderOperations = lazy(() => import('../pages/order-management/OrderOperations'));
 const InvoiceManual = lazy(() => import('../pages/invoice-manual/InvoiceManual'));
 // const Setting = lazy(() => import('@rentify/setting/ui/Setting'));
 const ProductForm = lazy(() => import('../pages/product-form/ProductForm'));
@@ -47,10 +45,10 @@ export const dashboardRoutes = {
     { path: 'products/import', element: <ProductImports /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },
-    { path: 'orders', element: <OrderManagement /> },
-    { path: 'marketplace-orders', element: <MarketplaceOrders /> },
+    { path: 'orders', element: <OrderOperations /> },
+    { path: 'marketplace-orders', element: <Navigate to="/orders" replace /> },
     { path: 'marketplace-readiness', element: <MarketplaceStoreOverview /> },
-    { path: 'orders/:id', element: <OrderDetailView /> },
+    { path: 'orders/:id', element: <OrderOperations /> },
     { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'help', element: <SupportPage /> },

@@ -2688,6 +2688,95 @@ paths:
                   policy:
                     $ref: "#/components/schemas/StoreDeliveryPolicy"
       operationId: put_api_stores_storeId_marketplace_delivery
+  /api/stores/{storeId}/orders:
+    get:
+      tags:
+        - Merchant Orders
+      summary: List unified merchant order operations for a Store
+      description: Returns buyer-safe marketplace, hosted storefront, POS, and invoice-linked order projections.
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: channel
+          in: query
+          schema:
+            type: string
+            enum: [marketplace, storefront, pos, invoice]
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 100 }
+        - name: dateFrom
+          in: query
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Unified merchant order list with total and truncation indicator
+      operationId: get_api_stores_storeId_orders
+  /api/stores/{storeId}/orders/{orderId}:
+    get:
+      tags:
+        - Merchant Orders
+      summary: Get a buyer-safe unified Store order projection
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: orderId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+      responses:
+        "200": { description: Unified merchant order detail }
+      operationId: get_api_stores_storeId_orders_orderId
+  /api/stores/{storeId}/orders/{orderId}/actions/{action}:
+    post:
+      tags:
+        - Merchant Orders
+      summary: Perform a server-permitted merchant order action
+      description: Revalidates Store authorization, current order version, legal state, and idempotency before changing fulfillment or COD facts.
+      x-client-generation: false
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - { name: orderId, in: path, required: true, schema: { $ref: "#/components/schemas/UUID" } }
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [delivered, delivery_failed, retry_delivery, collect_cod, confirm_refund]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedVersion: { type: integer }
+                reason: { type: string, maxLength: 500 }
+                resolution: { type: string, enum: [retry, cancel] }
+                buyerAgreed: { type: boolean }
+                amount: { $ref: "#/components/schemas/Money" }
+                method: { type: string, maxLength: 80 }
+                confirmation: { type: string, maxLength: 500 }
+      responses:
+        "200": { description: Updated authoritative order projection }
+        "409": { description: "Illegal, stale, or conflicting transition" }
+      operationId: post_api_stores_storeId_orders_orderId_actions_action
   /api/stores/{storeId}/marketplace-orders:
     get:
       tags:

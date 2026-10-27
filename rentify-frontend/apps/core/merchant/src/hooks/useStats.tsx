@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { useChannels } from '../context/ChannelContext';
-import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
+import { commerceClient } from '@rentify/shared/api';
 import { useTranslation } from '@rentify/utils';
 
 export function useStats() {
@@ -59,16 +59,17 @@ export function useStats() {
 
   // If no websiteId, fetch marketplace orders for the store
   useEffect(() => {
-    if (websiteId || !store?.id) return;
+    const storeId = store?.storeId || store?.id;
+    if (websiteId || !storeId) return;
     let active = true;
     setStoreOrdersLoading(true);
-    fetch(`${ECOMMERCE_API_ROOT}/api/stores/${store.id}/marketplace-orders`, {
-      credentials: 'include',
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (active && data?.orders) {
-          setStoreOrders(data.orders);
+    commerceClient.request<any>({ method: 'GET', path: `/api/stores/${storeId}/orders`, credentials: 'include' })
+      .then((response) => {
+        if (active && response.data?.orders) {
+          setStoreOrders(response.data.orders.map((order: any) => ({
+            ...order, totalAmount: order.totals?.total, orderDate: order.createdAt,
+            shippingDetails: order.buyer,
+          })));
         }
       })
       .catch(() => undefined)
@@ -78,7 +79,7 @@ export function useStats() {
     return () => {
       active = false;
     };
-  }, [websiteId, store?.id]);
+  }, [websiteId, store?.id, store?.storeId]);
 
   useEffect(() => {
     if (statsQuery.error && (statsQuery.error as any).status === 403) {

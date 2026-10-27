@@ -844,6 +844,29 @@ and event timeline.
 **Acceptance:** permitted merchant/staff completes every legal action; high-risk
 actions summarize consequences and require reason/evidence.
 
+**Implemented on `feature/p4-merchant-experience`:** The additive
+`/api/stores/{storeId}/orders` surface returns a Store-scoped, buyer-safe
+operation projection for marketplace, hosted storefront, POS, and
+invoice-linked orders while the existing marketplace-order contract remains
+available for compatibility. Commerce calculates channel, amount due, payment/COD
+facts, fulfillment, immutable item prices, reports, timeline, document links,
+and the exact legal next actions from authoritative rows. Search, channel,
+status, and UTC date filters are server validated. Completed-order contact and
+street data are minimized. Store ownership and staff Orders permission remain
+server enforced; cross-Store detail lookup returns not found. Actions recheck
+the locked order state and optional version, require an idempotency key, and
+retain the existing COD transaction rules. Failure, return, and complaint
+events do not infer a payment or refund. The merchant UI consolidates the
+previous Website and marketplace screens into responsive table/card and detail
+views with English/Khmer copy, semantic filters, focus-visible controls,
+high-risk confirmation, and forbidden/offline/timeout/conflict recovery. The
+old `/marketplace-orders` UI URL safely redirects to `/orders`.
+
+**Deferred:** evidence upload/storage, carrier integrations, and non-COD
+payment/refund execution remain separate domain packages. Existing evidence
+metadata is shown as a count; P4-MER-005 does not invent a document store or
+execute external refunds.
+
 ### Buyer experience packages
 
 #### P4-BUY-001 — Marketplace discovery
