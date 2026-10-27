@@ -26,15 +26,15 @@ test('all required dashboard configuration files exist and are non-empty', () =>
 const tabBlock = (content, tabPath) =>
   content.match(new RegExp(`\\{[^{}]*path:\\s*['"]${tabPath}['"][^{}]*\\}`))?.[0];
 
-test('dashboard-tabs defines the Storefront channel under Sell for all relevant roles', () => {
+test('dashboard-tabs defines the Storefront sales channel for all relevant roles', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
-  // Sales channels live in the Sell section
+  // Sales channels live in the Channels section
   const storeMgmtBlock = tabBlock(content, 'store-management');
   assert.ok(storeMgmtBlock, 'Store management block must be found');
   assert.match(storeMgmtBlock, /label:\s*['"]Storefront['"]/);
   assert.match(storeMgmtBlock, /channel:\s*['"]storefront['"]/);
-  assert.match(storeMgmtBlock, /section:\s*['"]sell['"]/);
+  assert.match(storeMgmtBlock, /section:\s*['"]channels['"]/);
 
   // Verify roles include staff
   assert.match(storeMgmtBlock, /'staff'/, 'Store management must allow staff role');
@@ -42,7 +42,7 @@ test('dashboard-tabs defines the Storefront channel under Sell for all relevant 
   assert.match(storeMgmtBlock, /'admin'/, 'Store management must allow admin role');
 });
 
-test('dashboard-tabs defines Marketplace Orders as a sales channel and keeps POS decoupled', () => {
+test('dashboard-tabs defines Marketplace and keeps POS linked to the standalone app', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
   // Verify Marketplace Orders
@@ -51,10 +51,12 @@ test('dashboard-tabs defines Marketplace Orders as a sales channel and keeps POS
 
   const block = tabBlock(content, 'marketplace-orders');
   assert.ok(block, 'marketplace-orders block must be found');
-  assert.match(block, /section:\s*['"]sell['"]/, 'marketplace-orders must be in the Sell section');
+  assert.match(block, /section:\s*['"]channels['"]/, 'marketplace-orders must be in the Channels section');
 
-  // Verify POS is not an embedded tab (POS is a dedicated standalone app at rentify-pos.mekhla.digital)
-  assert.equal(/channel:\s*['"]pos['"]/.test(content), false, 'POS should not be an embedded tab in merchant dashboard');
+  const posBlock = tabBlock(content, 'pos');
+  assert.ok(posBlock, 'POS navigation block must be found');
+  assert.match(posBlock, /externalHref:\s*POS_URL/, 'POS must link to the dedicated standalone app');
+  assert.match(posBlock, /channel:\s*['"]pos['"]/, 'POS visibility must respect the channel entitlement');
 });
 
 test('every tab in dashboard-tabs has a corresponding route in dashboardRoutes', () => {
@@ -66,6 +68,7 @@ test('every tab in dashboard-tabs has a corresponding route in dashboardRoutes',
   assert.ok(tabPathMatches.length >= 10, 'Should have at least 10 dashboard tab paths');
 
   for (const tabPath of tabPathMatches) {
+    if (tabPath === 'pos') continue; // Standalone application link, not an embedded route.
     // If path has params like orders/:id, route must have orders/:id or base path
     const routeRegex = new RegExp(`path:\\s*['"]${tabPath}['"]`);
     assert.ok(

@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useGetOrderHistoryQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { useChannels } from '../context/ChannelContext';
-import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
+import { commerceClient } from '@rentify/shared/api';
 
 /**
  * Customers, derived from existing orders rather than a dedicated backend
@@ -24,15 +24,13 @@ export function useCustomers() {
   );
 
   useEffect(() => {
-    if (websiteId || !store?.id) return;
+    const storeId = store?.storeId || store?.id;
+    if (websiteId || !storeId) return;
     let active = true;
     setStoreOrdersLoading(true);
-    fetch(`${ECOMMERCE_API_ROOT}/api/stores/${store.id}/marketplace-orders`, {
-      credentials: 'include',
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (active && data?.orders) setStoreOrders(data.orders);
+    commerceClient.request({ method: 'GET', path: `/api/stores/${storeId}/orders`, credentials: 'include' })
+      .then((response) => {
+        if (active && response.data?.orders) setStoreOrders(response.data.orders);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -41,7 +39,7 @@ export function useCustomers() {
     return () => {
       active = false;
     };
-  }, [websiteId, store?.id]);
+  }, [websiteId, store?.id, store?.storeId]);
 
   const orders = websiteId ? orderHistory.data?.orders || [] : storeOrders;
   const isLoading = websiteId ? orderHistory.isLoading : storeOrdersLoading;
@@ -50,14 +48,14 @@ export function useCustomers() {
     const byContact = new Map();
 
     for (const order of orders) {
-      const name = order.shippingDetails?.name || order.customerName || 'Guest';
-      const email = order.shippingDetails?.email || order.customerEmail || '';
-      const phone = order.shippingDetails?.phone || order.customerPhone || '';
+      const name = order.buyer?.name || order.shippingDetails?.name || order.customerName || 'Guest';
+      const email = order.buyer?.email || order.shippingDetails?.email || order.customerEmail || '';
+      const phone = order.buyer?.phone || order.shippingDetails?.phone || order.customerPhone || '';
       const key = email || phone || name;
       if (!key) continue;
 
       const existing = byContact.get(key);
-      const amount = parseFloat(order.totalAmount) || 0;
+      const amount = parseFloat(order.totals?.total || order.totalAmount) || 0;
       const createdAt = order.createdAt ? new Date(order.createdAt).getTime() : 0;
 
       if (existing) {

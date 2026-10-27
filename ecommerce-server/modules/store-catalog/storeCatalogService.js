@@ -1,6 +1,8 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/db');
-const { Product, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview } = require('../../models');
+const {
+  Product, ProductVariant, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview,
+} = require('../../models');
 const { canonicalCategory } = require('../../config/marketplaceTaxonomy');
 
 /**
@@ -91,7 +93,64 @@ function validateImages(value, storeId) {
       }
     }
   }
-  return value.map((image) => ({ url: image.url }));
+  return value.map((image) => ({
+    url: image.url,
+    alt: typeof image.alt === 'string' ? image.alt.trim().slice(0, 240) : '',
+  }));
+}
+
+function defaultSku(name) {
+  const clean = String(name || 'SKU')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 16);
+  return `${clean || 'SKU'}-${Date.now().toString(36).toUpperCase()}`;
+}
+
+function sku(value) {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 120) {
+    fail('Every SKU is required and must be 120 characters or fewer');
+  }
+  return value.trim().toUpperCase();
+}
+
+function variants(value, fallback) {
+  const source = value === undefined ? [{
+    sku: fallback.sku,
+    price: fallback.price,
+    stockQuantity: fallback.stockQuantity,
+    optionValues: {},
+    status: 'active',
+  }] : value;
+  if (!Array.isArray(source) || source.length < 1 || source.length > 100) {
+    fail('Add between 1 and 100 SKUs');
+  }
+  const seen = new Set();
+  return source.map((entry, index) => {
+    if (!entry || typeof entry !== 'object') fail(`Invalid SKU at row ${index + 1}`);
+    const normalizedSku = sku(entry.sku);
+    if (seen.has(normalizedSku)) fail(`Duplicate SKU ${normalizedSku}`, 409, 'SKU_DUPLICATE');
+    seen.add(normalizedSku);
+    const optionValues = entry.optionValues === undefined ? {} : entry.optionValues;
+    if (!optionValues || Array.isArray(optionValues) || typeof optionValues !== 'object' ||
+        Object.keys(optionValues).length > 10 || Object.values(optionValues).some((item) =>
+          typeof item !== 'string' || !item.trim() || item.trim().length > 120)) {
+      fail(`Invalid options for SKU ${normalizedSku}`);
+    }
+    const status = entry.status || 'active';
+    if (!['active', 'disabled'].includes(status)) fail(`Invalid status for SKU ${normalizedSku}`);
+    return {
+      id: entry.id || null,
+      expectedVersion: entry.expectedVersion,
+      sku: normalizedSku,
+      price: money(entry.price ?? fallback.price, 'SKU price'),
+      stockQuantity: stock(Number(entry.stockQuantity ?? fallback.stockQuantity)),
+      optionValues: Object.fromEntries(Object.entries(optionValues).map(([key, item]) => [
+        String(key).trim().slice(0, 80), item.trim(),
+      ])),
+      status,
+    };
+  });
 }
 
 function category(value) {
@@ -100,18 +159,34 @@ function category(value) {
   return result;
 }
 
-async function create(store, input) {
+function prepareCreate(store, input) {
   const name = text(input.name, 200, 'Name');
   const price = money(input.price, 'price');
   const marketplaceCategory = category(input.marketplaceCategory);
-  const stockQuantity = stock(input.stockQuantity);
+  const fallbackStock = stock(input.stockQuantity);
   const status = input.status || 'draft';
   if (!['active', 'draft'].includes(status)) fail('Invalid product status');
-  if (status === 'active' && stockQuantity === 0) fail('Add stock before publishing the product');
   const description = typeof input.description === 'string' ? input.description.trim().slice(0, 4000) : '';
   const images = validateImages(input.images, store.storeId);
-  return sequelize.transaction(async (transaction) => {
-    // 1. Atomically lock store record to serialize concurrent product creations
+  const fallbackSku = input.sku !== undefined ? sku(input.sku) : defaultSku(name);
+  const preparedVariants = variants(input.variants, {
+    price, stockQuantity: fallbackStock, sku: fallbackSku,
+  });
+  const stockQuantity = preparedVariants.filter((entry) => entry.status === 'active')
+    .reduce((sum, entry) => sum + entry.stockQuantity, 0);
+  const canonicalPrice = preparedVariants.reduce((minimum, entry) =>
+    Math.min(minimum, Number(entry.price)), Number.POSITIVE_INFINITY).toFixed(2);
+  if (status === 'active' && stockQuantity === 0) fail('Add stock before publishing the product');
+  return {
+    name, price: canonicalPrice, marketplaceCategory, stockQuantity, status, description, images,
+    marketplaceVisibility: visibility(input.marketplaceVisibility),
+    variants: preparedVariants,
+  };
+}
+
+async function createInsideTransaction(store, input, transaction) {
+  const { name, price, marketplaceCategory, stockQuantity, status, description, images } = input;
+  // 1. Atomically lock store record to serialize concurrent product creations
     const storeAccess = await StoreAccess.findByPk(store.storeId, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -152,17 +227,37 @@ async function create(store, input) {
       restaurant: 'food', cafe: 'beverage', fashion: 'clothing',
       skincare: 'cleanser', electronics: 'device', grocery: 'fresh',
     }[websiteNiche] || 'physical';
-    return Product.create({
+    const product = await Product.create({
     storeId: store.storeId,
     websiteId: store.websiteId || null,
     websiteNiche,
     productType,
     name, description, price, marketplaceCategory, images,
-    marketplaceVisibility: visibility(input.marketplaceVisibility),
+    marketplaceVisibility: input.marketplaceVisibility,
     stockQuantity, status,
     slug: await uniqueSlug(store.storeId, name, transaction),
     }, { transaction });
-  });
+    if (!input.skipVariantCreation) {
+      await Promise.all(input.variants.map((variant) => ProductVariant.create({
+        productId: product.id,
+        sku: variant.sku,
+        price: variant.price,
+        stockQuantity: variant.stockQuantity,
+        optionValues: variant.optionValues,
+        status: variant.status,
+      }, { transaction })));
+    }
+    return Product.findByPk(product.id, {
+      include: [{ model: ProductVariant, as: 'ProductVariants' }], transaction,
+    });
+}
+
+async function create(store, input, options = {}) {
+  // Keep request validation outside the transaction so malformed or
+  // cross-Store input is rejected before a database connection is acquired.
+  const prepared = { ...prepareCreate(store, input), skipVariantCreation: options.skipVariantCreation === true };
+  if (options.transaction) return createInsideTransaction(store, prepared, options.transaction);
+  return sequelize.transaction((transaction) => createInsideTransaction(store, prepared, transaction));
 }
 
 async function listOwn(storeId, query = {}) {
@@ -170,9 +265,19 @@ async function listOwn(storeId, query = {}) {
   const limit = Math.max(1, Math.min(60, Number.parseInt(query.limit, 10) || 20));
   const { count, rows } = await Product.findAndCountAll({
     where: { storeId }, order: [['createdAt', 'DESC']],
-    offset: (page - 1) * limit, limit,
+    include: [{ model: ProductVariant, as: 'ProductVariants' }],
+    distinct: true, offset: (page - 1) * limit, limit,
   });
   return { products: rows, total: count, page, limit };
+}
+
+async function getOwn(storeId, productId) {
+  const product = await Product.findOne({
+    where: { id: productId, storeId },
+    include: [{ model: ProductVariant, as: 'ProductVariants' }],
+  });
+  if (!product) fail('Product not found', 404);
+  return product;
 }
 
 async function update(storeId, productId, input) {
@@ -185,6 +290,7 @@ async function update(storeId, productId, input) {
       fail('Product version has changed; refresh and retry', 409);
     }
     const changes = {};
+    let preparedVariants = null;
     if (input.name !== undefined) {
       changes.name = text(input.name, 200, 'Name');
       if (changes.name !== product.name) changes.slug = await uniqueSlug(storeId, changes.name, transaction);
@@ -204,17 +310,69 @@ async function update(storeId, productId, input) {
     }
     if (input.marketplaceCategory !== undefined) changes.marketplaceCategory = category(input.marketplaceCategory);
     if (input.marketplaceVisibility !== undefined) changes.marketplaceVisibility = visibility(input.marketplaceVisibility);
-    if (input.images !== undefined) changes.images = validateImages(input.images, store.storeId);
+    if (input.images !== undefined) changes.images = validateImages(input.images, storeId);
     if (input.status !== undefined) {
       if (!['active', 'draft', 'archived', 'out_of_stock'].includes(input.status)) fail('Invalid product status');
       changes.status = input.status;
     }
-    if (changes.status === 'active' &&
+    if (input.variants !== undefined) {
+      preparedVariants = variants(input.variants, {
+        price: changes.price ?? product.price,
+        stockQuantity: changes.stockQuantity ?? product.stockQuantity,
+      });
+      const existing = await ProductVariant.findAll({
+        where: { productId }, transaction, lock: transaction.LOCK.UPDATE,
+      });
+      const byId = new Map(existing.map((entry) => [entry.id, entry]));
+      for (const variant of preparedVariants) {
+        if (!variant.id) continue;
+        const current = byId.get(variant.id);
+        if (!current) fail('SKU does not belong to this product', 403, 'SKU_STORE_MISMATCH');
+        if (!Number.isSafeInteger(variant.expectedVersion) || variant.expectedVersion !== current.version) {
+          fail('SKU version has changed; refresh and retry', 409, 'SKU_VERSION_CONFLICT');
+        }
+      }
+      const totalStock = preparedVariants
+        .filter((entry) => entry.status === 'active')
+        .reduce((sum, entry) => sum + entry.stockQuantity, 0);
+      changes.stockQuantity = totalStock;
+      changes.price = preparedVariants.reduce((minimum, entry) =>
+        Math.min(minimum, Number(entry.price)), Number.POSITIVE_INFINITY).toFixed(2);
+    }
+    if ((changes.status ?? product.status) === 'active' &&
         (changes.stockQuantity ?? product.stockQuantity) === 0) {
       fail('Add stock before publishing the product');
     }
-    if (!Object.keys(changes).length) fail('No product changes provided');
-    return product.update({ ...changes, version: product.version + 1 }, { transaction });
+    if (!Object.keys(changes).length && !preparedVariants) fail('No product changes provided');
+    const updated = await product.update({ ...changes, version: product.version + 1 }, { transaction });
+    if (preparedVariants) {
+      const retainedIds = [];
+      for (const variant of preparedVariants) {
+        if (variant.id) {
+          retainedIds.push(variant.id);
+          const current = await ProductVariant.findByPk(variant.id, { transaction });
+          await current.update({
+            sku: variant.sku, price: variant.price, stockQuantity: variant.stockQuantity,
+            optionValues: variant.optionValues, status: variant.status, version: current.version + 1,
+          }, { transaction });
+        } else {
+          const created = await ProductVariant.create({
+            productId, sku: variant.sku, price: variant.price,
+            stockQuantity: variant.stockQuantity, optionValues: variant.optionValues,
+            status: variant.status,
+          }, { transaction });
+          retainedIds.push(created.id);
+        }
+      }
+      if (input.replaceVariants === true) {
+        await ProductVariant.destroy({
+          where: { productId, id: { [Op.notIn]: retainedIds } }, transaction,
+        });
+      }
+    }
+    return Product.findByPk(updated.id, {
+      include: [{ model: ProductVariant, as: 'ProductVariants' }], transaction,
+    });
   });
 }
 
@@ -259,6 +417,17 @@ function publicProduct(product, ratingSummary) {
     // Colour/finish variants, e.g. { variants: [{ label, url }] }, set by
     // sellers who list photos per colour. Optional — most products have none.
     variants: Array.isArray(product.nicheAttributes?.variants) ? product.nicheAttributes.variants : [],
+    productVariants: (product.ProductVariants || []).map((variant) => ({
+      id: variant.id,
+      productId: product.id,
+      sku: variant.sku,
+      price: variant.price,
+      compareAtPrice: variant.compareAtPrice,
+      stockQuantity: variant.stockQuantity,
+      optionValues: variant.optionValues,
+      status: variant.status,
+      version: variant.version,
+    })),
     // Real average + count from ProductReview. No reviews yet → 0/0, not a
     // made-up number — the frontend shows "No reviews" in that case.
     rating: ratingSummary?.rating ?? 0,
@@ -271,7 +440,10 @@ async function listPublic(query = {}) {
   const limit = Math.max(1, Math.min(60, Number.parseInt(query.limit, 10) || 20));
   const where = eligibleProductWhere(query);
   const { count, rows } = await Product.findAndCountAll({
-    where, include: [eligibleStore], distinct: true, subQuery: false,
+    where, include: [eligibleStore, {
+      model: ProductVariant, as: 'ProductVariants', required: false,
+      where: { status: 'active' },
+    }], distinct: true, subQuery: false,
     // Sellers' own uploaded (Cloudinary) photos outrank generic stock/demo
     // images of the same product, so a mismatched stock photo never sits
     // above a real one for the same listing.
@@ -288,11 +460,15 @@ async function listPublic(query = {}) {
 
 async function getPublic(productId) {
   const product = await Product.findOne({
-    where: { id: productId, ...eligibleProductWhere() }, include: [eligibleStore],
+    where: { id: productId, ...eligibleProductWhere() },
+    include: [eligibleStore, {
+      model: ProductVariant, as: 'ProductVariants', required: false,
+      where: { status: 'active' },
+    }],
   });
   if (!product) fail('Product not found', 404);
   const ratings = await ratingSummariesFor([product.id]);
   return publicProduct(product, ratings.get(product.id));
 }
 
-module.exports = { create, listOwn, update, listPublic, getPublic, eligibleProductWhere, publicProduct };
+module.exports = { create, listOwn, getOwn, update, listPublic, getPublic, eligibleProductWhere, publicProduct };

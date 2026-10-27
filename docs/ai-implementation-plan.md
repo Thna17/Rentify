@@ -698,6 +698,38 @@ clients and design tokens; do not duplicate backend rules in the UI.
 
 ### Merchant experience packages
 
+#### P4-MER-000 — Merchant dashboard information architecture and UX foundation
+
+Audit and define the merchant workspace before redesigning individual journeys.
+Use the Admin dashboard as a visual-language reference for hierarchy, grouped
+navigation, page headers, action queues, cards, tables, filters, drawers,
+semantic status badges, feedback states, and responsive behavior. The merchant
+workspace must remain role-appropriate: it must not expose platform-admin
+controls, moderation powers, cross-tenant data, or admin-specific workflows.
+
+**Depends on:** P1-UX-001, P1-API-004, relevant P2 authorization packages
+**Acceptance:**
+
+- a reviewed audit maps every active merchant route to its navigation label,
+  owner, actor/permission, API dependency, responsive state, English/Khmer
+  coverage, and target disposition (`keep`, `merge`, `redirect`, or `retire`);
+- one approved target information architecture covers Home/launch, Products,
+  Orders, sales channels, Customers, Insights, Finance, Team/Settings, and
+  Help without separate Website-only and marketplace-only workspaces;
+- the component inventory identifies which shared React primitives will be
+  reused and which merchant shell, page-header, data-view, status, feedback,
+  and action components must be added or consolidated;
+- UI gaps and API/contract gaps are recorded separately for P4-MER-001 through
+  P4-MER-005, with Store-first ownership and typed-client migration called out;
+- route compatibility preserves documented bookmarks and redirects, with
+  automated checks for old product, catalog, order, marketplace-order,
+  storefront, settings, usage, support, and ops aliases;
+- the implementation plan names the exact expected code and test areas, covers
+  360 px and desktop layouts, keyboard/focus/zoom/reduced-motion needs, and
+  requires reviewed English and Khmer copy for every critical state;
+- `git diff --check` and `npm run verify:repository` pass for the audit package,
+  and no merchant page redesign or runtime behavior change is included.
+
 #### P4-MER-001 — Resumable onboarding and path selection
 
 Implement Store-first onboarding with marketplace-only and storefront paths,
@@ -705,8 +737,32 @@ saved progress, contact verification, primary category, Store details, and an
 honest final status.
 
 **Depends on:** P2 identity/entitlements, P0 decisions
-**Acceptance:** retries create no duplicate Store/Website/subscription; a
-marketplace-only merchant reaches a useful workspace without a Website.
+**Acceptance:**
+
+- a merchant explicitly chooses marketplace-only or marketplace plus
+  storefront, and only the storefront path asks for a template;
+- refresh, browser back, authentication return, and a later visit restore the
+  safe local draft while authenticated Store, Website, approval, and contact
+  verification responses remain authoritative;
+- verified contact, Store name, and a reviewed primary category are required
+  before completion; validation, loading, offline, timeout, forbidden,
+  conflict, server-error, and retry states explain a safe next action;
+- repeated and concurrent submission creates at most one Store, one Website,
+  and one linked subscription, with integration coverage for replay and the
+  unique-constraint race;
+- a marketplace-only merchant reaches the unified merchant workspace without
+  a Website or storefront subscription and sees the real seller-approval
+  status rather than a claim that the Store is live;
+- an existing marketplace-only Store can add a Website later without changing
+  its Store identity or recreating Product data, and `websiteId` is never used
+  as merchant or Store identity;
+- desktop and 360 px mobile flows support keyboard focus, semantic landmarks,
+  labelled fields, reduced motion, 200% zoom, and complete English/Khmer copy;
+- analytics events contain only path, step, result, status, and boolean entity
+  presence—never contact details, entity IDs, secrets, or free-form input;
+- focused frontend state/localization tests, Core Store/Website idempotency
+  integration tests, lint, typecheck, marketing build, and representative
+  desktop/mobile visual checks pass.
 
 #### P4-MER-002 — Merchant launch checklist
 
@@ -714,8 +770,33 @@ Drive Store details, delivery/return policy, first product, seller application,
 preview, approval, and publish from one action-oriented home.
 
 **Depends on:** P4-MER-001, P3-CAT-002
-**Acceptance:** every blocked item states reason and next action; activation
-events measure progression and completion.
+**Acceptance:**
+
+- Core composes verified contact, Store details/category, seller application,
+  Website readiness, approval, and publication state with read-only Commerce
+  facts for delivery policy and the first valid Product/SKU; the browser never
+  decides authoritative readiness;
+- every item uses exactly `complete`, `incomplete`, `blocked`, `pending`, or
+  `failed`, and every blocked/failed state carries a safe reason code and exact
+  next-action code;
+- marketplace-only Stores omit storefront requirements, while Stores with a
+  Website receive separate marketplace and storefront publication readiness;
+- progress is an honest completed-item count, never an invented percentage,
+  and stale or unavailable Commerce facts prevent a positive readiness guess;
+- the merchant Overview provides keyboard-operable actions, semantic status
+  text, visible focus, reduced-motion loading, 200% zoom-safe layouts, 360 px
+  mobile behavior, and complete English/Khmer checklist and recovery copy;
+- loading, empty, forbidden, offline, timeout, stale-data, error, and safe
+  retry states are covered; activation events contain only event/action/status,
+  path, booleans, and aggregate counts—never IDs, secrets, contacts, or free
+  text;
+- focused Core/Commerce service tests cover marketplace-only, storefront,
+  all five statuses, missing Product/SKU, policy, review, approval,
+  publication, stale projection, timeout, and recovery; merchant tests cover
+  both locales, reason/action mappings, and both channel paths;
+- focused lint, typecheck, API/authorization contract validation, backend
+  tests, merchant tests/build, and representative desktop/mobile visual checks
+  pass before the P4-MER-002 commit.
 
 #### P4-MER-003 — Product/SKU editor and media
 
@@ -723,8 +804,41 @@ Build quick simple-product creation and advanced variants, images/alt text,
 category, price, stock, visibility, preview, conflict handling, and archive.
 
 **Depends on:** P3-CAT-001, P3-INV-001
-**Acceptance:** one published Product appears with the same ID/price/stock on
-eligible marketplace and storefront surfaces.
+**Acceptance:**
+
+- one Store-first catalog and editor serves marketplace-only and storefront
+  merchants without treating `websiteId` as Product or merchant identity;
+- simple creation writes exactly one canonical SKU, while variant creation
+  writes 1–100 independently priced, stocked, enabled/disabled SKU rows in the
+  same transaction as the Product;
+- Commerce derives Product price and aggregate available stock from canonical
+  SKU input, enforces global SKU uniqueness and Store authorization, and uses
+  Product/SKU versions to reject stale edits;
+- category, publication, Store-level marketplace visibility inheritance,
+  archive, media upload, per-image alternative text, and a value-only channel
+  preview are available in responsive English and Khmer UI;
+- `/products`, `/products/create`, `/products/edit/:id`, and `/products/:id`
+  remain supported, while `/catalog` safely redirects to the single catalog;
+- loading, empty, forbidden, conflict, timeout, offline, failed-image, and
+  recovery behavior are keyboard-operable, focus-visible, reduced-motion safe,
+  and usable at 360 px and 200% zoom;
+- focused tests prove simple and variant payloads, duplicate-SKU rejection,
+  optimistic versions, Store-scoped reads, locale parity, and the same
+  Product/SKU identifiers, price, and stock on eligible marketplace and
+  storefront projections.
+
+**Implemented on `feature/p4-merchant-experience`:** The merchant workspace
+now uses one Store-scoped catalog and progressive Product/SKU editor for both
+selling paths. Commerce creates the Product and canonical SKU rows atomically,
+returns Store-owned detail snapshots, derives Product price and sellable stock
+from variants, preserves SKU versions during edits, and exposes allowlisted
+SKU facts on marketplace projections. The editor supports simple and variant
+Products, categories, draft/publish/archive, inherited or explicit marketplace
+visibility, image upload with alternative text, honest preview, and explicit
+forbidden/conflict/timeout/offline recovery in English and Khmer. The former
+Website-only form, detail editor, duplicate quick-add catalog, and their dead
+route implementations were removed; compatibility URLs now resolve to the
+single editor.
 
 #### P4-MER-004 — Bulk import/export
 
@@ -736,6 +850,23 @@ categories, SKU uniqueness, or publication rules.
 **Acceptance:** partial invalid data does not silently publish; job history and
 correction report are available.
 
+**Implemented on `feature/p4-merchant-experience`:** Commerce now owns a
+durable, Store-scoped `ProductImportJob` lifecycle with a versioned 1.0
+template, bounded server-side CSV parsing (5 MB/5,000 rows), authoritative
+preview, separate warning/error reason codes, idempotent creation, asynchronous
+row checkpoints, exact progress, 25-job history, safe resume, correction CSV,
+and Store-scoped Product/SKU export. Every accepted row is written through the
+existing Store catalog entitlement/category/product-limit rules and the
+canonical globally unique SKU constraint; Product, SKU, and row checkpoint are
+one transaction. Imports always create marketplace-hidden drafts, so import
+cannot publish a listing. Formula-leading input is rejected and all generated
+CSV cells are spreadsheet-safe. The merchant workspace supplies responsive
+table/card previews, explicit partial-import behavior, English/Khmer copy,
+permission, timeout, offline, conflict, and recovery states. This package does
+not add a distributed queue or user-requested cancellation: work is scheduled
+by the Commerce process, and an interrupted job is intentionally resumed from
+its durable checkpoint through the retry operation.
+
 #### P4-MER-005 — Unified order operations
 
 Present marketplace, storefront, POS, and invoice orders with channel label,
@@ -745,6 +876,29 @@ and event timeline.
 **Depends on:** P3-ORD-001, P3-COD-001
 **Acceptance:** permitted merchant/staff completes every legal action; high-risk
 actions summarize consequences and require reason/evidence.
+
+**Implemented on `feature/p4-merchant-experience`:** The additive
+`/api/stores/{storeId}/orders` surface returns a Store-scoped, buyer-safe
+operation projection for marketplace, hosted storefront, POS, and
+invoice-linked orders while the existing marketplace-order contract remains
+available for compatibility. Commerce calculates channel, amount due, payment/COD
+facts, fulfillment, immutable item prices, reports, timeline, document links,
+and the exact legal next actions from authoritative rows. Search, channel,
+status, and UTC date filters are server validated. Completed-order contact and
+street data are minimized. Store ownership and staff Orders permission remain
+server enforced; cross-Store detail lookup returns not found. Actions recheck
+the locked order state and optional version, require an idempotency key, and
+retain the existing COD transaction rules. Failure, return, and complaint
+events do not infer a payment or refund. The merchant UI consolidates the
+previous Website and marketplace screens into responsive table/card and detail
+views with English/Khmer copy, semantic filters, focus-visible controls,
+high-risk confirmation, and forbidden/offline/timeout/conflict recovery. The
+old `/marketplace-orders` UI URL safely redirects to `/orders`.
+
+**Deferred:** evidence upload/storage, carrier integrations, and non-COD
+payment/refund execution remain separate domain packages. Existing evidence
+metadata is shown as a count; P4-MER-005 does not invent a document store or
+execute external refunds.
 
 ### Buyer experience packages
 

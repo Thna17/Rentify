@@ -24,6 +24,7 @@ router.get('/public', controller.listPublicStores);
 router.get('/public/:storeId', controller.getPublicStore);
 router.use(verifyToken);
 router.get('/mine', controller.getOwnStore);
+router.get('/mine/launch-checklist', controller.getLaunchChecklist);
 router.get('/mine/entitlements', controller.getOwnStoreEntitlements);
 router.post('/', controller.createStore);
 router.patch('/mine', controller.updateOwnStore);

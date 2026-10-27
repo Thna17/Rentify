@@ -38,6 +38,12 @@ router.get('/stores/:storeId/marketplace-delivery',
   createRequireStoreAccess({ permissions: ['orders', 'manage_settings'] }), controller.getDeliveryPolicy);
 router.put('/stores/:storeId/marketplace-delivery',
   createRequireStoreAccess({ permissions: ['manage_settings'] }), controller.setDeliveryPolicy);
+router.get('/stores/:storeId/orders',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.merchantOrders);
+router.get('/stores/:storeId/orders/:orderId',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.merchantOrder);
+router.post('/stores/:storeId/orders/:orderId/actions/:action',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.merchantOrderAction);
 router.get('/stores/:storeId/marketplace-orders',
   createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.sellerOrders);
 router.get('/stores/:storeId/marketplace-orders/:orderId',

@@ -1,951 +1,187 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-  AUTH_URL,
-  DASHBOARD_URL,
-  ECOMMERCE_API_ROOT,
-  HOSTED_STOREFRONT_DOMAIN,
-  MARKETPLACE_URL,
-  RENTIFY_API_BASE,
-} from '@rentify/shared/config/urls';
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  CheckCircle2,
-  Copy,
-  ExternalLink,
-  Globe,
-  ImagePlus,
-  LayoutDashboard,
-  Package,
-  ShoppingBag,
-  Sparkles,
-  Store,
-  UserCheck,
-  Wallet,
-} from 'lucide-react';
+import { AUTH_URL, DASHBOARD_URL, MARKETPLACE_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, CircleAlert, ExternalLink, Globe2, LayoutDashboard, LoaderCircle, MonitorSmartphone, RefreshCw, ShieldCheck, ShoppingBag, Store, WifiOff } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { ONBOARDING_PATHS, ONBOARDING_STORAGE_KEY, STEPS, classifyOnboardingError, completionState, deriveResumeStep, emitOnboardingEvent, safeDraft } from './onboardingState';
+import { startSellingCopy } from './startSellingCopy';
 
 const storeUrl = `${RENTIFY_API_BASE}/api/stores`;
-const authMeUrl = `${RENTIFY_API_BASE}/api/auth/me`;
-const STORAGE_KEY = 'rentify-unified-onboarding-draft';
+const requestTimeout = 12000;
+const inputClass = 'mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 disabled:bg-slate-100';
+const primaryClass = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-60';
+const secondaryClass = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200';
 
-const slugify = (value) =>
-  String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '') || 'your-store';
-
-const STEPS = [
-  { id: 1, title: 'Register', subtitle: 'One Rentify account', icon: UserCheck },
-  { id: 2, title: 'Create store', subtitle: 'Name + main category', icon: Store },
-  { id: 3, title: 'Add first product', subtitle: 'One shared catalog', icon: Package },
-  { id: 4, title: 'Live on Marketplace', subtitle: 'Upgrade when ready', icon: Sparkles },
-];
-
-export default function StartSelling() {
-  const [searchParams] = useSearchParams();
-  const requestedPlan = searchParams.get('plan') || 'starter';
-  const fileInputRef = useRef(null);
-
-  const [loadingInit, setLoadingInit] = useState(true);
-  const [user, setUser] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [existingStore, setExistingStore] = useState(null);
-  const [currentStep, setCurrentStep] = useState(1);
-
-  // Step 2: Store state
-  const [name, setName] = useState('');
-  const [primaryCategory, setPrimaryCategory] = useState('');
-  const [submittingStore, setSubmittingStore] = useState(false);
-
-  // Step 3: First product state
-  const [productName, setProductName] = useState('');
-  const [productPrice, setProductPrice] = useState('');
-  const [productStock, setProductStock] = useState('10');
-  const [productDescription, setProductDescription] = useState('');
-  const [productImageFile, setProductImageFile] = useState(null);
-  const [productImagePreview, setProductImagePreview] = useState('');
-  const [submittingProduct, setSubmittingProduct] = useState(false);
-  const [createdProduct, setCreatedProduct] = useState(null);
-
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('error');
-
-  // Restore saved draft if returning from Auth
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.name) setName(parsed.name);
-        if (parsed.primaryCategory) setPrimaryCategory(parsed.primaryCategory);
-      }
-    } catch {
-      // ignore storage errors
+async function request(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), requestTimeout);
+  try {
+    const response = await fetch(url, { credentials: 'include', ...options, signal: controller.signal, headers: options.body ? { 'Content-Type': 'application/json', ...options.headers } : options.headers });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(body.message || body.error || 'Request failed');
+      error.status = response.status;
+      throw error;
     }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      fetch(`${storeUrl}/categories`)
-        .then((res) => (res.ok ? res.json() : { data: [] }))
-        .catch(() => ({ data: [] })),
-      fetch(authMeUrl, { credentials: 'include' })
-        .then((res) => (res.ok ? res.json() : null))
-        .catch(() => null),
-      fetch(`${storeUrl}/mine`, { credentials: 'include' })
-        .then((res) => (res.ok ? res.json() : null))
-        .catch(() => null),
-    ])
-      .then(([categoryResult, authResult, storeResult]) => {
-        if (!active) return;
-        const cats = categoryResult?.data || [];
-        setCategories(cats);
-
-        const resolvedUser = authResult?.user || authResult?.data || null;
-        const resolvedStore = storeResult?.data || null;
-
-        setUser(resolvedUser);
-        setExistingStore(resolvedStore);
-
-        if (resolvedStore) {
-          setName(resolvedStore.name || '');
-          setPrimaryCategory(resolvedStore.primaryCategory || cats[0] || '');
-          setCurrentStep(3);
-        } else if (resolvedUser) {
-          setCurrentStep(2);
-        } else {
-          setCurrentStep(1);
-        }
-      })
-      .finally(() => {
-        if (active) setLoadingInit(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const saveDraftForAuth = () => {
-    try {
-      sessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ name, primaryCategory })
-      );
-    } catch {
-      // ignore
-    }
-  };
-
-  const buildAuthRedirectUrl = (mode = 'register') => {
-    const returnUrl = typeof window !== 'undefined' ? window.location.href : '/start';
-    const path = mode === 'login' ? 'login' : 'register';
-    return `${AUTH_URL}/${path}?returnUrl=${encodeURIComponent(returnUrl)}`;
-  };
-
-  async function handleCreateStore(event) {
-    event.preventDefault();
-    setSubmittingStore(true);
-    setMessage('');
-
-    try {
-      const response = await fetch(storeUrl, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          primaryCategory,
-          marketplaceEnabled: true,
-        }),
-      });
-
-      if (response.status === 401) {
-        saveDraftForAuth();
-        setMessageType('info');
-        setMessage('Please register or sign in to create your store. Redirecting you now…');
-        window.location.assign(buildAuthRedirectUrl('register'));
-        return;
-      }
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || result.error || 'Could not create your Store');
-      }
-
-      const createdStore = result.data || result;
-      setExistingStore(createdStore);
-      sessionStorage.removeItem(STORAGE_KEY);
-      setCurrentStep(3);
-    } catch (error) {
-      setMessageType('error');
-      setMessage(error.message || 'Could not create your Store');
-    } finally {
-      setSubmittingStore(false);
-    }
+    return body;
+  } finally {
+    window.clearTimeout(timeout);
   }
-
-  const handleImageSelect = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setProductImageFile(file);
-    setProductImagePreview(URL.createObjectURL(file));
-  };
-
-  async function handleCreateFirstProduct(event) {
-    event.preventDefault();
-    if (!existingStore?.id) return;
-
-    setSubmittingProduct(true);
-    setMessage('');
-
-    try {
-      let uploadedImages = [];
-      if (productImageFile) {
-        const formData = new FormData();
-        formData.append('images', productImageFile);
-        const uploadRes = await fetch(`${storeUrl}/${existingStore.id}/product-images`, {
-          method: 'POST',
-          credentials: 'include',
-          body: formData,
-        });
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          if (Array.isArray(uploadData.images)) {
-            uploadedImages = uploadData.images
-              .filter((img) => img?.url)
-              .map((img) => ({ url: img.url }));
-          }
-        }
-      }
-
-      const productRes = await fetch(
-        `${ECOMMERCE_API_ROOT}/api/stores/${existingStore.id}/products`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: productName.trim(),
-            price: Number(productPrice),
-            stockQuantity: Math.max(1, parseInt(productStock, 10) || 1),
-            marketplaceCategory:
-              existingStore.primaryCategory || primaryCategory || categories[0] || 'Other',
-            description:
-              productDescription.trim() ||
-              `${productName.trim()} from ${existingStore.name}`,
-            images: uploadedImages,
-            status: 'active',
-            marketplaceVisibility: true,
-          }),
-        }
-      );
-
-      const productData = await productRes.json();
-      if (!productRes.ok) {
-        throw new Error(
-          productData.error || productData.message || 'Could not create product'
-        );
-      }
-
-      setCreatedProduct(productData);
-      setCurrentStep(4);
-    } catch (error) {
-      setMessageType('error');
-      setMessage(error.message || 'Could not add product. You can also skip and add products in your dashboard.');
-    } finally {
-      setSubmittingProduct(false);
-    }
-  }
-
-  const rawStoreSlug = String(existingStore?.slug || '').trim();
-  const isAutoUuidSlug = /^store-[0-9a-f-]{20,}$/i.test(rawStoreSlug);
-  const storeSlug = slugify(
-    (!isAutoUuidSlug && rawStoreSlug) || existingStore?.name || name
-  );
-  const storefrontDomain =
-    existingStore?.websiteDomain ||
-    `${storeSlug}.${HOSTED_STOREFRONT_DOMAIN || 'mekhla.digital'}`;
-  const posUrl = DASHBOARD_URL.includes('mekhla.digital')
-    ? 'https://rentify-pos.mekhla.digital'
-    : 'http://localhost:4401';
-
-  const marketplaceBase = (MARKETPLACE_URL || 'https://rentify-market.mekhla.digital').replace(/\/+$/, '');
-  const marketplaceStoreSlug = existingStore?.id || (!isAutoUuidSlug && rawStoreSlug) || storeSlug;
-  const marketplaceStoreUrl = `${marketplaceBase}/stores/${marketplaceStoreSlug}`;
-  const marketplaceDisplayUrl = `${marketplaceBase.replace(/^https?:\/\//, '')}/stores/${marketplaceStoreSlug}`;
-
-  const [selectedChannel, setSelectedChannel] = useState('marketplace');
-  const [copiedMarketplace, setCopiedMarketplace] = useState(false);
-
-  const handleCopyMarketplaceUrl = (e) => {
-    e.stopPropagation();
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(marketplaceStoreUrl);
-      setCopiedMarketplace(true);
-      setTimeout(() => setCopiedMarketplace(false), 2000);
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#f8fafc_0%,#eff6ff_55%,#f0fdfa_100%)] text-slate-900">
-      {/* Top Bar */}
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 text-white shadow-sm">
-              <Sparkles className="h-4.5 w-4.5" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              Rentify
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-3 text-sm">
-            {user ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {user.email || user.username || 'Signed in'}
-              </span>
-            ) : (
-              <a
-                href={buildAuthRedirectUrl('login')}
-                onClick={saveDraftForAuth}
-                className="font-medium text-slate-600 hover:text-blue-600"
-              >
-                Sign in
-              </a>
-            )}
-            {existingStore && (
-              <a
-                href={`${DASHBOARD_URL}/overview`}
-                className="rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
-              >
-                Dashboard
-              </a>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 md:py-14">
-        {/* Hero Header */}
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
-            One unified path for every seller
-          </span>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
-            Start selling in minutes
-          </h1>
-          <p className="mt-2.5 text-base text-slate-600">
-            One Rentify account and one catalog. Start free on Rentify Marketplace, then unlock your own website and POS whenever you’re ready.
-          </p>
-        </div>
-
-        {/* 4-Step Unified Stepper */}
-        <nav aria-label="Onboarding progress" className="mt-8">
-          <ol className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {STEPS.map((step) => {
-              const Icon = step.icon;
-              const isCompleted =
-                step.id < currentStep ||
-                (step.id === 1 && Boolean(user || existingStore)) ||
-                (step.id === 2 && Boolean(existingStore));
-              const isCurrent = step.id === currentStep;
-
-              return (
-                <li
-                  key={step.id}
-                  onClick={() => {
-                    if (step.id === 1 && !user && !existingStore) setCurrentStep(1);
-                    if (step.id === 2 && !existingStore) setCurrentStep(2);
-                    if (step.id === 3 && existingStore) setCurrentStep(3);
-                    if (step.id === 4 && existingStore) setCurrentStep(4);
-                  }}
-                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3.5 transition-all ${
-                    isCurrent
-                      ? 'border-blue-600 bg-white shadow-md ring-2 ring-blue-600/15'
-                      : isCompleted
-                      ? 'border-emerald-200 bg-emerald-50/60'
-                      : 'border-slate-200 bg-white/70 opacity-75'
-                  }`}
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
-                      isCompleted
-                        ? 'bg-emerald-600 text-white'
-                        : isCurrent
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {isCompleted ? <Check className="h-4 w-4" /> : step.id}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Step {step.id}
-                    </p>
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      {step.title}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-
-        {message && (
-          <div
-            role="alert"
-            className={`mt-6 rounded-2xl border p-4 text-sm font-medium ${
-              messageType === 'info'
-                ? 'border-blue-200 bg-blue-50 text-blue-900'
-                : 'border-amber-200 bg-amber-50 text-amber-900'
-            }`}
-          >
-            {message}
-          </div>
-        )}
-
-        {/* Main Step Card */}
-        <div className="mt-8">
-          {loadingInit ? (
-            <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              <p className="mt-3 text-sm text-slate-500">Preparing your onboarding workspace…</p>
-            </div>
-          ) : currentStep === 1 && !user && !existingStore ? (
-            /* STEP 1: REGISTER & STORE DETAILS */
-            <div className="grid gap-6 md:grid-cols-[1.15fr_0.85fr]">
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                  Step 1 & 2 • Quick Setup
-                </div>
-                <h2 className="mt-3 text-2xl font-bold text-slate-900">
-                  Create your account & store
-                </h2>
-                <p className="mt-1.5 text-sm text-slate-600">
-                  Tell us your store name and main category, then register or sign in to continue.
-                </p>
-
-                <form onSubmit={handleCreateStore} className="mt-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-800">
-                      Store name
-                      <input
-                        required
-                        maxLength={120}
-                        placeholder="e.g. BKK Coffee & Roastery"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                      />
-                    </label>
-                    {name.trim() && (
-                      <p className="mt-1.5 text-xs text-slate-500">
-                        Reserved storefront address:{' '}
-                        <span className="font-mono font-medium text-blue-600">
-                          {slugify(name)}.{HOSTED_STOREFRONT_DOMAIN || 'mekhla.digital'}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-800">
-                      Main store category
-                      <select
-                        required
-                        value={primaryCategory}
-                        onChange={(e) => setPrimaryCategory(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                      >
-                        <option value="">Choose your main category</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="pt-2 flex flex-col gap-3 sm:flex-row">
-                    <a
-                      href={buildAuthRedirectUrl('register')}
-                      onClick={saveDraftForAuth}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                    >
-                      1. Register Free Account
-                      <ArrowRight className="h-4 w-4" />
-                    </a>
-                    <a
-                      href={buildAuthRedirectUrl('login')}
-                      onClick={saveDraftForAuth}
-                      className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Sign In
-                    </a>
-                  </div>
-                </form>
-              </section>
-
-              <aside className="rounded-3xl border border-slate-200 bg-slate-900 p-6 text-white shadow-sm sm:p-8 flex flex-col justify-between">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-teal-300">
-                    How it works
-                  </span>
-                  <h3 className="mt-3 text-xl font-bold">
-                    No need to choose between Storefront or Marketplace at signup
-                  </h3>
-                  <ul className="mt-5 space-y-3.5 text-sm text-slate-300">
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
-                      <span>
-                        <strong className="text-white">1. Register</strong> — one account for Marketplace, Storefront, and POS.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
-                      <span>
-                        <strong className="text-white">2. Create store</strong> — just your store name and main category.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
-                      <span>
-                        <strong className="text-white">3. Add first product</strong> — one shared catalog and inventory.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
-                      <span>
-                        <strong className="text-white">4. Live on Rentify Marketplace 🎉</strong> — start selling for $0/mo.
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-6 rounded-2xl bg-white/10 p-4 text-xs text-slate-200">
-                  <p className="font-semibold text-white">5. Upgrade from your dashboard when ready:</p>
-                  <p className="mt-1">
-                    Pick a website template or open POS at your counter anytime — both unlock Starter with a 14-day free trial.
-                  </p>
-                </div>
-              </aside>
-            </div>
-          ) : currentStep <= 2 && !existingStore ? (
-            /* STEP 2: CREATE STORE (AUTHENTICATED) */
-            <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                Step 2 of 4 • Create Store
-              </div>
-              <h2 className="mt-3 text-2xl font-bold text-slate-900">
-                Name your store & pick a main category
-              </h2>
-              <p className="mt-1.5 text-sm text-slate-600">
-                Your store starts on the Free plan ($0/mo) with one unified catalog.
-              </p>
-
-              <form onSubmit={handleCreateStore} className="mt-6 space-y-5">
-                <label className="block text-sm font-semibold text-slate-800">
-                  Store name
-                  <input
-                    required
-                    maxLength={120}
-                    placeholder="e.g. Khmer Artisan Market"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                  />
-                </label>
-
-                <label className="block text-sm font-semibold text-slate-800">
-                  Primary category
-                  <select
-                    required
-                    value={primaryCategory}
-                    onChange={(event) => setPrimaryCategory(event.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                  >
-                    <option value="">Choose a category</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <button
-                  type="submit"
-                  disabled={submittingStore || !categories.length}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {submittingStore ? 'Creating your Store…' : 'Create Store & Continue'}
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </form>
-            </section>
-          ) : currentStep === 3 && existingStore ? (
-            /* STEP 3: ADD FIRST PRODUCT */
-            <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                  Step 3 of 4 • Add First Product
-                </span>
-                <span className="text-xs font-medium text-slate-500">
-                  Store: <strong className="text-slate-800">{existingStore.name}</strong>
-                </span>
-              </div>
-
-              <h2 className="mt-3 text-2xl font-bold text-slate-900">
-                Add your first product
-              </h2>
-              <p className="mt-1.5 text-sm text-slate-600">
-                Products belong to your store catalog and automatically sync across Rentify Marketplace, your future storefront, and POS.
-              </p>
-
-              <form onSubmit={handleCreateFirstProduct} className="mt-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-800">
-                    Product name
-                    <input
-                      required
-                      maxLength={200}
-                      placeholder="e.g. Handwoven Silk Scarf"
-                      value={productName}
-                      onChange={(e) => setProductName(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                    />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className="block text-sm font-semibold text-slate-800">
-                    Price (USD)
-                    <input
-                      required
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="15.00"
-                      value={productPrice}
-                      onChange={(e) => setProductPrice(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                    />
-                  </label>
-
-                  <label className="block text-sm font-semibold text-slate-800">
-                    Available stock
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={productStock}
-                      onChange={(e) => setProductStock(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                    />
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-800">
-                    Short description (optional)
-                    <textarea
-                      rows={2}
-                      placeholder="Describe your item for shoppers…"
-                      value={productDescription}
-                      onChange={(e) => setProductDescription(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                    />
-                  </label>
-                </div>
-
-                <div>
-                  <span className="block text-sm font-semibold text-slate-800">
-                    Product photo (optional)
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="mt-1.5 flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-slate-300 p-3 text-left hover:border-blue-500 hover:bg-blue-50/40"
-                  >
-                    {productImagePreview ? (
-                      <img
-                        src={productImagePreview}
-                        alt="Product preview"
-                        className="h-12 w-12 rounded-lg object-cover border"
-                      />
-                    ) : (
-                      <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                        <ImagePlus className="h-5 w-5" />
-                      </span>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">
-                        {productImagePreview ? 'Change product photo' : 'Upload a product photo'}
-                      </p>
-                      <p className="text-xs text-slate-500">PNG, JPG, or WebP</p>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="pt-3 flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="submit"
-                    disabled={submittingProduct}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {submittingProduct ? 'Publishing product…' : 'Save Product & Go Live'}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(4)}
-                    className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Skip for now
-                  </button>
-                </div>
-              </form>
-            </section>
-          ) : (
-            /* STEP 4: YOU'RE LIVE ON RENTIFY MARKETPLACE + STEP 5 DASHBOARD CHECKLIST */
-            <div className="space-y-6">
-              <section className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm sm:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Step 4 Complete
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                    Current Plan: Free ($0/mo)
-                  </span>
-                </div>
-
-                <h2 className="mt-4 text-2xl font-extrabold text-slate-950 sm:text-3xl">
-                  You’re live on Rentify Marketplace 🎉{' '}
-                  <span className="text-base font-medium text-slate-500">
-                    (after seller approval)
-                  </span>
-                </h2>
-                <p className="mt-2 text-slate-600">
-                  Your store <strong>{existingStore?.name}</strong> ({existingStore?.primaryCategory}) is set up with one unified catalog
-                  {createdProduct ? ` and your first product "${createdProduct.name}" is saved` : ''}.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <a
-                    href={`${DASHBOARD_URL}/overview`}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                  >
-                    <LayoutDashboard className="h-4 w-4" />
-                    Open Merchant Dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                  <a
-                    href={marketplaceStoreUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-400 px-5 py-3.5 text-sm font-bold text-amber-950 shadow-sm hover:bg-amber-300"
-                  >
-                    <ShoppingBag className="h-4 w-4 text-amber-950" />
-                    View Shop on Marketplace
-                    <ArrowUpRight className="h-4 w-4 text-amber-950" />
-                  </a>
-                  <Link
-                    to={`/onboarding/${requestedPlan}?step=template`}
-                    className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/70 px-5 py-3.5 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                  >
-                    <Globe className="h-4 w-4" />
-                    Get Your Own Website (14-Day Free Trial)
-                  </Link>
-                </div>
-              </section>
-
-              {/* Step 5: Dashboard Checklist Preview */}
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
-                      Step 5 • Dashboard Checklist
-                    </p>
-                    <h3 className="mt-1 text-xl font-bold text-slate-900">
-                      Upgrade when ready
-                    </h3>
-                  </div>
-                  <span className="rounded-full bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
-                    Both unlock Starter (≈$5/mo) • 14-day free trial
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <div
-                    onClick={() => setSelectedChannel('marketplace')}
-                    className={`cursor-pointer rounded-2xl border p-4 transition-all ${
-                      selectedChannel === 'marketplace'
-                        ? 'border-emerald-300 bg-emerald-50/70 shadow-sm ring-2 ring-emerald-500/20'
-                        : 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/70'
-                    }`}
-                  >
-                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                      <div className="flex items-start gap-3">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white">
-                          <Check className="h-4 w-4" />
-                        </span>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900">
-                              Store and one catalog ({existingStore?.name})
-                            </p>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                              <ShoppingBag className="h-3 w-3 text-emerald-700" />
-                              Active Channel
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-600">
-                            Sell on Rentify Marketplace • Commission only on marketplace orders
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-semibold text-emerald-700">Included in Free</span>
-                        <a
-                          href={marketplaceStoreUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-400 px-3.5 py-2 text-xs font-bold text-amber-950 shadow-sm transition-all hover:bg-amber-300"
-                        >
-                          <ShoppingBag className="h-3.5 w-3.5 text-amber-950" />
-                          View on Marketplace
-                          <ArrowUpRight className="h-3.5 w-3.5 text-amber-950" />
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Dedicated shop link box when selected */}
-                    {selectedChannel === 'marketplace' && (
-                      <div className="mt-3.5 rounded-xl border border-amber-200/90 bg-white/95 p-3.5 shadow-xs">
-                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="min-w-0">
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-800">
-                              <ShoppingBag className="h-3 w-3 text-amber-600" />
-                              Your Shop on Rentify Marketplace
-                            </span>
-                            <a
-                              href={marketplaceStoreUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="mt-0.5 block truncate font-mono text-xs font-semibold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
-                            >
-                              {marketplaceDisplayUrl}
-                            </a>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={handleCopyMarketplaceUrl}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                            >
-                              {copiedMarketplace ? (
-                                <>
-                                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                  <span className="font-semibold text-emerald-700">Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-3.5 w-3.5 text-slate-500" />
-                                  <span>Copy Link</span>
-                                </>
-                              )}
-                            </button>
-                            <a
-                              href={marketplaceStoreUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-amber-400"
-                            >
-                              <span>Open Shop Page</span>
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 bg-white text-transparent">
-                        <Check className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          Get your own website → pick template → live on{' '}
-                          <span className="font-mono text-blue-600">{storefrontDomain}</span>
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Unlocks Starter (14-day free trial) • Uses your same store catalog
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      to={`/onboarding/${requestedPlan}?step=template`}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800"
-                    >
-                      Pick Template
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-
-                  <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 bg-white text-transparent">
-                        <Check className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          Sell at your counter → open POS
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Unlocks Starter (14-day free trial) • Instant KHQR & cash checkout synced with your inventory
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={posUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                    >
-                      <Wallet className="h-3.5 w-3.5" />
-                      Open POS
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-        </div>
-      </div>
-    </main>
-  );
 }
 
+function loadDraft() {
+  try { return safeDraft(JSON.parse(localStorage.getItem(ONBOARDING_STORAGE_KEY) || '{}')); }
+  catch { return safeDraft({}); }
+}
+
+function StepIndicator({ current, copy, hasWebsitePath }) {
+  const steps = [[STEPS.ACCOUNT, copy.stepAccount], [STEPS.CONTACT, copy.stepContact], [STEPS.PATH, copy.stepPath], [STEPS.DETAILS, copy.stepDetails], ...(hasWebsitePath ? [[STEPS.TEMPLATE, copy.stepTemplate]] : []), [STEPS.COMPLETE, copy.stepComplete]];
+  const currentIndex = Math.max(0, steps.findIndex(([id]) => id === current));
+  return <nav aria-label={copy.progress} className="overflow-x-auto pb-2"><ol className="flex min-w-max items-center gap-2 text-sm">{steps.map(([id, label], index) => <li key={id} className="flex items-center gap-2"><span aria-current={id === current ? 'step' : undefined} className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3 font-medium ${id === current ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : index < currentIndex ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-500'}`}>{index < currentIndex ? <Check aria-hidden="true" className="h-4 w-4" /> : <span aria-hidden="true">{index + 1}</span>}{label}</span>{index < steps.length - 1 && <span aria-hidden="true" className="h-px w-4 bg-slate-300" />}</li>)}</ol></nav>;
+}
+
+function ErrorPanel({ kind, copy, onRetry }) {
+  const Icon = kind === 'offline' ? WifiOff : CircleAlert;
+  return <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-950"><div className="flex gap-3"><Icon aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" /><div><h2 className="font-semibold">{copy.errorTitle}</h2><p className="mt-1 text-sm leading-6">{copy[kind] || copy.server}</p></div></div>{onRetry && <button type="button" className={`${secondaryClass} mt-4 border-rose-300`} onClick={onRetry}><RefreshCw aria-hidden="true" className="h-4 w-4" />{copy.retry}</button>}</div>;
+}
+
+export default function StartSelling() {
+  const { language, toggleLanguage } = useLanguage();
+  const copy = startSellingCopy[language] || startSellingCopy.EN;
+  const [searchParams] = useSearchParams();
+  const requestedPlan = searchParams.get('plan') || 'starter';
+  const submitLock = useRef(false);
+  const [draft, setDraft] = useState(loadDraft);
+  const [user, setUser] = useState(null);
+  const [storeData, setStoreData] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [step, setStep] = useState(STEPS.ACCOUNT);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorKind, setErrorKind] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const applyAuthoritativeState = useCallback((resolvedUser, resolvedStore, currentDraft) => {
+    setUser(resolvedUser);
+    setStoreData(resolvedStore);
+    setDraft((previous) => safeDraft({ ...previous, ...currentDraft, name: resolvedStore?.name || currentDraft.name || previous.name, primaryCategory: resolvedStore?.primaryCategory || currentDraft.primaryCategory || previous.primaryCategory, email: currentDraft.email || resolvedUser?.email || previous.email, contact: currentDraft.contact || resolvedUser?.phoneNumber || previous.contact }));
+    const next = deriveResumeStep({ user: resolvedUser, store: resolvedStore, draft: currentDraft });
+    setStep(next);
+    emitOnboardingEvent('onboarding_resumed', { step: next, path: currentDraft.path || 'undecided', hasStore: Boolean(resolvedStore), hasWebsite: Boolean(resolvedStore?.websiteId) });
+  }, []);
+
+  const refresh = useCallback(async () => {
+    setLoading(true); setErrorKind('');
+    const currentDraft = loadDraft();
+    try {
+      const [categoryResult, authResult, storeResult, templateResult, packageResult] = await Promise.all([
+        request(`${storeUrl}/categories`),
+        request(`${RENTIFY_API_BASE}/api/auth/me`).catch((error) => error.status === 401 ? null : Promise.reject(error)),
+        request(`${storeUrl}/mine`).catch((error) => [401, 404].includes(error.status) ? null : Promise.reject(error)),
+        request(`${RENTIFY_API_BASE}/templates`).catch(() => []),
+        request(`${RENTIFY_API_BASE}/api/packages`).catch(() => []),
+      ]);
+      const resolvedUser = authResult?.user || authResult?.data || null;
+      const resolvedStore = storeResult?.data || null;
+      setCategories(categoryResult?.data || []);
+      setTemplates(Array.isArray(templateResult) ? templateResult : templateResult?.data || []);
+      setPackages(Array.isArray(packageResult) ? packageResult : packageResult?.data || []);
+      applyAuthoritativeState(resolvedUser, resolvedStore, currentDraft);
+    } catch (error) { setErrorKind(classifyOnboardingError(error, navigator.onLine)); }
+    finally { setLoading(false); }
+  }, [applyAuthoritativeState]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { document.documentElement.lang = language === 'KH' ? 'km' : 'en'; }, [language]);
+  useEffect(() => { try { localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({ ...draft, step })); } catch { /* storage may be disabled */ } }, [draft, step]);
+
+  const updateDraft = (changes) => setDraft((value) => safeDraft({ ...value, ...changes }));
+  const authUrl = (mode) => `${AUTH_URL}/${mode}?returnUrl=${encodeURIComponent(window.location.href)}`;
+  const verifyUrl = `${AUTH_URL}/verify-email?returnUrl=${encodeURIComponent(window.location.href)}${user?.email ? `&email=${encodeURIComponent(user.email)}` : ''}${user?.phoneNumber ? `&phone=${encodeURIComponent(user.phoneNumber)}` : ''}`;
+  const selectedPackage = useMemo(() => packages.find((item) => item.id === draft.packageId) || packages.find((item) => String(item.name || '').toLowerCase() === requestedPlan.toLowerCase()) || packages.find((item) => String(item.name || '').toLowerCase() === 'starter') || packages[0], [packages, draft.packageId, requestedPlan]);
+
+  const choosePath = (path) => { updateDraft({ path, step: STEPS.DETAILS }); setStep(STEPS.DETAILS); emitOnboardingEvent('onboarding_path_selected', { path, step: STEPS.DETAILS }); };
+  const validateDetails = () => {
+    const errors = {};
+    if (!draft.name.trim()) errors.name = copy.required;
+    if (!draft.primaryCategory) errors.primaryCategory = copy.required;
+    if (draft.path === ONBOARDING_PATHS.STOREFRONT) {
+      if (!draft.email.trim()) errors.email = copy.required;
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) errors.email = copy.invalidEmail;
+      if (!draft.contact.trim()) errors.contact = copy.required;
+    }
+    setFieldErrors(errors); return Object.keys(errors).length === 0;
+  };
+
+  const saveStore = async (event) => {
+    event.preventDefault();
+    if (!validateDetails() || submitLock.current) return;
+    submitLock.current = true; setSubmitting(true); setErrorKind('');
+    try {
+      const result = await request(storeData ? `${storeUrl}/mine` : storeUrl, { method: storeData ? 'PATCH' : 'POST', body: JSON.stringify(storeData ? { primaryCategory: draft.primaryCategory, marketplaceEnabled: true } : { name: draft.name.trim(), primaryCategory: draft.primaryCategory, marketplaceEnabled: true }) });
+      const savedStore = { ...(storeData || {}), ...(result.data || result) };
+      setStoreData(savedStore);
+      emitOnboardingEvent('onboarding_store_saved', { path: draft.path, step: STEPS.DETAILS, result: storeData ? 'updated' : 'created', hasStore: true });
+      const next = draft.path === ONBOARDING_PATHS.STOREFRONT ? STEPS.TEMPLATE : STEPS.COMPLETE;
+      updateDraft({ step: next }); setStep(next);
+    } catch (error) { const kind = classifyOnboardingError(error, navigator.onLine); setErrorKind(kind); if (kind === 'conflict') await refresh(); }
+    finally { submitLock.current = false; setSubmitting(false); }
+  };
+
+  const createStorefront = async () => {
+    if (!draft.templateId || !selectedPackage?.id || submitLock.current) return;
+    submitLock.current = true; setSubmitting(true); setErrorKind('');
+    try {
+      await request(`${RENTIFY_API_BASE}/api/websites`, { method: 'POST', body: JSON.stringify({ templateId: draft.templateId, packageId: selectedPackage.id, businessData: { name: storeData?.name || draft.name, primaryCategory: storeData?.primaryCategory || draft.primaryCategory, email: draft.email, contact: draft.contact, location: draft.location || undefined } }) });
+      const authoritative = await request(`${storeUrl}/mine`);
+      setStoreData(authoritative.data); updateDraft({ packageId: selectedPackage.id, step: STEPS.COMPLETE }); setStep(STEPS.COMPLETE);
+      emitOnboardingEvent('onboarding_storefront_created', { path: ONBOARDING_PATHS.STOREFRONT, step: STEPS.COMPLETE, result: 'success', hasStore: true, hasWebsite: true });
+    } catch (error) { const kind = classifyOnboardingError(error, navigator.onLine); setErrorKind(kind); if (kind === 'conflict') await refresh(); }
+    finally { submitLock.current = false; setSubmitting(false); }
+  };
+
+  const goBack = () => { const previous = step === STEPS.TEMPLATE ? STEPS.DETAILS : step === STEPS.DETAILS ? STEPS.PATH : STEPS.ACCOUNT; updateDraft({ step: previous }); setStep(previous); };
+  const addStorefront = () => { updateDraft({ path: ONBOARDING_PATHS.STOREFRONT, step: STEPS.TEMPLATE }); setStep(STEPS.TEMPLATE); };
+  const status = completionState(storeData);
+  const statusText = { approval_pending: copy.approvalPending, marketplace_ready: copy.marketReady, storefront_customization: copy.customize, storefront_live: copy.live, needs_changes: copy.needsChanges, suspended: copy.suspended }[status] || copy.approvalPending;
+
+  return <div className={`min-h-screen bg-slate-50 text-slate-950 ${language === 'KH' ? 'font-khmer' : ''}`}>
+    <a href="#onboarding-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:p-3 focus:ring-4 focus:ring-indigo-300">{copy.skip}</a>
+    <header className="border-b border-slate-200 bg-white" role="banner"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8"><Link to="/" className="inline-flex min-h-11 items-center gap-2 rounded-lg font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"><ArrowLeft aria-hidden="true" className="h-4 w-4" />{copy.backHome}</Link><button type="button" onClick={toggleLanguage} className={secondaryClass} aria-label={`Switch language to ${copy.language}`}><Globe2 aria-hidden="true" className="h-4 w-4" />{copy.language}</button></div></header>
+    <main id="onboarding-main" className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-8 lg:py-12">
+      <section aria-labelledby="onboarding-title" className="min-w-0"><p className="text-sm font-bold uppercase tracking-[0.18em] text-indigo-700">{copy.eyebrow}</p><h1 id="onboarding-title" className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{copy.title}</h1><p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">{copy.subtitle}</p><div className="mt-6"><StepIndicator current={step} copy={copy} hasWebsitePath={draft.path === ONBOARDING_PATHS.STOREFRONT || Boolean(storeData?.websiteId)} /></div>
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          {loading ? <div role="status" aria-live="polite" className="flex min-h-64 flex-col items-center justify-center gap-4 text-slate-600"><LoaderCircle aria-hidden="true" className="h-8 w-8 animate-spin motion-reduce:animate-none" /><p>{copy.loading}</p></div> : <>
+            {errorKind && <div className="mb-6"><ErrorPanel kind={errorKind} copy={copy} onRetry={refresh} /></div>}
+            {step === STEPS.ACCOUNT && <div><ShieldCheck aria-hidden="true" className="h-10 w-10 text-indigo-700" /><h2 className="mt-5 text-2xl font-bold">{copy.accountTitle}</h2><p className="mt-3 max-w-2xl leading-7 text-slate-600">{copy.accountBody}</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><a className={primaryClass} href={authUrl('register')}>{copy.register}<ArrowRight aria-hidden="true" className="h-4 w-4" /></a><a className={secondaryClass} href={authUrl('login')}>{copy.signIn}</a></div></div>}
+            {step === STEPS.CONTACT && <div><ShieldCheck aria-hidden="true" className="h-10 w-10 text-indigo-700" /><h2 className="mt-5 text-2xl font-bold">{copy.contactTitle}</h2><p className="mt-3 max-w-2xl leading-7 text-slate-600">{copy.contactBody}</p><div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="font-semibold text-amber-950">{user?.isVerified ? copy.verified : copy.notVerified}</p><p className="mt-1 break-all text-sm text-amber-900">{user?.email || user?.phoneNumber || copy.accountContact}</p></div><div className="mt-8 flex flex-col gap-3 sm:flex-row"><a className={primaryClass} href={verifyUrl}>{copy.verify}<ExternalLink aria-hidden="true" className="h-4 w-4" /></a><button type="button" className={secondaryClass} onClick={refresh}><RefreshCw aria-hidden="true" className="h-4 w-4" />{copy.refresh}</button></div></div>}
+            {step === STEPS.PATH && <div><h2 className="text-2xl font-bold">{copy.pathTitle}</h2><p className="mt-3 leading-7 text-slate-600">{copy.pathBody}</p><div className="mt-7 grid gap-4 md:grid-cols-2"><PathCard icon={ShoppingBag} title={copy.marketTitle} body={copy.marketBody} action={copy.choose} onClick={() => choosePath(ONBOARDING_PATHS.MARKETPLACE)} /><PathCard icon={MonitorSmartphone} title={copy.webTitle} body={copy.webBody} action={copy.choose} badge={copy.recommended} onClick={() => choosePath(ONBOARDING_PATHS.STOREFRONT)} /></div></div>}
+            {step === STEPS.DETAILS && <DetailsForm copy={copy} draft={draft} updateDraft={updateDraft} categories={categories} fieldErrors={fieldErrors} storeData={storeData} submitting={submitting} onSubmit={saveStore} onBack={goBack} />}
+            {step === STEPS.TEMPLATE && <TemplateStep copy={copy} templates={templates} draft={draft} updateDraft={updateDraft} selectedPackage={selectedPackage} submitting={submitting} onBack={goBack} onCreate={createStorefront} />}
+            {step === STEPS.COMPLETE && <Completion copy={copy} storeData={storeData} statusText={statusText} onAddStorefront={addStorefront} />}
+          </>}
+        </div>
+      </section>
+      <aside aria-label={copy.summary} className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-6"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-100 text-indigo-800"><Store aria-hidden="true" className="h-5 w-5" /></span><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Store</p><p className="truncate font-bold">{storeData?.name || draft.name || '—'}</p></div></div><dl className="mt-6 space-y-4 border-t border-slate-200 pt-5 text-sm"><div><dt className="text-slate-500">{copy.category}</dt><dd className="mt-1 font-semibold">{storeData?.primaryCategory || draft.primaryCategory || '—'}</dd></div><div><dt className="text-slate-500">{copy.accountContact}</dt><dd className="mt-1 break-all font-semibold">{user?.email || user?.phoneNumber || '—'}</dd></div></dl><div className="mt-6 rounded-2xl bg-slate-100 p-4 text-sm leading-6 text-slate-700"><CheckCircle2 aria-hidden="true" className="mb-2 h-5 w-5 text-emerald-700" />{copy.serverNote}</div><p aria-live="polite" className="mt-4 text-center text-xs text-slate-500">{copy.saved}</p></aside>
+    </main>
+  </div>;
+}
+
+function PathCard({ icon: Icon, title, body, action, badge, onClick }) {
+  return <button type="button" aria-label={title} onClick={onClick} className="group rounded-2xl border-2 border-slate-200 p-5 text-left transition hover:border-indigo-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"><Icon aria-hidden="true" className="h-8 w-8 text-indigo-700" />{badge && <span className="mt-4 inline-block rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-800">{badge}</span>}<h3 className="mt-3 text-xl font-bold">{title}</h3><p className="mt-2 min-h-20 leading-6 text-slate-600">{body}</p><span className="mt-5 inline-flex items-center gap-2 font-semibold text-indigo-700">{action}<ArrowRight aria-hidden="true" className="h-4 w-4 transition group-hover:translate-x-1 motion-reduce:transform-none" /></span></button>;
+}
+
+function DetailsForm({ copy, draft, updateDraft, categories, fieldErrors, storeData, submitting, onSubmit, onBack }) {
+  const fieldError = (key) => fieldErrors[key] && <span className="mt-2 block text-sm font-semibold text-rose-700">{fieldErrors[key]}</span>;
+  return <form onSubmit={onSubmit} noValidate><h2 className="text-2xl font-bold">{copy.detailsTitle}</h2><p className="mt-3 leading-7 text-slate-600">{copy.detailsBody}</p><div className="mt-7 grid gap-5 sm:grid-cols-2"><label className="font-semibold text-slate-800 sm:col-span-2">{copy.name}<input className={inputClass} value={draft.name} disabled={Boolean(storeData)} onChange={(event) => updateDraft({ name: event.target.value })} aria-invalid={Boolean(fieldErrors.name)} required /><span className="mt-2 block text-sm font-normal text-slate-500">{copy.nameHint}</span>{fieldError('name')}</label><label className="font-semibold text-slate-800 sm:col-span-2">{copy.category}<select className={inputClass} value={draft.primaryCategory} onChange={(event) => updateDraft({ primaryCategory: event.target.value })} aria-invalid={Boolean(fieldErrors.primaryCategory)} required><option value="">{copy.categoryPlaceholder}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select>{fieldError('primaryCategory')}</label>{draft.path === ONBOARDING_PATHS.STOREFRONT && <><label className="font-semibold text-slate-800">{copy.email}<input type="email" autoComplete="email" className={inputClass} value={draft.email} onChange={(event) => updateDraft({ email: event.target.value })} aria-invalid={Boolean(fieldErrors.email)} required />{fieldError('email')}</label><label className="font-semibold text-slate-800">{copy.phone}<input type="tel" autoComplete="tel" className={inputClass} value={draft.contact} onChange={(event) => updateDraft({ contact: event.target.value })} aria-invalid={Boolean(fieldErrors.contact)} required />{fieldError('contact')}</label><label className="font-semibold text-slate-800 sm:col-span-2">{copy.location} <span className="font-normal text-slate-500">({copy.optional})</span><input autoComplete="address-level1" className={inputClass} value={draft.location} onChange={(event) => updateDraft({ location: event.target.value })} /></label><p className="text-sm leading-6 text-slate-500 sm:col-span-2">{copy.contactHint}</p></>}</div><div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"><button type="button" className={secondaryClass} onClick={onBack}><ArrowLeft aria-hidden="true" className="h-4 w-4" />{copy.back}</button><button className={primaryClass} disabled={submitting}>{submitting && <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" />}{submitting ? copy.updating : draft.path === ONBOARDING_PATHS.STOREFRONT ? copy.saveWeb : copy.saveMarket}</button></div></form>;
+}
+
+function TemplateStep({ copy, templates, draft, updateDraft, selectedPackage, submitting, onBack, onCreate }) {
+  return <div><h2 className="text-2xl font-bold">{copy.templateTitle}</h2><p className="mt-3 leading-7 text-slate-600">{copy.templateBody}</p>{templates.length ? <div className="mt-7 grid gap-4 sm:grid-cols-2">{templates.map((template) => { const id = String(template.id ?? template.websiteTemplateId); const chosen = draft.templateId === id; return <button key={id} type="button" aria-pressed={chosen} onClick={() => updateDraft({ templateId: id })} className={`rounded-2xl border-2 p-5 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 ${chosen ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300'}`}><div className="flex items-start justify-between gap-3"><MonitorSmartphone aria-hidden="true" className="h-7 w-7 text-indigo-700" />{chosen && <CheckCircle2 aria-hidden="true" className="h-6 w-6 text-indigo-700" />}</div><h3 className="mt-4 text-lg font-bold">{template.name || template.templateName || `Template ${id}`}</h3><p className="mt-2 text-sm font-semibold text-indigo-700">{chosen ? copy.selected : copy.select}</p></button>; })}</div> : <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-600">{copy.noTemplates}</div>}{selectedPackage && <div className="mt-6 rounded-2xl border border-slate-200 p-4"><p className="text-sm text-slate-500">{copy.trial}</p><p className="mt-1 font-bold">{selectedPackage.name}</p></div>}<div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"><button type="button" className={secondaryClass} onClick={onBack}><ArrowLeft aria-hidden="true" className="h-4 w-4" />{copy.back}</button><button type="button" className={primaryClass} disabled={!draft.templateId || !selectedPackage || submitting} onClick={onCreate}>{submitting && <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" />}{submitting ? copy.creating : copy.launch}</button></div></div>;
+}
+
+function Completion({ copy, storeData, statusText, onAddStorefront }) {
+  return <div><CheckCircle2 aria-hidden="true" className="h-11 w-11 text-emerald-700" /><h2 className="mt-5 text-2xl font-bold">{copy.completeTitle}</h2><p className="mt-3 max-w-2xl leading-7 text-slate-600">{statusText}</p><div className="mt-6 flex flex-wrap gap-2"><span className={`rounded-full px-3 py-1 text-sm font-bold ${storeData?.marketplaceApprovalStatus === 'approved' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-950'}`}>{storeData?.marketplaceApprovalStatus === 'approved' ? copy.approvedBadge : copy.pendingBadge}</span><span className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-900">{storeData?.websiteId ? copy.websiteBadge : copy.noWebsiteBadge}</span></div><div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5"><h3 className="font-bold">{copy.nextTitle}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{copy.addProducts}</p><div className="mt-5 flex flex-col gap-3 sm:flex-row"><a href={DASHBOARD_URL} className={primaryClass}>{copy.dashboard}<LayoutDashboard aria-hidden="true" className="h-4 w-4" /></a><a href={MARKETPLACE_URL} className={secondaryClass}>{copy.marketplace}<ExternalLink aria-hidden="true" className="h-4 w-4" /></a></div></div>{!storeData?.websiteId && <button type="button" className="mt-6 w-full rounded-2xl border-2 border-dashed border-indigo-300 p-5 text-left transition hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200" onClick={onAddStorefront}><span className="font-bold text-indigo-800">{copy.addStorefront}</span><span className="mt-1 block text-sm text-slate-600">{copy.addStorefrontBody}</span></button>}</div>;
+}

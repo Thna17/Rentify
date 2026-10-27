@@ -119,6 +119,25 @@ test('website creation retry reuses the Website and does not create another tria
   assert.deepEqual(calls, ['commit']);
 });
 
+test('concurrent website submission returns the committed Website after a unique race', async (t) => {
+  const { calls, website } = setupCreation(t);
+  let lookup = 0;
+  Website.findOne.mock.mockImplementation(async () => (++lookup === 1 ? null : website));
+  Website.create.mock.mockImplementation(async () => {
+    const error = new Error('duplicate Website');
+    error.name = 'SequelizeUniqueConstraintError';
+    throw error;
+  });
+
+  const result = await websiteService.createWebsiteWithTrial({
+    userId: 'user-1', templateId: 'template-1', packageId: 'package-1', businessData,
+  });
+
+  assert.equal(result, website);
+  assert.deepEqual(calls, ['ensure store', 'rollback']);
+  assert.equal(subscriptionService.createTrialSubscription.mock.callCount(), 0);
+});
+
 test('new and updated website statuses use Commerce-supported values', async (t) => {
   const posted = [];
   const updated = [];

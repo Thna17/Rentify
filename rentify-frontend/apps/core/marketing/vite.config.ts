@@ -67,4 +67,8 @@ export default defineConfig(({ mode }) => ({
   },
      base: './',
   define: vitePublicDefines(mode),
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.{js,jsx,ts,tsx}'],
+  },
 }));

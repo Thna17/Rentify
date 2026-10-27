@@ -158,7 +158,7 @@ exports.createInvoice = async (req, res) => {
 };
 
 exports.createPOSOrder = async (req, res) => {
-  const checkoutKey = req.get('Idempotency-Key') || req.body?.idempotencyKey || req.body?.checkoutKey || null;
+  const checkoutKey = (typeof req.get === 'function' ? req.get('Idempotency-Key') : req.headers?.['idempotency-key']) || req.body?.idempotencyKey || req.body?.checkoutKey || null;
 
   try {
     const rawWebsiteId = req.params.websiteId || req.store?.websiteId;
