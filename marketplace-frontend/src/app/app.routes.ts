@@ -160,6 +160,13 @@ export const routes: Routes = [
     title: 'My orders | Rentify Marketplace',
   },
   {
+    path: 'orders/:id',
+    canActivate: [buyerGuard],
+    loadComponent: () =>
+      import('./pages/order-detail.component').then((m) => m.OrderDetailComponent),
+    title: 'Order Details | Rentify Marketplace',
+  },
+  {
     path: 'my-orders',
     pathMatch: 'full',
     redirectTo: 'orders',

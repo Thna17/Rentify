@@ -1,19 +1,23 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CatalogService } from '../core/catalog/catalog.service';
 import { ProductSort } from '../core/catalog/catalog.models';
+import { SearchTelemetryService } from '../core/telemetry/search-telemetry.service';
+import { SeoService } from '../core/seo/seo.service';
+import { TranslateService } from '../core/i18n/translate.service';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
 
-const SORTS: { value: ProductSort; label: string }[] = [
-  { value: 'featured', label: 'Featured' },
-  { value: 'price-asc', label: 'Price: low to high' },
-  { value: 'price-desc', label: 'Price: high to low' },
-  { value: 'rating', label: 'Top rated' },
-  { value: 'newest', label: 'Newest' },
+const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = [
+  { value: 'featured', labelKey: 'catalog.sortFeatured', defaultLabel: 'Featured' },
+  { value: 'price-asc', labelKey: 'catalog.sortPriceAsc', defaultLabel: 'Price: low to high' },
+  { value: 'price-desc', labelKey: 'catalog.sortPriceDesc', defaultLabel: 'Price: high to low' },
+  { value: 'rating', labelKey: 'catalog.sortRating', defaultLabel: 'Top rated' },
+  { value: 'newest', labelKey: 'catalog.sortNewest', defaultLabel: 'Newest' },
 ];
 
 @Component({
@@ -25,80 +29,80 @@ const SORTS: { value: ProductSort; label: string }[] = [
     FooterComponent,
     IconComponent,
     ProductCardComponent,
+    TranslatePipe,
   ],
   template: `
     <app-navbar />
 
     <header class="container products-head">
       <nav class="crumbs" aria-label="Breadcrumb">
-        <a routerLink="/">Home</a>
+        <a routerLink="/">{{ 'nav.home' | translate }}</a>
         <ui-icon name="chevron-right" [size]="12" />
         @if (categoryName(); as name) {
-          <a routerLink="/products">Products</a>
+          <a routerLink="/products">{{ 'nav.products' | translate }}</a>
           <ui-icon name="chevron-right" [size]="12" />
           <span aria-current="page">{{ name }}</span>
         } @else {
-          <span aria-current="page">Products</span>
+          <span aria-current="page">{{ 'nav.products' | translate }}</span>
         }
       </nav>
       <div class="title-row">
         <h1>{{ heading() }}</h1>
         <span class="total">
-          {{ results().length }} {{ results().length === 1 ? 'product' : 'products' }}
-          @if (search()) { for “{{ search() }}” }
+          {{ results().length }} {{ results().length === 1 ? ('catalog.oneProductCount' | translate) : ('catalog.productsCount' | translate:{ count: results().length }) }}
+          @if (search()) { {{ 'catalog.forSearch' | translate:{ term: search() } }} }
         </span>
       </div>
     </header>
 
     <div class="container toolbar" aria-label="Product filters">
       <button type="button" class="tool filters-btn" [class.active]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">
-        <ui-icon name="filter" [size]="15" /> Filters
+        <ui-icon name="filter" [size]="15" /> {{ 'catalog.filters' | translate }}
         @if (sidebarCount()) { <span class="count">{{ sidebarCount() }}</span> }
       </button>
       <label class="tool select">
         <select [value]="priceBand()" (change)="setPriceBand($event)" aria-label="Price">
-          <option value="">Price</option>
-          <option value="under-5">Under $5</option>
-          <option value="5-10">$5–$10</option>
-          <option value="10-20">$10–$20</option>
-          <option value="over-20">Over $20</option>
+          <option value="">{{ 'catalog.price' | translate }}</option>
+          <option value="under-5">{{ 'catalog.priceUnder5' | translate }}</option>
+          <option value="5-10">{{ 'catalog.price5To10' | translate }}</option>
+          <option value="10-20">{{ 'catalog.price10To20' | translate }}</option>
+          <option value="over-20">{{ 'catalog.priceOver20' | translate }}</option>
         </select>
         <ui-icon name="chevron-down" [size]="14" />
       </label>
       <label class="tool select">
         <select [value]="minRating() ?? ''" (change)="setRating($event)" aria-label="Rating">
-          <option value="">Rating</option>
-          <option value="4.5">4.5 & up</option>
-          <option value="4">4.0 & up</option>
+          <option value="">{{ 'catalog.rating' | translate }}</option>
+          <option value="4.5">{{ 'catalog.rating45' | translate }}</option>
+          <option value="4">{{ 'catalog.rating40' | translate }}</option>
         </select>
         <ui-icon name="chevron-down" [size]="14" />
       </label>
-      <button type="button" class="tool" [class.active]="inStockOnly()" (click)="toggleInStock()">In stock</button>
-      <button type="button" class="tool" [class.active]="onSaleOnly()" (click)="toggleSale()">On sale</button>
+      <button type="button" class="tool" [class.active]="inStockOnly()" (click)="toggleInStock()">{{ 'catalog.inStock' | translate }}</button>
+      <button type="button" class="tool" [class.active]="onSaleOnly()" (click)="toggleSale()">{{ 'catalog.onSaleOnly' | translate }}</button>
       @if (hasFilters()) {
-        <button type="button" class="clear" (click)="clearAll()">Clear all</button>
+        <button type="button" class="clear" (click)="clearAll()">{{ 'catalog.clearAll' | translate }}</button>
       }
       <label class="tool select sort">
-        <span>Sort:</span>
+        <span>{{ 'catalog.sort' | translate }}</span>
         <select [value]="sort()" (change)="setSort($event)" aria-label="Sort">
           @for (option of sorts; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
+            <option [value]="option.value">{{ option.labelKey | translate }}</option>
           }
         </select>
         <ui-icon name="chevron-down" [size]="14" />
       </label>
     </div>
 
-
     <div class="container shop-layout" [class.with-side]="filtersOpen()">
       @if (filtersOpen()) {
         <aside class="side" aria-label="Filters" animate.enter="side-in">
-          <div class="side-head"><ui-icon name="filter" [size]="16" /> Filters</div>
+          <div class="side-head"><ui-icon name="filter" [size]="16" /> {{ 'catalog.filters' | translate }}</div>
 
           <div class="group">
-            <h3>Category</h3>
+            <h3>{{ 'catalog.category' | translate }}</h3>
             <button type="button" class="row" [class.on]="!category()" (click)="setCategory(null)">
-              All <span>{{ countFor({ category: undefined }) }}</span>
+              {{ 'catalog.all' | translate }} <span>{{ countFor({ category: undefined }) }}</span>
             </button>
             @for (cat of categories; track cat.slug) {
               <button type="button" class="row" [class.on]="category() === cat.slug" (click)="setCategory(cat.slug)">
@@ -109,8 +113,8 @@ const SORTS: { value: ProductSort; label: string }[] = [
 
           @if (subcategories().length) {
             <div class="group">
-              <h3>Sub-category</h3>
-              <button type="button" class="row" [class.on]="!subcategory()" (click)="setSub(null)">All</button>
+              <h3>{{ 'catalog.subCategory' | translate }}</h3>
+              <button type="button" class="row" [class.on]="!subcategory()" (click)="setSub(null)">{{ 'catalog.all' | translate }}</button>
               @for (sub of subcategories(); track sub.slug) {
                 <button type="button" class="row" [class.on]="subcategory() === sub.slug" (click)="setSub(sub.slug)">{{ sub.name }}</button>
               }
@@ -118,23 +122,23 @@ const SORTS: { value: ProductSort; label: string }[] = [
           }
 
           <div class="group">
-            <h3>Price</h3>
+            <h3>{{ 'catalog.price' | translate }}</h3>
             @for (b of priceBands; track b.value) {
               <label class="check">
                 <input type="checkbox" [checked]="priceBand() === b.value" (change)="togglePrice(b.value)" />
-                {{ b.label }}
+                {{ b.labelKey | translate }}
               </label>
             }
             <div class="range">
-              <input #min type="number" min="0" placeholder="Min" [value]="minPrice() ?? ''" aria-label="Minimum price" />
+              <input #min type="number" min="0" placeholder="Min" [value]="minPrice() ?? ''" [attr.aria-label]="'catalog.minPrice' | translate" />
               <span>–</span>
-              <input #max type="number" min="0" placeholder="Max" [value]="maxPrice() ?? ''" aria-label="Maximum price" />
-              <button type="button" class="go" (click)="applyRange(min.value, max.value)" aria-label="Apply price"><ui-icon name="arrow-right" [size]="14" /></button>
+              <input #max type="number" min="0" placeholder="Max" [value]="maxPrice() ?? ''" [attr.aria-label]="'catalog.maxPrice' | translate" />
+              <button type="button" class="go" (click)="applyRange(min.value, max.value)" [attr.aria-label]="'catalog.applyPrice' | translate"><ui-icon name="arrow-right" [size]="14" /></button>
             </div>
           </div>
 
           <div class="group">
-            <h3>Rating</h3>
+            <h3>{{ 'catalog.rating' | translate }}</h3>
             @for (r of ratings; track r) {
               <label class="check">
                 <input type="checkbox" [checked]="minRating() === r" (change)="toggleRating(r)" />
@@ -144,13 +148,13 @@ const SORTS: { value: ProductSort; label: string }[] = [
           </div>
 
           <div class="group">
-            <h3>Availability</h3>
-            <label class="check"><input type="checkbox" [checked]="inStockOnly()" (change)="toggleInStock()" /> In stock only</label>
-            <label class="check"><input type="checkbox" [checked]="onSaleOnly()" (change)="toggleSale()" /> On sale</label>
+            <h3>{{ 'catalog.availability' | translate }}</h3>
+            <label class="check"><input type="checkbox" [checked]="inStockOnly()" (change)="toggleInStock()" /> {{ 'catalog.inStockOnly' | translate }}</label>
+            <label class="check"><input type="checkbox" [checked]="onSaleOnly()" (change)="toggleSale()" /> {{ 'catalog.onSaleOnly' | translate }}</label>
           </div>
 
           @if (hasFilters()) {
-            <button type="button" class="side-clear" (click)="clearAll()">Clear all filters</button>
+            <button type="button" class="side-clear" (click)="clearAll()">{{ 'catalog.clearAll' | translate }}</button>
           }
         </aside>
       }
@@ -159,16 +163,16 @@ const SORTS: { value: ProductSort; label: string }[] = [
       @if (!catalog.loaded()) {
         <div class="catalog-state" aria-live="polite">
           <ui-icon class="spin" name="loader" [size]="28" />
-          <h2>Loading products</h2>
-          <p>We’re checking the latest products and availability.</p>
+          <h2>{{ 'state.loadingProducts' | translate }}</h2>
+          <p>{{ 'state.checkingCatalog' | translate }}</p>
         </div>
       } @else if (catalog.productError()) {
         <div class="catalog-state error-state" role="alert">
           <div class="state-icon"><ui-icon name="alert-circle" [size]="30" /></div>
-          <h2>We couldn’t load the marketplace</h2>
+          <h2>{{ 'state.couldNotLoad' | translate }}</h2>
           <p>{{ catalog.productError() }}</p>
           <button class="btn btn-primary" type="button" (click)="catalog.load()">
-            Try again
+            {{ 'state.tryAgain' | translate }}
           </button>
         </div>
       } @else if (results().length) {
@@ -178,17 +182,37 @@ const SORTS: { value: ProductSort; label: string }[] = [
           }
         </div>
       } @else {
-        <div class="no-results">
+        <div class="no-results" role="region" [attr.aria-label]="'search.zeroResultTitle' | translate">
           <div class="empty-image img-placeholder">
             <ui-icon name="search" [size]="34" />
           </div>
-          <h2>No products match that search</h2>
+          <h2>{{ 'search.zeroResultTitle' | translate }}</h2>
           <p>
-            Try a different keyword, or clear the filters to see everything we
-            have.
+            {{ 'search.zeroResultBody' | translate }}
           </p>
+
+          <div class="zero-recovery-block">
+            <span class="recovery-label">{{ 'search.suggestedTerms' | translate }}</span>
+            <div class="recovery-chips">
+              @for (term of suggestedSearches; track term) {
+                <button type="button" class="recovery-chip" (click)="runSuggestedSearch(term)">
+                  <ui-icon name="search" [size]="12" /> {{ term }}
+                </button>
+              }
+            </div>
+
+            <span class="recovery-label">{{ 'search.suggestedCategories' | translate }}</span>
+            <div class="recovery-chips">
+              @for (cat of categories.slice(0, 6); track cat.slug) {
+                <button type="button" class="recovery-chip" (click)="setCategory(cat.slug)">
+                  <ui-icon [name]="cat.icon" [size]="12" /> {{ cat.name }}
+                </button>
+              }
+            </div>
+          </div>
+
           <button class="btn btn-primary" (click)="clearAll()">
-            Clear filters
+            {{ 'catalog.clearFilters' | translate }}
           </button>
         </div>
       }
@@ -368,6 +392,44 @@ const SORTS: { value: ProductSort; label: string }[] = [
         max-width: 400px;
         margin-bottom: 8px;
       }
+      .zero-recovery-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin: 14px 0 20px;
+        max-width: 580px;
+      }
+      .recovery-label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin-top: 6px;
+      }
+      .recovery-chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+      .recovery-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        background: var(--color-surface);
+        color: var(--color-text);
+        font-size: 12.5px;
+        cursor: pointer;
+        transition: all 140ms ease;
+      }
+      .recovery-chip:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+        background: var(--color-accent-soft, rgba(200, 90, 40, 0.06));
+      }
       @media (max-width: 1100px) {
         .product-grid {
           grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -502,9 +564,21 @@ export class ProductsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly catalog = inject(CatalogService);
+  private readonly telemetry = inject(SearchTelemetryService);
+  private readonly seo = inject(SeoService);
+  protected readonly translate = inject(TranslateService);
 
   protected readonly categories = this.catalog.categories;
   protected readonly sorts = SORTS;
+
+  readonly suggestedSearches = [
+    'silk scarf',
+    'kampot pepper',
+    'palm sugar',
+    'bamboo basket',
+    'jasmine rice',
+    'pottery',
+  ];
 
   // The URL is the single source of truth for filter state, so a filtered view
   // is shareable and the back button steps back through filters.
@@ -556,12 +630,40 @@ export class ProductsComponent {
     return slug ? this.catalog.category(slug)?.subcategories ?? [] : [];
   });
   protected readonly priceBands = [
-    { value: 'under-5', label: 'Under $5' },
-    { value: '5-10', label: '$5 – $10' },
-    { value: '10-20', label: '$10 – $20' },
-    { value: 'over-20', label: 'Over $20' },
+    { value: 'under-5', labelKey: 'catalog.priceUnder5', defaultLabel: 'Under $5' },
+    { value: '5-10', labelKey: 'catalog.price5To10', defaultLabel: '$5 – $10' },
+    { value: '10-20', labelKey: 'catalog.price10To20', defaultLabel: '$10 – $20' },
+    { value: 'over-20', labelKey: 'catalog.priceOver20', defaultLabel: 'Over $20' },
   ];
   protected readonly ratings = [4.5, 4, 3.5];
+
+  constructor() {
+    // Dynamic privacy-safe search telemetry
+    effect(() => {
+      const q = this.search();
+      const list = this.results();
+      const filterCount =
+        (this.category() ? 1 : 0) +
+        (this.subcategory() ? 1 : 0) +
+        (this.onSaleOnly() ? 1 : 0) +
+        (this.inStockOnly() ? 1 : 0) +
+        (this.minRating() ? 1 : 0) +
+        (this.priceBand() ? 1 : 0);
+
+      this.telemetry.recordSearch({
+        queryLength: q.length,
+        filterCount,
+        durationMs: 1.5,
+        resultCount: list.length,
+      });
+    });
+
+    // Dynamic SEO title updates
+    effect(() => {
+      const head = this.heading();
+      this.seo.setPageTitle(head);
+    });
+  }
 
   /** How many products a category option would show with the other filters kept. */
   protected countFor(override: { category?: string }): number {
@@ -573,6 +675,10 @@ export class ProductsComponent {
       minRating: this.minRating() ?? undefined,
       ...this.priceRange(),
     }).length;
+  }
+
+  protected runSuggestedSearch(term: string): void {
+    this.merge({ search: term, category: null, subcategory: null });
   }
 
   protected setSub(slug: string | null): void {
@@ -595,7 +701,7 @@ export class ProductsComponent {
     return slug ? this.catalog.category(slug)?.name ?? null : null;
   });
 
-  protected readonly results = computed(() =>
+  readonly results = computed(() =>
     this.catalog.search({
       search: this.search(),
       category: this.category() ?? undefined,
@@ -612,7 +718,7 @@ export class ProductsComponent {
   protected readonly heading = computed(() => {
     const categorySlug = this.category();
     if (categorySlug) {
-      return this.catalog.category(categorySlug)?.name ?? 'Products';
+      return this.catalog.category(categorySlug)?.name ?? this.translate.t('nav.products');
     }
     const collection = this.collection();
     if (collection) {
@@ -622,9 +728,9 @@ export class ProductsComponent {
         .join(' ');
     }
     if (this.onSaleOnly()) {
-      return 'On Sale';
+      return this.translate.t('catalog.onSale');
     }
-    return this.search() ? 'Search results' : 'All products';
+    return this.search() ? this.translate.t('catalog.searchResults') : this.translate.t('catalog.allProducts');
   });
 
   protected setCategory(slug: string | null): void {
@@ -672,5 +778,9 @@ export class ProductsComponent {
       queryParams: params,
       queryParamsHandling: 'merge',
     });
+  }
+
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.translate.t(key, params);
   }
 }

@@ -104,6 +104,7 @@ async function getCart(buyerOrOptions, storeId, channel = 'marketplace') {
     return {
       id: cart.id,
       storeId: cart.storeId,
+      channel: cart.websiteId ? 'storefront' : 'marketplace',
       websiteId: channel === 'storefront' ? store?.websiteId : null,
       items,
       subtotal: dollars(subtotal),

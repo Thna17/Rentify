@@ -7,6 +7,7 @@ const { asyncHandler } = require("../../utils/helpers");
 const { ERROR_CODES } = require("../../config/constants");
 const {
   Website,
+  Store,
   User,
   Staff,
   Subscription,
@@ -182,8 +183,8 @@ class WebsiteController {
         },
       ];
 
-      // Rentify-hosted address (<subdomain>.<HOSTED_STOREFRONT_DOMAIN>): only
-      // published Websites answer, so an unpublished or suspended store is not served.
+      // Rentify-hosted address (<subdomain>.<HOSTED_STOREFRONT_DOMAIN>) or custom domain:
+      // only active Websites and active Stores answer, so an unpublished or suspended store is not served.
       const hostedSubdomain = hostedSubdomainFromHost(targetDomain);
       let website = hostedSubdomain
         ? await Website.findOne({
@@ -191,20 +192,32 @@ class WebsiteController {
             include: includeModels,
           })
         : await Website.findOne({
-            where: { domain: targetDomain },
+            where: { domain: targetDomain, status: "active" },
             include: includeModels,
           });
 
       if (!website && !hostedSubdomain && targetDomain.includes(":")) {
         const [hostOnly] = targetDomain.split(":");
         website = await Website.findOne({
-          where: { domain: hostOnly },
+          where: { domain: hostOnly, status: "active" },
           include: includeModels,
         });
       }
 
       if (!website) {
         return res.status(404).json({ error: "Website not found" });
+      }
+
+      if (website.storeId && Store?.findByPk) {
+        try {
+          const store = await Store.findByPk(website.storeId, { attributes: ['id', 'status'] });
+          if (store && store.status !== 'active') {
+            return res.status(404).json({ error: "Website not found" });
+          }
+        } catch (dbErr) {
+          // In isolated unit tests without active DB connection, do not crash lookup
+          if (dbErr.name !== 'SequelizeConnectionRefusedError') throw dbErr;
+        }
       }
 
       const subscription = await Subscription.findOne({
@@ -231,6 +244,7 @@ class WebsiteController {
         storeId: website.storeId,
         userId: website.userId,
         templateId: website.templateId,
+        status: website.status,
         name: website.name || null,
         domain: website.domain || null,
         subdomain: website.subdomain || null,

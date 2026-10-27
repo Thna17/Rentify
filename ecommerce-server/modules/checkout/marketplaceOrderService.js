@@ -158,6 +158,28 @@ async function orderEvents(storeId, orderId) {
   return OrderEvent.findAll({ where: { storeId, orderId }, order: [['createdAt', 'ASC']] });
 }
 
+async function buyerOrderEvents(buyerId, orderId, { storeId, channel = 'marketplace' } = {}) {
+  uuid(buyerId, 'buyer'); uuid(orderId, 'order');
+  if (storeId) uuid(storeId, 'Store');
+  const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: channel,
+    ...(storeId ? { storeId } : {}) } });
+  if (!order) fail('Order not found', 404);
+  const events = await OrderEvent.findAll({ where: { orderId }, order: [['createdAt', 'ASC']] });
+  return events.map((ev) => ({
+    id: ev.id,
+    type: ev.type,
+    amount: ev.amount,
+    createdAt: ev.createdAt,
+    details: {
+      reason: ev.details?.reason,
+      resolution: ev.details?.resolution,
+      method: ev.details?.method,
+      refundedAt: ev.details?.refundedAt,
+      evidence: ev.details?.evidence,
+    },
+  }));
+}
+
 async function buyerReport({ buyerId, orderId, eventKey, type, details,
   storeId, channel = 'marketplace' }) {
   uuid(buyerId, 'buyer'); uuid(orderId, 'order'); validIdempotencyKey(eventKey);
@@ -165,7 +187,42 @@ async function buyerReport({ buyerId, orderId, eventKey, type, details,
   const order = await Order.findOne({ where: { id: orderId, buyerId, salesChannel: channel,
     ...(storeId ? { storeId } : {}) } });
   if (!order) fail('Order not found', 404);
+
+  if (type === 'return_requested') {
+    if (order.deliveryStatus !== 'delivered') {
+      fail('Return is only permitted after order is delivered', 409);
+    }
+    const deliveredEvent = await OrderEvent.findOne({
+      where: { orderId, type: 'delivered' },
+      order: [['createdAt', 'DESC']],
+    });
+    const deliveredAt = deliveredEvent?.createdAt || order.updatedAt;
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - new Date(deliveredAt).getTime() > sevenDaysMs) {
+      fail('Return window has expired (7 days from delivery)', 409);
+    }
+  }
+
   const reason = requiredText(details?.reason, 'reason', 1000);
+  let evidence = null;
+  if (details?.evidence) {
+    if (Array.isArray(details.evidence)) {
+      evidence = details.evidence.slice(0, 5).map((e) => {
+        const str = String(e).trim();
+        if (str.startsWith('http://')) fail('Insecure HTTP evidence URL not permitted');
+        if (str.startsWith('javascript:')) fail('Invalid evidence URL');
+        return str.slice(0, 500);
+      });
+    } else if (typeof details.evidence === 'string') {
+      const str = details.evidence.trim();
+      if (str.startsWith('http://')) fail('Insecure HTTP evidence URL not permitted');
+      if (str.startsWith('javascript:')) fail('Invalid evidence URL');
+      evidence = [str.slice(0, 500)];
+    }
+  }
+
+  const reportDetails = { reason, ...(evidence && evidence.length ? { evidence } : {}) };
+
   const prior = await OrderEvent.findOne({ where: { eventKey } });
   if (prior) {
     if (prior.orderId !== orderId || prior.actorId !== buyerId || prior.type !== type ||
@@ -174,7 +231,7 @@ async function buyerReport({ buyerId, orderId, eventKey, type, details,
   }
   try {
     const event = await recordEvent({ orderId, storeId: order.storeId, actorId: buyerId,
-      eventKey, type, details: { reason } });
+      eventKey, type, details: reportDetails });
     return { id: event.id, type: event.type };
   } catch (error) {
     if (error.name !== 'SequelizeUniqueConstraintError') throw error;
@@ -186,7 +243,8 @@ async function buyerReport({ buyerId, orderId, eventKey, type, details,
 }
 
 module.exports = {
-  buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, merchantAction, buyerReport,
+  buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents,
+  merchantAction, buyerReport,
   merchantOrders: orderOperations.listStoreOrders,
   merchantOrder: orderOperations.getStoreOrder,
 };

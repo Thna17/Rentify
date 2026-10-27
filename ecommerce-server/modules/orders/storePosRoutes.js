@@ -8,5 +8,7 @@ router.post('/stores/:storeId/orders/pos', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['pos', 'manage_pos'] }), OrderController.createPOSOrder);
 router.get('/stores/:storeId/orders/pos', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['pos', 'manage_pos'] }), OrderController.getPOSOrders);
+router.post('/stores/:storeId/orders/pos/:orderId/return', verifyStoreActor,
+  createRequireStoreAccess({ permissions: ['pos', 'manage_pos'] }), OrderController.processPOSReturn);
 
 module.exports = router;

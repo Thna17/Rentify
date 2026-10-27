@@ -1,181 +1,504 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
+import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
+import { FooterComponent } from '../components/shared/layout/footer/footer.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { TranslateService } from '../core/i18n/translate.service';
+import { SeoService } from '../core/seo/seo.service';
+import { MarketplaceOrder, RentifyMarketplaceService } from '../core/rentify/rentify-marketplace.service';
+
+interface PlacedOrderView {
+  orderNumber: string;
+  storeId: string;
+  sellerName: string;
+  total: string;
+  subtotal?: string;
+  deliveryFee?: string;
+  itemCount: number;
+  recipientName?: string;
+  recipientPhone?: string;
+  deliveryAddress?: string;
+  paymentMethod?: string;
+  items: Array<{ name: string; quantity: number; price: number }>;
+}
 
 @Component({
   selector: 'app-order-success',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent],
+  imports: [CommonModule, RouterLink, IconComponent, NavbarComponent, FooterComponent, TranslatePipe],
   template: `
-  <div class="page">
-    <div class="success-card animate-scale">
-      <div class="check-circle"><ui-icon name="check" [size]="26" [strokeWidth]="2.6"></ui-icon></div>
-      <h1>Order placed successfully</h1>
-      <p>Thank you for supporting Cambodian local sellers.<br>Your contribution helps preserve ancient traditions.</p>
+    <app-navbar />
 
-      <div class="order-meta">
-        <div><small>ORDER ID</small><strong>{{ order.id }}</strong></div>
-        <div><small>DATE</small><strong>{{ order.date }}</strong></div>
-        <div><small>PAYMENT</small><strong>{{ order.payment }}</strong></div>
-        <div><small>STATUS</small><span class="badge badge-gold">{{ order.status }}</span></div>
+    <main class="page">
+      <div class="success-card animate-scale" role="region" aria-label="Order confirmation">
+        <div class="check-circle" aria-hidden="true">
+          <ui-icon name="check" [size]="28" [strokeWidth]="2.6" />
+        </div>
+
+        <h1>{{ 'orderSuccess.title' | translate }}</h1>
+        <p class="subtitle">{{ 'orderSuccess.sub' | translate }}</p>
+
+        <!-- Primary Order Reference Meta -->
+        <div class="order-meta">
+          <div>
+            <small>{{ 'orderSuccess.orderRef' | translate }}</small>
+            <strong class="order-ref">#{{ primaryOrderNumber() }}</strong>
+          </div>
+          <div>
+            <small>{{ 'orderSuccess.date' | translate }}</small>
+            <strong>{{ orderDate }}</strong>
+          </div>
+          <div>
+            <small>{{ 'orderSuccess.paymentMethod' | translate }}</small>
+            <span class="badge badge-cod">COD</span>
+          </div>
+          <div>
+            <small>{{ 'orderSuccess.paymentStatus' | translate }}</small>
+            <span class="badge badge-pending">{{ 'orderSuccess.pendingPayment' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Distinct Store Orders / Shipments -->
+        <div class="shipments-container">
+          @for (ord of orders(); track ord.orderNumber) {
+            <div class="shipment-card">
+              <header class="shipment-header">
+                <div class="seller-meta">
+                  <ui-icon name="store" [size]="15" />
+                  <strong>{{ ord.sellerName }}</strong>
+                  <span class="order-sub-num">#{{ ord.orderNumber }}</span>
+                </div>
+                <div class="amount-due-box">
+                  <small>{{ 'orderSuccess.amountDue' | translate }}</small>
+                  <strong class="shipment-total">\${{ ord.total }}</strong>
+                </div>
+              </header>
+
+              @if (ord.deliveryAddress) {
+                <div class="delivery-address-row">
+                  <ui-icon name="map-pin" [size]="13" />
+                  <span>{{ ord.deliveryAddress }}</span>
+                </div>
+              }
+
+              @if (ord.items && ord.items.length) {
+                <div class="items-list">
+                  @for (it of ord.items; track it.name) {
+                    <div class="item-row">
+                      <span class="item-qty">{{ it.quantity }}×</span>
+                      <span class="item-name">{{ it.name }}</span>
+                      <span class="item-price">\${{ (it.price * it.quantity).toFixed(2) }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Next Steps Instruction Card -->
+        <div class="next-steps-card">
+          <h3>
+            <ui-icon name="info" [size]="16" />
+            {{ 'orderSuccess.nextStepsTitle' | translate }}
+          </h3>
+          <ol class="steps-list">
+            <li>{{ 'orderSuccess.step1' | translate }}</li>
+            <li>
+              {{
+                'orderSuccess.step2'
+                  | translate:{ phone: primaryPhone() || 'your phone' }
+              }}
+            </li>
+            <li>
+              {{
+                'orderSuccess.step3'
+                  | translate:{ amount: primaryTotal() }
+              }}
+            </li>
+          </ol>
+        </div>
+
+        <div class="actions">
+          <a class="btn btn-primary" routerLink="/orders">
+            {{ 'orderSuccess.viewOrders' | translate }}
+          </a>
+          <a class="btn btn-outline" routerLink="/products">
+            {{ 'orderSuccess.continueShopping' | translate }}
+          </a>
+        </div>
       </div>
 
-      @if (placedOrders.length > 1) {
-        <div class="multi-orders">
-          <div class="multi-head">
-            <h3>{{ placedOrders.length }} Separate Store Shipments</h3>
-            <p>Each merchant fulfills and delivers their own packages directly. You will pay each courier upon cash delivery (COD).</p>
-          </div>
-          <div class="shipment-list">
-            @for (ord of placedOrders; track ord.orderNumber) {
-              <div class="shipment-card">
-                <div class="shipment-top">
-                  <div class="seller-info">
-                    <strong><ui-icon name="store" [size]="14"></ui-icon> {{ ord.sellerName }}</strong>
-                    <span class="sub-id">#{{ ord.orderNumber }}</span>
-                  </div>
-                  <span class="shipment-total">\${{ ord.total }}</span>
-                </div>
-                @if (ord.items && ord.items.length) {
-                  <div class="shipment-items">
-                    @for (it of ord.items; track it.name) {
-                      <div class="mini-item">
-                        <span>{{ it.quantity }}× {{ it.name }}</span>
-                        <span>\${{ (it.price * it.quantity).toFixed(2) }}</span>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </div>
+      <aside class="info-strip">
+        <div class="info-card">
+          <span class="info-icon"><ui-icon name="shield" [size]="18" /></span>
+          <strong>Direct COD Settlement</strong>
+          <p>Pay safely with cash when your items arrive at your doorstep. Inspect your package before paying.</p>
         </div>
-      } @else if (order.items.length > 0) {
-        <div class="order-summary">
-          <h4>Order Summary</h4>
-          <div class="order-item" *ngFor="let item of order.items">
-            <div class="thumb img-placeholder"></div>
-            <div class="info">
-              <strong>{{ item.name }}</strong>
-              <small>Qty: {{ item.qty }} &middot; {{ item.variant }}</small>
-            </div>
-            <span class="price">\${{ item.price.toFixed(2) }}</span>
-          </div>
-          <div class="total-row"><span>Total</span><span>\${{ total.toFixed(2) }}</span></div>
+        <div class="info-card">
+          <span class="info-icon"><ui-icon name="truck" [size]="18" /></span>
+          <strong>Store Fulfillment</strong>
+          <p>Each artisan or merchant packages and dispatches their own items directly to your address.</p>
         </div>
+        <div class="info-card">
+          <span class="info-icon"><ui-icon name="check-circle" [size]="18" /></span>
+          <strong>Customer Support</strong>
+          <p>If you have any questions or need to report an issue, Rentify Marketplace support is here to help.</p>
+        </div>
+      </aside>
+    </main>
+
+    <app-footer />
+  `,
+  styles: [
+    `
+      .page {
+        background: var(--color-bg-alt, #fafaf9);
+        min-height: calc(100vh - 140px);
+        padding: 44px 20px 64px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .success-card {
+        background: #fff;
+        border: 1px solid var(--color-border, #e5e7eb);
+        border-radius: var(--radius-lg, 12px);
+        box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
+        max-width: 620px;
+        width: 100%;
+        padding: 36px;
+        text-align: center;
+      }
+      .check-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #dcfce7;
+        color: #16a34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+      }
+      .success-card h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+        color: var(--color-text-primary, #111827);
+      }
+      .subtitle {
+        color: var(--color-muted, #6b7280);
+        font-size: 14px;
+        margin-bottom: 24px;
+        line-height: 1.5;
+      }
+      .order-meta {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        text-align: left;
+        background: var(--color-bg-subtle, #f9fafb);
+        border: 1px solid var(--color-border, #e5e7eb);
+        border-radius: var(--radius-sm, 6px);
+        padding: 14px 16px;
+        margin-bottom: 24px;
+      }
+      .order-meta small {
+        display: block;
+        color: var(--color-muted, #6b7280);
+        font-size: 10.5px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .order-meta strong {
+        font-size: 13.5px;
+        color: var(--color-text-primary, #111827);
+      }
+      .order-ref {
+        font-family: monospace;
+      }
+      .badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .badge-cod {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .badge-pending {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .shipments-container {
+        display: grid;
+        gap: 12px;
+        text-align: left;
+        margin-bottom: 24px;
+      }
+      .shipment-card {
+        background: #fff;
+        border: 1px solid var(--color-border, #e5e7eb);
+        border-radius: var(--radius-sm, 6px);
+        padding: 16px;
+      }
+      .shipment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+      .seller-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-text-primary, #111827);
+      }
+      .seller-meta strong {
+        font-size: 14.5px;
+      }
+      .order-sub-num {
+        font-size: 12px;
+        color: var(--color-muted, #6b7280);
+        font-family: monospace;
+      }
+      .amount-due-box {
+        text-align: right;
+      }
+      .amount-due-box small {
+        display: block;
+        font-size: 10.5px;
+        color: var(--color-muted, #6b7280);
+        text-transform: uppercase;
+      }
+      .shipment-total {
+        font-size: 16px;
+        color: #166534;
+        font-weight: 700;
+      }
+      .delivery-address-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-muted, #6b7280);
+        padding: 6px 0;
+        border-top: 1px dashed var(--color-border, #e5e7eb);
+      }
+      .items-list {
+        border-top: 1px solid var(--color-border, #e5e7eb);
+        margin-top: 8px;
+        padding-top: 8px;
+        display: grid;
+        gap: 6px;
+      }
+      .item-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--color-text-secondary, #4b5563);
+      }
+      .item-qty {
+        font-weight: 600;
+        color: var(--color-text-primary, #111827);
+      }
+      .item-name {
+        flex: 1;
+      }
+      .item-price {
+        font-weight: 600;
+      }
+      .next-steps-card {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: var(--radius-sm, 6px);
+        padding: 16px 20px;
+        text-align: left;
+        margin-bottom: 24px;
+      }
+      .next-steps-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #166534;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .steps-list {
+        margin: 0;
+        padding-left: 20px;
+        color: #15803d;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+      .actions .btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .info-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 900px;
+        width: 100%;
+        margin-top: 36px;
+      }
+      .info-card {
+        background: #fff;
+        border: 1px solid var(--color-border, #e5e7eb);
+        border-radius: var(--radius-md, 8px);
+        padding: 18px;
+        text-align: left;
+      }
+      .info-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--color-bg-subtle, #f3f4f6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-accent, #2563eb);
+        margin-bottom: 10px;
+      }
+      .info-card strong {
+        display: block;
+        font-size: 13.5px;
+        margin-bottom: 4px;
+        color: var(--color-text-primary, #111827);
+      }
+      .info-card p {
+        font-size: 12px;
+        color: var(--color-muted, #6b7280);
+        margin: 0;
+        line-height: 1.5;
       }
 
-      <div class="actions">
-        <a class="btn btn-primary" routerLink="/orders">View My Orders</a>
-        <a class="btn btn-outline" routerLink="/products">Continue Shopping</a>
-      </div>
-    </div>
-
-    <div class="info-strip animate-in delay-1">
-      <div class="info-card">
-        <span class="info-icon"><ui-icon name="leaf" [size]="18" color="var(--color-accent)"></ui-icon></span>
-        <strong>Sustainable Impact</strong>
-        <p>Your purchase provides sustainable income for local merchants and artisan families.</p>
-      </div>
-      <div class="info-card">
-        <span class="info-icon"><ui-icon name="truck" [size]="18" color="var(--color-accent)"></ui-icon></span>
-        <strong>Tracking Updates</strong>
-        <p>You can track delivery updates directly in your orders tab as merchants prepare your delivery.</p>
-      </div>
-      <div class="info-card">
-        <span class="info-icon"><ui-icon name="check-circle" [size]="18" color="var(--color-accent)"></ui-icon></span>
-        <strong>Direct COD Settlement</strong>
-        <p>Pay safely with cash when your items arrive at your doorstep.</p>
-      </div>
-    </div>
-  </div>
-  `,
-  styles: [`
-    .page { background: var(--color-bg-alt); min-height: 100vh; padding: 56px 20px; display: flex; flex-direction: column; align-items: center; }
-    .success-card { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); max-width: 520px; width: 100%; padding: 36px; text-align: center; }
-    .check-circle {
-      width: 60px; height: 60px; border-radius: 50%; background: var(--color-success-soft); color: var(--color-success);
-      display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
-    }
-    .success-card h1 { font-size: 23px; margin-bottom: 12px; }
-    .success-card > p { color: var(--color-muted); font-size: 13.5px; margin-bottom: 24px; line-height: 1.6; }
-    .order-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: left; margin-bottom: 22px; }
-    .order-meta small { display: block; color: var(--color-muted); font-size: 10px; margin-bottom: 3px; letter-spacing: .03em; }
-    .order-meta strong { font-size: 13px; }
-    .multi-orders { text-align: left; border-top: 1px solid var(--color-border); padding-top: 18px; margin-bottom: 20px; }
-    .multi-head h3 { font-size: 14px; font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
-    .multi-head p { font-size: 12px; color: var(--color-muted); margin-bottom: 14px; line-height: 1.45; }
-    .shipment-list { display: grid; gap: 10px; }
-    .shipment-card { background: var(--color-bg-alt, #fafaf9); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 12px 14px; }
-    .shipment-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .seller-info { display: flex; flex-direction: column; gap: 2px; }
-    .seller-info strong { font-size: 13px; color: var(--color-text); display: flex; align-items: center; gap: 5px; }
-    .sub-id { font-size: 11px; color: var(--color-muted); }
-    .shipment-total { font-weight: 700; font-size: 13.5px; color: var(--color-accent); }
-    .shipment-items { border-top: 1px dashed var(--color-border); padding-top: 6px; margin-top: 6px; font-size: 11.5px; color: var(--color-text-secondary); display: grid; gap: 4px; }
-    .mini-item { display: flex; justify-content: space-between; }
-    .order-summary { text-align: left; border-top: 1px solid var(--color-border); padding-top: 18px; }
-    .order-summary h4 { font-size: 13px; margin-bottom: 12px; color: var(--color-muted); }
-    .order-item { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-    .thumb { width: 42px; height: 42px; border-radius: var(--radius-xs); flex-shrink: 0; font-size: 9px; }
-    .info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-    .info small { color: var(--color-muted); font-size: 11px; }
-    .price { font-weight: 600; font-size: 13px; }
-    .total-row { display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid var(--color-border); padding-top: 14px; margin-top: 6px; color: var(--color-accent); font-size: 16px; }
-    .actions { display: flex; gap: 10px; margin-top: 24px; }
-    .actions .btn { flex: 1; }
-
-    .info-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 900px; width: 100%; margin-top: 32px; }
-    .info-card { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 20px; text-align: left; }
-    .info-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--color-accent-soft); display: flex; align-items: center; justify-content: center; }
-    .info-card strong { display: block; margin: 10px 0 5px; font-size: 13.5px; }
-    .info-card p { font-size: 12px; color: var(--color-muted); line-height: 1.5; }
-
-    @media (max-width: 700px) {
-      .order-meta, .info-strip { grid-template-columns: repeat(2, 1fr); }
-    }
-  `]
+      @media (max-width: 700px) {
+        .order-meta {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .info-strip {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          flex-direction: column;
+        }
+      }
+    `,
+  ],
 })
-export class OrderSuccessComponent {
+export class OrderSuccessComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly rentify = inject(RentifyMarketplaceService);
+  protected readonly translate = inject(TranslateService);
+  private readonly seo = inject(SeoService);
 
+  readonly orderParam = this.route.snapshot.queryParamMap.get('order') || 'Confirmed';
   readonly ordersParam = this.route.snapshot.queryParamMap.get('orders');
-  readonly orderNumber = this.route.snapshot.queryParamMap.get('order') || 'Confirmed';
 
-  placedOrders: Array<{
-    orderNumber: string;
-    storeId: string;
-    sellerName: string;
-    total: string;
-    itemCount: number;
-    items: Array<{ name: string; quantity: number; price: number }>;
-  }> = [];
+  readonly orders = signal<PlacedOrderView[]>([]);
+  readonly orderDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
-  order = {
-    id: this.orderNumber,
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    payment: 'COD',
-    status: 'Pending',
-    items: [] as { name: string; variant: string; qty: number; price: number }[],
-  };
+  ngOnInit(): void {
+    this.seo.setPageTitle(this.translate.t('orderSuccess.title'));
+    this.loadOrders();
+  }
 
-  constructor() {
+  private loadOrders(): void {
+    // 1. Try reading from sessionStorage
     if (typeof sessionStorage !== 'undefined') {
       try {
         const stored = sessionStorage.getItem('rentify_placed_orders');
         if (stored) {
-          this.placedOrders = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.orders.set(parsed);
+            return;
+          }
         }
       } catch {}
     }
 
-    if (this.placedOrders.length > 1) {
-      this.order.id = `${this.placedOrders.length} orders (#${this.placedOrders.map(o => o.orderNumber).join(', #')})`;
+    // 2. Fallback: single order from query param
+    const fallbackOrder: PlacedOrderView = {
+      orderNumber: this.orderParam,
+      storeId: '',
+      sellerName: 'Local Merchant',
+      total: '0.00',
+      itemCount: 1,
+      items: [],
+    };
+    this.orders.set([fallbackOrder]);
+
+    // 3. Attempt to fetch live order details if user reloaded
+    if (this.orderParam && this.orderParam !== 'Confirmed') {
+      void firstValueFrom(this.rentify.orders()).then((res) => {
+        const live = (res?.orders || []).find(
+          (o) => o.orderNumber === this.orderParam || o.id === this.orderParam,
+        );
+        if (live) {
+          const updated: PlacedOrderView = {
+            orderNumber: live.orderNumber,
+            storeId: live.storeId,
+            sellerName: 'Local Merchant',
+            total: live.totalAmount,
+            subtotal: live.subtotal,
+            deliveryFee: live.deliveryFee,
+            itemCount: live.items.reduce((s, it) => s + it.quantity, 0),
+            recipientName: live.customerInfo?.name,
+            recipientPhone: live.customerInfo?.phone,
+            deliveryAddress: live.shippingInfo?.address,
+            paymentMethod: 'COD',
+            items: live.items.map((it) => ({
+              name: it.name,
+              quantity: it.quantity,
+              price: it.quantity ? Math.round((parseFloat(it.total) / it.quantity) * 100) / 100 : 0,
+            })),
+          };
+          this.orders.set([updated]);
+        }
+      }).catch(() => {});
     }
   }
 
-  get total() {
-    return this.order.items.reduce((sum, i) => sum + i.price, 0);
+  primaryOrderNumber(): string {
+    const list = this.orders();
+    if (list.length === 1) return list[0].orderNumber;
+    return `${list.length} orders (${list.map((o) => o.orderNumber).join(', ')})`;
+  }
+
+  primaryPhone(): string {
+    return this.orders()[0]?.recipientPhone || '';
+  }
+
+  primaryTotal(): string {
+    const list = this.orders();
+    if (list.length === 1) return list[0].total;
+    const sum = list.reduce((s, o) => s + (parseFloat(o.total) || 0), 0);
+    return sum.toFixed(2);
   }
 }

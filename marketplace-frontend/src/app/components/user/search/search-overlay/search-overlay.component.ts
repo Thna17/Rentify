@@ -12,6 +12,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CatalogService } from '../../../../core/catalog/catalog.service';
 import { SearchHistoryService } from '../../../../core/search/search-history.service';
+import { SearchTelemetryService } from '../../../../core/telemetry/search-telemetry.service';
+import { TranslateService } from '../../../../core/i18n/translate.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 
 /** Curated, not computed — these are the terms worth steering people toward. */
@@ -37,7 +40,7 @@ const POPULAR_SEARCHES = [
  */
 @Component({
   selector: 'app-search-overlay',
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, IconComponent, TranslatePipe],
   template: `
     <div
       class="scrim"
@@ -56,8 +59,8 @@ const POPULAR_SEARCHES = [
             type="search"
             name="q"
             [(ngModel)]="term"
-            placeholder="Search products, stores and categories…"
-            aria-label="Search products"
+            [placeholder]="'nav.searchPlaceholder' | translate"
+            [attr.aria-label]="'nav.search' | translate"
             autocomplete="off"
           />
           @if (term()) {
@@ -81,13 +84,13 @@ const POPULAR_SEARCHES = [
             <div class="search-error" role="alert">
               <ui-icon name="alert-circle" [size]="18" />
               <span>{{ catalog.productError() }}</span>
-              <button type="button" (click)="catalog.load()">Try again</button>
+              <button type="button" (click)="catalog.load()">{{ 'state.tryAgain' | translate }}</button>
             </div>
           } @else if (term().trim()) {
             <!-- Typing: live matches, so the panel is never a dead end. -->
             <section>
               <h3>
-                Products
+                {{ 'nav.products' | translate }}
                 <span class="count">{{ matches().length }}</span>
               </h3>
               @if (matches().length) {
@@ -111,12 +114,12 @@ const POPULAR_SEARCHES = [
                   }
                 </ul>
                 <button type="button" class="see-all" (click)="submit()">
-                  See all results for “{{ term().trim() }}”
+                  {{ 'search.seeAll' | translate:{ term: term().trim() } }}
                   <ui-icon name="arrow-right" [size]="13" />
                 </button>
               } @else {
                 <p class="none">
-                  Nothing matches “{{ term().trim() }}”. Try a category below.
+                  {{ 'search.noMatches' | translate:{ term: term().trim() } }}
                 </p>
               }
             </section>
@@ -124,9 +127,9 @@ const POPULAR_SEARCHES = [
             @if (history.recent().length) {
               <section>
                 <h3>
-                  Recent searches
+                  {{ 'search.recentSearches' | translate }}
                   <button type="button" class="link" (click)="history.clear()">
-                    Clear
+                    {{ 'search.clearHistory' | translate }}
                   </button>
                 </h3>
                 <div class="chips">
@@ -150,7 +153,7 @@ const POPULAR_SEARCHES = [
             }
 
             <section>
-              <h3>Popular searches</h3>
+              <h3>{{ 'search.popularSearches' | translate }}</h3>
               <div class="chips">
                 @for (entry of popular; track entry) {
                   <button type="button" class="chip" (click)="run(entry)">
@@ -161,7 +164,7 @@ const POPULAR_SEARCHES = [
             </section>
 
             <section>
-              <h3>All categories</h3>
+              <h3>{{ 'search.allCategories' | translate }}</h3>
               <div class="category-grid">
                 @for (category of categories; track category.slug) {
                   <button
@@ -175,8 +178,7 @@ const POPULAR_SEARCHES = [
                     <span class="cat-main">
                       <span class="cat-name">{{ category.name }}</span>
                       <span class="cat-count"
-                        >{{ catalog.countByCategory(category.slug) }}
-                        products</span
+                        >{{ 'category.productCount' | translate:{ count: catalog.countByCategory(category.slug) } }}</span
                       >
                     </span>
                   </button>
@@ -552,6 +554,7 @@ export class SearchOverlayComponent {
 
   protected readonly catalog = inject(CatalogService);
   protected readonly history = inject(SearchHistoryService);
+  private readonly telemetry = inject(SearchTelemetryService);
   private readonly router = inject(Router);
 
   private readonly field =
@@ -581,6 +584,12 @@ export class SearchOverlayComponent {
     if (!cleaned) {
       return;
     }
+    this.telemetry.recordSearch({
+      queryLength: cleaned.length,
+      filterCount: 0,
+      durationMs: 1.0,
+      resultCount: this.matches().length,
+    });
     this.history.record(cleaned);
     void this.router.navigate(['/products'], {
       queryParams: { search: cleaned },
@@ -591,6 +600,12 @@ export class SearchOverlayComponent {
   protected openProduct(id: string): void {
     // Record the term too: they searched, then acted on it.
     this.history.record(this.term());
+    this.telemetry.recordSearch({
+      queryLength: this.term().trim().length,
+      filterCount: 0,
+      durationMs: 1.0,
+      resultCount: 1,
+    });
     void this.router.navigate(['/product', id]);
     this.close.emit();
   }

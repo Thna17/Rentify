@@ -3,16 +3,16 @@ const OrderTypeStrategy = require('./OrderTypeStrategy');
 
 class POSOrderStrategy extends OrderTypeStrategy {
   async processOrder(orderData, transaction) {
-    const { websiteId, storeId, items, paymentMethod, cashierId, customerInfo, currency = 'USD' } = orderData;
+    const { websiteId, storeId, items, paymentMethod, cashierId, customerInfo, currency = 'USD', checkoutKey } = orderData;
 
     // Validate products using niche strategy
     await this.validateOrderItems(items, transaction);
 
     // Calculate totals using niche strategy
     const totals = this.nicheStrategy.calculateOrderTotals(
-      items, 
-      'pos', 
-      {}, 
+      items,
+      'pos',
+      {},
       currency
     );
 
@@ -29,6 +29,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
     const order = await this.createOrderRecord({
       websiteId: websiteId || null,
       storeId: storeId || null,
+      checkoutKey: checkoutKey || null,
       orderType: "pos",
       salesChannel: "pos",
       customerId: customer?.id,
@@ -96,20 +97,30 @@ class POSOrderStrategy extends OrderTypeStrategy {
     // Process niche-specific logic
     await this.nicheStrategy.processNicheSpecific(order, orderItems, transaction);
 
+    // Ensure inventory deduction and status alignment if payment is completed
+    if (!order.stockDeducted && payment && (payment.status === 'completed' || isImmediatePayment)) {
+      await this.nicheStrategy.updateInventory(items, transaction);
+      await order.update({
+        status: 'completed',
+        deliveryStatus: 'delivered',
+        stockDeducted: true
+      }, { transaction });
+    }
+
     // Create invoice
     const invoice = await this.createInvoice(
-      order, 
-      payment, 
-      transaction, 
+      order,
+      payment,
+      transaction,
       customerInfo
     );
 
     // Update order status for instant payments
     if (isImmediatePayment) {
-      await order.update({ 
+      await order.update({
         status: 'completed',
         deliveryStatus: 'delivered',
-        stockDeducted: true 
+        stockDeducted: true
       }, { transaction });
     }
 
@@ -161,7 +172,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
 
   async createInvoice(order, payment, transaction, customerInfo = {}) {
     const invoiceNumber = this.generateInvoiceNumber();
-    
+
     return await this.models.Invoice.create({
       websiteId: order.websiteId || null,
       storeId: order.storeId || null,

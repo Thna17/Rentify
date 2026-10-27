@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogService } from '../core/catalog/catalog.service';
+import { SeoService } from '../core/seo/seo.service';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 import { Category } from '../core/catalog/catalog.models';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
@@ -8,17 +10,17 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
 @Component({
   selector: 'app-categories',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent],
+  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, TranslatePipe],
   template: `
     <app-navbar />
 
     <section class="container head">
       <nav class="crumbs">
-        <a routerLink="/">Home</a> <span>›</span> <span>Categories</span>
+        <a routerLink="/">{{ 'nav.home' | translate }}</a> <span>›</span> <span>{{ 'nav.categories' | translate }}</span>
       </nav>
-      <h1>Browse by category</h1>
+      <h1>{{ 'category.browse' | translate }}</h1>
       <p class="sub">
-        Explore departments across Rentify Marketplace’s Cambodian local-first marketplace.
+        {{ 'category.subheading' | translate }}
       </p>
     </section>
 
@@ -36,16 +38,16 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
             <p>{{ category.description }}</p>
             <span class="count">
               @if (!catalog.loaded()) {
-                Loading products…
+                {{ 'category.loadingProducts' | translate }}
               } @else if (catalog.productError()) {
-                Product count unavailable
+                {{ 'category.countUnavailable' | translate }}
               } @else {
-                {{ catalog.countByCategory(category.slug) }} products
+                {{ 'category.productCount' | translate:{ count: catalog.countByCategory(category.slug) } }}
               }
             </span>
             <span class="subs">{{ subLabel(category) }}</span>
             <span class="cta">
-              View products <ui-icon name="arrow-right" [size]="13" />
+              {{ 'category.viewProducts' | translate }} <ui-icon name="arrow-right" [size]="13" />
             </span>
           </a>
         }
@@ -153,7 +155,13 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 })
 export class CategoriesComponent {
   protected readonly catalog = inject(CatalogService);
+  private readonly seo = inject(SeoService);
   protected readonly categories = this.catalog.categories;
+
+  constructor() {
+    this.seo.setPageTitle('Categories');
+    this.seo.setDescription('Browse Cambodian authentic product categories on Rentify Marketplace.');
+  }
 
   /** First few sub-categories, so the card previews what is inside. */
   protected subLabel(category: Category): string {

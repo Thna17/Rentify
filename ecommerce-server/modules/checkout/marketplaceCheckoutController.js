@@ -108,6 +108,7 @@ module.exports = {
   }) })),
   buyerOrders: wrap(async (req, res) => res.json({ orders: await service.buyerOrders(req.user.id) })),
   buyerOrder: wrap(async (req, res) => res.json({ order: await service.buyerOrder(req.user.id, req.params.orderId) })),
+  buyerOrderEvents: wrap(async (req, res) => res.json({ events: await service.buyerOrderEvents(req.user.id, req.params.orderId) })),
   buyerReport: wrap(async (req, res) => res.status(201).json({ event: await service.buyerReport({
     buyerId: req.user.id, orderId: req.params.orderId,
     eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
