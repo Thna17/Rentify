@@ -30,6 +30,14 @@ test('P4-MER-004 UI exposes partial results, resume, correction, and responsive 
   assert.match(page, /aria-describedby="product-import-help"/);
 });
 
+test('P4-MER-004 accessible keyboard actions and resilient recovery controls', () => {
+  assert.match(page, /focus-visible:ring-2/);
+  assert.match(page, /role="status"/);
+  assert.match(page, /aria-label=\{t\('dashboard\.imports\.refresh'\)\}/);
+  assert.match(page, /aria-label=\{t\('dashboard\.imports\.summary'\)\}/);
+  assert.match(page, /aria-describedby="product-import-help"/);
+});
+
 test('P4-MER-004 English and Khmer cover every workflow and recovery key', () => {
   assert.deepEqual(Object.keys(kh).sort(), Object.keys(en).sort());
   for (const key of [

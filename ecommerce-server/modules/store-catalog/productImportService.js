@@ -405,5 +405,5 @@ module.exports = {
   TEMPLATE_VERSION, COLUMNS, MAX_BYTES, MAX_ROWS,
   spreadsheetFormula, csvCell, validateRow, parseCsv, templateCsv,
   previewReplay, nextPendingRow, checkpointChanges,
-  createPreview, listJobs, getJob, markQueued, processJob, reportCsv, exportCsv, jobView,
+  createPreview, listJobs, getJob, markQueued, processOne, processJob, reportCsv, exportCsv, jobView,
 };
