@@ -7,6 +7,7 @@ import { SearchTelemetryService } from '../core/telemetry/search-telemetry.servi
 import { SeoService } from '../core/seo/seo.service';
 import { TranslateService } from '../core/i18n/translate.service';
 import { Product } from '../core/catalog/catalog.models';
+import axe from 'axe-core';
 
 describe('ProductsComponent', () => {
   let fixture: ComponentFixture<ProductsComponent>;
@@ -80,6 +81,16 @@ describe('ProductsComponent', () => {
     expect(component.results().length).toBe(1);
     expect(component.results()[0].name).toBe('Kampot Black Pepper');
     expect(component['search']()).toBe('pepper');
+  });
+
+  it('has no serious or critical automated accessibility violations', async () => {
+    const result = await axe.run(fixture.nativeElement, {
+      rules: { 'color-contrast': { enabled: false } },
+    });
+    const blocking = result.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    );
+    expect(blocking).toEqual([]);
   });
 
   it('records search latency and query telemetry anonymously', () => {

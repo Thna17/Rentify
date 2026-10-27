@@ -242,13 +242,7 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 10 & 11 — Revoked Session & 
   }
 });
 
-test('P2-AUTHZ-001 Discovered Gaps Tracking: All 14 authorization gaps properly recorded', () => {
+test('P2-AUTHZ-002 Acceptance: all recorded authorization gaps are remediated', () => {
   const gaps = getRecordedGaps();
-  assert.equal(gaps.length, 14, `Expected exactly 14 recorded authorization gaps, got ${gaps.length}`);
-
-  for (const gap of gaps) {
-    assert.equal(gap.currentImplementationStatus, 'gap');
-    assert.ok(gap.gapDetails && gap.gapDetails.length > 10, `Gap ${gap.operationId} must have meaningful gapDetails`);
-    assert.equal(gap.remediationPackage, 'P2-AUTHZ-002', `Gap ${gap.operationId} must target P2-AUTHZ-002`);
-  }
+  assert.equal(gaps.length, 0, `Expected no unresolved authorization gaps, got ${gaps.length}`);
 });
