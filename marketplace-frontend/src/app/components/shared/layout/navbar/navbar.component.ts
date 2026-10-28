@@ -56,13 +56,15 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
 
     <header class="navbar" [class.scrolled]="scrolled()" [class.nav-hidden]="hidden()" [class.home]="is('home')" [class.home-top]="is('home') && homeTop()">
       <div class="navbar-inner container">
-        <a routerLink="/" class="logo">
+        <a routerLink="/" class="logo" aria-label="Rentify Marketplace home">
           <img
             src="/assets/rentify-logo.webp"
             alt="Rentify Marketplace"
             class="logo-mark"
           />
-          Rentify Marketplace
+          <span class="logo-name">
+            <strong>Rentify</strong><span class="logo-sub">Marketplace</span>
+          </span>
         </a>
 
         <div class="search-group">
@@ -317,16 +319,17 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                 animate.leave="kc-pop-leave"
                 (click)="$event.stopPropagation()"
               >
-                <a routerLink="/" (click)="menuOpen.set(false)">Home</a>
-                <a routerLink="/products" (click)="menuOpen.set(false)">All products</a>
-                <a routerLink="/categories" (click)="menuOpen.set(false)">Categories</a>
-                <a routerLink="/stores" (click)="menuOpen.set(false)">All stores</a>
-                <p class="menu-section">Shop by category</p>
+                <p class="menu-section top-section">Shop by category</p>
                 @for (c of categories; track c.slug) {
                   <a class="menu-cat" [routerLink]="['/categories', c.slug]" (click)="menuOpen.set(false)">
                     <ui-icon [name]="c.icon" [size]="16" /> {{ c.name }}
                   </a>
                 }
+                <p class="menu-section">Navigation</p>
+                <a routerLink="/" (click)="menuOpen.set(false)">Home</a>
+                <a routerLink="/products" (click)="menuOpen.set(false)">All products</a>
+                <a routerLink="/categories" (click)="menuOpen.set(false)">Categories</a>
+                <a routerLink="/stores" (click)="menuOpen.set(false)">All stores</a>
                 <p class="menu-section">Collections</p>
                 <!-- Same shortcuts the category bar shows on wide screens —
                      the bar hides them below 1400px since there isn't room
@@ -396,6 +399,11 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
       .menu-section {
         margin: 8px 0 2px; padding: 6px 12px 0; border-top: 1px solid var(--color-border);
         font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-muted);
+      }
+      .menu-section.top-section {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
       }
       .mobile-menu a.menu-cat { display: flex; align-items: center; gap: 10px; }
       /* Hidden while scrolling down, revealed the instant the user scrolls
@@ -493,8 +501,8 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: clamp(18px, 2.4vw, 42px);
-        padding-top: 6px;
-        padding-bottom: 6px;
+        padding-top: 2px;
+        padding-bottom: 2px;
         height: var(--header-h);
       }
       .search-group {
@@ -505,13 +513,29 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
       .logo {
         font-family: var(--font-heading);
         font-weight: 600;
-        font-size: 21px;
+        font-size: 20px;
         color: var(--color-text);
         flex-shrink: 0;
         display: flex;
         align-items: center;
         gap: 9px;
         letter-spacing: -0.02em;
+        white-space: nowrap;
+      }
+      .logo-name {
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .logo-name strong {
+        font-weight: 700;
+        color: var(--color-text);
+      }
+      .logo-sub {
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        font-size: 0.9em;
       }
       .logo-mark {
         width: 32px;
@@ -530,16 +554,17 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
       .search-bar {
         display: inline-flex;
         align-items: center;
-        gap: 9px;
+        gap: 10px;
         width: clamp(320px, 40vw, 640px);
-        height: 44px;
-        padding: 0 16px;
+        height: 38px;
+        padding: 0 16px 0 14px;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-full);
         background: var(--color-bg-alt);
         color: var(--color-muted);
         font-size: 13.5px;
         font-weight: 400;
+        cursor: pointer;
       }
       .search-placeholder {
         overflow: hidden;
@@ -547,8 +572,8 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         white-space: nowrap;
       }
       .search-bar:hover {
-        background: rgba(255,255,255,.78);
-        border-color: rgba(142,48,33,.28);
+        background: #ffffff;
+        border-color: var(--color-border-strong);
         color: var(--color-text);
         box-shadow: var(--shadow-xs);
       }
@@ -633,23 +658,24 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         background: var(--color-accent);
       }
       .signin-btn {
-        background: rgba(142, 48, 33, .08);
+        background: var(--color-bg-alt);
         color: var(--color-accent);
-        border: 1px solid rgba(142, 48, 33, .18);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-full);
         min-height: 40px;
-        padding: 9px 17px;
+        padding: 8px 18px 8px 12px;
         font-size: 13.5px;
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 9px;
         margin-left: 6px;
         white-space: nowrap;
+        transition: background 160ms var(--ease-standard), border-color 160ms var(--ease-standard);
       }
       .signin-btn:hover {
-        background: rgba(142, 48, 33, .14);
-        border-color: rgba(142, 48, 33, .3);
+        background: var(--color-bg-hover);
+        border-color: var(--color-border-strong);
       }
 
       /* ---------------------------------------------------- account menu */
@@ -658,20 +684,27 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
       }
       .account-btn {
         cursor: pointer;
-        padding-left: 6px;
+        padding: 6px 16px 6px 10px;
+        background: var(--color-bg-alt);
+        border: 1px solid var(--color-border);
+        color: var(--color-accent);
+      }
+      .account-btn:hover {
+        background: var(--color-bg-hover);
+        border-color: var(--color-border-strong);
       }
       /* A seller signs in with the same account they shop with, so the header
          is the only place that can say which they are. Without this the
          button was just a first name, identical to a buyer's, with no hint
          that a dashboard existed at all. */
       .account-btn.is-seller {
-        background: rgba(38, 60, 49, .08);
-        border-color: rgba(38, 60, 49, .2);
+        background: rgba(38, 60, 49, .06);
+        border-color: rgba(38, 60, 49, .14);
         color: var(--color-forest);
       }
       .account-btn.is-seller:hover {
-        background: rgba(38, 60, 49, .14);
-        border-color: rgba(38, 60, 49, .32);
+        background: rgba(38, 60, 49, .10);
+        border-color: rgba(38, 60, 49, .22);
       }
       .avatar {
         display: grid;
@@ -685,6 +718,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         font-size: 12px;
         font-weight: 700;
         line-height: 1;
+        margin-left: 1px;
       }
       .account-btn.is-seller .avatar {
         background: var(--color-forest);
@@ -909,44 +943,22 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         .announce-links {
           display: none;
         }
+        .logo {
+          font-size: 18px;
+        }
       }
       @media (max-width: 1180px) {
-        .navbar-inner { grid-template-columns: auto minmax(0, 1fr) auto; }
+        .navbar-inner { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; }
         .search-group { min-width: 0; }
         .search-bar { width: 100%; min-width: 0; }
         .search-bar > ui-icon, .lang-wrap { flex-shrink: 0; }
+        .logo { font-size: 17px; }
       }
-      @media (max-width: 700px) {
-        .navbar-inner { grid-template-columns: 1fr auto 1fr; }
-        .search-placeholder {
-          display: none;
-        }
-        /* Once it is just a magnifier, the pill border and fill around it are
-           a box drawn around an icon — and the wishlist and cart beside it are
-           bare icons, so the search looked like a different kind of control
-           for no reason. */
-        .search-bar {
-          /* flex, not width alone: the 1180px rule sets min-width: 0 so the
-             bar can shrink with the viewport, and at phone width that let it
-             collapse to 0 with its icon spilling outside. Fixing the basis and
-             refusing to shrink keeps the tap target intact. */
-          flex: 0 0 36px;
-          width: 36px;
-          min-width: 36px;
-          padding: 0;
-          justify-content: center;
-          border: 0;
-          background: none;
-          border-radius: var(--radius-sm);
-        }
-        .search-bar:hover {
-          background: var(--color-bg-hover);
-          border-color: transparent;
-          box-shadow: none;
-        }
-        .lang-menu {
-          right: -8px;
-        }
+      @media (max-width: 1060px) {
+        .logo-sub { display: none; }
+      }
+      @media (max-width: 960px) {
+        .logo { font-size: 16px; }
       }
       /* Below ~420px the icon row plus a labelled Sign In button overflows the
          viewport, so the button collapses to its icon. */
@@ -973,7 +985,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
       @media (max-width: 560px) {
         .announce-inner { justify-content: center; font-size: 10.5px; }
         .announce .dot, .announce-inner > span:nth-of-type(2) { display: none; }
-        .logo { font-size: 18px; }
+        .logo { font-size: 14px; gap: 7px; white-space: nowrap; }
         .logo-mark { width: 28px; height: 28px; }
         .signin-label { display: none; }
         .signin-btn { padding-inline: 11px; margin-left: 0; }
@@ -991,6 +1003,74 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         .wishlist-btn { display: none; }
         .menu-btn { width: 38px; }
       }
+      @media (max-width: 700px) {
+        .announce { display: none; }
+        .navbar-inner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          height: 60px;
+          padding-inline: 12px;
+        }
+        .logo-name { display: none; }
+        .logo-mark { width: 32px; height: 32px; }
+        .logo { flex-shrink: 0; }
+        .search-group {
+          flex: 1 1 auto;
+          min-width: 0;
+          width: auto;
+        }
+        .search-bar {
+          width: 100%;
+          min-width: 0;
+          height: 36px;
+          padding: 0 12px;
+          justify-content: flex-start;
+          gap: 8px;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-full);
+          background: var(--color-bg-alt);
+          box-shadow: none;
+        }
+        .search-placeholder {
+          display: inline-block;
+          font-size: 13px;
+          color: var(--color-muted);
+        }
+        .search-bar > ui-icon { flex-shrink: 0; }
+        .search-bar:hover {
+          background: #fff;
+          border-color: var(--color-border-hover, #cbd5e1);
+        }
+        .lang-wrap, .wishlist-btn, .cat-wrap, .signin-label { display: none; }
+        .nav-actions {
+          flex-shrink: 0;
+          gap: 4px;
+        }
+        .nav-menu-slot { display: block; }
+        .row-menu-slot { display: none; }
+        .signin-btn {
+          margin: 0;
+          width: 36px;
+          height: 36px;
+          min-height: 36px;
+          padding: 0;
+          justify-content: center;
+          border-radius: 50%;
+          border: none;
+          background: transparent;
+        }
+        .signin-btn:hover {
+          background: var(--color-bg-alt);
+          border-color: transparent;
+        }
+        .menu-btn { width: 36px; height: 36px; }
+        .icon-btn { width: 36px; height: 36px; }
+        .account-btn .role-chip { display: none; }
+        .account-btn > ui-icon { display: none; }
+        .mobile-menu { right: 0; max-width: calc(100vw - 32px); }
+      }
+
     `,
   ],
 })

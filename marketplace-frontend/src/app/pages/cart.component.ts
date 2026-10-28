@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
 import { CartService } from '../core/cart/cart.service';
@@ -15,6 +15,10 @@ import { SeoService } from '../core/seo/seo.service';
 
 @Component({
   selector: 'app-cart',
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+    '(document:keydown.escape)': 'sheetOpen.set(false)',
+  },
   imports: [
     RouterLink,
     NavbarComponent,
@@ -278,61 +282,104 @@ import { SeoService } from '../core/seo/seo.service';
           </button>
         </div>
 
-        <aside class="summary card">
-          <h2>{{ 'cart.orderSummary' | translate }}</h2>
-          <div class="row">
-            <span>{{ 'cart.subtotal' | translate }} ({{ cart.count() }} items)</span>
-            <span>\${{ cart.subtotal().toFixed(2) }}</span>
-          </div>
-          <div class="row">
-            <span>{{ 'cart.deliveryFee' | translate }}</span>
-            @if (cart.shipping() === 0) {
-              <span class="free">{{ 'cart.freeDelivery' | translate }}</span>
-            } @else {
-              <span>\${{ cart.shipping().toFixed(2) }}</span>
-            }
+        <!-- Desktop: sticky sidebar, always open. Phone (<=900px): a bottom sheet
+             that shows only the total and checkout, and slides up for details. -->
+        <aside
+          #summary
+          class="summary card"
+          [class.open]="sheetOpen()"
+          [attr.aria-label]="'cart.orderSummary' | translate"
+        >
+          <button
+            type="button"
+            class="sheet-grabber"
+            (click)="toggleSheet()"
+            aria-controls="summary-details"
+            [attr.aria-label]="(sheetOpen() ? 'cart.hideDetails' : 'cart.showDetails') | translate"
+          ></button>
+
+          <div class="reveal" id="summary-details">
+            <div class="reveal-inner">
+              <h2>{{ 'cart.orderSummary' | translate }}</h2>
+              <div class="row">
+                <span>{{ 'cart.subtotal' | translate }} ({{ cart.count() }} items)</span>
+                <span>\${{ cart.subtotal().toFixed(2) }}</span>
+              </div>
+              <div class="row">
+                <span>{{ 'cart.deliveryFee' | translate }}</span>
+                @if (cart.shipping() === 0) {
+                  <span class="free">{{ 'cart.freeDelivery' | translate }}</span>
+                } @else {
+                  <span>\${{ cart.shipping().toFixed(2) }}</span>
+                }
+              </div>
+
+              <div class="stores-summary-box">
+                <span class="stores-count-label">
+                  <ui-icon name="store" [size]="14" />
+                  {{ storeCount() }} {{ storeCount() === 1 ? 'store cart' : 'store carts' }}
+                </span>
+                <p class="ship-hint">
+                  {{ 'cart.independentOrdersNotice' | translate }}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div class="stores-summary-box">
-            <span class="stores-count-label">
-              <ui-icon name="store" [size]="14" />
-              {{ storeCount() }} {{ storeCount() === 1 ? 'store cart' : 'store carts' }}
-            </span>
-            <p class="ship-hint">
-              {{ 'cart.independentOrdersNotice' | translate }}
-            </p>
-          </div>
-
-          <div class="row total">
+          <button
+            type="button"
+            class="row total"
+            (click)="toggleSheet()"
+            aria-controls="summary-details"
+            [attr.aria-expanded]="sheetOpen()"
+          >
             <span>{{ 'cart.exactTotal' | translate }}</span>
-            <span>\${{ cart.total().toFixed(2) }}</span>
+            <span class="total-value">
+              \${{ cart.total().toFixed(2) }}
+              <span class="chevron" aria-hidden="true"><ui-icon name="chevron-up" [size]="14" /></span>
+            </span>
+          </button>
+
+          <!-- Phone, collapsed: one quiet line so the total has context. -->
+          <div class="reveal collapsed-only">
+            <div class="reveal-inner">
+              <p class="sheet-hint">
+                <ui-icon name="store" [size]="12" />
+                {{ storeCount() }} {{ storeCount() === 1 ? 'store cart' : 'store carts' }}
+                · {{ cart.count() }} {{ cart.count() === 1 ? 'item' : 'items' }}
+              </p>
+            </div>
           </div>
 
           @if (readyStores().length > 0) {
             <button
-              class="btn btn-primary btn-block btn-lg"
+              class="btn btn-primary btn-block btn-lg checkout-btn"
               (click)="goToCheckout()"
             >
               {{ 'cart.checkoutSelectedStore' | translate }}
               <ui-icon name="arrow-right" [size]="16" color="#fff" />
             </button>
           } @else {
-            <button class="btn btn-secondary btn-block btn-lg" disabled>
+            <button class="btn btn-secondary btn-block btn-lg checkout-btn" disabled>
               {{ 'cart.notReady' | translate }}
             </button>
           }
 
-          @if (!isAuthenticated()) {
-            <p class="login-note">
-              <ui-icon name="lock" [size]="13" />
-              Browse and add items without an account. Sign in or create one when you check out.
-            </p>
-          }
+          <div class="reveal">
+            <div class="reveal-inner">
+              @if (!isAuthenticated()) {
+                <p class="login-note">
+                  <ui-icon name="lock" [size]="13" />
+                  Browse and add items without an account. Sign in or create one when you check out.
+                </p>
+              }
 
-          <div class="trust-list">
-            <div><ui-icon name="package" [size]="14" /> Items stay grouped by seller</div>
-            <div><ui-icon name="check" [size]="14" /> Authoritative totals calculated by Commerce</div>
-            <div><ui-icon name="shield" [size]="14" /> Cash on Delivery (COD) payment</div>
+              <div class="trust-list">
+                <div><ui-icon name="package" [size]="14" /> Items stay grouped by seller</div>
+                <div><ui-icon name="check" [size]="14" /> Authoritative totals calculated by Commerce</div>
+                <div><ui-icon name="shield" [size]="14" /> Cash on Delivery (COD) payment</div>
+              </div>
+            </div>
           </div>
         </aside>
       </section>
@@ -725,6 +772,12 @@ import { SeoService } from '../core/seo/seo.service';
         position: sticky;
         top: 20px;
       }
+      /* Sheet-only parts are hidden on desktop, where everything is open. */
+      .sheet-grabber,
+      .chevron,
+      .collapsed-only {
+        display: none;
+      }
       .summary h2 {
         font-size: 18px;
         margin-bottom: 14px;
@@ -737,12 +790,26 @@ import { SeoService } from '../core/seo/seo.service';
         color: var(--color-text-secondary, #4b5563);
       }
       .summary .row.total {
+        width: 100%;
+        align-items: center;
+        border: 0;
         border-top: 1px solid var(--color-border, #e5e7eb);
-        padding-top: 12px;
-        margin-top: 12px;
+        border-radius: 0;
+        background: none;
+        padding: 12px 0 0;
+        margin: 12px 0 14px;
+        font: inherit;
         font-size: 17px;
         font-weight: 700;
         color: var(--color-text-primary, #111827);
+        text-align: left;
+        cursor: default;
+        pointer-events: none;
+      }
+      .total-value {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
       }
       .free {
         color: #16a34a;
@@ -836,7 +903,8 @@ import { SeoService } from '../core/seo/seo.service';
 
       @media (max-width: 900px) {
         .cart-layout {
-          grid-template-columns: 1fr;
+          /* minmax(0) so long store/product rows can't push the column wider than the screen */
+          grid-template-columns: minmax(0, 1fr);
         }
         .group-footer {
           flex-direction: column;
@@ -847,6 +915,155 @@ import { SeoService } from '../core/seo/seo.service';
         }
         .checkout-store-btn {
           justify-content: center;
+        }
+
+        /* ---- Bottom sheet ---- */
+        .summary {
+          position: sticky;
+          top: auto;
+          bottom: 0;
+          z-index: 30;
+          /* bleed to the screen edges past .cart-layout's 32px side padding */
+          margin: 8px -32px 0;
+          padding: 0 20px calc(16px + env(safe-area-inset-bottom));
+          border: 0;
+          border-radius: 24px 24px 0 0;
+          background: var(--color-surface);
+          box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.13);
+        }
+        .sheet-grabber {
+          display: block;
+          position: relative;
+          width: 100%;
+          height: 20px;
+          min-height: 0;
+          padding: 0;
+          border: 0;
+          background: none;
+          cursor: pointer;
+        }
+        .sheet-grabber::before {
+          content: '';
+          position: absolute;
+          left: 50%;
+          top: 8px;
+          width: 40px;
+          height: 5px;
+          margin-left: -20px;
+          border-radius: 99px;
+          background: var(--color-border-strong);
+        }
+
+        /* Auto-height reveal without measuring: grid rows 0fr -> 1fr. */
+        .reveal {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 230ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .reveal-inner {
+          min-height: 0;
+          overflow: hidden;
+        }
+        .summary.open .reveal {
+          grid-template-rows: 1fr;
+        }
+        .collapsed-only {
+          display: grid;
+          grid-template-rows: 1fr;
+        }
+        .summary.open .collapsed-only {
+          grid-template-rows: 0fr;
+        }
+        .summary h2 {
+          margin: 6px 0 12px;
+          font-size: 16px;
+        }
+
+        .summary .row.total {
+          margin: 6px 0 2px;
+          padding: 6px 0;
+          border-top-color: transparent;
+          font-size: 17px;
+          cursor: pointer;
+          pointer-events: auto;
+          transition: font-size 230ms cubic-bezier(0.4, 0, 0.2, 1), border-color 230ms ease;
+        }
+        .summary.open .row.total {
+          margin-top: 4px;
+          padding-top: 12px;
+          border-top-color: var(--color-border);
+          font-size: 19px;
+        }
+        .chevron {
+          display: grid;
+          place-items: center;
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: var(--color-bg-alt);
+          color: var(--color-text-secondary);
+          transition: transform 230ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .summary.open .chevron {
+          transform: rotate(180deg);
+        }
+        .sheet-hint {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin: 0 0 12px;
+          font-size: 12.5px;
+          color: var(--color-muted);
+        }
+
+        /* The panel grows while the button shrinks a little, so opening reads
+           as the sheet expanding rather than the page being pushed around. */
+        .checkout-btn {
+          height: 52px;
+          border-radius: 14px;
+          transition: height 230ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .summary.open .checkout-btn {
+          height: 48px;
+        }
+        .summary .stores-summary-box {
+          margin-bottom: 4px;
+        }
+        .trust-list {
+          margin-top: 12px;
+          padding-top: 12px;
+        }
+      }
+
+      /* Phone: give the item rows room; same content, tighter spacing. */
+      @media (max-width: 600px) {
+        .cart-layout {
+          padding: 20px 16px 0;
+        }
+        .summary {
+          margin: 8px -16px 0;
+        }
+        .store-group {
+          padding: 14px;
+        }
+        .item-row {
+          gap: 12px;
+        }
+        .item-thumb {
+          width: 68px;
+          height: 68px;
+        }
+        .item-main {
+          min-width: 0;
+        }
+      }
+
+      @media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+        .reveal,
+        .summary .row.total,
+        .chevron,
+        .checkout-btn {
+          transition-duration: 1ms;
         }
       }
     `,
@@ -868,6 +1085,21 @@ export class CartComponent {
   }
 
   protected readonly storeCount = computed(() => this.cart.groups().length);
+
+  /** Phone bottom sheet: collapsed shows total + checkout, open shows the breakdown. */
+  protected readonly sheetOpen = signal(false);
+  private readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
+
+  protected toggleSheet(): void {
+    this.sheetOpen.update((open) => !open);
+  }
+
+  /** Tapping anywhere outside the sheet closes it. */
+  protected onDocumentClick(event: MouseEvent): void {
+    if (this.sheetOpen() && !this.summary()?.nativeElement.contains(event.target as Node)) {
+      this.sheetOpen.set(false);
+    }
+  }
 
   protected readonly readyStores = computed(() =>
     this.cart.groups().filter((g) => g.checkoutReady),

@@ -4,7 +4,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
 import { Category } from '../../../../core/catalog/catalog.models';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { PromoCardComponent } from '../../../shared/ui/promo-card/promo-card.component';
-import { PROMO_SLOTS } from '../../../../core/promos/promos.data';
+import { Promo } from '../../../../core/promos/promo.models';
 
 const OPEN_DELAY_MS = 60;
 const CLOSE_DELAY_MS = 180;
@@ -12,8 +12,8 @@ const SLIDE_MS = 6000;
 
 
 /**
- * Homepage hero: vertical category sidebar with a hover mega-menu, a rotating
- * main banner and stacked promo cards. The sidebar is desktop-only; below
+ * Homepage hero: category sidebar with a hover mega-menu, a rotating
+ * split banner and a row of collection cards. The sidebar is desktop-only; below
  * 1024px the navbar's category row and menu drawer take over.
  */
 @Component({
@@ -92,17 +92,17 @@ const SLIDE_MS = 6000;
             <img [src]="s.image" [alt]="s.alt" [attr.loading]="i === 0 ? 'eager' : 'lazy'" />
             <span class="slide-copy">
               <small>{{ s.eyebrow }}</small>
-              <strong>{{ s.title }} <span>{{ s.accent }}</span></strong>
-              <p>{{ s.text }}</p>
+              <h1>{{ s.title }} <span>{{ s.accent }}</span></h1>
               <em class="slide-cta">{{ s.cta }} <ui-icon name="arrow-right" [size]="15" /></em>
             </span>
           </a>
         }
-        <div class="dots" role="tablist">
+        <div class="dots" role="group" aria-label="Featured collections">
           @for (s of slides; track s.title; let i = $index) {
             <button
               type="button"
               [class.on]="slide() === i"
+              [attr.aria-pressed]="slide() === i"
               [attr.aria-label]="'Show slide ' + (i + 1)"
               (click)="goTo(i)"
             ></button>
@@ -123,7 +123,7 @@ const SLIDE_MS = 6000;
       display: grid;
       grid-template-columns: 236px minmax(0, 1fr) 300px;
       gap: 16px;
-      padding-top: 20px;
+      padding-top: 12px;
       align-items: stretch;
     }
 
@@ -227,8 +227,8 @@ const SLIDE_MS = 6000;
       max-width: 420px; display: flex; flex-direction: column; gap: 14px; color: var(--color-text);
     }
     .slide-copy small { font-size: 12px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--color-muted); }
-    .slide-copy strong { font-size: clamp(30px, 3.4vw, 48px); line-height: 1.05; letter-spacing: -.02em; font-weight: 800; }
-    .slide-copy strong span { display: block; color: var(--color-accent); }
+    .slide-copy h1 { margin: 0; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.05; letter-spacing: -.02em; font-weight: 800; }
+    .slide-copy h1 span { display: block; color: var(--color-accent); }
     .slide-copy p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--color-text-secondary); }
     .slide-cta {
       align-self: flex-start; margin-top: 6px; font-style: normal;
@@ -268,6 +268,72 @@ const SLIDE_MS = 6000;
       .promos { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; }
       .promos app-promo-card { scroll-snap-align: start; }
     }
+    .hero-grid { grid-template-columns: 224px minmax(0, 1fr); gap: 20px; padding-top: 12px; }
+    .cat-side { border-radius: 20px; padding: 10px; background: #fff; }
+    .cat-head { background: #f0edff; color: #5743bb; padding: 14px 12px; }
+    .cat-row { padding: 10px 12px; }
+    .banner { min-height: 380px; border-radius: 24px; background: #f2effb; }
+    .slide { background: #f2effb; }
+    .slide img { position: absolute; right: 0; width: 48%; object-position: center; }
+    .slide::after { background: linear-gradient(90deg, #f2effb 44%, rgba(242,239,251,.6) 54%, transparent 68%); pointer-events: none; }
+    .slide-copy { left: 40px; max-width: 49%; gap: 18px; }
+    .slide-copy small { color: #66538a; letter-spacing: .14em; font-size: 10px; }
+    .slide-copy h1 { margin: 0; font-size: clamp(32px, 3.4vw, 54px); line-height: 1.12; letter-spacing: -.045em; font-weight: 750; }
+    .slide-copy h1 span { color: #6750b5; }
+    .slide-copy p { max-width: 340px; font-size: 14px; line-height: 1.75; }
+    .slide-cta { border-radius: 12px; background: #2563eb; box-shadow: 0 6px 16px #2563eb20; padding: 14px 20px; }
+    .slide:hover .slide-cta { background: #1d4ed8; }
+    .dots { left: 40px; bottom: 22px; }
+    .dots button { width: 7px; height: 7px; }
+    .dots button.on { background: #6750b5; }
+    .promos { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    @media (max-width: 1100px) {
+      .hero-grid { grid-template-columns: 200px minmax(0, 1fr); }
+      .slide-copy { left: 28px; }
+      .slide-copy h1 { margin: 0; font-size: 36px; }
+      .banner { min-height: 430px; }
+    }
+    @media (max-width: 1023px) {
+      .hero-grid { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
+      .banner { min-height: 390px; }
+      .slide-copy { max-width: 48%; }
+    }
+    /* Phone: one fixed-height photo card with the copy over it (no height jump
+       between slides), and the three promos as a swipeable row of slim cards. */
+    @media (max-width: 640px) {
+      .hero-grid { gap: 10px; padding-top: 10px; }
+      .banner { min-height: 0; height: 232px; border-radius: 16px; }
+      .slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+      .slide::after {
+        display: block;
+        background: linear-gradient(0deg, rgba(15, 23, 42, .82) 0%, rgba(15, 23, 42, .45) 45%, rgba(15, 23, 42, .05) 80%);
+      }
+      .slide-copy {
+        left: 16px; right: 16px; top: auto; bottom: 16px; transform: none;
+        max-width: none; gap: 6px; color: var(--color-bg);
+      }
+      .slide-copy small { font-size: 9.5px; letter-spacing: .12em; color: rgba(255, 255, 255, .78); }
+      .slide-copy h1 { font-size: 21px; line-height: 1.15; letter-spacing: -.02em; font-weight: 700; color: var(--color-bg); }
+      .slide-copy h1 span { display: inline; color: var(--color-sand); }
+      .slide-copy p { display: none; }
+      .slide-cta {
+        margin-top: 6px; min-height: 32px; padding: 0 12px; gap: 6px; border-radius: 999px;
+        background: var(--color-bg); color: var(--color-text); box-shadow: none; font-size: 12px;
+      }
+      .slide:hover .slide-cta { background: var(--color-bg); }
+      .dots { left: auto; right: 14px; top: 14px; bottom: auto; gap: 5px; padding: 5px 7px; border-radius: 999px; background: rgba(15, 23, 42, .35); }
+      .dots button { width: 6px; height: 6px; min-width: 0; min-height: 0; background: rgba(255, 255, 255, .55); }
+      .dots button.on { width: 16px; background: var(--color-bg); }
+
+      .promos {
+        display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 68%;
+        gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+        margin-inline: calc(var(--page-gutter, 16px) * -1); padding-inline: var(--page-gutter, 16px);
+        scroll-padding-inline: var(--page-gutter, 16px);
+      }
+      .promos::-webkit-scrollbar { display: none; }
+      .promos app-promo-card { height: 84px; scroll-snap-align: start; }
+    }
     @media (prefers-reduced-motion: reduce) {
       .slide, .mega { transition: none; }
     }
@@ -302,13 +368,13 @@ export class HomeHeroComponent {
 
   protected readonly slides = [
     {
-      eyebrow: 'Shop local, live better',
-      title: 'Everything you need,',
-      accent: 'from sellers you trust',
-      text: 'Discover products from Cambodian stores with clear prices and one simple checkout.',
-      cta: 'Shop now',
-      image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1600&q=80',
-      alt: 'Bright, calm living room interior',
+      eyebrow: 'Your everyday, a little better',
+      title: 'Good finds.',
+      accent: 'Great local stores.',
+      text: 'Shop everyday essentials and something special from stores across Cambodia. All together on Rentify.',
+      cta: 'Explore the marketplace',
+      image: '/assets/promos/artisan-homeware.webp',
+      alt: 'Woven baskets, pottery and home accessories in warm natural light',
       params: { sort: 'featured' },
     },
     {
@@ -317,8 +383,8 @@ export class HomeHeroComponent {
       accent: 'every week',
       text: 'Fresh listings from growing local brands, updated as sellers add them.',
       cta: 'See what’s new',
-      image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=1600&q=80',
-      alt: 'Laptop, headphones and devices on a desk',
+      image: '/assets/promos/botanical-beauty.webp',
+      alt: 'Botanical beauty and personal care collection',
       params: { sort: 'newest' },
     },
     {
@@ -327,14 +393,18 @@ export class HomeHeroComponent {
       accent: 'local makers',
       text: 'Handmade goods and authentic craftsmanship, straight from the people who make them.',
       cta: 'Explore collection',
-      image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1600&q=80',
+      image: '/assets/promos/silk-weaving.webp',
       alt: 'Handwoven basket and ceramics on a wooden table',
       params: { collection: 'handmade-crafts' },
     },
   ];
 
 
-  protected readonly promos = PROMO_SLOTS.heroSide;
+  protected readonly promos: Promo[] = [
+    { id: 'home', eyebrow: 'Make yourself at home', title: 'Small touches. Big difference.', cta: 'Shop home & living', link: '/categories/home-living', image: '/assets/promos/artisan-homeware.webp' },
+    { id: 'style', eyebrow: 'Find your own style', title: 'A little more you.', cta: 'Explore fashion', link: '/categories/fashion', image: '/assets/promos/khmer-fashion.webp' },
+    { id: 'pantry', eyebrow: 'Fresh inspiration', title: 'Good things for your pantry.', cta: 'Shop food & groceries', link: '/categories/food-groceries', image: '/assets/promos/local-pantry.webp' },
+  ];
 
   protected readonly slide = signal(0);
 

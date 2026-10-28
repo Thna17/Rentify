@@ -694,42 +694,42 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         :host-context(.product-grid) .cart-add { height: 31px; width: 31px; }
       }
 
-      /* ---------- minimal card */
-      .product-card {
+      /* ---------- minimal card (applies to standalone/grid cards, but preserves list view styles) */
+      :host:not(:host-context(.product-list)) .product-card {
         border: 0 !important;
         box-shadow: none !important;
         background: transparent !important;
       }
-      .thumb-wrap {
+      :host:not(:host-context(.product-list)) .thumb-wrap {
         border-radius: 16px;
         overflow: hidden;
         aspect-ratio: 1 / 1;
         background: var(--color-bg-alt);
       }
-      .product-body { padding: 12px 2px 0 !important; gap: 2px !important; }
+      :host:not(:host-context(.product-list)) .product-body { padding: 12px 2px 0 !important; gap: 2px !important; }
       /* Fixed min-height so a card with no reviews takes the same space as
          one with a rating row — otherwise cards in the same grid row end up
          at different heights depending on whether they have reviews yet. */
-      .product-kicker { order: 3; min-height: 15px !important; margin: 0 !important; }
-      .name {
+      :host:not(:host-context(.product-list)) .product-kicker { order: 3; min-height: 15px !important; margin: 0 !important; }
+      :host:not(:host-context(.product-list)) .name {
         font-size: 14px !important; font-weight: 500 !important; line-height: 1.35 !important;
         font-family: var(--font-body) !important; color: var(--color-text) !important;
         display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
       }
-      .seller { font-size: 12.5px !important; color: var(--color-muted) !important; }
-      .price-row { margin-top: 8px !important; align-items: center !important; }
-      .price { font-size: 15px !important; font-weight: 700 !important; color: var(--color-text) !important; }
-      .was { font-size: 12.5px !important; }
-      .discount-badge {
+      :host:not(:host-context(.product-list)) .seller { font-size: 12.5px !important; color: var(--color-muted) !important; }
+      :host:not(:host-context(.product-list)) .price-row { margin-top: 8px !important; align-items: center !important; }
+      :host:not(:host-context(.product-list)) .price { font-size: 15px !important; font-weight: 700 !important; color: var(--color-text) !important; }
+      :host:not(:host-context(.product-list)) .was { font-size: 12.5px !important; }
+      :host:not(:host-context(.product-list)) .discount-badge {
         background: #ef4444 !important; color: #fff !important; border: 0 !important;
         border-radius: 999px !important; font-size: 11px !important; padding: 2px 8px !important;
       }
-      .cart-add {
+      :host:not(:host-context(.product-list)) .cart-add {
         width: 34px !important; height: 34px !important; min-width: 0 !important; padding: 0 !important;
         border-radius: 999px !important; background: var(--color-text) !important; justify-content: center;
       }
-      .cart-add:hover:not(:disabled) { background: var(--color-accent) !important; }
-      .cart-label { display: none !important; }
+      :host:not(:host-context(.product-list)) .cart-add:hover:not(:disabled) { background: var(--color-accent) !important; }
+      :host:not(:host-context(.product-list)) .cart-label { display: none !important; }
       .wish-btn { opacity: 0; transition: opacity 180ms ease; }
       .product-card:hover .wish-btn, .wish-btn.saved, .wish-btn:focus-visible { opacity: 1; }
       @media (hover: none) { .wish-btn { opacity: 1; } }

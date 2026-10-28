@@ -8,6 +8,7 @@ import {
   Output,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../../core/cart/cart.service';
@@ -119,10 +120,28 @@ import { IconComponent } from '../ui/icon/icon.component';
           }
         </div>
 
-        <footer class="order-summary">
-          <div class="summary-line"><span>Subtotal</span><span>\${{ cart.subtotal().toFixed(2) }}</span></div>
-          <div class="summary-line"><span>Delivery</span><span [class.free]="cart.shipping() === 0">{{ cart.shipping() === 0 ? 'Free' : '$' + cart.shipping().toFixed(2) }}</span></div>
-          <div class="summary-line total"><span>Total</span><strong>\${{ cart.total().toFixed(2) }}</strong></div>
+        <!-- Phone: the breakdown folds away so the bag gets the room; tap the
+             total to slide it open. Desktop: always open. -->
+        <footer class="order-summary" [class.open]="summaryOpen()">
+          <div class="breakdown" id="drawer-breakdown">
+            <div class="breakdown-inner">
+              <div class="summary-line"><span>Subtotal</span><span>\${{ cart.subtotal().toFixed(2) }}</span></div>
+              <div class="summary-line"><span>Delivery</span><span [class.free]="cart.shipping() === 0">{{ cart.shipping() === 0 ? 'Free' : '$' + cart.shipping().toFixed(2) }}</span></div>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="summary-line total"
+            (click)="toggleSummary()"
+            aria-controls="drawer-breakdown"
+            [attr.aria-expanded]="summaryOpen()"
+          >
+            <span>Total</span>
+            <span class="total-value">
+              <strong>\${{ cart.total().toFixed(2) }}</strong>
+              <span class="total-chevron" aria-hidden="true"><ui-icon name="chevron-up" [size]="13" /></span>
+            </span>
+          </button>
           <button class="checkout-button" type="button" [disabled]="cart.isEmpty()" (click)="checkout()">
             Secure checkout <span>\${{ cart.total().toFixed(2) }}</span>
           </button>
@@ -175,8 +194,10 @@ import { IconComponent } from '../ui/icon/icon.component';
     .line-total { color: var(--color-text); font-size: 13px; }
     .order-summary { background: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -8px 22px rgba(64,44,34,.05); padding: 12px 24px 14px; }
     .summary-line { color: var(--color-muted); display: flex; font-size: 11px; justify-content: space-between; margin-bottom: 5px; }
-    .summary-line.total { border-top: 1px solid var(--color-border); color: var(--color-text); font-size: 13px; margin: 9px 0 10px; padding-top: 9px; }
+    .summary-line.total { align-items: center; background: none; border: 0; border-top: 1px solid var(--color-border); border-radius: 0; color: var(--color-text); cursor: default; font: inherit; font-size: 13px; margin: 9px 0 10px; min-height: 0; padding: 9px 0 0; pointer-events: none; text-align: left; width: 100%; }
     .summary-line.total strong { font-size: 16px; }
+    .total-value { align-items: center; display: inline-flex; gap: 8px; }
+    .total-chevron { display: none; }
     .free { color: var(--color-accent); font-weight: 750; }
     .checkout-button { align-items: center; background: var(--color-accent); border: 0; border-radius: 8px; color: white; cursor: pointer; display: flex; font-size: 12px; font-weight: 800; justify-content: space-between; min-height: 42px; padding: 0 15px; transition: background 160ms, transform 160ms; width: 100%; }
     .checkout-button:hover:not(:disabled) { background: var(--color-accent-hover); transform: translateY(-1px); }
@@ -196,19 +217,44 @@ import { IconComponent } from '../ui/icon/icon.component';
     .panel-leave { animation: drawer-out 240ms cubic-bezier(.4,0,.68,.15) both; }
     @media (max-width: 720px) {
       .cart-backdrop { background: rgba(12,22,17,.56); }
-      .cart-panel { animation-name: sheet-in; border-radius: 20px 20px 0 0; bottom: 0; height: min(88dvh, 760px); max-width: none; top: auto; width: 100%; }
+      /* Sheet sizes to its content and stops at ~70% of the screen, so it
+         sits lower and the page stays visible above it; the item list scrolls. */
+      .cart-panel { animation-name: sheet-in; border-radius: 20px 20px 0 0; bottom: 0; display: flex; flex-direction: column; height: auto; max-height: min(70dvh, 620px); max-width: none; top: auto; width: 100%; }
+      .drawer-body { flex: 1 1 auto; min-height: 0; }
+      .eyebrow { margin-bottom: 5px; }
+      h2 { font-size: 22px; }
       .cart-panel::before { background: #d3d1ca; border-radius: 99px; content: ''; height: 4px; left: 50%; position: absolute; top: 9px; transform: translateX(-50%); width: 42px; }
-      .drawer-header { padding: 27px 20px 18px; }
+      .drawer-header { align-items: center; padding: 22px 20px 12px; }
+      .close-button { height: 34px; width: 34px; }
       .drawer-body { padding: 0 20px 20px; }
-      .order-summary { padding: 11px 16px max(12px, env(safe-area-inset-bottom)); }
-      .cart-line { grid-template-columns: 76px minmax(0,1fr); gap: 12px; padding: 18px 0; }
-      .product-image { height: 92px; }
+      /* Part of the same sheet: flat, one hairline on top, no second grabber. */
+      .order-summary { border-radius: 0; box-shadow: 0 -6px 16px rgba(15,23,42,.04); padding: 8px 16px max(12px, env(safe-area-inset-bottom)); }
+      /* Auto-height reveal with no JS measuring: grid rows 0fr -> 1fr. */
+      .breakdown { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 230ms cubic-bezier(.4,0,.2,1); }
+      .breakdown-inner { min-height: 0; overflow: hidden; }
+      .order-summary.open .breakdown { grid-template-rows: 1fr; }
+      .breakdown-inner .summary-line:first-child { margin-top: 4px; }
+      .summary-line.total { border-top-color: transparent; cursor: pointer; margin: 0 0 10px; padding: 4px 0; pointer-events: auto; transition: font-size 230ms cubic-bezier(.4,0,.2,1), border-color 230ms ease, padding 230ms ease; }
+      .summary-line.total strong { font-size: 17px; transition: font-size 230ms cubic-bezier(.4,0,.2,1); }
+      .order-summary.open .summary-line.total { border-top-color: var(--color-border); margin-top: 6px; padding-top: 10px; }
+      .order-summary.open .summary-line.total strong { font-size: 19px; }
+      .total-chevron { align-items: center; background: var(--color-bg-alt); border-radius: 50%; color: var(--color-text-secondary); display: flex; height: 24px; justify-content: center; transition: transform 230ms cubic-bezier(.4,0,.2,1); width: 24px; }
+      .order-summary.open .total-chevron { transform: rotate(180deg); }
+      /* The sheet grows while the button shrinks a touch: reads as "opening". */
+      .checkout-button { border-radius: 12px; font-size: 13.5px; min-height: 50px; padding: 0 18px; transition: min-height 230ms cubic-bezier(.4,0,.2,1), background 160ms; }
+      .order-summary.open .checkout-button { min-height: 46px; }
+      .cart-line { grid-template-columns: 64px minmax(0,1fr); gap: 12px; padding: 14px 0; }
+      .product-image { height: 72px; }
+      .shipping-progress, .shipping-earned { margin-top: 12px; padding: 10px 12px; }
+      .unit-price { margin-top: 5px; }
+      .line-bottom { padding-top: 8px; }
       @keyframes sheet-in { from { opacity: .9; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
       @keyframes sheet-out { from { opacity: 1; transform: translateY(0); } to { opacity: .9; transform: translateY(100%); } }
       .panel-leave { animation-name: sheet-out; }
     }
     @media (prefers-reduced-motion: reduce) {
       .cart-backdrop, .cart-panel, .backdrop-leave, .panel-leave { animation-duration: 1ms; }
+      .breakdown, .summary-line.total, .summary-line.total strong, .total-chevron, .checkout-button { transition-duration: 1ms; }
     }
   `],
 })
@@ -221,6 +267,13 @@ export class CartDrawerComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly previousOverflow = document.body.style.overflow;
   private readonly previousPaddingRight = document.body.style.paddingRight;
+
+  /** Phone only: whether the price breakdown above the total is showing. */
+  protected readonly summaryOpen = signal(false);
+
+  protected toggleSummary(): void {
+    this.summaryOpen.update((open) => !open);
+  }
 
   protected get shippingProgress(): number {
     return Math.min(100, (this.cart.subtotal() / 50) * 100);
@@ -260,7 +313,12 @@ export class CartDrawerComponent implements AfterViewInit, OnDestroy {
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       event.preventDefault();
-      this.requestClose();
+      // First Escape folds the price details, the next one closes the bag.
+      if (this.summaryOpen()) {
+        this.summaryOpen.set(false);
+      } else {
+        this.requestClose();
+      }
       return;
     }
     if (event.key !== 'Tab' || !this.panel) return;

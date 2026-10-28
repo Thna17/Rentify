@@ -22,7 +22,10 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
 
 @Component({
   selector: 'app-products',
-  host: { '(document:keydown.escape)': 'filtersOpen.set(false)' },
+  host: {
+    '(document:keydown.escape)': 'closeMenu(); filtersOpen.set(false)',
+    '(document:click)': 'onDocumentClick($event)',
+  },
   imports: [
     RouterLink,
     NavbarComponent,
@@ -49,7 +52,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
       <div class="title-row">
         <h1>{{ heading() }}</h1>
         <span class="total">
-          {{ results().length }} {{ results().length === 1 ? ('catalog.oneProductCount' | translate) : ('catalog.productsCount' | translate:{ count: results().length }) }}
+          {{ results().length === 1 ? ('catalog.oneProductCount' | translate) : ('catalog.productsCount' | translate:{ count: results().length }) }}
           @if (search()) { {{ 'catalog.forSearch' | translate:{ term: search() } }} }
         </span>
       </div>
@@ -60,38 +63,96 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
         <ui-icon name="filter" [size]="15" /> {{ 'catalog.filters' | translate }}
         @if (sidebarCount()) { <span class="count">{{ sidebarCount() }}</span> }
       </button>
-      <label class="tool select">
-        <select [value]="priceBand()" (change)="setPriceBand($event)" aria-label="Price">
-          <option value="">{{ 'catalog.price' | translate }}</option>
-          <option value="under-5">{{ 'catalog.priceUnder5' | translate }}</option>
-          <option value="5-10">{{ 'catalog.price5To10' | translate }}</option>
-          <option value="10-20">{{ 'catalog.price10To20' | translate }}</option>
-          <option value="over-20">{{ 'catalog.priceOver20' | translate }}</option>
-        </select>
-        <ui-icon name="chevron-down" [size]="14" />
-      </label>
-      <label class="tool select">
-        <select [value]="minRating() ?? ''" (change)="setRating($event)" aria-label="Rating">
-          <option value="">{{ 'catalog.rating' | translate }}</option>
-          <option value="4.5">{{ 'catalog.rating45' | translate }}</option>
-          <option value="4">{{ 'catalog.rating40' | translate }}</option>
-        </select>
-        <ui-icon name="chevron-down" [size]="14" />
-      </label>
+      <!-- Price -->
+      <div class="dd" [class.open]="openMenu() === 'price'">
+        <button
+          type="button"
+          class="tool dd-trigger"
+          [class.active]="!!priceBand()"
+          aria-haspopup="listbox"
+          [attr.aria-expanded]="openMenu() === 'price'"
+          (click)="toggleMenu('price')"
+        >
+          {{ priceLabel() }}
+          <ui-icon class="dd-chevron" name="chevron-down" [size]="14" />
+        </button>
+        @if (openMenu() === 'price') {
+          <div class="dd-backdrop" animate.enter="fade-in" animate.leave="fade-out" (click)="closeMenu()"></div>
+          <div class="dd-menu" role="listbox" [attr.aria-label]="'catalog.price' | translate" animate.enter="menu-in" animate.leave="menu-out">
+            <div class="dd-title">{{ 'catalog.price' | translate }}</div>
+            <button type="button" class="dd-option" role="option" [class.on]="!priceBand()" [attr.aria-selected]="!priceBand()" (click)="pickPrice(null)">
+              {{ 'catalog.anyPrice' | translate }} <ui-icon class="dd-check" name="check" [size]="15" />
+            </button>
+            @for (b of priceBands; track b.value) {
+              <button type="button" class="dd-option" role="option" [class.on]="priceBand() === b.value" [attr.aria-selected]="priceBand() === b.value" (click)="pickPrice(b.value)">
+                {{ b.labelKey | translate }} <ui-icon class="dd-check" name="check" [size]="15" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Rating -->
+      <div class="dd" [class.open]="openMenu() === 'rating'">
+        <button
+          type="button"
+          class="tool dd-trigger"
+          [class.active]="!!minRating()"
+          aria-haspopup="listbox"
+          [attr.aria-expanded]="openMenu() === 'rating'"
+          (click)="toggleMenu('rating')"
+        >
+          @if (minRating(); as r) {
+            <ui-icon name="star" [size]="13" [filled]="true" color="var(--color-gold)" /> {{ r }}+
+          } @else {
+            {{ 'catalog.rating' | translate }}
+          }
+          <ui-icon class="dd-chevron" name="chevron-down" [size]="14" />
+        </button>
+        @if (openMenu() === 'rating') {
+          <div class="dd-backdrop" animate.enter="fade-in" animate.leave="fade-out" (click)="closeMenu()"></div>
+          <div class="dd-menu" role="listbox" [attr.aria-label]="'catalog.rating' | translate" animate.enter="menu-in" animate.leave="menu-out">
+            <div class="dd-title">{{ 'catalog.rating' | translate }}</div>
+            <button type="button" class="dd-option" role="option" [class.on]="!minRating()" [attr.aria-selected]="!minRating()" (click)="pickRating(null)">
+              {{ 'catalog.anyRating' | translate }} <ui-icon class="dd-check" name="check" [size]="15" />
+            </button>
+            @for (r of ratings; track r) {
+              <button type="button" class="dd-option" role="option" [class.on]="minRating() === r" [attr.aria-selected]="minRating() === r" (click)="pickRating(r)">
+                <span class="dd-stars"><ui-icon name="star" [size]="13" [filled]="true" color="var(--color-gold)" /> {{ r }} &amp; up</span>
+                <ui-icon class="dd-check" name="check" [size]="15" />
+              </button>
+            }
+          </div>
+        }
+      </div>
       <button type="button" class="tool" [class.active]="inStockOnly()" (click)="toggleInStock()">{{ 'catalog.inStock' | translate }}</button>
       <button type="button" class="tool" [class.active]="onSaleOnly()" (click)="toggleSale()">{{ 'catalog.onSaleOnly' | translate }}</button>
       @if (hasFilters()) {
         <button type="button" class="clear" (click)="clearAll()">{{ 'catalog.clearAll' | translate }}</button>
       }
-      <label class="tool select sort">
-        <span>{{ 'catalog.sort' | translate }}</span>
-        <select [value]="sort()" (change)="setSort($event)" aria-label="Sort">
-          @for (option of sorts; track option.value) {
-            <option [value]="option.value">{{ option.labelKey | translate }}</option>
-          }
-        </select>
-        <ui-icon name="chevron-down" [size]="14" />
-      </label>
+      <div class="dd sort" [class.open]="openMenu() === 'sort'">
+        <button
+          type="button"
+          class="tool dd-trigger"
+          aria-haspopup="listbox"
+          [attr.aria-expanded]="openMenu() === 'sort'"
+          (click)="toggleMenu('sort')"
+        >
+          <span class="sort-label">{{ 'catalog.sort' | translate }}</span> {{ sortLabel() }}
+          <ui-icon class="dd-chevron" name="chevron-down" [size]="14" />
+        </button>
+        @if (openMenu() === 'sort') {
+          <div class="dd-backdrop" animate.enter="fade-in" animate.leave="fade-out" (click)="closeMenu()"></div>
+          <div class="dd-menu right" role="listbox" [attr.aria-label]="'catalog.sortBy' | translate" animate.enter="menu-in" animate.leave="menu-out">
+            <div class="dd-title">{{ 'catalog.sortBy' | translate }}</div>
+            @for (option of sorts; track option.value) {
+              <button type="button" class="dd-option" role="option" [class.on]="sort() === option.value" [attr.aria-selected]="sort() === option.value" (click)="pickSort(option.value)">
+                {{ option.labelKey | translate }} <ui-icon class="dd-check" name="check" [size]="15" />
+              </button>
+            }
+          </div>
+        }
+      </div>
     </div>
 
     <div class="container shop-layout" [class.with-side]="filtersOpen()">
@@ -176,11 +237,15 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
           </button>
         </div>
       } @else if (results().length) {
-        <div class="product-grid">
-          @for (product of results(); track product.id) {
-            <app-product-card [product]="product" />
-          }
-        </div>
+        <!-- Re-keyed on every filter/sort change so the cards play their
+             entrance again; the stagger is capped so long lists stay snappy. -->
+        @for (key of [filterKey()]; track key) {
+          <div class="product-grid">
+            @for (product of results(); track product.id; let i = $index) {
+              <app-product-card class="card-in" [style.--i]="i < 12 ? i : 12" [product]="product" />
+            }
+          </div>
+        }
       } @else {
         <div class="no-results" role="region" [attr.aria-label]="'search.zeroResultTitle' | translate">
           <div class="empty-image img-placeholder">
@@ -483,29 +548,83 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
 
       .toolbar {
         display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        margin-top: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--color-border);
+        margin-top: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--color-border);
       }
       .tool {
-        position: relative; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px;
+        position: relative; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 13px;
         border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface);
-        color: var(--color-text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
-        transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+        color: var(--color-text); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: border-color 150ms ease, background 150ms ease, color 150ms ease, box-shadow 150ms ease;
       }
-      .tool:hover { border-color: var(--color-text); }
-      .tool.active { background: var(--color-text); border-color: var(--color-text); color: #fff; }
+      .tool:hover {
+        border-color: var(--color-border-strong, #cbd5e1);
+        background: var(--color-bg-alt);
+        color: var(--color-text);
+      }
+      .tool.active {
+        background: var(--color-forest, #1e392a);
+        border-color: var(--color-forest, #1e392a);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(30, 57, 42, 0.2);
+      }
       .filters-btn .count {
         display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
         background: var(--color-accent); color: #fff; font-size: 11px; font-weight: 700;
+        margin-left: 2px;
       }
-      .select { padding-right: 34px; }
-      .select select {
-        appearance: none; -webkit-appearance: none; border: 0; background: transparent; font: inherit; color: inherit;
-        cursor: pointer; outline: none; padding: 0;
+      .tool.active.filters-btn .count {
+        background: #fff;
+        color: var(--color-forest, #1e392a);
       }
-      .select ui-icon { position: absolute; right: 12px; pointer-events: none; color: var(--color-muted); }
+      .clear {
+        border: 0; background: none; color: var(--color-accent); font-size: 13px; font-weight: 600; cursor: pointer;
+        padding: 0 6px; white-space: nowrap; transition: opacity 140ms ease;
+      }
+      .clear:hover { text-decoration: underline; opacity: 0.85; }
+
+      /* ---------- pill dropdowns: tap anywhere on the pill to open */
+      .dd { position: relative; flex-shrink: 0; }
+      .dd-trigger { padding-right: 11px; }
+      .dd-chevron { color: var(--color-muted); transition: transform 220ms cubic-bezier(.2,.7,.2,1); }
+      .tool.active .dd-chevron { color: inherit; }
+      .dd.open .dd-trigger:not(.active) { border-color: var(--color-text); }
+      .dd.open .dd-chevron { transform: rotate(180deg); }
       .sort { margin-left: auto; }
-      .sort span { color: var(--color-muted); }
-      .clear { border: 0; background: none; color: var(--color-accent); font-size: 13.5px; font-weight: 600; cursor: pointer; padding: 0 6px; }
+      .sort-label { color: var(--color-muted); font-size: 12.5px; }
+      .dd-menu {
+        position: absolute; z-index: 60; top: calc(100% + 8px); left: 0; min-width: 220px; padding: 6px;
+        border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface);
+        box-shadow: var(--shadow-lg); transform-origin: top left;
+      }
+      .dd-menu.right { left: auto; right: 0; transform-origin: top right; }
+      .dd-title { display: none; }
+      .dd-option {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+        min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: none;
+        font: inherit; font-size: 13.5px; color: var(--color-text-secondary); text-align: left; cursor: pointer;
+        transition: background 120ms ease, color 120ms ease;
+      }
+      .dd-option:hover { background: var(--color-bg-alt); color: var(--color-text); }
+      .dd-option.on { color: var(--color-text); font-weight: 600; }
+      .dd-check { opacity: 0; transform: scale(.6); color: var(--color-accent); transition: opacity 150ms ease, transform 200ms cubic-bezier(.2,.7,.2,1); }
+      .dd-option.on .dd-check { opacity: 1; transform: none; }
+      .dd-stars { display: inline-flex; align-items: center; gap: 6px; }
+      .dd-backdrop { display: none; }
+      .menu-in { animation: menuIn 200ms cubic-bezier(.2,.8,.2,1) both; }
+      .menu-out { animation: menuOut 140ms ease-in both; }
+      @keyframes menuIn { from { opacity: 0; transform: translateY(-6px) scale(.96); } }
+      @keyframes menuOut { to { opacity: 0; transform: translateY(-4px) scale(.98); } }
+      .fade-in { animation: ddFade 200ms ease both; }
+      .fade-out { animation: ddFade 160ms ease reverse both; }
+      @keyframes ddFade { from { opacity: 0; } }
+
+      /* ---------- product entrance: staggered rise on every filter change */
+      .card-in { animation: cardIn 460ms cubic-bezier(.2,.75,.25,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+      @keyframes cardIn {
+        from { opacity: 0; transform: translateY(14px) scale(.98); filter: blur(2px); }
+        to { opacity: 1; transform: none; filter: none; }
+      }
 
       .grid-section { padding-top: 24px; }
       .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 28px 20px !important; }
@@ -554,7 +673,26 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
         .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 22px 14px !important; }
         .toolbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
         .toolbar::-webkit-scrollbar { display: none; }
+        .toolbar > * { flex-shrink: 0; }
         .sort { margin-left: 0; }
+        /* Phone: the option list is a bottom sheet (the toolbar scrolls sideways,
+           so an attached popover would get clipped). */
+        .dd-backdrop { display: block; position: fixed; inset: 0; z-index: 59; background: rgba(15, 23, 42, .38); }
+        .dd-menu, .dd-menu.right {
+          position: fixed; top: auto; left: 0; right: 0; bottom: 0; min-width: 0;
+          padding: 8px 12px calc(14px + env(safe-area-inset-bottom)); border: 0; border-radius: 20px 20px 0 0;
+          box-shadow: 0 -12px 40px rgba(15, 23, 42, .16);
+        }
+        .dd-menu::before { content: ''; display: block; width: 36px; height: 4px; margin: 2px auto 8px; border-radius: 99px; background: var(--color-border-strong); }
+        .dd-title { display: block; padding: 2px 12px 8px; font-size: 15px; font-weight: 700; color: var(--color-text); }
+        .dd-option { min-height: 48px; font-size: 14.5px; }
+        .menu-in { animation: sheetUp 260ms cubic-bezier(.2,.8,.2,1) both; }
+        .menu-out { animation: sheetDown 180ms ease-in both; }
+        @keyframes sheetUp { from { transform: translateY(100%); } }
+        @keyframes sheetDown { to { transform: translateY(100%); } }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card-in, .menu-in, .menu-out, .fade-in, .fade-out { animation-duration: 1ms; animation-delay: 0ms; }
       }
       @media (max-width: 370px) { .product-grid { grid-template-columns: 1fr !important; } }
     `,
@@ -624,6 +762,50 @@ export class ProductsComponent {
   ));
 
   protected readonly filtersOpen = signal(false);
+
+  /** Which toolbar pill has its option list open. */
+  protected readonly openMenu = signal<'price' | 'rating' | 'sort' | null>(null);
+
+  /** Changes whenever the visible list changes, so the grid can replay its entrance. */
+  protected readonly filterKey = computed(() => this.params().toString());
+
+  protected readonly priceLabel = computed(() => {
+    const band = this.priceBands.find((b) => b.value === this.priceBand());
+    return this.translate.t(band ? band.labelKey : 'catalog.price');
+  });
+  protected readonly sortLabel = computed(() => {
+    const option = SORTS.find((o) => o.value === this.sort()) ?? SORTS[0];
+    return this.translate.t(option.labelKey);
+  });
+
+  protected toggleMenu(menu: 'price' | 'rating' | 'sort'): void {
+    this.openMenu.update((open) => (open === menu ? null : menu));
+  }
+
+  protected closeMenu(): void {
+    this.openMenu.set(null);
+  }
+
+  protected onDocumentClick(event: MouseEvent): void {
+    if (this.openMenu() && !(event.target as HTMLElement).closest('.dd')) {
+      this.closeMenu();
+    }
+  }
+
+  protected pickPrice(value: string | null): void {
+    this.merge({ price: value, min: null, max: null });
+    this.closeMenu();
+  }
+
+  protected pickRating(value: number | null): void {
+    this.merge({ rating: value === null ? null : String(value) });
+    this.closeMenu();
+  }
+
+  protected pickSort(value: ProductSort): void {
+    this.merge({ sort: value === 'featured' ? null : value });
+    this.closeMenu();
+  }
   protected readonly subcategory = computed(() => this.params().get('subcategory'));
   protected readonly subcategories = computed(() => {
     const slug = this.category();
@@ -746,18 +928,6 @@ export class ProductsComponent {
     if (value === null || value === '') return null;
     const n = Number(value);
     return Number.isFinite(n) && n >= 0 ? n : null;
-  }
-
-  protected setSort(event: Event): void {
-    this.merge({ sort: (event.target as HTMLSelectElement).value });
-  }
-
-  protected setPriceBand(event: Event): void {
-    this.merge({ price: (event.target as HTMLSelectElement).value || null, min: null, max: null });
-  }
-
-  protected setRating(event: Event): void {
-    this.merge({ rating: (event.target as HTMLSelectElement).value || null });
   }
 
   protected toggleInStock(): void {
