@@ -672,3 +672,35 @@ Progress:
   Mono but does not load them. Apps still hard-code colors; four indigo hex
   fallbacks remain in `rentify-frontend/libs`, `marketplace-frontend/src` and
   `admin-frontend/src`.
+
+## 2026-10-27 RX-F01 token proposals for design review
+
+These are **proposed**, not approved design decisions. `@rentify/design-tokens` remains at **1.1.0**. The current implementation uses these values and the contrast validator passes its named pairs; review them against real EN/KM screens before freezing the palette.
+
+| Token | Light proposal | Dark proposal | Use |
+|---|---|---|---|
+| `brand.primaryActive` | `#08443b` | `#7fd3bb` | Pressed jade control |
+| `status.success.border` | `#bfe3cb` | `#1f4d31` | Success boundary |
+| `status.warning.border` | `#f6d9a8` | `#5a4214` | Warning boundary |
+| `status.danger.border` | `#f5c2bd` | `#5e2424` | Danger boundary |
+| `status.info.border` | `#bcd3f2` | `#1f3d66` | Information boundary |
+| `status.neutral.border` | `#ddd8cf` | `#3a414b` | Neutral boundary |
+| `status.success` base / text / subtle | `#15803d` / `#14532d` / `#eaf6ee` | `#4ade80` / `#86efac` / `#12261a` | Paid, delivered, approved |
+| `status.warning` base / text / subtle | `#b45309` / `#78350f` / `#fef5e7` | `#f59e0b` / `#fcd34d` / `#2a1f0a` | Pending, needs action |
+| `status.danger` base / text / subtle | `#c2261c` / `#7f1d1d` / `#fdecea` | `#f87171` / `#fca5a5` / `#2c1414` | Rejected, suspended |
+| `status.info` base / text / subtle | `#1d5fb8` / `#1e3a8a` / `#eaf1fb` | `#60a5fa` / `#93c5fd` / `#0f1e33` | Shipped, in progress |
+| `status.neutral` base / text / subtle | `#5b616b` / `#30343a` / `#f1f0ec` | `#9aa0a8` / `#d4d4cf` / `#23272d` | Draft, cancelled |
+
+- **Current (RX-F02 address data):** The prior checkout list remains for compatibility. The shared `AddressFields` selector uses a CC-BY-4.0 bilingual hierarchy (25 provinces, 210 districts/khan, 1,652 communes/sangkat) with source and license attribution in `rentify-frontend/libs/shared/src/data/README.md`. Review spelling differences before migrating saved checkout addresses to codes.
+
+## 2026-10-28 local email fallback
+
+- **Current:** with `NODE_ENV=development`, Core's `sendEmail` prints the
+  email (recipient, subject, text with the OTP or reset code) to the
+  core-api log when delivery fails, and reports success, so sign-up and
+  password reset can be tested without a working mail account
+  ([email service](../rentify-server/src/modules/notifications/emailService.js)).
+  Other environments still fail as before.
+- **Open:** the Gmail app password in the local `rentify-server/.env` is
+  rejected by Gmail (535 BadCredentials); real delivery needs a new app
+  password or a `RESEND_API_KEY`.

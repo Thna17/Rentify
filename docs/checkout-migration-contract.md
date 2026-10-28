@@ -166,3 +166,16 @@ parity.
    restricted-product moderation, tax and delivery policy, and an admin case
    review workflow before public release. Decide whether a flat delivery fee
    is sufficient beyond the pilot or whether zones and weights are needed.
+
+### Marketplace checkout interaction
+
+The Angular checkout reveals required-field errors only after an explicit order
+attempt. Error slots retain their space to avoid moving delivery fields and the
+order button. Invalid submission focuses the first incomplete field; correcting
+the form clears the validation summary. Unavailable payment options are disabled
+and COD stays selected. The address review updates as delivery details change.
+
+Province/city and city/district use linked dropdowns from the repository's
+Cambodia address dataset. Changing province clears the district selection.
+Options display in the selected UI language and retain English address values
+for the existing checkout request contract.
