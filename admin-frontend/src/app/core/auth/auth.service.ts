@@ -27,6 +27,39 @@ export class AuthService {
     return role === 'ADMIN';
   });
 
+  hasPermission(claim: string): boolean {
+    const user = this.userState();
+    if (!user) return false;
+    const role = user.role?.toUpperCase();
+    if (role === 'ADMIN') {
+      if (Array.isArray(user.claims) && user.claims.length > 0) {
+        return user.claims.includes(claim);
+      }
+      return true;
+    }
+    return Boolean(user.claims?.includes(claim));
+  }
+
+  canViewSupport(): boolean {
+    return this.hasPermission('support:case:read');
+  }
+
+  canWriteSupport(): boolean {
+    return this.hasPermission('support:case:write');
+  }
+
+  canResolveDisputes(): boolean {
+    return this.hasPermission('support:dispute:resolve');
+  }
+
+  canModerateCatalog(): boolean {
+    return this.hasPermission('catalog:moderate');
+  }
+
+  canApproveMakerChecker(): boolean {
+    return this.hasPermission('maker_checker:approve');
+  }
+
   getLoginUrl(returnUrl?: string): string {
     const returnTarget =
       returnUrl || (typeof window !== 'undefined' ? window.location.href : 'http://localhost:4800');
