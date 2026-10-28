@@ -31,6 +31,7 @@ Usage:
 Options:
   --tag <tag>      Filter journeys by tag (e.g. @buyer, @merchant, @golden, @contract, @safety)
   --ci             Run in CI mode with strict reporting
+  --staging        Run the real-host staging rehearsal (excluded from local runs by default)
   --help           Show this help message
 
 Examples:
@@ -38,6 +39,7 @@ Examples:
   node tools/e2e/runner.js --tag @buyer
   node tools/e2e/runner.js --tag @golden
   node tools/e2e/runner.js --ci
+  node tools/e2e/runner.js --staging
 `);
 }
 
@@ -74,7 +76,6 @@ async function main() {
     process.exit(1);
   }
 
-  const isStagingRehearsal = filterTag === '@rehearsal' || filterTag === '@staging' || args.includes('--staging');
   const serverManager = new E2EServerManager({ artifactCollector });
   const results = [];
   let overallPassed = true;
@@ -83,7 +84,9 @@ async function main() {
     // 1. Filter journeys
     const selectedJourneys = filterTag
       ? ALL_JOURNEYS.filter((j) => j.tags.includes(filterTag))
-      : ALL_JOURNEYS;
+      : args.includes('--staging')
+        ? ALL_JOURNEYS.filter((j) => j.tags.includes('@staging'))
+        : ALL_JOURNEYS.filter((j) => !j.tags.includes('@staging') && !j.tags.includes('@rehearsal'));
 
     if (selectedJourneys.length === 0) {
       console.warn(`⚠️  No journeys matched tag: "${filterTag}". Available tags: @buyer, @merchant, @golden, @contract, @safety, @artifacts, @rehearsal`);

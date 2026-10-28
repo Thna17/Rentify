@@ -15,7 +15,6 @@ export function useProductManagementState() {
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [isBulkPriceModalOpen, setIsBulkPriceModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isBulkCreateOpen, setIsBulkCreateOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
@@ -57,7 +56,6 @@ export function useProductManagementState() {
     setIsEditModalOpen(false);
     setIsBulkStatusModalOpen(false);
     setIsBulkPriceModalOpen(false);
-    setIsBulkCreateOpen(false);
     setOpenDeleteDialog(false);
     setIsInventoryDialogOpen(false);
     setIsProductDetailOpen(false);
@@ -72,8 +70,6 @@ export function useProductManagementState() {
     setIsBulkPriceModalOpen,
     isCreateModalOpen,
     setIsCreateModalOpen,
-    isBulkCreateOpen,
-    setIsBulkCreateOpen,
     isEditModalOpen,
     setIsEditModalOpen,
     openDeleteDialog,

@@ -199,6 +199,7 @@ export namespace Commerce {
   }
 
   export interface Product {
+    ProductVariants?: Array<Commerce.ProductVariant>;
     allowBackorders?: boolean;
     barcode?: string | null;
     categoryId?: string | null;
@@ -209,6 +210,7 @@ export namespace Commerce {
     hasVariants?: boolean;
     id: Commerce.UUID;
     images?: Array<{
+      alt?: string;
       url: string;
     }>;
     lowStockThreshold?: number;
@@ -258,6 +260,16 @@ export namespace Commerce {
     version: number;
   }
 
+  export interface ProductVariantInput {
+    expectedVersion?: number;
+    id?: Commerce.UUID;
+    optionValues?: Record<string, string>;
+    price: Commerce.Money;
+    sku: string;
+    status?: "active" | "disabled";
+    stockQuantity: number;
+  }
+
   export interface PublicProduct {
     barcode?: string | null;
     category: string;
@@ -271,6 +283,8 @@ export namespace Commerce {
     }>;
     name: string;
     price: Commerce.Money;
+    /** Canonical sellable SKU rows. The legacy variants field remains reserved for image swatches. */
+    productVariants?: Array<Commerce.ProductVariant>;
     rating: number;
     reviewCount: number;
     sku?: string | null;
@@ -884,17 +898,6 @@ export namespace Commerce {
       body: Record<string, any>;
       response: any;
     };
-    post_api_invoice_invoices_invoiceId_cancel: {
-      method: 'POST';
-      path: '/api/invoice/invoices/{invoiceId}/cancel';
-      parameters: {
-        path: {
-          invoiceId: string;
-        };
-      };
-      body?: Record<string, any>;
-      response: any;
-    };
     post_api_invoice_invoices_invoiceId_fulfill: {
       method: 'POST';
       path: '/api/invoice/invoices/{invoiceId}/fulfill';
@@ -934,17 +937,6 @@ export namespace Commerce {
         };
       };
       response: Array<Commerce.Invoice>;
-    };
-    post_api_invoice_websites_websiteId_invoices: {
-      method: 'POST';
-      path: '/api/invoice/websites/{websiteId}/invoices';
-      parameters: {
-        path: {
-          websiteId: string;
-        };
-      };
-      body: Record<string, any>;
-      response: any;
     };
     delete_api_marketplace_cart: {
       method: 'DELETE';
@@ -2069,14 +2061,18 @@ export namespace Commerce {
       body: {
         description?: string;
         images?: Array<{
+          alt?: string;
           url: string;
         }>;
         marketplaceCategory: string;
         marketplaceVisibility?: boolean | null;
         name: string;
         price: Commerce.Money;
+        /** Required for a simple Product when variants are omitted. */
+        sku?: string;
         status?: "active" | "draft";
         stockQuantity: number;
+        variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
     };
@@ -2094,14 +2090,18 @@ export namespace Commerce {
         /** Current version of the product for optimistic locking */
         expectedVersion: number;
         images?: Array<{
+          alt?: string;
           url: string;
         }>;
         marketplaceCategory?: string;
         marketplaceVisibility?: boolean | null;
         name?: string;
         price?: Commerce.Money;
+        /** When true, SKU rows omitted from variants are removed atomically. */
+        replaceVariants?: boolean;
         status?: "active" | "draft" | "archived" | "out_of_stock";
         stockQuantity?: number;
+        variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
     };
@@ -2239,6 +2239,7 @@ export type CommercePayment = Commerce.Payment;
 export type CommerceProduct = Commerce.Product;
 export type CommerceProductReview = Commerce.ProductReview;
 export type CommerceProductVariant = Commerce.ProductVariant;
+export type CommerceProductVariantInput = Commerce.ProductVariantInput;
 export type CommercePublicProduct = Commerce.PublicProduct;
 export type CommercePublicationExplanation = Commerce.PublicationExplanation;
 export type CommercePublicationSummary = Commerce.PublicationSummary;

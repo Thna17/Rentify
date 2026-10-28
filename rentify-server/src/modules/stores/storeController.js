@@ -4,6 +4,7 @@ const { asyncHandler } = require('../../utils/helpers');
 const { STORE_CATEGORIES } = require('./storeCategories');
 const { cloudinaryUploadService, uploadController } = require('../media');
 const { respondToUploadError } = uploadController;
+const launchChecklistService = require('./launchChecklistService');
 
 exports.getCategories = (req, res) => res.json({ success: true, data: STORE_CATEGORIES });
 
@@ -49,6 +50,11 @@ exports.getOwnStore = asyncHandler(async (req, res) => {
       entitlements,
     },
   });
+});
+
+exports.getLaunchChecklist = asyncHandler(async (req, res) => {
+  const data = await launchChecklistService.getForActor(req.user.id);
+  return res.json({ success: true, data });
 });
 
 exports.getStoreEntitlements = asyncHandler(async (req, res) => {

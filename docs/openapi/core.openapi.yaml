@@ -920,6 +920,58 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/stores/mine/launch-checklist:
+    get:
+      tags:
+        - Stores
+      summary: Get authoritative merchant launch checklist
+      description: Composes Core identity, Store, Website, seller-review, and Commerce catalog facts into safe checklist statuses and reason codes.
+      operationId: getOwnStoreLaunchChecklist
+      x-client-generation: false
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Merchant launch checklist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required: [version, observedAt, stale, merchantPath, summary, channels, items]
+                    properties:
+                      version:
+                        type: integer
+                      observedAt:
+                        type: string
+                        format: date-time
+                      stale:
+                        type: boolean
+                      staleReasonCode:
+                        type: string
+                        nullable: true
+                      merchantPath:
+                        type: string
+                        enum: [marketplace, storefront]
+                      summary:
+                        type: object
+                      channels:
+                        type: object
+                      items:
+                        type: array
+                        items:
+                          type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /api/stores:
     post:
       tags:

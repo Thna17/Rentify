@@ -1295,35 +1295,6 @@ export class CommerceApiClient {
   }
 
   /**
-   * Cancel an invoice and release reservation or restore stock
-   * POST /api/invoice/invoices/{invoiceId}/cancel
-   */
-  async post_api_invoice_invoices_invoiceId_cancel(options: {
-    path: {
-      invoiceId: string;
-    };
-    body?: Record<string, any>;
-    headers?: Record<string, string>;
-    correlationId?: string;
-    credentials?: RequestCredentials;
-  }): Promise<ApiResponse<any>> {
-    return this.transport.request<any>({
-      method: 'POST',
-      path: '/api/invoice/invoices/{invoiceId}/cancel',
-      pathParams: (options as any)?.path,
-      body: (options as any)?.body,
-      headers: options?.headers,
-      correlationId: options?.correlationId,
-      credentials: options?.credentials,
-    });
-  }
-
-  /** Alias for post_api_invoice_invoices_invoiceId_cancel */
-  async postApiInvoiceInvoicesInvoiceIdCancel(options: any): Promise<ApiResponse<any>> {
-    return (this as any).post_api_invoice_invoices_invoiceId_cancel(options);
-  }
-
-  /**
    * Fulfill an invoice and deduct canonical stock
    * POST /api/invoice/invoices/{invoiceId}/fulfill
    */
@@ -1429,35 +1400,6 @@ export class CommerceApiClient {
   /** Alias for get_api_invoice_websites_websiteId_invoices */
   async getApiInvoiceWebsitesWebsiteIdInvoices(options: any): Promise<ApiResponse<Array<Commerce.Invoice>>> {
     return (this as any).get_api_invoice_websites_websiteId_invoices(options);
-  }
-
-  /**
-   * Create invoice for website
-   * POST /api/invoice/websites/{websiteId}/invoices
-   */
-  async post_api_invoice_websites_websiteId_invoices(options: {
-    path: {
-      websiteId: string;
-    };
-    body: Record<string, any>;
-    headers?: Record<string, string>;
-    correlationId?: string;
-    credentials?: RequestCredentials;
-  }): Promise<ApiResponse<any>> {
-    return this.transport.request<any>({
-      method: 'POST',
-      path: '/api/invoice/websites/{websiteId}/invoices',
-      pathParams: (options as any)?.path,
-      body: (options as any)?.body,
-      headers: options?.headers,
-      correlationId: options?.correlationId,
-      credentials: options?.credentials,
-    });
-  }
-
-  /** Alias for post_api_invoice_websites_websiteId_invoices */
-  async postApiInvoiceWebsitesWebsiteIdInvoices(options: any): Promise<ApiResponse<any>> {
-    return (this as any).post_api_invoice_websites_websiteId_invoices(options);
   }
 
   /**
@@ -4233,14 +4175,18 @@ export class CommerceApiClient {
     body: {
       description?: string;
       images?: Array<{
+        alt?: string;
         url: string;
       }>;
       marketplaceCategory: string;
       marketplaceVisibility?: boolean | null;
       name: string;
       price: Commerce.Money;
+      /** Required for a simple Product when variants are omitted. */
+      sku?: string;
       status?: "active" | "draft";
       stockQuantity: number;
+      variants?: Array<Commerce.ProductVariantInput>;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -4276,14 +4222,18 @@ export class CommerceApiClient {
       /** Current version of the product for optimistic locking */
       expectedVersion: number;
       images?: Array<{
+        alt?: string;
         url: string;
       }>;
       marketplaceCategory?: string;
       marketplaceVisibility?: boolean | null;
       name?: string;
       price?: Commerce.Money;
+      /** When true, SKU rows omitted from variants are removed atomically. */
+      replaceVariants?: boolean;
       status?: "active" | "draft" | "archived" | "out_of_stock";
       stockQuantity?: number;
+      variants?: Array<Commerce.ProductVariantInput>;
     };
     headers?: Record<string, string>;
     correlationId?: string;

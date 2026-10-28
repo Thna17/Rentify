@@ -6,6 +6,7 @@ const { Op } = require('sequelize');
 const { Order, OrderItem, Payment, OrderEvent, ProductVariant } = require('../../models');
 const { inventoryLedgerService } = require('../inventory');
 const { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, orderView } = require('./marketplaceRules');
+const orderOperations = require('./orderOperationsService');
 
 function actionFingerprint(action, input) {
   const fields = {
@@ -59,6 +60,9 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         salesChannel: { [Op.in]: ['marketplace', 'storefront'] } },
         transaction, lock: transaction.LOCK.UPDATE });
       if (!order) fail('Order not found', 404);
+      if (details.expectedVersion !== undefined && Number(details.expectedVersion) !== Number(order.version)) {
+        fail('Order changed since it was loaded. Refresh and review the latest state.', 409);
+      }
       const replay = await OrderEvent.findOne({ where: { eventKey }, transaction });
       if (replay) {
         if (replay.storeId !== storeId || replay.orderId !== orderId || replay.type !== action ||
@@ -284,4 +288,9 @@ async function buyerReport({ buyerId, orderId, eventKey, type, details,
   }
 }
 
-module.exports = { buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction, buyerReport };
+module.exports = {
+  buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents,
+  merchantAction, buyerReport,
+  merchantOrders: orderOperations.listStoreOrders,
+  merchantOrder: orderOperations.getStoreOrder,
+};

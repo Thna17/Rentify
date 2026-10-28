@@ -23,6 +23,14 @@ manage the same store through one account across both channels. For the first
 release, each merchant owns exactly one Store, and each Store has zero or one
 Website. Marketplace-only Stores have no Website.
 
+The merchant onboarding implementation follows this model at `/start`. Draft
+form progress is resumable on the merchant's device, but authenticated contact,
+Store, Website, entitlement, and approval responses from Core always override
+draft state. Store creation is idempotent by owner; Website and subscription
+creation are atomic and replay-safe. Completing the marketplace-only path does
+not create a Website or subscription. The same Store can enter the storefront
+template step later, so catalog ownership continues to use `storeId`.
+
 ## Core domain relationships
 
 ```text

@@ -98,6 +98,16 @@ test('website and required trial subscription commit together in dependency orde
   assert.equal(result._ecommerceData.storeId, 'store-1');
 });
 
+test('website creation without paymentId creates a trial subscription even for a package with a listed price', async (t) => {
+  const { calls, website } = setupCreation(t);
+  Package.findByPk.mock.mockImplementation(async () => ({ id: 'starter-pkg', name: 'Starter', price: 5.0, limits: {}, features: {}, get() { return this; } }));
+  const result = await websiteService.createWebsiteWithTrial({
+    userId: 'user-1', templateId: 'template-1', packageId: 'starter-pkg', businessData,
+  });
+  assert.equal(result, website);
+  assert.ok(calls.includes('create subscription'));
+});
+
 test('failed trial creation rolls back the website', async (t) => {
   const { calls } = setupCreation(t, { failSubscription: true });
   await assert.rejects(
@@ -117,6 +127,25 @@ test('website creation retry reuses the Website and does not create another tria
   });
   assert.equal(result, website);
   assert.deepEqual(calls, ['commit']);
+});
+
+test('concurrent website submission returns the committed Website after a unique race', async (t) => {
+  const { calls, website } = setupCreation(t);
+  let lookup = 0;
+  Website.findOne.mock.mockImplementation(async () => (++lookup === 1 ? null : website));
+  Website.create.mock.mockImplementation(async () => {
+    const error = new Error('duplicate Website');
+    error.name = 'SequelizeUniqueConstraintError';
+    throw error;
+  });
+
+  const result = await websiteService.createWebsiteWithTrial({
+    userId: 'user-1', templateId: 'template-1', packageId: 'package-1', businessData,
+  });
+
+  assert.equal(result, website);
+  assert.deepEqual(calls, ['ensure store', 'rollback']);
+  assert.equal(subscriptionService.createTrialSubscription.mock.callCount(), 0);
 });
 
 test('new and updated website statuses use Commerce-supported values', async (t) => {

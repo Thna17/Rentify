@@ -49,7 +49,7 @@ function categorizeResource(svc, method, p, tag) {
     return 'Websites';
   }
   if (p.startsWith('/api/stores') || p.startsWith('/api/store-access') || p.startsWith('/dashboard')) {
-    if (p.includes('/products')) return 'Products and variants';
+    if (p.includes('/products') || p.includes('/product-imports')) return 'Products and variants';
     if (p.includes('/orders/pos')) return 'POS';
     if (p.includes('/delivery-policy')) return 'Stores';
     if (p.includes('/categories')) return 'Categories';
@@ -233,11 +233,8 @@ function classifyOperation(svc, method, p, opObj) {
     actorMatrix.unpermittedStaff = 'deny_403';
     actorMatrix.platformAdmin = 'allow';
 
-    if (p.startsWith('/api/product/{websiteId}')) {
-      currentImplementationStatus = 'gap';
-      gapDetails = 'Legacy endpoint is keyed by websiteId rather than storeId and does not verify staff permission tokens';
-      remediationPackage = 'P2-AUTHZ-002';
-    }
+    // Website-scoped compatibility routes resolve the canonical Store and enforce
+    // products/manage_products through requireWebsitePermission.
   } else if (resource === 'POS') {
     subjectType = 'any';
     requiredRole = 'merchant';
@@ -250,34 +247,24 @@ function classifyOperation(svc, method, p, opObj) {
     actorMatrix.unpermittedStaff = 'deny_403';
     actorMatrix.platformAdmin = 'allow';
 
-    if (p.includes('/websites/{websiteId}/orders/pos')) {
-      currentImplementationStatus = 'gap';
-      gapDetails = 'Legacy POS route is keyed by websiteId rather than storeId';
-      remediationPackage = 'P2-AUTHZ-002';
-    }
-  } else if (resource === 'Invoices') {
-    subjectType = 'any';
-    requiredRole = 'merchant';
-    requiredStoreRelationship = 'owner';
-    requiredPermission = 'invoices';
-    ownershipRule = 'user.id === store.merchantId || staff.storeId === store.id';
-    actorMatrix.storeOwner = 'allow';
-    actorMatrix.permittedStaff = 'allow';
-    actorMatrix.unpermittedStaff = 'deny_403';
-    actorMatrix.platformAdmin = 'allow';
-
-    if (method === 'GET' && p.includes('/websites/{websiteId}/invoices')) {
-      actorMatrix.permittedStaff = 'deny_403';
-      currentImplementationStatus = 'gap';
-      gapDetails = 'Legacy invoices endpoint is keyed by websiteId rather than storeId';
-      remediationPackage = 'P2-AUTHZ-002';
-    }
-  } else if (resource === 'Orders') {
+    // Website-scoped compatibility routes resolve the canonical Store and enforce
+    // the POS permission through requireWebsitePermission.
+  } else if (resource === 'Orders' || resource === 'Invoices') {
     if (p.includes('/merchant') || p.includes('/stores/')) {
       subjectType = 'any';
       requiredRole = 'merchant';
       requiredStoreRelationship = 'owner';
       requiredPermission = 'orders';
+      ownershipRule = 'store.merchantId === user.id || staff.storeId === store.id';
+      actorMatrix.storeOwner = 'allow';
+      actorMatrix.permittedStaff = 'allow';
+      actorMatrix.unpermittedStaff = 'deny_403';
+      actorMatrix.platformAdmin = 'allow';
+    } else if (p.includes('/websites/{websiteId}/invoices')) {
+      subjectType = 'any';
+      requiredRole = 'merchant';
+      requiredStoreRelationship = 'owner';
+      requiredPermission = 'invoices';
       ownershipRule = 'store.merchantId === user.id || staff.storeId === store.id';
       actorMatrix.storeOwner = 'allow';
       actorMatrix.permittedStaff = 'allow';
@@ -330,9 +317,11 @@ function classifyOperation(svc, method, p, opObj) {
     actorMatrix.platformAdmin = 'allow';
 
     if (p.startsWith('/ecommerce/stats/websites/{websiteId}')) {
-      currentImplementationStatus = 'gap';
-      gapDetails = 'Legacy stats route verifies token but lacks tenant website ownership verification';
-      remediationPackage = 'P2-AUTHZ-002';
+      subjectType = 'any';
+      requiredPermission = 'analytics';
+      ownershipRule = 'store.merchantId === user.id || staff.storeId === store.id';
+      actorMatrix.permittedStaff = 'allow';
+      actorMatrix.unpermittedStaff = 'deny_403';
     }
   } else {
     // Default store owner

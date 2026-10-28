@@ -1,5 +1,6 @@
 # Context is the repository root; send only the frontend sources.
 **
+!packages
 !rentify-frontend
 !marketplace-frontend
 !admin-frontend

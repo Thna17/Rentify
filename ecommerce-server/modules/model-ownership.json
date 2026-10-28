@@ -6,6 +6,7 @@
     "ProductOption": ["catalog", "store-catalog"],
     "Category": ["catalog"],
     "ProductReview": ["store-catalog"],
+    "ProductImportJob": ["store-catalog"],
     "StoreDeliveryPolicy": ["checkout"],
     "Cart": ["cart"],
     "CartItem": ["cart"],

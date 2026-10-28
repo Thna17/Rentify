@@ -27,6 +27,7 @@ const EventReplayAudit = require('./EventReplayAudit');
 const InventoryBalance = require('./InventoryBalance');
 const InventoryLedgerEntry = require('./InventoryLedgerEntry');
 const InventoryReservation = require('./InventoryReservation');
+const ProductImportJob = require('./ProductImportJob');
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -182,4 +183,5 @@ module.exports = {
   InventoryBalance,
   InventoryLedgerEntry,
   InventoryReservation,
+  ProductImportJob,
 };

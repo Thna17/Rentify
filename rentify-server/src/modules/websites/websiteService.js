@@ -16,9 +16,6 @@ class WebsiteService {
     const transaction = await Website.sequelize.transaction();
 
     try {
-      // Validate inputs
-      await this.validateCreationInputs({ templateId, packageId, userId });
-
       // A deployment retry must reuse the same Website and trial. A merchant
       // may own only one Website, including after starting as marketplace-only.
       const existingWebsite = await Website.findOne({ where: { userId }, transaction });
@@ -26,6 +23,11 @@ class WebsiteService {
         await transaction.commit();
         return existingWebsite;
       }
+
+      // Validate only when there is new work to create. A safe retry must not
+      // fail because an old draft references a template or package that was
+      // later retired; the persisted Website remains authoritative.
+      await this.validateCreationInputs({ templateId, packageId, userId });
 
       // Get package and template
       const [packageData, template, user, staffs] = await Promise.all([
@@ -54,13 +56,14 @@ class WebsiteService {
       // Create the website first because Subscription.websiteId is required.
       // Both rows stay in the same transaction so a failed trial rolls back
       // the website as well.
+      // Paid plans are paid by KHQR before this point; free plans and un-prepaid plans start a trial
+      const isPaid = Number(packageData.price) > 0 && Boolean(paymentId);
       const website = await Website.create({
         userId,
         storeId: store.id,
         templateId,
         businessDetails: businessData,
-        // Paid plans are paid by KHQR before this point; free plans start a trial
-        pricing: { totalPrice: Number(packageData.price) > 0 ? Number(packageData.price) : 0 },
+        pricing: { totalPrice: isPaid ? Number(packageData.price) : 0 },
         limits: packageData.limits,
         name: businessData.name,
         status: DEPLOYMENT.STATUS.CUSTOMIZATION,
@@ -83,7 +86,7 @@ class WebsiteService {
       await store.update({ projectionVersion: store.projectionVersion + 1 }, { transaction });
       await storeSyncService.queueStore(store, { websiteId: website.id, transaction });
 
-      const subscription = Number(packageData.price) > 0
+      const subscription = isPaid
         ? await subscriptionService.createPaidSubscriptionForWebsite({
           userId,
           pkg: packageData,
@@ -131,6 +134,15 @@ class WebsiteService {
 
     } catch (error) {
       if (!transaction.finished) await transaction.rollback();
+      // Concurrent double submission can race past the initial lookup. The
+      // unique Website→Store constraint rejects the second insert; return the
+      // committed Website instead of asking the merchant to start over. Its
+      // subscription was created in the same transaction, so this also avoids
+      // duplicate subscriptions.
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const existingWebsite = await Website.findOne({ where: { userId } });
+        if (existingWebsite) return existingWebsite;
+      }
       logger.error('Website creation failed', { userId, error: error.message });
       throw error;
     }

@@ -57,15 +57,17 @@ async function runMerchantJourney({ serverManager, contractValidator, artifactCo
       { timeout: 15000 }
     );
 
-    // Assert that the real merchant UI renders Store B data and storefront status
+    // Assert that the real merchant UI renders Store B data and exposes the
+    // Storefront sales channel. The redesigned dashboard no longer uses the
+    // legacy "Storefront · Live" badge.
     const bodyContentB = await browser.textContent('body');
     assert.ok(
       bodyContentB.includes('Mekong Silk Heritage'),
       `Merchant UI must render Store B name "Mekong Silk Heritage". Got: "${bodyContentB.slice(0, 200)}"`
     );
     assert.ok(
-      bodyContentB.includes('Storefront · Live'),
-      'Merchant UI must render "Storefront · Live" badge for storefront-enabled Store B'
+      bodyContentB.includes('Storefront') && !bodyContentB.includes('Get your own website'),
+      'Merchant UI must expose the Storefront channel for storefront-enabled Store B'
     );
 
     // Capture Playwright screenshot of Store B authenticated merchant dashboard
@@ -140,8 +142,8 @@ async function runMerchantJourney({ serverManager, contractValidator, artifactCo
       `Merchant UI must render Store A name "Angkor Artisan Pottery". Got: "${bodyContentA.slice(0, 200)}"`
     );
     assert.ok(
-      bodyContentA.includes('Get your own website') || !bodyContentA.includes('Storefront · Live'),
-      'Merchant UI for marketplace-only store must show website prompt and NOT indicate storefront live'
+      bodyContentA.includes('Get your own website') || !bodyContentA.includes('Storefront'),
+      'Merchant UI for a marketplace-only store must show the website prompt or omit the Storefront channel'
     );
 
     // Capture Playwright screenshot of Store A authenticated merchant dashboard

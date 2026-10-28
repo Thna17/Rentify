@@ -128,6 +128,18 @@ module.exports = {
     eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
     type: req.params.type, details: req.body,
   }) })),
+  merchantOrder: wrap(async (req, res) => res.json({ order: await service.merchantOrder(
+    req.params.storeId, req.params.orderId,
+  ) })),
+  merchantOrders: wrap(async (req, res) => res.json(await service.merchantOrders(req.params.storeId, req.query))),
+  merchantOrderAction: wrap(async (req, res) => {
+    await service.merchantAction({
+      storeId: req.params.storeId, orderId: req.params.orderId, actorId: req.user.id,
+      eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
+      action: req.params.action, details: req.body,
+    });
+    res.json({ order: await service.merchantOrder(req.params.storeId, req.params.orderId) });
+  }),
   sellerOrder: wrap(async (req, res) => res.json({ order: await service.buyerOrderForStore(
     req.params.storeId, req.params.orderId,
   ) })),

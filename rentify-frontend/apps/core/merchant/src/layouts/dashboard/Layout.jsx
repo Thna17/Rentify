@@ -15,6 +15,7 @@ import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import StoreCategoryPrompt from '../../pages/overview/StoreCategoryPrompt';
 import { ChannelProvider } from '../../context/ChannelContext';
+import { WorkspaceState } from '../../components/WorkspaceState';
 
 export const DashboardLayoutContent = ({ store, setStore }) => {
   const { websiteData } = useThemeService();
@@ -27,6 +28,10 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [searchFilter, setSearchFilter] = useState('');
+
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile]);
 
   // POS channel enabled state, persisted in localStorage
   const [posEnabled] = useState(() => {
@@ -90,7 +95,10 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     );
   }
 
-  const currentTabData = matchedTab || platformTabs[0] || ALL_TABS[0];
+  const currentTabData = platformTabs.find((tab) => tab.path === matchedTab?.path)
+    || matchedTab
+    || platformTabs[0]
+    || ALL_TABS[0];
 
   // Handler to navigate to tab
   const handleTabChange = (tabPath) => {
@@ -100,7 +108,8 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   const sidebarTabs = platformTabs.filter((tab) => !tab.hideInSidebar);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-dvh min-h-screen bg-background">
+      <a href="#merchant-main-content" className="rentify-skip-link">{t('dashboard.shell.skip_to_content')}</a>
       {/* Desktop Sidebar */}
       {!isMobile && (
         <AppSidebar
@@ -113,6 +122,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           setOpen={setSidebarOpen}
           hasStorefront={channels.hasStorefront}
           searchFilter={searchFilter}
+          store={store}
         />
       )}
 
@@ -128,6 +138,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           setOpen={setSidebarOpen}
           hasStorefront={channels.hasStorefront}
           searchFilter={searchFilter}
+          store={store}
         />
       )}
 
@@ -142,34 +153,35 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           onTabChange={handleTabChange}
           searchFilter={searchFilter}
           setSearchFilter={setSearchFilter}
+          store={store}
         />
         
-        <main className="flex-1 overflow-auto bg-background scrollbar-subtle">
+        <main id="merchant-main-content" tabIndex="-1" className="flex-1 overflow-auto bg-background scrollbar-subtle">
           {store?.entitlements?.isGracePeriod && (
             <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-semibold">⚠️ Grace Period Active:</span>
-                <span>Your storefront and marketplace sales remain live, but adding products, staff, and website edits are locked until subscription renewal.</span>
+                <span className="font-semibold">{t('dashboard.shell.grace_period_title')}</span>
+                <span>{t('dashboard.shell.grace_period_description')}</span>
               </div>
               <a
                 href="/settings/billing"
                 className="underline font-semibold whitespace-nowrap hover:text-amber-950 dark:hover:text-amber-100"
               >
-                Review Billing &rarr;
+                {t('dashboard.shell.review_billing')} &rarr;
               </a>
             </div>
           )}
           {store?.entitlements?.isSuspended && (
             <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-3 text-red-900 dark:text-red-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-semibold">⛔ Subscription Suspended:</span>
-                <span>{store?.entitlements?.restrictionReason || "Your subscription is suspended. Historical orders and invoices remain readable for 90 days."}</span>
+                <span className="font-semibold">{t('dashboard.shell.suspended_title')}</span>
+                <span>{store?.entitlements?.restrictionReason || t('dashboard.shell.suspended_description')}</span>
               </div>
               <a
                 href="/settings/billing"
                 className="underline font-semibold whitespace-nowrap hover:text-red-950 dark:hover:text-red-100"
               >
-                Settle Subscription &rarr;
+                {t('dashboard.shell.settle_subscription')} &rarr;
               </a>
             </div>
           )}
@@ -180,12 +192,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           )}
           <Suspense
             fallback={
-              <div className="flex h-64 w-full items-center justify-center p-8">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400" />
-                  <span className="text-xs text-muted-foreground font-medium">Loading feature...</span>
-                </div>
-              </div>
+              <WorkspaceState kind="loading" title={t('dashboard.shell.loading_feature')} />
             }
           >
             <div key={location.pathname} className="ds-page min-h-full">
@@ -202,20 +209,31 @@ export const DashboardLayout = () => {
   const { websiteId, isLoading: websiteLoading } = useWebsiteData();
   const [store, setStore] = useState(null);
   const [storeLoaded, setStoreLoaded] = useState(false);
+  const [storeLoadError, setStoreLoadError] = useState(false);
   const { isAuthenticated, isLoading: authLoading, profile } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isAuthenticated) return;
     let active = true;
+    setStoreLoadError(false);
     fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
-      .then((response) => response.ok ? response.json() : null)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Store request failed with ${response.status}`);
+        return response.json();
+      })
       .then((result) => { if (active) { setStore(result?.data || null); setStoreLoaded(true); } })
-      .catch(() => { if (active) setStoreLoaded(true); });
+      .catch(() => {
+        if (active) {
+          setStoreLoadError(true);
+          setStoreLoaded(true);
+        }
+      });
     return () => { active = false; };
   }, [isAuthenticated]);
 
   if (authLoading) {
-    return <div className="min-h-screen grid place-items-center">Loading…</div>;
+    return <WorkspaceState kind="loading" title={t('dashboard.shell.loading_workspace')} fullScreen />;
   }
 
   // Show authentication required if not authenticated
@@ -224,7 +242,21 @@ export const DashboardLayout = () => {
   }
 
   if (websiteLoading || !storeLoaded) {
-    return <div className="min-h-screen grid place-items-center">Loading your Store…</div>;
+    return <WorkspaceState kind="loading" title={t('dashboard.shell.loading_store')} fullScreen />;
+  }
+
+  if (storeLoadError) {
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    return (
+      <WorkspaceState
+        kind={offline ? 'offline' : 'error'}
+        title={t(offline ? 'dashboard.shell.offline_title' : 'dashboard.shell.store_error_title')}
+        description={t(offline ? 'dashboard.shell.offline_description' : 'dashboard.shell.store_error_description')}
+        actionLabel={t('dashboard.shell.try_again')}
+        onAction={() => window.location.reload()}
+        fullScreen
+      />
+    );
   }
 
   const effectiveWebsiteId =
@@ -239,10 +271,10 @@ export const DashboardLayout = () => {
     return (
       <main className="min-h-screen grid place-items-center text-center p-6">
         <div className="max-w-md space-y-4">
-          <h1 className="text-2xl font-bold">Welcome to Rentify</h1>
-          <p className="text-muted-foreground">You do not have an active store yet. Create your store to get started with marketplace or storefront selling.</p>
+          <h1 className="text-2xl font-bold">{t('dashboard.shell.welcome')}</h1>
+          <p className="text-muted-foreground">{t('dashboard.shell.no_store_description')}</p>
           <a href={`${MARKETING_URL}/start`} className="inline-block bg-primary text-primary-foreground font-medium rounded-lg px-6 py-2.5">
-            Create your Store
+            {t('dashboard.shell.create_store')}
           </a>
         </div>
       </main>

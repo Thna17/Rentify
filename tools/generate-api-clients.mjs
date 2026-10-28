@@ -172,6 +172,9 @@ function generateTypesForDoc(doc, namespace) {
       if (!['get', 'post', 'put', 'patch', 'delete'].includes(method)) continue;
       const op = pathObj[method];
       if (!op.operationId) continue;
+      // Some documented internal or scoped-rollout endpoints intentionally use
+      // the generic transport without expanding every application SDK.
+      if (op['x-client-generation'] === false) continue;
 
       const pathParams = (op.parameters || []).filter((p) => p.in === 'path');
       const queryParams = (op.parameters || []).filter((p) => p.in === 'query');
@@ -461,6 +464,7 @@ function generateClientClass(doc, namespace, className) {
       if (!['get', 'post', 'put', 'patch', 'delete'].includes(method)) continue;
       const op = pathObj[method];
       if (!op.operationId) continue;
+      if (op['x-client-generation'] === false) continue;
 
       const pathParams = (op.parameters || []).filter((p) => p.in === 'path');
       const queryParams = (op.parameters || []).filter((p) => p.in === 'query');
