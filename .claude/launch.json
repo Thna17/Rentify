@@ -25,6 +25,17 @@
         "--strictPort"
       ],
       "port": 4210
+    },
+    {
+      "name": "pos",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "rentify-frontend",
+        "run",
+        "dev:pos"
+      ],
+      "port": 4450
     }
   ]
 }
