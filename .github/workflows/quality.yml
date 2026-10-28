@@ -67,7 +67,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: rentify-server/package-lock.json
-      - run: npm ci --prefix rentify-server
+      - run: npm ci --prefix rentify-server && npm ci --prefix ecommerce-server
       - run: npm --prefix rentify-server run db:migrate
       - run: npm --prefix rentify-server run db:migrate:verify
       - run: npm run verify:core

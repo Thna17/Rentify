@@ -216,10 +216,13 @@ test('P3-INV-003: 1. Real Engine Anti-Mock Proof: Verifies InnoDB Engine, ACID T
   await sequelize.sync();
 
   const [dbInfo] = await sequelize.query('SELECT DATABASE() as db, VERSION() as ver;');
-  assert.equal(dbInfo[0].db, 'rentify_ecommerce_test', 'Must execute against real rentify_ecommerce_test database');
+  const currentDb = dbInfo[0].db;
+  const expectedDb = process.env.COMMERCE_DB_NAME || process.env.DB_NAME || 'rentify_ecommerce_test';
+  assert.equal(currentDb, expectedDb, `Must execute against real ${expectedDb} database`);
 
   const [engineInfo] = await sequelize.query(
-    "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'rentify_ecommerce_test' AND TABLE_NAME = 'InventoryBalances';"
+    "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = :currentDb AND TABLE_NAME = 'InventoryBalances';",
+    { replacements: { currentDb } }
   );
   assert.equal(engineInfo[0].ENGINE, 'InnoDB', 'InventoryBalances must use real transaction-capable InnoDB engine');
 });
