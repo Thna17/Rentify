@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { merchantDashboardUrl } from '../../../../core/rentify/rentify-marketplace.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TranslatePipe],
   template: `
   <footer class="footer">
     <div class="container footer-grid">
@@ -49,24 +50,12 @@ import { merchantDashboardUrl } from '../../../../core/rentify/rentify-marketpla
       </div>
     </div>
     <div class="footer-payment-strip container">
-      <div class="payment-strip-title">Accepted &amp; supported payments</div>
+      <div class="payment-strip-title">{{ 'footer.launchPayment' | translate }}</div>
       <div class="payment-badges">
         <div class="pay-badge active" title="Pay with cash on delivery">
           <span class="pay-dot"></span>
-          <span class="pay-name">Cash on Delivery</span>
-          <span class="pay-pill available">Available</span>
-        </div>
-        <div class="pay-badge soon" title="Bakong KHQR instant scan payment">
-          <span class="pay-name">Bakong KHQR</span>
-          <span class="pay-pill soon">Coming soon</span>
-        </div>
-        <div class="pay-badge soon" title="ABA Mobile &amp; PayWay">
-          <span class="pay-name">ABA PayWay</span>
-          <span class="pay-pill soon">Coming soon</span>
-        </div>
-        <div class="pay-badge soon" title="Visa and Mastercard cards">
-          <span class="pay-name">Visa / Mastercard</span>
-          <span class="pay-pill soon">Coming soon</span>
+          <span class="pay-name">{{ 'checkout.codLabel' | translate }}</span>
+          <span class="pay-pill available">{{ 'checkout.available' | translate }}</span>
         </div>
       </div>
     </div>

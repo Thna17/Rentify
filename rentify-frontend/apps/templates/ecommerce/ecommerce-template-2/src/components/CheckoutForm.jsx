@@ -39,7 +39,7 @@ function Field({ name, label, hint, error, required, children }) {
  * Customer contact, delivery and payment details. Validation follows the
  * storefront checkout contract; `onSubmit` receives valid data only.
  */
-export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD', 'KHQR'], onDetailsChange, onPaymentMethodChange, onSubmit, submitting, submitError }) {
+export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD'], onDetailsChange, onPaymentMethodChange, onSubmit, submitting, submitError }) {
   const { t } = useI18n();
   const formRef = useRef(null);
   const [errors, setErrors] = useState({});
@@ -86,7 +86,7 @@ export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD', 
           {t('checkout.contact')}
         </h2>
         <Field name="name" label={t('checkout.name')} error={errors.name} required>
-          {(props) => <input {...props} name="name" autoComplete="name" className="field-input" value={details.name} onChange={update('name')} maxLength={120} />}
+{(props) => <input {...props} name="name" autoComplete="name" className="field-input" value={details.name ?? ''} onChange={update('name')} maxLength={120} />}
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="phone" label={t('checkout.phone')} hint={t('checkout.phoneHint')} error={errors.phone} required>
@@ -98,7 +98,7 @@ export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD', 
                 inputMode="tel"
                 autoComplete="tel"
                 className="field-input"
-                value={details.phone}
+                value={details.phone ?? ''}
                 onChange={update('phone')}
                 maxLength={20}
               />
@@ -113,7 +113,7 @@ export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD', 
                 inputMode="email"
                 autoComplete="email"
                 className="field-input"
-                value={details.email}
+                value={details.email ?? ''}
                 onChange={update('email')}
                 maxLength={160}
               />
@@ -123,7 +123,7 @@ export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD', 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="province" label={t('checkout.province')} error={errors.province} required>
             {(props) => (
-              <select {...props} name="province" autoComplete="address-level1" className="field-input" value={details.province} onChange={update('province')}>
+              <select {...props} name="province" autoComplete="address-level1" className="field-input" value={details.province ?? ''} onChange={update('province')}>
                 <option value="">{t('checkout.selectProvince')}</option>
                 {CAMBODIA_PROVINCES.map((province) => (
                   <option key={province} value={province}>
@@ -134,17 +134,17 @@ export function CheckoutForm({ details, paymentMethod, paymentMethods = ['COD', 
             )}
           </Field>
           <Field name="district" label={t('checkout.district')} error={errors.district}>
-            {(props) => <input {...props} name="district" autoComplete="address-level2" className="field-input" value={details.district} onChange={update('district')} maxLength={120} />}
+{(props) => <input {...props} name="district" autoComplete="address-level2" className="field-input" value={details.district ?? ''} onChange={update('district')} maxLength={120} />}
           </Field>
         </div>
         <Field name="commune" label={t('checkout.commune')} error={errors.commune}>
-          {(props) => <input {...props} name="commune" autoComplete="address-level3" className="field-input" value={details.commune} onChange={update('commune')} maxLength={120} />}
+{(props) => <input {...props} name="commune" autoComplete="address-level3" className="field-input" value={details.commune ?? ''} onChange={update('commune')} maxLength={120} />}
         </Field>
         <Field name="street" label={t('checkout.street')} hint={t('checkout.streetHint')} error={errors.street} required>
-          {(props) => <input {...props} name="street" autoComplete="street-address" className="field-input" value={details.street} onChange={update('street')} maxLength={255} />}
+{(props) => <input {...props} name="street" autoComplete="street-address" className="field-input" value={details.street ?? ''} onChange={update('street')} maxLength={255} />}
         </Field>
         <Field name="note" label={t('checkout.note')} error={errors.note}>
-          {(props) => <textarea {...props} name="note" rows={3} className="field-input" value={details.note} onChange={update('note')} maxLength={255} />}
+{(props) => <textarea {...props} name="note" rows={3} className="field-input" value={details.note ?? ''} onChange={update('note')} maxLength={255} />}
         </Field>
       </section>
 

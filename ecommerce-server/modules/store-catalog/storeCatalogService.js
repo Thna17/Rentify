@@ -448,7 +448,7 @@ async function listPublic(query = {}) {
     // images of the same product, so a mismatched stock photo never sits
     // above a real one for the same listing.
     order: [
-      [sequelize.literal("(JSON_EXTRACT(images, '$[0].url') LIKE '%res.cloudinary.com%')"), 'DESC'],
+      [sequelize.literal("(JSON_EXTRACT(`Product`.`images`, '$[0].url') LIKE '%res.cloudinary.com%')"), 'DESC'],
       ['createdAt', 'DESC'],
     ],
     offset: (page - 1) * limit, limit,

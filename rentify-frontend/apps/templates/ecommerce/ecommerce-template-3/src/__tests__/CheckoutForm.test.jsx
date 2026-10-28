@@ -52,20 +52,20 @@ describe('CheckoutForm', () => {
     expect(document.activeElement).toBe(screen.getByLabelText('Phone number', { exact: false }));
   });
 
-  test('submits valid details with the chosen payment method', () => {
+  test('submits valid details with the Phase 4 COD payment method', () => {
     const onSubmit = vi.fn();
     render(<Harness onSubmit={onSubmit} />);
     type('Full name', 'Sok Dara');
     type('Phone number', '012 345 678');
     fireEvent.change(screen.getByLabelText('Province / City', { exact: false }), { target: { value: 'Phnom Penh' } });
     type('Street address', '#12, St 271');
-    fireEvent.click(screen.getByRole('radio', { name: /KHQR/ }));
+    expect(screen.getAllByRole('radio')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'Place order' }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Sok Dara', phone: '012 345 678', province: 'Phnom Penh', street: '#12, St 271' }),
-      'KHQR'
+      'COD'
     );
   });
 
