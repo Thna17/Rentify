@@ -4,7 +4,6 @@ const assert = require('node:assert/strict');
 const dns = require('node:dns/promises');
 const https = require('node:https');
 const tls = require('node:tls');
-const { BrowserSession } = require('../browserShell');
 
 /**
  * Diagnostic check verifying real staging infrastructure readiness.
@@ -102,6 +101,10 @@ async function checkStagingReadiness(config = {}) {
  * @param {import('../artifactCollector').ArtifactCollector} params.artifactCollector
  */
 async function runHostedSubdomainRehearsalJourney({ config, artifactCollector }) {
+  // Keep Playwright out of the readiness-only import path used by Core API
+  // security tests. The browser dependency is required only for a real
+  // staging rehearsal.
+  const { BrowserSession } = require('../browserShell');
   const readiness = await checkStagingReadiness(config);
   if (!readiness.ready) {
     const error = new Error(`REAL STAGING HOST UNAVAILABLE:\n- ${readiness.missing.join('\n- ')}`);
