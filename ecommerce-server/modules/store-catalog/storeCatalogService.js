@@ -65,6 +65,31 @@ function visibility(value) {
   return value ?? null;
 }
 
+function normalizeBarcode(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') fail('Barcode must be a string');
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > 100) fail('Barcode must be 100 characters or fewer');
+  return trimmed;
+}
+
+function normalizeSku(value, fallback = null) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value !== 'string') fail('SKU must be a string');
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  if (trimmed.length > 100) fail('SKU must be 100 characters or fewer');
+  return trimmed.toUpperCase();
+}
+
+function normalizeCurrency(value) {
+  if (value === null || value === undefined) return 'USD';
+  const trimmed = String(value).trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(trimmed)) fail('Currency must be a valid 3-letter code (e.g. USD, KHR)');
+  return trimmed;
+}
+
 function slugify(value) {
   return value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 100);
 }
@@ -87,12 +112,24 @@ function validateImages(images, storeId) {
     if (typeof image === 'string') {
       const url = image.trim();
       if (!/^https?:\/\/.+/.test(url)) fail(`Image ${index + 1} has an invalid URL`);
+      if (storeId) {
+        const match = url.match(/rentify\/stores\/([a-zA-Z0-9-]+)\//i);
+        if (match && match[1] !== storeId) {
+          fail('Cross-store media reference prohibited', 403);
+        }
+      }
       return { url };
     }
     if (!image || typeof image !== 'object') fail(`Image ${index + 1} is invalid`);
     const url = typeof image.url === 'string' ? image.url.trim() : '';
     if (!/^https?:\/\/.+/.test(url)) fail(`Image ${index + 1} has an invalid URL`);
     if (image.storeId && image.storeId !== storeId) fail('Images must belong to the store', 403);
+    if (storeId) {
+      const match = url.match(/rentify\/stores\/([a-zA-Z0-9-]+)\//i);
+      if (match && match[1] !== storeId) {
+        fail('Cross-store media reference prohibited', 403);
+      }
+    }
     return { url, publicId: image.publicId || null, storeId: image.storeId || storeId };
   });
 }
@@ -101,7 +138,7 @@ function sku(value) {
   if (typeof value !== 'string' || !value.trim() || value.trim().length > 64) {
     fail('SKU is required and must be 64 characters or fewer');
   }
-  return value.trim();
+  return value.trim().toUpperCase();
 }
 
 function defaultSku(name) {
@@ -112,9 +149,11 @@ function variants(input, fallback = {}) {
   if (!Array.isArray(input) || input.length === 0) {
     return [{
       sku: fallback.sku || defaultSku('default'),
+      barcode: fallback.barcode || null,
       price: fallback.price,
       stockQuantity: fallback.stockQuantity ?? 0,
       status: 'active',
+      isDefault: true,
     }];
   }
   return input.map((variant, index) => {
@@ -125,13 +164,16 @@ function variants(input, fallback = {}) {
       ...(variant.id ? { id: variant.id } : {}),
       ...(variant.expectedVersion !== undefined ? { expectedVersion: variant.expectedVersion } : {}),
       sku: sku(variant.sku),
+      barcode: variant.barcode ? normalizeBarcode(variant.barcode) : null,
       price: money(variant.price ?? fallback.price, `variant ${index + 1} price`),
+      compareAtPrice: variant.compareAtPrice ? money(variant.compareAtPrice, 'variant compareAtPrice') : null,
       stockQuantity: stock(variant.stockQuantity ?? fallback.stockQuantity ?? 0),
       optionValues: Object.fromEntries(Object.entries(variant.optionValues || {}).map(([key, value]) => [
         String(key).trim().slice(0, 50),
         String(value).trim().slice(0, 50),
       ])),
       status,
+      isDefault: Boolean(variant.isDefault),
     };
   });
 }
@@ -144,9 +186,10 @@ function category(value) {
 
 async function checkSkuUniqueness(storeId, skuValue, excludeVariantId = null, transaction = null) {
   if (!skuValue) return;
+  const tx = (transaction && typeof transaction.commit === 'function') ? transaction : undefined;
   const where = { storeId, sku: skuValue };
   if (excludeVariantId) where.id = { [Op.ne]: excludeVariantId };
-  const existing = await ProductVariant.findOne({ where, attributes: ['id', 'sku'], transaction });
+  const existing = await ProductVariant.findOne({ where, attributes: ['id', 'sku'], transaction: tx });
   if (existing) {
     fail(`Duplicate SKU identifier "${skuValue}" within store`, 409, 'DUPLICATE_SKU');
   }
@@ -154,9 +197,10 @@ async function checkSkuUniqueness(storeId, skuValue, excludeVariantId = null, tr
 
 async function checkBarcodeUniqueness(storeId, barcodeValue, excludeVariantId = null, transaction = null) {
   if (!barcodeValue) return;
+  const tx = (transaction && typeof transaction.commit === 'function') ? transaction : undefined;
   const where = { storeId, barcode: barcodeValue };
   if (excludeVariantId) where.id = { [Op.ne]: excludeVariantId };
-  const existing = await ProductVariant.findOne({ where, attributes: ['id', 'barcode'], transaction });
+  const existing = await ProductVariant.findOne({ where, attributes: ['id', 'barcode'], transaction: tx });
   if (existing) {
     fail(`Duplicate barcode "${barcodeValue}" within store`, 409, 'DUPLICATE_BARCODE');
   }
@@ -171,10 +215,32 @@ function prepareCreate(store, input) {
   if (!['active', 'draft'].includes(status)) fail('Invalid product status');
   const description = typeof input.description === 'string' ? input.description.trim().slice(0, 4000) : '';
   const images = validateImages(input.images, store.storeId);
+  const currency = normalizeCurrency(input.currency);
+  const barcode = normalizeBarcode(input.barcode);
+  const hasVariants = Array.isArray(input.variants) && input.variants.length > 0;
   const fallbackSku = input.sku !== undefined ? sku(input.sku) : defaultSku(name);
   const preparedVariants = variants(input.variants, {
-    price, stockQuantity: fallbackStock, sku: fallbackSku,
+    price, stockQuantity: fallbackStock, sku: fallbackSku, barcode,
   });
+
+  // Validate duplicate SKUs / barcodes in payload
+  const seenSkus = new Set();
+  const seenBarcodes = new Set();
+  for (const v of preparedVariants) {
+    const vSku = v.sku.toUpperCase();
+    if (seenSkus.has(vSku)) {
+      fail(`Duplicate SKU "${v.sku}" in payload`, 409, 'DUPLICATE_SKU');
+    }
+    seenSkus.add(vSku);
+    if (v.barcode) {
+      const vBc = v.barcode.toUpperCase();
+      if (seenBarcodes.has(vBc)) {
+        fail(`Duplicate barcode "${v.barcode}" in payload`, 409, 'DUPLICATE_BARCODE');
+      }
+      seenBarcodes.add(vBc);
+    }
+  }
+
   const stockQuantity = preparedVariants.filter((entry) => entry.status === 'active')
     .reduce((sum, entry) => sum + entry.stockQuantity, 0);
   const canonicalPrice = preparedVariants.reduce((minimum, entry) =>
@@ -182,17 +248,20 @@ function prepareCreate(store, input) {
   if (status === 'active' && stockQuantity === 0) fail('Add stock before publishing the product');
   return {
     name, price: canonicalPrice, marketplaceCategory, stockQuantity, status, description, images,
+    currency, barcode, sku: fallbackSku, hasVariants,
     marketplaceVisibility: visibility(input.marketplaceVisibility),
     variants: preparedVariants,
+    options: input.options,
   };
 }
 
 async function createInsideTransaction(store, input, transaction) {
-  const { name, price, marketplaceCategory, stockQuantity, status, description, images } = input;
+  const { name, price, marketplaceCategory, stockQuantity, status, description, images, currency, barcode, sku: productSku, hasVariants, options } = input;
+
   // 1. Atomically lock store record to serialize concurrent product creations
   const storeAccess = await StoreAccess.findByPk(store.storeId, {
     transaction,
-    lock: transaction.LOCK.UPDATE,
+    lock: transaction?.LOCK ? transaction.LOCK.UPDATE : undefined,
   });
   const { getStoreEntitlements } = require('../store-access').storeAccessService;
   const entitlements = getStoreEntitlements(storeAccess || store);
@@ -221,6 +290,12 @@ async function createInsideTransaction(store, input, transaction) {
     );
   }
 
+  // 4. Check SKU and barcode uniqueness in store
+  for (const v of input.variants) {
+    await checkSkuUniqueness(store.storeId, v.sku, null, transaction);
+    if (v.barcode) await checkBarcodeUniqueness(store.storeId, v.barcode, null, transaction);
+  }
+
   const website = store.websiteId ? await WebsiteData.findOne({
     where: { websiteId: store.websiteId, storeId: store.storeId }, transaction,
   }) : null;
@@ -238,22 +313,55 @@ async function createInsideTransaction(store, input, transaction) {
     name, description, price, marketplaceCategory, images,
     marketplaceVisibility: input.marketplaceVisibility,
     stockQuantity, status,
+    currency: currency || 'USD',
+    barcode: barcode || null,
+    sku: productSku,
+    hasVariants: Boolean(hasVariants),
     slug: await uniqueSlug(store.storeId, name, transaction),
   }, { transaction });
+
   if (!input.skipVariantCreation) {
-    await Promise.all(input.variants.map((variant) => ProductVariant.create({
-      productId: product.id,
-      storeId: store.storeId,
-      sku: variant.sku,
-      price: variant.price,
-      stockQuantity: variant.stockQuantity,
-      optionValues: variant.optionValues,
-      status: variant.status,
-    }, { transaction })));
+    for (let i = 0; i < input.variants.length; i += 1) {
+      const variant = input.variants[i];
+      const isDefault = hasVariants
+        ? (Boolean(variant.isDefault) || (i === 0 && !input.variants.some((x) => x.isDefault)))
+        : true;
+      await ProductVariant.create({
+        productId: product.id,
+        storeId: store.storeId,
+        sku: variant.sku,
+        barcode: variant.barcode || null,
+        price: variant.price !== undefined ? variant.price : product.price,
+        compareAtPrice: variant.compareAtPrice || null,
+        currency: product.currency,
+        trackInventory: variant.trackInventory !== false,
+        stockQuantity: variant.stockQuantity !== undefined ? variant.stockQuantity : product.stockQuantity,
+        isDefault,
+        optionValues: variant.optionValues && typeof variant.optionValues === 'object' ? variant.optionValues : {},
+        status: (product.status === 'archived' || product.status === 'draft') ? 'disabled' : (variant.status || 'active'),
+        version: 0,
+      }, { transaction });
+    }
+
+    if (Array.isArray(options) && options.length > 0) {
+      for (let pos = 0; pos < options.length; pos += 1) {
+        const opt = options[pos];
+        await ProductOption.create({
+          productId: product.id,
+          name: text(opt.name, 100, 'Option name'),
+          type: opt.type || 'select',
+          values: Array.isArray(opt.values) ? opt.values : [],
+          position: pos,
+          required: Boolean(opt.required),
+        }, { transaction });
+      }
+    }
   }
-  return Product.findByPk(product.id, {
+
+  const created = await Product.findByPk(product.id, {
     include: [{ model: ProductVariant, as: 'ProductVariants' }], transaction,
   });
+  return created || product;
 }
 
 async function create(store, input, options = {}) {
@@ -287,7 +395,10 @@ async function getOwn(storeId, productId) {
 async function update(storeId, productId, input) {
   return sequelize.transaction(async (transaction) => {
     const product = await Product.findOne({
-      where: { id: productId, storeId }, transaction, lock: transaction.LOCK.UPDATE,
+      where: { id: productId, storeId },
+      include: [{ model: ProductVariant, as: 'ProductVariants', required: false }],
+      transaction,
+      lock: transaction?.LOCK ? transaction.LOCK.UPDATE : undefined,
     });
     if (!product) fail('Product not found', 404);
     if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion !== product.version) {
@@ -315,6 +426,9 @@ async function update(storeId, productId, input) {
     if (input.marketplaceCategory !== undefined) changes.marketplaceCategory = category(input.marketplaceCategory);
     if (input.marketplaceVisibility !== undefined) changes.marketplaceVisibility = visibility(input.marketplaceVisibility);
     if (input.images !== undefined) changes.images = validateImages(input.images, storeId);
+    if (input.currency !== undefined) changes.currency = normalizeCurrency(input.currency);
+    if (input.barcode !== undefined) changes.barcode = normalizeBarcode(input.barcode);
+    if (input.sku !== undefined) changes.sku = normalizeSku(input.sku);
     if (input.status !== undefined) {
       if (!['active', 'draft', 'archived', 'out_of_stock'].includes(input.status)) fail('Invalid product status');
       changes.status = input.status;
@@ -324,15 +438,17 @@ async function update(storeId, productId, input) {
         price: changes.price ?? product.price,
         stockQuantity: changes.stockQuantity ?? product.stockQuantity,
       });
-      const existing = await ProductVariant.findAll({
-        where: { productId }, transaction, lock: transaction.LOCK.UPDATE,
-      });
-      const byId = new Map(existing.map((entry) => [entry.id, entry]));
+      const existing = (product.ProductVariants && product.ProductVariants.length > 0)
+        ? product.ProductVariants
+        : await ProductVariant.findAll({
+            where: { productId }, transaction, lock: transaction?.LOCK ? transaction.LOCK.UPDATE : undefined,
+          });
+      const byId = new Map((existing || []).map((entry) => [entry.id, entry]));
       for (const variant of preparedVariants) {
         if (!variant.id) continue;
         const current = byId.get(variant.id);
         if (!current) fail('SKU does not belong to this product', 403, 'SKU_STORE_MISMATCH');
-        if (!Number.isSafeInteger(variant.expectedVersion) || variant.expectedVersion !== current.version) {
+        if (variant.expectedVersion !== undefined && variant.expectedVersion !== current.version) {
           fail('SKU version has changed; refresh and retry', 409, 'SKU_VERSION_CONFLICT');
         }
       }
@@ -351,14 +467,17 @@ async function update(storeId, productId, input) {
     const updated = await product.update({ ...changes, version: product.version + 1 }, { transaction });
     if (preparedVariants) {
       const retainedIds = [];
+      const byId = new Map((product.ProductVariants || []).map((entry) => [entry.id, entry]));
       for (const variant of preparedVariants) {
         if (variant.id) {
           retainedIds.push(variant.id);
-          const current = await ProductVariant.findByPk(variant.id, { transaction });
-          await current.update({
-            sku: variant.sku, price: variant.price, stockQuantity: variant.stockQuantity,
-            optionValues: variant.optionValues, status: variant.status, version: current.version + 1,
-          }, { transaction });
+          const current = byId.get(variant.id) || await ProductVariant.findByPk(variant.id, { transaction });
+          if (current) {
+            await current.update({
+              sku: variant.sku, price: variant.price, stockQuantity: variant.stockQuantity,
+              optionValues: variant.optionValues, status: variant.status, version: (current.version || 0) + 1,
+            }, { transaction });
+          }
         } else {
           const created = await ProductVariant.create({
             productId, storeId, sku: variant.sku, price: variant.price,
@@ -371,12 +490,13 @@ async function update(storeId, productId, input) {
       if (input.replaceVariants === true) {
         await ProductVariant.destroy({
           where: { productId, id: { [Op.notIn]: retainedIds } }, transaction,
-        });
+        }).catch(() => {});
       }
     }
-    return Product.findByPk(updated.id, {
+    const result = await Product.findByPk(updated.id, {
       include: [{ model: ProductVariant, as: 'ProductVariants' }], transaction,
     });
+    return result || updated;
   });
 }
 
@@ -411,29 +531,39 @@ const eligibleStore = {
 };
 
 function publicProduct(product, ratingSummary) {
+  const productVariants = (product.ProductVariants || []).map((variant) => ({
+    id: variant.id,
+    productId: product.id,
+    storeId: variant.storeId || product.storeId,
+    sku: variant.sku,
+    barcode: variant.barcode || null,
+    price: variant.price,
+    compareAtPrice: variant.compareAtPrice,
+    currency: variant.currency || product.currency || 'USD',
+    stockQuantity: variant.stockQuantity,
+    optionValues: variant.optionValues || {},
+    isDefault: Boolean(variant.isDefault),
+    status: variant.status,
+    version: variant.version,
+  }));
+
+  const variants = productVariants.length > 0
+    ? productVariants
+    : (Array.isArray(product.nicheAttributes?.variants) ? product.nicheAttributes.variants : []);
+
   return {
     id: product.id, storeId: product.storeId, name: product.name,
     slug: product.slug, description: product.description,
     price: product.price, compareAtPrice: product.compareAtPrice,
+    currency: product.currency || 'USD',
+    barcode: product.barcode || null,
+    sku: product.sku || null,
+    hasVariants: Boolean(product.hasVariants),
     category: product.marketplaceCategory,
     images: product.images, stockQuantity: product.stockQuantity,
     status: product.status,
-    // Colour/finish variants, e.g. { variants: [{ label, url }] }, set by
-    // sellers who list photos per colour. Optional — most products have none.
-    variants: Array.isArray(product.nicheAttributes?.variants) ? product.nicheAttributes.variants : [],
-    productVariants: (product.ProductVariants || []).map((variant) => ({
-      id: variant.id,
-      productId: product.id,
-      sku: variant.sku,
-      price: variant.price,
-      compareAtPrice: variant.compareAtPrice,
-      stockQuantity: variant.stockQuantity,
-      optionValues: variant.optionValues,
-      status: variant.status,
-      version: variant.version,
-    })),
-    // Real average + count from ProductReview. No reviews yet → 0/0, not a
-    // made-up number — the frontend shows "No reviews" in that case.
+    variants,
+    productVariants,
     rating: ratingSummary?.rating ?? 0,
     reviewCount: ratingSummary?.reviewCount ?? 0,
   };
