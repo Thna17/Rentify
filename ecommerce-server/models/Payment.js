@@ -25,13 +25,8 @@ const Payment = sequelize.define("Payment", {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM(
-      "pending",
-      "completed",
-      "failed",
-      "refunded",
-      "paid"
-    ),
+    type: DataTypes.STRING(32),
+    allowNull: false,
     defaultValue: "pending",
   },
   transactionId: {
@@ -77,7 +72,7 @@ const Payment = sequelize.define("Payment", {
       const { recordOrderPaidEvent } = require("../modules/billing/usageEventService");
       const previousStatus = payment.previous("status");
       if (
-        (payment.status === "completed" || payment.status === "paid") &&
+        (payment.status === "completed" || payment.status === "paid" || payment.status === "collected") &&
         previousStatus !== payment.status
       ) {
         await recordOrderPaidEvent(payment.orderId, payment.paidAt || payment.updatedAt);
@@ -85,7 +80,7 @@ const Payment = sequelize.define("Payment", {
     },
     afterCreate: async (payment) => {
       const { recordOrderPaidEvent } = require("../modules/billing/usageEventService");
-      if (payment.status === "completed" || payment.status === "paid") {
+      if (payment.status === "completed" || payment.status === "paid" || payment.status === "collected") {
         await recordOrderPaidEvent(payment.orderId, payment.paidAt || payment.createdAt);
       }
     },

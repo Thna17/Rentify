@@ -50,6 +50,9 @@ class BrowserSession {
 
   async init(journeyName = 'journey') {
     if (this.isInitialized) return;
+    if (!pw) {
+      throw new Error('Playwright is not available in node_modules');
+    }
 
     const engine = this.browserType === 'webkit' ? pw.webkit : pw.chromium;
     const launchOptions = {

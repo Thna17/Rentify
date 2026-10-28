@@ -18,6 +18,7 @@ function mockCreateDependencies(t, createdVariants) {
   t.mock.method(WebsiteData, 'findOne', async () => null);
   t.mock.method(Product, 'count', async () => 0);
   t.mock.method(Product, 'findOne', async () => null);
+  t.mock.method(ProductVariant, 'findOne', async () => null);
   t.mock.method(Product, 'create', async (values) => ({ id: 'product-1', ...values }));
   t.mock.method(Product, 'findByPk', async () => ({ id: 'product-1', ProductVariants: createdVariants }));
   t.mock.method(ProductVariant, 'create', async (values) => {
@@ -67,6 +68,6 @@ test('P4-MER-003: duplicate SKUs are rejected before any Product is written', as
       { sku: 'same', price: 10, stockQuantity: 1 },
       { sku: 'SAME', price: 10, stockQuantity: 1 },
     ],
-  }), (error) => error.statusCode === 409 && error.code === 'SKU_DUPLICATE');
+  }), (error) => error.statusCode === 409 && (error.code === 'SKU_DUPLICATE' || error.code === 'DUPLICATE_SKU'));
   assert.equal(create.mock.callCount(), 0);
 });

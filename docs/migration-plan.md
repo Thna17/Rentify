@@ -199,6 +199,19 @@ cannot publish a draft or overdraw stock, and delete actions archive products.
 The SQL smoke covers a Website-less Product and a Website-linked Product
 crossing from draft to both public surfaces and back to archived.
 
+**Progress (2026-10-25):** P3-INV-002 Slice 3 complete: Legacy Website order compatibility.
+Live storefront online, POS, and invoice order inventory writes route through canonical
+`inventoryLedgerService`. Website-to-Store resolution resolves exactly one active Store
+and rejects ambiguous or unmapped websites with explicit HTTP 409/404 errors. Legacy product
+identities safely resolve to canonical SKUs, strictly rejecting ambiguous variable product
+mappings when `variantId` is omitted. Legacy stock writers (`NicheStrategy`, `stockService`,
+`sharedStockService`) route to the canonical inventory ledger without creating a secondary
+inventory authority. Exactly one inventory effect is guaranteed for deductions, cancellations,
+and idempotent replays. Compatibility source and legacy order IDs are preserved in ledger
+metadata. Reconcile tool (`reconcileLegacyWebsiteStock`) audits mapped vs unmapped rows
+and fails safely on unexplained records. Additive migration `20261025_019_legacy_website_order_compatibility.js`
+indexes legacy website order queries and safely backfills `storeId`.
+
 **Gate remains open:** normal Angular development routes now use the designed
 marketplace UI with Rentify catalog, cart, and checkout APIs. Browser session/CORS
 rehearsal and full seller/category eligibility checks have not occurred. The

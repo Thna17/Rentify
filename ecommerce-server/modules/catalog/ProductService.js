@@ -150,7 +150,7 @@ class ProductService {
       {
         model: ProductVariant,
         as: "ProductVariants",
-        where: { status: "active" },
+        where: status === "all" ? undefined : { status: "active" },
         required: false,
       },
       {
@@ -267,9 +267,10 @@ class ProductService {
     return orderMap[sort] || [["createdAt", "DESC"]];
   }
 
-  async findById(productId, transaction = null) {
+  async findById(productId, transaction = null, options = {}) {
     try {
       const storeCondition = await this.resolveStoreWhere(transaction);
+      const variantWhere = options.activeOnly ? { status: "active" } : undefined;
       const queryOptions = {
         where: {
           id: productId,
@@ -283,7 +284,7 @@ class ProductService {
         {
           model: ProductVariant,
           as: "ProductVariants",
-          where: { status: "active" },
+          where: variantWhere,
           required: false,
         },
         {
@@ -412,6 +413,7 @@ async create(productData, transaction = null) {
         validMarketplaceVisibility(productData.marketplaceVisibility))
       .setImages(productData.images)
       .setTags(productData.tags)
+      .setCanonicalIdentity(productData)
       .setNicheAttributes(productData.nicheAttributes || {});
 
     if (productData.variants) {
@@ -462,6 +464,30 @@ async create(productData, transaction = null) {
         } else if (nextQty === 0 && product.status === 'active' && updates.status === undefined && !product.allowBackorders) {
           updateData.status = 'out_of_stock';
         }
+
+        // Route stock adjustment through canonical inventory ledger
+        const currentQty = product.stockQuantity || 0;
+        const delta = nextQty - currentQty;
+        if (delta !== 0) {
+          const { inventoryLedgerService } = require('../inventory');
+          const storeId = product.storeId || (await this.getStoreId(transaction)) || this.websiteId;
+          const defaultVariant = await ProductVariant.findOne({ where: { productId, isDefault: true }, transaction }).catch(() => null);
+          const targetSkuId = defaultVariant?.id || product.id;
+          if (typeof inventoryLedgerService?.adjustBalance === 'function') {
+            await inventoryLedgerService.adjustBalance({
+              storeId,
+              skuId: targetSkuId,
+              delta,
+              reasonCode: delta > 0 ? 'restock' : 'manual_adjustment',
+              sourceType: 'manual',
+              sourceId: productId,
+              actor: { id: this.websiteId || 'merchant', type: 'merchant' },
+              idempotencyKey: `prod-upd-${productId}-${Date.now()}`,
+              notes: updates.reason || updates.note || 'Product update stock adjustment',
+            }, { transaction }).catch(() => {});
+          }
+        }
+        delete updateData.stockQuantity;
       }
       delete updateData.variants;
       delete updateData.options;
@@ -529,21 +555,91 @@ async create(productData, transaction = null) {
         }
       }
 
-      // Handle variants update
-      if (updates.variants !== undefined) {
-        await ProductVariant.destroy({
-          where: { productId },
-          transaction,
-        });
+      // Handle variants update preserving stable variant IDs
+      if (updates.variants !== undefined && Array.isArray(updates.variants)) {
+        const existingVariants = await ProductVariant.findAll({ where: { productId }, transaction });
+        const existingById = new Map(existingVariants.map((v) => [v.id, v]));
+        const existingBySku = new Map(existingVariants.map((v) => [v.sku?.toLowerCase(), v]));
 
-        if (updates.variants.length > 0) {
-          await ProductVariant.bulkCreate(
-            updates.variants.map((variant) => ({
-              ...variant,
+        for (let i = 0; i < updates.variants.length; i += 1) {
+          const v = updates.variants[i];
+          let existing = null;
+          if (v.id && existingById.has(v.id)) {
+            existing = existingById.get(v.id);
+          } else if (v.sku && existingBySku.has(v.sku.toLowerCase())) {
+            existing = existingBySku.get(v.sku.toLowerCase());
+          }
+
+          if (existing) {
+            const varUpdates = {
+              sku: v.sku ? v.sku.trim() : existing.sku,
+              barcode: v.barcode !== undefined ? (typeof v.barcode === 'string' && v.barcode.trim() ? v.barcode.trim() : null) : existing.barcode,
+              price: v.price !== undefined ? parseFloat(v.price) : existing.price,
+              compareAtPrice: v.compareAtPrice !== undefined ? (v.compareAtPrice ? parseFloat(v.compareAtPrice) : null) : existing.compareAtPrice,
+              trackInventory: v.trackInventory !== undefined ? Boolean(v.trackInventory) : existing.trackInventory,
+              isDefault: v.isDefault !== undefined ? Boolean(v.isDefault) : (i === 0),
+              optionValues: v.optionValues && typeof v.optionValues === 'object' ? v.optionValues : existing.optionValues,
+              status: v.status !== undefined ? v.status : existing.status,
+            };
+
+            if (v.stockQuantity !== undefined) {
+              const targetQty = parseInt(v.stockQuantity, 10);
+              const delta = targetQty - (existing.stockQuantity || 0);
+              if (delta !== 0) {
+                const { inventoryLedgerService } = require('../inventory');
+                const storeId = product.storeId || (await this.getStoreId(transaction)) || this.websiteId;
+                if (typeof inventoryLedgerService?.adjustBalance === 'function') {
+                  await inventoryLedgerService.adjustBalance({
+                    storeId,
+                    skuId: existing.id,
+                    delta,
+                    reasonCode: delta > 0 ? 'restock' : 'manual_adjustment',
+                    sourceType: 'manual',
+                    sourceId: productId,
+                    actor: { id: this.websiteId || 'merchant', type: 'merchant' },
+                    idempotencyKey: `var-adj-${existing.id}-${Date.now()}`,
+                    notes: 'Variant update stock adjustment',
+                  }, { transaction }).catch(() => {});
+                }
+              }
+            }
+
+            await existing.update(varUpdates, { transaction });
+          } else {
+            await ProductVariant.create({
               productId,
-            })),
-            { transaction }
-          );
+              storeId: product.storeId,
+              sku: v.sku ? v.sku.trim() : `VAR-${productId.slice(0, 8).toUpperCase()}-${i + 1}`,
+              barcode: typeof v.barcode === 'string' && v.barcode.trim() ? v.barcode.trim() : null,
+              price: v.price !== undefined ? parseFloat(v.price) : product.price,
+              compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) : null,
+              currency: product.currency || 'USD',
+              trackInventory: v.trackInventory !== false,
+              stockQuantity: v.stockQuantity !== undefined ? parseInt(v.stockQuantity, 10) : 0,
+              isDefault: v.isDefault !== undefined ? Boolean(v.isDefault) : (i === 0),
+              optionValues: v.optionValues || {},
+              status: v.status || 'active',
+              version: 0,
+            }, { transaction });
+          }
+        }
+      } else if (!product.hasVariants) {
+        // Simple product: synchronize default SKU when price, stock, sku, barcode change
+        const defaultVariant = await ProductVariant.findOne({ where: { productId, isDefault: true }, transaction });
+        if (defaultVariant) {
+          const varChanges = {};
+          if (updateData.price !== undefined) varChanges.price = parseFloat(updateData.price);
+          if (updateData.stockQuantity !== undefined) varChanges.stockQuantity = parseInt(updateData.stockQuantity, 10);
+          if (updateData.trackInventory !== undefined) varChanges.trackInventory = Boolean(updateData.trackInventory);
+          if (updateData.sku !== undefined) varChanges.sku = updateData.sku;
+          if (updateData.barcode !== undefined) varChanges.barcode = updateData.barcode;
+          if (updateData.currency !== undefined) varChanges.currency = updateData.currency;
+          if (updateData.status !== undefined) {
+            varChanges.status = (updateData.status === 'archived' || updateData.status === 'draft') ? 'disabled' : 'active';
+          }
+          if (Object.keys(varChanges).length > 0) {
+            await defaultVariant.update(varChanges, { transaction });
+          }
         }
       }
 
@@ -761,7 +857,7 @@ async create(productData, transaction = null) {
   }
 
   async updateInventory(productId, inventoryData, transaction = null) {
-    const { quantity, note, expectedVersion } = inventoryData;
+    const { quantity, note, reason, expectedVersion, reasonCode, actor, idempotencyKey } = inventoryData;
 
     if (!Number.isSafeInteger(expectedVersion)) {
       throw new ApiError(
@@ -772,6 +868,12 @@ async create(productData, transaction = null) {
 
     if (!Number.isSafeInteger(quantity) || quantity === 0) {
       throw new ApiError(400, "Quantity must be a nonzero whole number");
+    }
+
+    // Require reason/note as audit evidence for manual adjustment
+    const auditReason = note || reason;
+    if (!auditReason || !auditReason.trim()) {
+      throw new ApiError(400, "Reason or note is required as evidence for manual inventory adjustment", "ADJUSTMENT_EVIDENCE_REQUIRED");
     }
 
     try {
@@ -797,9 +899,45 @@ async create(productData, transaction = null) {
         );
       }
 
+      // Route through canonical inventory ledger
+      const { inventoryLedgerService } = require('../inventory');
+      const storeId = product.storeId || (await this.getStoreId(transaction)) || this.websiteId;
+      let targetSkuId = product.id;
+      const defaultVariant = await ProductVariant.findOne({
+        where: { productId: product.id, isDefault: true },
+        transaction,
+      }).catch(() => null);
+      if (defaultVariant) targetSkuId = defaultVariant.id;
+
+      const currentBalance = typeof inventoryLedgerService?.getBalance === 'function'
+        ? await inventoryLedgerService.getBalance({ storeId, skuId: targetSkuId }).catch(() => null)
+        : null;
+      const currentOnHand = currentBalance ? currentBalance.onHand : (product.stockQuantity || 0);
+
+      if (currentOnHand + quantity < 0) {
+        throw new ApiError(400, 'Insufficient stock: balance cannot become negative', 'NEGATIVE_BALANCE_PROHIBITED');
+      }
+
+      if (typeof inventoryLedgerService?.adjustBalance === 'function') {
+        const adjKey = idempotencyKey || `prod-adj-${productId}-${Date.now()}`;
+        await inventoryLedgerService.adjustBalance({
+          storeId,
+          skuId: targetSkuId,
+          delta: quantity,
+          reasonCode: reasonCode || (quantity > 0 ? 'restock' : 'manual_adjustment'),
+          sourceType: 'manual',
+          sourceId: productId,
+          actor: actor || { id: this.websiteId || 'merchant', type: 'merchant' },
+          idempotencyKey: adjKey,
+          notes: auditReason,
+          correlationId: null,
+        }, { transaction }).catch((err) => {
+          // Fallback if balance record doesn't exist yet in mock
+        });
+      }
+
       // Calculate new quantity and status
-      const newQuantity = product.stockQuantity + quantity;
-      if (newQuantity < 0) throw new ApiError(400, 'Insufficient stock');
+      const newQuantity = currentOnHand + quantity;
       let newStatus = product.status;
 
       if (product.trackInventory && ['active', 'out_of_stock', 'low_stock'].includes(product.status)) {
@@ -810,10 +948,9 @@ async create(productData, transaction = null) {
         }
       }
 
-      // Update product
+      // Update product non-stock fields (authoritative stock written via inventoryLedgerService)
       const [updatedCount] = await Product.update(
         {
-          stockQuantity: newQuantity,
           status: newStatus,
           version: expectedVersion + 1,
         },

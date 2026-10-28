@@ -84,45 +84,41 @@ class NicheStrategy {
 
   // Order totals calculation for this niche
   calculateOrderTotals(items, orderType, shippingInfo = {}, currency = 'USD') {
-    let subtotal = 0;
-    let taxTotal = 0;
-    let discountTotal = 0;
+    const { parseMinor, formatDecimal } = require('../../../../../utils/money');
+    let subtotalMinor = 0;
 
-    // Calculate item totals
+    // Calculate item totals using integer minor units (no floating-point math)
     for (const item of items) {
-      const itemTotal = item.price * item.quantity;
-      subtotal += itemTotal;
-      
-      // Calculate tax per item
-      const itemTax = this.calculateItemTax(itemTotal, item.productType);
-      taxTotal += itemTax;
+      const priceMinor = parseMinor(item.price || 0, currency);
+      const qty = Number(item.quantity) || 1;
+      subtotalMinor += priceMinor * qty;
     }
 
-    // Calculate shipping
-    const shippingFee = this.calculateShippingFee(items, orderType, shippingInfo);
+    // Release 1 Policy: Tax calculation is disabled at 0.00
+    const taxTotalMinor = 0;
+    const discountTotalMinor = 0;
 
-    // Apply discounts
-    const totalAmount = subtotal + taxTotal + shippingFee - discountTotal;
+    // Calculate shipping
+    let shippingFeeMinor = 0;
+    if (orderType !== 'pos' && orderType !== 'pickup') {
+      const fee = this.calculateShippingFee(items, orderType, shippingInfo);
+      shippingFeeMinor = parseMinor(fee, currency);
+    }
+
+    const totalAmountMinor = subtotalMinor + taxTotalMinor + shippingFeeMinor - discountTotalMinor;
 
     return {
-      subtotal: Math.round(subtotal * 100) / 100,
-      taxTotal: Math.round(taxTotal * 100) / 100,
-      discountTotal: Math.round(discountTotal * 100) / 100,
-      shippingFee: Math.round(shippingFee * 100) / 100,
-      totalAmount: Math.round(totalAmount * 100) / 100
+      subtotal: subtotalMinor / 100,
+      taxTotal: 0,
+      discountTotal: 0,
+      shippingFee: shippingFeeMinor / 100,
+      totalAmount: totalAmountMinor / 100,
     };
   }
 
   calculateItemTax(itemTotal, productType) {
-    const taxRates = {
-      digital: 0.10,
-      physical: 0.08,
-      service: 0.08,
-      food: 0.05,
-      beverage: 0.05
-    };
-    
-    return itemTotal * (taxRates[productType] || this.config.taxRate);
+    // Release 1 Policy: Tax calculation is disabled at 0.00
+    return 0;
   }
 
   calculateShippingFee(items, orderType, shippingInfo) {
@@ -153,15 +149,13 @@ class NicheStrategy {
   }
 
   // Inventory management for this niche
-  async updateInventory(items, transaction = null) {
-    for (const item of [...items].sort((a, b) => a.productId.localeCompare(b.productId))) {
-      await this.updateItemInventory(item, transaction);
-    }
+  async updateInventory(items, transaction = null, context = {}) {
+    const { deductOrderInventory } = require('../../../services/legacyWebsiteCompatibilityService');
+    return await deductOrderInventory(items, transaction, context);
   }
 
-  async updateItemInventory(item, transaction = null) {
-    const { changeStock } = require('../../../../inventory').sharedStockService;
-    await changeStock(item.productId, -item.quantity, transaction, item.variantId || null);
+  async updateItemInventory(item, transaction = null, context = {}) {
+    return await this.updateInventory([item], transaction, context);
   }
 
   // Order metadata for this niche

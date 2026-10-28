@@ -10,7 +10,9 @@
   "scripts": {
     "install:all": "npm ci --prefix rentify-server && npm ci --prefix ecommerce-server && npm ci --prefix rentify-frontend && npm ci --prefix marketplace-frontend && npm ci --prefix admin-frontend",
     "verify": "npm run verify:repository && npm run verify:core && npm run verify:commerce && npm run verify:frontend && npm run verify:marketplace && npm run verify:admin",
-    "verify:repository": "npm run secrets:scan && npm run verify:migrations && npm run verify:openapi && npm run verify:clients && npm run verify:tokens && npm run verify:hosts && npm run verify:authz && node tools/repository-policy.mjs",
+    "verify:repository": "npm run secrets:scan && npm run verify:migrations && npm run verify:openapi && npm run verify:clients && npm run verify:tokens && npm run verify:hosts && npm run verify:authz && npm run verify:reconciliation && node tools/repository-policy.mjs",
+    "reconcile": "node tools/reconciliation/cli.js",
+    "verify:reconciliation": "node --test tools/reconciliation/test/*.test.js",
     "verify:hosts": "node tools/validate-host-config.js && node --test tools/host-validator/test/validator.test.js",
     "verify:authz": "node tools/authz/matrixValidator.js && node --test tools/authz/test/authorizationMatrix.test.js",
     "verify:core": "npm --prefix rentify-server run verify",

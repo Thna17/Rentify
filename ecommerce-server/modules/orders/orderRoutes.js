@@ -9,7 +9,7 @@ const {
   getMyOrderPayment,
   createPOSOrder,
   createInvoice,
-  getPOSOrders
+  getPOSOrders,
 } = require("./OrderController");
 const OrderController = require("./OrderController");
 
@@ -27,11 +27,13 @@ router.use(verifyToken);
 // Store-scoped POS routes
 router.post(
   "/stores/:storeId/orders/pos",
+  verifyStoreActor,
   createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
   createPOSOrder
 );
 router.get(
   "/stores/:storeId/orders/pos",
+  verifyStoreActor,
   createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
   getPOSOrders
 );

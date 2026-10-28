@@ -18,7 +18,12 @@
     "OutcomeContract": ["ops"],
     "ReminderLog": ["ops"],
     "UserSession": ["auth", "admin"],
-    "AuditLog": ["auth", "admin", "ops"]
+    "AuditLog": ["auth", "admin", "ops"],
+    "EventOutbox": ["events", "commerce-sync"],
+    "EventInbox": ["events"],
+    "EventReplayAudit": ["events"],
+    "PaymentAttempt": ["billing"],
+    "ProviderEvent": ["billing"]
   },
   "exceptions": []
 }

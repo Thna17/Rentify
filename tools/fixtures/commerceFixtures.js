@@ -248,37 +248,15 @@ async function cleanupCommerceFixtures(models, trackerOrScenario, options = {}) 
       const trackedPaymentIds = created.Payment || [];
       const trackedProductIds = created.Product || [];
 
-      if (productIds.length > 0) {
-        // Delete dynamic cart items referencing test products
-        await sequelizeInstance.query(
-          `DELETE FROM CartItems WHERE productId IN (:productIds)
-           ${trackedCartItemIds.length > 0 ? 'AND id NOT IN (:trackedCartItemIds)' : ''}`,
-          { replacements: { productIds, trackedCartItemIds }, transaction }
-        ).catch(() => {});
-
-        // Delete dynamic order items referencing test products
-        await sequelizeInstance.query(
-          `DELETE FROM OrderItems WHERE productId IN (:productIds)
-           ${trackedOrderItemIds.length > 0 ? 'AND id NOT IN (:trackedOrderItemIds)' : ''}`,
-          { replacements: { productIds, trackedOrderItemIds }, transaction }
-        ).catch(() => {});
-      }
-
-      // Delete dynamic payments
-      if (trackedPaymentIds.length > 0) {
-        await sequelizeInstance.query(
-          `DELETE FROM Payments WHERE id NOT IN (:trackedPaymentIds)`,
-          { replacements: { trackedPaymentIds }, transaction }
-        ).catch(() => {});
-      }
-
-      // Delete dynamic orders
-      if (trackedOrderIds.length > 0) {
-        await sequelizeInstance.query(
-          `DELETE FROM Orders WHERE id NOT IN (:trackedOrderIds)`,
-          { replacements: { trackedOrderIds }, transaction }
-        ).catch(() => {});
-      }
+      // Delete dynamic checkout and order records in reverse foreign key dependency order
+      await sequelizeInstance.query('DELETE FROM OrderEvents', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM Invoices', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM ShippingDetails', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM Payments', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM OrderItems', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM Orders', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM CartItems', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM Carts', { transaction }).catch(() => {});
 
       // Delete dynamic products
       if (trackedProductIds.length > 0) {
@@ -287,6 +265,11 @@ async function cleanupCommerceFixtures(models, trackerOrScenario, options = {}) 
           { replacements: { trackedProductIds }, transaction }
         ).catch(() => {});
       }
+
+      // Delete dynamic inventory records created during test journeys
+      await sequelizeInstance.query('DELETE FROM InventoryReservations', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM InventoryLedgerEntries', { transaction }).catch(() => {});
+      await sequelizeInstance.query('DELETE FROM InventoryBalances', { transaction }).catch(() => {});
     } catch {}
   }
 

@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const { Customer, Order } = require("../../models");
 const { updateStock } = require("../inventory").stockService;
+const { orderStateMachineService } = require("../orders");
 const retryTransaction = require("../../utils/retryTransaction");
 const { ORDER_STATUS } = require("../../utils/constants");
 
@@ -120,66 +121,52 @@ exports.cancelOrderByCustomer = async (req, res) => {
   }
 
   try {
-    await retryTransaction(async (t) => {
-      const order = await Order.findByPk(orderId, {
-        include: ['OrderItems'],
-        transaction: t,
-        lock: t.LOCK.UPDATE
-      });
+    const actor = {
+      id: user.id,
+      type: user.type,
+      sessionId: req.sessionId || user.sessionId,
+    };
+    const idempotencyKey = req.headers?.['idempotency-key'] || req.body?.idempotencyKey || `cancel-cust-${orderId}-${Date.now()}`;
+    const correlationId = req.headers?.['x-correlation-id'] || null;
 
-      if (!order) {
-        const error = new Error("Order not found");
-        error.statusCode = 404;
-        throw error;
-      }
+    const order = await Order.findByPk(orderId);
+    if (!order) {
+      const error = new Error("Order not found");
+      error.statusCode = 404;
+      throw error;
+    }
 
-      // Verify buyer ownership: buyer may cancel only their own order
-      const isOwner = (user.type === 'customer' && order.userId === user.id) ||
-                      (user.type === 'user' && order.buyerId === user.id) ||
-                      (user.sessionId && order.sessionId === user.sessionId);
+    // Verify buyer ownership: buyer may cancel only their own order
+    const isOwner = (user.type === 'customer' && order.userId === user.id) ||
+                    (user.type === 'user' && order.buyerId === user.id) ||
+                    (user.sessionId && order.sessionId === user.sessionId);
 
-      if (!isOwner) {
-        const error = new Error("Order not found");
-        error.statusCode = 404;
-        throw error;
-      }
+    if (!isOwner) {
+      const error = new Error("Order not found");
+      error.statusCode = 404;
+      throw error;
+    }
 
-      // Reject cross-store / cross-website cancellation if context was supplied
-      const targetStoreId = req.params.storeId || req.query?.storeId || req.body?.storeId;
-      if (targetStoreId && order.storeId && order.storeId !== targetStoreId) {
-        const error = new Error("Order not found");
-        error.statusCode = 404;
-        throw error;
-      }
+    // Reject cross-store / cross-website cancellation if context was supplied
+    const targetStoreId = req.params?.storeId || req.query?.storeId || req.body?.storeId;
+    if (targetStoreId && order.storeId && order.storeId !== targetStoreId) {
+      const error = new Error("Order not found");
+      error.statusCode = 404;
+      throw error;
+    }
 
-      // Validate order can be cancelled
-      const cancellableStatuses = [
-        ORDER_STATUS.PENDING,
-        ORDER_STATUS.CONFIRMED,
-        ORDER_STATUS.PROCESSING
-      ];
-
-      if (!cancellableStatuses.includes(order.status)) {
-        const error = new Error("Order cannot be cancelled at this stage");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      // Restore stock if needed
-      if (order.stockDeducted) {
-        await updateStock(orderId, "restore", t);
-      }
-
-      // Update order status
-      await order.update(
-        { status: ORDER_STATUS.CANCELLED },
-        { transaction: t }
-      );
+    await orderStateMachineService.cancelOrder(orderId, {
+      actor,
+      reason: req.body?.reason || 'Cancelled by customer',
+      idempotencyKey,
+      correlationId,
     });
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Customer cancel error:", error);
-    res.status(error.statusCode || 400).json({ error: error.message });
+    if (error.code === 'UNAUTHORIZED_TRANSITION_ACTOR') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.status(error.statusCode || 400).json({ error: error.message, code: error.code });
   }
 };

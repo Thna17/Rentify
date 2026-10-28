@@ -1349,6 +1349,39 @@ export class CoreApiClient {
   }
 
   /**
+   * Ingest signed CutLuy payment webhook event
+   * POST /api/payment/cutluy/webhook
+   */
+  async ingestCutLuyWebhook(options: {
+    body: {
+      amount?: string;
+      currency?: "USD";
+      event_id?: string;
+      payment_id?: string;
+      reference_id?: string;
+      status?: "pending" | "scanned" | "paid" | "expired" | "failed";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      acknowledged?: boolean;
+      duplicate?: boolean;
+    }>> {
+    return this.transport.request<{
+      acknowledged?: boolean;
+      duplicate?: boolean;
+    }>({
+      method: 'POST',
+      path: '/api/payment/cutluy/webhook',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Initiate Bakong KHQR payment for subscription package
    * POST /api/payment/khqr
    */
