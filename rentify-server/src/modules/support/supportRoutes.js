@@ -1,0 +1,17 @@
+const express = require('express');
+const { verifyToken } = require('../../middlewares/auth');
+const controller = require('./supportController');
+const router = express.Router();
+const safe = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
+router.use(verifyToken);
+router.post('/', safe(controller.create));
+router.get('/', safe(controller.list));
+router.get('/:caseId', safe(controller.get));
+router.post('/:caseId/assignment', safe(controller.mutation('assign')));
+router.post('/:caseId/transition', safe(controller.mutation('transition')));
+router.get('/:caseId/notes', safe(controller.notes));
+router.post('/:caseId/notes', safe(controller.mutation('note')));
+router.get('/:caseId/attachments', safe(controller.attachments));
+router.post('/:caseId/attachments', safe(controller.mutation('attachment')));
+router.get('/:caseId/events', safe(controller.events));
+module.exports = router;

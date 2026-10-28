@@ -24,6 +24,12 @@ const ProviderEvent = require('./ProviderEvent');
 const PlatformRoleGrant = require('./PlatformRoleGrant');
 const AdminApprovalRequest = require('./AdminApprovalRequest');
 const BreakGlassGrant = require('./BreakGlassGrant');
+const SupportCase = require('./SupportCase');
+const SupportCaseLink = require('./SupportCaseLink');
+const SupportCaseNote = require('./SupportCaseNote');
+const SupportCaseAttachment = require('./SupportCaseAttachment');
+const SupportCaseEvent = require('./SupportCaseEvent');
+const SupportIdempotency = require('./SupportIdempotency');
 
 PaymentAttempt.hasMany(ProviderEvent, { foreignKey: 'paymentAttemptId', as: 'providerEvents' });
 ProviderEvent.belongsTo(PaymentAttempt, { foreignKey: 'paymentAttemptId', as: 'paymentAttempt' });
@@ -160,4 +166,10 @@ module.exports = {
   PlatformRoleGrant,
   AdminApprovalRequest,
   BreakGlassGrant,
+  SupportCase,
+  SupportCaseLink,
+  SupportCaseNote,
+  SupportCaseAttachment,
+  SupportCaseEvent,
+  SupportIdempotency,
 };

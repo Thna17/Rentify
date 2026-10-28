@@ -14,6 +14,7 @@ const sessionConfig = require('./config/sessionConfig');
 // Route modules
 const authRoutes = require('./modules/auth/authRoutes');
 const adminRoute = require('./modules/admin/adminRoute');
+const supportRoutes = require('./modules/support/supportRoutes');
 const userRoutes = require('./modules/users/userRoutes');
 const websiteRoutes = require('./modules/websites/websiteRoutes');
 const storeRoutes = require('./modules/stores/storeRoutes');
@@ -63,6 +64,7 @@ app.get('/ready', async (_req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/admin', adminRoute);
+app.use('/api/support/cases', supportRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/websites', websiteRoutes);
 app.use('/api/stores', storeRoutes);

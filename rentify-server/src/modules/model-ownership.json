@@ -26,7 +26,13 @@
     "ProviderEvent": ["billing"],
     "PlatformRoleGrant": ["admin"],
     "AdminApprovalRequest": ["admin"],
-    "BreakGlassGrant": ["admin"]
+    "BreakGlassGrant": ["admin"],
+    "SupportCase": ["support"],
+    "SupportCaseLink": ["support"],
+    "SupportCaseNote": ["support"],
+    "SupportCaseAttachment": ["support"],
+    "SupportCaseEvent": ["support"],
+    "SupportIdempotency": ["support"]
   },
   "exceptions": []
 }
