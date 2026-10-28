@@ -161,6 +161,9 @@ async function mutate(item, input, ctx, key, kind) {
       if (input.status === 'closed') { changes.closedAt = new Date(); changes.activeSourceKey = null; }
       if (input.status === 'reopened') { changes.closedAt = null; changes.resolvedAt = null; changes.activeSourceKey = sourceKey(item); action = 'reopened'; }
     } else if (kind === 'note') {
+      if (ctx.roles?.includes('merchant') && ['closed', 'resolved'].includes(item.status)) {
+        throw ApiError.conflict('This case is closed to responses', 'CASE_TRANSITION_INVALID');
+      }
       if (!VISIBILITIES.includes(input.visibility)) validation('Invalid note visibility');
       if (/<\/?[a-z][^>]*>/i.test(input.body || '')) validation('Notes must be plain text');
       const note = await SupportCaseNote.create({ caseId: item.id, authorId: ctx.actorId, visibility: input.visibility,

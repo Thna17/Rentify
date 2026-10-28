@@ -78,7 +78,8 @@ test('merchant styles consume P1 design tokens and define zoom-safe wrapping', (
 
 test('notification shell contains no seeded orders, payouts, or decorative counts', () => {
   assert.doesNotMatch(notifications, /INITIAL_NOTIFICATIONS|ORD-\d+|unreadCount|merchant_notifications/);
-  assert.match(notifications, /does not yet expose a merchant notifications contract/);
+  assert.match(notifications, /\/api\/notifications\/inbox/);
+  assert.match(notifications, /credentials: 'include'/);
 });
 
 test('workspace recovery foundation covers required operational states', () => {

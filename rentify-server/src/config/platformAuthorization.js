@@ -105,6 +105,14 @@ function isKnownPermission(permission) {
   return ALL_PLATFORM_PERMISSIONS.includes(permission);
 }
 
+function permissionForStoreUpdate(body = {}) {
+  const suspension = body.status === 'suspended' || body.marketplaceApprovalStatus === 'suspended';
+  const onlySuspension = (body.status === undefined || body.status === 'suspended')
+    && (body.marketplaceApprovalStatus === undefined || body.marketplaceApprovalStatus === 'suspended')
+    && (body.marketplaceEnabled === undefined || body.marketplaceEnabled === false);
+  return suspension && onlySuspension ? 'seller.store.suspend.approve' : 'platform.role.manage.approve';
+}
+
 module.exports = {
   PLATFORM_ROLES,
   ROLE_PERMISSIONS,
@@ -115,4 +123,5 @@ module.exports = {
   SCOPE_TYPES,
   permissionsForRole,
   isKnownPermission,
+  permissionForStoreUpdate,
 };

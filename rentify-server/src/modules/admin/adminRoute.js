@@ -8,7 +8,7 @@ const sellerReviewController = require('../stores').sellerReviewController;
 const operations = require('./platformOperationsController');
 const security = require('./adminSecurityController');
 const access = require('./adminAccessController');
-const { APPROVAL_ACTION_BY_NAME } = require('../../config/platformAuthorization');
+const { APPROVAL_ACTION_BY_NAME, permissionForStoreUpdate } = require('../../config/platformAuthorization');
 const safe = (handler) => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 
 router.use(verifyToken);
@@ -47,7 +47,9 @@ router.delete('/break-glass/:grantId', permission('platform.break_glass.use', pl
 
 router.get('/operations/overview', permission(['platform.audit.read', 'finance.subscription.read', 'seller.application.read'], platformScope), safe(operations.overview));
 router.get('/operations/:resource', requireResourceRead, safe(operations.list));
-router.patch('/operations/stores/:storeId', permission('seller.decision.approve', storeScope), requireRecentAuth, requireMfaVerified, safe(operations.updateStore));
+router.patch('/operations/stores/:storeId', (req, res, next) =>
+  permission(permissionForStoreUpdate(req.body), storeScope)(req, res, next),
+requireRecentAuth, requireMfaVerified, safe(operations.updateStore));
 router.post("/template", permission('platform.role.manage.approve', platformScope), createTemplate);
 router.put("/template/:id", permission('platform.role.manage.approve', platformScope), updateTemplate);
 router.delete("/template/:id", permission('platform.role.manage.approve', platformScope), requireRecentAuth, requireMfaVerified, deleteTemplate);

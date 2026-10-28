@@ -39,6 +39,14 @@ test('P5-ADM-001: every canonical role expands to only its frozen permission com
   assert.equal(config.permissionsForRole('unknown').length, 0);
 });
 
+test('P5-ADM-001: seller suspension permission cannot authorize unrelated Store updates', () => {
+  assert.equal(config.permissionForStoreUpdate({ status: 'suspended', marketplaceEnabled: false }), 'seller.store.suspend.approve');
+  assert.equal(config.permissionForStoreUpdate({ status: 'closed' }), 'platform.role.manage.approve');
+  assert.equal(config.permissionForStoreUpdate({ marketplaceApprovalStatus: 'rejected' }), 'platform.role.manage.approve');
+  assert.equal(config.permissionForStoreUpdate({ status: 'suspended', marketplaceEnabled: true }), 'platform.role.manage.approve');
+  assert.equal(config.permissionForStoreUpdate({ marketplaceEnabled: true }), 'platform.role.manage.approve');
+});
+
 test('P5-ADM-001: legacy administrators retain the frozen platform-admin permissions', async (t) => {
   t.mock.method(models.User, 'findByPk', async () => ({ id: 'admin-1', role: 'admin', mfaEnabled: true }));
   const access = await platformAuth.resolvePlatformAccess('admin-1');
@@ -142,6 +150,16 @@ test('P5-ADM-001: recent-auth prerequisite is complemented by MFA-verified sessi
   t.mock.method(models.User, 'findByPk', async () => ({ id: 'operator-1', mfaEnabled: true }));
   t.mock.method(models.UserSession, 'findByPk', async () => ({ id: 'session-1', mfaVerified: false,
     revokedAt: null, expiresAt: new Date(Date.now() + 60000) }));
+  const denied = response();
+  await platformAuth.requireMfaVerified({ user: { id: 'operator-1', sessionId: 'session-1' } }, denied, () => {});
+  assert.equal(denied.statusCode, 403);
+  assert.equal(denied.body.error.code, 'MFA_REQUIRED');
+});
+
+test('P5-ADM-001: an MFA session belonging to another user is denied', async (t) => {
+  t.mock.method(models.User, 'findByPk', async () => ({ id: 'operator-1', mfaEnabled: true }));
+  t.mock.method(models.UserSession, 'findByPk', async () => ({ id: 'session-1', userId: 'operator-2',
+    mfaVerified: true, revokedAt: null, expiresAt: new Date(Date.now() + 60000) }));
   const denied = response();
   await platformAuth.requireMfaVerified({ user: { id: 'operator-1', sessionId: 'session-1' } }, denied, () => {});
   assert.equal(denied.statusCode, 403);

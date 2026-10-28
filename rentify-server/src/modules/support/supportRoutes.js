@@ -1,9 +1,13 @@
 const express = require('express');
 const { verifyToken } = require('../../middlewares/auth');
 const controller = require('./supportController');
+const merchant = require('./merchantSupportController');
 const router = express.Router();
 const safe = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 router.use(verifyToken);
+router.get('/mine', safe(merchant.list));
+router.get('/mine/:caseId', safe(merchant.get));
+router.post('/mine/:caseId/responses', safe(merchant.respond));
 router.post('/', safe(controller.create));
 router.get('/', safe(controller.list));
 router.get('/:caseId', safe(controller.get));

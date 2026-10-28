@@ -3,8 +3,10 @@ const router = express.Router();
 const paymentController = require('./paymentController');
 
 const { verifyToken } = require('../../middlewares/auth');
+const history = require('./merchantPaymentHistory');
 
 router.post('/khqr', verifyToken, paymentController.initiateKHQRPayment);
+router.get('/history', verifyToken, (req, res, next) => Promise.resolve(history.list(req, res)).catch(next));
 router.get('/status/:paymentId', verifyToken, paymentController.checkPaymentStatus);
 
 // P3-PAY-002: Signed CutLuy Webhook Ingestion Endpoint

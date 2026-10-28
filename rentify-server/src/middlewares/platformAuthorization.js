@@ -86,16 +86,16 @@ async function requireMfaVerified(req, res, next) {
   const user = await User.findByPk(req.user?.id, { attributes: ['id', 'mfaEnabled'] });
   if (!user?.mfaEnabled) return errorResponse(res, 403, 'MFA_REQUIRED', 'MFA is required for this action');
   let session = req.user.sessionId
-    ? await UserSession.findByPk(req.user.sessionId, { attributes: ['id', 'revokedAt', 'expiresAt', 'mfaVerified'] })
+    ? await UserSession.findByPk(req.user.sessionId, { attributes: ['id', 'userId', 'revokedAt', 'expiresAt', 'mfaVerified'] })
     : null;
   if (!session && req.cookies?.userRefreshToken) {
     const crypto = require('crypto');
     const tokenHash = crypto.createHash('sha256').update(String(req.cookies.userRefreshToken)).digest('hex');
     session = await UserSession.findOne({ where: { userId: req.user.id, tokenHash, revokedAt: null },
-      attributes: ['id', 'revokedAt', 'expiresAt', 'mfaVerified'] });
+      attributes: ['id', 'userId', 'revokedAt', 'expiresAt', 'mfaVerified'] });
     if (session) req.user.sessionId = session.id;
   }
-  if (!session || session.revokedAt || session.expiresAt < new Date() || !session.mfaVerified) {
+  if (!session || String(session.userId) !== String(req.user.id) || session.revokedAt || session.expiresAt < new Date() || !session.mfaVerified) {
     return errorResponse(res, 403, 'MFA_REQUIRED', 'An MFA-verified session is required');
   }
   return next();

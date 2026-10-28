@@ -8,6 +8,7 @@ require.cache[dbPath].exports = sequelize;
 const models = require('../../src/models');
 const service = require('../../src/modules/support/supportService');
 const controller = require('../../src/modules/support/supportController');
+const merchant = require('../../src/modules/support/merchantSupportController');
 
 const actorId = '11111111-1111-4111-8111-111111111111';
 const storeId = '22222222-2222-4222-8222-222222222222';
@@ -121,4 +122,23 @@ test('note and attachment endpoints enforce case scope before revealing internal
   const res = { json() { throw new Error('Unauthorized case data was returned'); } };
   await assert.rejects(() => controller.notes(req, res), (error) => error.code === 'NOT_FOUND');
   await assert.rejects(() => controller.attachments(req, res), (error) => error.code === 'NOT_FOUND');
+});
+
+test('merchant sees only their store and merchant-visible notes and can reply idempotently', async (t) => {
+  t.mock.method(models.Store, 'findOne', async ({ where }) => where.ownerUserId === actorId ? { id: storeId, ownerUserId: actorId }
+    : { id: '44444444-4444-4444-8444-444444444444', ownerUserId: where.ownerUserId });
+  const data = [];
+  const res = { json(value) { data.push(value); return this; } };
+  const req = { user: { id: actorId, role: 'user' }, params: { caseId: item.id }, correlationId: 'merchant-test-001',
+    get: () => 'merchant-response-key', body: { expectedVersion: 11, body: 'Thank you for helping.' } };
+  await merchant.get(req, res);
+  assert.deepEqual(data[0].data.notes.map((note) => note.body), []);
+  await merchant.respond(req, res);
+  await merchant.respond(req, res);
+  assert.equal(data[2].replayed, true);
+  await merchant.get(req, res);
+  assert.deepEqual(data[3].data.notes.map((note) => note.body), ['Thank you for helping.']);
+  assert.equal(JSON.stringify(data[3]).includes('Internal review'), false);
+  await assert.rejects(() => merchant.get({ ...req, user: { id: assigneeId, role: 'user' } }, res),
+    (error) => error.code === 'NOT_FOUND');
 });

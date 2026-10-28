@@ -71,6 +71,10 @@ exports.overview = async (_req, res) => {
 exports.updateStore = async (req, res) => {
   const { storeId } = req.params;
   const { marketplaceEnabled, status, marketplaceApprovalStatus } = req.body;
+  if (marketplaceApprovalStatus === 'rejected') {
+    return res.status(400).json({ error: { code: 'VALIDATION_FAILED',
+      message: 'Use the seller review workflow to reject an application', fieldErrors: [], retryable: false } });
+  }
   const store = await Store.findByPk(storeId);
   if (!store) return res.status(404).json({ error: 'Store not found' });
   const updates = {};
