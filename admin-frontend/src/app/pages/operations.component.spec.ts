@@ -3,6 +3,7 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { OperationsComponent } from './operations.component';
 import { PlatformOperationsService } from '../services/platform-operations.service';
+import { AuthService } from '../core/auth/auth.service';
 
 const route = (section: string) => ({
   snapshot: { data: { section }, queryParamMap: { get: () => null } },
@@ -182,5 +183,45 @@ describe('OperationsComponent', () => {
     component.toggleStoreStatus(store, 'suspended');
     expect(updatedStatus).toBe('suspended');
     expect(store.status).toBe('suspended');
+  });
+
+  it('disables sensitive operations when administrator lacks the required claim', () => {
+    const product = { id: 'prod-restricted-01', name: 'Herbal Medicine', stockQuantity: 10, status: 'active', marketplaceVisibility: null };
+    const mockAuthService = {
+      user: () => ({ id: 'limited-admin', name: 'Reader Only', role: 'ADMIN', claims: ['ops:overview:read'] }),
+      canReviewSellers: () => false,
+      canModerateCatalog: () => false,
+      canModerateReviews: () => false,
+      canAdjustInventory: () => false,
+      canWriteSupport: () => false,
+    };
+    TestBed.configureTestingModule({
+      imports: [OperationsComponent],
+      providers: [
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: route('products') },
+        { provide: PlatformOperationsService, useValue: { commerce: () => of({ data: [product], total: 1, page: 1, limit: 20 }) } },
+        { provide: AuthService, useValue: mockAuthService },
+      ],
+    });
+    const fixture = TestBed.createComponent(OperationsComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    expect(component.canModerateCatalog()).toBe(false);
+    expect(component.canAdjustInventory()).toBe(false);
+    expect(component.canReviewSellers()).toBe(false);
+    expect(component.canWriteSupport()).toBe(false);
+
+    component.openItem(product, 'products');
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('aside.drawer button');
+    // All action buttons inside drawer should have disabled attribute
+    const actionButtons = Array.from(buttons).filter((b: any) => !b.classList.contains('icon-btn'));
+    expect(actionButtons.length).toBeGreaterThan(0);
+    for (const btn of actionButtons as HTMLButtonElement[]) {
+      expect(btn.disabled).toBe(true);
+    }
   });
 });

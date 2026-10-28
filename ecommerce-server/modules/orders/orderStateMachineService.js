@@ -515,6 +515,23 @@ async function transitionFulfillment(orderId, {
       byStateMachine: true,
     });
 
+    try {
+      const { emitOrderDelivered, emitOrderDeliveryFailed } = require('../events');
+      if (targetFulfillment === FULFILLMENT_STATES.DELIVERED) {
+        await emitOrderDelivered({
+          order,
+          deliveredAt: now.toISOString(),
+          correlationId,
+        }, { transaction: tx });
+      } else if (targetFulfillment === FULFILLMENT_STATES.FAILED) {
+        await emitOrderDeliveryFailed({
+          order,
+          reason: reason || 'Delivery attempt failed',
+          correlationId,
+        }, { transaction: tx });
+      }
+    } catch (_evtErr) {}
+
     // 4. Append immutable OrderEvent
     const event = await safeCreateEvent({
       id: randomUUID(),
@@ -871,6 +888,16 @@ async function requestReturn(orderId, {
       byStateMachine: true,
     });
 
+    try {
+      const { emitOrderReturnRequested } = require('../events');
+      await emitOrderReturnRequested({
+        order,
+        reason,
+        evidenceUrls: (evidence || []).map((e) => (typeof e === 'string' ? e : e?.url || '')),
+        correlationId,
+      }, { transaction: tx });
+    } catch (_evtErr) {}
+
     const now = new Date();
     const event = await safeCreateEvent({
       id: randomUUID(),
@@ -977,6 +1004,23 @@ async function processReturnDecision(orderId, {
       transaction: tx,
       byStateMachine: true,
     });
+
+    try {
+      const { emitOrderReturnApproved, emitOrderReturnRejected } = require('../events');
+      if (decision === 'approve') {
+        await emitOrderReturnApproved({
+          order,
+          decisionNotes: reason,
+          correlationId,
+        }, { transaction: tx });
+      } else {
+        await emitOrderReturnRejected({
+          order,
+          rejectionReason: reason,
+          correlationId,
+        }, { transaction: tx });
+      }
+    } catch (_evtErr) {}
 
     const now = new Date();
     const event = await safeCreateEvent({
@@ -1155,6 +1199,15 @@ async function receiveReturn(orderId, {
       byStateMachine: true,
     });
 
+    try {
+      const { emitOrderReturnReceived } = require('../events');
+      await emitOrderReturnReceived({
+        order,
+        restocked: restockedCount > 0,
+        correlationId,
+      }, { transaction: tx });
+    } catch (_evtErr) {}
+
     const now = new Date();
     const event = await safeCreateEvent({
       id: randomUUID(),
@@ -1250,6 +1303,17 @@ async function completeReturn(orderId, {
       transaction: tx,
       byStateMachine: true,
     });
+
+    try {
+      const { emitOrderRefundConfirmed } = require('../events');
+      await emitOrderRefundConfirmed({
+        order,
+        refundAmount: order.totalAmount,
+        refundMethod: 'cod_direct_refund',
+        reference: refundTransactionId,
+        correlationId,
+      }, { transaction: tx });
+    } catch (_evtErr) {}
 
     const now = new Date();
     const event = await safeCreateEvent({

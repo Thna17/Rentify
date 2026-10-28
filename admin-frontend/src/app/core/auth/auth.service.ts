@@ -30,14 +30,9 @@ export class AuthService {
   hasPermission(claim: string): boolean {
     const user = this.userState();
     if (!user) return false;
-    const role = user.role?.toUpperCase();
-    if (role === 'ADMIN') {
-      if (Array.isArray(user.claims) && user.claims.length > 0) {
-        return user.claims.includes(claim);
-      }
-      return true;
-    }
-    return Boolean(user.claims?.includes(claim));
+    // Admins and operators consume scoped permissions; wildcard '*' grants all claims
+    const claims = Array.isArray(user.claims) ? user.claims : [];
+    return claims.includes(claim) || claims.includes('*');
   }
 
   canViewSupport(): boolean {
@@ -54,6 +49,18 @@ export class AuthService {
 
   canModerateCatalog(): boolean {
     return this.hasPermission('catalog:moderate');
+  }
+
+  canModerateReviews(): boolean {
+    return this.hasPermission('review:moderate');
+  }
+
+  canAdjustInventory(): boolean {
+    return this.hasPermission('inventory:adjust');
+  }
+
+  canReviewSellers(): boolean {
+    return this.hasPermission('seller:review');
   }
 
   canApproveMakerChecker(): boolean {

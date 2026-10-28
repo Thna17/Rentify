@@ -480,10 +480,33 @@ async function listReports({ buyerId = null, storeId = null, subjectType = null,
   };
 }
 
+/**
+ * Escalates an unresolved report/dispute and emits order.dispute_escalated outbox event.
+ */
+async function escalateReport(reportId, { reason = '48h SLA response deadline breached', actor = null } = {}, { transaction = null } = {}) {
+  const report = await BuyerReport.findByPk(reportId, { transaction });
+  if (!report) fail('Report not found', 404, 'REPORT_NOT_FOUND');
+
+  let order = null;
+  if (report.subjectType === 'order') {
+    order = await Order.findByPk(report.subjectId, { transaction });
+  }
+
+  const { emitOrderDisputeEscalated } = require('../events');
+  await emitOrderDisputeEscalated({
+    order: order || { id: report.subjectId, orderNumber: report.subjectId, storeId: report.storeId, buyerId: report.buyerId },
+    caseId: report.coreCaseId || report.id,
+    escalationReason: reason,
+  }, { transaction });
+
+  return { escalated: true, reportId: report.id };
+}
+
 module.exports = {
   sanitizeEvidence,
   evaluateEligibility,
   submitBuyerReport,
+  escalateReport,
   getAuthoritativeFacts,
   listReports,
   retryReportLinkage: coreCaseLinkageAdapter.retryReportLinkage,

@@ -33,9 +33,25 @@ test('commerce operations prefer the Core session cookie over a stale bearer tok
       newAccessToken: 'rotated' } };
   } })(req, res, () => { nextCalled = true; });
   assert.deepEqual(submitted, { access: 'other-cookie', refresh: 'refresh' });
-  assert.deepEqual(req.user, { id: 'admin-id', role: 'admin' });
+  assert.deepEqual(req.user, { id: 'admin-id', role: 'admin', claims: [] });
   assert.equal(res.cookieSet.name, 'userAccessToken');
   assert.equal(nextCalled, true);
+});
+
+test('commerce operations extract scoped claims from Core token validation', async () => {
+  const req = { headers: { authorization: 'Bearer admin-token' }, cookies: {} };
+  const res = response();
+  let nextCalled = false;
+  await createVerifyCoreAdmin({
+    validate: async () => ({
+      data: {
+        valid: true,
+        entity: { id: 'admin-mod', type: 'admin', claims: ['catalog:moderate', 'support:case:read'] },
+      },
+    }),
+  })(req, res, () => { nextCalled = true; });
+  assert.equal(nextCalled, true);
+  assert.deepEqual(req.user.claims, ['catalog:moderate', 'support:case:read']);
 });
 
 test('commerce operations accept a bearer token when no session cookie exists', async () => {
