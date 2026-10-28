@@ -41,7 +41,8 @@ import CtaBand from "../../components/site/CtaBand";
 import useStartTrial from "../../hooks/useStartTrial";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PlanCards from "../pricing/components/PlanCards";
-import { Container, Heading, Lead, Section } from "../../components/site/ui";
+import { Container, Heading, Lead, Section, SmartLink } from "../../components/site/ui";
+import { MARKETPLACE_URL } from "@rentify/shared/config/urls";
 import { Reveal } from "../../components/site/motion";
 
 import { HomeFaq, HomeSolutions, HomeTemplates } from './components/HomeHighlights';
@@ -180,35 +181,38 @@ const SocialProof = () => (
 );
 
 // --- How It Works Section ---
+const HOW_IT_WORKS_STEPS = [
+  ['Create Your Store', 'Sign up and tell us about your business. In minutes, your professional online storefront will be ready.'],
+  ['Add Products & Manage Sales', "Easily add your products once. They'll appear on your website, POS, and invoices automatically."],
+  ['Grow Your Business', 'Start accepting payments with KHQR, track your best-selling items, and manage all your customers in one place.'],
+];
+
 const HowItWorks = () => (
-  <section className="py-16 md:py-24 bg-gray-50">
+  <section className="py-10 md:py-24 bg-gray-50">
     <div className="container">
-      <div className="mx-auto mb-12 max-w-2xl text-center">
-        <h2 className="text-3xl font-bold md:text-4xl">Go Live in 3 Simple Steps</h2>
-        <p className="mt-4 text-lg text-muted-foreground">
+      <div className="mb-6 max-w-2xl md:mx-auto md:mb-12 md:text-center">
+        <h2 className="text-[24px] font-bold leading-tight tracking-[-0.03em] md:text-4xl">Go Live in 3 Simple Steps</h2>
+        <p className="mt-2 text-[14px] leading-snug text-muted-foreground md:mt-4 md:text-lg">
           You don't need to be a tech expert. If you can use Facebook, you can use Rentify.
         </p>
       </div>
-      <div className="grid gap-8 md:grid-cols-3">
-        {/* Step 1 */}
-        <div className="text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-2xl">1</div>
-          <h3 className="text-xl font-semibold">Create Your Store</h3>
-          <p className="mt-2 text-muted-foreground">Sign up and tell us about your business. In minutes, your professional online storefront will be ready.</p>
-        </div>
-        {/* Step 2 */}
-        <div className="text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-2xl">2</div>
-          <h3 className="text-xl font-semibold">Add Products & Manage Sales</h3>
-          <p className="mt-2 text-muted-foreground">Easily add your products once. They'll appear on your website, POS, and invoices automatically.</p>
-        </div>
-        {/* Step 3 */}
-        <div className="text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-2xl">3</div>
-          <h3 className="text-xl font-semibold">Grow Your Business</h3>
-          <p className="mt-2 text-muted-foreground">Start accepting payments with KHQR, track your best-selling items, and manage all your customers in one place.</p>
-        </div>
-      </div>
+      {/* Phones: a compact vertical timeline. Tablet/desktop: three centred columns. */}
+      <ol className="grid md:grid-cols-3 md:gap-8">
+        {HOW_IT_WORKS_STEPS.map(([title, body], index) => (
+          <li key={title} className="relative flex gap-3.5 pb-5 last:pb-0 md:block md:pb-0 md:text-center">
+            {index < HOW_IT_WORKS_STEPS.length - 1 && (
+              <span aria-hidden="true" className="absolute left-[17px] top-10 bottom-1 w-px bg-blue-200 md:hidden" />
+            )}
+            <div className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[15px] font-bold text-blue-600 md:mb-4 md:h-16 md:w-16 md:text-2xl">
+              {index + 1}
+            </div>
+            <div className="min-w-0 pt-1 md:pt-0">
+              <h3 className="text-[16px] font-semibold leading-snug md:text-xl">{title}</h3>
+              <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground md:mt-2 md:text-base md:leading-normal">{body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   </section>
 );
@@ -231,217 +235,101 @@ const ArrowDownRight = ({ className = "w-10 h-10 text-amber-500" }) => (
 // --- Feature Showcase Section ---
 const FeatureShowcase = () => {
   const reduceMotion = useReducedMotion();
+  const marketplaceHref = MARKETPLACE_URL || 'https://rentify-market.mekhla.digital/';
 
   const features = [
     {
       id: 'store',
       icon: Store,
-      number: '01',
       title: "Your Own Online Store",
       description: "Create your own professional online store in minutes. Add products, manage orders, and sell 24/7 without coding.",
       image: storefrontPreview,
       imageAlt: "Aura Botanicals storefront created with Rentify",
-      tone: 'blue',
-      callout: {
-        lines: ["Your brand", "Your website", "Your customers"],
-        type: "down-left",
-        className: "top-3 right-4 sm:top-5 sm:right-8 lg:right-12",
-        textColor: "text-blue-600/90",
-        arrowColor: "text-blue-500/80"
-      },
-      highlights: [
-        { icon: Palette, label: 'Custom design', sublabel: 'Make it your brand' },
-        { icon: Package, label: 'Easy product setup', sublabel: 'Manage with ease' },
-        { icon: Globe, label: 'Sell 24/7', sublabel: 'Reach more customers' },
-      ],
+      href: '/feature#store',
+      panel: 'bg-[#efedfb]',
+      highlights: ['Custom design', 'Easy product setup', 'Sell 24/7'],
     },
     {
       id: 'marketplace',
       icon: ShoppingBag,
-      number: '02',
       title: "Rentify Marketplace",
       description: "List your products on the Rentify Marketplace, where customers can discover, compare, and buy from businesses across Cambodia.",
       image: marketplacePreview,
       imageAlt: "Rentify Marketplace store page with real product listings",
-      tone: 'amber',
-      callout: {
-        lines: ["Discover", "thousands of", "products"],
-        type: "down-right",
-        className: "top-3 left-4 sm:top-5 sm:left-8 lg:left-12",
-        textColor: "text-amber-700/90",
-        arrowColor: "text-amber-600/80"
-      },
-      highlights: [
-        { icon: Users, label: 'More customers', sublabel: 'Reach wider audience' },
-        { icon: Shield, label: 'Trusted marketplace', sublabel: 'Safe and secure' },
-        { icon: BarChart3, label: 'More opportunities', sublabel: 'Grow your business' },
-      ],
+      href: marketplaceHref,
+      panel: 'bg-[#fbeee4]',
+      highlights: ['More customers', 'Trusted marketplace', 'More opportunities'],
     },
     {
       id: 'pos',
       icon: Smartphone,
-      number: '03',
       title: "Smart POS System",
       description: "Use Rentify at your physical store to manage sales, products, inventory, and accept KHQR payments — all in one simple POS system.",
       image: posPreview,
       imageAlt: "Rentify Smart POS product catalog and order screen",
-      tone: 'emerald',
-      callout: {
-        lines: ["Faster checkout", "Track inventory", "Accept KHQR"],
-        type: "down-left",
-        className: "top-3 right-4 sm:top-5 sm:right-8 lg:right-12",
-        textColor: "text-emerald-700/90",
-        arrowColor: "text-emerald-600/80"
-      },
-      highlights: [
-        { icon: Zap, label: 'Fast checkout', sublabel: 'Serve customers quickly' },
-        { icon: Layers, label: 'Inventory management', sublabel: 'Track stock in real-time' },
-        { icon: QrCode, label: 'KHQR payments', sublabel: 'Accept local payments' },
-      ],
+      href: '/feature#pos',
+      panel: 'bg-[#e6f2ec]',
+      highlights: ['Fast checkout', 'Inventory management', 'KHQR payments'],
     },
   ];
 
-  const tones = {
-    blue: {
-      panel: 'border-blue-100/90 bg-[linear-gradient(135deg,#f4f8ff_0%,#e8f2ff_100%)] shadow-md',
-      icon: 'bg-blue-100/80 text-blue-600',
-      number: 'text-blue-600 border-blue-200/80',
-      button: 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20',
-      highlightIcon: 'text-blue-600',
-    },
-    amber: {
-      panel: 'border-amber-100/90 bg-[linear-gradient(135deg,#fffdf5_0%,#fff5e0_100%)] shadow-md',
-      icon: 'bg-amber-100/80 text-amber-600',
-      number: 'text-amber-600 border-amber-200/80',
-      button: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20',
-      highlightIcon: 'text-amber-600',
-    },
-    emerald: {
-      panel: 'border-emerald-100/90 bg-[linear-gradient(135deg,#f2fbf7_0%,#e0f7eb_100%)] shadow-sm',
-      icon: 'bg-emerald-100/80 text-emerald-600',
-      number: 'text-emerald-600 border-emerald-200/80',
-      button: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
-      highlightIcon: 'text-emerald-600',
-    },
-  };
-
   return (
-    <section id="features" className="overflow-hidden bg-white py-16 md:py-24">
+    <section id="features" className="bg-white py-12 md:py-24">
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
         <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.4 }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto mb-16 max-w-3xl text-center md:mb-20"
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-3xl"
         >
-          <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-600 sm:text-xs">One connected workspace</p>
+          <h2 className="mt-2.5 text-[26px] font-bold leading-tight tracking-[-0.035em] text-slate-950 sm:mt-3 md:text-4xl lg:text-5xl">
             One Platform, Endless Possibilities
           </h2>
-          <p className="mt-4 text-lg text-slate-600 sm:text-xl">
+          <p className="mt-2 text-[15px] text-slate-500 sm:mt-3 sm:text-lg">
             Rentify is more than a website builder. It's a complete toolkit designed for the way you work.
           </p>
         </motion.div>
 
-        {/* Stacked Cards with Alternating Slide-In Effect */}
-        <div className="space-y-16 md:space-y-24 lg:space-y-28">
-          {features.map((feature, index) => {
-            const imageOnRight = index % 2 === 0;
-            const itemTone = tones[feature.tone];
-            // Alternating entry:
-            // Card 1 (index 0): --> []  (slides in from left: x: -100 -> 0)
-            // Card 2 (index 1): [] <--  (slides in from right: x: 100 -> 0)
-            // Card 3 (index 2): ---> [] (slides in from left: x: -100 -> 0)
-            const slideFromLeft = index % 2 === 0;
+        <div className="mt-6 grid gap-3 sm:mt-10 md:grid-cols-3 md:gap-6 lg:mt-12 lg:gap-8">
+          {features.map((feature, index) => (
+            <motion.article
+              key={feature.id}
+              initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+              className="group grid grid-cols-[112px_minmax(0,1fr)] items-center gap-3.5 md:flex md:flex-col md:items-stretch md:gap-0"
+            >
+              {/* Picture panel */}
+              <div className={`flex aspect-square items-center justify-center overflow-hidden rounded-2xl p-2 md:aspect-[16/10] md:rounded-[28px] md:p-6 lg:p-8 ${feature.panel}`}>
+                <img
+                  src={feature.image}
+                  alt={feature.imageAlt}
+                  loading="lazy"
+                  className="h-full w-full object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
 
-            return (
-              <motion.div
-                key={feature.id}
-                initial={reduceMotion ? false : { opacity: 0, x: slideFromLeft ? -100 : 100 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: false, amount: 0.25 }}
-                transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-                className={`grid min-h-[480px] md:min-h-[540px] lg:min-h-[580px] overflow-hidden rounded-[36px] border ${
-                  imageOnRight
-                    ? 'md:grid-cols-[1fr_1.35fr] xl:grid-cols-[1fr_1.45fr]'
-                    : 'md:grid-cols-[1.35fr_1fr] xl:grid-cols-[1.45fr_1fr]'
-                } ${itemTone.panel}`}
-              >
-                {/* Text Side */}
-                <div
-                  className={`order-1 md:order-none flex flex-col justify-center px-6 py-10 sm:px-10 md:px-10 lg:px-14 xl:px-16 ${
-                    imageOnRight
-                      ? 'md:col-start-1 md:row-start-1'
-                      : 'md:col-start-2 md:row-start-1'
-                  }`}
+              {/* Copy */}
+              <div className="min-w-0 md:px-1 md:pt-7">
+                <feature.icon className="hidden h-7 w-7 text-indigo-600 md:block" strokeWidth={1.6} />
+                <h3 className="text-[16px] font-bold tracking-[-0.02em] text-slate-950 md:mt-4 md:text-2xl">{feature.title}</h3>
+                <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-slate-500 md:mt-3 md:line-clamp-none md:text-base md:leading-relaxed">
+                  {feature.description}
+                </p>
+                <p className="mt-3 hidden text-sm text-slate-400 md:block">{feature.highlights.join(' · ')}</p>
+                <SmartLink
+                  to={feature.href}
+                  className="mt-2 inline-flex min-h-[32px] items-center gap-1.5 text-[13px] font-semibold text-indigo-600 hover:text-indigo-700 md:mt-5 md:text-base"
                 >
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${itemTone.icon} shadow-xs`}>
-                      <feature.icon className="h-6 w-6" />
-                    </div>
-                    <span className={`inline-flex items-center justify-center rounded-full bg-white/95 border ${itemTone.number} px-3.5 py-1 text-xs font-extrabold tracking-[0.16em] shadow-xs`}>
-                      {feature.number}
-                    </span>
-                  </div>
-
-                  <h3 className="text-3xl font-extrabold tracking-[-0.035em] text-slate-950 lg:text-[2.65rem] lg:leading-[1.08]">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg lg:text-xl">
-                    {feature.description}
-                  </p>
-
-                  <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">
-                    {feature.highlights.map(({ icon: HighlightIcon, label, sublabel }) => (
-                      <div key={label} className="min-w-0">
-                        <HighlightIcon className={`mb-2.5 h-6 w-6 ${itemTone.highlightIcon}`} />
-                        <p className="text-sm font-extrabold leading-tight text-slate-900 sm:text-base">{label}</p>
-                        <p className="mt-1 text-xs font-medium leading-snug text-slate-500 sm:text-sm">{sublabel}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button className={`mt-9 h-12 w-fit rounded-full px-7 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.03] ${itemTone.button}`}>
-                    Learn more <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </div>
-
-                {/* Image / Visual Side */}
-                <div
-                  className={`relative order-2 md:order-none flex min-h-[360px] items-center justify-center p-3 sm:p-6 md:min-h-[520px] lg:p-8 ${
-                    imageOnRight
-                      ? 'md:col-start-2 md:row-start-1'
-                      : 'md:col-start-1 md:row-start-1'
-                  }`}
-                >
-                  {/* Handwritten Callout Doodle */}
-                  {feature.callout && (
-                    <div className={`hidden sm:flex flex-col items-center absolute z-20 pointer-events-none select-none ${feature.callout.className}`}>
-                      <div className={`font-sans italic font-bold text-xs lg:text-sm xl:text-base ${feature.callout.textColor} leading-tight text-center tracking-wide drop-shadow-xs`}>
-                        {feature.callout.lines.map((line, i) => (
-                          <p key={i}>{line}</p>
-                        ))}
-                      </div>
-                      {feature.callout.type === 'down-left' ? (
-                        <ArrowDownLeft className={`w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 ${feature.callout.arrowColor} mt-0.5 transform -rotate-12`} />
-                      ) : (
-                        <ArrowDownRight className={`w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 ${feature.callout.arrowColor} mt-0.5 transform rotate-12`} />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Main Mockup Image */}
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <img
-                      src={feature.image}
-                      alt={feature.imageAlt}
-                      className="w-full h-auto max-h-[460px] md:max-h-[520px] lg:max-h-[580px] object-contain drop-shadow-2xl transition-transform duration-500 hover:scale-[1.03]"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                  Learn more
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 md:h-5 md:w-5" />
+                </SmartLink>
+              </div>
+            </motion.article>
+          ))}
         </div>
       </div>
     </section>
