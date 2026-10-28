@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/db');
 const {
-  Product, ProductVariant, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview,
+  Product, ProductOption, ProductVariant, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview,
 } = require('../../models');
 const { canonicalCategory } = require('../../config/marketplaceTaxonomy');
 
