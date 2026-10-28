@@ -54,7 +54,7 @@ module.exports = {
     callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Idempotency-Key', 'x-session-id', 'X-Session-Id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Idempotency-Key', 'x-session-id', 'X-Session-Id', 'X-Correlation-ID'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  exposedHeaders: ['Set-Cookie'],
+  exposedHeaders: ['Set-Cookie', 'X-Correlation-ID'],
 };

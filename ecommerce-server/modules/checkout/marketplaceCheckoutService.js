@@ -13,7 +13,7 @@ const { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, eligibleS
 const { getDeliveryPolicy, setDeliveryPolicy } = require('./deliveryPolicyService');
 const { getCart, setCartItem, updateCartItem, removeCartItem, clearCart, mergeCarts } = require('./marketplaceCartService');
 const { buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction,
-  buyerReport } = require('./marketplaceOrderService');
+  buyerReport, merchantOrders, merchantOrder } = require('./marketplaceOrderService');
 
 async function resolveProductAndSku(item, store, transaction, channel) {
   const { product, variant: explicitVariant, unitPrice, currency } = await checkedProductAndVariant(
@@ -393,4 +393,4 @@ async function checkoutMultiStore({
 }
 
 module.exports = { getDeliveryPolicy, setDeliveryPolicy, getCart, setCartItem, updateCartItem, removeCartItem, clearCart, mergeCarts,
-  checkout, checkoutMultiStore, buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction, buyerReport, checkedProductAndVariant };
+  checkout, checkoutMultiStore, buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction, buyerReport, merchantOrders, merchantOrder, checkedProductAndVariant };
