@@ -30,6 +30,11 @@ const SupportCaseNote = require('./SupportCaseNote');
 const SupportCaseAttachment = require('./SupportCaseAttachment');
 const SupportCaseEvent = require('./SupportCaseEvent');
 const SupportIdempotency = require('./SupportIdempotency');
+const InboxNotification = require('./InboxNotification');
+const NotificationPreference = require('./NotificationPreference');
+const NotificationDelivery = require('./NotificationDelivery');
+const NotificationDeliveryAttempt = require('./NotificationDeliveryAttempt');
+const NotificationSourceEvent = require('./NotificationSourceEvent');
 
 PaymentAttempt.hasMany(ProviderEvent, { foreignKey: 'paymentAttemptId', as: 'providerEvents' });
 ProviderEvent.belongsTo(PaymentAttempt, { foreignKey: 'paymentAttemptId', as: 'paymentAttempt' });
@@ -172,4 +177,9 @@ module.exports = {
   SupportCaseAttachment,
   SupportCaseEvent,
   SupportIdempotency,
+  InboxNotification,
+  NotificationPreference,
+  NotificationDelivery,
+  NotificationDeliveryAttempt,
+  NotificationSourceEvent,
 };

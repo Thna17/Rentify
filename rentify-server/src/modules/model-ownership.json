@@ -32,7 +32,12 @@
     "SupportCaseNote": ["support"],
     "SupportCaseAttachment": ["support"],
     "SupportCaseEvent": ["support"],
-    "SupportIdempotency": ["support"]
+    "SupportIdempotency": ["support"],
+    "InboxNotification": ["notifications"],
+    "NotificationPreference": ["notifications"],
+    "NotificationDelivery": ["notifications"],
+    "NotificationDeliveryAttempt": ["notifications"],
+    "NotificationSourceEvent": ["notifications"]
   },
   "exceptions": []
 }
