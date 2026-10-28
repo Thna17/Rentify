@@ -29,9 +29,15 @@ const InventoryLedgerEntry = require('./InventoryLedgerEntry');
 const InventoryReservation = require('./InventoryReservation');
 const ProductImportJob = require('./ProductImportJob');
 const ProductModerationHistory = require('./ProductModerationHistory');
+const BuyerReport = require('./BuyerReport');
 
 Product.hasMany(ProductModerationHistory, { foreignKey: 'productId', as: 'ModerationHistories' });
 ProductModerationHistory.belongsTo(Product, { foreignKey: 'productId' });
+
+Order.hasMany(BuyerReport, { foreignKey: 'orderId', as: 'BuyerReports' });
+BuyerReport.belongsTo(Order, { foreignKey: 'orderId', as: 'Order' });
+BuyerReport.belongsTo(Product, { foreignKey: 'productId', as: 'Product' });
+BuyerReport.belongsTo(StoreAccess, { foreignKey: 'storeId', targetKey: 'storeId', as: 'Store', constraints: false });
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -189,4 +195,5 @@ module.exports = {
   InventoryReservation,
   ProductImportJob,
   ProductModerationHistory,
+  BuyerReport,
 };

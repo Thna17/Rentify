@@ -17,5 +17,7 @@ router.post('/inventory/adjust', safe(controller.adjustInventory));
 router.patch('/reviews/:id', safe(controller.updateReview));
 router.delete('/reviews/:id', safe(controller.deleteReview));
 router.patch('/reports/:id', safe(controller.updateReport));
+router.get('/reports/:id/facts', safe(controller.reportFacts));
+router.post('/reports/:id/retry-linkage', safe(controller.retryReportLinkage));
 
 module.exports = router;

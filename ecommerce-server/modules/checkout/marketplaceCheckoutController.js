@@ -123,11 +123,86 @@ module.exports = {
   buyerOrders: wrap(async (req, res) => res.json({ orders: await service.buyerOrders(req.user.id) })),
   buyerOrder: wrap(async (req, res) => res.json({ order: await service.buyerOrder(req.user.id, req.params.orderId) })),
   buyerOrderEvents: wrap(async (req, res) => res.json({ events: await service.buyerOrderEvents(req.user.id, req.params.orderId) })),
-  buyerReport: wrap(async (req, res) => res.status(201).json({ event: await service.buyerReport({
-    buyerId: req.user.id, orderId: req.params.orderId,
-    eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
-    type: req.params.type, details: req.body,
-  }) })),
+  buyerReport: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const idempotencyKey = req.get('Idempotency-Key') || req.body?.idempotencyKey || null;
+    const correlationId = req.get('X-Correlation-ID') || null;
+    const subjectType = req.params.type === 'return_requested' ? 'return' : 'order';
+    const category = req.params.type === 'return_requested' ? 'return_claim' : 'order_complaint';
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason : (req.body?.notes || req.params.type);
+    const description = typeof req.body?.notes === 'string' ? req.body.notes : reason;
+    const evidence = req.body?.evidence || (req.body?.evidenceUrl ? [req.body.evidenceUrl] : []);
+
+    try {
+      const result = await buyerReportService.submitBuyerReport(
+        req.user.id,
+        {
+          subjectType,
+          subjectId: req.params.orderId,
+          category,
+          reason,
+          description: description && description.length >= 10 ? description : `${description} (additional details provided)`,
+          evidence,
+        },
+        { idempotencyKey, correlationId }
+      );
+      res.status(201).json({
+        success: true,
+        event: { id: result.report.id, type: req.params.type },
+        data: result,
+      });
+    } catch (err) {
+      // Fallback to legacy service if needed
+      if (err.code === 'REPORT_NOT_FOUND' || err.code === 'INVALID_SUBJECT_TYPE') {
+        const legacyEvent = await service.buyerReport({
+          buyerId: req.user.id, orderId: req.params.orderId,
+          eventKey: idempotencyKey,
+          type: req.params.type, details: req.body,
+        });
+        return res.status(201).json({ event: legacyEvent });
+      }
+      throw err;
+    }
+  }),
+  checkReportEligibility: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const result = await buyerReportService.evaluateEligibility(req.user.id, {
+      subjectType: req.query.subjectType,
+      subjectId: req.query.subjectId,
+    });
+    res.json({ success: true, data: result });
+  }),
+  submitReport: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const idempotencyKey = req.get('Idempotency-Key') || req.body?.idempotencyKey || null;
+    const correlationId = req.get('X-Correlation-ID') || null;
+    const result = await buyerReportService.submitBuyerReport(
+      req.user.id,
+      req.body,
+      { idempotencyKey, correlationId }
+    );
+    res.status(201).json({ success: true, data: result });
+  }),
+  myReports: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const result = await buyerReportService.listReports({
+      buyerId: req.user.id,
+      subjectType: req.query.subjectType,
+      page: Number.parseInt(req.query.page, 10) || 1,
+      limit: Number.parseInt(req.query.limit, 10) || 20,
+    });
+    res.json({ success: true, data: result.items, total: result.total, page: result.page, limit: result.limit });
+  }),
+  getReport: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const facts = await buyerReportService.getAuthoritativeFacts(req.params.id);
+    if (facts.report.buyerId !== req.user.id) {
+      const err = new Error('Unauthorized');
+      err.statusCode = 403;
+      throw err;
+    }
+    res.json({ success: true, data: facts });
+  }),
   merchantOrder: wrap(async (req, res) => res.json({ order: await service.merchantOrder(
     req.params.storeId, req.params.orderId,
   ) })),

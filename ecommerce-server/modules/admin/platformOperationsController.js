@@ -328,3 +328,17 @@ exports.productModerationHistory = async (req, res) => {
   const history = await productModerationService.getModerationHistory(id);
   res.json({ success: true, data: history });
 };
+
+exports.reportFacts = async (req, res) => {
+  const { id } = req.params;
+  const { buyerReportService } = require('../support');
+  const facts = await buyerReportService.getAuthoritativeFacts(id);
+  res.json({ success: true, data: facts });
+};
+
+exports.retryReportLinkage = async (req, res) => {
+  const { id } = req.params;
+  const { buyerReportService } = require('../support');
+  const result = await buyerReportService.retryReportLinkage(id);
+  res.json({ success: true, data: result });
+};

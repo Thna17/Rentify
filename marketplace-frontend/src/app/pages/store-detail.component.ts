@@ -14,6 +14,7 @@ import { NavbarComponent } from '../components/shared/layout/navbar/navbar.compo
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
+import { BuyerReportModalComponent } from '../components/shared/reports/buyer-report-modal.component';
 
 const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = [
   { value: 'featured', labelKey: 'catalog.sortFeatured', defaultLabel: 'Featured' },
@@ -41,7 +42,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
 
 @Component({
   selector: 'app-store-detail',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductCardComponent, TranslatePipe],
+  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductCardComponent, BuyerReportModalComponent, TranslatePipe],
   template: `
     <app-navbar />
 
@@ -106,6 +107,9 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
               <div class="store-actions">
                 <a class="btn btn-primary" href="#products" (click)="scrollToSection('products', $event)">{{ 'store.shopStore' | translate:{ name: s.name } }}</a>
                 <button type="button" class="btn btn-outline" disabled title="Store following will be available when account sync is ready"><ui-icon name="heart" [size]="15" /> Follow soon</button>
+                <button type="button" class="btn btn-outline" (click)="showReportModal.set(true)" title="Report store issue or policy concern">
+                  <ui-icon name="flag" [size]="14" /> {{ 'store.reportStore' | translate }}
+                </button>
               </div>
             </div>
           </div>
@@ -210,6 +214,15 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
             <div class="review-note"><strong>Be the first to review this store’s products.</strong><p>Review eligibility will be available after a completed order.</p></div>
           }
         </section>
+
+        @if (showReportModal()) {
+          <buyer-report-modal
+            subjectType="merchant"
+            [subjectId]="s.id"
+            [subjectTitle]="s.name"
+            (closed)="showReportModal.set(false)"
+          />
+        }
       </main>
     } @else {
       <section class="container missing" role="alert">
@@ -360,6 +373,7 @@ export class StoreDetailComponent {
   protected readonly translate = inject(TranslateService);
 
   protected readonly merchantDashboardUrl = this.rentify.merchantDashboard;
+  protected readonly showReportModal = signal(false);
   protected readonly activeCategory = signal<string | null>(null);
   protected readonly activeSection = signal<'products' | 'about' | 'reviews'>('products');
   private readonly storeId = toSignal(this.route.paramMap.pipe(map((params) => params.get('id') ?? '')), { initialValue: this.route.snapshot.paramMap.get('id') ?? '' });

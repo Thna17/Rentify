@@ -2802,6 +2802,176 @@ paths:
                   event:
                     type: object
       operationId: post_api_marketplace_my_orders_orderId_reports_type
+  /api/marketplace/reports/eligibility:
+    get:
+      tags:
+        - Buyer Reports
+      summary: Check eligibility and deadlines for filing a complaint or return report
+      description: Evaluates whether an order, return, product, or merchant is eligible for a buyer report and returns deadlines and guidelines.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: subjectType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - order
+              - return
+              - product
+              - merchant
+        - name: subjectId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Eligibility report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        "401":
+          $ref: "#/components/responses/Error401"
+      operationId: get_api_marketplace_reports_eligibility
+  /api/marketplace/reports:
+    post:
+      tags:
+        - Buyer Reports
+      summary: Submit buyer report linked to authoritative Core support case
+      description: Submits a structured complaint or return report with safe evidence metadata, triggering idempotent Core SupportCase linkage.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subjectType
+                - subjectId
+                - category
+                - reason
+                - description
+              properties:
+                subjectType:
+                  type: string
+                  enum:
+                    - order
+                    - return
+                    - product
+                    - merchant
+                subjectId:
+                  type: string
+                category:
+                  type: string
+                reason:
+                  type: string
+                  minLength: 5
+                description:
+                  type: string
+                  minLength: 10
+                evidence:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                      label:
+                        type: string
+                      type:
+                        type: string
+                      fileName:
+                        type: string
+      responses:
+        "201":
+          description: Buyer report created and linked
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_marketplace_reports
+  /api/marketplace/reports/my-reports:
+    get:
+      tags:
+        - Buyer Reports
+      summary: List buyer's submitted reports and support case references
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of buyer reports
+        "401":
+          $ref: "#/components/responses/Error401"
+      operationId: get_api_marketplace_reports_my_reports
+  /api/marketplace/reports/{id}:
+    get:
+      tags:
+        - Buyer Reports
+      summary: Get details of buyer report and linked Core case reference
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Buyer report details
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_marketplace_reports_id
   /api/storefront/{websiteId}/my-orders:
     get:
       tags:
@@ -5779,6 +5949,47 @@ paths:
         "200":
           description: Report updated
       operationId: patch_api_admin_operations_reports_id
+  /api/admin/operations/reports/{id}/facts:
+    get:
+      tags:
+        - Platform Operations
+      summary: Get authoritative Commerce facts for Core support case investigation
+      description: Returns authoritative transaction facts, order history, store facts, and evidence metadata without leaking internal notes.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Authoritative Commerce facts
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_admin_operations_reports_id_facts
+  /api/admin/operations/reports/{id}/retry-linkage:
+    post:
+      tags:
+        - Platform Operations
+      summary: Retry linking a failed buyer report to Core SupportCase
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Linkage retry outcome
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: post_api_admin_operations_reports_id_retry_linkage
   /api/ops/invoices/reminder-candidates:
     get:
       tags:
