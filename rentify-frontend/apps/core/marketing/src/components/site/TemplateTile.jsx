@@ -106,7 +106,7 @@ const TemplateTile = ({ template }) => {
       </Link>
       <div className="mt-6 flex items-start justify-between gap-4 px-1">
         <div className="min-w-0">
-          <h3 className="text-[21px] font-semibold tracking-[-0.015em] text-[#1d1d1f] md:text-[24px]">
+          <h3 className="text-[18px] font-semibold tracking-[-0.015em] text-[#1d1d1f] md:text-[24px]">
             {template.name}
           </h3>
           <p className="mt-1 text-[15px] text-[#6e6e73]">

@@ -29,6 +29,7 @@ import {
 
 import SiteHeader from "../../components/site/SiteHeader";
 import SiteFooter from "../../components/site/SiteFooter";
+import demoStorefront from '../../assets/site/storefront-beauty-desktop.jpg';
 
 
 const LiveDemoPage = () => {
@@ -45,20 +46,20 @@ const LiveDemoPage = () => {
               Interactive Experience
             </Badge>
             
-            <h1 className="text-4xl font-bold md:text-5xl lg:text-6xl mb-6">
+            <h1 className="text-[30px] leading-tight font-bold md:text-5xl lg:text-6xl mb-4 md:mb-6">
               Experience Rentify <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">in Action</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               No sign-up. No pressure. Click the button below to explore a fully functional demo store. 
               See how it feels to be a customer, place a test order, and discover the magic for yourself.
             </p>
 
             {/* Demo Store Mockup */}
             <div className="relative max-w-4xl mx-auto mb-8">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border-8 border-gray-900">
-                <img 
-                  src="https://i.ibb.co/7QxY9hL/fashion-dashboard.png"
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-900 sm:border-8">
+                <img
+                  src={demoStorefront}
                   alt="Modern Cambodian Fashion Boutique - Rentify Demo Store"
                   className="w-full h-auto"
                 />
@@ -72,7 +73,7 @@ const LiveDemoPage = () => {
             </div>
 
             {/* Main CTA Button */}
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 px-12 py-6 text-lg">
+            <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 px-6 sm:px-12 py-5 text-base sm:py-6 sm:text-lg">
               <ExternalLink className="mr-2 h-5 w-5" />
               Launch the Live Demo Store
             </Button>
@@ -100,7 +101,7 @@ const LiveDemoPage = () => {
       <section className="py-16 md:py-24 bg-white">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold md:text-4xl mb-4">What You'll Discover</h2>
+            <h2 className="text-2xl font-bold md:text-4xl mb-3 md:mb-4">What You'll Discover</h2>
             <p className="text-lg text-muted-foreground">
               Explore every feature as if you were running your own business
             </p>
@@ -125,7 +126,7 @@ const LiveDemoPage = () => {
               }
             ].map((item, index) => (
               <div key={index} className="text-center p-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl mb-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-blue-100 text-blue-600 rounded-2xl mb-4">
                   <item.icon className="h-8 w-8" />
                 </div>
                 <h3 className="font-bold text-lg mb-2">{item.title}</h3>
@@ -139,7 +140,7 @@ const LiveDemoPage = () => {
       {/* Alternative CTA */}
       <section className="py-16 md:py-24 bg-gray-50">
         <div className="container text-center">
-          <h2 className="text-3xl font-bold md:text-4xl mb-4">Prefer a Guided Tour?</h2>
+          <h2 className="text-2xl font-bold md:text-4xl mb-3 md:mb-4">Prefer a Guided Tour?</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Let us walk you through the platform with a personalized demo
           </p>

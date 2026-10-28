@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   ExternalLink,
   Globe,
@@ -314,7 +315,7 @@ export default function StartSelling() {
               <a
                 href={buildAuthRedirectUrl('login')}
                 onClick={saveDraftForAuth}
-                className="font-medium text-slate-600 hover:text-blue-600"
+                className="inline-flex min-h-[44px] items-center px-2 font-medium text-slate-600 hover:text-blue-600"
               >
                 Sign in
               </a>
@@ -365,7 +366,7 @@ export default function StartSelling() {
                     if (step.id === 3 && existingStore) setCurrentStep(3);
                     if (step.id === 4 && existingStore) setCurrentStep(4);
                   }}
-                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3.5 transition-all ${
+                  className={`flex min-h-[64px] cursor-pointer items-center gap-2.5 rounded-2xl border p-3 transition-all sm:gap-3 sm:p-3.5 ${
                     isCurrent
                       ? 'border-blue-600 bg-white shadow-md ring-2 ring-blue-600/15'
                       : isCompleted
@@ -388,7 +389,7 @@ export default function StartSelling() {
                     <p className="truncate text-xs font-bold uppercase tracking-wider text-slate-400">
                       Step {step.id}
                     </p>
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold leading-snug text-slate-900 sm:truncate">
                       {step.title}
                     </p>
                   </div>
@@ -442,7 +443,7 @@ export default function StartSelling() {
                         placeholder="e.g. BKK Coffee & Roastery"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                        className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                       />
                     </label>
                     {name.trim() && (
@@ -462,7 +463,7 @@ export default function StartSelling() {
                         required
                         value={primaryCategory}
                         onChange={(e) => setPrimaryCategory(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                        className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base sm:text-sm text-slate-900 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400 cursor-pointer"
                       >
                         <option value="">Choose your main category</option>
                         {categories.map((category) => (
@@ -560,25 +561,28 @@ export default function StartSelling() {
                     placeholder="e.g. Khmer Artisan Market"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                   />
                 </label>
 
                 <label className="block text-sm font-semibold text-slate-800">
                   Primary category
-                  <select
+                  <div className="relative mt-1.5">
+                    <select
                     required
                     value={primaryCategory}
                     onChange={(event) => setPrimaryCategory(event.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                    className={`h-12 w-full appearance-none rounded-xl border border-slate-300 bg-white pl-4 pr-11 text-base font-normal sm:text-sm transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400 cursor-pointer ${primaryCategory ? 'text-slate-900' : 'text-slate-400'}`}
                   >
                     <option value="">Choose a category</option>
                     {categories.map((category) => (
-                      <option key={category} value={category}>
+                      <option key={category} value={category} className="text-slate-900">
                         {category}
                       </option>
                     ))}
                   </select>
+                    <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </div>
                 </label>
 
                 <button
@@ -620,7 +624,7 @@ export default function StartSelling() {
                       placeholder="e.g. Handwoven Silk Scarf"
                       value={productName}
                       onChange={(e) => setProductName(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                      className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                     />
                   </label>
                 </div>
@@ -636,7 +640,7 @@ export default function StartSelling() {
                       placeholder="15.00"
                       value={productPrice}
                       onChange={(e) => setProductPrice(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                      className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                     />
                   </label>
 
@@ -649,7 +653,7 @@ export default function StartSelling() {
                       step="1"
                       value={productStock}
                       onChange={(e) => setProductStock(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                      className="mt-1.5 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                     />
                   </label>
                 </div>
@@ -662,7 +666,7 @@ export default function StartSelling() {
                       placeholder="Describe your item for shoppers…"
                       value={productDescription}
                       onChange={(e) => setProductDescription(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                      className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                     />
                   </label>
                 </div>

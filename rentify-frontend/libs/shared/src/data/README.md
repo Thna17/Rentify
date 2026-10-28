@@ -1,0 +1,3 @@
+# Cambodia address data
+
+`cambodia-addresses.json` is a compact derivative of [Open Admin Data's Cambodia administrative divisions](https://github.com/open-admin-data/cambodia-administrative-divisions), downloaded 2026-10-27 from `data/hierarchy.json`. It contains province, district/khan, and commune/sangkat codes and bilingual names; coordinates, postal codes, and other metadata were removed. Source data © 2026 jakkrapongt, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Changes: compact hierarchy and field names. The earlier checkout province/district spellings remain in `locations.ts` for compatibility.

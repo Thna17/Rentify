@@ -26,6 +26,7 @@ const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownP
 const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
 const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 const Customers = lazy(() => import('../pages/customers/Customers'));
+const ComponentGallery = lazy(() => import('../pages/dev/ComponentGallery'));
 
 export const dashboardRoutes = {
   path: '/',
@@ -65,6 +66,7 @@ export const dashboardRoutes = {
     { path: 'ops/reminders', element: <Navigate to="/usage/breakdown" replace /> },
     { path: 'ops/contract', element: <Navigate to="/usage/billing" replace /> },
     { path: 'search', element: <Navigate to="/overview" replace /> },
+    ...(import.meta.env.DEV ? [{ path: '__ui', element: <ComponentGallery /> }] : []),
 
 
     { path: '*', element: <Navigate to="overview" replace /> },

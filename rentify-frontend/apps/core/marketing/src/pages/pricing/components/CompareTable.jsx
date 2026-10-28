@@ -88,18 +88,18 @@ const CompareTable = ({ plans }) => {
   const rows = buildMatrixRows();
 
   return (
-    <Reveal className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
-      <div className="overflow-hidden rounded-[24px] border border-black/[0.08] bg-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.12)]">
-        <table className="w-full min-w-[680px] border-collapse text-left">
+    <Reveal className="overflow-x-auto rounded-[24px]">
+      <div className="w-[600px] overflow-clip rounded-[24px] border sm:w-auto border-black/[0.08] bg-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.12)]">
+        <table className="w-full min-w-[600px] border-collapse text-left sm:min-w-[680px]">
           <thead>
             <tr className="border-b border-black/[0.08] bg-[#fbfbfd]">
-              <th className="sticky left-0 z-10 w-[34%] bg-[#fbfbfd] px-6 py-5 text-[14px] font-semibold text-[#86868b]">
+              <th className="sticky left-0 z-10 w-[34%] bg-[#fbfbfd] px-4 py-4 text-[14px] sm:px-6 sm:py-5 font-semibold text-[#86868b]">
                 {/* Empty header matching reference table */}
               </th>
               {displayPlans.map((plan, idx) => (
                 <th
                   key={plan.id || idx}
-                  className="w-[22%] px-6 py-5 text-left text-[16px] font-bold tracking-[-0.01em] text-[#1d1d1f]"
+                  className="w-[22%] px-4 py-4 text-left text-[15px] sm:px-6 sm:py-5 sm:text-[16px] font-bold tracking-[-0.01em] text-[#1d1d1f]"
                 >
                   {formatColumnHeading(plan, idx)}
                 </th>
@@ -114,12 +114,12 @@ const CompareTable = ({ plans }) => {
               >
                 <th
                   scope="row"
-                  className="sticky left-0 z-10 bg-white px-6 py-5 text-[15px] font-medium leading-snug text-[#1d1d1f]"
+                  className="sticky left-0 z-10 w-[150px] bg-white px-4 py-4 text-[14px] font-medium leading-snug text-[#1d1d1f] shadow-[1px_0_0_rgba(0,0,0,0.06)] sm:w-auto sm:px-6 sm:py-5 sm:text-[15px] sm:shadow-none"
                 >
                   {row.label}
                 </th>
                 {displayPlans.map((plan, idx) => (
-                  <td key={plan.id || idx} className="px-6 py-5 text-left align-top">
+                  <td key={plan.id || idx} className="px-4 py-4 text-left align-top sm:px-6 sm:py-5">
                     <Cell value={row.value(plan, idx)} t={t} />
                   </td>
                 ))}

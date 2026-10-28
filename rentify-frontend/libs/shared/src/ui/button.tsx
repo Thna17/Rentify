@@ -9,7 +9,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        primary: "bg-[var(--rentify-color-brand-primary)] text-[var(--rentify-color-text-inverse)] hover:bg-[var(--rentify-color-brand-primary-hover)] active:bg-[var(--rentify-color-brand-primary-active)]",
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        danger: "bg-[var(--rentify-color-danger-base)] text-[var(--rentify-color-text-inverse)] hover:opacity-90",
+        accent: "bg-[var(--rentify-color-brand-accent)] text-[var(--rentify-color-text-on-accent)] hover:opacity-90",
         destructive:
           "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
@@ -21,10 +24,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
+        default: "h-11 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-9 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-[52px] rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-11",
       },
     },
     defaultVariants: {
@@ -34,22 +37,23 @@ const buttonVariants = cva(
   }
 )
 
+export type ButtonProps = React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean; loading?: boolean; iconLeft?: React.ReactNode; iconRight?: React.ReactNode }
+
 const Button = React.forwardRef<
   React.ElementRef<"button">,
-  React.ComponentProps<"button"> &
-    VariantProps<typeof buttonVariants> & {
-      asChild?: boolean
-    }
->(({ className, variant, size, asChild = false, ...props }, ref) => {
+  ButtonProps
+>(({ className, variant, size, asChild = false, loading = false, iconLeft, iconRight, children, disabled, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
       ref={ref}
       data-slot="button"
+      disabled={disabled || loading}
+      aria-busy={loading}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >{loading ? <span role="status" aria-label="Loading" className="size-4 rounded-full border-2 border-current border-t-transparent" /> : iconLeft}{children}{iconRight}</Comp>
   )
 })
 

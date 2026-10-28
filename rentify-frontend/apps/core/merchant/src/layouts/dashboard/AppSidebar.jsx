@@ -28,7 +28,7 @@ export function AppSidebar({
     : tabs;
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-card text-foreground w-[244px] border-r border-border/60 select-none">
+    <div className="flex h-full flex-col bg-card text-foreground w-[244px] select-none">
       {/* Header */}
       <div className="p-3.5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">

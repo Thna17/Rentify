@@ -30,7 +30,7 @@ const SwitchRow = ({ from, to, index }) => (
     className="grid items-center gap-3 border-t border-white/15 py-8 md:grid-cols-[1fr_auto_1fr] md:gap-10 md:py-10"
   >
     <div className="relative w-fit">
-      <p className="text-[21px] leading-snug text-[#86868b] md:text-[28px]">{from}</p>
+      <p className="text-[17px] leading-snug text-[#86868b] md:text-[28px]">{from}</p>
       <motion.span
         className="absolute left-0 top-1/2 h-[2px] w-full origin-left bg-[#86868b]"
         variants={{ hidden: { scaleX: 0 }, show: { scaleX: 1 } }}
@@ -39,7 +39,7 @@ const SwitchRow = ({ from, to, index }) => (
     </div>
     <ArrowRight className="hidden h-6 w-6 text-[#86868b] md:block" strokeWidth={1.5} />
     <motion.p
-      className="text-[21px] font-semibold leading-snug text-white md:text-[28px]"
+      className="text-[17px] font-semibold leading-snug text-white md:text-[28px]"
       variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
       transition={{ duration: 0.8, ease: EASE, delay: 0.6 + index * 0.05 }}
     >
@@ -81,7 +81,8 @@ const Solutions = () => {
           <span key={segment.id} id={segment.id} className="absolute top-0 scroll-mt-14" aria-hidden />
         ))}
         <Container>
-          <Reveal>
+          {/* The switcher is several screens tall in scroll mode, so it reveals as soon as it enters */}
+          <Reveal amount={0.01}>
             <IndustrySwitcher />
           </Reveal>
         </Container>
@@ -123,7 +124,7 @@ const Solutions = () => {
                     <p className="text-[15px] font-semibold tabular-nums text-[#86868b]">
                       {String(index + 1).padStart(2, '0')}
                     </p>
-                    <h3 className="mt-4 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
+                    <h3 className="mt-4 text-[22px] font-semibold md:text-[28px] tracking-[-0.02em] text-[#1d1d1f]">
                       {t(`site.solutions.stages.${stage}.title`)}
                     </h3>
                     <p className="mt-3 flex-1 text-[17px] leading-snug text-[#6e6e73]">
@@ -132,7 +133,7 @@ const Solutions = () => {
                     {plan && (
                       <div className="mt-10 border-t border-black/10 pt-6">
                         <p className="text-[13px] text-[#86868b]">{t('site.solutions.stages.plan')}</p>
-                        <p className="mt-1 text-[19px] font-semibold text-[#1d1d1f]">{plan.name}</p>
+                        <p className="mt-1 text-[17px] font-semibold text-[#1d1d1f] md:text-[19px]">{plan.name}</p>
                       </div>
                     )}
                     <ChevronLink to="/pricing" className="mt-5 text-[17px] md:text-[17px]">

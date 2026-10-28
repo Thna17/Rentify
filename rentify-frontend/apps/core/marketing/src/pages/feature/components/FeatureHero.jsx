@@ -24,7 +24,7 @@ const FeatureHero = () => {
   const phoneY = useTransform(scrollYProgress, [0, 0.6], [0, -90]);
 
   return (
-    <section id="overview" ref={ref} className="relative scroll-mt-14 overflow-hidden bg-white pb-24 pt-16 md:pb-36 md:pt-24">
+    <section id="overview" ref={ref} className="relative scroll-mt-14 overflow-hidden bg-white pb-14 pt-10 md:pb-36 md:pt-24">
       <div
         className="pointer-events-none absolute inset-x-0 top-[38%] h-[70%] bg-[radial-gradient(50%_50%_at_50%_50%,rgba(0,113,227,0.08),transparent)]"
         aria-hidden

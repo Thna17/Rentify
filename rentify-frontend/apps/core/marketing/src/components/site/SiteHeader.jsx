@@ -276,7 +276,7 @@ const SiteHeader = () => {
                   >
                     <Link
                       to={item.to}
-                      className="block py-2 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]"
+                      className="block py-2 text-[22px] font-semibold tracking-[-0.02em] text-[#1d1d1f]"
                     >
                       {t(item.key)}
                     </Link>
@@ -292,7 +292,7 @@ const SiteHeader = () => {
                     href={MARKETPLACE_HREF}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 py-2 text-[28px] font-semibold tracking-[-0.02em] text-amber-700"
+                    className="inline-flex items-center gap-2 py-2 text-[22px] font-semibold tracking-[-0.02em] text-amber-700"
                   >
                     <ShoppingBag className="h-6 w-6 text-amber-600" />
                     <span>{t('site.nav.marketplace')}</span>

@@ -28,7 +28,7 @@ const PricingPage = () => {
 
   return (
     <SiteLayout title={t('site.pricing.title')}>
-      <Section id="plans" tone="gray" className="pt-20 md:pt-28">
+      <Section id="plans" tone="gray" className="pt-12 md:pt-28">
         <Container>
           <div className="mx-auto mb-16 max-w-3xl text-center md:mb-20">
             <Reveal>

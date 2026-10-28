@@ -23,7 +23,7 @@ export const Section = ({ id, tone = 'white', className, children }) => (
   <section
     id={id}
     className={cn(
-      'relative scroll-mt-14 overflow-clip py-24 md:py-36 2xl:py-44',
+      'relative scroll-mt-14 overflow-clip py-14 md:py-24 2xl:py-32',
       SECTION_TONES[tone],
       className
     )}
@@ -35,7 +35,7 @@ export const Section = ({ id, tone = 'white', className, children }) => (
 export const Eyebrow = ({ className, children }) => (
   <p
     className={cn(
-      'text-[17px] font-semibold tracking-tight text-[#0071e3] md:text-[21px] 2xl:text-[24px]',
+      'text-[14px] font-semibold tracking-tight text-[#0071e3] md:text-[17px] 2xl:text-[19px]',
       className
     )}
   >
@@ -45,11 +45,11 @@ export const Eyebrow = ({ className, children }) => (
 
 const HEADING_SIZES = {
   display:
-    'text-[44px] leading-[1.04] tracking-[-0.035em] sm:text-6xl md:text-7xl lg:text-[88px] 2xl:text-[112px]',
-  xl: 'text-[40px] leading-[1.06] tracking-[-0.03em] sm:text-5xl md:text-6xl lg:text-[72px] 2xl:text-[88px]',
-  lg: 'text-[32px] leading-[1.1] tracking-[-0.025em] sm:text-4xl md:text-5xl 2xl:text-[64px]',
-  md: 'text-2xl leading-[1.15] tracking-[-0.02em] md:text-[32px]',
-  sm: 'text-xl leading-snug tracking-[-0.01em] md:text-2xl',
+    'text-[34px] leading-[1.08] tracking-[-0.03em] sm:text-5xl md:text-6xl lg:text-[68px] 2xl:text-[84px]',
+  xl: 'text-[28px] leading-[1.12] tracking-[-0.025em] sm:text-4xl md:text-5xl lg:text-[56px] 2xl:text-[68px]',
+  lg: 'text-[24px] leading-[1.18] tracking-[-0.02em] sm:text-3xl md:text-4xl 2xl:text-[52px]',
+  md: 'text-xl leading-[1.2] tracking-[-0.015em] md:text-[28px]',
+  sm: 'text-[17px] leading-snug tracking-[-0.01em] md:text-xl',
 };
 
 export const Heading = ({ as: Tag = 'h2', size = 'lg', className, children }) => (
@@ -67,7 +67,7 @@ export const Heading = ({ as: Tag = 'h2', size = 'lg', className, children }) =>
 export const Lead = ({ className, children }) => (
   <p
     className={cn(
-      'text-[19px] leading-[1.45] text-[#6e6e73] md:text-[21px] 2xl:text-[24px]',
+      'text-[15px] leading-[1.55] text-[#6e6e73] md:text-[19px] 2xl:text-[21px]',
       className
     )}
   >
@@ -88,7 +88,7 @@ const BUTTON_VARIANTS = {
 const BUTTON_SIZES = {
   sm: 'h-8 px-4 text-[13px]',
   md: 'h-11 px-6 text-[15px]',
-  lg: 'h-12 px-7 text-[17px]',
+  lg: 'h-11 px-6 text-[15px] md:h-12 md:px-7 md:text-[17px]',
 };
 
 const isExternal = (href) => /^https?:\/\//.test(href || '');
@@ -144,7 +144,7 @@ export const ChevronLink = ({ to, tone = 'blue', className, children }) => {
     <SmartLink
       to={to}
       className={cn(
-        'group inline-flex items-center gap-0.5 text-[17px] font-normal hover:underline md:text-[19px]',
+        'group inline-flex min-h-[44px] items-center gap-0.5 text-[15px] font-normal hover:underline md:min-h-0 md:text-[17px]',
         tone === 'blue' && 'text-[#0066cc]',
         tone === 'light' && 'text-[#2997ff]',
         className

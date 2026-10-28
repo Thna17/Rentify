@@ -23,7 +23,7 @@ const TeamCard = ({ member }) => {
 
   return (
     <article className="group">
-      <div className="aspect-[4/5] overflow-hidden rounded-[28px] bg-[#f5f5f7]">
+      <div className="aspect-[4/5] overflow-hidden rounded-[20px] bg-[#f5f5f7] sm:rounded-[28px]">
         <img
           src={member.image}
           alt={member.name}
@@ -32,19 +32,19 @@ const TeamCard = ({ member }) => {
           className="h-full w-full object-cover mix-blend-multiply grayscale transition duration-700 ease-out group-hover:scale-[1.03] group-hover:grayscale-0"
         />
       </div>
-      <h3 className="mt-6 text-[21px] font-semibold tracking-[-0.015em] text-[#1d1d1f]">
+      <h3 className="mt-4 text-[17px] font-semibold leading-snug sm:mt-6 sm:text-[21px] tracking-[-0.015em] text-[#1d1d1f]">
         {member.name}
       </h3>
-      <p className="mt-1 text-[15px] text-[#6e6e73]">{member.position}</p>
+      <p className="mt-1 text-[14px] text-[#6e6e73] sm:text-[15px]">{member.position}</p>
       {links.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+        <div className="mt-1.5 flex flex-wrap gap-x-4 sm:mt-3 sm:gap-x-5">
           {links.map((social) => (
             <a
               key={social.name}
               href={social.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-0.5 text-[15px] text-[#0066cc] hover:underline"
+              className="inline-flex min-h-[32px] items-center gap-0.5 text-[14px] text-[#0066cc] hover:underline sm:min-h-0 sm:text-[15px]"
             >
               {social.name}
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -63,7 +63,7 @@ const ContactTile = ({ icon: Icon, label, value, to }) => (
   >
     <Icon className="h-7 w-7 text-[#1d1d1f]" strokeWidth={1.4} />
     <p className="mt-8 text-[15px] text-[#6e6e73]">{label}</p>
-    <p className="mt-1 flex items-center gap-1 text-[19px] font-semibold text-[#1d1d1f] md:text-[21px]">
+    <p className="mt-1 flex items-center gap-1 text-[17px] font-semibold text-[#1d1d1f] md:text-[21px]">
       {value}
       <ArrowUpRight className="h-4 w-4 text-[#86868b] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
     </p>
@@ -103,8 +103,8 @@ const AboutPage = () => {
             text={t('site.about.mission.text')}
             className={
               language === 'KH'
-                ? 'mt-6 text-[26px] font-semibold leading-[1.6] text-[#1d1d1f] md:text-[40px] md:leading-[1.55] 2xl:text-[48px]'
-                : 'mt-6 text-[30px] font-semibold leading-[1.2] tracking-[-0.02em] text-[#1d1d1f] md:text-[48px] md:leading-[1.15] 2xl:text-[60px]'
+                ? 'mt-5 text-[20px] font-semibold leading-[1.6] text-[#1d1d1f] md:text-[40px] md:leading-[1.55] 2xl:text-[48px]'
+                : 'mt-5 text-[24px] font-semibold leading-[1.2] tracking-[-0.02em] text-[#1d1d1f] md:text-[48px] md:leading-[1.15] 2xl:text-[60px]'
             }
           />
         </Container>
@@ -123,7 +123,7 @@ const AboutPage = () => {
                 <p className="text-[15px] font-semibold tabular-nums text-[#86868b]">
                   {String(index + 1).padStart(2, '0')}
                 </p>
-                <h3 className="mt-4 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
+                <h3 className="mt-4 text-[22px] font-semibold md:text-[28px] tracking-[-0.02em] text-[#1d1d1f]">
                   {t(`site.about.values.${value}.title`)}
                 </h3>
                 <p className="mt-3 text-[17px] leading-snug text-[#6e6e73]">
@@ -145,7 +145,7 @@ const AboutPage = () => {
               <Lead className="mt-6">{t('site.about.team.lead')}</Lead>
             </Reveal>
           </div>
-          <Stagger className="mt-16 grid gap-x-6 gap-y-14 sm:grid-cols-2 md:mt-20 md:grid-cols-3 lg:grid-cols-5" stagger={0.12}>
+          <Stagger className="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-14 md:mt-20 md:grid-cols-3 lg:grid-cols-5" stagger={0.12}>
             {teamMembers.map((member) => (
               <StaggerItem key={member.name}>
                 <TeamCard member={member} />

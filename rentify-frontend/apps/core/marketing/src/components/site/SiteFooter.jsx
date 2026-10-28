@@ -75,8 +75,8 @@ const SiteFooter = () => {
       )}
     >
       <Container className="py-10">
-        <div className="flex flex-col gap-10 sm:grid sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,1fr)] lg:gap-6">
-          <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-[1.2fr_repeat(4,1fr)] lg:gap-6">
+          <div className="col-span-2 flex flex-col gap-3 lg:col-span-1">
             <Link to="/" className="inline-flex shrink-0 items-center gap-2">
               <img src={rentifyLogo} alt="Rentify" className="h-6 w-6 rounded-[6px] object-cover ring-1 ring-black/10" />
               <span className="text-[14px] font-bold tracking-tight text-[#1d1d1f]">Rentify</span>
@@ -90,7 +90,7 @@ const SiteFooter = () => {
                       key={item.id}
                       to={item.url}
                       aria-label={item.label}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1d1d1f] ring-1 ring-black/[0.06] transition-colors hover:bg-[#e8e8ed]"
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-white lg:h-7 lg:w-7 text-[#1d1d1f] ring-1 ring-black/[0.06] transition-colors hover:bg-[#e8e8ed]"
                     >
                       <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
                     </SmartLink>
@@ -101,15 +101,15 @@ const SiteFooter = () => {
           </div>
 
           {columns.map((column) => (
-            <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-[#1d1d1f]">
+            <nav key={column.title} aria-label={column.title} className="flex flex-col gap-0.5 lg:gap-2.5">
+              <span className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1d1d1f] lg:mb-0">
                 {column.title}
               </span>
               {column.links.map((link) => (
                 <SmartLink
                   key={link.label}
                   to={link.to}
-                  className="text-[#424245] transition-colors hover:text-[#1d1d1f] hover:underline"
+                  className="py-1.5 text-[#424245] transition-colors hover:text-[#1d1d1f] hover:underline lg:py-0"
                 >
                   {link.label}
                 </SmartLink>

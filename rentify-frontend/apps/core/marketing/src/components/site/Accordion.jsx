@@ -23,7 +23,7 @@ const Accordion = ({ items, className }) => {
               aria-controls={id}
               className="flex w-full items-center justify-between gap-6 py-6 text-left"
             >
-              <span className="text-[19px] font-semibold tracking-[-0.01em] text-[#1d1d1f] md:text-[21px]">
+              <span className="text-[16px] font-semibold tracking-[-0.01em] text-[#1d1d1f] md:text-[21px]">
                 {item.question}
               </span>
               <Plus

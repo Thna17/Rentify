@@ -11,7 +11,7 @@ const CtaBand = ({ title, lead }) => {
   const { trialPath, trial } = useStartTrial();
 
   return (
-    <section className="relative overflow-hidden bg-white py-28 md:py-40">
+    <section className="relative overflow-hidden bg-white py-16 md:py-32">
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[60%] bg-[radial-gradient(60%_60%_at_50%_100%,rgba(0,113,227,0.10),transparent)]"
         aria-hidden

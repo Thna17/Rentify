@@ -594,7 +594,8 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
       if (!activeModel) return;
-      const scale = window.innerWidth < 640 ? 0.44 : window.innerWidth < 1024 ? 0.88 : 1;
+      const isPhone = window.innerWidth < 640;
+      const scale = isPhone ? 0.72 : window.innerWidth < 1024 ? 0.88 : 1;
       activeModel.root.scale.setScalar(activeModel.baseScale * scale);
     };
     const observer = new ResizeObserver(resize);
@@ -615,7 +616,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
         screenMaterial.uniforms.effect.value = TRANSITION_EFFECTS[stage];
         // On wide screens the laptop moves right to make room for the feature text
         const slideDistance = window.innerWidth >= 1024 ? 1.35 : 0;
-        activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance + (window.innerWidth < 640 ? 0.2 : 0);
+        activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance;
         activeModel.root.position.y = activeModel.basePositionY + motion.modelLift;
       }
       camera.lookAt(0, motion.cameraTargetY, 0);
@@ -654,9 +655,20 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       .to(marketplaceLabelRef.current, { autoAlpha: 1, y: 0, duration: 0.3 }, 1.55)
       .to(marketplaceLabelRef.current, { autoAlpha: 0, y: -16, duration: 0.25 }, 2.1)
       // The camera moves in until the laptop screen fills most of the view
-      // Narrow windows zoom less so the whole screen stays in view
-      .to(camera.position, { z: () => (window.innerWidth / window.innerHeight < 1.4 ? 5.6 : 3.9), y: 1.35, duration: 0.8 }, 2.1)
-      .to(motion, { cameraTargetY: 1.1, duration: 0.8 }, 2.1)
+      // Zoom in tight on phones so the screen and details are clearly legible
+      .to(
+        camera.position,
+        {
+          z: () => {
+            if (window.innerWidth < 640) return 4.0;
+            return window.innerWidth / window.innerHeight < 1.4 ? 5.2 : 3.9;
+          },
+          y: () => (window.innerWidth < 640 ? 1.3 : 1.35),
+          duration: 0.8,
+        },
+        2.1
+      )
+      .to(motion, { cameraTargetY: () => (window.innerWidth < 640 ? 1.05 : 1.1), duration: 0.8 }, 2.1)
       .to(captions[0], { autoAlpha: 1, y: 0, duration: 0.25 }, 2.7)
       .to(captions[0], { autoAlpha: 0, y: -12, duration: 0.15 }, 3.35)
       .to(motion, { screen: 2, duration: 0.55 }, 3.4)
