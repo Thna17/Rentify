@@ -23,6 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci --prefix rentify-server && npm ci --prefix ecommerce-server
       - run: npm run verify:repository
 
   core-api:
@@ -67,9 +68,9 @@ jobs:
           cache: npm
           cache-dependency-path: rentify-server/package-lock.json
       - run: npm ci --prefix rentify-server
-      - run: npm run verify:core
       - run: npm --prefix rentify-server run db:migrate
       - run: npm --prefix rentify-server run db:migrate:verify
+      - run: npm run verify:core
 
   commerce-api:
     name: Commerce API
@@ -113,9 +114,9 @@ jobs:
           cache: npm
           cache-dependency-path: ecommerce-server/package-lock.json
       - run: npm ci --prefix ecommerce-server
-      - run: npm run verify:commerce
       - run: npm --prefix ecommerce-server run db:migrate
       - run: npm --prefix ecommerce-server run db:migrate:verify
+      - run: npm run verify:commerce
 
   react-frontend:
     name: React applications
