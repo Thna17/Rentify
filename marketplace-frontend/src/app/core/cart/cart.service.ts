@@ -71,8 +71,8 @@ export class CartService {
 
         const lines: StoreCartGroupLine[] = activeItems.map((it) => {
           const known =
-            this.catalog.productById(it.productId) ||
-            this.localProductCache.get(it.productId);
+            this.localProductCache.get(it.productId) ||
+            this.catalog.productById(it.productId);
           const backendProd = (it as any).product;
           const backendVar = (it as any).variant;
           const img =
@@ -140,7 +140,8 @@ export class CartService {
                 ? `Only ${stockLimit} available`
                 : undefined,
             lineTotal: round(currentPrice * it.quantity),
-            optionValues: backendVar?.optionValues,
+            optionValues: backendVar?.optionValues || known?.productVariants?.find(v => v.id === it.variantId)?.optionValues,
+            variantImage: known?.productVariants?.find(v => v.id === it.variantId)?.image,
           };
         });
 
@@ -193,11 +194,12 @@ export class CartService {
 
       const lines: StoreCartGroupLine[] = items.map((it) => {
         const known =
-          this.catalog.productById(it.productId) ||
           this.localProductCache.get(it.productId) ||
+          this.catalog.productById(it.productId) ||
           it.product;
-        const serverItem = serverCart?.items?.find((i) => i.productId === it.productId);
-        const price = known?.price || (it as any).price || 0;
+        const serverItem = serverCart?.items?.find((i) => i.productId === it.productId && (i.variantId || null) === (it.variantId || null));
+        const variant = known?.productVariants?.find(v => v.id === it.variantId);
+        const price = variant?.price ?? known?.price ?? (it as any).price ?? 0;
         const lineTotal = round(price * it.quantity);
         storeSubtotal += lineTotal;
         return {
@@ -224,13 +226,15 @@ export class CartService {
             createdAt: new Date().toISOString(),
             collections: [],
           },
-          variantId: serverItem?.variantId || null,
+          variantId: it.variantId || serverItem?.variantId || null,
+          optionValues: variant?.optionValues || serverItem?.variant?.optionValues,
+          variantImage: variant?.image,
           quantity: it.quantity,
           unitPrice: price,
           currentPrice: price,
           isPriceStale: false,
-          available: (known?.status ?? 'in-stock') !== 'out-of-stock',
-          stockLimit: known?.stock ?? 99,
+          available: variant ? variant.stockQuantity > 0 && variant.status !== 'archived' : (known?.status ?? 'in-stock') !== 'out-of-stock',
+          stockLimit: variant?.stockQuantity ?? known?.stock ?? 99,
           lineTotal,
         };
       });
@@ -264,7 +268,10 @@ export class CartService {
   readonly lines = computed<CartLine[]>(() => {
     return this.groups().flatMap((group) =>
       group.lines.map((line) => ({
-        product: line.product,
+        product: { ...line.product, price: line.currentPrice, stock: line.stockLimit ?? line.product.stock },
+        variantId: line.variantId,
+        optionValues: line.optionValues,
+        variantImage: line.variantImage,
         quantity: line.quantity,
         lineTotal: line.lineTotal,
       })),
@@ -373,7 +380,7 @@ export class CartService {
           this.storeCarts.set(mergeRes.carts);
           for (const c of mergeRes.carts) {
             for (const it of c.items) {
-              mergedProductIds.add(it.productId);
+              mergedProductIds.add(`${it.productId}:${it.variantId || ""}`);
             }
           }
         }
@@ -382,7 +389,7 @@ export class CartService {
       const pending = this.guestItems();
       const remaining: EnhancedCartItem[] = [];
       for (const item of pending) {
-        if (mergedProductIds.has(item.productId)) {
+        if (mergedProductIds.has(`${item.productId}:${item.variantId || ""}`)) {
           continue;
         }
         try {
@@ -392,7 +399,7 @@ export class CartService {
             item.product ||
             (await this.catalog.loadProduct(item.productId));
           const res = await firstValueFrom(
-            this.rentify.addItem(item.productId, item.quantity, product?.storeId),
+            this.rentify.addItem(item.productId, item.quantity, product?.storeId, item.variantId || undefined),
           );
           if (res?.carts) {
             this.storeCarts.set(res.carts);
@@ -424,6 +431,12 @@ export class CartService {
         this.storeCarts.set(res.carts);
         for (const c of res.carts) {
           for (const it of c.items) {
+            if (it.variantId && !this.localProductCache.get(it.productId)?.productVariants?.length) {
+              try {
+                const fullProduct = await this.catalog.loadProduct(it.productId);
+                if (fullProduct) this.localProductCache.set(it.productId, fullProduct);
+              } catch { /* Cart metadata remains usable while catalog is unavailable. */ }
+            }
             const bp = (it as any).product;
             if (bp && !this.localProductCache.has(it.productId)) {
               const img = bp.images?.[0]?.url || bp.images?.[0] || null;
@@ -457,7 +470,7 @@ export class CartService {
           for (const c of res.carts) {
             for (const it of c.items) {
               const cached = this.localProductCache.get(it.productId);
-              restored.push({ productId: it.productId, quantity: it.quantity, product: cached });
+              restored.push({ productId: it.productId, variantId: it.variantId, quantity: it.quantity, product: cached });
             }
           }
           if (restored.length > 0) {
@@ -481,7 +494,13 @@ export class CartService {
   async add(product: Product, quantity = 1, variantId?: string): Promise<boolean> {
     this.error.set('');
 
-    if (product.status === 'out-of-stock' || quantity < 1) {
+    const variant = product.productVariants?.find(v => v.id === variantId);
+    if ((product.hasVariants || (product.productVariants?.length || 0) > 1) && !variant) {
+      this.error.set('Choose your product options before adding to cart.');
+      return false;
+    }
+    const stock = variant?.stockQuantity ?? product.stock;
+    if (product.status === 'out-of-stock' || quantity < 1 || !Number.isInteger(quantity) || stock < quantity || variant?.status === 'archived') {
       this.error.set('This product is out of stock.');
       return false;
     }
@@ -490,24 +509,24 @@ export class CartService {
 
     if (!this.signedIn()) {
       this.guestItems.update((items) => {
-        const existing = items.find((item) => item.productId === product.id);
-        const newQty = clamp((existing?.quantity || 0) + quantity, product);
+        const existing = items.find((item) => item.productId === product.id && (item.variantId || null) === (variantId || null));
+        const newQty = Math.min((existing?.quantity || 0) + quantity, stock);
         if (!existing) {
           return [
             ...items,
-            { productId: product.id, quantity: newQty, product },
+            { productId: product.id, variantId, quantity: newQty, product },
           ];
         }
         return items.map((item) =>
-          item.productId === product.id
+          item.productId === product.id && (item.variantId || null) === (variantId || null)
             ? { ...item, quantity: newQty, product }
             : item,
         );
       });
 
-      const targetQty = this.quantityOf(product.id);
+      const targetQty = this.quantityOf(product.id, variantId);
       const persist$ = product.storeId
-        ? this.rentify.setQuantity(product.storeId, product.id, targetQty)
+        ? this.rentify.setQuantity(product.storeId, product.id, targetQty, variantId)
         : this.rentify.addItem(product.id, quantity, product.storeId, variantId);
       await firstValueFrom(persist$).then((res) => {
         if (res?.carts) this.storeCarts.set(res.carts);
@@ -518,10 +537,10 @@ export class CartService {
     try {
       this.loading.set(true);
       const existingCart = this.storeCarts().find((c) => c.storeId === product.storeId);
-      const existingItem = existingCart?.items.find((it) => it.productId === product.id);
+      const existingItem = existingCart?.items.find((it) => it.productId === product.id && (it.variantId || null) === (variantId || null));
       const currentQty = existingItem?.quantity || 0;
       const mutation$ = product.storeId
-        ? this.rentify.setQuantity(product.storeId, product.id, currentQty + quantity)
+        ? this.rentify.setQuantity(product.storeId, product.id, currentQty + quantity, variantId)
         : this.rentify.addItem(product.id, quantity, product.storeId, variantId);
       const res = await firstValueFrom(mutation$);
       this.storeCarts.set(res.carts || []);
@@ -534,9 +553,9 @@ export class CartService {
     }
   }
 
-  async changeQuantity(productId: string, delta: number): Promise<void> {
+  async changeQuantity(productId: string, delta: number, variantId?: string | null): Promise<void> {
     const product =
-      this.catalog.productById(productId) || this.localProductCache.get(productId);
+      this.localProductCache.get(productId) || this.catalog.productById(productId);
 
     if (!this.signedIn()) {
       let targetStoreId: string | null = product?.storeId || null;
@@ -544,8 +563,8 @@ export class CartService {
       this.guestItems.update((items) =>
         items
           .map((item) => {
-            if (item.productId === productId) {
-              const q = product ? clamp(item.quantity + delta, product) : item.quantity + delta;
+            if (item.productId === productId && (item.variantId || null) === (variantId || null)) {
+              const q = product ? Math.min(item.quantity + delta, product.productVariants?.find(v => v.id === variantId)?.stockQuantity ?? product.stock) : item.quantity + delta;
               nextQty = Math.max(0, q);
               if (!targetStoreId && (item as any).product?.storeId) {
                 targetStoreId = (item as any).product.storeId;
@@ -559,7 +578,7 @@ export class CartService {
 
       if (targetStoreId) {
         await firstValueFrom(
-          this.rentify.setQuantity(targetStoreId, productId, nextQty),
+          this.rentify.setQuantity(targetStoreId, productId, nextQty, variantId),
         ).then((res) => {
           if (res?.carts) this.storeCarts.set(res.carts);
         }).catch(() => {});
@@ -570,7 +589,7 @@ export class CartService {
     let targetStoreId: string | null = null;
     let targetItem: { productId: string; quantity: number } | null = null;
     for (const cart of this.storeCarts()) {
-      const it = cart.items.find((i) => i.productId === productId);
+      const it = cart.items.find((i) => i.productId === productId && (i.variantId || null) === (variantId || null));
       if (it) {
         targetStoreId = cart.storeId;
         targetItem = it;
@@ -586,7 +605,7 @@ export class CartService {
     try {
       this.loading.set(true);
       const res = await firstValueFrom(
-        this.rentify.setQuantity(targetStoreId, productId, Math.max(0, next)),
+        this.rentify.setQuantity(targetStoreId, productId, Math.max(0, next), variantId),
       );
       this.storeCarts.set(res.carts || []);
     } catch (error: unknown) {
@@ -596,23 +615,23 @@ export class CartService {
     }
   }
 
-  async remove(productId: string): Promise<void> {
+  async remove(productId: string, variantId?: string | null): Promise<void> {
     const product =
-      this.catalog.productById(productId) || this.localProductCache.get(productId);
+      this.localProductCache.get(productId) || this.catalog.productById(productId);
 
     if (!this.signedIn()) {
       let targetStoreId: string | null = product?.storeId || null;
       for (const item of this.guestItems()) {
-        if (item.productId === productId && (item as any).product?.storeId) {
+        if (item.productId === productId && (item.variantId || null) === (variantId || null) && (item as any).product?.storeId) {
           targetStoreId = (item as any).product.storeId;
         }
       }
       this.guestItems.update((items) =>
-        items.filter((item) => item.productId !== productId),
+        items.filter((item) => !(item.productId === productId && (item.variantId || null) === (variantId || null))),
       );
       if (targetStoreId) {
         await firstValueFrom(
-          this.rentify.setQuantity(targetStoreId, productId, 0),
+          this.rentify.setQuantity(targetStoreId, productId, 0, variantId),
         ).then((res) => {
           if (res?.carts) this.storeCarts.set(res.carts);
         }).catch(() => {});
@@ -622,7 +641,7 @@ export class CartService {
 
     let targetStoreId: string | null = null;
     for (const cart of this.storeCarts()) {
-      if (cart.items.some((it) => it.productId === productId)) {
+      if (cart.items.some((it) => it.productId === productId && (it.variantId || null) === (variantId || null))) {
         targetStoreId = cart.storeId;
         break;
       }
@@ -635,7 +654,7 @@ export class CartService {
     try {
       this.loading.set(true);
       const res = await firstValueFrom(
-        this.rentify.setQuantity(targetStoreId, productId, 0),
+        this.rentify.setQuantity(targetStoreId, productId, 0, variantId),
       );
       this.storeCarts.set(res.carts || []);
     } catch (error: unknown) {
@@ -677,12 +696,10 @@ export class CartService {
     }
   }
 
-  quantityOf(productId: string): number {
-    for (const group of this.groups()) {
-      const item = group.lines.find((i) => i.product.id === productId);
-      if (item) return item.quantity;
-    }
-    return 0;
+  quantityOf(productId: string, variantId?: string | null): number {
+    return this.groups().flatMap(group => group.lines)
+      .filter(line => line.product.id === productId && (variantId === undefined || (line.variantId || null) === variantId))
+      .reduce((total, line) => total + line.quantity, 0);
   }
 
   contains(productId: string): boolean {

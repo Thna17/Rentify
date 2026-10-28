@@ -1323,6 +1323,7 @@ export class ProductDetailComponent {
 
   protected onVariantChange(variant: ProductVariantView): void {
     this.currentVariant.set(variant);
+    this.quantity.set(1);
     if (variant.image) {
       this.pinnedImage.set(variant.image);
     }
@@ -1383,7 +1384,7 @@ export class ProductDetailComponent {
       this.flyToCart.fly(current.image, source, current.name);
     }
 
-    if (!(await this.cart.add(effectiveProduct, units))) {
+    if (!(await this.cart.add(effectiveProduct, units, variant?.id))) {
       // cart.error carries the server's reason, e.g. "Only 3 left in stock".
       this.feedback.set('');
       return;

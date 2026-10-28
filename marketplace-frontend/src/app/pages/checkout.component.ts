@@ -332,7 +332,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                     <span>{{ 'checkout.separateDelivery' | translate }}</span>
                   </header>
                   <div class="lines">
-                    @for (line of group.lines; track line.product.id) {
+                    @for (line of group.lines; track line.product.id + (line.variantId || "")) {
                       <div class="line">
                         <span class="qty">{{ line.quantity }}×</span>
                         <span class="name">{{ line.product.name }}</span>
@@ -1070,6 +1070,7 @@ export class CheckoutComponent implements OnInit {
       storeId: g.storeId,
       sellerName: g.sellerName,
       lines: g.lines.map((l) => ({
+        variantId: l.variantId,
         product: l.product,
         quantity: l.quantity,
         lineTotal: l.lineTotal,

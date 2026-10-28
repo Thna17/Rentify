@@ -34,7 +34,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
                   [class.selected]="selectedOptions()[option.name] === val"
                   [class.out-of-stock]="isOptionCombinationOos(option.name, val)"
                   [attr.aria-checked]="selectedOptions()[option.name] === val"
-                  [attr.aria-disabled]="isOptionCombinationOos(option.name, val)"
+                  [disabled]="isOptionCombinationOos(option.name, val)"
                   (click)="selectOption(option.name, val)"
                   [title]="isOptionCombinationOos(option.name, val) ? t('catalog.outOfStock') : val"
                 >
@@ -282,6 +282,7 @@ export class VariantPickerComponent {
   }
 
   selectOption(name: string, value: string): void {
+    if (this.isOptionCombinationOos(name, value)) return;
     this.selectedOptions.update((prev) => ({
       ...prev,
       [name]: value,
@@ -301,7 +302,7 @@ export class VariantPickerComponent {
     if (matched) {
       return matched.stockQuantity === 0 || matched.status === 'out-of-stock';
     }
-    return false;
+    return true;
   }
 
   protected t(key: string, params?: Record<string, string | number>): string {

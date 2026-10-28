@@ -1,3 +1,4 @@
+import { KeyValuePipe } from '@angular/common';
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
@@ -20,6 +21,7 @@ import { SeoService } from '../core/seo/seo.service';
     '(document:keydown.escape)': 'sheetOpen.set(false)',
   },
   imports: [
+    KeyValuePipe,
     RouterLink,
     NavbarComponent,
     FooterComponent,
@@ -114,7 +116,7 @@ import { SeoService } from '../core/seo/seo.service';
               }
 
               <div class="group-items">
-                @for (line of group.lines; track line.product.id) {
+                @for (line of group.lines; track line.product.id + (line.variantId || "")) {
                   <div class="cart-item" [class.unavailable]="!line.available">
                     <div class="item-row">
                       <a
@@ -135,16 +137,18 @@ import { SeoService } from '../core/seo/seo.service';
                           {{ line.product.name }}
                         </a>
 
+                        <div class="selected-variant-preview">
+                          @if (line.variantImage) { <img [src]="line.variantImage" alt="Selected variant" /> }
+                          @for (option of line.optionValues | keyvalue; track option.key) {
+                            <span>{{ option.key }}: {{ option.value }}</span>
+                          }
+                        </div>
                         <div class="item-sub-meta">
                           <span class="item-cat">{{ line.product.categoryName }}</span>
                           @if (line.sku) {
                             <span class="sku-tag">SKU: {{ line.sku }}</span>
                           }
-                          @if (line.optionValues) {
-                            @for (entry of optionEntries(line.optionValues); track entry[0]) {
-                              <span class="opt-tag">{{ entry[0] }}: {{ entry[1] }}</span>
-                            }
-                          }
+
                         </div>
 
                         @if (line.isPriceStale) {
@@ -168,7 +172,7 @@ import { SeoService } from '../core/seo/seo.service';
                         <div class="qty-stepper">
                           <button
                             type="button"
-                            (click)="cart.changeQuantity(line.product.id, -1)"
+                            (click)="cart.changeQuantity(line.product.id, -1, line.variantId)"
                             aria-label="Decrease quantity"
                           >
                             <ui-icon name="minus" [size]="13" />
@@ -176,7 +180,7 @@ import { SeoService } from '../core/seo/seo.service';
                           <span aria-live="polite">{{ line.quantity }}</span>
                           <button
                             type="button"
-                            (click)="cart.changeQuantity(line.product.id, 1)"
+                            (click)="cart.changeQuantity(line.product.id, 1, line.variantId)"
                             [disabled]="
                               !line.available ||
                               (line.stockLimit !== undefined &&
@@ -201,7 +205,7 @@ import { SeoService } from '../core/seo/seo.service';
                         <button
                           type="button"
                           class="remove"
-                          (click)="cart.remove(line.product.id)"
+                          (click)="cart.remove(line.product.id, line.variantId)"
                         >
                           <ui-icon name="trash" [size]="13" /> {{ 'cart.remove' | translate }}
                         </button>
@@ -418,7 +422,11 @@ import { SeoService } from '../core/seo/seo.service';
   `,
   styles: [
     `
-      .cart-layout {
+      .selected-variant-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 0; font-size: 11px; color: var(--color-text-secondary); }
+    .selected-variant-preview:empty { display: none; }
+    .selected-variant-preview img { width: 32px; height: 32px; object-fit: contain; border: 1px solid var(--color-border); border-radius: 5px; }
+    .selected-variant-preview span { padding: 3px 6px; background: var(--color-bg-alt); border-radius: 4px; }
+    .cart-layout {
         display: grid;
         grid-template-columns: 1fr 360px;
         column-gap: 32px;
@@ -1156,7 +1164,7 @@ export class CartComponent {
     if (!this.wishlist.isWishlisted(line.product.id)) {
       this.wishlist.toggle(line.product.id);
     }
-    this.cart.remove(line.product.id);
+    this.cart.remove(line.product.id, line.variantId);
   }
 
   protected checkoutStore(storeId: string): void {

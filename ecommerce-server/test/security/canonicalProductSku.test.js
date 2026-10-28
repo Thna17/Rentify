@@ -433,6 +433,7 @@ test('P3-CAT-001: 7. Legacy Product response compatibility', () => {
     ProductVariants: [
       {
         id: 'var-1',
+        images: [{ url: 'https://example.com/selected-color.png' }],
         productId: 'prod-legacy-1',
         storeId: STORE_A,
         sku: 'SKU-LEGACY-01',
@@ -449,6 +450,7 @@ test('P3-CAT-001: 7. Legacy Product response compatibility', () => {
   };
 
   const formatted = storeCatalog.publicProduct(mockProductRow, { rating: 4.9, reviewCount: 8 });
+  assert.equal(formatted.productVariants[0].image, 'https://example.com/selected-color.png');
 
   // Verify all legacy fields are present and compatible
   assert.equal(formatted.id, 'prod-legacy-1');

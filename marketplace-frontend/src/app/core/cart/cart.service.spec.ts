@@ -125,6 +125,38 @@ describe('CartService', () => {
     localStorage.clear();
   });
 
+  it('keeps colors separate and changes/removes only the selected variant', async () => {
+    const product: Product = { ...mockProduct, hasVariants: true, productVariants: [
+      { id: 'blue', productId: mockProduct.id, sku: 'BLUE', price: 30, stockQuantity: 3, optionValues: { Color: 'Blue', Size: 'M' }, image: '/blue.png' },
+      { id: 'red', productId: mockProduct.id, sku: 'RED', price: 35, stockQuantity: 5, optionValues: { Color: 'Red', Size: 'M' }, image: '/red.png' },
+    ] };
+    expect(await service.add(product, 1)).toBe(false);
+    expect(await service.add(product, 2, 'blue')).toBe(true);
+    expect(await service.add(product, 1, 'red')).toBe(true);
+    expect(service.groups()[0].lines.map(line => [line.variantId, line.quantity, line.currentPrice])).toEqual([
+      ['blue', 2, 30], ['red', 1, 35],
+    ]);
+    expect(service.quantityOf(product.id)).toBe(3);
+    expect(service.groups()[0].lines[0].variantImage).toBe('/blue.png');
+    expect(service.groups()[0].lines[0].optionValues).toEqual({ Color: 'Blue', Size: 'M' });
+    await service.changeQuantity(product.id, 1, 'blue');
+    expect(service.quantityOf(product.id, 'blue')).toBe(3);
+    expect(service.quantityOf(product.id, 'red')).toBe(1);
+    await service.remove(product.id, 'blue');
+    expect(service.groups()[0].lines.map(line => line.variantId)).toEqual(['red']);
+  });
+
+  it('sends the selected variant to Commerce for authenticated cart mutations', async () => {
+    const mutation = vi.spyOn(mockRentify, 'setQuantity');
+    const product: Product = { ...mockProduct, hasVariants: true, productVariants: [
+      { id: 'blue', productId: mockProduct.id, sku: 'BLUE', price: 30, stockQuantity: 3, optionValues: { Color: 'Blue' } },
+    ] };
+    isAuthSignal.set(true);
+    expect(await service.add(product, 2, 'blue')).toBe(true);
+    expect(mutation).toHaveBeenCalledWith(product.storeId, product.id, 2, 'blue');
+    mutation.mockRestore();
+  });
+
   it('adds an item to guest cart and reflects in lines and counts', async () => {
     expect(service.isEmpty()).toBe(true);
     expect(service.count()).toBe(0);

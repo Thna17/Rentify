@@ -541,6 +541,7 @@ function publicProduct(product, ratingSummary) {
     compareAtPrice: variant.compareAtPrice,
     currency: variant.currency || product.currency || 'USD',
     stockQuantity: variant.stockQuantity,
+    image: variant.images?.[0]?.url || variant.images?.[0] || null,
     optionValues: variant.optionValues || {},
     isDefault: Boolean(variant.isDefault),
     status: variant.status,

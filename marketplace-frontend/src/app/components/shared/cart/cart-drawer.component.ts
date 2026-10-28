@@ -1,3 +1,4 @@
+import { KeyValuePipe } from '@angular/common';
 import {
   AfterViewInit,
   Component,
@@ -16,7 +17,7 @@ import { IconComponent } from '../ui/icon/icon.component';
 
 @Component({
   selector: 'app-cart-drawer',
-  imports: [RouterLink, IconComponent],
+  imports: [KeyValuePipe, RouterLink, IconComponent],
   template: `
     <div class="cart-layer" aria-live="polite">
       <button
@@ -78,7 +79,7 @@ import { IconComponent } from '../ui/icon/icon.component';
             }
 
             <div class="cart-lines">
-              @for (line of cart.lines(); track line.product.id) {
+              @for (line of cart.lines(); track line.product.id + (line.variantId || "")) {
                 <article class="cart-line">
                   <a class="product-image" [routerLink]="['/product', line.product.id]" (click)="requestClose()" [attr.aria-label]="'View ' + line.product.name">
                     @if (line.product.image) {
@@ -94,20 +95,26 @@ import { IconComponent } from '../ui/icon/icon.component';
                         <a class="product-name" [routerLink]="['/product', line.product.id]" (click)="requestClose()">{{ line.product.name }}</a>
                         <span class="seller-name">{{ line.product.sellerName }}</span>
                       </div>
-                      <button class="remove-button" type="button" (click)="cart.remove(line.product.id)" [attr.aria-label]="'Remove ' + line.product.name">
+                      <button class="remove-button" type="button" (click)="cart.remove(line.product.id, line.variantId)" [attr.aria-label]="'Remove ' + line.product.name">
                         <ui-icon name="trash" [size]="15" />
                       </button>
                     </div>
 
-                    <span class="unit-price">\${{ line.product.price.toFixed(2) }} each</span>
+                    <div class="selected-variant-preview">
+                          @if (line.variantImage) { <img [src]="line.variantImage" alt="Selected variant" /> }
+                          @for (option of line.optionValues | keyvalue; track option.key) {
+                            <span>{{ option.key }}: {{ option.value }}</span>
+                          }
+                        </div>
+                        <span class="unit-price">\${{ line.product.price.toFixed(2) }} each</span>
 
                     <div class="line-bottom">
                       <div class="quantity-control" [attr.aria-label]="'Quantity for ' + line.product.name">
-                        <button type="button" (click)="cart.changeQuantity(line.product.id, -1)" [attr.aria-label]="'Decrease ' + line.product.name + ' quantity'">
+                        <button type="button" (click)="cart.changeQuantity(line.product.id, -1, line.variantId)" [attr.aria-label]="'Decrease ' + line.product.name + ' quantity'">
                           <ui-icon name="minus" [size]="12" />
                         </button>
                         <span aria-live="polite" [attr.aria-label]="'Quantity ' + line.quantity">{{ line.quantity }}</span>
-                        <button type="button" (click)="cart.changeQuantity(line.product.id, 1)" [disabled]="line.quantity >= line.product.stock" [attr.aria-label]="'Increase ' + line.product.name + ' quantity'">
+                        <button type="button" (click)="cart.changeQuantity(line.product.id, 1, line.variantId)" [disabled]="line.quantity >= line.product.stock" [attr.aria-label]="'Increase ' + line.product.name + ' quantity'">
                           <ui-icon name="plus" [size]="12" />
                         </button>
                       </div>
@@ -152,6 +159,10 @@ import { IconComponent } from '../ui/icon/icon.component';
   `,
   styles: [`
     :host { position: fixed; inset: 0; z-index: 1000; }
+    .selected-variant-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 0; font-size: 11px; color: var(--color-text-secondary); }
+    .selected-variant-preview:empty { display: none; }
+    .selected-variant-preview img { width: 32px; height: 32px; object-fit: contain; border: 1px solid var(--color-border); border-radius: 5px; }
+    .selected-variant-preview span { padding: 3px 6px; background: var(--color-bg-alt); border-radius: 4px; }
     .cart-layer { position: fixed; inset: 0; }
     .cart-backdrop { animation: backdrop-in 220ms ease-out both; backdrop-filter: blur(3px); background: rgba(15, 23, 19, .61); border: 0; cursor: default; inset: 0; padding: 0; position: absolute; width: 100%; }
     .cart-panel { animation: drawer-in 360ms cubic-bezier(.22,.85,.32,1) both; background: #fffdf9; box-shadow: -24px 0 70px rgba(9, 27, 19, .24); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; max-width: 480px; outline: none; position: absolute; right: 0; top: 0; width: min(41vw, 480px); }

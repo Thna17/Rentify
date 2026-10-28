@@ -442,7 +442,7 @@ const toProductFromRentify = (
   const subcategorySlugVal = explicitSub ? subcategorySlug(explicitSub) : classification.subcategorySlug;
 
   const rawVariants = (api as any).productVariants || (api as any).variants || [];
-  const productVariants = rawVariants.map((v: any, idx: number) => {
+  const productVariants = rawVariants.filter((v: any) => Boolean(v.id)).map((v: any, idx: number) => {
     const vPrice = typeof v.price === 'string' ? parseFloat(v.price) || price : Number(v.price) || price;
     const vStock = v.stockQuantity !== undefined ? Number(v.stockQuantity) : stock;
     const vOptions =
