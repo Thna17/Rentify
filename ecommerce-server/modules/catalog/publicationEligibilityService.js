@@ -171,6 +171,62 @@ const REASON_CODES = {
     nextAction: 'Modify prohibited attributes or contact platform support to appeal.',
     blocking: true,
   },
+  PRODUCT_MODERATION_HELD: {
+    code: 'PRODUCT_MODERATION_HELD',
+    message: 'Product listing is temporarily held pending trust and safety evaluation.',
+    nextAction: 'Inspect product policy guidance and resolve flagged attributes.',
+    blocking: true,
+  },
+
+  // 8a. Prohibited goods categories (P5-TRUST-001 / DEC-006)
+  PROHIBITED_WEAPONS_EXPLOSIVES: {
+    code: 'PROHIBITED_WEAPONS_EXPLOSIVES',
+    message: 'Listing of weapons, firearms, or explosives is strictly prohibited by platform policy.',
+    nextAction: 'Remove weapons, firearms, ammunition, or combat equipment from listing.',
+    blocking: true,
+  },
+  PROHIBITED_NARCOTICS: {
+    code: 'PROHIBITED_NARCOTICS',
+    message: 'Listing of illegal narcotics, drugs, or paraphernalia is strictly prohibited.',
+    nextAction: 'Remove controlled substances and prohibited drug-related terms.',
+    blocking: true,
+  },
+  PROHIBITED_COUNTERFEIT: {
+    code: 'PROHIBITED_COUNTERFEIT',
+    message: 'Listing of counterfeit or trademark-infringing goods is prohibited.',
+    nextAction: 'Submit manufacturer authorization or licensing documentation via appeal.',
+    blocking: true,
+  },
+  PROHIBITED_WILDLIFE_FLORA: {
+    code: 'PROHIBITED_WILDLIFE_FLORA',
+    message: 'Listing of protected wildlife, ivory, or endangered species parts is prohibited.',
+    nextAction: 'Remove protected flora/fauna items in compliance with biodiversity laws.',
+    blocking: true,
+  },
+  PROHIBITED_HUMAN_REMAINS: {
+    code: 'PROHIBITED_HUMAN_REMAINS',
+    message: 'Commercial trade in human remains or organs is strictly prohibited.',
+    nextAction: 'Remove prohibited biological or anatomical items immediately.',
+    blocking: true,
+  },
+  PROHIBITED_ADULT_CONTENT: {
+    code: 'PROHIBITED_ADULT_CONTENT',
+    message: 'Sexually explicit adult content and adult services are prohibited on the platform.',
+    nextAction: 'Remove adult-oriented or sexually explicit materials.',
+    blocking: true,
+  },
+  PROHIBITED_HAZARDOUS_MATERIALS: {
+    code: 'PROHIBITED_HAZARDOUS_MATERIALS',
+    message: 'Sale of toxic chemicals and hazardous materials is restricted.',
+    nextAction: 'Submit government safety clearances or remove hazardous materials.',
+    blocking: true,
+  },
+  PROHIBITED_UNLICENSED_MEDICINE: {
+    code: 'PROHIBITED_UNLICENSED_MEDICINE',
+    message: 'Prescription pharmaceuticals require verified health licensing.',
+    nextAction: 'Provide Ministry of Health pharmaceutical license via appeal.',
+    blocking: true,
+  },
 
   // 9. Marketplace visibility
   MARKETPLACE_VISIBILITY_DISABLED: {
@@ -329,9 +385,17 @@ function evaluateChannel(context) {
   if (moderation === 'pending') {
     addReason('PRODUCT_MODERATION_PENDING');
   } else if (moderation === 'flagged') {
-    addReason('PRODUCT_MODERATION_FLAGGED');
+    if (product.prohibitedReasonCode && REASON_CODES[product.prohibitedReasonCode]) {
+      addReason(product.prohibitedReasonCode);
+    } else {
+      addReason('PRODUCT_MODERATION_FLAGGED');
+    }
   } else if (moderation === 'rejected') {
-    addReason('PRODUCT_MODERATION_REJECTED');
+    if (product.prohibitedReasonCode && REASON_CODES[product.prohibitedReasonCode]) {
+      addReason(product.prohibitedReasonCode);
+    } else {
+      addReason('PRODUCT_MODERATION_REJECTED');
+    }
   }
 
   // 4. SKU / Variant Status (all channels)
@@ -510,6 +574,10 @@ function evaluatePublicationEligibility(context) {
     storeId: context.product?.storeId || context.store?.storeId || null,
     status: context.product?.status || null,
     moderationStatus: context.isPrivileged ? (context.product?.moderationStatus || 'approved') : undefined,
+    prohibitedReasonCode: context.isPrivileged ? (context.product?.prohibitedReasonCode || null) : undefined,
+    moderationNotes: context.isPrivileged ? (context.product?.moderationNotes || null) : undefined,
+    appealStatus: context.isPrivileged ? (context.product?.appealStatus || 'none') : undefined,
+    canAppeal: context.isPrivileged ? Boolean(context.product?.appealStatus !== 'pending' && ['flagged', 'rejected'].includes(context.product?.moderationStatus)) : undefined,
     isPublished: isPublishedOnAnyChannel,
     channels,
     summary: {

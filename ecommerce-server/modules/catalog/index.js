@@ -3,4 +3,6 @@
 module.exports = {
   get ProductService() { return require('./ProductService'); },
   get publicationEligibilityService() { return require('./publicationEligibilityService'); },
+  get restrictedProductTaxonomy() { return require('./restrictedProductTaxonomy'); },
+  get productModerationService() { return require('./productModerationService'); },
 };

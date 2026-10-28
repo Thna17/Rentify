@@ -93,6 +93,31 @@ const Product = sequelize.define(
       defaultValue: 'approved',
       allowNull: false,
     },
+    prohibitedReasonCode: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+    },
+    moderationNotes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    appealStatus: {
+      type: DataTypes.ENUM('none', 'pending', 'approved', 'rejected'),
+      defaultValue: 'none',
+      allowNull: false,
+    },
+    appealedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    moderatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    moderatedBy: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+    },
     // Niche-specific fields
     nicheAttributes: {
       type: DataTypes.JSON,

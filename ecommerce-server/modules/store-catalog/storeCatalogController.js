@@ -36,3 +36,33 @@ exports.getPublicationStatus = respond(async (req, res) => {
   if (!explanation) return res.status(404).json({ error: 'Product not found' });
   return res.json(explanation);
 });
+
+exports.evaluatePolicy = respond(async (req, res) => {
+  const { productModerationService } = require('../catalog');
+  const result = productModerationService.evaluateForSubmission(req.body || {});
+  return res.json({ data: result });
+});
+
+exports.submitAppeal = respond(async (req, res) => {
+  const { productModerationService } = require('../catalog');
+  const result = await productModerationService.submitMerchantAppeal(
+    req.store.storeId,
+    req.params.productId,
+    {
+      reason: req.body?.reason,
+      evidenceUrls: req.body?.evidenceUrls,
+      actor: { id: req.user?.id || req.staff?.id || 'merchant', type: 'merchant' },
+      idempotencyKey: req.get('Idempotency-Key') || req.body?.idempotencyKey,
+      correlationId: req.get('X-Correlation-ID') || null,
+    }
+  );
+  return res.status(201).json({ success: true, data: result });
+});
+
+exports.getModerationHistory = respond(async (req, res) => {
+  const { productModerationService } = require('../catalog');
+  const history = await productModerationService.getModerationHistory(req.params.productId, {
+    storeId: req.store.storeId,
+  });
+  return res.json({ data: history });
+});

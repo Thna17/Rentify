@@ -99,7 +99,19 @@ exports.updateProduct = async (req, res) => {
     updates.status = status;
   }
   if (moderationStatus && ['approved', 'pending', 'flagged', 'rejected'].includes(moderationStatus)) {
+    if (moderationStatus !== 'approved' && (!reason || String(reason).trim().length < 5)) {
+      throw ApiError.badRequest('Moderator reason of at least 5 characters is required when flagging or rejecting a product', 'MODERATION_REASON_REQUIRED');
+    }
     updates.moderationStatus = moderationStatus;
+    if (moderationStatus !== 'approved') {
+      updates.marketplaceVisibility = false;
+      updates.prohibitedReasonCode = req.body.reasonCode || 'POLICY_VIOLATION';
+      updates.moderationNotes = String(reason).trim();
+    } else {
+      updates.prohibitedReasonCode = null;
+    }
+    updates.moderatedAt = new Date();
+    updates.moderatedBy = req.user?.id || 'admin';
   }
 
   // Handle stock adjustment via canonical inventory ledger
@@ -259,4 +271,60 @@ exports.productPublicationStatus = async (req, res) => {
   });
   if (!explanation) throw ApiError.notFound('Product not found');
   res.json({ success: true, data: explanation });
+};
+
+exports.moderationQueue = async (req, res) => {
+  const { productModerationService } = require('../catalog');
+  const result = await productModerationService.getModerationQueue({
+    status: req.query.status || 'all_open',
+    page: Number.parseInt(req.query.page, 10) || 1,
+    limit: Number.parseInt(req.query.limit, 10) || 20,
+    q: req.query.q || '',
+  });
+  res.json({ success: true, data: result.items, total: result.total, page: result.page, limit: result.limit });
+};
+
+exports.recordModeratorDecision = async (req, res) => {
+  const { id } = req.params;
+  const { decision, reasonCode, reason, evidence } = req.body || {};
+  const { productModerationService } = require('../catalog');
+  const idempotencyKey = req.headers?.['idempotency-key'] || req.body?.idempotencyKey || null;
+  const correlationId = req.headers?.['x-correlation-id'] || null;
+
+  const result = await productModerationService.recordModeratorDecision(id, {
+    decision,
+    reasonCode,
+    reason,
+    evidence,
+    actor: { id: req.user?.id || 'admin', type: 'admin' },
+    idempotencyKey,
+    correlationId,
+  });
+  res.json({ success: true, data: result });
+};
+
+exports.decideAppeal = async (req, res) => {
+  const { id } = req.params;
+  const { decision, reasonCode, reason, evidence } = req.body || {};
+  const { productModerationService } = require('../catalog');
+  const idempotencyKey = req.headers?.['idempotency-key'] || req.body?.idempotencyKey || null;
+  const correlationId = req.headers?.['x-correlation-id'] || null;
+
+  const result = await productModerationService.decideAppeal(id, {
+    decision,
+    reasonCode,
+    reason,
+    evidence,
+    actor: { id: req.user?.id || 'admin', type: 'admin' },
+    idempotencyKey,
+    correlationId,
+  });
+  res.json({ success: true, data: result });
+};
+
+exports.productModerationHistory = async (req, res) => {
+  const { id } = req.params;
+  const { productModerationService } = require('../catalog');
+  const history = await productModerationService.getModerationHistory(id);
+  res.json({ success: true, data: history });
 };

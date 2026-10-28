@@ -584,6 +584,45 @@ paths:
         "200": { description: CSV containing rejected rows and safe reason codes, content: { text/csv: { schema: { type: string } } } }
         "404": { $ref: "#/components/responses/Error404" }
       operationId: get_api_stores_storeId_product_imports_jobId_report
+  /api/stores/{storeId}/products/evaluate-policy:
+    post:
+      tags:
+        - Store Catalog
+      summary: Pre-submission evaluation of product content against restricted taxonomy
+      description: Returns real-time compliance feedback and guidance before product submission without mutating database state.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                marketplaceCategory:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Policy evaluation result and guidance
+        "400":
+          $ref: "#/components/responses/Error400"
+      operationId: post_api_stores_storeId_products_evaluate_policy
   /api/stores/{storeId}/products/{productId}:
     get:
       tags:
@@ -753,6 +792,85 @@ paths:
         "404":
           description: Product not found
       operationId: get_api_stores_storeId_products_productId_publication_status
+  /api/stores/{storeId}/products/{productId}/appeal:
+    post:
+      tags:
+        - Store Catalog
+      summary: Submit a merchant appeal for a held or rejected product
+      description: Merchants can submit explanation and safe HTTPS evidence URLs to appeal a moderation hold or rejection.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  minLength: 10
+                evidenceUrls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+      responses:
+        "201":
+          description: Appeal submitted successfully
+        "400":
+          $ref: "#/components/responses/Error400"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_stores_storeId_products_productId_appeal
+  /api/stores/{storeId}/products/{productId}/moderation-history:
+    get:
+      tags:
+        - Store Catalog
+      summary: View immutable moderation audit history for product
+      description: Returns the append-only timeline of moderation actions, appeals, and system policy evaluations for the store's product.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: productId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: List of immutable moderation audit records
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_stores_storeId_products_productId_moderation_history
   /api/product/stores/{storeId}:
     get:
       tags:
@@ -5246,6 +5364,50 @@ paths:
         "200":
           description: Overview metrics
       operationId: get_api_admin_operations_overview
+  /api/admin/operations/moderation/queue:
+    get:
+      tags:
+        - Platform Operations
+      summary: List products in moderation queue
+      description: Retrieve products that are currently flagged or under appeal review for moderation staff.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - all_open
+              - flagged
+              - rejected
+              - approved
+            default: all_open
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Moderation queue retrieved successfully
+        "403":
+          $ref: "#/components/responses/Error403"
+      operationId: get_api_admin_operations_moderation_queue
   /api/admin/operations/{resource}:
     get:
       tags:
@@ -5358,6 +5520,142 @@ paths:
         "404":
           description: Product not found
       operationId: get_api_admin_operations_products_id_publication_status
+  /api/admin/operations/products/{id}/moderation:
+    post:
+      tags:
+        - Platform Operations
+      summary: Record moderator decision for product
+      description: Record an administrative moderation action (approve, reject, or flag) with required reason and safe evidence.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - approved
+                    - rejected
+                    - flagged
+                reasonCode:
+                  type: string
+                reason:
+                  type: string
+                evidence:
+                  type: string
+      responses:
+        "200":
+          description: Moderation decision recorded successfully
+        "400":
+          $ref: "#/components/responses/Error400"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: post_api_admin_operations_products_id_moderation
+  /api/admin/operations/products/{id}/appeal/decision:
+    post:
+      tags:
+        - Platform Operations
+      summary: Review and decide on a merchant product appeal
+      description: Platform administrator reviews a pending appeal and accepts (approves) or denies (rejects) it.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - approved
+                    - rejected
+                reasonCode:
+                  type: string
+                reason:
+                  type: string
+                evidence:
+                  type: string
+      responses:
+        "200":
+          description: Appeal decision recorded successfully
+        "400":
+          $ref: "#/components/responses/Error400"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+      operationId: post_api_admin_operations_products_id_appeal_decision
+  /api/admin/operations/products/{id}/moderation-history:
+    get:
+      tags:
+        - Platform Operations
+      summary: View full immutable moderation audit history for product
+      description: Returns all historical moderation decisions, automatic system evaluations, and merchant appeals.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: List of immutable moderation audit records
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+      operationId: get_api_admin_operations_products_id_moderation_history
   /api/admin/operations/inventory/adjust:
     post:
       tags:

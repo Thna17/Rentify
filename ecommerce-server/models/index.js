@@ -28,6 +28,10 @@ const InventoryBalance = require('./InventoryBalance');
 const InventoryLedgerEntry = require('./InventoryLedgerEntry');
 const InventoryReservation = require('./InventoryReservation');
 const ProductImportJob = require('./ProductImportJob');
+const ProductModerationHistory = require('./ProductModerationHistory');
+
+Product.hasMany(ProductModerationHistory, { foreignKey: 'productId', as: 'ModerationHistories' });
+ProductModerationHistory.belongsTo(Product, { foreignKey: 'productId' });
 
 Product.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
@@ -184,4 +188,5 @@ module.exports = {
   InventoryLedgerEntry,
   InventoryReservation,
   ProductImportJob,
+  ProductModerationHistory,
 };
