@@ -3,9 +3,10 @@
 const { sequelize } = require('../../config/db');
 const { createHash } = require('node:crypto');
 const { Op } = require('sequelize');
-const { Order, OrderItem, Payment, OrderEvent } = require('../../models');
-const { changeStock } = require('../inventory').sharedStockService;
+const { Order, OrderItem, Payment, OrderEvent, ProductVariant } = require('../../models');
+const { inventoryLedgerService } = require('../inventory');
 const { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, orderView } = require('./marketplaceRules');
+const orderOperations = require('./orderOperationsService');
 
 function actionFingerprint(action, input) {
   const fields = {
@@ -59,6 +60,9 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         salesChannel: { [Op.in]: ['marketplace', 'storefront'] } },
         transaction, lock: transaction.LOCK.UPDATE });
       if (!order) fail('Order not found', 404);
+      if (details.expectedVersion !== undefined && Number(details.expectedVersion) !== Number(order.version)) {
+        fail('Order changed since it was loaded. Refresh and review the latest state.', 409);
+      }
       const replay = await OrderEvent.findOne({ where: { eventKey }, transaction });
       if (replay) {
         if (replay.storeId !== storeId || replay.orderId !== orderId || replay.type !== action ||
@@ -72,7 +76,12 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
       let amount = null;
       if (action === 'delivered') {
         if (!['pending', 'retrying'].includes(order.deliveryStatus)) fail('Delivery cannot be completed', 409);
-        await order.update({ deliveryStatus: 'delivered', status: 'fulfilled' }, { transaction });
+        await order.update({
+          deliveryStatus: 'delivered',
+          fulfillmentStatus: 'delivered',
+          deliveredAt: new Date(),
+          status: 'fulfilled',
+        }, { transaction, byStateMachine: true });
       } else if (action === 'delivery_failed') {
         const reason = requiredText(details.reason, 'failure reason', 500);
         if (!['pending', 'retrying'].includes(order.deliveryStatus) || Number(payment.collectedAmount) > 0) {
@@ -81,19 +90,60 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         const resolution = details.resolution;
         if (!['retry', 'cancel'].includes(resolution)) fail('Choose retry or cancel');
         if (resolution === 'cancel') {
-          const lines = await OrderItem.findAll({ where: { orderId }, transaction, order: [['productId', 'ASC']] });
-          for (const line of lines) {
-            await changeStock(line.productId, line.quantity, transaction, line.variantId || line.itemMetadata?.variantId || null);
+          if (order.stockDeducted) {
+            const lines = await OrderItem.findAll({ where: { orderId }, transaction, order: [['productId', 'ASC']] });
+            for (const line of lines) {
+              let skuId = line.variantId || line.itemMetadata?.variantId || line.itemMetadata?.snapshot?.variantId;
+              if (!skuId) {
+                try {
+                  const txOpt = (transaction && (transaction.id || transaction.uuid))
+                    ? { transaction, ...(transaction.LOCK?.UPDATE ? { lock: transaction.LOCK.UPDATE } : {}) }
+                    : {};
+                  const defaultVariant = await ProductVariant.findOne({
+                    where: { productId: line.productId, isDefault: true },
+                    ...txOpt,
+                  });
+                  skuId = defaultVariant ? defaultVariant.id : line.productId;
+                } catch {
+                  skuId = line.productId;
+                }
+              }
+              const itemCancelKey = `cancel-stock-${order.id}-${line.id}-${eventKey}`;
+              await inventoryLedgerService.mutateBalance({
+                storeId: order.storeId,
+                skuId,
+                changeOnHand: line.quantity,
+                changeReserved: 0,
+                reasonCode: 'cancellation',
+                sourceType: 'order',
+                sourceId: order.id,
+                actor: { id: actorId, type: 'merchant' },
+                idempotencyKey: itemCancelKey,
+                correlationId: eventKey,
+              }, { transaction });
+            }
+            order.stockDeducted = false;
           }
-          await order.update({ deliveryStatus: 'failed', status: 'cancelled', stockDeducted: false }, { transaction });
+          await order.update({
+            deliveryStatus: 'failed',
+            fulfillmentStatus: 'failed',
+            status: 'cancelled',
+            stockDeducted: false,
+          }, { transaction, byStateMachine: true });
         } else {
-          await order.update({ deliveryStatus: 'failed' }, { transaction });
+          await order.update({
+            deliveryStatus: 'failed',
+            fulfillmentStatus: 'failed',
+          }, { transaction, byStateMachine: true });
         }
         details = { reason, resolution };
       } else if (action === 'retry_delivery') {
         if (order.deliveryStatus !== 'failed' || order.status === 'cancelled') fail('Delivery cannot be retried', 409);
         if (details.buyerAgreed !== true) fail('Buyer agreement is required');
-        await order.update({ deliveryStatus: 'retrying' }, { transaction });
+        await order.update({
+          deliveryStatus: 'retrying',
+          fulfillmentStatus: 'shipped',
+        }, { transaction, byStateMachine: true });
         details = { buyerAgreed: true };
       } else if (action === 'collect_cod') {
         if (order.deliveryStatus !== 'delivered' || payment.status !== 'pending') fail('COD cannot be collected', 409);
@@ -103,7 +153,7 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         await payment.update({ collectedAmount: amount, collectedAt: new Date(), collectorId: actorId,
           paidAt: new Date(), status: 'paid' }, { transaction });
       } else if (action === 'confirm_refund') {
-        if (payment.status !== 'paid') fail('Uncollected COD cannot be refunded', 409);
+        if (!['paid', 'collected', 'partially_refunded'].includes(payment.status)) fail('Uncollected COD cannot be refunded', 409);
         const method = requiredText(details.method, 'refund method', 80);
         const confirmation = requiredText(details.confirmation, 'refund confirmation', 500);
         const refundCents = cents(details.amount);
@@ -238,4 +288,9 @@ async function buyerReport({ buyerId, orderId, eventKey, type, details,
   }
 }
 
-module.exports = { buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction, buyerReport };
+module.exports = {
+  buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents,
+  merchantAction, buyerReport,
+  merchantOrders: orderOperations.listStoreOrders,
+  merchantOrder: orderOperations.getStoreOrder,
+};

@@ -23,6 +23,39 @@ export class CommerceApiClient {
   }
 
   /**
+   * Privileged administrative inventory adjustment
+   * POST /api/admin/operations/inventory/adjust
+   */
+  async post_api_admin_operations_inventory_adjust(options: {
+    body: {
+      delta: number;
+      evidence?: string;
+      idempotencyKey?: string;
+      reason?: string;
+      reasonCode?: "manual_adjustment" | "restock" | "return" | "opening_balance";
+      skuId: string;
+      storeId: Commerce.UUID;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/admin/operations/inventory/adjust',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_operations_inventory_adjust */
+  async postApiAdminOperationsInventoryAdjust(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_admin_operations_inventory_adjust(options);
+  }
+
+  /**
    * Get administrative operations metrics overview
    * GET /api/admin/operations/overview
    */
@@ -54,7 +87,13 @@ export class CommerceApiClient {
       id: string;
     };
     body: {
+      delta?: number;
+      evidence?: string;
+      marketplaceVisibility?: boolean | null;
+      moderationStatus?: "approved" | "pending" | "flagged" | "rejected";
+      reason?: string;
       status?: "active" | "draft" | "archived";
+      stockQuantity?: number;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -74,6 +113,46 @@ export class CommerceApiClient {
   /** Alias for patch_api_admin_operations_products_id */
   async patchApiAdminOperationsProductsId(options: any): Promise<ApiResponse<any>> {
     return (this as any).patch_api_admin_operations_products_id(options);
+  }
+
+  /**
+   * Inspect product publication and moderation eligibility
+   * GET /api/admin/operations/products/{id}/publication-status
+   */
+  async get_api_admin_operations_products_id_publication_status(options: {
+    path: {
+      id: string;
+    };
+    query?: {
+      channel?: "marketplace" | "storefront" | "pos" | "all";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      data?: Commerce.PublicationExplanation;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Commerce.PublicationExplanation;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/admin/operations/products/{id}/publication-status',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_products_id_publication_status */
+  async getApiAdminOperationsProductsIdPublicationStatus(options: any): Promise<ApiResponse<{
+      data?: Commerce.PublicationExplanation;
+      success?: boolean;
+    }>> {
+    return (this as any).get_api_admin_operations_products_id_publication_status(options);
   }
 
   /**
@@ -1187,6 +1266,89 @@ export class CommerceApiClient {
   }
 
   /**
+   * Update invoice details and adjust reservations
+   * PATCH /api/invoice/invoices/{invoiceId}
+   */
+  async patch_api_invoice_invoices_invoiceId(options: {
+    path: {
+      invoiceId: string;
+    };
+    body: Record<string, any>;
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'PATCH',
+      path: '/api/invoice/invoices/{invoiceId}',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for patch_api_invoice_invoices_invoiceId */
+  async patchApiInvoiceInvoicesInvoiceId(options: any): Promise<ApiResponse<any>> {
+    return (this as any).patch_api_invoice_invoices_invoiceId(options);
+  }
+
+  /**
+   * Fulfill an invoice and deduct canonical stock
+   * POST /api/invoice/invoices/{invoiceId}/fulfill
+   */
+  async post_api_invoice_invoices_invoiceId_fulfill(options: {
+    path: {
+      invoiceId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/invoice/invoices/{invoiceId}/fulfill',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_invoice_invoices_invoiceId_fulfill */
+  async postApiInvoiceInvoicesInvoiceIdFulfill(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_invoice_invoices_invoiceId_fulfill(options);
+  }
+
+  /**
+   * Issue a draft invoice and reserve canonical stock
+   * POST /api/invoice/invoices/{invoiceId}/issue
+   */
+  async post_api_invoice_invoices_invoiceId_issue(options: {
+    path: {
+      invoiceId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/invoice/invoices/{invoiceId}/issue',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_invoice_invoices_invoiceId_issue */
+  async postApiInvoiceInvoicesInvoiceIdIssue(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_invoice_invoices_invoiceId_issue(options);
+  }
+
+  /**
    * Download invoice PDF
    * GET /api/invoice/invoices/{invoiceId}/pdf
    */
@@ -2040,6 +2202,109 @@ export class CommerceApiClient {
   /** Alias for post_api_merchant_orders_orderId_process */
   async postApiMerchantOrdersOrderIdProcess(options: any): Promise<ApiResponse<any>> {
     return (this as any).post_api_merchant_orders_orderId_process(options);
+  }
+
+  /**
+   * Complete return after refund confirmation
+   * POST /api/merchant/orders/{orderId}/returns/complete
+   */
+  async post_api_merchant_orders_orderId_returns_complete(options: {
+    path: {
+      orderId: string;
+    };
+    body?: {
+      reason?: string;
+      refundTransactionId?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/merchant/orders/{orderId}/returns/complete',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_merchant_orders_orderId_returns_complete */
+  async postApiMerchantOrdersOrderIdReturnsComplete(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_merchant_orders_orderId_returns_complete(options);
+  }
+
+  /**
+   * Process return decision (approve or reject)
+   * POST /api/merchant/orders/{orderId}/returns/decision
+   */
+  async post_api_merchant_orders_orderId_returns_decision(options: {
+    path: {
+      orderId: string;
+    };
+    body: {
+      decision: "approve" | "reject";
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/merchant/orders/{orderId}/returns/decision',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_merchant_orders_orderId_returns_decision */
+  async postApiMerchantOrdersOrderIdReturnsDecision(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_merchant_orders_orderId_returns_decision(options);
+  }
+
+  /**
+   * Physical return receipt and inspection restock
+   * POST /api/merchant/orders/{orderId}/returns/receive
+   */
+  async post_api_merchant_orders_orderId_returns_receive(options: {
+    path: {
+      orderId: string;
+    };
+    body?: {
+      evidence?: string;
+      inspectionOutcome?: "resellable" | "damaged" | "non_resellable";
+      itemsToRestock?: Array<{
+        condition?: string;
+        itemId?: string;
+        quantity?: number;
+        restock?: boolean;
+      }>;
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/merchant/orders/{orderId}/returns/receive',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_merchant_orders_orderId_returns_receive */
+  async postApiMerchantOrdersOrderIdReturnsReceive(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_merchant_orders_orderId_returns_receive(options);
   }
 
   /**
@@ -3757,6 +4022,102 @@ export class CommerceApiClient {
   }
 
   /**
+   * Lookup product and stock by barcode for store POS
+   * GET /api/stores/{storeId}/orders/pos/lookup
+   */
+  async get_api_stores_storeId_orders_pos_lookup(options: {
+    path: {
+      storeId: string;
+    };
+    query?: {
+      barcode: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/orders/pos/lookup',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_stores_storeId_orders_pos_lookup */
+  async getApiStoresStoreIdOrdersPosLookup(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_stores_storeId_orders_pos_lookup(options);
+  }
+
+  /**
+   * Record manual KHQR payment and deduct stock for POS order
+   * POST /api/stores/{storeId}/orders/pos/{orderId}/manual-khqr
+   */
+  async post_api_stores_storeId_orders_pos_orderId_manual_khqr(options: {
+    path: {
+      orderId: string;
+      storeId: string;
+    };
+    body?: {
+      idempotencyKey?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/manual-khqr',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_orders_pos_orderId_manual_khqr */
+  async postApiStoresStoreIdOrdersPosOrderIdManualKhqr(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_stores_storeId_orders_pos_orderId_manual_khqr(options);
+  }
+
+  /**
+   * Void POS order and restore stock
+   * POST /api/stores/{storeId}/orders/pos/{orderId}/void
+   */
+  async post_api_stores_storeId_orders_pos_orderId_void(options: {
+    path: {
+      orderId: string;
+      storeId: string;
+    };
+    body?: {
+      idempotencyKey?: string;
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/void',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_orders_pos_orderId_void */
+  async postApiStoresStoreIdOrdersPosOrderIdVoid(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_stores_storeId_orders_pos_orderId_void(options);
+  }
+
+  /**
    * List merchant store products
    * GET /api/stores/{storeId}/products
    */
@@ -3814,14 +4175,18 @@ export class CommerceApiClient {
     body: {
       description?: string;
       images?: Array<{
+        alt?: string;
         url: string;
       }>;
       marketplaceCategory: string;
       marketplaceVisibility?: boolean | null;
       name: string;
       price: Commerce.Money;
+      /** Required for a simple Product when variants are omitted. */
+      sku?: string;
       status?: "active" | "draft";
       stockQuantity: number;
+      variants?: Array<Commerce.ProductVariantInput>;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -3857,14 +4222,18 @@ export class CommerceApiClient {
       /** Current version of the product for optimistic locking */
       expectedVersion: number;
       images?: Array<{
+        alt?: string;
         url: string;
       }>;
       marketplaceCategory?: string;
       marketplaceVisibility?: boolean | null;
       name?: string;
       price?: Commerce.Money;
+      /** When true, SKU rows omitted from variants are removed atomically. */
+      replaceVariants?: boolean;
       status?: "active" | "draft" | "archived" | "out_of_stock";
       stockQuantity?: number;
+      variants?: Array<Commerce.ProductVariantInput>;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -3884,6 +4253,38 @@ export class CommerceApiClient {
   /** Alias for patch_api_stores_storeId_products_productId */
   async patchApiStoresStoreIdProductsProductId(options: any): Promise<ApiResponse<Commerce.Product>> {
     return (this as any).patch_api_stores_storeId_products_productId(options);
+  }
+
+  /**
+   * Get product publication eligibility and visibility explanation
+   * GET /api/stores/{storeId}/products/{productId}/publication-status
+   */
+  async get_api_stores_storeId_products_productId_publication_status(options: {
+    path: {
+      productId: string;
+      storeId: string;
+    };
+    query?: {
+      channel?: "marketplace" | "storefront" | "pos" | "all";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Commerce.PublicationExplanation>> {
+    return this.transport.request<Commerce.PublicationExplanation>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/products/{productId}/publication-status',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_stores_storeId_products_productId_publication_status */
+  async getApiStoresStoreIdProductsProductIdPublicationStatus(options: any): Promise<ApiResponse<Commerce.PublicationExplanation>> {
+    return (this as any).get_api_stores_storeId_products_productId_publication_status(options);
   }
 
   /**

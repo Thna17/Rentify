@@ -200,10 +200,10 @@ class CartController {
         });
       }
 
-      // Get website ID from first cart or request
+      // Get website ID and channel from first cart or request
       const guestCart = await Cart.findOne({
         where: { sessionId },
-        attributes: ['websiteId']
+        attributes: ['websiteId', 'channel']
       });
 
       if (!guestCart) {
@@ -212,6 +212,22 @@ class CartController {
           message: 'No guest cart found to merge',
           mergedCount: 0,
           skippedCount: 0
+        });
+      }
+
+      if (!guestCart.websiteId || guestCart.channel === 'marketplace') {
+        await transaction.rollback();
+        const { marketplaceCartService } = require('../checkout');
+        const carts = await marketplaceCartService.mergeCarts({
+          buyerId: userId,
+          sessionId,
+          channel: 'marketplace',
+        });
+        return res.status(200).json({
+          message: 'Cart merged successfully',
+          mergedCount: Array.isArray(carts) ? carts.reduce((acc, c) => acc + (c.items?.length || 0), 0) : 1,
+          skippedCount: 0,
+          carts,
         });
       }
 

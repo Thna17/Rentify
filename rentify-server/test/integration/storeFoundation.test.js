@@ -51,6 +51,19 @@ test('marketplace-only Store defaults to marketplace enabled and needs approval'
   assert.equal(created[0].primaryCategory, 'Fashion');
 });
 
+test('repeated Store submission returns the existing Store without creating another', async (t) => {
+  const existing = { id: 'store-1', ownerUserId: 'owner-1', name: 'Existing shop' };
+  t.mock.method(Store, 'findOne', async () => existing);
+  t.mock.method(Staff, 'findByPk', async () => null);
+  t.mock.method(Store, 'create', async () => assert.fail('must not create a duplicate Store'));
+
+  const result = await storeService.createMarketplaceStore({
+    ownerUserId: 'owner-1', name: 'Retried shop', primaryCategory: 'Fashion',
+  });
+
+  assert.deepEqual(result, { store: existing, created: false });
+});
+
 test('merchant can opt out of marketplace without losing the Store', async (t) => {
   const transaction = { LOCK: { UPDATE: 'UPDATE' } };
   const store = {

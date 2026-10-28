@@ -5,12 +5,19 @@ const OnlineOrderStrategy = require('../../modules/orders/core/orderCreation/str
 const NicheStrategy = require('../../modules/orders/core/orderCreation/strategies/NicheStrategy');
 const { changeStock } = require('../../modules/inventory/sharedStockService');
 const { updateStock } = require('../../modules/inventory/stockService');
-const { Product, ProductVariant, Order, OrderItem, Payment, Invoice, Customer, Cart, CartItem, ShippingDetail } = require('../../models');
+const { Product, ProductVariant, Order, OrderItem, Payment, Invoice, Customer, Cart, CartItem, ShippingDetail, InventoryBalance, InventoryLedgerEntry } = require('../../models');
 
 test('omnichannel full sync: POS, Storefront, and Marketplace share canonical inventory and status transitions', async (t) => {
   const storeId = 'store-uuid-canonical-1111';
   const websiteId = 'website-uuid-storefront-2222';
   const productId = 'prod-uuid-omnichannel-3333';
+
+  if (InventoryBalance && typeof InventoryBalance.destroy === 'function') {
+    await InventoryBalance.destroy({ where: { storeId } }).catch(() => {});
+  }
+  if (InventoryLedgerEntry && typeof InventoryLedgerEntry.destroy === 'function') {
+    await InventoryLedgerEntry.destroy({ where: { storeId } }).catch(() => {});
+  }
 
   let currentStock = 10;
   let currentStatus = 'active';

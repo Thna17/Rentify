@@ -17,6 +17,7 @@ export namespace Commerce {
     id: Commerce.UUID;
     items: Array<{
       category?: string;
+      currency?: Commerce.Currency;
       name: string;
       price: Commerce.Money;
       productId: Commerce.UUID;
@@ -24,6 +25,8 @@ export namespace Commerce {
       seller?: {
         storeId?: Commerce.UUID;
       };
+      /** P3-MNY-001 line-level immutable snapshot */
+      snapshot?: Record<string, any> | null;
       total: Commerce.Money;
     }>;
     orderNumber: string;
@@ -38,6 +41,8 @@ export namespace Commerce {
     shippingInfo: {
       address?: string;
     };
+    /** P3-MNY-001 order-level immutable snapshot */
+    snapshot?: Record<string, any> | null;
     status: "pending" | "confirmed" | "processing" | "cancelled" | "completed" | "fulfilled" | "refunded" | "preparing" | "ready_for_pickup" | "out_for_delivery";
     storeId: Commerce.UUID;
     subtotal: Commerce.Money;
@@ -62,6 +67,16 @@ export namespace Commerce {
     websiteId?: string | null;
   }
 
+  export interface ChannelEligibility {
+    channel: "marketplace" | "storefront" | "pos";
+    /** Whether the product is visible and browsable on this channel */
+    eligible: boolean;
+    primaryBlocker?: (Commerce.EligibilityReason) | null;
+    /** Whether the product can be added to cart and purchased on this channel */
+    purchasable: boolean;
+    reasons: Array<Commerce.EligibilityReason>;
+  }
+
   /** Release 1 standard currency is USD. */
   export type Currency = "USD";
 
@@ -71,6 +86,13 @@ export namespace Commerce {
     name: string;
     phoneNumber?: string | null;
     storeId?: string | null;
+  }
+
+  export interface EligibilityReason {
+    blocking: boolean;
+    code: string;
+    message: string;
+    nextAction: string;
   }
 
   export type ErrorEnvelope = ErrorResponse;
@@ -145,6 +167,8 @@ export namespace Commerce {
     discountTotal?: Commerce.Money;
     id: Commerce.UUID;
     orderNumber: string;
+    /** P3-MNY-001 immutable order-level money and policy snapshot */
+    orderSnapshot?: Record<string, any> | null;
     orderType?: "online" | "pos" | "manual" | "delivery" | "pickup";
     salesChannel: "marketplace" | "storefront" | "pos";
     shippingFee?: Commerce.Money;
@@ -175,13 +199,18 @@ export namespace Commerce {
   }
 
   export interface Product {
+    ProductVariants?: Array<Commerce.ProductVariant>;
     allowBackorders?: boolean;
+    barcode?: string | null;
     categoryId?: string | null;
     compareAtPrice?: string | null;
     createdAt?: string;
+    currency?: string;
     description?: string;
+    hasVariants?: boolean;
     id: Commerce.UUID;
     images?: Array<{
+      alt?: string;
       url: string;
     }>;
     lowStockThreshold?: number;
@@ -191,6 +220,7 @@ export namespace Commerce {
     price: Commerce.Money;
     productType?: string;
     shortDescription?: string;
+    sku?: string | null;
     slug?: string;
     status: "active" | "draft" | "archived" | "out_of_stock" | "inactive" | "low_stock";
     stockQuantity: number;
@@ -214,35 +244,74 @@ export namespace Commerce {
   }
 
   export interface ProductVariant {
+    barcode?: string | null;
     compareAtPrice?: string | null;
+    currency?: string;
     id: Commerce.UUID;
+    isDefault?: boolean;
     optionValues?: Record<string, any>;
     price: Commerce.Money;
     productId: Commerce.UUID;
     sku?: string;
     status?: "active" | "disabled";
     stockQuantity: number;
+    storeId?: Commerce.UUID;
     trackInventory?: boolean;
     version: number;
   }
 
+  export interface ProductVariantInput {
+    expectedVersion?: number;
+    id?: Commerce.UUID;
+    optionValues?: Record<string, string>;
+    price: Commerce.Money;
+    sku: string;
+    status?: "active" | "disabled";
+    stockQuantity: number;
+  }
+
   export interface PublicProduct {
+    barcode?: string | null;
     category: string;
     compareAtPrice?: string | null;
+    currency?: string;
     description?: string;
+    hasVariants?: boolean;
     id: Commerce.UUID;
     images?: Array<{
       url?: string;
     }>;
     name: string;
     price: Commerce.Money;
+    /** Canonical sellable SKU rows. The legacy variants field remains reserved for image swatches. */
+    productVariants?: Array<Commerce.ProductVariant>;
     rating: number;
     reviewCount: number;
+    sku?: string | null;
     slug: string;
     status: string;
     stockQuantity: number;
     storeId: Commerce.UUID;
     variants?: Array<Commerce.ProductVariant>;
+  }
+
+  export interface PublicationExplanation {
+    channels: {
+      marketplace: Commerce.ChannelEligibility;
+      pos: Commerce.ChannelEligibility;
+      storefront: Commerce.ChannelEligibility;
+    };
+    isPublished: boolean;
+    moderationStatus?: "approved" | "pending" | "flagged" | "rejected";
+    productId?: string | null;
+    status?: string | null;
+    storeId?: string | null;
+    summary: Commerce.PublicationSummary;
+  }
+
+  export interface PublicationSummary {
+    isPublishedOnAnyChannel: boolean;
+    primaryBlocker?: (Commerce.EligibilityReason) | null;
   }
 
   export interface ReadinessResponse {
@@ -324,6 +393,22 @@ export namespace Commerce {
   }
 
   export interface Operations {
+    post_api_admin_operations_inventory_adjust: {
+      method: 'POST';
+      path: '/api/admin/operations/inventory/adjust';
+      parameters: {
+      };
+      body: {
+        delta: number;
+        evidence?: string;
+        idempotencyKey?: string;
+        reason?: string;
+        reasonCode?: "manual_adjustment" | "restock" | "return" | "opening_balance";
+        skuId: string;
+        storeId: Commerce.UUID;
+      };
+      response: any;
+    };
     get_api_admin_operations_overview: {
       method: 'GET';
       path: '/api/admin/operations/overview';
@@ -340,9 +425,31 @@ export namespace Commerce {
         };
       };
       body: {
+        delta?: number;
+        evidence?: string;
+        marketplaceVisibility?: boolean | null;
+        moderationStatus?: "approved" | "pending" | "flagged" | "rejected";
+        reason?: string;
         status?: "active" | "draft" | "archived";
+        stockQuantity?: number;
       };
       response: any;
+    };
+    get_api_admin_operations_products_id_publication_status: {
+      method: 'GET';
+      path: '/api/admin/operations/products/{id}/publication-status';
+      parameters: {
+        path: {
+          id: string;
+        };
+        query?: {
+          channel?: "marketplace" | "storefront" | "pos" | "all";
+        };
+      };
+      response: {
+        data?: Commerce.PublicationExplanation;
+        success?: boolean;
+      };
     };
     patch_api_admin_operations_reports_id: {
       method: 'PATCH';
@@ -780,6 +887,37 @@ export namespace Commerce {
       };
       response: any;
     };
+    patch_api_invoice_invoices_invoiceId: {
+      method: 'PATCH';
+      path: '/api/invoice/invoices/{invoiceId}';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      body: Record<string, any>;
+      response: any;
+    };
+    post_api_invoice_invoices_invoiceId_fulfill: {
+      method: 'POST';
+      path: '/api/invoice/invoices/{invoiceId}/fulfill';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      response: any;
+    };
+    post_api_invoice_invoices_invoiceId_issue: {
+      method: 'POST';
+      path: '/api/invoice/invoices/{invoiceId}/issue';
+      parameters: {
+        path: {
+          invoiceId: string;
+        };
+      };
+      response: any;
+    };
     get_api_invoice_invoices_invoiceId_pdf: {
       method: 'GET';
       path: '/api/invoice/invoices/{invoiceId}/pdf';
@@ -1110,6 +1248,55 @@ export namespace Commerce {
         path: {
           orderId: string;
         };
+      };
+      response: any;
+    };
+    post_api_merchant_orders_orderId_returns_complete: {
+      method: 'POST';
+      path: '/api/merchant/orders/{orderId}/returns/complete';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      body?: {
+        reason?: string;
+        refundTransactionId?: string;
+      };
+      response: any;
+    };
+    post_api_merchant_orders_orderId_returns_decision: {
+      method: 'POST';
+      path: '/api/merchant/orders/{orderId}/returns/decision';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      body: {
+        decision: "approve" | "reject";
+        reason?: string;
+      };
+      response: any;
+    };
+    post_api_merchant_orders_orderId_returns_receive: {
+      method: 'POST';
+      path: '/api/merchant/orders/{orderId}/returns/receive';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      body?: {
+        evidence?: string;
+        inspectionOutcome?: "resellable" | "damaged" | "non_resellable";
+        itemsToRestock?: Array<{
+          condition?: string;
+          itemId?: string;
+          quantity?: number;
+          restock?: boolean;
+        }>;
+        reason?: string;
       };
       response: any;
     };
@@ -1802,6 +1989,48 @@ export namespace Commerce {
         order?: Commerce.Order;
       };
     };
+    get_api_stores_storeId_orders_pos_lookup: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/orders/pos/lookup';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+        query?: {
+          barcode: string;
+        };
+      };
+      response: any;
+    };
+    post_api_stores_storeId_orders_pos_orderId_manual_khqr: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/manual-khqr';
+      parameters: {
+        path: {
+          orderId: string;
+          storeId: string;
+        };
+      };
+      body?: {
+        idempotencyKey?: string;
+      };
+      response: any;
+    };
+    post_api_stores_storeId_orders_pos_orderId_void: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/orders/pos/{orderId}/void';
+      parameters: {
+        path: {
+          orderId: string;
+          storeId: string;
+        };
+      };
+      body?: {
+        idempotencyKey?: string;
+        reason?: string;
+      };
+      response: any;
+    };
     get_api_stores_storeId_products: {
       method: 'GET';
       path: '/api/stores/{storeId}/products';
@@ -1832,14 +2061,18 @@ export namespace Commerce {
       body: {
         description?: string;
         images?: Array<{
+          alt?: string;
           url: string;
         }>;
         marketplaceCategory: string;
         marketplaceVisibility?: boolean | null;
         name: string;
         price: Commerce.Money;
+        /** Required for a simple Product when variants are omitted. */
+        sku?: string;
         status?: "active" | "draft";
         stockQuantity: number;
+        variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
     };
@@ -1857,16 +2090,34 @@ export namespace Commerce {
         /** Current version of the product for optimistic locking */
         expectedVersion: number;
         images?: Array<{
+          alt?: string;
           url: string;
         }>;
         marketplaceCategory?: string;
         marketplaceVisibility?: boolean | null;
         name?: string;
         price?: Commerce.Money;
+        /** When true, SKU rows omitted from variants are removed atomically. */
+        replaceVariants?: boolean;
         status?: "active" | "draft" | "archived" | "out_of_stock";
         stockQuantity?: number;
+        variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
+    };
+    get_api_stores_storeId_products_productId_publication_status: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/products/{productId}/publication-status';
+      parameters: {
+        path: {
+          productId: string;
+          storeId: string;
+        };
+        query?: {
+          channel?: "marketplace" | "storefront" | "pos" | "all";
+        };
+      };
+      response: Commerce.PublicationExplanation;
     };
     post_api_telegram_webhook: {
       method: 'POST';
@@ -1972,8 +2223,10 @@ export namespace Commerce {
 
 export type CommerceCODOrderView = Commerce.CODOrderView;
 export type CommerceCart = Commerce.Cart;
+export type CommerceChannelEligibility = Commerce.ChannelEligibility;
 export type CommerceCurrency = Commerce.Currency;
 export type CommerceCustomer = Commerce.Customer;
+export type CommerceEligibilityReason = Commerce.EligibilityReason;
 export type CommerceErrorEnvelope = Commerce.ErrorEnvelope;
 export type CommerceErrorResponse = Commerce.ErrorResponse;
 export type CommerceFieldError = Commerce.FieldError;
@@ -1986,7 +2239,10 @@ export type CommercePayment = Commerce.Payment;
 export type CommerceProduct = Commerce.Product;
 export type CommerceProductReview = Commerce.ProductReview;
 export type CommerceProductVariant = Commerce.ProductVariant;
+export type CommerceProductVariantInput = Commerce.ProductVariantInput;
 export type CommercePublicProduct = Commerce.PublicProduct;
+export type CommercePublicationExplanation = Commerce.PublicationExplanation;
+export type CommercePublicationSummary = Commerce.PublicationSummary;
 export type CommerceReadinessResponse = Commerce.ReadinessResponse;
 export type CommerceStandardErrorDetail = Commerce.StandardErrorDetail;
 export type CommerceStoreAccess = Commerce.StoreAccess;

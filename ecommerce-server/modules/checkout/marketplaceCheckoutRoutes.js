@@ -3,6 +3,7 @@ const { verifyCoreBuyer, verifyOptionalCoreBuyer, verifyStoreActor } = require('
 const { createRequireStoreAccess } = require('../../middlewares/requireStoreAccess');
 const controller = require('./marketplaceCheckoutController');
 const { requireMarketplaceCheckoutEnabled } = require('./marketplaceCheckoutGate');
+const { enforceCustomDomainBoundary } = require('../../middlewares/customDomainBoundary');
 
 const router = express.Router();
 const requireBuyer = (req, res, next) => {
@@ -13,16 +14,16 @@ const requireBuyer = (req, res, next) => {
 
 // Cart routes (guest session or authenticated buyer)
 router.get('/marketplace/cart', verifyOptionalCoreBuyer, controller.getCart);
-router.post('/marketplace/cart/items', verifyOptionalCoreBuyer, controller.addToCart);
-router.put('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, controller.setCartItem);
-router.patch('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, controller.setCartItem);
-router.patch('/marketplace/cart/items/:itemId', verifyOptionalCoreBuyer, controller.updateCartItem);
-router.put('/marketplace/cart/items/:itemId', verifyOptionalCoreBuyer, controller.updateCartItem);
-router.delete('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, controller.removeCartItem);
-router.delete('/marketplace/cart/items/:id', verifyOptionalCoreBuyer, controller.removeCartItem);
-router.delete('/marketplace/cart/:storeId', verifyOptionalCoreBuyer, controller.clearCart);
-router.delete('/marketplace/cart', verifyOptionalCoreBuyer, controller.clearCart);
-router.post('/marketplace/cart/merge', verifyCoreBuyer, requireBuyer, controller.mergeCarts);
+router.post('/marketplace/cart/items', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.addToCart);
+router.put('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.setCartItem);
+router.patch('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.setCartItem);
+router.patch('/marketplace/cart/items/:itemId', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.updateCartItem);
+router.put('/marketplace/cart/items/:itemId', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.updateCartItem);
+router.delete('/marketplace/cart/:storeId/items/:productId', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.removeCartItem);
+router.delete('/marketplace/cart/items/:id', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.removeCartItem);
+router.delete('/marketplace/cart/:storeId', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.clearCart);
+router.delete('/marketplace/cart', verifyOptionalCoreBuyer, enforceCustomDomainBoundary('cart'), controller.clearCart);
+router.post('/marketplace/cart/merge', verifyCoreBuyer, requireBuyer, enforceCustomDomainBoundary('cart'), controller.mergeCarts);
 
 // Checkout & orders (require verified buyer)
 router.post('/marketplace/checkout', verifyCoreBuyer, requireBuyer, requireMarketplaceCheckoutEnabled, controller.checkout);
@@ -38,6 +39,12 @@ router.get('/stores/:storeId/marketplace-delivery',
   createRequireStoreAccess({ permissions: ['orders', 'manage_settings'] }), controller.getDeliveryPolicy);
 router.put('/stores/:storeId/marketplace-delivery',
   createRequireStoreAccess({ permissions: ['manage_settings'] }), controller.setDeliveryPolicy);
+router.get('/stores/:storeId/orders',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.merchantOrders);
+router.get('/stores/:storeId/orders/:orderId',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.merchantOrder);
+router.post('/stores/:storeId/orders/:orderId/actions/:action',
+  createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.merchantOrderAction);
 router.get('/stores/:storeId/marketplace-orders',
   createRequireStoreAccess({ permissions: ['orders', 'manage_orders'] }), controller.sellerOrders);
 router.get('/stores/:storeId/marketplace-orders/:orderId',

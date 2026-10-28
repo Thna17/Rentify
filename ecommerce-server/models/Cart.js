@@ -16,6 +16,14 @@ const Cart = sequelize.define(
       allowNull: true,
     },
     storeId: { type: DataTypes.UUID, allowNull: true },
+    channel: {
+      type: DataTypes.STRING(32),
+      allowNull: false,
+      defaultValue: 'marketplace',
+      validate: {
+        isIn: [['marketplace', 'storefront']],
+      },
+    },
     buyerId: { type: DataTypes.UUID, allowNull: true },
     userId: {
       type: DataTypes.UUID,
@@ -78,12 +86,20 @@ const Cart = sequelize.define(
     indexes: [
       { unique: true, fields: ["websiteId", "userId"] },
       { unique: true, fields: ["websiteId", "sessionId"] },
-      { unique: true, fields: ["storeId", "buyerId"] },
+      { unique: true, fields: ["storeId", "buyerId", "channel"] },
+      { fields: ["storeId", "sessionId", "channel"] },
+      { fields: ["channel"] },
+      { fields: ["websiteId", "channel"] },
       { fields: ["abandoned"] },
       { fields: ["lastActiveAt"] },
       { fields: ["version"] },
     ],
     hooks: {
+      beforeValidate: (cart) => {
+        if (cart.websiteId && (!cart.channel || cart.channel === 'marketplace')) {
+          cart.channel = 'storefront';
+        }
+      },
       beforeUpdate: (cart) => {
         cart.lastActiveAt = new Date();
       }

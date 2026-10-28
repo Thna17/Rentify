@@ -29,7 +29,7 @@ function enforceCustomDomainBoundary(actionType = 'checkout') {
       try {
         website = await WebsiteData.findOne({
           where: { domain: host, status: 'active' },
-          attributes: ['id', 'domain', 'websiteId', 'storeId', 'subdomain'],
+          attributes: ['id', 'domain', 'websiteId', 'storeId', 'subdomain', 'status'],
         });
       } catch (err) {
         // If DB lookup fails, continue or fail safe

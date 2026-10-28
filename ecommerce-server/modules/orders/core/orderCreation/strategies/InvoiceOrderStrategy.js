@@ -1,103 +1,27 @@
-// strategies/InvoiceOrderStrategy.js
+// ecommerce-server/modules/orders/core/orderCreation/strategies/InvoiceOrderStrategy.js
+// P3-INV-002 Slice 5: Routes invoice order creation through canonical invoice fulfillment service.
+// Supports draft invoices (0 stock effect), immediate payment (deduction), and pending invoices (reservation).
+
 const OrderTypeStrategy = require('./OrderTypeStrategy');
+const { invoiceFulfillmentService } = require('../../../../invoices');
+const { createInvoiceOrder } = invoiceFulfillmentService;
 
 class InvoiceOrderStrategy extends OrderTypeStrategy {
   async processOrder(orderData, transaction) {
-    const { websiteId, invoiceData, currency = "USD" } = orderData;
-    const items = invoiceData.items;
+    const { websiteId, invoiceData = {}, storeId } = orderData;
+    const effectiveStoreId = storeId || orderData.storeId;
 
-    // Validate products using niche strategy
-    await this.validateOrderItems(items, transaction);
-
-    // Determine if we should deduct stock now
-    const immediatePaymentMethods = ['cash', 'card'];
-    const shouldDeductNow = immediatePaymentMethods.includes(invoiceData.paymentMethod);
-
-    // Calculate totals using niche strategy
-    const totals = this.nicheStrategy.calculateOrderTotals(
-      items, 
-      'manual', 
-      invoiceData.shippingInfo, 
-      currency
-    );
-
-    // Create order
-    const order = await this.createOrderRecord({
-      websiteId,
-      storeId: orderData.storeId || null,
-      orderType: "manual",
-      paymentMethod: invoiceData.paymentMethod,
-      status: shouldDeductNow ? 'confirmed' : 'pending',
-      stockDeducted: shouldDeductNow,
-      customerInfo: {
-        name: invoiceData.customerName,
-        email: invoiceData.customerEmail,
-        phone: invoiceData.customerPhone
-      },
-      customerEmail: invoiceData.customerEmail,
-      currency,
-      ...totals
-    }, totals, transaction);
-
-    // Create shipping details
-    await this.createShippingDetail(
-      order.id,
+    return await createInvoiceOrder(
       {
-        name: invoiceData.customerName,
-        phone: invoiceData.customerPhone,
-        email: invoiceData.customerEmail,
-        street: invoiceData.address,
-      },
-      transaction
-    );
-
-    // Create order items
-    const orderItems = await this.createOrderItems(order.id, items, transaction);
-
-    // Update inventory if immediate payment
-    if (shouldDeductNow) {
-      await this.nicheStrategy.updateInventory(items, transaction);
-    }
-
-    // Process payment
-    const payment = await this.paymentProcessor.process(
-      order,
-      invoiceData.paymentMethod,
-      orderData.merchantConfig,
-      transaction,
-      currency
-    );
-
-    // Process niche-specific logic
-    await this.nicheStrategy.processNicheSpecific(order, orderItems, transaction);
-
-    // Create invoice
-    const invoice = await this.models.Invoice.create(
-      {
+        storeId: effectiveStoreId,
         websiteId,
-        storeId: order.storeId || orderData.storeId || null,
-        orderId: order.id,
-        paymentId: payment.id,
-        invoiceNumber: invoiceData.invoiceNumber || this.generateInvoiceNumber(),
-        dueDate: invoiceData.dueDate,
-        status: payment.status === 'completed' ? 'paid' : 'sent',
-        customerName: invoiceData.customerName,
-        customerEmail: invoiceData.customerEmail,
-        subtotal: order.subtotal,
-        tax: order.taxTotal || 0,
-        discount: order.discountTotal || 0,
-        total: order.totalAmount,
-        currency: order.currency,
+        invoiceData,
+        actor: orderData.actor || { id: 'merchant', role: 'merchant' },
+        idempotencyKey: orderData.idempotencyKey || invoiceData.idempotencyKey,
+        correlationId: orderData.correlationId,
       },
       { transaction }
     );
-
-    return { 
-      order: order.toJSON(),
-      payment: payment.toJSON(),
-      invoice: invoice.toJSON(),
-      orderItems: orderItems.map(item => item.toJSON())
-    };
   }
 
   getOrderType() {

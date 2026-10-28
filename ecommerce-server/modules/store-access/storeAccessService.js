@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/db');
+const { receiveEvent } = require('../events');
 const {
   StoreAccess, StoreDeliveryPolicy, WebsiteData, Product, Category, Cart, Order, Invoice,
   Payment, UsageEvent, BillingStatement, PaymentGatewayConfig, Customer,
@@ -143,4 +144,24 @@ function getStoreEntitlements(store) {
   };
 }
 
-module.exports = { applySnapshot, validateSnapshot, backfillWebsiteRows, getStoreEntitlements };
+async function applyStoreProjectedEvent(envelope) {
+  return receiveEvent({
+    envelope,
+    consumer: 'store-access-projection',
+    getCurrentAggregateVersion: async (_aggregateType, aggregateId) => {
+      const store = await StoreAccess.findByPk(aggregateId);
+      return store ? store.version : null;
+    },
+    handler: async (env) => {
+      return applySnapshot(env.payload);
+    },
+  });
+}
+
+module.exports = {
+  applySnapshot,
+  validateSnapshot,
+  backfillWebsiteRows,
+  getStoreEntitlements,
+  applyStoreProjectedEvent,
+};

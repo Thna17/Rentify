@@ -1,8 +1,14 @@
-const { applySnapshot } = require('./storeAccessService');
+const { applySnapshot, applyStoreProjectedEvent } = require('./storeAccessService');
+const launchFactsService = require('./launchFactsService');
 
 exports.syncStore = async (req, res) => {
   try {
-    const result = await applySnapshot(req.body);
+    let result;
+    if (req.body && req.body.eventId && req.body.eventType) {
+      result = await applyStoreProjectedEvent(req.body);
+    } else {
+      result = await applySnapshot(req.body);
+    }
     return res.json({ success: true, ...result });
   } catch (error) {
     return res.status(error.statusCode || 500).json({ message: error.message });
@@ -10,3 +16,12 @@ exports.syncStore = async (req, res) => {
 };
 
 exports.getStoreForMerchant = (req, res) => res.json({ success: true, data: req.store });
+
+exports.getLaunchFacts = async (req, res) => {
+  try {
+    const data = await launchFactsService.getLaunchFacts(req.params.storeId);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};

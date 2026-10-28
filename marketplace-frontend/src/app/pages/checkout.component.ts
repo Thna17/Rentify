@@ -35,46 +35,20 @@ export interface SavedAddress {
 }
 
 interface PaymentOption {
-  value: PaymentMethod | 'KHQR' | 'CARD';
-  label: string;
-  hint: string;
+  value: PaymentMethod;
+  labelKey: string;
+  hintKey: string;
   icon: string;
-  status: 'active' | 'coming_soon';
-  badge?: string;
+  badgeKey: string;
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
   {
     value: 'COD',
-    label: 'Cash on delivery (COD)',
-    hint: 'Pay the courier with cash or Bakong upon receiving your parcel.',
+    labelKey: 'checkout.codLabel',
+    hintKey: 'checkout.codHint',
     icon: 'banknote',
-    status: 'active',
-    badge: 'Available',
-  },
-  {
-    value: 'KHQR',
-    label: 'Bakong KHQR (Scan to Pay)',
-    hint: 'Scan with ABA, Canadia, Wing, ACLEDA, or any Bakong-supported banking app.',
-    icon: 'qr-code',
-    status: 'coming_soon',
-    badge: 'Coming Soon',
-  },
-  {
-    value: 'ABA_PAYWAY',
-    label: 'ABA PayWay',
-    hint: 'Instant payment via ABA Mobile app or online PayWay account.',
-    icon: 'wallet',
-    status: 'coming_soon',
-    badge: 'Coming Soon',
-  },
-  {
-    value: 'CARD',
-    label: 'Credit / Debit Card',
-    hint: 'Pay securely with Visa, Mastercard, or UnionPay cards.',
-    icon: 'credit-card',
-    status: 'coming_soon',
-    badge: 'Coming Soon',
+    badgeKey: 'checkout.available',
   },
 ];
 
@@ -93,17 +67,17 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
     <app-navbar />
 
     <section class="container checkout">
-      <nav class="crumbs" aria-label="Breadcrumb">
-        <a routerLink="/cart">Cart</a> <span>›</span> <span>{{ 'checkout.title' | translate }}</span>
+      <nav class="crumbs" [attr.aria-label]="'checkout.breadcrumb' | translate">
+        <a routerLink="/cart">{{ 'cart.title' | translate }}</a> <span>›</span> <span>{{ 'checkout.title' | translate }}</span>
       </nav>
 
       @if (cart.isEmpty()) {
-        <div class="empty card" role="region" aria-label="Empty cart">
+        <div class="empty card" role="region" [attr.aria-label]="'checkout.emptyTitle' | translate">
           <ui-icon name="cart" [size]="32" />
-          <h1>Your cart is empty</h1>
-          <p>Add something before checking out.</p>
+          <h1>{{ 'checkout.emptyTitle' | translate }}</h1>
+          <p>{{ 'checkout.emptyDescription' | translate }}</p>
           <button class="btn btn-primary" routerLink="/products">
-            Browse products
+            {{ 'state.browseProducts' | translate }}
           </button>
         </div>
       } @else {
@@ -256,33 +230,24 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             <section class="card block" aria-labelledby="step-2-heading">
               <h2 id="step-2-heading"><span class="step">2</span> {{ 'checkout.paymentMethod' | translate }}</h2>
 
-              <div class="payments" role="radiogroup" aria-label="Select payment method">
+              <div class="payments" role="radiogroup" [attr.aria-label]="'checkout.paymentAria' | translate">
                 @for (option of paymentOptions; track option.value) {
                   <label
                     class="payment"
                     [class.selected]="method() === option.value"
-                    [class.coming-soon]="option.status === 'coming_soon'"
+                    (click)="selectMethod(option)"
                   >
                     <input
                       type="radio"
                       name="paymentMethod"
-                      [disabled]="option.status !== 'active'"
                       [value]="option.value"
                       [checked]="method() === option.value"
                       (change)="selectMethod(option)"
                     />
                     <ui-icon [name]="option.icon" [size]="18" />
                     <div class="payment-title-row">
-                      <strong>{{ option.label }}</strong>
-                      @if (option.badge) {
-                        <span
-                          class="pay-badge"
-                          [class.pay-badge-active]="option.status === 'active'"
-                          [class.pay-badge-soon]="option.status === 'coming_soon'"
-                        >
-                          {{ option.badge }}
-                        </span>
-                      }
+                      <strong>{{ option.labelKey | translate }}</strong>
+                      <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span>
                     </div>
                   </label>
                 }
@@ -291,7 +256,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 
             <!-- Step 3: Policy Acknowledgement -->
             <section class="card block" aria-labelledby="step-3-heading">
-              <h2 id="step-3-heading"><span class="step">3</span> Store Policy & Terms</h2>
+              <h2 id="step-3-heading"><span class="step">3</span> {{ 'checkout.policyTitle' | translate }}</h2>
 
               <div class="policy-card compact-policy">
                 <label class="checkbox-container" [class.has-error]="invalid('policyAcknowledged')">
@@ -302,7 +267,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                     aria-describedby="policy-error"
                   />
                   <span class="checkbox-text">
-                    I agree to seller terms: orders are fulfilled directly by the store and payment is collected upon handover (Cash on Delivery).
+                    {{ 'checkout.policyAck' | translate }}
                   </span>
                 </label>
                 <small id="policy-error" class="error-msg" [class.error-hidden]="!invalid('policyAcknowledged')">
@@ -344,17 +309,17 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
           </form>
 
           <!-- Order Summary Sidebar -->
-          <aside class="summary card" role="region" aria-label="Order summary">
-            <h2>Order summary</h2>
+          <aside class="summary card" role="region" [attr.aria-label]="'cart.orderSummary' | translate">
+            <h2>{{ 'cart.orderSummary' | translate }}</h2>
 
             @if (activeStoreId()) {
               <div class="single-store-banner">
                 <ui-icon name="store" [size]="14" />
                 <div class="single-store-banner-text">
-                  <strong>Checking out with this seller</strong>
-                  <p>Items from other stores remain saved in your cart.</p>
+                  <strong>{{ 'checkout.sellerCheckout' | translate }}</strong>
+                  <p>{{ 'checkout.otherCartsSaved' | translate }}</p>
                 </div>
-                <a routerLink="/cart" class="back-cart-link">All stores</a>
+                <a routerLink="/cart" class="back-cart-link">{{ 'checkout.allStores' | translate }}</a>
               </div>
             }
 
@@ -364,7 +329,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                   <header>
                     <ui-icon name="store" [size]="13" />
                     {{ group.sellerName }}
-                    <span>Separate delivery</span>
+                    <span>{{ 'checkout.separateDelivery' | translate }}</span>
                   </header>
                   <div class="lines">
                     @for (line of group.lines; track line.product.id) {
@@ -380,12 +345,12 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             </div>
 
             <div class="row">
-              <span>Subtotal</span><span>\${{ checkoutSubtotal().toFixed(2) }}</span>
+              <span>{{ 'cart.subtotal' | translate }}</span><span>\${{ checkoutSubtotal().toFixed(2) }}</span>
             </div>
             <div class="row">
-              <span>Delivery</span>
+              <span>{{ 'checkout.delivery' | translate }}</span>
               @if (checkoutShipping() === 0) {
-                <span class="free">Free</span>
+                <span class="free">{{ 'cart.freeDelivery' | translate }}</span>
               } @else {
                 <span>\${{ checkoutShipping().toFixed(2) }}</span>
               }
@@ -440,7 +405,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             </button>
 
             <p class="fine">
-              Totals are calculated by Rentify Marketplace when the order is placed.
+              {{ 'checkout.authoritativeTotals' | translate }}
             </p>
           </aside>
         </div>
@@ -1082,9 +1047,7 @@ export class CheckoutComponent implements OnInit {
   }
 
   protected selectMethod(option: PaymentOption): void {
-    if (option.status === 'active') {
-      this.method.set(option.value as PaymentMethod);
-    }
+    this.method.set(option.value);
   }
 
   protected readonly requestedStoreId = toSignal(
@@ -1288,9 +1251,9 @@ export class CheckoutComponent implements OnInit {
 
           const storeName =
             this.shipmentGroups().find((g) => g.storeId === cart.storeId)?.sellerName ||
-            'Local Merchant';
+            this.translate.t('checkout.localMerchant');
           const items = (res.order?.items || []).map((it: any) => ({
-            name: it.name || 'Item',
+            name: it.name || this.translate.t('checkout.item'),
             quantity: it.quantity,
             price: it.quantity
               ? Math.round((parseFloat(it.total) / it.quantity) * 100) / 100
@@ -1440,7 +1403,7 @@ export class CheckoutComponent implements OnInit {
           {
             orderNumber: recentOrder.orderNumber,
             storeId: recentOrder.storeId,
-            sellerName: 'Local Merchant',
+            sellerName: this.translate.t('checkout.localMerchant'),
             total: recentOrder.totalAmount,
             subtotal: recentOrder.subtotal,
             deliveryFee: recentOrder.deliveryFee,
@@ -1478,7 +1441,7 @@ export class CheckoutComponent implements OnInit {
       this.error.set('');
       this.recoveryMessage.set(this.translate.t('checkout.noOrderFound'));
     } catch {
-      this.error.set('Could not verify orders. Please check your network or try again.');
+      this.error.set(this.translate.t('checkout.verifyError'));
     } finally {
       this.checkingRecovery.set(false);
     }

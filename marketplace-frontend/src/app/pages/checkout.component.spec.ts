@@ -12,6 +12,7 @@ import { WishlistService } from '../core/wishlist/wishlist.service';
 import { TranslateService } from '../core/i18n/translate.service';
 import { SeoService } from '../core/seo/seo.service';
 import { StoreCartGroup } from '../core/catalog/catalog.models';
+import axe from 'axe-core';
 
 describe('CheckoutComponent (P4-BUY-003 COD Checkout)', () => {
   let fixture: ComponentFixture<CheckoutComponent>;
@@ -237,6 +238,21 @@ describe('CheckoutComponent (P4-BUY-003 COD Checkout)', () => {
     expect(component['form'].valid).toBe(false);
   });
 
+  it('exposes COD as the only active Phase 4 buyer payment method', () => {
+    expect(component['paymentOptions'].map((option) => option.value)).toEqual(['COD']);
+    expect(component['method']()).toBe('COD');
+  });
+
+  it('has no serious or critical automated accessibility violations', async () => {
+    const result = await axe.run(fixture.nativeElement, {
+      rules: { 'color-contrast': { enabled: false } },
+    });
+    const blocking = result.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    );
+    expect(blocking).toEqual([]);
+  });
+
   it('should prevent checkout when policy acknowledgement is not checked', async () => {
     component['form'].patchValue({
       province: 'Phnom Penh',
@@ -297,14 +313,6 @@ describe('CheckoutComponent (P4-BUY-003 COD Checkout)', () => {
     fixture.detectChanges();
     expect(component['showValidationSummary']()).toBe(false);
     expect(component['invalid']('address')).toBe(false);
-  });
-
-  it('keeps COD selected and unavailable payment methods disabled', () => {
-    const radios = Array.from(fixture.nativeElement.querySelectorAll('.payment input')) as HTMLInputElement[];
-    expect(radios[0].checked).toBe(true);
-    expect(radios.slice(1).every((radio) => radio.disabled)).toBe(true);
-    component['selectMethod'](component['paymentOptions'][1]);
-    expect(component['method']()).toBe('COD');
   });
 
   it('updates the address review when delivery fields change', () => {

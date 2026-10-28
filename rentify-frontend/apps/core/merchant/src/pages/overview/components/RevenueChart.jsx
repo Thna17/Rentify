@@ -16,18 +16,18 @@ import {
   ChartTooltipContent,
 } from "@rentify/shared/ui/chart";
 import { Skeleton } from "@rentify/shared/ui/skeleton";
-import { format } from 'date-fns';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Line } from "recharts"
 
-export const RevenueChart = ({ data, dateRange, isLoading }) => {
+export const RevenueChart = ({ data, dateRange, isLoading, labels = {}, locale = 'en-US' }) => {
+  const copy = { sales: 'Sales', loading: 'Loading revenue data', revenue: 'Revenue', orders: 'Orders', ...labels };
   const [timeRange, setTimeRange] = useState('7d');
   
   if (isLoading) {
     return (
       <Card className="h-full gap-4 py-6 bg-card">
         <CardHeader>
-          <CardTitle className="text-base">Sales</CardTitle>
-          <CardDescription>Loading revenue data</CardDescription>
+          <CardTitle className="text-base">{copy.sales}</CardTitle>
+          <CardDescription>{copy.loading}</CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton className="w-full h-[320px] rounded-xl" />
@@ -45,11 +45,11 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
 
   const chartConfig = {
     revenue: {
-      label: "Revenue",
+      label: copy.revenue,
       color: "oklch(var(--primary))",
     },
     orders: {
-      label: "Orders",
+      label: copy.orders,
       color: "oklch(var(--secondary))",
     },
   };
@@ -58,11 +58,11 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
     <Card className="h-full gap-4 py-6 bg-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-base">Sales</CardTitle>
+          <CardTitle className="text-base">{copy.sales}</CardTitle>
           <CardDescription>
             {dateRange && (
               <span>
-                {format(new Date(dateRange.start), 'MMM dd')} - {format(new Date(dateRange.end), 'MMM dd')}
+                {new Date(dateRange.start).toLocaleDateString(locale, { month: 'short', day: 'numeric' })} - {new Date(dateRange.end).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
               </span>
             )}
           </CardDescription>
@@ -105,7 +105,7 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
+                return date.toLocaleDateString(locale, {
                   month: "short",
                   day: "numeric",
                 });
@@ -122,15 +122,15 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                    return new Date(value).toLocaleDateString(locale, {
                       month: "short",
                       day: "numeric",
                     });
                   }}
                   indicator="dot"
                   formatter={(value, name) => {
-                    if (name === 'revenue') return [`$${value} `, 'Revenue'];
-                    return [value, 'Orders'];
+                    if (name === 'revenue') return [`$${value} `, copy.revenue];
+                    return [value, copy.orders];
                   }}
                 />
               }

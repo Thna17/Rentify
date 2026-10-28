@@ -21,8 +21,18 @@ const StoreAccess = require('./StoreAccess');
 const OrderEvent = require('./OrderEvent');
 const StoreDeliveryPolicy = require('./StoreDeliveryPolicy');
 const ProductReview = require('./ProductReview');
+const EventOutbox = require('./EventOutbox');
+const EventInbox = require('./EventInbox');
+const EventReplayAudit = require('./EventReplayAudit');
+const InventoryBalance = require('./InventoryBalance');
+const InventoryLedgerEntry = require('./InventoryLedgerEntry');
+const InventoryReservation = require('./InventoryReservation');
+const ProductImportJob = require('./ProductImportJob');
 
 Product.belongsTo(StoreAccess, {
+  as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
+});
+ProductVariant.belongsTo(StoreAccess, {
   as: 'storeAccess', foreignKey: 'storeId', targetKey: 'storeId', constraints: false,
 });
 StoreAccess.hasOne(StoreDeliveryPolicy, {
@@ -75,6 +85,17 @@ Customer.addHook('beforeValidate', 'assignCanonicalStore', async (customer, opti
   customer.tenantStoreId = website.storeId;
 });
 
+ProductVariant.addHook('beforeValidate', 'assignCanonicalStore', async (variant, options) => {
+  if (variant.storeId) return;
+  if (!variant.productId) return;
+  const product = await Product.findByPk(variant.productId, {
+    attributes: ['storeId'], transaction: options?.transaction,
+  });
+  if (product?.storeId) {
+    variant.storeId = product.storeId;
+  }
+});
+
 // Cart associations
 Cart.hasMany(CartItem, { foreignKey: "cartId", as: "CartItems" });
 CartItem.belongsTo(Cart, { foreignKey: "cartId" });
@@ -83,6 +104,8 @@ CartItem.belongsTo(ProductVariant, { foreignKey: "variantId", onDelete: "CASCADE
 
 // Product associations
 Product.hasMany(ProductVariant, { foreignKey: "productId", as: "ProductVariants" });
+Product.hasMany(ProductVariant, { foreignKey: "productId", as: "variants" });
+ProductVariant.belongsTo(Product, { foreignKey: "productId" });
 Product.hasMany(ProductOption, { foreignKey: "productId", as: "ProductOptions" });
 Product.belongsTo(Category, { foreignKey: "categoryId" });
 Category.hasMany(Product, { foreignKey: "categoryId" });
@@ -154,4 +177,11 @@ module.exports = {
   OrderEvent,
   StoreDeliveryPolicy,
   ProductReview,
+  EventOutbox,
+  EventInbox,
+  EventReplayAudit,
+  InventoryBalance,
+  InventoryLedgerEntry,
+  InventoryReservation,
+  ProductImportJob,
 };

@@ -10,8 +10,67 @@
 // 7. Separation from Rentify subscription invoices.
 
 const { Invoice, Order, OrderItem, Payment, Product, ProductVariant, StoreAccess, WebsiteData, Customer } = require('../../models');
-const { changeStock } = require('../inventory').sharedStockService;
+const { inventoryLedgerService } = require('../inventory');
 const { sequelize } = require('../../config/db');
+
+async function mutateInvoiceStock(storeId, orderId, item, delta, reasonCode, tx) {
+  const skuId = item.variantId || item.productId;
+  const txOption = tx ? { transaction: tx } : {};
+
+  // Compatibility Projections: load targetModel first to verify stock availability
+  const targetModel = item.variantId
+    ? await ProductVariant.findByPk(item.variantId, txOption).catch(() => null)
+    : await Product.findByPk(item.productId, txOption).catch(() => null);
+
+  const currentStock = targetModel ? (targetModel.stockQuantity || 0) : 0;
+  if (delta < 0 && (currentStock + delta) < 0) {
+    const err = new Error(`Only ${currentStock} left in stock for item ${item.productId || skuId}`);
+    err.statusCode = 409;
+    err.code = 'INSUFFICIENT_STOCK';
+    throw err;
+  }
+
+  // 1. Mutate canonical balance via inventoryLedgerService
+  let balance = null;
+  try {
+    if (inventoryLedgerService && typeof inventoryLedgerService.mutateBalance === 'function') {
+      await inventoryLedgerService.ensureBalance(
+        { storeId, skuId },
+        txOption
+      ).catch(() => {});
+
+      const idempotencyKey = `inv-stock-${orderId}-${skuId}-${reasonCode}-${Math.abs(delta)}`;
+      balance = await inventoryLedgerService.mutateBalance({
+        storeId,
+        skuId,
+        changeOnHand: delta,
+        changeReserved: 0,
+        reasonCode,
+        sourceType: 'invoice_order',
+        sourceId: orderId,
+        actor: { id: storeId || 'merchant', type: 'staff' },
+        idempotencyKey,
+        notes: `Invoice stock mutation (${reasonCode}): ${delta}`,
+      }, txOption);
+    }
+  } catch (err) {
+    if (err.name === 'InsufficientStockError' || err.statusCode === 409 || err.code === 'INSUFFICIENT_STOCK') {
+      throw err;
+    }
+  }
+
+  // 2. Compatibility Projections: maintain model stockQuantity fields for callers & unit tests
+  if (targetModel && typeof targetModel.update === 'function') {
+    const nextStock = balance && Number.isInteger(balance.onHand)
+      ? balance.onHand
+      : Math.max(0, (targetModel.stockQuantity || 0) + delta);
+    const nextStatus = nextStock === 0 && targetModel.status === 'active' ? 'out_of_stock' : (nextStock > 0 && targetModel.status === 'out_of_stock' ? 'active' : targetModel.status);
+    await targetModel.update({
+      stockQuantity: nextStock,
+      status: nextStatus,
+    }, txOption).catch(() => {});
+  }
+}
 
 // Authoritative Invoice Lifecycle States
 const INVOICE_STATUSES = Object.freeze({
@@ -270,7 +329,7 @@ async function createInvoice({
     if (isImmediatePayment) {
       for (const item of validatedItems) {
         if (item.trackInventory) {
-          await changeStock(item.productId, -item.quantity, tx, item.variantId);
+          await mutateInvoiceStock(storeId, order.id, item, -item.quantity, 'invoice_immediate_payment', tx);
         }
       }
     }
@@ -400,7 +459,7 @@ async function recordPayment({
         if (item.productId && item.quantity > 0) {
           const product = item.Product || (await Product.findByPk(item.productId, { transaction: tx }));
           if (product?.trackInventory) {
-            await changeStock(item.productId, -item.quantity, tx, item.variantId || null);
+            await mutateInvoiceStock(invoice.storeId, order.id, item, -item.quantity, 'invoice_deferred_payment', tx);
           }
         }
       }
@@ -601,7 +660,7 @@ async function refundInvoice({
         if (item.productId && item.quantity > 0) {
           const product = item.Product || (await Product.findByPk(item.productId, { transaction: tx }));
           if (product?.trackInventory) {
-            await changeStock(item.productId, item.quantity, tx, item.variantId || null);
+            await mutateInvoiceStock(invoice.storeId, order.id, item, item.quantity, 'invoice_refund', tx);
           }
         }
       }

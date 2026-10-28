@@ -1,10 +1,13 @@
 // Validation, money and eligibility rules shared by marketplace and storefront
 // carts, checkout and orders.
 const { Product, ProductVariant, StoreAccess, WebsiteData } = require('../../models');
+const { parseMinor, formatDecimal, Money, assertSupportedOnlineCurrency } = require('../../utils/money');
 
-function fail(message, statusCode = 400) {
+function fail(message, statusCode = 400, code = null) {
   const error = new Error(message);
   error.statusCode = statusCode;
+  error.status = statusCode;
+  if (code) error.code = code;
   throw error;
 }
 
@@ -28,12 +31,18 @@ function requiredText(value, label, max = 255) {
 }
 
 function cents(value) {
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount < 0 || !/^\d+(\.\d{1,2})?$/.test(String(value))) fail('Invalid product price', 409);
-  return Math.round(amount * 100);
+  try {
+    return parseMinor(value, 'USD', { allowNegative: false });
+  } catch (err) {
+    fail('Invalid product price', 409);
+  }
 }
 
-function dollars(value) { return (value / 100).toFixed(2); }
+function dollars(value) {
+  if (typeof value === 'string' && /^\d+\.\d{2}$/.test(value)) return value;
+  const num = typeof value === 'number' ? value : Number.parseInt(String(value), 10);
+  return formatDecimal(Number.isSafeInteger(num) ? num : 0, 'USD');
+}
 
 function deliveryFeeCents(value) {
   const fee = cents(value);
@@ -59,6 +68,19 @@ async function eligibleStore(storeId, transaction, channel = 'marketplace') {
 }
 
 function eligibleProduct(product, store, channel = 'marketplace') {
+  const { publicationEligibilityService } = require('../catalog');
+  if (typeof publicationEligibilityService?.evaluateChannel === 'function') {
+    const deliveryPolicy = store?.deliveryPolicy || { flatFee: '0.00' };
+    const website = store?.websiteId ? { status: 'active', websiteId: store.websiteId } : undefined;
+    const res = publicationEligibilityService.evaluateChannel({
+      product,
+      store,
+      website,
+      deliveryPolicy,
+      channel,
+    });
+    return res.eligible;
+  }
   if (channel === 'storefront') {
     return product && product.storeId === store.storeId && product.websiteId === store.websiteId &&
       product.status === 'active';
@@ -85,21 +107,32 @@ async function checkedProductAndVariant(productId, variantId, store, transaction
     }
   }
 
+  const itemCurrency = String(variant?.currency || product?.currency || 'USD').toUpperCase();
+  if (itemCurrency === 'KHR') {
+    fail('KHR online checkout is disabled in Release 1. Online checkout is USD only.', 400, 'KHR_CHECKOUT_DISABLED');
+  }
+
   const unitPrice = variant ? variant.price : product.price;
-  return { product, variant, unitPrice };
+  return { product, variant, unitPrice, currency: itemCurrency };
 }
 
 function orderView(order, items, payment) {
   return {
     id: order.id, orderNumber: order.orderNumber, storeId: order.storeId, websiteId: order.websiteId,
     buyerId: order.buyerId, status: order.status, deliveryStatus: order.deliveryStatus,
+    fulfillmentStatus: order.fulfillmentStatus || 'unfulfilled',
+    returnStatus: order.returnStatus || 'none',
     salesChannel: order.salesChannel, subtotal: order.subtotal,
     deliveryFee: order.shippingFee, totalAmount: order.totalAmount, currency: order.currency,
     customerInfo: order.customerInfo, shippingInfo: order.shippingInfo,
+    snapshot: order.orderSnapshot || null,
     items: items.map((item) => ({
+      id: item.id,
       productId: item.productId, name: item.name, quantity: item.quantity,
-      price: item.price, total: item.total, seller: item.itemMetadata?.seller,
+      price: item.price, total: item.total, currency: item.currency || order.currency || 'USD',
+      seller: item.itemMetadata?.seller,
       category: item.itemMetadata?.category,
+      snapshot: item.lineSnapshot || null,
     })),
     payment: payment && {
       method: payment.paymentMethod, status: payment.status, amountDue: payment.amount,
@@ -108,5 +141,20 @@ function orderView(order, items, payment) {
   };
 }
 
-module.exports = { fail, uuid, validIdempotencyKey, requiredText, cents, dollars, deliveryFeeCents, eligibleStore, eligibleProduct,
-  checkedProductAndVariant, orderView };
+module.exports = {
+  fail,
+  uuid,
+  validIdempotencyKey,
+  requiredText,
+  cents,
+  dollars,
+  deliveryFeeCents,
+  eligibleStore,
+  eligibleProduct,
+  checkedProductAndVariant,
+  orderView,
+  Money,
+  parseMinor,
+  formatDecimal,
+  assertSupportedOnlineCurrency,
+};

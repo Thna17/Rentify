@@ -1,5 +1,5 @@
-// modules/invoices/invoiceController.js
-// P4-INV-001: Omnichannel invoice, quote, and payment lifecycle controller.
+// ecommerce-server/modules/invoices/invoiceController.js
+// P3-INV-002 / P4-INV-001: Omnichannel invoice, quote, and payment lifecycle controller.
 
 const {
   Invoice,
@@ -8,8 +8,12 @@ const {
   OrderItem,
   Payment,
   ShippingDetail,
+  WebsiteData,
+  StoreAccess,
 } = require("../../models");
 const { Op } = require("sequelize");
+const invoiceFulfillmentService = require("./invoiceFulfillmentService");
+const { INVOICE_ERROR_CODES } = require("./invoiceErrors");
 const invoiceLifecycle = require("./invoiceLifecycleService");
 
 /**
@@ -46,18 +50,20 @@ exports.getInvoices = async (req, res) => {
       where = conditions[0];
     }
 
-    // Add status filter
     if (status && status !== "all") {
       where.status = status;
     }
 
-    // Add search filter (search by invoiceNumber)
+    // Add search filter (search by invoiceNumber or customerName)
     if (search) {
-      where.invoiceNumber = { [Op.like]: `%${search}%` };
+      where[Op.or] = [
+        { customerName: { [Op.like]: `%${search}%` } },
+        { invoiceNumber: { [Op.like]: `%${search}%` } },
+      ];
     }
 
     // Handle sorting
-    const validSortFields = ["createdAt", "updatedAt", "dueDate", "status", "invoiceNumber"];
+    const validSortFields = ["createdAt", "updatedAt", "dueDate", "status", "invoiceNumber", "customerName"];
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
     const order = [[sortField, sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC"]];
 
@@ -118,6 +124,11 @@ exports.getInvoiceById = async (req, res) => {
       return res.status(404).json({ error: "Invoice not found" });
     }
 
+    const authorizedStoreId = req.store?.storeId || req.website?.storeId;
+    if (authorizedStoreId && invoice.storeId && invoice.storeId !== authorizedStoreId) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
     const order = invoice.Order;
     const payment = invoice.Payment || order?.Payment;
     const snapshot = invoiceLifecycle.buildInvoiceSnapshot(invoice, order, payment);
@@ -130,197 +141,151 @@ exports.getInvoiceById = async (req, res) => {
 };
 
 /**
- * Creates a formal commercial Invoice backed by a canonical Order.
+ * Creates an authoritative invoice for a store (omnichannel).
  */
 exports.createStoreInvoice = async (req, res) => {
   try {
-    const storeId = req.params.storeId || req.store?.storeId || req.body.storeId;
-    const websiteId = req.params.websiteId || req.body.websiteId;
-    const {
-      customerInfo = {},
-      items = [],
-      paymentMethod = "cash",
-      isImmediatePayment = false,
-      dueDate = null,
-      currency = "USD",
-      notes = "",
-    } = req.body;
-
-    const staffId = req.user?.id || null;
+    const storeId = req.params.storeId || req.store?.storeId || req.website?.storeId;
+    const websiteId = req.params.websiteId || req.body.websiteId || req.website?.websiteId;
+    const invoiceData = req.body;
 
     const result = await invoiceLifecycle.createInvoice({
       storeId,
       websiteId,
-      customerInfo,
-      items,
-      paymentMethod,
-      isImmediatePayment,
-      dueDate,
-      currency,
-      notes,
-      staffId,
+      invoiceData,
+      actor: req.user,
     });
 
     res.status(201).json(result);
   } catch (error) {
-    console.error("Error in createStoreInvoice:", error);
-    const statusCode = error.statusCode || (error.name === "SequelizeValidationError" ? 400 : 500);
-    res.status(statusCode).json({ error: error.message });
+    console.error("Create Store Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
 /**
- * Creates a non-binding Quote for customer review.
- * Invariant: Produces ZERO stock reservation and ZERO stock deduction.
+ * Creates a non-binding Quote (zero stock reserved / deducted).
  */
 exports.createStoreQuote = async (req, res) => {
   try {
-    const storeId = req.params.storeId || req.store?.storeId || req.body.storeId;
-    const websiteId = req.params.websiteId || req.body.websiteId;
-    const {
-      customerInfo = {},
-      items = [],
-      currency = "USD",
-      notes = "",
-      expiryDays = 14,
-    } = req.body;
+    const storeId = req.params.storeId || req.store?.storeId || req.website?.storeId;
+    const websiteId = req.params.websiteId || req.body.websiteId || req.website?.websiteId;
+    const quoteData = req.body;
 
-    const staffId = req.user?.id || null;
-
-    const quote = await invoiceLifecycle.createQuote({
+    const result = await invoiceLifecycle.createQuote({
       storeId,
       websiteId,
-      customerInfo,
-      items,
-      currency,
-      notes,
-      expiryDays,
-      staffId,
+      quoteData,
+      actor: req.user,
     });
 
-    res.status(201).json({
-      success: true,
-      quote,
-    });
+    res.status(201).json(result);
   } catch (error) {
-    console.error("Error in createStoreQuote:", error);
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    console.error("Create Store Quote Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
 /**
- * Converts a non-binding Quote into a binding commercial Invoice.
+ * Converts a non-binding Quote into a formal Invoice.
  */
 exports.convertQuoteToInvoice = async (req, res) => {
   try {
     const storeId = req.params.storeId || req.store?.storeId;
-    const websiteId = req.params.websiteId;
-    const { quote, paymentMethod = "cash", isImmediatePayment = false, dueDate = null } = req.body;
+    const { quoteId, dueDate } = req.body;
 
     const result = await invoiceLifecycle.convertQuoteToInvoice({
-      quote,
+      quoteId,
       storeId,
-      websiteId,
-      paymentMethod,
-      isImmediatePayment,
       dueDate,
-      staffId: req.user?.id || null,
+      actor: req.user,
     });
 
-    res.status(201).json(result);
+    res.status(200).json(result);
   } catch (error) {
-    console.error("Error in convertQuoteToInvoice:", error);
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    console.error("Convert Quote Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
 /**
- * Records payment against an invoice and guarantees the Non-Double-Deduction invariant.
+ * Records payment against an invoice (deducts stock if not pre-deducted).
  */
 exports.recordInvoicePayment = async (req, res) => {
   try {
     const { invoiceId } = req.params;
-    const storeId = req.params.storeId || req.store?.storeId;
-    const {
-      paymentMethod = "cash",
-      transactionReference = "",
-      amountPaid = null,
-    } = req.body;
-
-    const staffId = req.user?.id || "staff";
+    const storeId = req.store?.storeId || req.params.storeId;
+    const { amount, method, transactionId, notes } = req.body;
 
     const result = await invoiceLifecycle.recordPayment({
       invoiceId,
       storeId,
-      paymentMethod,
-      transactionReference,
-      amountPaid,
-      staffId,
+      paymentData: { amount, method, transactionId, notes },
+      actor: req.user,
     });
 
-    res.json(result);
+    res.status(200).json(result);
   } catch (error) {
-    console.error("Error in recordInvoicePayment:", error);
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    console.error("Record Invoice Payment Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
 /**
- * Cancels an unpaid invoice.
- * State machine: Paid invoices cannot be cancelled (must be refunded).
+ * Cancels an invoice (checks status machine).
  */
 exports.cancelStoreInvoice = async (req, res) => {
   try {
     const { invoiceId } = req.params;
-    const storeId = req.params.storeId || req.store?.storeId;
-    const { reason = "Cancelled by merchant" } = req.body;
+    const storeId = req.store?.storeId || req.params.storeId;
+    const { reason } = req.body;
 
     const result = await invoiceLifecycle.cancelInvoice({
       invoiceId,
       storeId,
       reason,
-      staffId: req.user?.id || null,
+      actor: req.user,
     });
 
-    res.json(result);
+    res.status(200).json(result);
   } catch (error) {
-    console.error("Error in cancelStoreInvoice:", error);
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    console.error("Cancel Store Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
 /**
- * Refunds a paid invoice and replenishes canonical catalog inventory.
+ * Refunds an invoice and restores catalog stock.
  */
 exports.refundStoreInvoice = async (req, res) => {
   try {
     const { invoiceId } = req.params;
-    const storeId = req.params.storeId || req.store?.storeId;
-    const { reason = "Customer return / refund", amount = null } = req.body;
+    const storeId = req.store?.storeId || req.params.storeId;
+    const { reason, amount } = req.body;
 
     const result = await invoiceLifecycle.refundInvoice({
       invoiceId,
       storeId,
       reason,
       amount,
-      staffId: req.user?.id || null,
+      actor: req.user,
     });
 
-    res.json(result);
+    res.status(200).json(result);
   } catch (error) {
-    console.error("Error in refundStoreInvoice:", error);
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    console.error("Refund Store Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };
 
 /**
- * Public customer invoice lookup by invoiceNumber.
- * Omits internal merchant credentials while delivering accurate line items and totals.
+ * Public invoice lookup by invoiceNumber.
  */
 exports.getPublicInvoice = async (req, res) => {
   try {
@@ -355,9 +320,6 @@ exports.getPublicInvoice = async (req, res) => {
   }
 };
 
-/**
- * Returns PDF URL for an invoice.
- */
 exports.getInvoicePdf = async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.invoiceId);
@@ -366,5 +328,151 @@ exports.getInvoicePdf = async (req, res) => {
   } catch (error) {
     console.error("Error in getInvoicePdf:", error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+// --- P3 Legacy & Compatibility Endpoints (invoiceFulfillmentService) ---
+
+exports.createInvoice = async (req, res) => {
+  try {
+    const rawWebsiteId = req.params.websiteId || req.body?.websiteId || null;
+    const invoiceData = req.body.body || req.body || {};
+
+    let effectiveStoreId = req.params.storeId || req.store?.storeId || invoiceData.storeId || null;
+
+    if (!effectiveStoreId && rawWebsiteId) {
+      const website = await WebsiteData.findOne({
+        where: { websiteId: rawWebsiteId },
+        attributes: ["storeId", "websiteId"],
+      });
+      if (website?.storeId) {
+        effectiveStoreId = website.storeId;
+      }
+    }
+
+    if (!effectiveStoreId) {
+      return res.status(400).json({ error: "storeId is required" });
+    }
+
+    // Body parameter override protection
+    const bodyStoreId = req.body?.storeId || invoiceData.storeId;
+    if (bodyStoreId && effectiveStoreId && bodyStoreId !== effectiveStoreId) {
+      return res.status(403).json({ error: "Cross-store body selection prohibited" });
+    }
+
+    const idempotencyKey = req.headers["idempotency-key"] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers["x-correlation-id"] || null;
+
+    const result = await invoiceFulfillmentService.createInvoiceOrder({
+      storeId: effectiveStoreId,
+      websiteId: rawWebsiteId,
+      invoiceData,
+      actor: req.user || { id: "merchant", role: "merchant" },
+      idempotencyKey,
+      correlationId,
+    });
+
+    const status = result.replayed ? 200 : 201;
+    res.status(status).json(result);
+  } catch (error) {
+    console.error("Create Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.fulfillInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers["idempotency-key"] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers["x-correlation-id"] || null;
+
+    const result = await invoiceFulfillmentService.fulfillInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: "merchant", role: "merchant" },
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Fulfill Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.cancelInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers["idempotency-key"] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers["x-correlation-id"] || null;
+    const reason = req.body?.reason || "Invoice cancelled";
+
+    const result = await invoiceFulfillmentService.cancelInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: "merchant", role: "merchant" },
+      reason,
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Cancel Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.updateInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers["idempotency-key"] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers["x-correlation-id"] || null;
+    const updateData = req.body || {};
+
+    const result = await invoiceFulfillmentService.updateInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: "merchant", role: "merchant" },
+      updateData,
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Update Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
+  }
+};
+
+exports.issueDraftInvoice = async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const storeId = req.store?.storeId || req.params.storeId || req.website?.storeId || null;
+    const idempotencyKey = req.headers["idempotency-key"] || req.body?.idempotencyKey || null;
+    const correlationId = req.headers["x-correlation-id"] || null;
+
+    const result = await invoiceFulfillmentService.issueDraftInvoice({
+      invoiceId,
+      storeId,
+      actor: req.user || { id: "merchant", role: "merchant" },
+      idempotencyKey,
+      correlationId,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Issue Draft Invoice Error:", error);
+    const status = error.statusCode || error.status || 400;
+    res.status(status).json({ error: error.message, code: error.code });
   }
 };

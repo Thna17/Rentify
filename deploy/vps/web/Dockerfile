@@ -3,6 +3,7 @@
 
 FROM node:22-bookworm-slim AS rentify-frontend
 WORKDIR /src
+COPY packages/ /packages/
 COPY rentify-frontend/package*.json ./
 RUN npm ci --ignore-scripts
 COPY rentify-frontend/ ./
@@ -24,9 +25,12 @@ RUN npx vite build --config apps/core/marketing/vite.config.ts \
 
 FROM node:22-bookworm-slim AS marketplace
 WORKDIR /src
+COPY packages/ /packages/
 COPY marketplace-frontend/package*.json ./
 RUN npm ci --ignore-scripts
 COPY marketplace-frontend/ ./
+COPY packages/ /packages/
+COPY packages/ /src/packages/
 RUN npx ng build --configuration production
 
 FROM node:22-bookworm-slim AS admin

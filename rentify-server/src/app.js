@@ -37,7 +37,11 @@ app.use(helmetConfig);
 // app.use(rateLimiter);
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'default'));
 app.use(sessionConfig);
 app.use(passport.initialize());

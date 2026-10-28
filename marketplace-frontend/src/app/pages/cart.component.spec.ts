@@ -10,6 +10,7 @@ import { WishlistService } from '../core/wishlist/wishlist.service';
 import { TranslateService } from '../core/i18n/translate.service';
 import { SeoService } from '../core/seo/seo.service';
 import { StoreCartGroup } from '../core/catalog/catalog.models';
+import axe from 'axe-core';
 
 describe('CartComponent', () => {
   let fixture: ComponentFixture<CartComponent>;
@@ -190,6 +191,16 @@ describe('CartComponent', () => {
     expect(banner).toBeTruthy();
     expect(banner.textContent).toContain('Multi-vendor marketplace');
     expect(banner.textContent).toContain('ship separately');
+  });
+
+  it('has no serious or critical automated accessibility violations', async () => {
+    const result = await axe.run(fixture.nativeElement, {
+      rules: { 'color-contrast': { enabled: false } },
+    });
+    const blocking = result.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    );
+    expect(blocking).toEqual([]);
   });
 
   it('renders separate store groups with distinct channel badges and Commerce totals', () => {

@@ -59,6 +59,23 @@ async function queueStore(store, { websiteId = null, transaction, entitlements =
   } else {
     await StoreSyncOutbox.create({ storeId: store.id, payload, version: payload.version }, { transaction });
   }
+
+  // P3-EVT-001: Record standard event in EventOutbox
+  try {
+    const { recordEvent } = require('../events');
+    await recordEvent({
+      eventType: 'store.projected.v1',
+      aggregateType: 'Store',
+      aggregateId: store.id,
+      aggregateVersion: Number(payload.version) || 1,
+      producer: 'rentify-server',
+      storeId: store.id,
+      payload,
+    }, { transaction });
+  } catch (eventErr) {
+    logger.warn('Failed to record standard store.projected.v1 event', { storeId: store.id, error: eventErr.message });
+  }
+
   return payload;
 }
 

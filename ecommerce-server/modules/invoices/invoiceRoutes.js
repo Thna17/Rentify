@@ -1,11 +1,16 @@
 // modules/invoices/invoiceRoutes.js
-// P4-INV-001: Omnichannel Store- and Website-scoped invoice routes.
+// P3-INV-002 / P4-INV-001: Omnichannel Store- and Website-scoped invoice routes.
 
 const express = require("express");
 const {
   getInvoices,
   getInvoiceById,
   getInvoicePdf,
+  createInvoice,
+  fulfillInvoice,
+  cancelInvoice,
+  updateInvoice,
+  issueDraftInvoice,
   createStoreInvoice,
   createStoreQuote,
   convertQuoteToInvoice,
@@ -27,13 +32,13 @@ const router = express.Router();
 router.get(
   "/websites/:websiteId/invoices",
   verifyToken,
-  requireWebsitePermission(["invoice", "invoices"]),
+  requireWebsitePermission(["invoice", "invoices", "manage_invoices"]),
   getInvoices
 );
 router.post(
   "/websites/:websiteId/invoices",
   verifyToken,
-  requireWebsitePermission(["invoice", "invoices"]),
+  requireWebsitePermission(["invoice", "invoices", "manage_invoices"]),
   createStoreInvoice
 );
 
@@ -71,8 +76,11 @@ router.post(
 router.get("/invoices/:invoiceId", verifyToken, requireInvoiceAccess, getInvoiceById);
 router.get("/invoices/:invoiceId/pdf", verifyToken, requireInvoiceAccess, getInvoicePdf);
 router.post("/invoices/:invoiceId/pay", verifyToken, requireInvoiceAccess, recordInvoicePayment);
+router.post("/invoices/:invoiceId/fulfill", verifyToken, requireInvoiceAccess, fulfillInvoice);
 router.post("/invoices/:invoiceId/cancel", verifyToken, requireInvoiceAccess, cancelStoreInvoice);
 router.post("/invoices/:invoiceId/refund", verifyToken, requireInvoiceAccess, refundStoreInvoice);
+router.patch("/invoices/:invoiceId", verifyToken, requireInvoiceAccess, updateInvoice);
+router.post("/invoices/:invoiceId/issue", verifyToken, requireInvoiceAccess, issueDraftInvoice);
 
 // --- Public Customer Invoice Lookup ---
 router.get("/invoices/public/:invoiceNumber", getPublicInvoice);

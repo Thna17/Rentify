@@ -114,6 +114,16 @@ const Order = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    stockReserved: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: "P3-INV-002: Whether order items currently hold an active stock reservation",
+    },
+    stockRestocked: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: "P3-INV-002: Whether return items have been physically restocked into inventory",
+    },
     currency: {
       type: DataTypes.STRING(3),
       defaultValue: "USD",
@@ -121,6 +131,48 @@ const Order = sequelize.define(
     metadata: {
       type: DataTypes.JSON,
       defaultValue: {},
+    },
+    orderSnapshot: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: "P3-MNY-001: Immutable order-level money and policy snapshot",
+    },
+    fulfillmentStatus: {
+      type: DataTypes.STRING(32),
+      allowNull: false,
+      defaultValue: "unfulfilled",
+      comment: "P3-ORD-001: Explicit fulfillment state",
+    },
+    returnStatus: {
+      type: DataTypes.STRING(32),
+      allowNull: false,
+      defaultValue: "none",
+      comment: "P3-ORD-001: Explicit return state",
+    },
+    cancellationReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "P3-ORD-001: Cancellation reason",
+    },
+    cancelledAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "P3-ORD-001: Cancellation timestamp",
+    },
+    confirmedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "P3-ORD-001: Confirmation timestamp",
+    },
+    deliveredAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "P3-ORD-001: Physical delivery timestamp",
+    },
+    fulfillmentNotes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "P3-ORD-001: Fulfillment notes",
     },
     version: {
       type: DataTypes.INTEGER,
@@ -131,6 +183,8 @@ const Order = sequelize.define(
   {
     indexes: [
       { fields: ["status"] },
+      { fields: ["fulfillmentStatus"] },
+      { fields: ["returnStatus"] },
       { fields: ["websiteId"] },
       { fields: ["buyerId", "createdAt"] },
       { fields: ["storeId", "createdAt"] },
@@ -141,8 +195,27 @@ const Order = sequelize.define(
       { fields: ["createdAt"] }
     ],
     hooks: {
-      beforeUpdate: (order) => {
+      beforeUpdate: (order, options) => {
+        if (order.changed('status') || order.changed('fulfillmentStatus') || order.changed('returnStatus')) {
+          if (!options?.byStateMachine && !options?.allowDirectStateAssignment) {
+            const err = new Error('Direct assignment of protected order state is prohibited. Use orderStateMachineService.');
+            err.name = 'OrderStateError';
+            err.code = 'DIRECT_ASSIGNMENT_PROHIBITED';
+            throw err;
+          }
+        }
         order.version = order.version + 1;
+      },
+      beforeBulkUpdate: (options) => {
+        const fields = options.attributes || options.fields || {};
+        const changedFields = Array.isArray(fields) ? fields : Object.keys(fields);
+        const touchesProtected = changedFields.some((f) => ['status', 'fulfillmentStatus', 'returnStatus'].includes(f));
+        if (touchesProtected && !options?.byStateMachine && !options?.allowDirectStateAssignment) {
+          const err = new Error('Direct assignment of protected order state is prohibited. Use orderStateMachineService.');
+          err.name = 'OrderStateError';
+          err.code = 'DIRECT_ASSIGNMENT_PROHIBITED';
+          throw err;
+        }
       },
       beforeCreate: async (order) => {
         let isUnique = false;

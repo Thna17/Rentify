@@ -920,6 +920,58 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/stores/mine/launch-checklist:
+    get:
+      tags:
+        - Stores
+      summary: Get authoritative merchant launch checklist
+      description: Composes Core identity, Store, Website, seller-review, and Commerce catalog facts into safe checklist statuses and reason codes.
+      operationId: getOwnStoreLaunchChecklist
+      x-client-generation: false
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+      responses:
+        '200':
+          description: Merchant launch checklist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required: [version, observedAt, stale, merchantPath, summary, channels, items]
+                    properties:
+                      version:
+                        type: integer
+                      observedAt:
+                        type: string
+                        format: date-time
+                      stale:
+                        type: boolean
+                      staleReasonCode:
+                        type: string
+                        nullable: true
+                      merchantPath:
+                        type: string
+                        enum: [marketplace, storefront]
+                      summary:
+                        type: object
+                      channels:
+                        type: object
+                      items:
+                        type: array
+                        items:
+                          type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /api/stores:
     post:
       tags:
@@ -3058,6 +3110,64 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+
+  /api/payment/cutluy/webhook:
+    post:
+      tags:
+        - Billing & Packages
+      summary: Ingest signed CutLuy payment webhook event
+      description: |
+        Processes signed raw-body webhook notifications from CutLuy for subscription payment attempts.
+        Verified using HMAC-SHA256 signature in X-CutLuy-Signature header with timestamp freshness tolerance.
+        Does not enable buyer checkout; creates payment infrastructure for subscription payments.
+      operationId: ingestCutLuyWebhook
+      security: []
+      parameters:
+        - name: X-CutLuy-Signature
+          in: header
+          required: true
+          description: Timestamp and HMAC-SHA256 signature (e.g. t=1729200000,v1=abcdef...)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_id:
+                  type: string
+                payment_id:
+                  type: string
+                reference_id:
+                  type: string
+                status:
+                  type: string
+                  enum: [pending, scanned, paid, expired, failed]
+                amount:
+                  type: string
+                currency:
+                  type: string
+                  enum: [USD]
+      responses:
+        '200':
+          description: Webhook acknowledged and processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  acknowledged:
+                    type: boolean
+                  duplicate:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /api/packages:
     get:

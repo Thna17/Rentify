@@ -2,10 +2,11 @@
   "description": "Which module may write each model. Other modules may read any model through the shared registry, but must ask the owning module to create, update or delete rows. Checked by scripts/quality/check-model-ownership.js.",
   "owners": {
     "Product": ["catalog", "store-catalog"],
-    "ProductVariant": ["catalog"],
-    "ProductOption": ["catalog"],
+    "ProductVariant": ["catalog", "store-catalog"],
+    "ProductOption": ["catalog", "store-catalog"],
     "Category": ["catalog"],
     "ProductReview": ["store-catalog"],
+    "ProductImportJob": ["store-catalog"],
     "StoreDeliveryPolicy": ["checkout"],
     "Cart": ["cart"],
     "CartItem": ["cart"],
@@ -22,7 +23,13 @@
     "PricingRule": ["billing"],
     "StoreAccess": ["store-access"],
     "WebsiteData": ["websites"],
-    "WebsiteContent": ["websites"]
+    "WebsiteContent": ["websites"],
+    "EventOutbox": ["events", "checkout", "orders"],
+    "EventInbox": ["events", "store-access"],
+    "EventReplayAudit": ["events"],
+    "InventoryBalance": ["inventory"],
+    "InventoryLedgerEntry": ["inventory"],
+    "InventoryReservation": ["inventory"]
   },
   "sharedTransactionDomain": {
     "reason": "AGENTS.md rule 6: checkout, stock reservation, orders, payments and invoices form one transaction domain. Placing an order writes the cart, order, items, events, payment and invoice in a single database transaction.",
@@ -44,6 +51,16 @@
       "module": "store-access",
       "model": "StoreDeliveryPolicy",
       "reason": "When a Store snapshot is projected from Core, a default delivery policy is provisioned if none exists."
+    },
+    {
+      "module": "inventory",
+      "model": "ProductVariant",
+      "reason": "Compatibility stock projection updates legacy stockQuantity when canonical inventory ledger balance mutates."
+    },
+    {
+      "module": "inventory",
+      "model": "Product",
+      "reason": "Compatibility stock projection updates legacy stockQuantity on simple products when canonical inventory ledger balance mutates."
     }
   ]
 }

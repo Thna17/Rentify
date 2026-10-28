@@ -49,11 +49,11 @@
     --radius-xl: 1rem;
 
     /* ---------- ELEVATION & MOTION ---------- */
-    --shadow-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.04);
-    --shadow-lift: 0 4px 12px rgb(16 24 40 / 0.06), 0 12px 32px rgb(16 24 40 / 0.06);
-    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    --duration: 200ms;
-    --radius-full: 9999px;
+    --shadow-soft: var(--rentify-shadow-sm);
+    --shadow-lift: var(--rentify-shadow-lg);
+    --ease-out: var(--rentify-transition-timing-out);
+    --duration: var(--rentify-transition-duration-base);
+    --radius-full: var(--rentify-radius-full);
   }
 
   /* ================= DARK MODE ================= */
@@ -100,7 +100,30 @@
 
   body {
     @apply bg-background text-foreground font-primary antialiased;
+    overflow-wrap: anywhere;
   }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: var(--rentify-focus-ring-width) solid var(--rentify-focus-ring-color);
+    outline-offset: var(--rentify-focus-ring-offset);
+  }
+}
+
+.rentify-skip-link {
+  position: fixed;
+  left: var(--rentify-space-4);
+  top: var(--rentify-space-3);
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: var(--rentify-radius-md);
+  background: var(--rentify-color-brand-primary);
+  color: var(--rentify-color-text-inverse);
+  padding: var(--rentify-space-2) var(--rentify-space-4);
+  font-weight: var(--rentify-font-weight-semibold);
+}
+
+.rentify-skip-link:focus {
+  transform: translateY(0);
 }
 
 @layer components {

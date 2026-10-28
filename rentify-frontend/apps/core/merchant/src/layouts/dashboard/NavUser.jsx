@@ -1,8 +1,7 @@
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem } from "./Sidebar";
-import { useMediaQuery } from '@rentify/utils';
+import { useMediaQuery, useTranslation } from '@rentify/utils';
 import {
   CreditCard,
-  Bell,
   User,
   LogOut,
   MoreVertical,
@@ -18,10 +17,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@rentify/shared/ui/dropdown-menu';
-import { Badge } from '@rentify/shared/ui/badge';
 
 export function NavUser({ user, onLogout }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const { t } = useTranslation();
 
   return (
     <SidebarGroup>
@@ -73,18 +72,17 @@ export function NavUser({ user, onLogout }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem className="cursor-pointer h-10">
+                  <DropdownMenuItem asChild className="cursor-pointer h-10">
+                    <a href="/settings/account">
                     <User className="mr-2 h-4 w-4" />
-                    <span>Account</span>
+                    <span>{t('dashboard.shell.account')}</span>
+                    </a>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer h-10">
+                  <DropdownMenuItem asChild className="cursor-pointer h-10">
+                    <a href="/settings/billing">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Billing</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer h-10">
-                    <Bell className="mr-2 h-4 w-4" />
-                    <span>Notifications</span>
-                    <Badge className="ml-auto">5</Badge>
+                    <span>{t('dashboard.shell.billing')}</span>
+                    </a>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
@@ -93,7 +91,7 @@ export function NavUser({ user, onLogout }) {
                   onClick={onLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('dashboard.shell.log_out')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

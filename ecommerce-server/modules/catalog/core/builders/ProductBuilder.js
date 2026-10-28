@@ -19,7 +19,7 @@ class ProductBuilder {
     return this;
   }
 
-  setBasicInfo({ name, description, price, productType, status }) {
+  setBasicInfo({ name, description, price, productType, status, sku, barcode, currency }) {
     const defaultType = {
       restaurant: 'food', cafe: 'beverage', fashion: 'clothing',
       skincare: 'cleanser', electronics: 'device', grocery: 'fresh',
@@ -31,9 +31,19 @@ class ProductBuilder {
       productType: productType || defaultType,
       websiteId: this.websiteId,
       websiteNiche: this.websiteNiche,
+      currency: typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD',
+      barcode: typeof barcode === 'string' && barcode.trim() ? barcode.trim() : null,
+      sku: typeof sku === 'string' && sku.trim() ? sku.trim() : null,
       nicheAttributes: this.strategy.generateDefaultAttributes()
     };
     if (status !== undefined) this.productData.status = status;
+    return this;
+  }
+
+  setCanonicalIdentity({ sku, barcode, currency } = {}) {
+    if (sku !== undefined) this.productData.sku = typeof sku === 'string' && sku.trim() ? sku.trim() : null;
+    if (barcode !== undefined) this.productData.barcode = typeof barcode === 'string' && barcode.trim() ? barcode.trim() : null;
+    if (currency !== undefined) this.productData.currency = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
     return this;
   }
 

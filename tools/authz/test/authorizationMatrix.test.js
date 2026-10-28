@@ -37,9 +37,9 @@ test('P2-AUTHZ-001 Acceptance: Matrix schema, operations count, and structural c
 
   assert.equal(result.valid, true, `Matrix should be valid: ${result.errors.join(', ')}`);
   assert.equal(result.errors.length, 0);
-  assert.equal(result.totalOperations, 254, 'Expected exactly 254 operations (116 Core + 138 Commerce)');
-  assert.equal(result.coreOperationsCount, 116, 'Core operations count must be 116');
-  assert.equal(result.commerceOperationsCount, 138, 'Commerce operations count must be 138');
+  assert.equal(result.totalOperations, 310, 'Expected exactly 310 operations (118 Core + 192 Commerce)');
+  assert.equal(result.coreOperationsCount, 118, 'Core operations count must be 118');
+  assert.equal(result.commerceOperationsCount, 192, 'Commerce operations count must be 192');
 
   // Assert all 11 required actors are defined
   for (const actor of REQUIRED_ACTORS) {
@@ -119,6 +119,8 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 2 & 3 — Permitted vs Unpermi
   const testTable = [
     { opId: 'get_api_stores_storeId_products', permitted: 'allow', unpermitted: 'deny_403', desc: 'Catalog viewing with products permission' },
     { opId: 'post_api_stores_storeId_products', permitted: 'allow', unpermitted: 'deny_403', desc: 'Catalog creation with products permission' },
+    { opId: 'post_api_stores_storeId_product_imports', permitted: 'allow', unpermitted: 'deny_403', desc: 'CSV preview with products permission' },
+    { opId: 'post_api_stores_storeId_product_imports_jobId_retry', permitted: 'allow', unpermitted: 'deny_403', desc: 'Import retry with products permission' },
     { opId: 'post_api_stores_storeId_orders_pos', permitted: 'allow', unpermitted: 'deny_403', desc: 'POS order with orders permission' },
     { opId: 'uploadStoreProductImages', permitted: 'allow', unpermitted: 'deny_403', desc: 'Upload product media with products permission' },
     { opId: 'sendStaffInvitation', permitted: 'deny_403', unpermitted: 'deny_403', desc: 'Owner-only: staff cannot invite other staff' },
@@ -140,6 +142,7 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 4 — Unrelated Merchant', () 
     'getOwnStore',
     'updateOwnStore',
     'post_api_stores_storeId_products',
+    'post_api_stores_storeId_product_imports',
     'patch_api_stores_storeId_products_productId',
     'post_api_stores_storeId_orders_pos',
     'publishWebsite',
@@ -182,6 +185,7 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 7 — Public User', () => {
     { opId: 'authSignup', expected: 'allow', desc: 'Signup endpoint' },
     { opId: 'getOwnStore', expected: 'deny_401', desc: 'Merchant store requires auth' },
     { opId: 'post_api_stores_storeId_products', expected: 'deny_401', desc: 'Product creation requires auth' },
+    { opId: 'get_api_stores_storeId_product_imports_export', expected: 'deny_401', desc: 'Product export requires auth' },
     { opId: 'getAdminOverview', expected: 'deny_401', desc: 'Admin overview requires auth' },
   ];
 
@@ -238,13 +242,7 @@ test('P2-AUTHZ-001 Table-Driven Tests: Actor Case 10 & 11 — Revoked Session & 
   }
 });
 
-test('P2-AUTHZ-001 Discovered Gaps Tracking: All 14 authorization gaps properly recorded', () => {
+test('P2-AUTHZ-002 Acceptance: all recorded authorization gaps are remediated', () => {
   const gaps = getRecordedGaps();
-  assert.equal(gaps.length, 14, `Expected exactly 14 recorded authorization gaps, got ${gaps.length}`);
-
-  for (const gap of gaps) {
-    assert.equal(gap.currentImplementationStatus, 'gap');
-    assert.ok(gap.gapDetails && gap.gapDetails.length > 10, `Gap ${gap.operationId} must have meaningful gapDetails`);
-    assert.equal(gap.remediationPackage, 'P2-AUTHZ-002', `Gap ${gap.operationId} must target P2-AUTHZ-002`);
-  }
+  assert.equal(gaps.length, 0, `Expected no unresolved authorization gaps, got ${gaps.length}`);
 });

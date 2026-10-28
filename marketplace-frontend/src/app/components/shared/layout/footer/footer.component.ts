@@ -30,7 +30,7 @@ const SOCIAL_LINKS: SocialLink[] = [
     <div class="container footer-top">
       <div class="footer-brand">
         <a routerLink="/" class="logo">
-          <span class="logo-mark" aria-hidden="true">R</span>
+          <img class="logo-mark" src="/assets/rentify-logo.webp" alt="Rentify" />
           <span><strong>{{ 'footer.brandName' | translate }}</strong> {{ 'footer.brandSuffix' | translate }}</span>
         </a>
         <p>{{ 'footer.tagline' | translate }}</p>
@@ -229,8 +229,7 @@ const SOCIAL_LINKS: SocialLink[] = [
     .logo strong { font-weight: 700; }
     .logo > span:last-child { font-weight: 400; }
     .logo-mark {
-      display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px;
-      background: var(--color-forest); color: var(--color-bg); font-size: 13px; font-weight: 700;
+      display: block; width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;
     }
     .footer-brand p { margin: 10px 0 0; max-width: 34ch; font-size: 12.5px; line-height: 1.55; color: var(--color-text-secondary); }
     .socials { display: flex; gap: 6px; margin-top: 14px; }
@@ -339,7 +338,7 @@ const SOCIAL_LINKS: SocialLink[] = [
         padding: 28px 20px 24px;
       }
       .logo { gap: 9px; font-size: 17px; }
-      .logo-mark { width: 35px; height: 35px; border-radius: 9px; font-size: 17px; }
+      .logo-mark { width: 35px; height: 35px; }
       .footer-brand p { margin-top: 9px; max-width: 38ch; font-size: 13px; line-height: 1.6; }
       .socials { gap: 9px; margin-top: 14px; }
       .social { width: 38px; height: 38px; border-radius: 9px; }

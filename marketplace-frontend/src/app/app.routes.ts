@@ -86,12 +86,8 @@ export const routes: Routes = [
   },
   {
     path: 'checkout/pay/:orderNumber',
-    canActivate: [buyerGuard],
-    loadComponent: () =>
-      import('./pages/payway-payment.component').then(
-        (m) => m.PaywayPaymentComponent,
-      ),
-    title: 'Pay with ABA | Rentify Marketplace',
+    pathMatch: 'full',
+    redirectTo: 'checkout',
   },
   { path: 'checkout/shipping', pathMatch: 'full', redirectTo: 'checkout' },
   { path: 'checkout/payment', pathMatch: 'full', redirectTo: 'checkout' },
