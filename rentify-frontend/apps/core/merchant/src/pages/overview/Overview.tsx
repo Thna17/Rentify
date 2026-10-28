@@ -19,6 +19,8 @@ import { TopProducts } from './components/TopProducts';
 import { RevenueChart } from './components/RevenueChart';
 import { useChannels, type ChannelView } from '../../context/ChannelContext';
 import { CHANNEL_LABEL, formatMoney, useChannelOrders, type StoreOrder } from '../../hooks/useChannelOrders';
+import { useAccess, type StaffPermission } from '../../utils/access';
+import { Lock } from 'lucide-react';
 import { HOSTED_STOREFRONT_DOMAIN, MARKETING_URL, MARKETPLACE_URL, POS_URL } from '@rentify/shared/config/urls';
 
 const PERIODS: [string, string][] = [
@@ -92,7 +94,8 @@ export const Kpi = ({ label, value, sub, loading }: { label: string; value: stri
 
 export const CHANNEL_BARS = CHANNEL_BAR;
 
-type ChannelAction = { label: string; onClick?: () => void; href?: string; external?: boolean; primary?: boolean };
+// `need` mirrors the backend rule for the action: owner-only setup, or a staff permission
+type ChannelAction = { label: string; onClick?: () => void; href?: string; external?: boolean; primary?: boolean; need?: 'owner' | StaffPermission };
 
 interface ChannelCardProps {
   icon: ReactNode;
@@ -187,6 +190,10 @@ export const Overview = () => {
   const { store, hasStorefront, hasMarketplace, hasPos, togglePos, toggleMarketplace, view } = useChannels();
   const [period, setPeriod] = useState('30d');
   const { orders, loading, error, summary } = useChannelOrders(period);
+  const access = useAccess();
+  const canMoney = access.can('manage_analytics');
+  const canOrders = access.can('manage_orders');
+  const allowed = (action: ChannelAction) => !action.need || (action.need === 'owner' ? access.isOwner : access.can(action.need));
 
   const firstName = useMemo(() => profile?.name?.split(' ')?.[0] || 'there', [profile?.name]);
   const greeting = useMemo(() => `${greetingForHour(new Date().getHours())}, ${firstName}`, [firstName]);
@@ -230,10 +237,10 @@ export const Overview = () => {
       footnote: hasMarketplace ? 'Marketplace fee: none recorded on your orders.' : undefined,
       actions: hasMarketplace
         ? [
-            { label: 'Marketplace orders', onClick: () => navigate('/marketplace-orders'), primary: true },
+            { label: 'Marketplace orders', onClick: () => navigate('/marketplace-orders'), primary: true, need: 'manage_orders' },
             { label: 'View shop', href: marketplaceShopHref, external: true },
           ]
-        : [{ label: 'Join marketplace', onClick: () => toggleMarketplace(true), primary: true }],
+        : [{ label: 'Join marketplace', onClick: () => toggleMarketplace(true), primary: true, need: 'owner' }],
     },
     storefront: {
       icon: <Store className="h-5 w-5" />,
@@ -247,10 +254,10 @@ export const Overview = () => {
       tint: 'bg-sky-500/10 text-sky-700',
       actions: hasStorefront
         ? [
-            { label: 'Customize', onClick: () => navigate('/store-management'), primary: true },
+            { label: 'Customize', onClick: () => navigate('/store-management'), primary: true, need: 'owner' },
             { label: 'Visit', href: storefrontHref, external: true },
           ]
-        : [{ label: 'Add online store', href: templateOnboardingUrl, primary: true }],
+        : [{ label: 'Add online store', href: templateOnboardingUrl, primary: true, need: 'owner' }],
     },
     pos: {
       icon: <MonitorSmartphone className="h-5 w-5" />,
@@ -263,10 +270,14 @@ export const Overview = () => {
         : 'Sell at your counter with KHQR or cash, synced with your catalog.',
       tint: 'bg-violet-500/10 text-violet-700',
       actions: hasPos
-        ? [{ label: 'Open POS', onClick: handleOpenPos, primary: true, external: true }]
-        : [{ label: 'Turn on POS', onClick: () => togglePos(true), primary: true }],
+        ? [{ label: 'Open POS', onClick: handleOpenPos, primary: true, external: true, need: 'manage_pos' }]
+        : [{ label: 'Turn on POS', onClick: () => togglePos(true), primary: true, need: 'owner' }],
     },
   };
+
+  (Object.keys(cards) as (keyof typeof cards)[]).forEach((key) => {
+    cards[key].actions = cards[key].actions.filter(allowed);
+  });
 
   const activeCount = [hasMarketplace, hasStorefront, hasPos].filter(Boolean).length;
   const recent = orders.slice(0, 6);
@@ -298,14 +309,14 @@ export const Overview = () => {
                 </button>
               ))}
             </div>
-            <button
+            {access.can('manage_products') && <button
               type="button"
               onClick={() => navigate('/products/create')}
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-card px-4 text-[13px] font-semibold text-foreground shadow-[var(--shadow-soft)] hover:bg-muted"
             >
               <Package className="h-4 w-4" />
               Add product
-            </button>
+            </button>}
           </div>
         </motion.div>
 
@@ -328,7 +339,12 @@ export const Overview = () => {
         {/* Money for the selected channel(s) */}
         <motion.section {...fadeUp(0.08)}>
           <SectionTitle title="Money" meta={`${view === 'all' ? 'All channels' : CHANNEL_LABEL[view]} · ${periodLabel}`} />
-          {error ? (
+          {!canMoney ? (
+            <Surface className="flex items-center gap-3 text-[13.5px] text-muted-foreground">
+              <Lock className="h-4 w-4 shrink-0" />
+              Sales and money are shown to people with Analytics access. Ask the store owner if you need it.
+            </Surface>
+          ) : error ? (
             <Surface className="text-center text-sm text-muted-foreground">Couldn't load orders. Try again in a moment.</Surface>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
@@ -346,8 +362,9 @@ export const Overview = () => {
         </motion.section>
 
         {/* Split + attention, two equal halves */}
-        <motion.div {...fadeUp(0.12)} className="grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-2">
-          {view === 'all' ? (
+        {canOrders && (
+        <motion.div {...fadeUp(0.12)} className={`grid grid-cols-1 gap-3 md:gap-4 ${canMoney || view !== 'all' ? 'lg:grid-cols-2' : ''}`}>
+          {view === 'all' ? (canMoney && (
             <Surface>
               <SectionTitle title="Sales by channel" meta={periodLabel} />
               {summary.byChannel.length === 0 ? (
@@ -370,7 +387,7 @@ export const Overview = () => {
                 </ul>
               )}
             </Surface>
-          ) : (
+          )) : (
             <Surface>
               <SectionTitle title={RETURNS_GUIDE[view].title} />
               <ol className="space-y-3">
@@ -425,15 +442,20 @@ export const Overview = () => {
           </Surface>
         </motion.div>
 
+        )}
+
         {/* Sales trend + best sellers */}
+        {canMoney && (
         <motion.div {...fadeUp(0.16)} className="grid grid-cols-1 gap-3 md:gap-4 xl:grid-cols-3">
           <div className="xl:col-span-2">
             <RevenueChart data={summary.trend} dateRange={summary.dateRange} isLoading={loading} />
           </div>
           <TopProducts products={summary.topProducts} isLoading={loading} />
         </motion.div>
+        )}
 
         {/* Recent orders, each labelled with its channel */}
+        {canOrders && (
         <motion.div {...fadeUp(0.2)}>
           <Surface>
             <SectionTitle
@@ -486,6 +508,7 @@ export const Overview = () => {
             )}
           </Surface>
         </motion.div>
+        )}
       </div>
     </div>
   );

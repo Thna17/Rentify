@@ -5,6 +5,7 @@ import { Sheet, SheetContent } from '@rentify/shared/ui/sheet';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
+import { useAccess } from '../../utils/access';
 import React from 'react';
 
 // How the Store sells, in plain words: Amazon-style marketplace, Shopify-style own site, or both
@@ -36,6 +37,7 @@ export function AppSidebar({
   searchFilter = '',
 }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const access = useAccess();
 
   const filteredTabs = searchFilter.trim()
     ? tabs.filter((t) => {
@@ -45,7 +47,7 @@ export function AppSidebar({
     : tabs;
 
   // Channels the Store doesn't use yet appear as a quiet "add" entry instead of a page
-  const extraChannelItems = !hasStorefront
+  const extraChannelItems = !hasStorefront && access.isOwner
     ? [{ key: 'add-online-store', action: true, label: 'Add online store', href: `${MARKETING_URL}/onboarding/starter?step=template` }]
     : [];
 
@@ -85,6 +87,14 @@ export function AppSidebar({
             <p className="truncate text-[13.5px] font-semibold leading-tight">{storeName}</p>
             <p className="truncate text-[11.5px] text-muted-foreground">{channelMode(channels)}</p>
           </div>
+          <span
+            className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+              access.isOwner ? 'bg-foreground text-background' : 'bg-card text-foreground/70'
+            }`}
+            title={access.isOwner ? 'Store owner: full access' : 'Staff: access set by the store owner'}
+          >
+            {access.isOwner ? 'Owner' : 'Staff'}
+          </span>
         </div>
         <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium">
           <ChannelDot on={channels.hasMarketplace} label="Marketplace" />

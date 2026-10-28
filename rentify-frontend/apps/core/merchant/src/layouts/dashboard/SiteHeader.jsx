@@ -2,6 +2,7 @@ import { useMediaQuery } from '@rentify/utils';
 import { Menu, MonitorSmartphone, Search, X } from 'lucide-react';
 import { POS_URL } from '@rentify/shared/config/urls';
 import { ChannelViewSwitcher } from '../../components/ChannelViewSwitcher';
+import { useAccess } from '../../utils/access';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { NotificationDropdown } from './NotificationDropdown';
@@ -17,6 +18,7 @@ export function SiteHeader({
   hasPos = false,
 }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const access = useAccess();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchContainerRef = useRef(null);
 
@@ -150,7 +152,7 @@ export function SiteHeader({
       <ChannelViewSwitcher className="hidden xl:flex" />
 
       <div className="flex flex-1 items-center justify-end gap-2 xl:max-w-sm">
-        {hasPos && (
+        {hasPos && access.can('manage_pos') && (
           <a
             href={POS_URL}
             target="_blank"

@@ -13,6 +13,9 @@ export const filterTabsByUserRole = (
       return false;
     }
 
+    // Owner-only areas (staff, billing, website) are never delegated to staff
+    if (tab.ownerOnly && role === 'staff') return false;
+
     // Filter by sales channel capabilities
     if (tab.channel === 'storefront' && !channels?.hasStorefront) return false;
     if (tab.channel === 'pos' && !channels?.hasPos) return false;

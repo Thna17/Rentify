@@ -16,6 +16,7 @@ import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import StoreCategoryPrompt from '../../pages/overview/StoreCategoryPrompt';
 import { ChannelProvider } from '../../context/ChannelContext';
 import { AlertOctagon, ArrowRight, Clock3 } from 'lucide-react';
+import { accessFor } from '../../utils/access';
 
 const NOTICE_TONES = {
   warning: { box: 'bg-amber-500/[0.08]', icon: 'bg-amber-500/15 text-amber-700', title: 'text-amber-900', action: 'bg-amber-900 text-amber-50 hover:bg-amber-950' },
@@ -23,7 +24,7 @@ const NOTICE_TONES = {
 };
 
 // Compact, stroke-free subscription notice shown above every dashboard page
-const SubscriptionNotice = ({ tone, icon, title, body, actionLabel }) => {
+const SubscriptionNotice = ({ tone, icon, title, body, actionLabel, showAction = true }) => {
   const t = NOTICE_TONES[tone];
   return (
     <div className="px-4 pt-4 sm:px-6 md:px-8">
@@ -34,13 +35,13 @@ const SubscriptionNotice = ({ tone, icon, title, body, actionLabel }) => {
             <span className={`font-semibold ${t.title}`}>{title}.</span> {body}
           </p>
         </div>
-        <a
+        {showAction && <a
           href="/settings/billing"
           className={`inline-flex min-h-[36px] w-fit shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition-colors ${t.action}`}
         >
           {actionLabel}
           <ArrowRight className="h-3.5 w-3.5" />
-        </a>
+        </a>}
       </div>
     </div>
   );
@@ -190,6 +191,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
               title="Grace period active"
               body="Your storefront and marketplace sales remain live, but adding products, staff, and website edits are locked until subscription renewal."
               actionLabel="Review billing"
+              showAction={accessFor(profile, role).isOwner}
             />
           )}
           {store?.entitlements?.isSuspended && (
@@ -199,6 +201,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
               title="Subscription suspended"
               body={store?.entitlements?.restrictionReason || "Your subscription is suspended. Historical orders and invoices remain readable for 90 days."}
               actionLabel="Settle subscription"
+              showAction={accessFor(profile, role).isOwner}
             />
           )}
           {store?.needsCategoryReview && (
