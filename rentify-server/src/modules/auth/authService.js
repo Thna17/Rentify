@@ -233,9 +233,13 @@ class AuthService {
   }) {
     this.validateInput({ email, phoneNumber, storeId, verificationMethod });
 
+    // Match only the contact the user gave; an undefined value makes Sequelize throw
+    const contacts = [];
+    if (email) contacts.push({ email });
+    if (phoneNumber) contacts.push({ phoneNumber });
     const whereClause = this.storeIdRequired
-      ? { [Op.or]: [{ email }, { phoneNumber }], storeId }
-      : { [Op.or]: [{ email }, { phoneNumber }] };
+      ? { [Op.or]: contacts, storeId }
+      : { [Op.or]: contacts };
     const entity = await this.entityModel.findOne({
       where: whereClause,
       transaction,
