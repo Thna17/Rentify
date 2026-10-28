@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -7,27 +6,22 @@ import {
   CardTitle,
 } from "@rentify/shared/ui/card";
 import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@rentify/shared/ui/toggle-group";
-import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@rentify/shared/ui/chart";
 import { Skeleton } from "@rentify/shared/ui/skeleton";
+import { format } from 'date-fns';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Line } from "recharts"
 
-export const RevenueChart = ({ data, dateRange, isLoading, labels = {}, locale = 'en-US' }) => {
-  const copy = { sales: 'Sales', loading: 'Loading revenue data', revenue: 'Revenue', orders: 'Orders', ...labels };
-  const [timeRange, setTimeRange] = useState('7d');
+export const RevenueChart = ({ data, dateRange, isLoading }) => {
   
   if (isLoading) {
     return (
-      <Card className="h-full gap-4 py-6 bg-card">
+      <Card className="h-full gap-4 rounded-3xl bg-card py-6 shadow-[var(--shadow-soft)]">
         <CardHeader>
-          <CardTitle className="text-base">{copy.sales}</CardTitle>
-          <CardDescription>{copy.loading}</CardDescription>
+          <CardTitle className="text-base">Sales</CardTitle>
+          <CardDescription>Loading revenue data</CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton className="w-full h-[320px] rounded-xl" />
@@ -45,39 +39,28 @@ export const RevenueChart = ({ data, dateRange, isLoading, labels = {}, locale =
 
   const chartConfig = {
     revenue: {
-      label: copy.revenue,
+      label: "Revenue",
       color: "oklch(var(--primary))",
     },
     orders: {
-      label: copy.orders,
+      label: "Orders",
       color: "oklch(var(--secondary))",
     },
   };
 
   return (
-    <Card className="h-full gap-4 py-6 bg-card">
+    <Card className="h-full gap-4 rounded-3xl bg-card py-6 shadow-[var(--shadow-soft)]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-base">{copy.sales}</CardTitle>
+          <CardTitle className="text-base">Sales</CardTitle>
           <CardDescription>
-            {dateRange && (
+            {dateRange?.start && dateRange?.end && (
               <span>
-                {new Date(dateRange.start).toLocaleDateString(locale, { month: 'short', day: 'numeric' })} - {new Date(dateRange.end).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                {format(new Date(dateRange.start), 'MMM dd')} - {format(new Date(dateRange.end), 'MMM dd')}
               </span>
             )}
           </CardDescription>
         </div>
-        <ToggleGroup
-          type="single"
-          value={timeRange}
-          onValueChange={setTimeRange}
-          size="sm"
-          className="rounded-xl bg-muted p-0.5"
-        >
-          <ToggleGroupItem value="7d" className="rounded-lg px-3 text-xs data-[state=on]:bg-card data-[state=on]:shadow-sm">7D</ToggleGroupItem>
-          <ToggleGroupItem value="30d" className="rounded-lg px-3 text-xs data-[state=on]:bg-card data-[state=on]:shadow-sm">30D</ToggleGroupItem>
-          <ToggleGroupItem value="90d" className="rounded-lg px-3 text-xs data-[state=on]:bg-card data-[state=on]:shadow-sm">90D</ToggleGroupItem>
-        </ToggleGroup>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[320px] w-full">
@@ -105,7 +88,7 @@ export const RevenueChart = ({ data, dateRange, isLoading, labels = {}, locale =
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString(locale, {
+                return date.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 });
@@ -122,15 +105,15 @@ export const RevenueChart = ({ data, dateRange, isLoading, labels = {}, locale =
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString(locale, {
+                    return new Date(value).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     });
                   }}
                   indicator="dot"
                   formatter={(value, name) => {
-                    if (name === 'revenue') return [`$${value} `, copy.revenue];
-                    return [value, copy.orders];
+                    if (name === 'revenue') return [`$${value} `, 'Revenue'];
+                    return [value, 'Orders'];
                   }}
                 />
               }

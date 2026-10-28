@@ -255,6 +255,12 @@ into `platform-architecture.md` and remove stale notes.
    release, commission split/deduction, refund, callback, fee, and
    reconciliation contracts. Define the final payout trigger and commission
    rate from those capabilities.
+6. (2026-10-29) The merchant dashboard splits money by channel from
+   `GET /api/stores/:storeId/orders`. Marketplace checkout quotes
+   `commissionTotal` but the Order row does not persist it, so the dashboard can
+   only say "no marketplace fee recorded". Persist the per-order commission and
+   expose it in `orderProjection.totals` before any fee is charged, so the
+   marketplace view can show gross, fee and net per order.
 
 ## Documentation practice
 

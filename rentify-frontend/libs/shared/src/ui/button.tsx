@@ -53,7 +53,8 @@ const Button = React.forwardRef<
       aria-busy={loading}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    >{loading ? <span role="status" aria-label="Loading" className="size-4 rounded-full border-2 border-current border-t-transparent" /> : iconLeft}{children}{iconRight}</Comp>
+    >{/* Slot (asChild) accepts exactly one child, so icons only wrap a real <button> */}
+      {asChild ? children : <>{loading ? <span role="status" aria-label="Loading" className="size-4 rounded-full border-2 border-current border-t-transparent" /> : iconLeft}{children}{iconRight}</>}</Comp>
   )
 })
 

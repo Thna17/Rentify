@@ -411,7 +411,6 @@
         "rejected": "Not approved"
       }
     },
-
     "store_management": {
       "title": "Storefront Customization",
       "description": "Customize your storefront theme, branding, fonts, and store content",
@@ -561,6 +560,7 @@
     },
     "product": {
       "title": "Products",
+      "manage_your_products": "Add, price and stock the products you sell on every channel.",
       "all_products": "All Products",
       "active": "Active",
       "inactive": "Inactive",
@@ -1110,7 +1110,6 @@
     "component_not_found": "Component not found",
     "contact_support": "Please contact support or check your permissions."
   },
-
   "platform": {
     "access_denied": "Access Denied",
     "access_denied_message": "You don't have permission to view this website's statistics",
@@ -1229,7 +1228,7 @@
     },
     "sections": {
       "catalog": "Catalog",
-      "channels": "Sales channels",
+      "channels": "Sales Channels",
       "insights": "Insights",
       "manage": "Manage",
       "operations": "Operations",
@@ -1237,7 +1236,6 @@
       "overview": "Overview",
       "inventory": "Catalog & Products",
       "orders": "Sales & Orders",
-      "channels": "Sales Channels",
       "analytics": "Analytics",
       "billing": "Store Plan & Billing",
       "settings": "Store Settings",

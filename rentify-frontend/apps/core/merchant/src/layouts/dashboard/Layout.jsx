@@ -15,7 +15,36 @@ import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import StoreCategoryPrompt from '../../pages/overview/StoreCategoryPrompt';
 import { ChannelProvider } from '../../context/ChannelContext';
-import { WorkspaceState } from '../../components/WorkspaceState';
+import { AlertOctagon, ArrowRight, Clock3 } from 'lucide-react';
+
+const NOTICE_TONES = {
+  warning: { box: 'bg-amber-500/[0.08]', icon: 'bg-amber-500/15 text-amber-700', title: 'text-amber-900', action: 'bg-amber-900 text-amber-50 hover:bg-amber-950' },
+  danger: { box: 'bg-rose-500/[0.08]', icon: 'bg-rose-500/15 text-rose-700', title: 'text-rose-900', action: 'bg-rose-900 text-rose-50 hover:bg-rose-950' },
+};
+
+// Compact, stroke-free subscription notice shown above every dashboard page
+const SubscriptionNotice = ({ tone, icon, title, body, actionLabel }) => {
+  const t = NOTICE_TONES[tone];
+  return (
+    <div className="px-4 pt-4 sm:px-6 md:px-8">
+      <div role="status" className={`mx-auto flex max-w-[1400px] flex-col gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:gap-4 ${t.box}`}>
+        <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${t.icon}`}>{icon}</span>
+          <p className="min-w-0 text-[13px] leading-snug text-foreground/80">
+            <span className={`font-semibold ${t.title}`}>{title}.</span> {body}
+          </p>
+        </div>
+        <a
+          href="/settings/billing"
+          className={`inline-flex min-h-[36px] w-fit shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition-colors ${t.action}`}
+        >
+          {actionLabel}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </a>
+      </div>
+    </div>
+  );
+};
 
 export const DashboardLayoutContent = ({ store, setStore }) => {
   const { websiteData } = useThemeService();
@@ -26,12 +55,11 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   const navigate = useNavigate();
   const { profile, role, handleLogout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 900px)');
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  // Read the width directly: useMediaQuery reports false on the first render, which would open the phone drawer
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 900px)').matches
+  );
   const [searchFilter, setSearchFilter] = useState('');
-
-  useEffect(() => {
-    if (isMobile) setSidebarOpen(false);
-  }, [isMobile]);
 
   // POS channel enabled state, persisted in localStorage
   const [posEnabled] = useState(() => {
@@ -95,10 +123,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     );
   }
 
-  const currentTabData = platformTabs.find((tab) => tab.path === matchedTab?.path)
-    || matchedTab
-    || platformTabs[0]
-    || ALL_TABS[0];
+  const currentTabData = matchedTab || platformTabs[0] || ALL_TABS[0];
 
   // Handler to navigate to tab
   const handleTabChange = (tabPath) => {
@@ -108,8 +133,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   const sidebarTabs = platformTabs.filter((tab) => !tab.hideInSidebar);
 
   return (
-    <div className="flex h-dvh min-h-screen bg-background">
-      <a href="#merchant-main-content" className="rentify-skip-link">{t('dashboard.shell.skip_to_content')}</a>
+    <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
       {!isMobile && (
         <AppSidebar
@@ -121,8 +145,9 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           isOpen={sidebarOpen}
           setOpen={setSidebarOpen}
           hasStorefront={channels.hasStorefront}
-          searchFilter={searchFilter}
+          channels={channels}
           store={store}
+          searchFilter={searchFilter}
         />
       )}
 
@@ -137,8 +162,9 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           isOpen={sidebarOpen}
           setOpen={setSidebarOpen}
           hasStorefront={channels.hasStorefront}
-          searchFilter={searchFilter}
+          channels={channels}
           store={store}
+          searchFilter={searchFilter}
         />
       )}
 
@@ -153,37 +179,27 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           onTabChange={handleTabChange}
           searchFilter={searchFilter}
           setSearchFilter={setSearchFilter}
-          store={store}
+          hasPos={channels.hasPos}
         />
         
-        <main id="merchant-main-content" tabIndex="-1" className="flex-1 overflow-auto bg-background scrollbar-subtle">
+        <main className="flex-1 overflow-auto bg-background scrollbar-subtle">
           {store?.entitlements?.isGracePeriod && (
-            <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{t('dashboard.shell.grace_period_title')}</span>
-                <span>{t('dashboard.shell.grace_period_description')}</span>
-              </div>
-              <a
-                href="/settings/billing"
-                className="underline font-semibold whitespace-nowrap hover:text-amber-950 dark:hover:text-amber-100"
-              >
-                {t('dashboard.shell.review_billing')} &rarr;
-              </a>
-            </div>
+            <SubscriptionNotice
+              tone="warning"
+              icon={<Clock3 className="h-4 w-4" />}
+              title="Grace period active"
+              body="Your storefront and marketplace sales remain live, but adding products, staff, and website edits are locked until subscription renewal."
+              actionLabel="Review billing"
+            />
           )}
           {store?.entitlements?.isSuspended && (
-            <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-3 text-red-900 dark:text-red-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{t('dashboard.shell.suspended_title')}</span>
-                <span>{store?.entitlements?.restrictionReason || t('dashboard.shell.suspended_description')}</span>
-              </div>
-              <a
-                href="/settings/billing"
-                className="underline font-semibold whitespace-nowrap hover:text-red-950 dark:hover:text-red-100"
-              >
-                {t('dashboard.shell.settle_subscription')} &rarr;
-              </a>
-            </div>
+            <SubscriptionNotice
+              tone="danger"
+              icon={<AlertOctagon className="h-4 w-4" />}
+              title="Subscription suspended"
+              body={store?.entitlements?.restrictionReason || "Your subscription is suspended. Historical orders and invoices remain readable for 90 days."}
+              actionLabel="Settle subscription"
+            />
           )}
           {store?.needsCategoryReview && (
             <div className="p-4 md:p-6 max-w-7xl mx-auto">
@@ -192,7 +208,12 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           )}
           <Suspense
             fallback={
-              <WorkspaceState kind="loading" title={t('dashboard.shell.loading_feature')} />
+              <div className="flex h-64 w-full items-center justify-center p-8">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400" />
+                  <span className="text-xs text-muted-foreground font-medium">Loading feature...</span>
+                </div>
+              </div>
             }
           >
             <div key={location.pathname} className="ds-page min-h-full">
@@ -209,31 +230,20 @@ export const DashboardLayout = () => {
   const { websiteId, isLoading: websiteLoading } = useWebsiteData();
   const [store, setStore] = useState(null);
   const [storeLoaded, setStoreLoaded] = useState(false);
-  const [storeLoadError, setStoreLoadError] = useState(false);
   const { isAuthenticated, isLoading: authLoading, profile } = useAuth();
-  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isAuthenticated) return;
     let active = true;
-    setStoreLoadError(false);
     fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Store request failed with ${response.status}`);
-        return response.json();
-      })
+      .then((response) => response.ok ? response.json() : null)
       .then((result) => { if (active) { setStore(result?.data || null); setStoreLoaded(true); } })
-      .catch(() => {
-        if (active) {
-          setStoreLoadError(true);
-          setStoreLoaded(true);
-        }
-      });
+      .catch(() => { if (active) setStoreLoaded(true); });
     return () => { active = false; };
   }, [isAuthenticated]);
 
   if (authLoading) {
-    return <WorkspaceState kind="loading" title={t('dashboard.shell.loading_workspace')} fullScreen />;
+    return <div className="min-h-screen grid place-items-center">Loading…</div>;
   }
 
   // Show authentication required if not authenticated
@@ -242,21 +252,7 @@ export const DashboardLayout = () => {
   }
 
   if (websiteLoading || !storeLoaded) {
-    return <WorkspaceState kind="loading" title={t('dashboard.shell.loading_store')} fullScreen />;
-  }
-
-  if (storeLoadError) {
-    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    return (
-      <WorkspaceState
-        kind={offline ? 'offline' : 'error'}
-        title={t(offline ? 'dashboard.shell.offline_title' : 'dashboard.shell.store_error_title')}
-        description={t(offline ? 'dashboard.shell.offline_description' : 'dashboard.shell.store_error_description')}
-        actionLabel={t('dashboard.shell.try_again')}
-        onAction={() => window.location.reload()}
-        fullScreen
-      />
-    );
+    return <div className="min-h-screen grid place-items-center">Loading your Store…</div>;
   }
 
   const effectiveWebsiteId =
@@ -271,10 +267,10 @@ export const DashboardLayout = () => {
     return (
       <main className="min-h-screen grid place-items-center text-center p-6">
         <div className="max-w-md space-y-4">
-          <h1 className="text-2xl font-bold">{t('dashboard.shell.welcome')}</h1>
-          <p className="text-muted-foreground">{t('dashboard.shell.no_store_description')}</p>
+          <h1 className="text-2xl font-bold">Welcome to Rentify</h1>
+          <p className="text-muted-foreground">You do not have an active store yet. Create your store to get started with marketplace or storefront selling.</p>
           <a href={`${MARKETING_URL}/start`} className="inline-block bg-primary text-primary-foreground font-medium rounded-lg px-6 py-2.5">
-            {t('dashboard.shell.create_store')}
+            Create your Store
           </a>
         </div>
       </main>

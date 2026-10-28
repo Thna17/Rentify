@@ -78,8 +78,4 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: { output: { manualChunks: rentifyManualChunks } },
   },
   define: vitePublicDefines(mode),
-  test: {
-    environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}'],
-  },
 }));
