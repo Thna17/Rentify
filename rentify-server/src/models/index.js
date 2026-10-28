@@ -21,6 +21,9 @@ const EventInbox = require('./EventInbox');
 const EventReplayAudit = require('./EventReplayAudit');
 const PaymentAttempt = require('./PaymentAttempt');
 const ProviderEvent = require('./ProviderEvent');
+const PlatformRoleGrant = require('./PlatformRoleGrant');
+const AdminApprovalRequest = require('./AdminApprovalRequest');
+const BreakGlassGrant = require('./BreakGlassGrant');
 
 PaymentAttempt.hasMany(ProviderEvent, { foreignKey: 'paymentAttemptId', as: 'providerEvents' });
 ProviderEvent.belongsTo(PaymentAttempt, { foreignKey: 'paymentAttemptId', as: 'paymentAttempt' });
@@ -125,6 +128,9 @@ User.hasMany(UserSession, { foreignKey: "userId", as: "sessions" });
 UserSession.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 AuditLog.belongsTo(User, { foreignKey: "actorUserId", as: "actor" });
+PlatformRoleGrant.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(PlatformRoleGrant, { foreignKey: 'userId', as: 'platformRoleGrants' });
+BreakGlassGrant.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 
 module.exports = {
@@ -151,4 +157,7 @@ module.exports = {
   EventReplayAudit,
   PaymentAttempt,
   ProviderEvent,
+  PlatformRoleGrant,
+  AdminApprovalRequest,
+  BreakGlassGrant,
 };

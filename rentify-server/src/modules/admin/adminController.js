@@ -5,16 +5,30 @@ const {
   WebsiteTemplate,
   TemplateContent,
 } = require("../../models");
+const { emitAuditEvent } = require('../../utils/auditLogger');
+const { getCorrelationId } = require('../../utils/logger');
+
+const auditContext = (req) => ({ correlationId: getCorrelationId(req), actorUserId: req.user?.id,
+  actorRole: req.platformAccess?.roles?.[0] || req.user?.role, actorRoles: req.platformAccess?.roles || (req.user?.role ? [req.user.role] : []),
+  effectivePermissions: req.platformAccess?.effectivePermissions || [], reason: req.body.reason,
+  sourceCaseId: req.body.sourceCaseId, tenantScope: req.platformAccess?.tenantScope,
+  breakGlassGrantId: req.platformAccess?.breakGlassGrantId, ipAddress: req.ip,
+  userAgent: req.get?.('user-agent') });
+const templatePayload = (body) => {
+  const { reason: _reason, sourceCaseId: _sourceCaseId, approvalRequestId: _approvalRequestId, content, ...data } = body;
+  return { data, content };
+};
 
 exports.createTemplate = async (req, res) => {
   try {
     // Create website template
-    const template = await WebsiteTemplate.create(req.body);
+    const { data, content } = templatePayload(req.body);
+    const template = await WebsiteTemplate.create(data);
 
     // Create template content
-    if (Array.isArray(req.body.content)) {
+    if (Array.isArray(content)) {
       await Promise.all(
-        req.body.content.map(async (item, index) => {
+        content.map(async (item) => {
           try {
             const content = await TemplateContent.create({
               ...item,
@@ -32,6 +46,9 @@ exports.createTemplate = async (req, res) => {
       );
     }
 
+    await emitAuditEvent({ ...auditContext(req), action: 'PLATFORM_TEMPLATE_CREATED',
+      resource: 'WebsiteTemplate', resourceId: template.id, safeAfter: template.toJSON?.() || template });
+
     res.status(201).json(template);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -48,16 +65,18 @@ exports.updateTemplate = async (req, res) => {
     }
 
     // 2. Update template main fields
-    await template.update(req.body);
+    const before = template.toJSON();
+    const { data, content } = templatePayload(req.body);
+    await template.update(data);
 
     // 3. Replace content
-    if (Array.isArray(req.body.content)) {
+    if (Array.isArray(content)) {
       // Delete old content
       await TemplateContent.destroy({ where: { templateId: id } });
 
       // Add new ones
       await Promise.all(
-        req.body.content.map((item) =>
+        content.map((item) =>
           TemplateContent.create({
             ...item,
             templateId: id,
@@ -65,6 +84,9 @@ exports.updateTemplate = async (req, res) => {
         )
       );
     }
+
+    await emitAuditEvent({ ...auditContext(req), action: 'PLATFORM_TEMPLATE_UPDATED',
+      resource: 'WebsiteTemplate', resourceId: template.id, safeBefore: before, safeAfter: template.toJSON() });
 
     res
       .status(200)
@@ -81,7 +103,10 @@ exports.deleteTemplate = async (req, res) => {
     const template = await WebsiteTemplate.findByPk(req.params.id);
     if (!template) return res.status(404).json({ error: "Template not found" });
 
+    const before = template.toJSON();
     await template.destroy();
+    await emitAuditEvent({ ...auditContext(req), action: 'PLATFORM_TEMPLATE_DELETED',
+      resource: 'WebsiteTemplate', resourceId: template.id, safeBefore: before, safeAfter: { deleted: true } });
     res.json({ message: "Template deleted successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });

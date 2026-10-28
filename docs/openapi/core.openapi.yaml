@@ -3324,6 +3324,207 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /admin/access/me:
+    get:
+      tags: [Admin Access]
+      summary: Resolve the current operator's scoped platform access
+      operationId: getPlatformAccess
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      responses:
+        '200': { description: 'Effective roles, permissions, scope and compatibility status' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+
+  /admin/approvals:
+    get:
+      tags: [Admin Access]
+      summary: List maker-checker approval requests
+      operationId: listAdminApprovals
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, approved, rejected, expired, cancelled, executed] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Approval request page }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+    post:
+      tags: [Admin Access]
+      summary: Propose a high-risk platform action
+      description: Requires the action-specific propose permission, recent authentication and an MFA-verified session.
+      operationId: proposeAdminApproval
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, targetType, targetId, scopeType, reason, requestedChange]
+              properties:
+                action: { type: string, enum: [seller.store.suspend, seller.decision.reject, platform.role.change, platform.identity.change, platform.store.close] }
+                targetType: { type: string }
+                targetId: { type: string }
+                scopeType: { type: string, enum: [platform, store, case, queue, finance] }
+                scopeId: { type: string, nullable: true }
+                reason: { type: string, maxLength: 500 }
+                sourceCaseId: { type: string, format: uuid, nullable: true }
+                requestedChange: { type: object, additionalProperties: true }
+                beforeVersion: { type: integer, nullable: true }
+                expiresInMinutes: { type: integer, minimum: 5, maximum: 60, default: 30 }
+      responses:
+        '201': { description: Immutable pending approval request }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/approvals/{approvalId}/decision:
+    post:
+      tags: [Admin Access]
+      summary: Approve or reject a proposed high-risk action
+      description: The proposer cannot decide their own request. Approval is scoped, expiring and single-use.
+      operationId: decideAdminApproval
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - { name: approvalId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reason]
+              properties:
+                decision: { type: string, enum: [approved, rejected] }
+                reason: { type: string, maxLength: 500 }
+      responses:
+        '200': { description: Decided approval request }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /admin/role-grants:
+    get:
+      tags: [Admin Access]
+      summary: List scoped platform role grants
+      operationId: listPlatformRoleGrants
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - { name: userId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string, enum: [active, revoked] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Scoped role grant page }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+    post:
+      tags: [Admin Access]
+      summary: Create an approved scoped platform role grant
+      operationId: createPlatformRoleGrant
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, role, scopeType, reason, approvalRequestId]
+              properties:
+                userId: { type: string, format: uuid }
+                role: { type: string, enum: [support_agent, seller_reviewer, catalog_moderator, finance_reconciliation, platform_admin] }
+                scopeType: { type: string, enum: [platform, store, case, queue, finance] }
+                scopeId: { type: string, nullable: true }
+                reason: { type: string, maxLength: 500 }
+                sourceCaseId: { type: string, format: uuid, nullable: true }
+                approvalRequestId: { type: string, format: uuid }
+      responses:
+        '201': { description: Active scoped role grant; affected sessions are revoked }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /admin/role-grants/{grantId}:
+    delete:
+      tags: [Admin Access]
+      summary: Revoke an approved scoped role grant
+      operationId: revokePlatformRoleGrant
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - { name: grantId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, approvalRequestId]
+              properties:
+                reason: { type: string, maxLength: 500 }
+                sourceCaseId: { type: string, format: uuid, nullable: true }
+                approvalRequestId: { type: string, format: uuid }
+      responses:
+        '200': { description: Revoked grant; affected sessions are revoked }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /admin/break-glass:
+    post:
+      tags: [Admin Access]
+      summary: Request a time-limited emergency permission elevation
+      description: Disabled unless production policy explicitly enables it and configures the maximum duration. Approval permissions can never be granted.
+      operationId: createBreakGlassGrant
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permissions, scopeType, reason, sourceCaseId, durationMinutes]
+              properties:
+                permissions: { type: array, minItems: 1, uniqueItems: true, items: { type: string } }
+                scopeType: { type: string, enum: [platform, store, case, queue, finance] }
+                scopeId: { type: string, nullable: true }
+                reason: { type: string, maxLength: 500 }
+                sourceCaseId: { type: string, format: uuid }
+                durationMinutes: { type: integer, minimum: 1 }
+      responses:
+        '201': { description: Active time-limited break-glass grant }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+
+  /admin/break-glass/{grantId}:
+    delete:
+      tags: [Admin Access]
+      summary: Revoke a break-glass grant and its sessions
+      operationId: revokeBreakGlassGrant
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - { name: grantId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 500 }
+      responses:
+        '200': { description: Revoked break-glass grant }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
   /admin/operations/overview:
     get:
       tags:
@@ -4037,12 +4238,20 @@ paths:
           application/json:
             schema:
               type: object
+              required: [reason]
               properties:
                 newEmail:
                   type: string
                   format: email
                 newPhoneNumber:
                   type: string
+                reason:
+                  type: string
+                  maxLength: 500
+                sourceCaseId:
+                  type: string
+                  format: uuid
+                  nullable: true
       responses:
         '200':
           description: Verification code sent
@@ -4070,9 +4279,16 @@ paths:
               type: object
               required:
                 - otp
+                - approvalRequestId
               properties:
                 otp:
                   type: string
+                approvalRequestId:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                  maxLength: 500
       responses:
         '200':
           description: Contact updated successfully
@@ -4107,10 +4323,22 @@ paths:
               type: object
               required:
                 - role
+                - approvalRequestId
+                - reason
               properties:
                 role:
                   type: string
                   enum: [user, admin]
+                approvalRequestId:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                  maxLength: 500
+                sourceCaseId:
+                  type: string
+                  format: uuid
+                  nullable: true
       responses:
         '200':
           description: Role updated
@@ -4718,6 +4946,18 @@ components:
             websiteNotFound:
               value:
                 error: Website not found
+    ConflictError:
+      description: Conflict — approval is stale, expired, used, or mismatched
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+    ValidationError:
+      description: Validation failed for the requested scoped operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
     BadGatewayError:
       description: Bad Gateway — upstream media storage or provider network error
       content:

@@ -23,7 +23,10 @@
     "EventInbox": ["events"],
     "EventReplayAudit": ["events"],
     "PaymentAttempt": ["billing"],
-    "ProviderEvent": ["billing"]
+    "ProviderEvent": ["billing"],
+    "PlatformRoleGrant": ["admin"],
+    "AdminApprovalRequest": ["admin"],
+    "BreakGlassGrant": ["admin"]
   },
   "exceptions": []
 }

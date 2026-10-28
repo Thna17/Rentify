@@ -9,6 +9,15 @@ const { generateAccessToken, generateRefreshToken } = require('../../utils/jwtUt
 const cookieConfig = require('../../config/cookieConfig');
 const bcrypt = require('bcrypt');
 const { sendEmail } = require('../notifications').emailService;
+const approvalService = require('../../utils/adminApprovalService');
+
+const contactChangeDescriptor = (pending) => ({
+  operation: 'contact.change',
+  emailFingerprint: pending.newEmail
+    ? crypto.createHash('sha256').update(String(pending.newEmail).trim().toLowerCase()).digest('hex') : null,
+  phoneFingerprint: pending.newPhoneNumber
+    ? crypto.createHash('sha256').update(String(pending.newPhoneNumber).trim()).digest('hex') : null,
+});
 
 /**
  * Returns MFA status for the currently authenticated administrator.
@@ -45,7 +54,6 @@ exports.getMfaStatus = async (req, res) => {
 exports.enrollMfa = async (req, res) => {
   const user = await User.findByPk(req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  if (user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
 
   const label = user.email || user.name || 'admin';
   const { base32, otpauthUrl } = totp.generateTotpSecret(label, 'Rentify');
@@ -54,6 +62,16 @@ exports.enrollMfa = async (req, res) => {
   user.mfaFailedAttempts = 0;
   user.mfaLockUntil = null;
   await user.save();
+
+  await emitAuditEvent({
+    correlationId: getCorrelationId(req), actorUserId: user.id,
+    actorRole: req.platformAccess?.roles?.[0] || req.user.role,
+    actorRoles: req.platformAccess?.roles, effectivePermissions: req.platformAccess?.effectivePermissions,
+    action: 'ADMIN_MFA_ENROLLMENT_STARTED', resource: 'User', resourceId: user.id,
+    reason: 'Operator initiated MFA enrollment', tenantScope: 'self/*',
+    safeBefore: { mfaEnabled: Boolean(user.mfaEnabled) }, safeAfter: { enrollmentPending: true },
+    ipAddress: req.ip, userAgent: req.get?.('user-agent'),
+  });
 
   res.json({
     secret: base32,
@@ -454,6 +472,8 @@ exports.requestContactChange = async (req, res) => {
   if (!newEmail && !newPhoneNumber) {
     return res.status(400).json({ error: 'Either newEmail or newPhoneNumber is required' });
   }
+  if (req.platformAccess && !req.body.reason) return res.status(400).json({ error: {
+    code: 'VALIDATION_FAILED', message: 'A reason is required', fieldErrors: [], retryable: false } });
 
   if (newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
     return res.status(400).json({ error: 'Invalid email format' });
@@ -487,6 +507,15 @@ exports.requestContactChange = async (req, res) => {
   });
   await user.save();
 
+  let approval = null;
+  if (req.platformAccess) {
+    approval = await approvalService.propose({ action: 'platform.identity.change', targetType: 'User',
+      targetId: user.id, scopeType: 'platform', scopeId: null, actorUserId: user.id,
+      actorRole: req.platformAccess.roles[0], reason: req.body.reason,
+      sourceCaseId: req.body.sourceCaseId, requestedChange: contactChangeDescriptor({ newEmail, newPhoneNumber }),
+      correlationId: getCorrelationId(req) });
+  }
+
   if (newEmail && process.env.NODE_ENV !== 'test') {
     try {
       await sendEmail(
@@ -508,11 +537,17 @@ exports.requestContactChange = async (req, res) => {
     ipAddress: req.ip,
     status: 'SUCCESS',
     details: { hasNewEmail: Boolean(newEmail), hasNewPhone: Boolean(newPhoneNumber) },
+    actorRoles: req.platformAccess?.roles, effectivePermissions: req.platformAccess?.effectivePermissions,
+    reason: req.body.reason || 'Administrator contact change requested', sourceCaseId: req.body.sourceCaseId,
+    tenantScope: req.platformAccess?.tenantScope || 'self/*', approvalRequestId: approval?.id,
+    safeBefore: { contactChangePending: false }, safeAfter: { contactChangePending: true,
+      hasNewEmail: Boolean(newEmail), hasNewPhone: Boolean(newPhoneNumber) },
   });
 
   res.json({
     success: true,
     message: 'Verification code sent to the requested contact address',
+    ...(approval ? { approvalRequestId: approval.id, approvalStatus: approval.status } : {}),
     // In test environment, expose OTP for automated testing convenience
     ...(process.env.NODE_ENV === 'test' ? { testOtp: otp } : {}),
   });
@@ -549,6 +584,18 @@ exports.verifyContactChange = async (req, res) => {
     return res.status(400).json({ error: 'Invalid verification code' });
   }
 
+  let approval = null;
+  if (req.platformAccess) {
+    try {
+      approval = await approvalService.consume({ approvalId: req.body.approvalRequestId,
+        action: 'platform.identity.change', targetType: 'User', targetId: user.id,
+        requestedChange: contactChangeDescriptor(pending) });
+    } catch (error) {
+      return res.status(error.code === 'APPROVAL_REQUIRED' ? 403 : 409).json({ error: {
+        code: error.code, message: error.message, fieldErrors: [], retryable: false } });
+    }
+  }
+
   // Apply contact change
   const oldEmail = user.email;
   if (pending.newEmail) user.email = pending.newEmail;
@@ -565,6 +612,12 @@ exports.verifyContactChange = async (req, res) => {
     ipAddress: req.ip,
     status: 'SUCCESS',
     details: { updatedEmail: Boolean(pending.newEmail), updatedPhone: Boolean(pending.newPhoneNumber) },
+    actorRoles: req.platformAccess?.roles, effectivePermissions: req.platformAccess?.effectivePermissions,
+    reason: req.body.reason || 'Approved administrator contact change executed',
+    sourceCaseId: req.body.sourceCaseId, tenantScope: req.platformAccess?.tenantScope || 'self/*',
+    approvalRequestId: approval?.id, safeBefore: { contactChangePending: true },
+    safeAfter: { contactChangePending: false, updatedEmail: Boolean(pending.newEmail),
+      updatedPhone: Boolean(pending.newPhoneNumber) },
   });
 
   res.json({
@@ -593,13 +646,22 @@ exports.updateUserRole = async (req, res) => {
   if (!targetUser) return res.status(404).json({ error: 'Target user not found' });
 
   const previousRole = targetUser.role;
+  let approval = null;
+  if (req.platformAccess) {
+    try {
+      approval = await approvalService.consume({ approvalId: req.body.approvalRequestId,
+        action: 'platform.role.change', targetType: 'User', targetId: userId,
+        requestedChange: { operation: 'legacy_role_change', previousRole, role } });
+    } catch (error) {
+      return res.status(error.code === 'APPROVAL_REQUIRED' ? 403 : 409).json({ error: {
+        code: error.code, message: error.message, fieldErrors: [], retryable: false } });
+    }
+  }
   targetUser.role = role;
   await targetUser.save();
 
-  // If an admin is demoted to user, immediately revoke all their active sessions
-  if (previousRole === 'admin' && role === 'user') {
-    await sessionManager.revokeAllUserSessions(targetUser.id);
-  }
+  // Any privilege change invalidates existing authorization snapshots.
+  await sessionManager.revokeAllUserSessions(targetUser.id);
 
   await emitAuditEvent({
     correlationId: getCorrelationId(req),
@@ -609,6 +671,15 @@ exports.updateUserRole = async (req, res) => {
     resourceId: targetUser.id,
     ipAddress: req.ip,
     status: 'SUCCESS',
+    actorRoles: req.platformAccess?.roles,
+    effectivePermissions: req.platformAccess?.effectivePermissions,
+    reason: req.body.reason,
+    sourceCaseId: req.body.sourceCaseId,
+    tenantScope: req.platformAccess?.tenantScope,
+    approvalRequestId: approval?.id,
+    breakGlassGrantId: req.platformAccess?.breakGlassGrantId,
+    safeBefore: { role: previousRole },
+    safeAfter: { role },
     details: { previousRole, newRole: role },
   });
 
