@@ -122,3 +122,50 @@ exports.generatePaymentLink = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.handleCutluyWebhook = async (req, res) => {
+  try {
+    const body = req.body || {};
+    const rawStatus = String(body.status || body.data?.status || "").toLowerCase();
+    const referenceId = String(body.reference_id || body.data?.reference_id || "").trim();
+    const providerPaymentId = body.id || body.data?.id || body.payment_id;
+
+    if (rawStatus !== "paid" && rawStatus !== "completed") {
+      return res.status(200).json({ received: true, note: `Status "${rawStatus}" acknowledged without action` });
+    }
+
+    const orderId = referenceId.startsWith("ORDER-")
+      ? referenceId.replace("ORDER-", "").trim()
+      : referenceId;
+
+    const queryConditions = [];
+    if (orderId) queryConditions.push({ orderId });
+    if (providerPaymentId) queryConditions.push({ transactionId: providerPaymentId });
+
+    if (queryConditions.length === 0) {
+      return res.status(400).json({ error: "Missing order or payment reference in webhook" });
+    }
+
+    const payment = await Payment.findOne({
+      where: {
+        [Op.or]: queryConditions,
+        status: PAYMENT_STATUS.PENDING,
+      },
+    });
+
+    if (!payment) {
+      return res.status(200).json({ received: true, note: "No pending payment found matching webhook reference" });
+    }
+
+    const result = await FulfillmentService.confirmOrderPayment(payment.id, {
+      provider: "cutluy",
+      transactionId: providerPaymentId,
+      providerEvent: body,
+    });
+
+    return res.status(200).json({ success: true, result });
+  } catch (error) {
+    console.error("CutLuy webhook handler error:", error);
+    return res.status(500).json({ error: "CutLuy webhook processing failed" });
+  }
+};

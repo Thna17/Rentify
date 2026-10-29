@@ -30,7 +30,9 @@ import {
   AlertCircle,
   Wallet,
   Globe,
-  Smartphone
+  Smartphone,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
@@ -39,6 +41,13 @@ import {
   useGetMerchantConfigQuery,
 } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+
+interface CutLuyConfig {
+  enabled: boolean;
+  apiKey: string;
+  webhookSecret: string;
+  businessName: string;
+}
 
 interface KHQRConfig {
   enabled: boolean;
@@ -78,7 +87,7 @@ interface CreditCardConfig {
 
 
 export const PaymentSetting = () => {
-  const [activeTab, setActiveTab] = useState('khqr');
+  const [activeTab, setActiveTab] = useState('cutluy');
   const [showApiKeys, setShowApiKeys] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { websiteData } = useThemeService();
@@ -97,6 +106,14 @@ export const PaymentSetting = () => {
     apiKey: '',
     currency: 'USD',
     merchantId: '',
+  });
+
+  // CutLuy Instant KHQR Config
+  const [cutluyConfig, setCutluyConfig] = useState<CutLuyConfig>({
+    enabled: false,
+    apiKey: '',
+    webhookSecret: '',
+    businessName: '',
   });
 
   // Other gateways remain static for now
@@ -126,11 +143,10 @@ export const PaymentSetting = () => {
     autoCapture: true,
   });
 
-  // Load KHQR config from API when component mounts or config changes
+  // Load gateway configs from API when component mounts or config changes
   useEffect(() => {
     if (merchantConfig && Array.isArray(merchantConfig)) {
       const khqrConfigFromApi = merchantConfig.find((config: any) => config.gateway === 'khqr')?.config;
-      
       if (khqrConfigFromApi) {
         setKhqrConfig(prev => ({
           ...prev,
@@ -140,12 +156,49 @@ export const PaymentSetting = () => {
           // Provider keys are deliberately write-only and are never returned by the API.
           apiKey: '',
           currency: khqrConfigFromApi.currency || 'USD',
-          // Note: merchantId might not be in the API response, keep existing if not present
           merchantId: khqrConfigFromApi.merchantId || prev.merchantId,
+        }));
+      }
+
+      const cutluyConfigFromApi = merchantConfig.find((config: any) => config.gateway === 'cutluy');
+      if (cutluyConfigFromApi) {
+        setCutluyConfig(prev => ({
+          ...prev,
+          enabled: Boolean(cutluyConfigFromApi.enabled),
+          businessName: cutluyConfigFromApi.config?.businessName || '',
+          apiKey: '',
+          webhookSecret: '',
         }));
       }
     }
   }, [merchantConfig]);
+
+  const handleSaveCutLuyConfig = async () => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        websiteId,
+        paymentGateways: {
+          cutluy: {
+            enabled: cutluyConfig.enabled,
+            businessName: cutluyConfig.businessName,
+            ...(cutluyConfig.apiKey ? { apiKey: cutluyConfig.apiKey } : {}),
+            ...(cutluyConfig.webhookSecret ? { webhookSecret: cutluyConfig.webhookSecret } : {}),
+          },
+        },
+      };
+
+      await updateMerchantConfig(payload).unwrap();
+      await refetchConfig();
+      toast.success('CutLuy payment configuration saved successfully');
+    } catch (error: any) {
+      console.error('Failed to save CutLuy config:', error);
+      const errorMessage = error.data?.error || error.message || 'Failed to save CutLuy configuration';
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSaveKHQRConfig = async () => {
     setIsSaving(true);
@@ -186,6 +239,10 @@ export const PaymentSetting = () => {
   };
 
   const handleSaveConfig = async (gateway: string) => {
+    if (gateway === 'cutluy') {
+      await handleSaveCutLuyConfig();
+      return;
+    }
     if (gateway === 'khqr') {
       await handleSaveKHQRConfig();
       return;
@@ -200,7 +257,8 @@ export const PaymentSetting = () => {
 
   const getGatewayName = (gateway: string) => {
     const names = {
-      khqr: 'KHQR',
+      cutluy: 'CutLuy (Instant KHQR)',
+      khqr: 'Bakong KHQR',
       aba: 'ABA Payway',
       stripe: 'Stripe',
       creditcard: 'Credit Card'
@@ -219,6 +277,7 @@ export const PaymentSetting = () => {
           checked={enabled}
           onCheckedChange={(checked) => {
             const configs = {
+              cutluy: setCutluyConfig,
               khqr: setKhqrConfig,
               aba: setAbaPaywayConfig,
               stripe: setStripeConfig,
@@ -291,12 +350,13 @@ export const PaymentSetting = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { gateway: 'khqr', name: 'KHQR', enabled: khqrConfig.enabled, icon: QrCode, color: 'bg-blue-500' },
+              { gateway: 'cutluy', name: 'CutLuy (Instant KHQR)', enabled: cutluyConfig.enabled, icon: QrCode, color: 'bg-emerald-600' },
+              { gateway: 'khqr', name: 'Bakong KHQR', enabled: khqrConfig.enabled, icon: QrCode, color: 'bg-blue-500' },
               { gateway: 'aba', name: 'ABA Payway', enabled: abaPaywayConfig.enabled, icon: Building, color: 'bg-red-500' },
               { gateway: 'stripe', name: 'Stripe', enabled: stripeConfig.enabled, icon: CreditCard, color: 'bg-purple-500' },
-              { gateway: 'creditcard', name: 'Credit Cards', enabled: creditCardConfig.enabled, icon: Wallet, color: 'bg-green-500' },
+              { gateway: 'creditcard', name: 'Credit Cards', enabled: creditCardConfig.enabled, icon: Wallet, color: 'bg-gray-700' },
             ].map(({ gateway, name, enabled, icon: Icon, color }) => (
               <div
                 key={gateway}
@@ -327,10 +387,14 @@ export const PaymentSetting = () => {
 
       {/* Gateway Configuration Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+          <TabsTrigger value="cutluy" className="flex items-center space-x-2">
+            <QrCode className="h-4 w-4 text-emerald-600" />
+            <span>CutLuy (KHQR)</span>
+          </TabsTrigger>
           <TabsTrigger value="khqr" className="flex items-center space-x-2">
             <QrCode className="h-4 w-4" />
-            <span>KHQR</span>
+            <span>Bakong KHQR</span>
           </TabsTrigger>
           <TabsTrigger value="aba" className="flex items-center space-x-2">
             <Building className="h-4 w-4" />
@@ -345,6 +409,135 @@ export const PaymentSetting = () => {
             <span>Credit Cards</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* CutLuy Instant KHQR Configuration */}
+        <TabsContent value="cutluy">
+          <Card className="shadow-sm border-0">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold flex items-center space-x-2">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <QrCode className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <span>CutLuy Instant KHQR</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Accept KHQR payments with 100% direct bank settlement into your Cambodian bank account (ABA, ACLEDA, Wing, Canadia).
+                  </CardDescription>
+                </div>
+                <GatewayStatus enabled={cutluyConfig.enabled} gateway="cutluy" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Direct settlement notice */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm space-y-2">
+                <div className="font-semibold flex items-center space-x-2 text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span>Direct Merchant Settlement (Zero Middleman)</span>
+                </div>
+                <p className="text-emerald-800 leading-relaxed text-xs sm:text-sm">
+                  Customer payments arrive 100% directly into your bank account connected to CutLuy. Rentify never touches or holds your customer funds.
+                </p>
+                <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
+                  <a
+                    href="https://cutluy.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-1 font-semibold text-emerald-700 hover:text-emerald-900 underline"
+                  >
+                    <span>Create a CutLuy account at cutluy.com</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <span className="text-emerald-400">•</span>
+                  <span className="text-emerald-700">50 free transactions/mo on Free tier</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ApiKeyField
+                  value={cutluyConfig.apiKey}
+                  label="CutLuy API Key"
+                  placeholder="ck_live_xxxxxxxxxxxxxxxx"
+                  onChange={(value) => setCutluyConfig({ ...cutluyConfig, apiKey: value })}
+                />
+
+                <ApiKeyField
+                  value={cutluyConfig.webhookSecret}
+                  label="Webhook Secret (Optional)"
+                  placeholder="whsec_xxxxxxxxxxxxxxxx"
+                  onChange={(value) => setCutluyConfig({ ...cutluyConfig, webhookSecret: value })}
+                />
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="cutluy-business-name" className="flex items-center space-x-2">
+                    <Building className="h-4 w-4" />
+                    <span>Business / Display Name (Optional)</span>
+                  </Label>
+                  <Input
+                    id="cutluy-business-name"
+                    value={cutluyConfig.businessName}
+                    onChange={(e) => setCutluyConfig({ ...cutluyConfig, businessName: e.target.value })}
+                    placeholder="Your Store Name"
+                  />
+                </div>
+              </div>
+
+              {/* Webhook Endpoint Box */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Your Webhook URL (Paste this into your CutLuy Dashboard)
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    readOnly
+                    value="https://ecommerce.rentify.mekhla.digital/api/payments/cutluy/webhook"
+                    className="bg-white font-mono text-xs text-gray-700"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText('https://ecommerce.rentify.mekhla.digital/api/payments/cutluy/webhook');
+                      toast.success('Webhook URL copied to clipboard');
+                    }}
+                    className="flex items-center space-x-1 shrink-0"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  CutLuy notifies this endpoint instantly when a customer pays, confirming orders automatically.
+                </p>
+              </div>
+
+              <Separator />
+
+              <div className="flex justify-between items-center">
+                <div className="text-xs text-gray-500">
+                  {cutluyConfig.enabled ? (
+                    <span className="text-emerald-600 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      CutLuy active for your Storefront and POS
+                    </span>
+                  ) : (
+                    <span>Enable toggle at top-right to activate CutLuy on your store</span>
+                  )}
+                </div>
+                <Button
+                  onClick={() => handleSaveConfig('cutluy')}
+                  disabled={isSaving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center space-x-2"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  <span>{isSaving ? 'Saving...' : 'Save CutLuy Settings'}</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* KHQR Configuration - Now Dynamic */}
         <TabsContent value="khqr">

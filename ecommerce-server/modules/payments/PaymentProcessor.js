@@ -6,7 +6,11 @@ class PaymentProcessor {
   }
 
   async process(order, paymentMethod, merchantConfig, transaction, currency) {
-    const strategy = PaymentFactory.createStrategy(paymentMethod, this.models);
+    const effectiveMethod =
+      merchantConfig?.gateway === 'cutluy' && ['khqr', 'cutluy'].includes(String(paymentMethod).toLowerCase())
+        ? 'cutluy'
+        : paymentMethod;
+    const strategy = PaymentFactory.createStrategy(effectiveMethod, this.models);
     return strategy.process(order, merchantConfig, transaction, currency);
   }
 }
