@@ -55,6 +55,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
       const productWhere = {
         id: item.productId,
         status: 'active',
+        moderationStatus: 'approved',
       };
       if (storeId && websiteId) {
         productWhere[Op.or] = [{ websiteId }, { storeId }];
@@ -69,7 +70,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
         transaction,
         lock: transaction.LOCK.UPDATE
       });
-      if (!product) throw new Error('Product is not available on this Website');
+      if (!product) throw new Error('Product is not available on this Website or not eligible for purchase');
       const { resolveLegacyItemToSku } = require('../../../services/legacyWebsiteCompatibilityService');
       const resolvedSku = await resolveLegacyItemToSku({
         productId: product.id,

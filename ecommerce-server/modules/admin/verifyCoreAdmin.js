@@ -28,11 +28,50 @@ const createVerifyCoreAdmin = ({ validate = (accessToken, refreshToken) => axios
   if (result.data.entity.type !== 'admin') {
     return sendError(res, req, ApiError.forbidden('Admin access required'));
   }
-  req.user = { id: result.data.entity.id, role: 'admin' };
+
+  // P5-ADM-001: Extract scoped permission claims from Core token validation
+  const entity = result.data.entity;
+  const claims = Array.isArray(entity.claims)
+    ? entity.claims
+    : (Array.isArray(entity.permissions)
+      ? entity.permissions
+      : (Array.isArray(result.data.claims) ? result.data.claims : []));
+
+  req.user = {
+    id: entity.id,
+    role: entity.role || entity.type || 'admin',
+    claims,
+  };
+
   if (result.data.newAccessToken) res.cookie('userAccessToken', result.data.newAccessToken, {
     ...cookieConfig, maxAge: 15 * 60 * 1000,
   });
   return next();
 };
 
-module.exports = { verifyCoreAdmin: createVerifyCoreAdmin(), createVerifyCoreAdmin };
+/**
+ * P5-ADM-001: Scoped permission guard for Commerce operations.
+ * Enforces server-side granular claims:
+ * ops:overview:read, support:case:read, support:case:write, support:dispute:resolve,
+ * catalog:moderate, review:moderate, inventory:adjust, maker_checker:approve.
+ */
+const requireAdminPermission = (requiredClaim) => (req, res, next) => {
+  if (!req.user) {
+    return sendError(res, req, ApiError.unauthorized('Admin sign-in required'));
+  }
+  const claims = Array.isArray(req.user.claims) ? req.user.claims : [];
+  // Super admin role or wildcard '*' grants full access
+  if (req.user.role === 'super_admin' || claims.includes('*') || claims.includes(requiredClaim)) {
+    return next();
+  }
+  return sendError(res, req, ApiError.forbidden(
+    `Missing required permission: ${requiredClaim}`,
+    'FORBIDDEN_INSUFFICIENT_PERMISSIONS'
+  ));
+};
+
+module.exports = {
+  verifyCoreAdmin: createVerifyCoreAdmin(),
+  createVerifyCoreAdmin,
+  requireAdminPermission,
+};

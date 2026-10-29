@@ -182,4 +182,51 @@ describe('AuthService', () => {
 
     expect(apiErrorMessage(new Error('Random error'), 'Default message')).toBe('Default message');
   });
+
+  it('evaluates scoped claims strictly without assuming admin has every capability', () => {
+    // Unauthenticated
+    expect(service.hasPermission('catalog:moderate')).toBe(false);
+
+    // Authenticated admin with specific scoped claims
+    service.setUser({
+      id: 'scoped-admin-1',
+      name: 'Catalog Lead',
+      email: 'catalog@rentify.local',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      claims: ['catalog:moderate', 'inventory:adjust'],
+    });
+
+    expect(service.hasPermission('catalog:moderate')).toBe(true);
+    expect(service.canModerateCatalog()).toBe(true);
+    expect(service.canAdjustInventory()).toBe(true);
+    expect(service.hasPermission('support:case:write')).toBe(false);
+    expect(service.canWriteSupport()).toBe(false);
+    expect(service.canReviewSellers()).toBe(false);
+
+    // Admin without claims array has zero scoped permissions (no broad assumption)
+    service.setUser({
+      id: 'unscoped-admin',
+      name: 'Unscoped Admin',
+      email: 'unscoped@rentify.local',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      claims: [],
+    });
+    expect(service.hasPermission('catalog:moderate')).toBe(false);
+    expect(service.hasPermission('seller:review')).toBe(false);
+
+    // Wildcard claim grants all capabilities
+    service.setUser({
+      id: 'super-admin',
+      name: 'Super Admin',
+      email: 'root@rentify.local',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      claims: ['*'],
+    });
+    expect(service.hasPermission('catalog:moderate')).toBe(true);
+    expect(service.hasPermission('support:dispute:resolve')).toBe(true);
+    expect(service.hasPermission('seller:review')).toBe(true);
+  });
 });

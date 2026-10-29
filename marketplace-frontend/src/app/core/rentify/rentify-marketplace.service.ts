@@ -329,6 +329,55 @@ export class RentifyMarketplaceService {
     );
   }
 
+  checkReportEligibility(
+    subjectType: 'order' | 'return' | 'product' | 'merchant',
+    subjectId: string,
+  ): Observable<{ success: boolean; data: import('../support/support.models').ReportEligibility }> {
+    return this.http.get<{ success: boolean; data: import('../support/support.models').ReportEligibility }>(
+      `${this.commerce}/api/marketplace/reports/eligibility`,
+      { params: { subjectType, subjectId } },
+    );
+  }
+
+  submitBuyerReport(
+    payload: import('../support/support.models').CreateBuyerReportPayload,
+    idempotencyKey?: string,
+  ): Observable<{ success: boolean; data: { duplicate: boolean; report: import('../support/support.models').BuyerReportResult; linkage: any } }> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    return this.http.post<{ success: boolean; data: { duplicate: boolean; report: import('../support/support.models').BuyerReportResult; linkage: any } }>(
+      `${this.commerce}/api/marketplace/reports`,
+      payload,
+      { headers },
+    );
+  }
+
+  getMyReports(
+    subjectType?: string,
+    page = 1,
+    limit = 20,
+  ): Observable<{ success: boolean; data: import('../support/support.models').BuyerReportResult[]; total: number }> {
+    const params: Record<string, string> = {
+      page: String(page),
+      limit: String(limit),
+    };
+    if (subjectType) params['subjectType'] = subjectType;
+    return this.http.get<{ success: boolean; data: import('../support/support.models').BuyerReportResult[]; total: number }>(
+      `${this.commerce}/api/marketplace/reports/my-reports`,
+      { params },
+    );
+  }
+
+  getReportDetails(
+    id: string,
+  ): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(
+      `${this.commerce}/api/marketplace/reports/${id}`,
+    );
+  }
+
   logout() {
     return this.http.post(`${this.core}/api/auth/logout`, {});
   }

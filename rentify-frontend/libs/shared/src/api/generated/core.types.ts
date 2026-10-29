@@ -71,6 +71,26 @@ export namespace Core {
     status: string;
   }
 
+  export interface InboxNotification {
+    aggregateId?: string;
+    aggregateType?: string;
+    body?: string;
+    correlationId?: string;
+    createdAt?: string;
+    eventId?: string;
+    eventName?: string;
+    id?: string;
+    locale?: "en" | "km";
+    mandatory?: boolean;
+    readAt?: string | null;
+    schemaVersion?: string;
+    sourceOccurredAt?: string;
+    storeId?: string | null;
+    templateKey?: string;
+    templateVersion?: number;
+    title?: string;
+  }
+
   export interface InternalOwnerContact {
     email?: string;
     id?: string;
@@ -149,6 +169,23 @@ export namespace Core {
     userId?: string;
     websiteId?: string;
     websiteTemplateId?: number;
+  }
+
+  export interface NotificationSourceEvent {
+    aggregateId: string;
+    aggregateType: string;
+    aggregateVersion: number;
+    correlationId: string;
+    /** Commerce-authoritative buyer subject identifier, required for order, delivery, return and refund events; mutable business facts are discarded. */
+    data?: {
+      buyerSubjectId?: string;
+    };
+    eventId: string;
+    eventName: "catalog.product.held.v1" | "catalog.product.rejected.v1" | "catalog.appeal.updated.v1" | "order.placed.v1" | "order.accepted.v1" | "delivery.out_for_delivery.v1" | "delivery.delivered.v1" | "delivery.failed.v1" | "return.requested.v1" | "return.updated.v1" | "refund.confirmed.v1";
+    occurredAt: string;
+    producer: "ecommerce-server";
+    schemaVersion: "1.0.0";
+    storeId: string;
   }
 
   export interface OutcomeContract {
@@ -503,6 +540,62 @@ export namespace Core {
     websiteId?: string;
   }
 
+  export interface SupportCase {
+    assigneeSubjectId?: string | null;
+    caseNumber?: string;
+    caseType?: string;
+    closedAt?: string | null;
+    createdAt?: string;
+    descriptionClassification?: string | null;
+    escalatedAt?: string | null;
+    id?: string;
+    language?: string | null;
+    openedAt?: string;
+    policyVersion?: string | null;
+    priority?: "low" | "normal" | "high" | "urgent";
+    queueKey?: string | null;
+    requesterKind?: string;
+    requesterSubjectId?: string | null;
+    resolutionCode?: string | null;
+    resolutionSummary?: string | null;
+    resolvedAt?: string | null;
+    serviceDeadlineAt?: string | null;
+    sla?: {
+      automaticEnforcementEnabled?: boolean;
+      breached?: boolean;
+    };
+    sourceId?: string | null;
+    sourceSystem?: string | null;
+    sourceType?: string | null;
+    status?: "open" | "triaged" | "in_progress" | "waiting_on_requester" | "waiting_on_merchant" | "escalated" | "resolved" | "closed" | "reopened";
+    storeId?: string | null;
+    summary?: string;
+    triagedAt?: string | null;
+    updatedAt?: string;
+    version?: number;
+  }
+
+  export interface SupportCaseCreate {
+    caseType: string;
+    descriptionClassification?: string;
+    language?: string;
+    links?: Array<{
+      relationship?: string;
+      subjectId: string;
+      subjectType: "tenant" | "store" | "user" | "buyer" | "product" | "order" | "return" | "payment" | "buyer_report" | "review" | "subscription" | "payment_attempt" | "approval_request";
+    }>;
+    priority: "low" | "normal" | "high" | "urgent";
+    queueKey?: string;
+    reason: string;
+    requesterKind: string;
+    requesterSubjectId?: string;
+    sourceId?: string;
+    sourceSystem?: string;
+    sourceType?: string;
+    storeId?: string;
+    summary: string;
+  }
+
   export interface TemplateContent {
     category?: string;
     id?: string;
@@ -606,6 +699,58 @@ export namespace Core {
   }
 
   export interface Operations {
+    getPlatformAccess: {
+      method: 'GET';
+      path: '/admin/access/me';
+      parameters: {
+      };
+      response: any;
+    };
+    listAdminApprovals: {
+      method: 'GET';
+      path: '/admin/approvals';
+      parameters: {
+        query?: {
+          cursor?: string;
+          limit?: number;
+          status?: "pending" | "approved" | "rejected" | "expired" | "cancelled" | "executed";
+        };
+      };
+      response: any;
+    };
+    proposeAdminApproval: {
+      method: 'POST';
+      path: '/admin/approvals';
+      parameters: {
+      };
+      body: {
+        action: "seller.store.suspend" | "seller.decision.reject" | "platform.role.change" | "platform.identity.change" | "platform.store.close";
+        beforeVersion?: number | null;
+        expiresInMinutes?: number;
+        reason: string;
+        requestedChange: Record<string, any>;
+        scopeId?: string | null;
+        scopeType: "platform" | "store" | "case" | "queue" | "finance";
+        sourceCaseId?: string | null;
+        targetId: string;
+        targetType: string;
+      };
+      response: any;
+    };
+    decideAdminApproval: {
+      method: 'POST';
+      path: '/admin/approvals/{approvalId}/decision';
+      parameters: {
+        path: {
+          approvalId: string;
+        };
+      };
+      body: {
+        decision: "approved" | "rejected";
+        reason: string;
+      };
+      response: any;
+    };
     adminStepUpAuth: {
       method: 'POST';
       path: '/admin/auth/step-up';
@@ -622,6 +767,34 @@ export namespace Core {
         success?: boolean;
       };
     };
+    createBreakGlassGrant: {
+      method: 'POST';
+      path: '/admin/break-glass';
+      parameters: {
+      };
+      body: {
+        durationMinutes: number;
+        permissions: Array<string>;
+        reason: string;
+        scopeId?: string | null;
+        scopeType: "platform" | "store" | "case" | "queue" | "finance";
+        sourceCaseId: string;
+      };
+      response: any;
+    };
+    revokeBreakGlassGrant: {
+      method: 'DELETE';
+      path: '/admin/break-glass/{grantId}';
+      parameters: {
+        path: {
+          grantId: string;
+        };
+      };
+      body: {
+        reason: string;
+      };
+      response: any;
+    };
     requestAdminContactChange: {
       method: 'POST';
       path: '/admin/contact/change-request';
@@ -630,6 +803,8 @@ export namespace Core {
       body: {
         newEmail?: string;
         newPhoneNumber?: string;
+        reason: string;
+        sourceCaseId?: string | null;
       };
       response: any;
     };
@@ -639,7 +814,9 @@ export namespace Core {
       parameters: {
       };
       body: {
+        approvalRequestId: string;
         otp: string;
+        reason?: string;
       };
       response: any;
     };
@@ -742,6 +919,50 @@ export namespace Core {
         };
       };
       response: Core.PaginatedAdminResourceResponse;
+    };
+    listPlatformRoleGrants: {
+      method: 'GET';
+      path: '/admin/role-grants';
+      parameters: {
+        query?: {
+          cursor?: string;
+          limit?: number;
+          status?: "active" | "revoked";
+          userId?: string;
+        };
+      };
+      response: any;
+    };
+    createPlatformRoleGrant: {
+      method: 'POST';
+      path: '/admin/role-grants';
+      parameters: {
+      };
+      body: {
+        approvalRequestId: string;
+        reason: string;
+        role: "support_agent" | "seller_reviewer" | "catalog_moderator" | "finance_reconciliation" | "platform_admin";
+        scopeId?: string | null;
+        scopeType: "platform" | "store" | "case" | "queue" | "finance";
+        sourceCaseId?: string | null;
+        userId: string;
+      };
+      response: any;
+    };
+    revokePlatformRoleGrant: {
+      method: 'DELETE';
+      path: '/admin/role-grants/{grantId}';
+      parameters: {
+        path: {
+          grantId: string;
+        };
+      };
+      body: {
+        approvalRequestId: string;
+        reason: string;
+        sourceCaseId?: string | null;
+      };
+      response: any;
     };
     listAdminSessions: {
       method: 'GET';
@@ -872,7 +1093,10 @@ export namespace Core {
         };
       };
       body: {
+        approvalRequestId: string;
+        reason: string;
         role: "user" | "admin";
+        sourceCaseId?: string | null;
       };
       response: any;
     };
@@ -1129,6 +1353,64 @@ export namespace Core {
         success?: boolean;
       };
     };
+    ingestNotificationEvent: {
+      method: 'POST';
+      path: '/api/notifications/events';
+      parameters: {
+      };
+      body: Core.NotificationSourceEvent;
+      response: any;
+    };
+    listNotificationInbox: {
+      method: 'GET';
+      path: '/api/notifications/inbox';
+      parameters: {
+        query?: {
+          after?: string;
+          limit?: number;
+          unread?: boolean;
+        };
+      };
+      response: {
+        data?: Array<Core.InboxNotification>;
+        page?: {
+          hasMore?: boolean;
+          limit?: number;
+          nextCursor?: string | null;
+        };
+      };
+    };
+    listNotificationDeliveries: {
+      method: 'GET';
+      path: '/api/notifications/inbox/{notificationId}/deliveries';
+      parameters: {
+      };
+      response: any;
+    };
+    listNotificationDeliveryAttempts: {
+      method: 'GET';
+      path: '/api/notifications/inbox/{notificationId}/deliveries/{deliveryId}/attempts';
+      parameters: {
+      };
+      response: any;
+    };
+    retryNotificationDelivery: {
+      method: 'POST';
+      path: '/api/notifications/inbox/{notificationId}/deliveries/{deliveryId}/retry';
+      parameters: {
+      };
+      response: any;
+    };
+    setNotificationReadState: {
+      method: 'PATCH';
+      path: '/api/notifications/inbox/{notificationId}/read';
+      parameters: {
+      };
+      body: {
+        read: boolean;
+      };
+      response: any;
+    };
     handleOrderNotification: {
       method: 'POST';
       path: '/api/notifications/orders';
@@ -1162,6 +1444,26 @@ export namespace Core {
       response: {
         success?: boolean;
       };
+    };
+    getNotificationPreferences: {
+      method: 'GET';
+      path: '/api/notifications/preferences';
+      parameters: {
+      };
+      response: any;
+    };
+    updateNotificationPreferences: {
+      method: 'PUT';
+      path: '/api/notifications/preferences';
+      parameters: {
+      };
+      body: {
+        emailEnabled?: boolean;
+        locale?: "en" | "km";
+        optionalEnabled?: boolean;
+        telegramEnabled?: boolean;
+      };
+      response: any;
     };
     sendMerchantNotification: {
       method: 'POST';
@@ -1245,6 +1547,23 @@ export namespace Core {
       response: {
         acknowledged?: boolean;
         duplicate?: boolean;
+      };
+    };
+    listMerchantPlanPayments: {
+      method: 'GET';
+      path: '/api/payment/history';
+      parameters: {
+      };
+      response: {
+        data?: Array<{
+          amountMinor?: number | null;
+          classification?: "subscription_payment";
+          createdAt?: string;
+          currency?: string;
+          id?: string;
+          packageId?: string | null;
+          status?: string;
+        }>;
       };
     };
     initiateKHQRPayment: {
@@ -1658,6 +1977,151 @@ export namespace Core {
       response: {
         images?: Array<Core.UploadedImageMetadata>;
       };
+    };
+    listSupportCases: {
+      method: 'GET';
+      path: '/api/support/cases';
+      parameters: {
+        query?: {
+          after?: string;
+          assigneeSubjectId?: string;
+          caseType?: string;
+          limit?: number;
+          priority?: string;
+          q?: string;
+          queueKey?: string;
+          status?: string;
+          storeId?: string;
+        };
+      };
+      response: {
+        data?: Array<Core.SupportCase>;
+        page?: {
+          hasMore?: boolean;
+          limit?: number;
+          nextCursor?: string | null;
+        };
+      };
+    };
+    createSupportCase: {
+      method: 'POST';
+      path: '/api/support/cases';
+      parameters: {
+      };
+      body: Core.SupportCaseCreate;
+      response: any;
+    };
+    listMerchantSupportCases: {
+      method: 'GET';
+      path: '/api/support/cases/mine';
+      parameters: {
+        query?: {
+          after?: string;
+          limit?: number;
+        };
+      };
+      response: any;
+    };
+    getMerchantSupportCase: {
+      method: 'GET';
+      path: '/api/support/cases/mine/{caseId}';
+      parameters: {
+      };
+      response: any;
+    };
+    respondToMerchantSupportCase: {
+      method: 'POST';
+      path: '/api/support/cases/mine/{caseId}/responses';
+      parameters: {
+      };
+      body: {
+        body: string;
+        expectedVersion: number;
+      };
+      response: any;
+    };
+    getSupportCase: {
+      method: 'GET';
+      path: '/api/support/cases/{caseId}';
+      parameters: {
+      };
+      response: any;
+    };
+    assignSupportCase: {
+      method: 'POST';
+      path: '/api/support/cases/{caseId}/assignment';
+      parameters: {
+      };
+      body: {
+        assigneeSubjectId: string;
+        expectedVersion: number;
+        reason: string;
+      };
+      response: any;
+    };
+    listSupportCaseAttachments: {
+      method: 'GET';
+      path: '/api/support/cases/{caseId}/attachments';
+      parameters: {
+      };
+      response: any;
+    };
+    addSupportCaseAttachment: {
+      method: 'POST';
+      path: '/api/support/cases/{caseId}/attachments';
+      parameters: {
+      };
+      body: {
+        expectedVersion: number;
+        mediaAssetId: string;
+        mediaType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
+        reason: string;
+        sha256: string;
+        sizeBytes: number;
+        visibility: "internal" | "requester" | "merchant";
+      };
+      response: any;
+    };
+    listSupportCaseEvents: {
+      method: 'GET';
+      path: '/api/support/cases/{caseId}/events';
+      parameters: {
+      };
+      response: any;
+    };
+    listSupportCaseNotes: {
+      method: 'GET';
+      path: '/api/support/cases/{caseId}/notes';
+      parameters: {
+      };
+      response: any;
+    };
+    addSupportCaseNote: {
+      method: 'POST';
+      path: '/api/support/cases/{caseId}/notes';
+      parameters: {
+      };
+      body: {
+        body: string;
+        expectedVersion: number;
+        reason: string;
+        visibility: "internal" | "requester" | "merchant";
+      };
+      response: any;
+    };
+    transitionSupportCase: {
+      method: 'POST';
+      path: '/api/support/cases/{caseId}/transition';
+      parameters: {
+      };
+      body: {
+        expectedVersion: number;
+        reason: string;
+        resolutionCode?: string;
+        resolutionSummary?: string;
+        status: "triaged" | "in_progress" | "waiting_on_requester" | "waiting_on_merchant" | "escalated" | "resolved" | "closed" | "reopened";
+      };
+      response: any;
     };
     getUserProfile: {
       method: 'GET';
@@ -2096,11 +2560,13 @@ export type CoreCreateWebsiteRequest = Core.CreateWebsiteRequest;
 export type CoreErrorEnvelope = Core.ErrorEnvelope;
 export type CoreFieldError = Core.FieldError;
 export type CoreHealthResponse = Core.HealthResponse;
+export type CoreInboxNotification = Core.InboxNotification;
 export type CoreInternalOwnerContact = Core.InternalOwnerContact;
 export type CoreKHQRInitiationResponse = Core.KHQRInitiationResponse;
 export type CoreLoginRequest = Core.LoginRequest;
 export type CoreLoginResponse = Core.LoginResponse;
 export type CoreMerchantWebsitePayload = Core.MerchantWebsitePayload;
+export type CoreNotificationSourceEvent = Core.NotificationSourceEvent;
 export type CoreOutcomeContract = Core.OutcomeContract;
 export type CoreOutcomeSummaryResponse = Core.OutcomeSummaryResponse;
 export type CoreOwnStore = Core.OwnStore;
@@ -2127,6 +2593,8 @@ export type CoreStandardSuccessResponse = Core.StandardSuccessResponse;
 export type CoreStore = Core.Store;
 export type CoreStoreEntitlements = Core.StoreEntitlements;
 export type CoreSubscription = Core.Subscription;
+export type CoreSupportCase = Core.SupportCase;
+export type CoreSupportCaseCreate = Core.SupportCaseCreate;
 export type CoreTemplateContent = Core.TemplateContent;
 export type CoreUploadedImageMetadata = Core.UploadedImageMetadata;
 export type CoreUser = Core.User;

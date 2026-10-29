@@ -23,6 +23,106 @@ export class CoreApiClient {
   }
 
   /**
+   * Resolve the current operator's scoped platform access
+   * GET /admin/access/me
+   */
+  async getPlatformAccess(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/admin/access/me',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List maker-checker approval requests
+   * GET /admin/approvals
+   */
+  async listAdminApprovals(options: {
+    query?: {
+      cursor?: string;
+      limit?: number;
+      status?: "pending" | "approved" | "rejected" | "expired" | "cancelled" | "executed";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/admin/approvals',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Propose a high-risk platform action
+   * POST /admin/approvals
+   */
+  async proposeAdminApproval(options: {
+    body: {
+      action: "seller.store.suspend" | "seller.decision.reject" | "platform.role.change" | "platform.identity.change" | "platform.store.close";
+      beforeVersion?: number | null;
+      expiresInMinutes?: number;
+      reason: string;
+      requestedChange: Record<string, any>;
+      scopeId?: string | null;
+      scopeType: "platform" | "store" | "case" | "queue" | "finance";
+      sourceCaseId?: string | null;
+      targetId: string;
+      targetType: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/approvals',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Approve or reject a proposed high-risk action
+   * POST /admin/approvals/{approvalId}/decision
+   */
+  async decideAdminApproval(options: {
+    path: {
+      approvalId: string;
+    };
+    body: {
+      decision: "approved" | "rejected";
+      reason: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/approvals/{approvalId}/decision',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Step-up re-authentication for high-risk administrator actions
    * POST /admin/auth/step-up
    */
@@ -55,6 +155,59 @@ export class CoreApiClient {
   }
 
   /**
+   * Request a time-limited emergency permission elevation
+   * POST /admin/break-glass
+   */
+  async createBreakGlassGrant(options: {
+    body: {
+      durationMinutes: number;
+      permissions: Array<string>;
+      reason: string;
+      scopeId?: string | null;
+      scopeType: "platform" | "store" | "case" | "queue" | "finance";
+      sourceCaseId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/break-glass',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Revoke a break-glass grant and its sessions
+   * DELETE /admin/break-glass/{grantId}
+   */
+  async revokeBreakGlassGrant(options: {
+    path: {
+      grantId: string;
+    };
+    body: {
+      reason: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'DELETE',
+      path: '/admin/break-glass/{grantId}',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Request administrator contact change with OTP verification (requires recent auth)
    * POST /admin/contact/change-request
    */
@@ -62,6 +215,8 @@ export class CoreApiClient {
     body: {
       newEmail?: string;
       newPhoneNumber?: string;
+      reason: string;
+      sourceCaseId?: string | null;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -83,7 +238,9 @@ export class CoreApiClient {
    */
   async verifyAdminContactChange(options: {
     body: {
+      approvalRequestId: string;
       otp: string;
+      reason?: string;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -305,6 +462,87 @@ export class CoreApiClient {
       path: '/admin/operations/{resource}',
       pathParams: (options as any)?.path,
       query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List scoped platform role grants
+   * GET /admin/role-grants
+   */
+  async listPlatformRoleGrants(options: {
+    query?: {
+      cursor?: string;
+      limit?: number;
+      status?: "active" | "revoked";
+      userId?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/admin/role-grants',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Create an approved scoped platform role grant
+   * POST /admin/role-grants
+   */
+  async createPlatformRoleGrant(options: {
+    body: {
+      approvalRequestId: string;
+      reason: string;
+      role: "support_agent" | "seller_reviewer" | "catalog_moderator" | "finance_reconciliation" | "platform_admin";
+      scopeId?: string | null;
+      scopeType: "platform" | "store" | "case" | "queue" | "finance";
+      sourceCaseId?: string | null;
+      userId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/admin/role-grants',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Revoke an approved scoped role grant
+   * DELETE /admin/role-grants/{grantId}
+   */
+  async revokePlatformRoleGrant(options: {
+    path: {
+      grantId: string;
+    };
+    body: {
+      approvalRequestId: string;
+      reason: string;
+      sourceCaseId?: string | null;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'DELETE',
+      path: '/admin/role-grants/{grantId}',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -588,7 +826,10 @@ export class CoreApiClient {
       userId: string;
     };
     body: {
+      approvalRequestId: string;
+      reason: string;
       role: "user" | "admin";
+      sourceCaseId?: string | null;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -1146,6 +1387,140 @@ export class CoreApiClient {
   }
 
   /**
+   * Ingest an authenticated Commerce notification source event
+   * POST /api/notifications/events
+   */
+  async ingestNotificationEvent(options: {
+    body: Core.NotificationSourceEvent;
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/notifications/events',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List the authenticated subject's in-app notifications
+   * GET /api/notifications/inbox
+   */
+  async listNotificationInbox(options: {
+    query?: {
+      after?: string;
+      limit?: number;
+      unread?: boolean;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Array<Core.InboxNotification>;
+      page?: {
+        hasMore?: boolean;
+        limit?: number;
+        nextCursor?: string | null;
+      };
+    }>> {
+    return this.transport.request<{
+      data?: Array<Core.InboxNotification>;
+      page?: {
+        hasMore?: boolean;
+        limit?: number;
+        nextCursor?: string | null;
+      };
+    }>({
+      method: 'GET',
+      path: '/api/notifications/inbox',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Inspect delivery status for the current subject's notification
+   * GET /api/notifications/inbox/{notificationId}/deliveries
+   */
+  async listNotificationDeliveries(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/notifications/inbox/{notificationId}/deliveries',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Inspect safe provider attempt history
+   * GET /api/notifications/inbox/{notificationId}/deliveries/{deliveryId}/attempts
+   */
+  async listNotificationDeliveryAttempts(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/notifications/inbox/{notificationId}/deliveries/{deliveryId}/attempts',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Retry a due retryable provider delivery
+   * POST /api/notifications/inbox/{notificationId}/deliveries/{deliveryId}/retry
+   */
+  async retryNotificationDelivery(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/notifications/inbox/{notificationId}/deliveries/{deliveryId}/retry',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Set the current subject's notification read state
+   * PATCH /api/notifications/inbox/{notificationId}/read
+   */
+  async setNotificationReadState(options: {
+    body: {
+      read: boolean;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'PATCH',
+      path: '/api/notifications/inbox/{notificationId}/read',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Format and dispatch order lifecycle notifications to merchant
    * POST /api/notifications/orders
    */
@@ -1201,6 +1576,49 @@ export class CoreApiClient {
       method: 'POST',
       path: '/api/notifications/orders/{orderId}/process',
       pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Get notification channel and locale preferences
+   * GET /api/notifications/preferences
+   */
+  async getNotificationPreferences(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/notifications/preferences',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Update the authenticated subject's notification preferences
+   * PUT /api/notifications/preferences
+   */
+  async updateNotificationPreferences(options: {
+    body: {
+      emailEnabled?: boolean;
+      locale?: "en" | "km";
+      optionalEnabled?: boolean;
+      telegramEnabled?: boolean;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'PUT',
+      path: '/api/notifications/preferences',
       body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
@@ -1375,6 +1793,44 @@ export class CoreApiClient {
       method: 'POST',
       path: '/api/payment/cutluy/webhook',
       body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List the authenticated merchant's recent Core plan payments
+   * GET /api/payment/history
+   */
+  async listMerchantPlanPayments(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Array<{
+        amountMinor?: number | null;
+        classification?: "subscription_payment";
+        createdAt?: string;
+        currency?: string;
+        id?: string;
+        packageId?: string | null;
+        status?: string;
+      }>;
+    }>> {
+    return this.transport.request<{
+      data?: Array<{
+        amountMinor?: number | null;
+        classification?: "subscription_payment";
+        createdAt?: string;
+        currency?: string;
+        id?: string;
+        packageId?: string | null;
+        status?: string;
+      }>;
+    }>({
+      method: 'GET',
+      path: '/api/payment/history',
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,
@@ -2252,6 +2708,309 @@ export class CoreApiClient {
       method: 'POST',
       path: '/api/stores/{storeId}/product-images',
       pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Search support cases within the operator's authorized scopes
+   * GET /api/support/cases
+   */
+  async listSupportCases(options: {
+    query?: {
+      after?: string;
+      assigneeSubjectId?: string;
+      caseType?: string;
+      limit?: number;
+      priority?: string;
+      q?: string;
+      queueKey?: string;
+      status?: string;
+      storeId?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Array<Core.SupportCase>;
+      page?: {
+        hasMore?: boolean;
+        limit?: number;
+        nextCursor?: string | null;
+      };
+    }>> {
+    return this.transport.request<{
+      data?: Array<Core.SupportCase>;
+      page?: {
+        hasMore?: boolean;
+        limit?: number;
+        nextCursor?: string | null;
+      };
+    }>({
+      method: 'GET',
+      path: '/api/support/cases',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Create a support case idempotently
+   * POST /api/support/cases
+   */
+  async createSupportCase(options: {
+    body: Core.SupportCaseCreate;
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/support/cases',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List cases for the authenticated Store owner
+   * GET /api/support/cases/mine
+   */
+  async listMerchantSupportCases(options: {
+    query?: {
+      after?: string;
+      limit?: number;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/support/cases/mine',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Read an owned case and merchant-visible notes
+   * GET /api/support/cases/mine/{caseId}
+   */
+  async getMerchantSupportCase(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/support/cases/mine/{caseId}',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Add an idempotent merchant-visible response
+   * POST /api/support/cases/mine/{caseId}/responses
+   */
+  async respondToMerchantSupportCase(options: {
+    body: {
+      body: string;
+      expectedVersion: number;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/support/cases/mine/{caseId}/responses',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Read a case and linked immutable identifiers
+   * GET /api/support/cases/{caseId}
+   */
+  async getSupportCase(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/support/cases/{caseId}',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Assign an open case to a Core user
+   * POST /api/support/cases/{caseId}/assignment
+   */
+  async assignSupportCase(options: {
+    body: {
+      assigneeSubjectId: string;
+      expectedVersion: number;
+      reason: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/support/cases/{caseId}/assignment',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * List authorized attachment metadata
+   * GET /api/support/cases/{caseId}/attachments
+   */
+  async listSupportCaseAttachments(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/support/cases/{caseId}/attachments',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Record attachment metadata in pending scan state
+   * POST /api/support/cases/{caseId}/attachments
+   */
+  async addSupportCaseAttachment(options: {
+    body: {
+      expectedVersion: number;
+      mediaAssetId: string;
+      mediaType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
+      reason: string;
+      sha256: string;
+      sizeBytes: number;
+      visibility: "internal" | "requester" | "merchant";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/support/cases/{caseId}/attachments',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Read immutable case event history
+   * GET /api/support/cases/{caseId}/events
+   */
+  async listSupportCaseEvents(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/support/cases/{caseId}/events',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Read notes as an authorized support operator
+   * GET /api/support/cases/{caseId}/notes
+   */
+  async listSupportCaseNotes(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/support/cases/{caseId}/notes',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Add an immutable plain-text note
+   * POST /api/support/cases/{caseId}/notes
+   */
+  async addSupportCaseNote(options: {
+    body: {
+      body: string;
+      expectedVersion: number;
+      reason: string;
+      visibility: "internal" | "requester" | "merchant";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/support/cases/{caseId}/notes',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Transition a case, resolve, close, escalate or reopen it
+   * POST /api/support/cases/{caseId}/transition
+   */
+  async transitionSupportCase(options: {
+    body: {
+      expectedVersion: number;
+      reason: string;
+      resolutionCode?: string;
+      resolutionSummary?: string;
+      status: "triaged" | "in_progress" | "waiting_on_requester" | "waiting_on_merchant" | "escalated" | "resolved" | "closed" | "reopened";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/support/cases/{caseId}/transition',
+      body: (options as any)?.body,
       headers: options?.headers,
       correlationId: options?.correlationId,
       credentials: options?.credentials,

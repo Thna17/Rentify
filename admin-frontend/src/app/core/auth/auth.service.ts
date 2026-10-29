@@ -27,6 +27,46 @@ export class AuthService {
     return role === 'ADMIN';
   });
 
+  hasPermission(claim: string): boolean {
+    const user = this.userState();
+    if (!user) return false;
+    // Admins and operators consume scoped permissions; wildcard '*' grants all claims
+    const claims = Array.isArray(user.claims) ? user.claims : [];
+    return claims.includes(claim) || claims.includes('*');
+  }
+
+  canViewSupport(): boolean {
+    return this.hasPermission('support:case:read');
+  }
+
+  canWriteSupport(): boolean {
+    return this.hasPermission('support:case:write');
+  }
+
+  canResolveDisputes(): boolean {
+    return this.hasPermission('support:dispute:resolve');
+  }
+
+  canModerateCatalog(): boolean {
+    return this.hasPermission('catalog:moderate');
+  }
+
+  canModerateReviews(): boolean {
+    return this.hasPermission('review:moderate');
+  }
+
+  canAdjustInventory(): boolean {
+    return this.hasPermission('inventory:adjust');
+  }
+
+  canReviewSellers(): boolean {
+    return this.hasPermission('seller:review');
+  }
+
+  canApproveMakerChecker(): boolean {
+    return this.hasPermission('maker_checker:approve');
+  }
+
   getLoginUrl(returnUrl?: string): string {
     const returnTarget =
       returnUrl || (typeof window !== 'undefined' ? window.location.href : 'http://localhost:4800');

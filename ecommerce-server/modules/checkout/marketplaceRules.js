@@ -83,17 +83,20 @@ function eligibleProduct(product, store, channel = 'marketplace') {
   }
   if (channel === 'storefront') {
     return product && product.storeId === store.storeId && product.websiteId === store.websiteId &&
-      product.status === 'active';
+      product.status === 'active' && (product.moderationStatus === 'approved' || !product.moderationStatus);
   }
   const vis = product?.marketplaceVisibility ?? null;
   return product && product.storeId === store.storeId && product.status === 'active' &&
+    (product.moderationStatus === 'approved' || !product.moderationStatus) &&
     Boolean(product.marketplaceCategory) &&
     (vis === true || (vis === null && store.marketplaceEnabled));
 }
 
 async function checkedProductAndVariant(productId, variantId, store, transaction, channel = 'marketplace') {
   const product = await Product.findByPk(productId, { transaction, lock: transaction.LOCK.UPDATE });
-  if (!eligibleProduct(product, store, channel)) fail('Product is not available on this sales channel', 409);
+  if (!product || (product.moderationStatus && product.moderationStatus !== 'approved') || !eligibleProduct(product, store, channel)) {
+    fail('Product is not available on this sales channel', 409, 'PRODUCT_NOT_ELIGIBLE');
+  }
 
   let variant = null;
   if (variantId) {

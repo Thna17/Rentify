@@ -20,6 +20,7 @@ import { FooterComponent } from '../components/shared/layout/footer/footer.compo
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductRailComponent } from '../components/user/catalog/product-rail/product-rail.component';
 import { VariantPickerComponent } from '../components/user/catalog/variant-picker/variant-picker.component';
+import { BuyerReportModalComponent } from '../components/shared/reports/buyer-report-modal.component';
 import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalog.models';
 
 @Component({
@@ -31,6 +32,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
     IconComponent,
     ProductRailComponent,
     VariantPickerComponent,
+    BuyerReportModalComponent,
     TranslatePipe,
   ],
   host: {
@@ -212,6 +214,18 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
                 <a routerLink="/cart">View cart</a>
               </p>
             }
+
+            <div class="report-action-row">
+              <button
+                type="button"
+                class="btn-report-listing"
+                (click)="showReportModal.set(true)"
+                title="Report issue or policy concern about this listing"
+              >
+                <ui-icon name="flag" [size]="13" />
+                <span>{{ 'product.reportListing' | translate }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -421,6 +435,15 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
           <img [src]="shownImage(product()!)" [alt]="product()?.name || ''" />
         </div>
       </div>
+    }
+
+    @if (showReportModal() && product(); as p) {
+      <buyer-report-modal
+        subjectType="product"
+        [subjectId]="p.id"
+        [subjectTitle]="p.name"
+        (closed)="showReportModal.set(false)"
+      />
     }
 
     <app-footer />
@@ -1093,10 +1116,32 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
         }
       }
 
+      .report-action-row {
+        margin-top: 14px;
+        display: flex;
+        justify-content: flex-start;
+      }
+      .btn-report-listing {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: 0;
+        color: var(--color-muted);
+        font-size: 12px;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: var(--radius-sm);
+        transition: color 0.15s ease;
+      }
+      .btn-report-listing:hover {
+        color: #ef4444;
+      }
     `,
   ],
 })
 export class ProductDetailComponent {
+  readonly showReportModal = signal(false);
   // --------------------------------------------------------------- gallery
   /**
    * Which photo the main frame is showing. Null means "whatever the product

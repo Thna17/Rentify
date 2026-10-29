@@ -283,10 +283,26 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       }, { transaction });
       await CartItem.destroy({ where: { cartId: cart.id }, transaction });
       await Cart.destroy({ where: { id: cart.id }, transaction });
+
+      // P5-NOT-001: Emit transactional outbox event for order creation
+      try {
+        const { emitOrderCreated } = require('../events');
+        await emitOrderCreated({
+          order,
+          buyerId,
+          storeId,
+          itemsCount: items.length,
+          totalAmount: dollars(total),
+          currency: 'USD',
+          salesChannel: channel,
+          correlationId: checkoutKey,
+        }, { transaction });
+      } catch (_evtErr) {}
+
       justCreated = true;
       return orderView(order, items, payment);
     });
-    if (justCreated) notifyStoreOfNewOrder(result);
+    // P5-NOT-001: Direct notification side-effects from business transactions are replaced by outbox event emission.
     return result;
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -301,18 +317,13 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
 }
 
 /**
- * Marketplace orders had no merchant notification at all — the seller only
- * found out when they happened to check Marketplace Orders. Fired after
- * checkout() commits, never lets a notification failure affect the buyer's
- * response (the order already exists either way).
+ * P5-NOT-001: Never send notifications directly from Commerce business transactions.
+ * Direct notification dispatch is decoupled through the transactional outbox (order.created)
+ * consumed by the Core notification engine and user preference service.
  */
 async function notifyStoreOfNewOrder(order) {
-  try {
-    const contact = await getStoreOwnerContact(order.storeId);
-    await NotificationService.sendNewOrderNotification(contact, order, order.items);
-  } catch (error) {
-    console.error(`Marketplace order notification failed (order ${order.id}):`, error.message);
-  }
+  // Direct notification removed in favor of transactional outbox event
+  return null;
 }
 
 /**
