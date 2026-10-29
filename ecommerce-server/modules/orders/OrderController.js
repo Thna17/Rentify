@@ -44,7 +44,7 @@ exports.createOrder = async (req, res) => {
     });
 
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
-      (cfg) => cfg.gateway === "khqr" && cfg.enabled
+      (cfg) => (cfg.gateway === "cutluy" || cfg.gateway === "khqr") && cfg.enabled
     ));
 
     const paymentProcessor = new PaymentProcessor(models);
@@ -118,7 +118,7 @@ exports.createInvoice = async (req, res) => {
     });
 
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
-      (cfg) => cfg.gateway === "khqr" && cfg.enabled
+      (cfg) => (cfg.gateway === "cutluy" || cfg.gateway === "khqr") && cfg.enabled
     ));
 
     const paymentProcessor = new PaymentProcessor(models);
@@ -264,7 +264,7 @@ exports.createPOSOrder = async (req, res) => {
     });
 
     const merchantConfig = hydratePaymentConfig(paymentConfigs.find(
-      (cfg) => cfg.gateway === "khqr" && cfg.enabled
+      (cfg) => (cfg.gateway === "cutluy" || cfg.gateway === "khqr") && cfg.enabled
     ));
 
     const paymentProcessor = new PaymentProcessor(models);
