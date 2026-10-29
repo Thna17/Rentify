@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { LanguageToggle, Wordmark } from '../../components/site/SiteHeader';
 import { EASE } from '../../components/site/motion';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -30,14 +31,23 @@ import { resolvePackage } from './resolvePackage';
 const Onboarding = () => {
   const { t, language } = useLanguage();
   const { packageId } = useParams();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const requestedPackage = packageId || searchParams.get('plan') || searchParams.get('packageId');
+
+  const stepParam = searchParams.get('step');
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (stepParam === 'template' || stepParam === 'brand' || stepParam === '2') return 2;
+    if (stepParam === 'pricing' || stepParam === 'plan' || stepParam === '3') return 3;
+    if (stepParam === 'payment' || stepParam === '4') return 4;
+    return 1;
+  });
   const [lastSaved, setLastSaved] = useState(null);
   const isKhmer = language === 'KH';
 
   const { data: packageList } = useGetPackagesQuery();
   const packageData = useMemo(
-    () => resolvePackage(Array.isArray(packageList) ? packageList : packageList?.data, packageId),
-    [packageList, packageId]
+    () => resolvePackage(Array.isArray(packageList) ? packageList : packageList?.data, requestedPackage),
+    [packageList, requestedPackage]
   );
 
   const [formData, setFormData] = useState(() => {
@@ -85,6 +95,27 @@ const Onboarding = () => {
       }));
     }
   }, [packageData, keepsChosenPlan, formData.package?.id]);
+
+  // Auto-fill contact details if the user is already authenticated
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/auth/me`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const u = data?.user || data?.data;
+        if (u) {
+          setFormData((prev) => ({
+            ...prev,
+            businessDetails: {
+              ...prev.businessDetails,
+              email: prev.businessDetails?.email || u.email || '',
+              contact: prev.businessDetails?.contact || u.phoneNumber || '',
+              name: prev.businessDetails?.name || u.name || '',
+            },
+          }));
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   // Paid plans get a KHQR payment step before the store is created
   const isPaidPlan = Number(formData.package?.price || 0) > 0;
