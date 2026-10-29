@@ -3851,6 +3851,54 @@ paths:
         '403':
           $ref: '#/components/responses/ForbiddenError'
 
+  /admin/operations/analytics:
+    get:
+      tags:
+        - Admin Operations
+      summary: Get privacy-safe Core operational and subscription metrics
+      description: Returns versioned activation, support SLA, notification reliability,
+        subscription-state and Rentify subscription-revenue measures. COD GMV is never
+        included as Rentify revenue. Undefined provider fees and net recognized revenue
+        are returned explicitly as unavailable rather than zero.
+      operationId: getCorePlatformAnalytics
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 30
+      responses:
+        '200':
+          description: Versioned Core analytics projection
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [catalogVersion, generatedAt, window, activation, support, notificationReliability, subscriptions, revenue]
+                    additionalProperties: true
+                    properties:
+                      catalogVersion: { type: string, example: 1.0.0 }
+                      generatedAt: { type: string, format: date-time }
+                      window: { type: object, additionalProperties: true }
+                      activation: { type: object, additionalProperties: true }
+                      support: { type: object, additionalProperties: true }
+                      notificationReliability: { type: object, additionalProperties: true }
+                      subscriptions: { type: object, additionalProperties: true }
+                      revenue: { type: object, additionalProperties: true }
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
   /admin/operations/{resource}:
     get:
       tags:

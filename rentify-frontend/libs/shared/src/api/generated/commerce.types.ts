@@ -393,6 +393,18 @@ export namespace Commerce {
   }
 
   export interface Operations {
+    get_api_admin_operations_analytics: {
+      method: 'GET';
+      path: '/api/admin/operations/analytics';
+      parameters: {
+        query?: {
+          days?: number;
+        };
+      };
+      response: {
+        data: Record<string, any>;
+      };
+    };
     post_api_admin_operations_inventory_adjust: {
       method: 'POST';
       path: '/api/admin/operations/inventory/adjust';
@@ -570,6 +582,22 @@ export namespace Commerce {
         path: {
           resource: string;
         };
+      };
+      response: any;
+    };
+    post_api_analytics_events: {
+      method: 'POST';
+      path: '/api/analytics/events';
+      parameters: {
+      };
+      body: {
+        eventId?: string;
+        eventName: "marketplace.search_performed" | "marketplace.discovery_viewed" | "cart.item_added" | "cart.item_updated" | "checkout.started" | "checkout.failed";
+        measures?: Record<string, number>;
+        occurredAt?: string;
+        properties: Record<string, any>;
+        schemaVersion?: "1.0.0";
+        storeId?: string;
       };
       response: any;
     };

@@ -73,6 +73,9 @@ function categorizeResource(svc, method, p, tag) {
   if (p.includes('/reports/complaint') || p.includes('/reviews')) {
     return 'Returns and complaints';
   }
+  if (p.includes('/support/cases') || p.includes('/reports')) {
+    return 'Returns and complaints';
+  }
   if (p.includes('/orders') || p.includes('/my-orders')) {
     return 'Orders';
   }

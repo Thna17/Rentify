@@ -7,6 +7,7 @@ router.use(verifyCoreAdmin);
 
 // Overview and moderation queue
 router.get('/overview', requireAdminPermission('ops:overview:read'), safe(controller.overview));
+router.get('/analytics', requireAdminPermission('ops:overview:read'), safe(controller.analytics));
 router.get('/moderation/queue', requireAdminPermission('catalog:moderate'), safe(controller.moderationQueue));
 
 // Dynamic resource listings

@@ -51,6 +51,13 @@ export interface BuyerSession {
   isVerified: boolean;
 }
 
+export interface ProductAnalyticsEventInput {
+  eventName: 'marketplace.search_performed' | 'marketplace.discovery_viewed';
+  occurredAt: string;
+  properties: Record<string, string | boolean>;
+  measures: Record<string, number>;
+}
+
 export interface StoreCartItem {
   id?: string;
   productId: string;
@@ -186,6 +193,12 @@ export class RentifyMarketplaceService {
 
   get configured(): boolean {
     return Boolean(this.core && this.commerce && this.auth);
+  }
+
+  recordAnalyticsEvent(event: ProductAnalyticsEventInput): void {
+    this.http.post(`${this.commerce}/api/analytics/events`, event).subscribe({
+      error: () => undefined,
+    });
   }
 
   session(): Observable<{ user: BuyerSession }> {

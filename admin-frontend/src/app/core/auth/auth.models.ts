@@ -9,6 +9,7 @@ export interface AuthUser {
   status: 'ACTIVE' | 'SUSPENDED' | 'active' | 'suspended';
   mfaEnabled?: boolean;
   claims?: string[];
+  platformRoles?: string[];
   created_at?: string;
   updated_at?: string;
 }

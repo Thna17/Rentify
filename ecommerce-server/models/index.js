@@ -30,6 +30,7 @@ const InventoryReservation = require('./InventoryReservation');
 const ProductImportJob = require('./ProductImportJob');
 const ProductModerationHistory = require('./ProductModerationHistory');
 const BuyerReport = require('./BuyerReport');
+const ProductAnalyticsEvent = require('./ProductAnalyticsEvent');
 
 Product.hasMany(ProductModerationHistory, { foreignKey: 'productId', as: 'ModerationHistories', constraints: false });
 ProductModerationHistory.belongsTo(Product, { foreignKey: 'productId', constraints: false });
@@ -196,4 +197,5 @@ module.exports = {
   ProductImportJob,
   ProductModerationHistory,
   BuyerReport,
+  ProductAnalyticsEvent,
 };

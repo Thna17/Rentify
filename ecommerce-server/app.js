@@ -48,6 +48,7 @@ app.use('/api', require('./modules/invoices/invoiceRoutes'));
 app.use('/api', require('./modules/checkout/marketplaceCheckoutRoutes'));
 app.use('/api', require('./modules/checkout/storefrontCheckoutRoutes'));
 app.use('/api/admin/operations', require('./modules/admin/platformOperationsRoutes'));
+app.use('/api/analytics', require('./modules/analytics/analyticsRoutes'));
 app.use('/ecommerce/stats', require('./modules/stats/ecommerceStatsRoutes'));
 app.use('/api/categories', require('./modules/catalog/categoryRoutes'));
 app.use('/api/auth', require('./modules/auth/authRoutes'));

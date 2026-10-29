@@ -61,6 +61,8 @@ describe('AuthService', () => {
         },
       },
     });
+    const accessReq = httpTesting.expectOne('http://localhost:3001/admin/access/me');
+    accessReq.flush({ data: { roles: ['platform_admin'], permissions: ['platform.audit.read'] } });
 
     const result = await loginPromise;
     expect(result.user?.id).toBe('admin-uuid-1');
@@ -83,6 +85,8 @@ describe('AuthService', () => {
         role: 'admin',
       },
     });
+    const accessReq = httpTesting.expectOne('http://localhost:3001/admin/access/me');
+    accessReq.flush({ data: { roles: ['platform_admin'], permissions: ['platform.audit.read'] } });
 
     const user1 = await userPromise1;
     expect(user1?.id).toBe('admin-uuid-2');
@@ -115,6 +119,8 @@ describe('AuthService', () => {
         role: 'admin',
       },
     });
+    const accessReq = httpTesting.expectOne('http://localhost:3001/admin/access/me');
+    accessReq.flush({ data: { roles: ['platform_admin'], permissions: ['platform.audit.read'] } });
 
     const updated = await refreshPromise;
     expect(updated?.id).toBe('admin-new');
@@ -203,6 +209,20 @@ describe('AuthService', () => {
     expect(service.hasPermission('support:case:write')).toBe(false);
     expect(service.canWriteSupport()).toBe(false);
     expect(service.canReviewSellers()).toBe(false);
+
+    // Canonical Core permissions satisfy transitional Commerce/Admin aliases.
+    service.setUser({
+      id: 'canonical-catalog-admin',
+      name: 'Canonical Catalog Lead',
+      email: 'canonical@rentify.local',
+      role: 'user',
+      status: 'ACTIVE',
+      claims: ['catalog.product.hold'],
+    });
+    expect(service.isAdmin()).toBe(true);
+    expect(service.canModerateCatalog()).toBe(true);
+    expect(service.canModerateReviews()).toBe(true);
+    expect(service.canWriteSupport()).toBe(false);
 
     // Admin without claims array has zero scoped permissions (no broad assumption)
     service.setUser({
