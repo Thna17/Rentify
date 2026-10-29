@@ -108,12 +108,12 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
             [attr.aria-label]="
               product().status === 'out-of-stock'
                 ? 'Out of stock'
-                : 'Add ' + product().name + ' to cart'
+                : (product().hasVariants || (product().productVariants?.length || 0) > 1 ? 'Choose options for ' : 'Add to cart: ') + product().name
             "
           >
             <span class="ring" aria-hidden="true"></span>
             <ui-icon [name]="justAdded() ? 'check' : 'cart'" [size]="14" color="#fff" />
-            <span class="cart-label">{{ justAdded() ? 'Added' : 'Add to cart' }}</span>
+            <span class="cart-label">{{ justAdded() ? 'Added' : product().hasVariants || (product().productVariants?.length || 0) > 1 ? 'Choose options' : 'Add to cart' }}</span>
           </button>
         </div>
       </div>
@@ -578,112 +578,67 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         height: 31px;
       }
 
-      /* Category list view: a marketplace search-result row with a strong
-         image column and all decision-making information beside it. Grid
-         cards keep the compact vertical layout above. */
+      /* Compact result rows: image left, information above a bottom action row. */
       :host-context(.product-list) .product-card {
         display: grid;
-        grid-template-columns: clamp(190px, 26%, 270px) minmax(0, 1fr);
-        min-height: 210px;
-        height: auto;
+        grid-template-columns: 160px minmax(0, 1fr);
+        min-height: 164px;
+        height: 100%;
         overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        background: var(--color-surface);
       }
       :host-context(.product-list) .thumb-wrap {
-        min-height: 210px;
-        border-right: 1px solid var(--color-border);
-        background: var(--color-bg-alt);
+        height: 100%; min-height: 164px; border: 0;
+        border-radius: 0; background: var(--color-bg-alt);
       }
       :host-context(.product-list) .product-thumb {
-        width: 100%;
-        height: 100%;
-        min-height: 210px;
-        aspect-ratio: auto;
+        width: 100%; height: 100%; min-height: 164px;
+        aspect-ratio: auto; object-fit: contain;
       }
       :host-context(.product-list) .product-body {
-        display: flex;
-        justify-content: flex-start;
-        gap: 8px;
-        padding: clamp(18px, 2.4vw, 28px);
+        display: flex; flex-direction: column; min-width: 0;
+        justify-content: flex-start; gap: 5px; padding: 16px 18px; border-top: 0;
       }
-      :host-context(.product-list) .product-kicker {
-        justify-content: flex-start;
-        gap: 16px;
-      }
-      :host-context(.product-list) .tag {
-        font-size: 10px;
-      }
+      :host-context(.product-list) .product-kicker { order: 3; min-height: 0; margin: 0; justify-content: flex-start; }
+      :host-context(.product-list) .product-kicker:empty { display: none; }
       :host-context(.product-list) .name {
-        min-height: 0;
-        max-width: 760px;
-        font-size: clamp(17px, 1.4vw, 21px);
-        line-height: 1.3;
+        order: 1; min-height: 0; margin: 0; max-width: 65ch;
+        font-size: 16px; line-height: 1.4; font-weight: 650;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
       }
       :host-context(.product-list) .seller {
-        width: fit-content;
-        font-size: 12.5px;
+        order: 2; width: fit-content; max-width: 100%; font-size: 12px;
+        line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
       :host-context(.product-list) .price-row {
-        justify-content: flex-start;
-        gap: 24px;
-        margin-top: 7px;
-        padding-top: 0;
+        order: 4; justify-content: space-between; align-items: flex-end;
+        gap: 10px; margin-top: auto; padding-top: 12px; width: 100%;
       }
-      :host-context(.product-list) .price {
-        font-size: 22px;
-      }
+      :host-context(.product-list) .prices { flex-wrap: wrap; gap: 3px 8px; min-width: 0; }
+      :host-context(.product-list) .price { font-size: 18px; line-height: 1.3; font-weight: 750; }
+      :host-context(.product-list) .was { font-size: 11px; }
       :host-context(.product-list) .cart-add {
-        display: inline-flex;
-        width: auto;
-        min-width: 126px;
-        height: 38px;
-        padding: 0 16px;
-        gap: 8px;
-        border-radius: var(--radius-full);
-        color: #fff;
-        font-size: 12px;
-        font-weight: 700;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0; width: auto; min-width: 110px; height: 36px;
+        padding: 0 12px; gap: 7px; border-radius: 10px;
+        color: #fff; font-size: 12px; font-weight: 600;
       }
-      :host-context(.product-list) .cart-label {
-        display: inline;
-      }
-      :host-context(.product-list) .wish-btn {
-        width: 34px;
-        height: 34px;
-      }
-
+      :host-context(.product-list) .cart-label { display: inline; }
+      :host-context(.product-list) .wish-btn { width: 30px; height: 30px; }
       @media (max-width: 640px) {
-        :host-context(.product-list) .product-card {
-          grid-template-columns: 128px minmax(0, 1fr);
-          min-height: 168px;
-        }
+        :host-context(.product-list) .product-card { grid-template-columns: 112px minmax(0, 1fr); min-height: 140px; border-radius: 12px; }
         :host-context(.product-list) .thumb-wrap,
-        :host-context(.product-list) .product-thumb {
-          min-height: 168px;
-        }
-        :host-context(.product-list) .product-body {
-          gap: 5px;
-          padding: 13px;
-        }
-        :host-context(.product-list) .product-kicker .tag {
-          display: none;
-        }
-        :host-context(.product-list) .name {
-          font-size: 14px;
-        }
-        :host-context(.product-list) .price-row {
-          gap: 12px;
-        }
-        :host-context(.product-list) .price {
-          font-size: 17px;
-        }
-        :host-context(.product-list) .cart-add {
-          min-width: 0;
-          width: 36px;
-          padding: 0;
-        }
-        :host-context(.product-list) .cart-label {
-          display: none;
-        }
+        :host-context(.product-list) .product-thumb { min-height: 140px; }
+        :host-context(.product-list) .product-body { gap: 4px; padding: 12px; }
+        :host-context(.product-list) .name { font-size: 13px; line-height: 1.4; }
+        :host-context(.product-list) .seller { font-size: 11px; }
+        :host-context(.product-list) .price-row { padding-top: 8px; }
+        :host-context(.product-list) .price { font-size: 16px; }
+        :host-context(.product-list) .cart-add { min-width: 36px; width: 36px; height: 36px; padding: 0; border-radius: 10px; }
+        :host-context(.product-list) .cart-label { display: none; }
       }
       @media (max-width: 520px) {
         :host-context(.product-grid) .product-thumb { min-height: 142px; }
@@ -694,42 +649,42 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         :host-context(.product-grid) .cart-add { height: 31px; width: 31px; }
       }
 
-      /* ---------- minimal card */
-      .product-card {
+      /* ---------- minimal card (applies to standalone/grid cards, but preserves list view styles) */
+      :host:not(:host-context(.product-list)) .product-card {
         border: 0 !important;
         box-shadow: none !important;
         background: transparent !important;
       }
-      .thumb-wrap {
+      :host:not(:host-context(.product-list)) .thumb-wrap {
         border-radius: 16px;
         overflow: hidden;
         aspect-ratio: 1 / 1;
         background: var(--color-bg-alt);
       }
-      .product-body { padding: 12px 2px 0 !important; gap: 2px !important; }
+      :host:not(:host-context(.product-list)) .product-body { padding: 12px 2px 0 !important; gap: 2px !important; }
       /* Fixed min-height so a card with no reviews takes the same space as
          one with a rating row — otherwise cards in the same grid row end up
          at different heights depending on whether they have reviews yet. */
-      .product-kicker { order: 3; min-height: 15px !important; margin: 0 !important; }
-      .name {
+      :host:not(:host-context(.product-list)) .product-kicker { order: 3; min-height: 15px !important; margin: 0 !important; }
+      :host:not(:host-context(.product-list)) .name {
         font-size: 14px !important; font-weight: 500 !important; line-height: 1.35 !important;
         font-family: var(--font-body) !important; color: var(--color-text) !important;
         display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
       }
-      .seller { font-size: 12.5px !important; color: var(--color-muted) !important; }
-      .price-row { margin-top: 8px !important; align-items: center !important; }
-      .price { font-size: 15px !important; font-weight: 700 !important; color: var(--color-text) !important; }
-      .was { font-size: 12.5px !important; }
-      .discount-badge {
+      :host:not(:host-context(.product-list)) .seller { font-size: 12.5px !important; color: var(--color-muted) !important; }
+      :host:not(:host-context(.product-list)) .price-row { margin-top: 8px !important; align-items: center !important; }
+      :host:not(:host-context(.product-list)) .price { font-size: 15px !important; font-weight: 700 !important; color: var(--color-text) !important; }
+      :host:not(:host-context(.product-list)) .was { font-size: 12.5px !important; }
+      :host:not(:host-context(.product-list)) .discount-badge {
         background: #ef4444 !important; color: #fff !important; border: 0 !important;
         border-radius: 999px !important; font-size: 11px !important; padding: 2px 8px !important;
       }
-      .cart-add {
+      :host:not(:host-context(.product-list)) .cart-add {
         width: 34px !important; height: 34px !important; min-width: 0 !important; padding: 0 !important;
         border-radius: 999px !important; background: var(--color-text) !important; justify-content: center;
       }
-      .cart-add:hover:not(:disabled) { background: var(--color-accent) !important; }
-      .cart-label { display: none !important; }
+      :host:not(:host-context(.product-list)) .cart-add:hover:not(:disabled) { background: var(--color-accent) !important; }
+      :host:not(:host-context(.product-list)) .cart-label { display: none !important; }
       .wish-btn { opacity: 0; transition: opacity 180ms ease; }
       .product-card:hover .wish-btn, .wish-btn.saved, .wish-btn:focus-visible { opacity: 1; }
       @media (hover: none) { .wish-btn { opacity: 1; } }
@@ -826,6 +781,10 @@ export class ProductCardComponent {
 
   protected async addToCart(event: Event): Promise<void> {
     event.stopPropagation();
+    if (this.product().hasVariants || (this.product().productVariants?.length || 0) > 1 || (this.product().options?.length || 0) > 0) {
+      void this.router.navigate(['/product', this.product().id]);
+      return;
+    }
 
     // Fires immediately, independent of the server round-trip below, so the
     // click feels instant instead of waiting on a network response.

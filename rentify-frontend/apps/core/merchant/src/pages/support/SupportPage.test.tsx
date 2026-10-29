@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import SupportPage from './SupportPage';
+import SupportPage from './SupportCases';
 
 vi.mock('@rentify/utils', () => ({ useTranslation: () => ({ language: 'en' }) }));
 vi.mock('@rentify/shared/config/urls', () => ({ RENTIFY_API_BASE: 'https://core.example.test' }));

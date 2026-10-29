@@ -10,6 +10,8 @@ import {
   ArrowLeft,
   Send,
   Edit2,
+  Mail,
+  Smartphone,
 } from 'lucide-react';
 import {
   useVerifyOtpMutation,
@@ -147,7 +149,7 @@ export default function VerifyOtpForm() {
 
   const submitVerification = async (codeToVerify: string) => {
     if (codeToVerify.length !== 6) {
-      setError(t('error.otpRequired'));
+      setError('error.otpRequired');
       return;
     }
 
@@ -184,12 +186,8 @@ export default function VerifyOtpForm() {
         window.location.href = redirect;
       }, 1500);
     } catch (err: any) {
-      setError(
-        err?.data?.error ||
-          (isKhmer
-            ? 'លេខកូដសម្ងាត់ OTP មិនត្រឹមត្រូវ ឬផុតកំណត់'
-            : 'Invalid or expired OTP')
-      );
+      const message = String(err?.data?.error || err?.data?.message || '');
+      setError(/invalid|expired|otp/i.test(message) ? 'verify.invalidCode' : 'verify.failed');
     }
   };
 
@@ -225,10 +223,7 @@ export default function VerifyOtpForm() {
           : 'A new verification code has been sent'
       );
     } catch (err: any) {
-      setError(
-        err?.data?.error ||
-          (isKhmer ? 'មិនអាចផ្ញើលេខកូដឡើងវិញបានទេ' : 'Failed to resend code')
-      );
+      setError('verify.resendFailed');
     }
   };
 
@@ -244,42 +239,27 @@ export default function VerifyOtpForm() {
       className={cn('space-y-6 transition-transform duration-200', shouldShake && 'animate-shake')}
       noValidate
     >
-      {/* Visual Destination Badge */}
       {maskedDestination && (
-        <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 shadow-sm animate-in fade-in-50">
-          <span className={cn('text-xs text-slate-500 font-medium text-center', isKhmer && 'font-khmer')}>
-            {isKhmer
-              ? 'យើងបានផ្ញើលេខកូដសម្ងាត់ ៦ ខ្ទង់ទៅកាន់'
-              : 'We sent a 6-digit verification code to'}
-          </span>
-          <span className="font-mono text-sm font-bold text-slate-800 mt-1 tracking-wide">
-            {maskedDestination}
-          </span>
+        <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200/70">
+            {isPhone ? <Smartphone className="h-5 w-5" /> : <Mail className="h-5 w-5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className={cn('text-xs text-slate-500', isKhmer && 'font-khmer')}>
+              {isKhmer ? 'លេខកូដត្រូវបានផ្ញើទៅ' : 'Code sent to'}
+            </p>
+            <p className="mt-0.5 break-all text-sm font-medium text-slate-800">{maskedDestination}</p>
+          </div>
           <button
             type="button"
             onClick={handleChangeContact}
-            className={cn(
-              'mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors',
-              isKhmer && 'font-khmer text-sm'
-            )}
+            aria-label={t('verify.changeContact')}
+            className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600', isKhmer && 'font-khmer')}
           >
-            <Edit2 className="h-3 w-3" />
-            <span>{t('verify.changeContact')}</span>
+            <Edit2 className="h-3.5 w-3.5" />
+            <span>{isKhmer ? 'ប្តូរ' : 'Change'}</span>
           </button>
         </div>
-      )}
-
-      {/* Error Alert */}
-      {error && (
-        <Alert
-          variant="destructive"
-          className="flex items-start gap-3 rounded-2xl border-rose-200 bg-rose-50/90 text-rose-900 shadow-sm animate-in fade-in-50"
-        >
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-600 mt-0.5" />
-          <AlertDescription className={cn('text-sm font-medium leading-relaxed', isKhmer && 'font-khmer')}>
-            {error}
-          </AlertDescription>
-        </Alert>
       )}
 
       {/* Success Alert */}
@@ -304,11 +284,14 @@ export default function VerifyOtpForm() {
               pattern="[0-9]*"
               maxLength={1}
               autoFocus={idx === 0}
+              aria-label={`Digit ${idx + 1} of 6`}
+              aria-invalid={Boolean(error)}
+              autoComplete={idx === 0 ? 'one-time-code' : 'off'}
               value={digit}
               onChange={(e) => handleChange(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
               className={cn(
-                'h-14 w-11 sm:h-15 sm:w-14 rounded-2xl border-2 text-center font-mono text-2xl font-bold transition-all focus:outline-none',
+                'h-12 min-w-0 w-full sm:h-14 rounded-xl border text-center text-xl font-semibold transition-all focus:outline-none',
                 digit
                   ? 'border-blue-600 bg-blue-50/40 text-blue-900 shadow-sm'
                   : 'border-slate-300 bg-white text-slate-800 hover:border-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10'
@@ -324,11 +307,24 @@ export default function VerifyOtpForm() {
         </p>
       </div>
 
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          variant="destructive"
+          className="flex items-start gap-3 rounded-xl border-rose-100 bg-rose-50 px-3.5 py-3 text-rose-800"
+        >
+          <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-500 mt-0.5" />
+          <AlertDescription className={cn('text-sm leading-relaxed', isKhmer && 'font-khmer')}>
+            {t(error)}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Primary Submit Button */}
       <Button
         type="submit"
         disabled={isVerifying || otpCode.length !== 6}
-        className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed"
+        className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-blue-600 active:scale-[0.99] transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isVerifying ? (
           <div className="flex items-center justify-center gap-2">

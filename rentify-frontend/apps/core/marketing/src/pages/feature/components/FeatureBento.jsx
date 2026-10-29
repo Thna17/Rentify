@@ -16,7 +16,7 @@ import { Container, Heading, Lead, Section, Tile } from '../../../components/sit
 const TileText = ({ label, title, className }) => (
   <div className={cn('relative z-10', className)}>
     <p className="text-[14px] font-semibold text-[#6e6e73] md:text-[15px]">{label}</p>
-    <h3 className="mt-2 whitespace-pre-line text-[26px] font-semibold leading-[1.12] tracking-[-0.02em] text-[#1d1d1f] md:text-[30px]">
+    <h3 className="mt-2 whitespace-pre-line text-[22px] font-semibold leading-[1.12] tracking-[-0.02em] text-[#1d1d1f] md:text-[30px]">
       {title}
     </h3>
   </div>

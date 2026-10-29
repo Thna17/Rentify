@@ -54,13 +54,13 @@ export const PaymentsSection = () => {
           <Reveal delay={0.16}>
             <Lead className="mt-6 max-w-lg text-[#a1a1a6]">{t(key('payments.lead'))}</Lead>
           </Reveal>
-          <Stagger className="mt-12 grid gap-8 sm:grid-cols-3 lg:grid-cols-1 lg:gap-6 xl:grid-cols-3" delay={0.2}>
+          <Stagger className="mt-8 grid gap-4 sm:mt-12 sm:grid-cols-3 sm:gap-8 lg:grid-cols-1 lg:gap-6 xl:grid-cols-3" delay={0.2}>
             {['f1', 'f2', 'f3'].map((fact) => (
-              <StaggerItem key={fact} className="border-t border-white/15 pt-5">
-                <p className="text-[17px] font-semibold text-white">
+              <StaggerItem key={fact} className="border-t border-white/15 pt-4 sm:pt-5">
+                <p className="text-[15px] font-semibold text-white sm:text-[17px]">
                   {t(key(`payments.${fact}.title`))}
                 </p>
-                <p className="mt-1.5 text-[15px] leading-snug text-[#a1a1a6]">
+                <p className="mt-1.5 hidden text-[15px] leading-snug text-[#a1a1a6] sm:block">
                   {t(key(`payments.${fact}.body`))}
                 </p>
               </StaggerItem>
@@ -184,14 +184,14 @@ export const MoreGrid = () => {
             {t(key('more.title'))}
           </Heading>
         </Reveal>
-        <Stagger className="mt-16 grid grid-cols-2 gap-x-6 gap-y-12 md:mt-20 md:grid-cols-4 md:gap-x-10 md:gap-y-16">
+        <Stagger className="mt-10 grid grid-cols-2 gap-x-6 gap-y-7 md:mt-20 md:grid-cols-4 md:gap-x-10 md:gap-y-16">
           {MORE_ITEMS.map(({ id, icon: Icon }) => (
             <StaggerItem key={id}>
-              <Icon className="h-8 w-8 text-[#1d1d1f]" strokeWidth={1.4} />
-              <p className="mt-4 text-[17px] font-semibold text-[#1d1d1f]">
+              <Icon className="h-6 w-6 text-[#1d1d1f] md:h-8 md:w-8" strokeWidth={1.4} />
+              <p className="mt-3 text-[15px] font-semibold text-[#1d1d1f] md:mt-4 md:text-[17px]">
                 {t(key(`more.${id}.title`))}
               </p>
-              <p className="mt-1 text-[15px] leading-snug text-[#6e6e73]">
+              <p className="mt-1 hidden text-[15px] leading-snug text-[#6e6e73] md:block">
                 {t(key(`more.${id}.body`))}
               </p>
             </StaggerItem>

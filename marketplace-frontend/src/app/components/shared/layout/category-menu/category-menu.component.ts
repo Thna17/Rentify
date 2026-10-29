@@ -154,13 +154,19 @@ const CLOSE_DELAY_MS = 220;
         font-size: 12.5px;
         font-weight: 500;
         color: var(--color-text-secondary);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .cat-row::-webkit-scrollbar {
+        display: none;
       }
       .cat-items {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: clamp(14px, 1.6vw, 30px);
+        gap: clamp(10px, 1.4vw, 24px);
         height: 100%;
+        flex-shrink: 0;
       }
       .cat-item {
         position: relative;
@@ -357,25 +363,32 @@ const CLOSE_DELAY_MS = 220;
         font-family: var(--font-heading);
         font-size: 24px;
         letter-spacing: -.01em;
+        line-height: 1.2;
+        margin: 0;
       }
       .promo p {
         margin: 8px 0 14px;
-        max-width: 24ch;
+        max-width: 26ch;
         color: var(--color-text-secondary);
         font-size: 13.5px;
-        line-height: 1.5;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
       }
       .promo-cta {
         display: inline-flex;
         align-items: center;
         gap: 7px;
         margin-top: auto;
-        padding: 11px 20px;
+        padding: 10px 18px;
         border-radius: var(--radius-full);
         background: var(--color-accent);
         color: #fff;
-        font-size: 13.5px;
+        font-size: 13px;
         font-weight: 650;
+        white-space: nowrap;
       }
       .promo-cta:hover {
         background: var(--color-accent-hover);
@@ -498,12 +511,11 @@ export class CategoryMenuComponent {
    * intrinsic width, which is the thing being economised in the first place.
    */
   /*
-   * 1180px, matching the width at which full labels plus the shortcut pills
-   * stop fitting on one line (they need ~1130px together). Shortening the
-   * labels at the same point is what lets the pills survive down to tablet
-   * widths instead of disappearing.
+   * 1360px matches when full category names plus the 3 shortcut badges
+   * start crowding on desktop screens before wrapping or overflowing.
+   * Switching to compact labels earlier ensures a clean single-line fit.
    */
-  private readonly compactQuery = globalThis.matchMedia?.('(max-width: 1180px)');
+  private readonly compactQuery = globalThis.matchMedia?.('(max-width: 1360px)');
   protected readonly compactLabels = signal(this.compactQuery?.matches ?? false);
 
   protected label(category: Category): string {

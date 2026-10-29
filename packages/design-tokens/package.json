@@ -1,6 +1,6 @@
 {
   "name": "@rentify/design-tokens",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Framework-neutral semantic design tokens and accessibility foundations for Rentify",
   "main": "index.js",
   "types": "index.d.ts",
@@ -21,7 +21,8 @@
     "index.js",
     "index.d.ts",
     "tailwind-preset.js",
-    "contrast-validator.js"
+    "contrast-validator.js",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "node contrast-validator.js && node --test test/tokens.test.js",

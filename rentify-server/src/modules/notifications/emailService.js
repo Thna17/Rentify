@@ -120,7 +120,34 @@ function createSmtpTransporter() {
 
 let smtpTransporter = null;
 
+// In local development a broken mail account should not block sign-up or
+// password reset: the message (with its code) is printed to the server log.
+const logEmailForDevelopment = (to, subject, html, error) => {
+  const text = String(html)
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  console.warn(
+    `[dev email] Delivery failed (${error.message}). Showing the email instead:\n` +
+      `  To: ${to}\n  Subject: ${subject}\n  ${text}`
+  );
+  return { success: true, devLogged: true };
+};
+
 async function sendEmail(to, subject, html) {
+  try {
+    return await deliverEmail(to, subject, html);
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      return logEmailForDevelopment(to, subject, html, error);
+    }
+    throw error;
+  }
+}
+
+async function deliverEmail(to, subject, html) {
   const resendApiKey = process.env.RESEND_API_KEY;
 
   if (resendApiKey) {

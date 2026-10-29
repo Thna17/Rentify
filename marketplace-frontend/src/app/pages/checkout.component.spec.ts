@@ -264,8 +264,61 @@ describe('CheckoutComponent (P4-BUY-003 COD Checkout)', () => {
     await component['placeOrder']();
 
     expect(component['form'].get('policyAcknowledged')?.invalid).toBe(true);
-    expect(component['error']()).toContain('acknowledge store policy');
+    expect(component['showValidationSummary']()).toBe(true);
     expect(mockRentifyService.checkout).not.toHaveBeenCalled();
+  });
+
+  it('offers province and district dropdowns and resets district when province changes', () => {
+    const province = fixture.nativeElement.querySelector('select[formControlName="province"]') as HTMLSelectElement;
+    const city = fixture.nativeElement.querySelector('select[formControlName="city"]') as HTMLSelectElement;
+    expect(province.options.length).toBe(26);
+    expect(city.options.length).toBe(1);
+
+    province.value = 'Phnom Penh';
+    province.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(city.options.length).toBeGreaterThan(1);
+    const firstDistrict = component['districts']()[0].en;
+    city.value = firstDistrict;
+    city.dispatchEvent(new Event('change'));
+    expect(component['form'].controls.city.value).toBe(firstDistrict);
+
+    province.value = 'Kandal';
+    province.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(component['form'].controls.city.value).toBe('');
+    expect(component['form'].controls.city.invalid).toBe(true);
+    expect(Array.from(city.options).slice(1).map((option) => option.value)).toEqual(component['districts']().map((district) => district.en));
+    expect(component['invalid']('city')).toBe(false);
+  });
+
+  it('keeps untouched and blurred fields quiet until an order attempt', async () => {
+    const address = component['form'].controls.address;
+    address.markAsTouched();
+    fixture.detectChanges();
+    expect(component['invalid']('address')).toBe(false);
+    const message = fixture.nativeElement.querySelector('#address-error');
+    expect(message.classList.contains('error-hidden')).toBe(true);
+
+    await component['placeOrder']();
+    fixture.detectChanges();
+    expect(component['invalid']('address')).toBe(true);
+    expect(fixture.nativeElement.querySelector('#address-error')).toBe(message);
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('[formControlName="province"]'));
+    expect(mockRentifyService.checkout).not.toHaveBeenCalled();
+
+    component['form'].patchValue({
+      province: 'Phnom Penh', city: 'Chamkarmon', address: 'Street 240', policyAcknowledged: true,
+    });
+    fixture.detectChanges();
+    expect(component['showValidationSummary']()).toBe(false);
+    expect(component['invalid']('address')).toBe(false);
+  });
+
+  it('updates the address review when delivery fields change', () => {
+    expect(component['fullDeliveryAddress']()).toBe('');
+    component['form'].patchValue({ address: 'Street 240', city: 'Chamkarmon', province: 'Phnom Penh' });
+    expect(component['fullDeliveryAddress']()).toBe('Street 240, Chamkarmon, Phnom Penh');
   });
 
   it('should idempotently place order with preserved checkout key and clear on success', async () => {

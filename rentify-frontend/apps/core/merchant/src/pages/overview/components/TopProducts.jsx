@@ -5,15 +5,14 @@ import { Package } from "lucide-react";
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
 
-export const TopProducts = ({ products = [], isLoading, labels = {} }) => {
-  const copy = { title: 'Top products', byRevenue: 'By revenue', sold: 'sold', empty: 'No sales yet', emptyHelp: 'Your best sellers will show up here.', ...labels };
+export const TopProducts = ({ products = [], isLoading }) => {
   const maxRevenue = Math.max(1, ...products.map((p) => Number(p.revenue) || 0));
 
   return (
-    <Card className="h-full gap-0 p-6 bg-card">
+    <Card className="h-full gap-0 rounded-3xl bg-card p-6 shadow-[var(--shadow-soft)]">
       <div className="flex items-baseline justify-between">
-        <h3 className="text-base font-semibold text-foreground">{copy.title}</h3>
-        <span className="text-xs text-muted-foreground">{copy.byRevenue}</span>
+        <h3 className="text-base font-semibold text-foreground">Top products</h3>
+        <span className="text-xs text-muted-foreground">By revenue</span>
       </div>
 
       {isLoading ? (
@@ -53,7 +52,7 @@ export const TopProducts = ({ products = [], isLoading, labels = {} }) => {
                     />
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {product.unitsSold} {copy.sold}
+                    {product.unitsSold} sold
                   </span>
                 </div>
               </div>
@@ -65,8 +64,8 @@ export const TopProducts = ({ products = [], isLoading, labels = {} }) => {
           <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <Package className="h-5 w-5" />
           </span>
-          <p className="text-sm font-medium text-foreground">{copy.empty}</p>
-          <p className="text-xs text-muted-foreground mt-1">{copy.emptyHelp}</p>
+          <p className="text-sm font-medium text-foreground">No sales yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Your best sellers will show up here.</p>
         </div>
       )}
     </Card>

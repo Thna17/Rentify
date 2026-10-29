@@ -133,21 +133,6 @@ import { ProductCardComponent } from '../product-card/product-card.component';
         outline-offset: 2px;
         border-radius: var(--radius-md);
       }
-      /* Keep the scrollbar visible rather than overlay-only: with no arrow
-         buttons it is the only cue that the row scrolls. */
-      .rail::-webkit-scrollbar {
-        height: 7px;
-      }
-      .rail::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .rail::-webkit-scrollbar-thumb {
-        background: var(--color-border-strong);
-        border-radius: var(--radius-full);
-      }
-      .rail::-webkit-scrollbar-thumb:hover {
-        background: var(--color-muted-2);
-      }
 
       /* Dense discovery rails expose more choices before the shopper needs to
          scroll, while each card still has enough room for two-line names. */

@@ -594,7 +594,8 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
       if (!activeModel) return;
-      const scale = window.innerWidth < 640 ? 0.44 : window.innerWidth < 1024 ? 0.88 : 1;
+      const isPhone = window.innerWidth < 640;
+      const scale = isPhone ? 0.6 : window.innerWidth < 1024 ? 0.88 : 1;
       activeModel.root.scale.setScalar(activeModel.baseScale * scale);
     };
     const observer = new ResizeObserver(resize);
@@ -615,7 +616,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
         screenMaterial.uniforms.effect.value = TRANSITION_EFFECTS[stage];
         // On wide screens the laptop moves right to make room for the feature text
         const slideDistance = window.innerWidth >= 1024 ? 1.35 : 0;
-        activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance + (window.innerWidth < 640 ? 0.2 : 0);
+        activeModel.root.position.x = (activeModel.basePositionX || 0) + motion.slide * slideDistance;
         activeModel.root.position.y = activeModel.basePositionY + motion.modelLift;
       }
       camera.lookAt(0, motion.cameraTargetY, 0);
@@ -628,7 +629,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     const featureItems = featurePanel.querySelectorAll('[data-feature]');
     gsap.set(labels, { autoAlpha: 0, y: 18 });
     gsap.set(featurePanel, { autoAlpha: 0 });
-    gsap.set(featureItems, { opacity: 0.3 });
+    gsap.set(featureItems, { opacity: 0.35 });
     const captions = captionLayer.querySelectorAll('[data-caption]');
     gsap.set(captions, { autoAlpha: 0, y: 16 });
 
@@ -654,9 +655,20 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       .to(marketplaceLabelRef.current, { autoAlpha: 1, y: 0, duration: 0.3 }, 1.55)
       .to(marketplaceLabelRef.current, { autoAlpha: 0, y: -16, duration: 0.25 }, 2.1)
       // The camera moves in until the laptop screen fills most of the view
-      // Narrow windows zoom less so the whole screen stays in view
-      .to(camera.position, { z: () => (window.innerWidth / window.innerHeight < 1.4 ? 5.6 : 3.9), y: 1.35, duration: 0.8 }, 2.1)
-      .to(motion, { cameraTargetY: 1.1, duration: 0.8 }, 2.1)
+      // Zoom in tight on phones so the screen and details are clearly legible
+      .to(
+        camera.position,
+        {
+          z: () => {
+            if (window.innerWidth < 640) return 4.0;
+            return window.innerWidth / window.innerHeight < 1.4 ? 5.2 : 3.9;
+          },
+          y: () => (window.innerWidth < 640 ? 1.3 : 1.35),
+          duration: 0.8,
+        },
+        2.1
+      )
+      .to(motion, { cameraTargetY: () => (window.innerWidth < 640 ? 1.05 : 1.1), duration: 0.8 }, 2.1)
       .to(captions[0], { autoAlpha: 1, y: 0, duration: 0.25 }, 2.7)
       .to(captions[0], { autoAlpha: 0, y: -12, duration: 0.15 }, 3.35)
       .to(motion, { screen: 2, duration: 0.55 }, 3.4)
@@ -671,6 +683,8 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       .to(motion, { cameraTargetY: 0.82, duration: 0.9 }, 5.2)
       // 4. The laptop moves right, dashboard features appear on the left, led by POS
       .to(motion, { slide: 1, duration: 0.6 }, 6.1)
+      // Below lg the features sit under the laptop, so tilt the camera to lift the laptop into the top half
+      .to(motion, { cameraTargetY: () => (window.innerWidth < 1024 ? 0.28 : 0.82), duration: 0.6 }, 6.1)
       .fromTo(featurePanel, { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.4 }, 6.3)
       .to(motion, { screen: 5, duration: 0.55 }, 6.4)
       .to(featureItems[0], { opacity: 1, duration: 0.2 }, 6.45)
@@ -734,28 +748,28 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
 
           <div
             ref={featurePanelRef}
-            className="pointer-events-none absolute inset-x-5 bottom-20 rounded-3xl bg-white/85 p-6 backdrop-blur lg:inset-x-auto lg:bottom-auto lg:left-[6vw] lg:top-1/2 lg:w-[380px] lg:-translate-y-1/2 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+            className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] sm:inset-x-8 sm:bottom-8 sm:p-6 lg:inset-x-auto lg:border-0 lg:shadow-none lg:bottom-auto lg:left-[6vw] lg:top-1/2 lg:w-[380px] lg:-translate-y-1/2 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
           >
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">Inside the dashboard</p>
-            <h3 className="mt-3 text-3xl font-bold leading-tight tracking-[-0.03em] text-slate-950 lg:text-5xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600 lg:text-sm lg:tracking-[0.18em]">Inside the dashboard</p>
+            <h3 className="mt-1.5 text-xl font-bold leading-tight tracking-[-0.03em] text-slate-950 sm:text-2xl lg:mt-3 lg:text-5xl">
               Sell at the counter, too.
             </h3>
-            <ul className="mt-6 space-y-4 lg:mt-8 lg:space-y-5">
+            <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 lg:mt-8 lg:block lg:space-y-5">
               {[
                 ['Point of sale', 'Ring up in-store sales in seconds on any laptop or tablet.'],
                 ['KHQR and cash', 'Take payment by KHQR or cash right at the counter.'],
                 ['One stock count', 'In-store sales draw from the same products as your online store.'],
                 ['Orders and reports', 'Every sale lands in one list, ready for your reports.'],
               ].map(([title, body]) => (
-                <li key={title} data-feature className="border-l-2 border-blue-600/30 pl-4">
-                  <p className="text-base font-semibold text-slate-950 lg:text-lg">{title}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-500 lg:text-base">{body}</p>
+                <li key={title} data-feature className="border-l-2 border-blue-600/30 pl-2.5 lg:pl-4">
+                  <p className="text-[13px] font-semibold leading-snug text-slate-950 lg:text-lg">{title}</p>
+                  <p className="mt-0.5 text-[11.5px] leading-[1.4] text-slate-500 line-clamp-3 lg:mt-1 lg:text-base lg:leading-6 lg:line-clamp-none">{body}</p>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur">
+          <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full lg:block border border-white/70 bg-white/70 px-4 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur">
             {modelStatus} · Scroll to explore
           </div>
         </div>

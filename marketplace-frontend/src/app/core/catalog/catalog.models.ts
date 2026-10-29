@@ -113,18 +113,23 @@ export interface Store {
 }
 
 export interface CartItem {
+  variantId?: string | null;
   productId: string;
   quantity: number;
 }
 
 /** A cart line joined with its product, ready to render. */
 export interface CartLine {
+  variantId?: string | null;
+  optionValues?: Record<string, string>;
+  variantImage?: string | null;
   product: Product;
   quantity: number;
   lineTotal: number;
 }
 
 export interface StoreCartGroupLine {
+  variantImage?: string | null;
   id?: string;
   product: Product;
   variantId?: string | null;

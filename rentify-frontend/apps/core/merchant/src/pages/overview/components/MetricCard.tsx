@@ -11,7 +11,6 @@ interface MetricCardProps {
   color: 'primary' | 'success' | 'warning' | 'info' | 'destructive' | 'secondary';
   tooltip?: string;
   loading?: boolean;
-  comparisonLabel?: string;
 }
 
 // Soft tinted icon chips; colour is a hint, not a block.
@@ -24,7 +23,7 @@ const ICON_TINT: Record<string, string> = {
   info: 'bg-sky-500/10 text-sky-600',
 };
 
-export const MetricCard = ({ icon, title, value, trend, color, tooltip, loading, comparisonLabel = 'vs previous period' }: MetricCardProps) => {
+export const MetricCard = ({ icon, title, value, trend, color, tooltip, loading }: MetricCardProps) => {
   if (loading) {
     return (
       <Card className="gap-0 p-5 bg-card">
@@ -67,7 +66,7 @@ export const MetricCard = ({ icon, title, value, trend, color, tooltip, loading,
             {up ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
             {Math.abs(trend)}%
           </span>
-          <span className="text-muted-foreground">{comparisonLabel}</span>
+          <span className="text-muted-foreground">vs previous period</span>
         </div>
       ) : (
         <div className="mt-2.5 h-4" />

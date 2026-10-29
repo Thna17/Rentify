@@ -1,81 +1,98 @@
 /**
- * Rentify Platform Design Tokens
+ * Rentify Platform Design Tokens v1.1 — "Jade & Saffron"
  * Framework-neutral semantic design tokens for React, Angular, and Tailwind CSS.
- * Conforms to WCAG 2.1 AA accessibility contrast standards.
+ * Conforms to WCAG 2.2 AA contrast (verified by contrast-validator.js).
  */
 
 :root {
   /* ============================================================
      1. Brand & Surface Colors
      ============================================================ */
-  --rentify-color-brand-primary: #4f46e5;
-  --rentify-color-brand-primary-hover: #4338ca;
-  --rentify-color-brand-primary-active: #3730a3;
-  --rentify-color-brand-primary-subtle: rgba(79, 70, 229, 0.08);
-  --rentify-color-brand-secondary: #2563eb;
-  --rentify-color-brand-secondary-hover: #1d4ed8;
+  --rentify-color-brand-primary: #0e6b5c;          /* Jade 700 */
+  --rentify-color-brand-primary-hover: #0a5549;    /* Jade 800 */
+  --rentify-color-brand-primary-active: #08443b;   /* Jade 900 */
+  --rentify-color-brand-primary-subtle: #e3f2ee;
+  --rentify-color-brand-secondary: #0e6b5c;        /* compatibility alias of primary */
+  --rentify-color-brand-secondary-hover: #0a5549;
+  --rentify-color-brand-accent: #f2a516;           /* Saffron 500: background only */
+  --rentify-color-brand-accent-subtle: #fdf3dc;
 
   --rentify-color-surface-base: #ffffff;
-  --rentify-color-surface-subtle: #f8fafc;
-  --rentify-color-surface-muted: #f1f5f9;
+  --rentify-color-surface-canvas: #faf8f4;
+  --rentify-color-surface-subtle: #f3f0ea;
+  --rentify-color-surface-muted: #eeeae3;
   --rentify-color-surface-raised: #ffffff;
-  --rentify-color-surface-hover: #f1f3f8;
-  --rentify-color-surface-overlay: rgba(15, 23, 42, 0.6);
+  --rentify-color-surface-hover: #f5f2ec;
+  --rentify-color-surface-inverse: #111418;
+  --rentify-color-surface-overlay: rgba(17, 20, 24, 0.6);
 
   /* ============================================================
-     2. Text Colors (WCAG AA Compliant on White & Subtle Surfaces)
+     2. Text Colors (WCAG AA on base, canvas and subtle surfaces)
      ============================================================ */
-  --rentify-color-text-primary: #0f172a;       /* 17.4:1 contrast on white */
-  --rentify-color-text-secondary: #475569;     /* 7.4:1 contrast on white */
-  --rentify-color-text-muted: #64748b;         /* 4.6:1 contrast on white */
-  --rentify-color-text-inverse: #ffffff;       /* 6.7:1 contrast on primary */
-  --rentify-color-text-brand: #4338ca;         /* 8.9:1 contrast on white */
-  --rentify-color-text-disabled: #94a3b8;
+  --rentify-color-text-primary: #111418;       /* 18.4:1 on white */
+  --rentify-color-text-secondary: #4a4f57;     /* 8.3:1 on white */
+  --rentify-color-text-muted: #666a72;         /* 5.4:1 white · 5.1:1 canvas · 4.8:1 subtle */
+  --rentify-color-text-inverse: #ffffff;       /* 6.4:1 on primary */
+  --rentify-color-text-brand: #0e6b5c;         /* 6.4:1 on white */
+  --rentify-color-text-on-accent: #111418;     /* 8.9:1 on accent */
+  --rentify-color-text-disabled: #9a968e;
 
   /* ============================================================
      3. Border Colors & Widths
      ============================================================ */
-  --rentify-color-border-default: #e2e8f0;
-  --rentify-color-border-subtle: #f1f5f9;
-  --rentify-color-border-strong: #cbd5e1;
-  --rentify-color-border-interactive: #94a3b8;
-  --rentify-color-border-focus: #4f46e5;
+  --rentify-color-border-default: #ddd8cf;
+  --rentify-color-border-subtle: #ece8e1;
+  --rentify-color-border-strong: #c7c1b6;
+  --rentify-color-border-input: #8b867d;       /* 3.6:1 white · 3.4:1 canvas (WCAG 1.4.11) */
+  --rentify-color-border-interactive: #8b867d;
+  --rentify-color-border-focus: #0e6b5c;
   --rentify-border-width-default: 1px;
   --rentify-border-width-thick: 2px;
 
   /* ============================================================
      4. Status & Feedback (Accessible Color Pairs)
      ============================================================ */
-  /* Success */
-  --rentify-color-success-base: #16a34a;
-  --rentify-color-success-text: #14532d;       /* 8.4:1 contrast on subtle */
-  --rentify-color-success-subtle: #f0fdf4;
-  --rentify-color-success-border: #bbf7d0;
+  /* Success: paid, delivered, approved */
+  --rentify-color-success-base: #15803d;
+  --rentify-color-success-text: #14532d;
+  --rentify-color-success-subtle: #eaf6ee;
+  --rentify-color-success-border: #bfe3cb;
 
-  /* Warning */
-  --rentify-color-warning-base: #d97706;
-  --rentify-color-warning-text: #78350f;       /* 9.3:1 contrast on subtle */
-  --rentify-color-warning-subtle: #fffbeb;
-  --rentify-color-warning-border: #fde68a;
+  /* Warning: pending, needs action, deadline soon */
+  --rentify-color-warning-base: #b45309;
+  --rentify-color-warning-text: #78350f;
+  --rentify-color-warning-subtle: #fef5e7;
+  --rentify-color-warning-border: #f6d9a8;
 
-  /* Danger / Error */
-  --rentify-color-danger-base: #dc2626;
-  --rentify-color-danger-text: #7f1d1d;        /* 11.2:1 contrast on subtle */
-  --rentify-color-danger-subtle: #fef2f2;
-  --rentify-color-danger-border: #fecaca;
+  /* Danger: errors, suspended, rejected */
+  --rentify-color-danger-base: #c2261c;
+  --rentify-color-danger-text: #7f1d1d;
+  --rentify-color-danger-subtle: #fdecea;
+  --rentify-color-danger-border: #f5c2bd;
 
-  /* Info */
-  --rentify-color-info-base: #2563eb;
-  --rentify-color-info-text: #1e3a8a;          /* 9.7:1 contrast on subtle */
-  --rentify-color-info-subtle: #eff6ff;
-  --rentify-color-info-border: #bfdbfe;
+  /* Info: shipped, in progress */
+  --rentify-color-info-base: #1d5fb8;
+  --rentify-color-info-text: #1e3a8a;
+  --rentify-color-info-subtle: #eaf1fb;
+  --rentify-color-info-border: #bcd3f2;
+
+  /* Neutral: cancelled, draft, archived */
+  --rentify-color-neutral-base: #5b616b;
+  --rentify-color-neutral-text: #30343a;
+  --rentify-color-neutral-subtle: #f1f0ec;
+  --rentify-color-neutral-border: #ddd8cf;
+
+  /* Price */
+  --rentify-color-price-sale: #c2261c;         /* sale price text only */
 
   /* ============================================================
      5. Typography
      ============================================================ */
-  --rentify-font-family-body: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --rentify-font-family-heading: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --rentify-font-family-mono: 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --rentify-font-family-body: 'Kantumruy Pro', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rentify-font-family-heading: 'Kantumruy Pro', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rentify-font-family-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --rentify-line-height-km-multiplier: 1.15;
 
   --rentify-font-size-xs: 0.75rem;
   --rentify-line-height-xs: 1rem;
@@ -92,13 +109,45 @@
   --rentify-font-size-3xl: 1.875rem;
   --rentify-line-height-3xl: 2.25rem;
 
+  /* Type scale (mobile; desktop values at 1024px below) */
+  --rentify-text-display-size: 2rem;
+  --rentify-text-display-line-height: 2.5rem;
+  --rentify-text-display-weight: 700;
+  --rentify-text-h1-size: 1.5rem;
+  --rentify-text-h1-line-height: 2rem;
+  --rentify-text-h1-weight: 700;
+  --rentify-text-h2-size: 1.25rem;
+  --rentify-text-h2-line-height: 1.75rem;
+  --rentify-text-h2-weight: 600;
+  --rentify-text-h3-size: 1.0625rem;
+  --rentify-text-h3-line-height: 1.5rem;
+  --rentify-text-h3-weight: 600;
+  --rentify-text-body-size: 0.9375rem;
+  --rentify-text-body-line-height: 1.5rem;
+  --rentify-text-body-weight: 400;
+  --rentify-text-body-sm-size: 0.8125rem;
+  --rentify-text-body-sm-line-height: 1.25rem;
+  --rentify-text-body-sm-weight: 400;
+  --rentify-text-label-size: 0.8125rem;
+  --rentify-text-label-line-height: 1.125rem;
+  --rentify-text-label-weight: 500;
+  --rentify-text-caption-size: 0.75rem;
+  --rentify-text-caption-line-height: 1rem;
+  --rentify-text-caption-weight: 500;
+  --rentify-text-price-lg-size: 1.5rem;
+  --rentify-text-price-lg-line-height: 2rem;
+  --rentify-text-price-lg-weight: 600;
+  --rentify-text-price-size: 1rem;
+  --rentify-text-price-line-height: 1.5rem;
+  --rentify-text-price-weight: 600;
+
   --rentify-font-weight-regular: 400;
   --rentify-font-weight-medium: 500;
   --rentify-font-weight-semibold: 600;
   --rentify-font-weight-bold: 700;
 
   /* ============================================================
-     6. Spacing Scale
+     6. Spacing Scale & Layout
      ============================================================ */
   --rentify-space-1: 0.25rem;
   --rentify-space-2: 0.5rem;
@@ -111,41 +160,45 @@
   --rentify-space-12: 3rem;
   --rentify-space-16: 4rem;
 
+  --rentify-layout-content-max: 1280px;
+  --rentify-layout-gutter: 16px;
+  --rentify-target-min: 44px;
+
   /* ============================================================
      7. Radii
      ============================================================ */
-  --rentify-radius-xs: 4px;
-  --rentify-radius-sm: 6px;
-  --rentify-radius-md: 8px;
-  --rentify-radius-lg: 12px;
-  --rentify-radius-xl: 16px;
+  --rentify-radius-xs: 4px;    /* badges */
+  --rentify-radius-sm: 8px;    /* inputs, buttons */
+  --rentify-radius-md: 12px;   /* cards */
+  --rentify-radius-lg: 16px;   /* sheets, dialogs */
+  --rentify-radius-xl: 24px;   /* hero tiles */
   --rentify-radius-full: 9999px;
 
   /* ============================================================
-     8. Shadows & Elevation
+     8. Shadows & Elevation (cards use borders)
      ============================================================ */
-  --rentify-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --rentify-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
-  --rentify-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
-  --rentify-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
-  --rentify-shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+  --rentify-shadow-xs: 0 1px 2px rgba(17, 20, 24, 0.05);
+  --rentify-shadow-sm: 0 1px 3px rgba(17, 20, 24, 0.1), 0 1px 2px rgba(17, 20, 24, 0.06);
+  --rentify-shadow-md: 0 4px 6px -1px rgba(17, 20, 24, 0.1), 0 2px 4px -2px rgba(17, 20, 24, 0.06);
+  --rentify-shadow-lg: 0 10px 15px -3px rgba(17, 20, 24, 0.1), 0 4px 6px -4px rgba(17, 20, 24, 0.05);
+  --rentify-shadow-xl: 0 20px 25px -5px rgba(17, 20, 24, 0.1), 0 8px 10px -6px rgba(17, 20, 24, 0.05);
 
   /* ============================================================
      9. Focus & Keyboard Accessibility
      ============================================================ */
-  --rentify-focus-ring-color: #4f46e5;
+  --rentify-focus-ring-color: #0e6b5c;
   --rentify-focus-ring-width: 2px;
   --rentify-focus-ring-offset: 2px;
   --rentify-focus-ring-offset-color: #ffffff;
-  --rentify-shadow-focus: 0 0 0 2px #ffffff, 0 0 0 4px #4f46e5;
+  --rentify-shadow-focus: 0 0 0 2px #ffffff, 0 0 0 4px #0e6b5c;
 
   /* ============================================================
      10. Disabled States
      ============================================================ */
   --rentify-opacity-disabled: 0.5;
-  --rentify-color-disabled-text: #94a3b8;
-  --rentify-color-disabled-bg: #f1f5f9;
-  --rentify-color-disabled-border: #e2e8f0;
+  --rentify-color-disabled-text: #9a968e;
+  --rentify-color-disabled-bg: #f3f0ea;
+  --rentify-color-disabled-border: #ece8e1;
 
   /* ============================================================
      11. Breakpoints
@@ -159,11 +212,197 @@
   /* ============================================================
      12. Transitions & Motion
      ============================================================ */
-  --rentify-transition-duration-fast: 150ms;
-  --rentify-transition-duration-base: 200ms;
-  --rentify-transition-duration-slow: 300ms;
+  --rentify-transition-duration-fast: 120ms;   /* press */
+  --rentify-transition-duration-base: 200ms;   /* expand */
+  --rentify-transition-duration-slow: 260ms;   /* sheet */
   --rentify-transition-timing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --rentify-transition-timing-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --rentify-layout-gutter: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --rentify-layout-gutter: 32px;
+    --rentify-text-display-size: 3rem;
+    --rentify-text-display-line-height: 3.5rem;
+    --rentify-text-h1-size: 2rem;
+    --rentify-text-h1-line-height: 2.5rem;
+    --rentify-text-h2-size: 1.5rem;
+    --rentify-text-h2-line-height: 2rem;
+    --rentify-text-h3-size: 1.125rem;
+    --rentify-text-h3-line-height: 1.625rem;
+  }
+}
+
+/* Khmer needs 15 % more line height. Redeclared on the element carrying lang="km"
+   so the larger values reach everything inside it. */
+:lang(km) {
+  --rentify-line-height-xs: calc(1rem * var(--rentify-line-height-km-multiplier));
+  --rentify-line-height-sm: calc(1.25rem * var(--rentify-line-height-km-multiplier));
+  --rentify-line-height-base: calc(1.5rem * var(--rentify-line-height-km-multiplier));
+  --rentify-line-height-lg: calc(1.75rem * var(--rentify-line-height-km-multiplier));
+  --rentify-line-height-xl: calc(1.75rem * var(--rentify-line-height-km-multiplier));
+  --rentify-line-height-2xl: calc(2rem * var(--rentify-line-height-km-multiplier));
+  --rentify-line-height-3xl: calc(2.25rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-display-line-height: calc(2.5rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-h1-line-height: calc(2rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-h2-line-height: calc(1.75rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-h3-line-height: calc(1.5rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-body-line-height: calc(1.5rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-body-sm-line-height: calc(1.25rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-label-line-height: calc(1.125rem * var(--rentify-line-height-km-multiplier));
+  --rentify-text-caption-line-height: calc(1rem * var(--rentify-line-height-km-multiplier));
+}
+
+@media (min-width: 1024px) {
+  :lang(km) {
+    --rentify-text-display-line-height: calc(3.5rem * var(--rentify-line-height-km-multiplier));
+    --rentify-text-h1-line-height: calc(2.5rem * var(--rentify-line-height-km-multiplier));
+    --rentify-text-h2-line-height: calc(2rem * var(--rentify-line-height-km-multiplier));
+    --rentify-text-h3-line-height: calc(1.625rem * var(--rentify-line-height-km-multiplier));
+  }
+}
+
+/* ============================================================
+   Dark theme. Opt-in only, so apps that still hard-code light
+   colors are not half-darkened: data-theme="dark" forces it,
+   data-theme="system" follows prefers-color-scheme.
+   ============================================================ */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --rentify-color-brand-primary: #2fa58e;
+  --rentify-color-brand-primary-hover: #3cb89f;
+  --rentify-color-brand-primary-active: #4fc7ae;
+  --rentify-color-brand-primary-subtle: #14302b;
+  --rentify-color-brand-secondary: #2fa58e;
+  --rentify-color-brand-secondary-hover: #3cb89f;
+  --rentify-color-brand-accent: #f5b83d;
+  --rentify-color-brand-accent-subtle: #2e2510;
+
+  --rentify-color-surface-base: #161a1f;
+  --rentify-color-surface-canvas: #0f1215;
+  --rentify-color-surface-subtle: #1e232a;
+  --rentify-color-surface-muted: #1e232a;
+  --rentify-color-surface-raised: #1e232a;
+  --rentify-color-surface-hover: #232931;
+  --rentify-color-surface-inverse: #f2f2ef;
+  --rentify-color-surface-overlay: rgba(0, 0, 0, 0.7);
+
+  --rentify-color-text-primary: #f2f2ef;
+  --rentify-color-text-secondary: #c3c6cb;
+  --rentify-color-text-muted: #8e939b;
+  --rentify-color-text-inverse: #0f1215;
+  --rentify-color-text-brand: #4fc7ae;
+  --rentify-color-text-on-accent: #111418;
+  --rentify-color-text-disabled: #5d636c;
+
+  --rentify-color-border-default: #2a3038;
+  --rentify-color-border-subtle: #22272e;
+  --rentify-color-border-strong: #3a414b;
+  --rentify-color-border-input: #6b727c;
+  --rentify-color-border-interactive: #6b727c;
+  --rentify-color-border-focus: #4fc7ae;
+
+  --rentify-color-success-base: #4ade80;
+  --rentify-color-success-text: #86efac;
+  --rentify-color-success-subtle: #12261a;
+  --rentify-color-success-border: #1f4d31;
+  --rentify-color-warning-base: #f59e0b;
+  --rentify-color-warning-text: #fcd34d;
+  --rentify-color-warning-subtle: #2a1f0a;
+  --rentify-color-warning-border: #5a4214;
+  --rentify-color-danger-base: #f87171;
+  --rentify-color-danger-text: #fca5a5;
+  --rentify-color-danger-subtle: #2c1414;
+  --rentify-color-danger-border: #5e2424;
+  --rentify-color-info-base: #60a5fa;
+  --rentify-color-info-text: #93c5fd;
+  --rentify-color-info-subtle: #0f1e33;
+  --rentify-color-info-border: #1f3d66;
+  --rentify-color-neutral-base: #9aa0a8;
+  --rentify-color-neutral-text: #d4d4cf;
+  --rentify-color-neutral-subtle: #23272d;
+  --rentify-color-neutral-border: #3a414b;
+  --rentify-color-price-sale: #f87171;
+
+  --rentify-focus-ring-color: #4fc7ae;
+  --rentify-focus-ring-offset-color: #0f1215;
+  --rentify-shadow-focus: 0 0 0 2px #0f1215, 0 0 0 4px #4fc7ae;
+  --rentify-color-disabled-text: #5d636c;
+  --rentify-color-disabled-bg: #1e232a;
+  --rentify-color-disabled-border: #22272e;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] {
+    color-scheme: dark;
+    --rentify-color-brand-primary: #2fa58e;
+    --rentify-color-brand-primary-hover: #3cb89f;
+    --rentify-color-brand-primary-active: #4fc7ae;
+    --rentify-color-brand-primary-subtle: #14302b;
+    --rentify-color-brand-secondary: #2fa58e;
+    --rentify-color-brand-secondary-hover: #3cb89f;
+    --rentify-color-brand-accent: #f5b83d;
+    --rentify-color-brand-accent-subtle: #2e2510;
+
+    --rentify-color-surface-base: #161a1f;
+    --rentify-color-surface-canvas: #0f1215;
+    --rentify-color-surface-subtle: #1e232a;
+    --rentify-color-surface-muted: #1e232a;
+    --rentify-color-surface-raised: #1e232a;
+    --rentify-color-surface-hover: #232931;
+    --rentify-color-surface-inverse: #f2f2ef;
+    --rentify-color-surface-overlay: rgba(0, 0, 0, 0.7);
+
+    --rentify-color-text-primary: #f2f2ef;
+    --rentify-color-text-secondary: #c3c6cb;
+    --rentify-color-text-muted: #8e939b;
+    --rentify-color-text-inverse: #0f1215;
+    --rentify-color-text-brand: #4fc7ae;
+    --rentify-color-text-on-accent: #111418;
+    --rentify-color-text-disabled: #5d636c;
+
+    --rentify-color-border-default: #2a3038;
+    --rentify-color-border-subtle: #22272e;
+    --rentify-color-border-strong: #3a414b;
+    --rentify-color-border-input: #6b727c;
+    --rentify-color-border-interactive: #6b727c;
+    --rentify-color-border-focus: #4fc7ae;
+
+    --rentify-color-success-base: #4ade80;
+    --rentify-color-success-text: #86efac;
+    --rentify-color-success-subtle: #12261a;
+    --rentify-color-success-border: #1f4d31;
+    --rentify-color-warning-base: #f59e0b;
+    --rentify-color-warning-text: #fcd34d;
+    --rentify-color-warning-subtle: #2a1f0a;
+    --rentify-color-warning-border: #5a4214;
+    --rentify-color-danger-base: #f87171;
+    --rentify-color-danger-text: #fca5a5;
+    --rentify-color-danger-subtle: #2c1414;
+    --rentify-color-danger-border: #5e2424;
+    --rentify-color-info-base: #60a5fa;
+    --rentify-color-info-text: #93c5fd;
+    --rentify-color-info-subtle: #0f1e33;
+    --rentify-color-info-border: #1f3d66;
+    --rentify-color-neutral-base: #9aa0a8;
+    --rentify-color-neutral-text: #d4d4cf;
+    --rentify-color-neutral-subtle: #23272d;
+    --rentify-color-neutral-border: #3a414b;
+    --rentify-color-price-sale: #f87171;
+
+    --rentify-focus-ring-color: #4fc7ae;
+    --rentify-focus-ring-offset-color: #0f1215;
+  --rentify-shadow-focus: 0 0 0 2px #0f1215, 0 0 0 4px #4fc7ae;
+    --rentify-color-disabled-text: #5d636c;
+    --rentify-color-disabled-bg: #1e232a;
+    --rentify-color-disabled-border: #22272e;
+  }
 }
 
 /* Accessible focus ring helper utility */

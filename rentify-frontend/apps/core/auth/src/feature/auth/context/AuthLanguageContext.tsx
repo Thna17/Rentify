@@ -12,6 +12,15 @@ export interface AuthLanguageContextValue {
 
 const translations: Record<Language, Record<string, string>> = {
   EN: {
+    'workspace.title': "Everything your business needs, in one place.",
+    'workspace.subtitle': "Return to your workspace to manage products, orders, and customers with clarity.",
+    'workspace.sync': "Keep products and orders in sync",
+    'workspace.customers': "Stay connected with your customers",
+    'workspace.security': "Secure access to your workspace",
+    'verify.invalidCode': "This code is invalid or has expired. Please try again or request a new code.",
+    'verify.failed': "We couldn’t verify your account. Please try again.",
+    'verify.resendFailed': "We couldn’t send a new code. Please try again.",
+
     // Brand & Header
     'brand.name': 'Rentify',
     'brand.tagline': 'Modern commerce for Cambodia and beyond',
@@ -163,6 +172,15 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.copyright': '© 2026 Rentify. All rights reserved.',
   },
   KH: {
+    'workspace.title': "អ្វីៗដែលអាជីវកម្មរបស់អ្នកត្រូវការ នៅក្នុងកន្លែងតែមួយ។",
+    'workspace.subtitle': "ត្រឡប់ទៅផ្ទាំងគ្រប់គ្រងរបស់អ្នក ដើម្បីគ្រប់គ្រងផលិតផល ការបញ្ជាទិញ និងអតិថិជនយ៉ាងងាយស្រួល។",
+    'workspace.sync': "ធ្វើសមកាលកម្មផលិតផល និងការបញ្ជាទិញ",
+    'workspace.customers': "រក្សាទំនាក់ទំនងជាមួយអតិថិជនរបស់អ្នក",
+    'workspace.security': "ចូលទៅកាន់ផ្ទាំងគ្រប់គ្រងដោយសុវត្ថិភាព",
+    'verify.invalidCode': "លេខកូដនេះមិនត្រឹមត្រូវ ឬផុតកំណត់។ សូមព្យាយាមម្តងទៀត ឬស្នើសុំលេខកូដថ្មី។",
+    'verify.failed': "មិនអាចផ្ទៀងផ្ទាត់គណនីបានទេ។ សូមព្យាយាមម្តងទៀត។",
+    'verify.resendFailed': "មិនអាចផ្ញើលេខកូដថ្មីបានទេ។ សូមព្យាយាមម្តងទៀត។",
+
     // Brand & Header
     'brand.name': 'Rentify',
     'brand.tagline': 'ដំណោះស្រាយពាណិជ្ជកម្មអេឡិចត្រូនិកទំនើបសម្រាប់កម្ពុជា',

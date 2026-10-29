@@ -245,10 +245,10 @@ export class RentifyMarketplaceService {
     return this.http.get<{ carts: StoreCart[] }>(`${this.commerce}/api/marketplace/cart`);
   }
 
-  setQuantity(storeId: string, productId: string, quantity: number): Observable<{ carts: StoreCart[] }> {
+  setQuantity(storeId: string, productId: string, quantity: number, variantId?: string | null): Observable<{ carts: StoreCart[] }> {
     return this.http.put<{ carts: StoreCart[] }>(
       `${this.commerce}/api/marketplace/cart/${storeId}/items/${productId}`,
-      { quantity },
+      { quantity, variantId },
     );
   }
 

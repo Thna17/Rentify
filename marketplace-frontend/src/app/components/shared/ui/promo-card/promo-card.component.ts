@@ -199,14 +199,14 @@ import { IconComponent } from '../icon/icon.component';
       justify-content: space-between;
       height: 100%;
       min-height: 100%;
-      padding: clamp(20px, 2.2vw, 26px);
+      padding: clamp(16px, 1.6vw, 22px);
       box-sizing: border-box;
-      gap: 16px;
+      gap: 10px;
     }
     .featured-top {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
     .featured-badges-row {
       display: flex;
@@ -256,7 +256,7 @@ import { IconComponent } from '../icon/icon.component';
       backdrop-filter: blur(6px);
     }
     .featured-title {
-      font-size: clamp(22px, 1.8vw, 26px);
+      font-size: clamp(20px, 1.5vw, 24px);
       font-weight: 800;
       letter-spacing: -0.02em;
       line-height: 1.15;
@@ -265,8 +265,8 @@ import { IconComponent } from '../icon/icon.component';
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     }
     .featured-text {
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: 12.5px;
+      line-height: 1.45;
       color: rgba(255, 255, 255, 0.88);
       margin: 0;
       max-width: 270px;
@@ -275,14 +275,14 @@ import { IconComponent } from '../icon/icon.component';
     .featured-center {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       margin: auto 0;
-      padding: 6px 0;
+      padding: 4px 0;
     }
     .perks-list {
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 6px;
     }
     .perk-chip {
       display: inline-flex;
@@ -293,8 +293,8 @@ import { IconComponent } from '../icon/icon.component';
       -webkit-backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 999px;
-      padding: 5px 12px;
-      font-size: 11.5px;
+      padding: 4px 11px;
+      font-size: 11px;
       font-weight: 600;
       color: rgba(255, 255, 255, 0.95);
       width: fit-content;
@@ -311,8 +311,8 @@ import { IconComponent } from '../icon/icon.component';
     .featured-bottom {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding-top: 4px;
+      gap: 8px;
+      padding-top: 2px;
     }
     .cta-action-wrap {
       display: flex;
@@ -325,9 +325,9 @@ import { IconComponent } from '../icon/icon.component';
       gap: 12px;
       background: #ffffff;
       color: #0f172a;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
-      padding: 10px 18px;
+      padding: 8px 16px;
       border-radius: 999px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
       transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease;
@@ -336,8 +336,8 @@ import { IconComponent } from '../icon/icon.component';
     .btn-arrow {
       display: grid;
       place-items: center;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       background: #0f172a;
       color: #ffffff;
@@ -356,13 +356,24 @@ import { IconComponent } from '../icon/icon.component';
       align-items: center;
       gap: 6px;
       color: rgba(255, 255, 255, 0.72);
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 500;
     }
 
     @media (max-width: 900px) {
-      :host(.featured) { height: auto; min-height: 380px; }
-      .featured-copy { min-height: 380px; }
+      :host(.featured) { height: auto; min-height: 0; max-height: 160px; }
+      .featured-copy { min-height: 0; max-height: 160px; padding: 12px 16px; gap: 6px; }
+      .featured-center { display: none; }
+      .featured-text { display: none; }
+      .featured-title { font-size: 17px; }
+      .featured-cta-btn { padding: 5px 12px; font-size: 11.5px; }
+      .btn-arrow { width: 16px; height: 16px; }
+    }
+    @media (max-width: 520px) {
+      :host(.featured) { max-height: 140px; }
+      .featured-copy { max-height: 140px; padding: 10px 12px; gap: 4px; }
+      .featured-title { font-size: 15px; }
+      .featured-kicker-row { display: none; }
     }
     @media (prefers-reduced-motion: reduce) { img, .featured-cta-btn, .btn-arrow { transition: none; } }
   `],

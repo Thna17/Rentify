@@ -12,11 +12,15 @@ const cssVariables = {
   brandPrimaryActive: 'var(--rentify-color-brand-primary-active)',
   brandPrimarySubtle: 'var(--rentify-color-brand-primary-subtle)',
   brandSecondary: 'var(--rentify-color-brand-secondary)',
+  brandAccent: 'var(--rentify-color-brand-accent)',
+  brandAccentSubtle: 'var(--rentify-color-brand-accent-subtle)',
   surfaceBase: 'var(--rentify-color-surface-base)',
+  surfaceCanvas: 'var(--rentify-color-surface-canvas)',
   surfaceSubtle: 'var(--rentify-color-surface-subtle)',
   surfaceMuted: 'var(--rentify-color-surface-muted)',
   surfaceRaised: 'var(--rentify-color-surface-raised)',
   surfaceHover: 'var(--rentify-color-surface-hover)',
+  surfaceInverse: 'var(--rentify-color-surface-inverse)',
   surfaceOverlay: 'var(--rentify-color-surface-overlay)',
 
   // Text
@@ -25,12 +29,14 @@ const cssVariables = {
   textMuted: 'var(--rentify-color-text-muted)',
   textInverse: 'var(--rentify-color-text-inverse)',
   textBrand: 'var(--rentify-color-text-brand)',
+  textOnAccent: 'var(--rentify-color-text-on-accent)',
   textDisabled: 'var(--rentify-color-text-disabled)',
 
   // Borders
   borderDefault: 'var(--rentify-color-border-default)',
   borderSubtle: 'var(--rentify-color-border-subtle)',
   borderStrong: 'var(--rentify-color-border-strong)',
+  borderInput: 'var(--rentify-color-border-input)',
   borderInteractive: 'var(--rentify-color-border-interactive)',
   borderFocus: 'var(--rentify-color-border-focus)',
 
@@ -55,6 +61,19 @@ const cssVariables = {
   infoSubtle: 'var(--rentify-color-info-subtle)',
   infoBorder: 'var(--rentify-color-info-border)',
 
+  neutralBase: 'var(--rentify-color-neutral-base)',
+  neutralText: 'var(--rentify-color-neutral-text)',
+  neutralSubtle: 'var(--rentify-color-neutral-subtle)',
+  neutralBorder: 'var(--rentify-color-neutral-border)',
+
+  // Price
+  priceSale: 'var(--rentify-color-price-sale)',
+
+  // Typography
+  fontBody: 'var(--rentify-font-family-body)',
+  fontHeading: 'var(--rentify-font-family-heading)',
+  fontMono: 'var(--rentify-font-family-mono)',
+
   // Radius
   radiusXs: 'var(--rentify-radius-xs)',
   radiusSm: 'var(--rentify-radius-sm)',
@@ -78,7 +97,7 @@ const cssVariables = {
 
 /**
  * Calculates the relative luminance of a sRGB hex color according to WCAG 2.1 specs.
- * @param {string} hex - 6-character hex color (e.g. '#4f46e5')
+ * @param {string} hex - 6-character hex color (e.g. '#0e6b5c')
  * @returns {number} Relative luminance (0 to 1)
  */
 function getLuminance(hex) {

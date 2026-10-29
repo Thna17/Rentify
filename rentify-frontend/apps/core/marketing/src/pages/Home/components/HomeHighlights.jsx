@@ -30,7 +30,8 @@ export const HomeSolutions = () => {
             <Lead className="mt-5">{t('site.solutions.hero.lead')}</Lead>
           </Reveal>
         </div>
-        <Reveal>
+        {/* The switcher is several screens tall in scroll mode, so it reveals as soon as it enters */}
+        <Reveal amount={0.01}>
           <IndustrySwitcher />
         </Reveal>
       </Container>

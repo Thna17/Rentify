@@ -21,7 +21,7 @@ export const CATEGORIES: Category[] = [
     name: 'Fashion & Accessories',
     shortName: 'Fashion',
     description: 'Clothing, footwear, bags, jewelry and traditional style',
-    tagline: 'Everyday fashion and Cambodian design, from independent labels to heritage textiles.',
+    tagline: 'Everyday clothing, accessories and heritage textiles.',
     icon: 'tag',
     banner: 'Cambodian fashion and textiles',
     subcategories: [

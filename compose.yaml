@@ -190,6 +190,7 @@ services:
       retries: 10
 
   marketing:
+    container_name: rentify-marketing-web
     build:
       context: ./rentify-frontend
       target: development
@@ -199,12 +200,14 @@ services:
       - '4200:4200'
     volumes:
       - ./rentify-frontend:/app
+      - ./packages:/packages
       - marketing-node-modules:/app/node_modules
     depends_on:
       core-api:
         condition: service_healthy
 
   auth:
+    container_name: rentify-auth-web
     build:
       context: ./rentify-frontend
       target: development
@@ -214,12 +217,14 @@ services:
       - '4300:4300'
     volumes:
       - ./rentify-frontend:/app
+      - ./packages:/packages
       - auth-node-modules:/app/node_modules
     depends_on:
       core-api:
         condition: service_healthy
 
   merchant:
+    container_name: rentify-merchant-web
     build:
       context: ./rentify-frontend
       target: development
@@ -229,6 +234,7 @@ services:
       - '4400:4400'
     volumes:
       - ./rentify-frontend:/app
+      - ./packages:/packages
       - merchant-node-modules:/app/node_modules
     depends_on:
       core-api:
@@ -237,6 +243,7 @@ services:
         condition: service_healthy
 
   marketplace:
+    container_name: rentify-marketplace-web
     build:
       context: ./marketplace-frontend
       target: development
@@ -245,6 +252,7 @@ services:
       - '4500:4500'
     volumes:
       - ./marketplace-frontend:/app
+      - ./packages:/packages
       - marketplace-node-modules:/app/node_modules
     depends_on:
       core-api:
@@ -258,6 +266,7 @@ services:
       retries: 10
 
   storefront-template-1:
+    container_name: rentify-storefront-t1-web
     build:
       context: ./rentify-frontend
       target: development
@@ -273,6 +282,7 @@ services:
         condition: service_healthy
 
   storefront-template-2:
+    container_name: rentify-storefront-t2-web
     build:
       context: ./rentify-frontend
       target: development
@@ -289,6 +299,7 @@ services:
 
   # The single storefront app: every published store on http://<subdomain>.localhost:4900.
   storefront:
+    container_name: rentify-storefront-web
     build:
       context: ./rentify-frontend
       target: development
@@ -304,6 +315,7 @@ services:
         condition: service_healthy
 
   admin:
+    container_name: rentify-admin-web
     build:
       context: ./admin-frontend
       target: development

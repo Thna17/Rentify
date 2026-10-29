@@ -255,6 +255,12 @@ into `platform-architecture.md` and remove stale notes.
    release, commission split/deduction, refund, callback, fee, and
    reconciliation contracts. Define the final payout trigger and commission
    rate from those capabilities.
+6. (2026-10-29) The merchant dashboard splits money by channel from
+   `GET /api/stores/:storeId/orders`. Marketplace checkout quotes
+   `commissionTotal` but the Order row does not persist it, so the dashboard can
+   only say "no marketplace fee recorded". Persist the per-order commission and
+   expose it in `orderProjection.totals` before any fee is charged, so the
+   marketplace view can show gross, fee and net per order.
 
 ## Documentation practice
 
@@ -649,3 +655,58 @@ Progress:
     it (both would fail only at runtime).
 - **Next:** controllers that still query other domains' models directly
   (reads are allowed, but some would be clearer behind the owning service).
+
+## 2026-10-27 RX-F01 design tokens "Jade & Saffron"
+
+- **Current:** `@rentify/design-tokens` 1.1.0 carries the brand values and
+  new tokens from [the brand spec](experience/02_BRAND_AND_DESIGN_SYSTEM.md)
+  §2–4. Existing names are unchanged. `npm run verify:tokens` checks 60
+  contrast pairs (light and dark) and that `index.css` matches `tokens.json`
+  ([audit](design-tokens.md)). Only `marketplace-frontend/src/styles.css`
+  imports `index.css` today, so the marketplace is the only app whose token
+  values change visually.
+- **Current:** dark theme is opt-in (`data-theme="dark"` or `"system"`); the
+  package never darkens `:root` on its own.
+- **Open:** the pack says "ship as v1.0.0", but the package was already
+  1.0.0. It ships as 1.1.0 because no name is removed or renamed.
+- **Open (design review):** 02 does not give values for `brand.primaryActive`,
+  `surface.muted`/`hover`, `text.disabled`, the status `border` tokens, or
+  the dark status colors ("lightened to pass AA"). The chosen values pass the
+  validator and are listed in `packages/design-tokens/tokens.json`.
+  `text.onAccent` was added so saffron always carries dark ink, also in dark.
+- **Open (RX-F02/RX-F03):** the package names Kantumruy Pro and JetBrains
+  Mono but does not load them. Apps still hard-code colors; four indigo hex
+  fallbacks remain in `rentify-frontend/libs`, `marketplace-frontend/src` and
+  `admin-frontend/src`.
+
+## 2026-10-27 RX-F01 token proposals for design review
+
+These are **proposed**, not approved design decisions. `@rentify/design-tokens` remains at **1.1.0**. The current implementation uses these values and the contrast validator passes its named pairs; review them against real EN/KM screens before freezing the palette.
+
+| Token | Light proposal | Dark proposal | Use |
+|---|---|---|---|
+| `brand.primaryActive` | `#08443b` | `#7fd3bb` | Pressed jade control |
+| `status.success.border` | `#bfe3cb` | `#1f4d31` | Success boundary |
+| `status.warning.border` | `#f6d9a8` | `#5a4214` | Warning boundary |
+| `status.danger.border` | `#f5c2bd` | `#5e2424` | Danger boundary |
+| `status.info.border` | `#bcd3f2` | `#1f3d66` | Information boundary |
+| `status.neutral.border` | `#ddd8cf` | `#3a414b` | Neutral boundary |
+| `status.success` base / text / subtle | `#15803d` / `#14532d` / `#eaf6ee` | `#4ade80` / `#86efac` / `#12261a` | Paid, delivered, approved |
+| `status.warning` base / text / subtle | `#b45309` / `#78350f` / `#fef5e7` | `#f59e0b` / `#fcd34d` / `#2a1f0a` | Pending, needs action |
+| `status.danger` base / text / subtle | `#c2261c` / `#7f1d1d` / `#fdecea` | `#f87171` / `#fca5a5` / `#2c1414` | Rejected, suspended |
+| `status.info` base / text / subtle | `#1d5fb8` / `#1e3a8a` / `#eaf1fb` | `#60a5fa` / `#93c5fd` / `#0f1e33` | Shipped, in progress |
+| `status.neutral` base / text / subtle | `#5b616b` / `#30343a` / `#f1f0ec` | `#9aa0a8` / `#d4d4cf` / `#23272d` | Draft, cancelled |
+
+- **Current (RX-F02 address data):** The prior checkout list remains for compatibility. The shared `AddressFields` selector uses a CC-BY-4.0 bilingual hierarchy (25 provinces, 210 districts/khan, 1,652 communes/sangkat) with source and license attribution in `rentify-frontend/libs/shared/src/data/README.md`. Review spelling differences before migrating saved checkout addresses to codes.
+
+## 2026-10-28 local email fallback
+
+- **Current:** with `NODE_ENV=development`, Core's `sendEmail` prints the
+  email (recipient, subject, text with the OTP or reset code) to the
+  core-api log when delivery fails, and reports success, so sign-up and
+  password reset can be tested without a working mail account
+  ([email service](../rentify-server/src/modules/notifications/emailService.js)).
+  Other environments still fail as before.
+- **Open:** the Gmail app password in the local `rentify-server/.env` is
+  rejected by Gmail (535 BadCredentials); real delivery needs a new app
+  password or a `RESEND_API_KEY`.

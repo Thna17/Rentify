@@ -7,11 +7,14 @@ const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
-const ProductEditor = lazy(() => import('../pages/product-editor/ProductEditor'));
-const ProductImports = lazy(() => import('../pages/product-imports/ProductImports'));
-const OrderOperations = lazy(() => import('../pages/order-management/OrderOperations'));
+const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
+const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
+const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
+const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
+const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
 const InvoiceManual = lazy(() => import('../pages/invoice-manual/InvoiceManual'));
 // const Setting = lazy(() => import('@rentify/setting/ui/Setting'));
+const ProductForm = lazy(() => import('../pages/product-form/ProductForm'));
 const AccountSettings = lazy(() => import('../pages/setting/AccountSettings'));
 const BillingSetting = lazy(() => import('../pages/setting/BillingSetting'));
 const SecuritySetting = lazy(() => import('../pages/setting/SecuritySetting'));
@@ -23,7 +26,7 @@ const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownP
 const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
 const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 const Customers = lazy(() => import('../pages/customers/Customers'));
-const MarketplaceStoreOverview = lazy(() => import('../pages/overview/MarketplaceStoreOverview'));
+const ComponentGallery = lazy(() => import('../pages/dev/ComponentGallery'));
 
 export const dashboardRoutes = {
   path: '/',
@@ -31,22 +34,18 @@ export const dashboardRoutes = {
   children: [
     { index: true, element: <Navigate to="overview" replace /> },
     { path: 'overview', element: <Overview /> },
-    { path: 'inventory', element: <ProductManagement /> },
-    { path: 'reports', element: <PlatformAnalytics /> },
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
     { path: 'customization', element: <Navigate to="/store-management" replace /> },
     { path: 'customization/:id', element: <Navigate to="/store-management" replace /> },
     { path: 'products', element: <ProductManagement /> },
-    { path: 'catalog', element: <Navigate to="/products" replace /> },
-    { path: 'products/:id', element: <ProductEditor /> },
-    { path: 'products/import', element: <ProductImports /> },
-    { path: 'products/create', element: <ProductEditor /> },
-    { path: 'products/edit/:id', element: <ProductEditor /> },
-    { path: 'orders', element: <OrderOperations /> },
-    { path: 'marketplace-orders', element: <Navigate to="/orders" replace /> },
-    { path: 'marketplace-readiness', element: <MarketplaceStoreOverview /> },
-    { path: 'orders/:id', element: <OrderOperations /> },
+    { path: 'catalog', element: <StoreCatalogPage /> },
+    { path: 'products/:id', element: <ProductDetailView /> },
+    { path: 'products/create', element: <ProductForm /> },
+    { path: 'products/edit/:id', element: <ProductForm /> },
+    { path: 'orders', element: <OrderManagement /> },
+    { path: 'marketplace-orders', element: <MarketplaceOrders /> },
+    { path: 'orders/:id', element: <OrderDetailView /> },
     { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'help', element: <SupportPage /> },
@@ -56,7 +55,6 @@ export const dashboardRoutes = {
     { path: 'settings/account', element: <AccountSettings /> },
     { path: 'settings/security', element: <SecuritySetting /> },
     { path: 'settings/staff', element: <StaffSetting /> },
-    { path: 'staff', element: <StaffSetting /> },
     { path: 'settings/payments', element: < PaymentSetting /> },
     { path: 'settings/billing', element: < BillingSetting />},
     { path: 'settings/preferences', element: < PreferencesSetting />},
@@ -68,6 +66,7 @@ export const dashboardRoutes = {
     { path: 'ops/reminders', element: <Navigate to="/usage/breakdown" replace /> },
     { path: 'ops/contract', element: <Navigate to="/usage/billing" replace /> },
     { path: 'search', element: <Navigate to="/overview" replace /> },
+    ...(import.meta.env.DEV ? [{ path: '__ui', element: <ComponentGallery /> }] : []),
 
 
     { path: '*', element: <Navigate to="overview" replace /> },

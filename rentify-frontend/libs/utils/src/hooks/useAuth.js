@@ -28,15 +28,19 @@ export const useAuth = () => {
     .find(row => row.startsWith('authType='))
     ?.split('=')[1]);
 
+  // A persisted profile only counts if it belongs to the current sign-in type; after switching
+  // accounts (e.g. owner -> staff) the old profile must be refetched, not reused
+  const hasCurrentProfile = !!auth.profile && auth.role === authRole;
+
   // Initialize all profile queries with conditional skipping
   const userProfile = useGetUserQuery(undefined, { 
-    skip: !authRole || authRole !== 'user' || !!auth.profile 
+    skip: !authRole || authRole !== 'user' || hasCurrentProfile 
   });
   const staffProfile = useGetStaffQuery(undefined, { 
-    skip: !authRole || authRole !== 'staff' || !!auth.profile 
+    skip: !authRole || authRole !== 'staff' || hasCurrentProfile 
   });
   const customerProfile = useGetCustomerQuery(undefined, { 
-    skip: !authRole || authRole !== 'customer' || !!auth.profile 
+    skip: !authRole || authRole !== 'customer' || hasCurrentProfile 
   });
   
   // Select active profile based on authRole
@@ -169,10 +173,10 @@ export const useAuth = () => {
   }, [authRole]);
 
   return {
-    profile: auth.profile,
-    isAuthenticated: !!auth.profile,
-    role: auth.role,
-    isLoading: !auth.profile && !!authRole,
+    profile: hasCurrentProfile ? auth.profile : null,
+    isAuthenticated: hasCurrentProfile,
+    role: hasCurrentProfile ? auth.role : authRole,
+    isLoading: !hasCurrentProfile && !!authRole,
     handleLogout,
     refreshProfile: refetch,
     checkTelegramLink,

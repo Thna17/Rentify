@@ -6,7 +6,7 @@ import { formatPrice } from '@rentify/utils/currency';
 import { ShippingForm } from './components/ShippingForm'
 import { PaymentMethodForm } from './components/PaymentMethodForm'
 import { ReviewOrder } from './components/ReviewOrder'
-import { cambodiaProvinces, cambodiaDistricts } from '../data/locations';
+import { cambodiaProvinces, cambodiaDistricts } from '@rentify/shared/data/locations';
 import { MobileSummaryBottomBar } from '@rentify/shared/ui/components/MobileSummaryBottomBar'
 import { MobileSummaryDrawer } from '@rentify/shared/ui/components/MobileSummaryDrawer'
 import { SummarySection } from '@rentify/shared/ui/components/SummarySection'

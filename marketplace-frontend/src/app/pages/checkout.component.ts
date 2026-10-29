@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -20,6 +20,19 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { TranslatePipe } from '../core/i18n/translate.pipe';
 import { TranslateService } from '../core/i18n/translate.service';
 import { SeoService } from '../core/seo/seo.service';
+
+import { CAMBODIA_LOCATIONS } from '../core/data/cambodia-locations';
+
+export interface SavedAddress {
+  id: string;
+  fullName: string;
+  phone: string;
+  province: string;
+  city: string;
+  address: string;
+  note?: string;
+  isDefault?: boolean;
+}
 
 interface PaymentOption {
   value: PaymentMethod;
@@ -74,84 +87,143 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
           <form class="panel" [formGroup]="form" (ngSubmit)="placeOrder()" novalidate>
             <!-- Step 1: Delivery Information -->
             <section class="card block" aria-labelledby="step-1-heading">
-              <h2 id="step-1-heading"><span class="step">1</span> {{ 'checkout.deliveryInfo' | translate }}</h2>
+              <div class="block-header-row">
+                <h2 id="step-1-heading"><span class="step">1</span> {{ 'checkout.deliveryInfo' | translate }}</h2>
+                <button
+                  type="button"
+                  class="btn-add-address"
+                  (click)="toggleCustomAddress()"
+                  [title]="showAddressForm() ? 'Choose from saved addresses' : 'Add new address'"
+                >
+                  <ui-icon [name]="showAddressForm() ? 'x' : 'plus'" [size]="14" />
+                  <span>{{ showAddressForm() ? 'Saved Addresses' : 'Add New' }}</span>
+                </button>
+              </div>
 
-              <div class="grid">
-                <label>
-                  <span>{{ 'checkout.fullName' | translate }} *</span>
-                  <input
-                    formControlName="fullName"
-                    autocomplete="name"
-                    [attr.aria-invalid]="invalid('fullName')"
-                    aria-describedby="fullName-error"
-                  />
-                  @if (invalid('fullName')) {
-                    <small id="fullName-error" class="error-msg" role="alert">
+              <!-- Saved Addresses List -->
+              @if (savedAddresses().length > 0 && !showAddressForm()) {
+                <div class="saved-addresses-list" role="radiogroup" aria-label="Select saved delivery address">
+                  @for (addr of savedAddresses(); track addr.id) {
+                    <div
+                      class="saved-addr-card"
+                      [class.selected]="selectedAddressId() === addr.id"
+                      (click)="selectSavedAddress(addr)"
+                      role="radio"
+                      [attr.aria-checked]="selectedAddressId() === addr.id"
+                      tabindex="0"
+                    >
+                      <div class="addr-radio-indicator">
+                        <span class="addr-dot"></span>
+                      </div>
+                      <div class="addr-content">
+                        <div class="addr-top-line">
+                          <strong class="addr-name">{{ addr.fullName }}</strong>
+                          <span class="addr-phone">{{ addr.phone }}</span>
+                          @if (addr.isDefault) {
+                            <span class="addr-default-pill">Default</span>
+                          }
+                        </div>
+                        <div class="addr-detail">
+                          {{ addr.address }}, {{ addr.city }}, {{ addr.province }}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        class="addr-edit-btn"
+                        (click)="editSelectedAddress(addr, $event)"
+                        title="Edit address"
+                      >
+                        <ui-icon name="edit" [size]="13" />
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Address Input Grid -->
+              @if (showAddressForm() || savedAddresses().length === 0) {
+                <div class="grid tight-grid">
+                  <label>
+                    <span>{{ 'checkout.fullName' | translate }} *</span>
+                    <input
+                      formControlName="fullName"
+                      autocomplete="name"
+                      [attr.aria-invalid]="invalid('fullName')"
+                      aria-describedby="fullName-error"
+                    />
+                    <small id="fullName-error" class="error-msg" [class.error-hidden]="!invalid('fullName')">
                       {{ 'checkout.fullNameError' | translate }}
                     </small>
-                  }
-                </label>
+                  </label>
 
-                <label>
-                  <span>{{ 'checkout.phone' | translate }} *</span>
-                  <input
-                    formControlName="phone"
-                    autocomplete="tel"
-                    placeholder="012 345 678"
-                    [attr.aria-invalid]="invalid('phone')"
-                    aria-describedby="phone-error"
-                  />
-                  @if (invalid('phone')) {
-                    <small id="phone-error" class="error-msg" role="alert">
+                  <label>
+                    <span>{{ 'checkout.phone' | translate }} *</span>
+                    <input
+                      type="tel"
+                      formControlName="phone"
+                      autocomplete="tel"
+                      placeholder="012 345 678"
+                      [attr.aria-invalid]="invalid('phone')"
+                      aria-describedby="phone-error"
+                    />
+                    <small id="phone-error" class="error-msg" [class.error-hidden]="!invalid('phone')">
                       {{ 'checkout.phoneError' | translate }}
                     </small>
-                  }
-                </label>
+                  </label>
 
-                <label>
-                  <span>{{ 'checkout.province' | translate }} *</span>
-                  <input
-                    formControlName="province"
-                    [placeholder]="'checkout.provincePlaceholder' | translate"
-                    [attr.aria-invalid]="invalid('province')"
-                  />
-                  @if (invalid('province')) {
-                    <small class="error-msg" role="alert">{{ 'checkout.required' | translate }}</small>
-                  }
-                </label>
+                  <label>
+                    <span>{{ 'checkout.province' | translate }} *</span>
+                    <select
+                      formControlName="province"
+                      autocomplete="address-level1"
+                      aria-describedby="province-error"
+                      [attr.aria-invalid]="invalid('province')"
+                      (change)="provinceChanged()"
+                    >
+                      <option value="" disabled>{{ translate.currentLang() === 'km' ? 'ជ្រើសរើសខេត្ត / រាជធានី' : 'Select province / city' }}</option>
+                      @for (province of provinces; track province.id) {
+                        <option [value]="province.en">{{ translate.currentLang() === 'km' ? province.km : province.en }}</option>
+                      }
+                    </select>
+                    <small id="province-error" class="error-msg" [class.error-hidden]="!invalid('province')">Required.</small>
+                  </label>
 
-                <label>
-                  <span>{{ 'checkout.city' | translate }} *</span>
-                  <input
-                    formControlName="city"
-                    [placeholder]="'checkout.cityPlaceholder' | translate"
-                    [attr.aria-invalid]="invalid('city')"
-                  />
-                  @if (invalid('city')) {
-                    <small class="error-msg" role="alert">{{ 'checkout.required' | translate }}</small>
-                  }
-                </label>
+                  <label>
+                    <span>{{ 'checkout.city' | translate }} *</span>
+                    <select
+                      formControlName="city"
+                      autocomplete="address-level2"
+                      aria-describedby="city-error"
+                      [attr.aria-invalid]="invalid('city')"
+                    >
+                      <option value="" disabled>{{ districts().length ? (translate.currentLang() === 'km' ? 'ជ្រើសរើសក្រុង / ស្រុក / ខណ្ឌ' : 'Select city / district') : (translate.currentLang() === 'km' ? 'សូមជ្រើសរើសខេត្តជាមុន' : 'Select a province first') }}</option>
+                      @for (district of districts(); track district.id) {
+                        <option [value]="district.en">{{ translate.currentLang() === 'km' ? district.km : district.en }}</option>
+                      }
+                    </select>
+                    <small id="city-error" class="error-msg" [class.error-hidden]="!invalid('city')">Required.</small>
+                  </label>
 
-                <label class="wide">
-                  <span>{{ 'checkout.address' | translate }} *</span>
-                  <input
-                    formControlName="address"
-                    [placeholder]="'checkout.addressPlaceholder' | translate"
-                    [attr.aria-invalid]="invalid('address')"
-                    aria-describedby="address-error"
-                  />
-                  @if (invalid('address')) {
-                    <small id="address-error" class="error-msg" role="alert">
+                  <label class="wide">
+                    <span>{{ 'checkout.address' | translate }} *</span>
+                    <input
+                      formControlName="address"
+                      autocomplete="street-address"
+                      placeholder="House 12, Street 240"
+                      [attr.aria-invalid]="invalid('address')"
+                      aria-describedby="address-error"
+                    />
+                    <small id="address-error" class="error-msg" [class.error-hidden]="!invalid('address')">
                       {{ 'checkout.addressError' | translate }}
                     </small>
-                  }
-                </label>
+                  </label>
 
-                <label class="wide">
-                  <span>{{ 'checkout.note' | translate }} <em>({{ 'checkout.optional' | translate }})</em></span>
-                  <input formControlName="note" [placeholder]="'checkout.notePlaceholder' | translate" />
-                </label>
-              </div>
+                  <label class="wide">
+                    <span>{{ 'checkout.note' | translate }} <em>({{ 'checkout.optional' | translate }})</em></span>
+                    <input formControlName="note" [placeholder]="'checkout.notePlaceholder' | translate" />
+                  </label>
+                </div>
+              }
             </section>
 
             <!-- Step 2: Payment Method -->
@@ -172,32 +244,21 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                       [checked]="method() === option.value"
                       (change)="selectMethod(option)"
                     />
-                    <ui-icon [name]="option.icon" [size]="20" />
-                    <div class="payment-info">
-                      <div class="payment-title-row">
-                        <strong>{{ option.labelKey | translate }}</strong>
-                        <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span>
-                      </div>
-                      <small>{{ option.hintKey | translate }}</small>
+                    <ui-icon [name]="option.icon" [size]="18" />
+                    <div class="payment-title-row">
+                      <strong>{{ option.labelKey | translate }}</strong>
+                      <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span>
                     </div>
                   </label>
                 }
               </div>
-
             </section>
 
             <!-- Step 3: Policy Acknowledgement -->
             <section class="card block" aria-labelledby="step-3-heading">
               <h2 id="step-3-heading"><span class="step">3</span> {{ 'checkout.policyTitle' | translate }}</h2>
 
-              <div class="policy-card">
-                <div class="policy-header">
-                  <ui-icon name="shield" [size]="18" />
-                  <strong>{{ 'checkout.policyHeader' | translate }}</strong>
-                </div>
-                <p class="policy-desc">
-                  {{ 'checkout.policyDescription' | translate }}
-                </p>
+              <div class="policy-card compact-policy">
                 <label class="checkbox-container" [class.has-error]="invalid('policyAcknowledged')">
                   <input
                     type="checkbox"
@@ -209,11 +270,9 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                     {{ 'checkout.policyAck' | translate }}
                   </span>
                 </label>
-                @if (invalid('policyAcknowledged')) {
-                  <small id="policy-error" class="error-msg" role="alert">
-                    {{ 'checkout.policyAckError' | translate }}
-                  </small>
-                }
+                <small id="policy-error" class="error-msg" [class.error-hidden]="!invalid('policyAcknowledged')">
+                  {{ 'checkout.policyAckError' | translate }}
+                </small>
               </div>
             </section>
 
@@ -273,7 +332,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                     <span>{{ 'checkout.separateDelivery' | translate }}</span>
                   </header>
                   <div class="lines">
-                    @for (line of group.lines; track line.product.id) {
+                    @for (line of group.lines; track line.product.id + (line.variantId || "")) {
                       <div class="line">
                         <span class="qty">{{ line.quantity }}×</span>
                         <span class="name">{{ line.product.name }}</span>
@@ -325,6 +384,10 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                 <span>{{ recMsg }}</span>
               </div>
             }
+
+            <p class="error validation-summary" role="status" [class.error-hidden]="!showValidationSummary()">
+              Please complete the delivery details and acknowledge store policy.
+            </p>
 
             @if (error(); as message) {
               <p class="error" role="alert">
@@ -403,15 +466,138 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
       .grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 8px 12px;
       }
       .wide {
         grid-column: 1 / -1;
       }
+      .block-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .block-header-row h2 {
+        margin-bottom: 0;
+      }
+      .btn-add-address {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-accent);
+        background: var(--color-accent-soft, rgba(0, 102, 204, 0.08));
+        border: 1px solid var(--color-accent);
+        border-radius: var(--radius-sm, 6px);
+        cursor: pointer;
+        transition: all 150ms ease;
+      }
+      .btn-add-address:hover {
+        background: var(--color-accent);
+        color: #fff;
+      }
+      .saved-addresses-list {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .saved-addr-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border: 1.5px solid var(--color-border-strong);
+        border-radius: var(--radius-sm, 6px);
+        background: #fff;
+        cursor: pointer;
+        transition: all 140ms ease;
+      }
+      .saved-addr-card:hover {
+        border-color: var(--color-accent);
+      }
+      .saved-addr-card.selected {
+        border-color: var(--color-accent);
+        background: var(--color-accent-soft, rgba(0, 102, 204, 0.04));
+      }
+      .addr-radio-indicator {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid var(--color-border-strong);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .saved-addr-card.selected .addr-radio-indicator {
+        border-color: var(--color-accent);
+      }
+      .addr-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: transparent;
+        transition: background 120ms ease;
+      }
+      .saved-addr-card.selected .addr-dot {
+        background: var(--color-accent);
+      }
+      .addr-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .addr-top-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .addr-name {
+        color: var(--color-text);
+      }
+      .addr-phone {
+        color: var(--color-muted);
+        font-size: 12px;
+      }
+      .addr-default-pill {
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: #e6f4ea;
+        color: #137333;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .addr-detail {
+        font-size: 12px;
+        color: var(--color-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .addr-edit-btn {
+        background: none;
+        border: none;
+        padding: 4px;
+        color: var(--color-muted);
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      }
+      .addr-edit-btn:hover {
+        color: var(--color-text);
+        background: rgba(0, 0, 0, 0.05);
+      }
       label {
         display: grid;
-        gap: 6px;
-        font-size: 13px;
+        gap: 4px;
+        font-size: 12.5px;
         font-weight: 600;
       }
       label em {
@@ -423,27 +609,40 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
       input:not([type]) {
         width: 100%;
       }
-      .grid input {
-        height: 42px;
-        padding: 0 12px;
+      .grid input,
+      .grid select {
+        height: 38px;
+        padding: 0 10px;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
-        font-size: 14px;
+        font-size: 13.5px;
       }
+      .grid label {
+        grid-template-rows: auto 38px minmax(14px, auto);
+        align-content: start;
+      }
+      .grid label:last-child { grid-template-rows: auto 38px; }
+      .error-hidden { visibility: hidden; }
+      .validation-summary { min-height: 36px; margin: 0; }
+      .grid select { width: 100%; min-width: 0; background: var(--color-surface, #fff); color: var(--color-text); }
+      .grid select.ng-invalid { color: var(--color-muted); }
+      .grid input[aria-invalid='true'],
+      .grid select[aria-invalid='true'] { border-color: var(--color-danger, #dc2626); }
       .error-msg {
         color: var(--color-danger, #dc2626);
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 600;
       }
       .payments {
         display: grid;
-        gap: 10px;
+        gap: 8px;
       }
       .payment {
         display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 13px 15px;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        min-height: 40px;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
         cursor: pointer;
@@ -455,6 +654,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
         background: var(--color-accent-soft);
       }
       .payment.coming-soon {
+        cursor: not-allowed;
         border-style: dashed;
         background: rgba(245, 240, 230, 0.45);
       }
@@ -463,24 +663,19 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
         background: rgba(245, 240, 230, 0.75);
       }
       .payment input[type='radio'] {
-        margin-top: 3px;
+        margin: 0;
       }
       .payment ui-icon {
-        margin-top: 1px;
-      }
-      .payment-info {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
+        flex-shrink: 0;
       }
       .payment-title-row {
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-wrap: wrap;
+        flex: 1;
       }
       .payment strong {
-        font-size: 14px;
+        font-size: 13.5px;
       }
       .pay-badge {
         font-size: 10px;
@@ -499,51 +694,18 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
         color: #b06000;
         border: 1px solid rgba(176, 96, 0, 0.2);
       }
-      .payment small {
-        color: var(--color-muted);
-        font-size: 12px;
-        font-weight: 400;
-        margin-top: 2px;
-      }
-      .payment-notice {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 14px;
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        background: #fff8e6;
-        border: 1px solid #f0dc9e;
-        color: #8c5b00;
-        font-size: 12.5px;
-        line-height: 1.4;
-      }
       .policy-card {
-        padding: 14px;
+        padding: 10px 12px;
         border-radius: var(--radius-sm, 6px);
         background: #fafaf9;
         border: 1px solid var(--color-border);
       }
-      .policy-header {
+      .checkbox-container {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 6px;
-        color: var(--color-text);
-        font-size: 13.5px;
-      }
-      .policy-desc {
-        font-size: 12px;
-        color: var(--color-muted);
-        line-height: 1.5;
-        margin: 0 0 12px;
-      }
-      .checkbox-container {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
         cursor: pointer;
-        padding: 10px;
+        padding: 8px 10px;
         background: #fff;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
@@ -554,16 +716,16 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
         background: #fef2f2;
       }
       .checkbox-container input[type='checkbox'] {
-        margin-top: 3px;
+        margin: 0;
         cursor: pointer;
-        width: 16px;
-        height: 16px;
+        width: 15px;
+        height: 15px;
         accent-color: var(--color-accent);
       }
       .checkbox-text {
-        font-size: 12.5px;
+        font-size: 12px;
         font-weight: 500;
-        line-height: 1.45;
+        line-height: 1.4;
         color: var(--color-text);
       }
       .review-details {
@@ -804,19 +966,84 @@ export class CheckoutComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   protected readonly translate = inject(TranslateService);
   private readonly seo = inject(SeoService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  protected readonly provinces = CAMBODIA_LOCATIONS;
   protected readonly paymentOptions = PAYMENT_OPTIONS;
   protected readonly method = signal<PaymentMethod>('COD');
+  protected readonly attemptedSubmit = signal(false);
   protected readonly submitting = signal(false);
   protected readonly uncertainSubmission = signal(false);
   protected readonly checkingRecovery = signal(false);
   protected readonly recoveryMessage = signal('');
   protected readonly error = signal('');
 
+  protected readonly savedAddresses = signal<SavedAddress[]>([]);
+  protected readonly selectedAddressId = signal<string | null>(null);
+  protected readonly showAddressForm = signal<boolean>(false);
+
+  private readonly STORAGE_SAVED_ADDRESSES = 'rentify_saved_addresses';
+
   private readonly checkoutKeys = new Map<string, string>();
 
   ngOnInit(): void {
     this.seo.setPageTitle(`${this.translate.t('checkout.title')} | Rentify Marketplace`);
+    this.initSavedAddresses();
+  }
+
+  private initSavedAddresses(): void {
+    let list: SavedAddress[] = [];
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(this.STORAGE_SAVED_ADDRESSES);
+        if (stored) {
+          list = JSON.parse(stored);
+        }
+      } catch {}
+    }
+
+    // Only real addresses are offered; never pre-fill a placeholder delivery address.
+    this.savedAddresses.set(list);
+
+    // Auto-select the first/default address and populate the form
+    const defaultAddr = list.find((a) => a.isDefault) || list[0];
+    if (defaultAddr) {
+      this.selectSavedAddress(defaultAddr);
+    }
+  }
+
+  protected selectSavedAddress(addr: SavedAddress): void {
+    this.selectedAddressId.set(addr.id);
+    this.form.patchValue({
+      fullName: addr.fullName,
+      phone: addr.phone,
+      province: addr.province,
+      city: addr.city,
+      address: addr.address,
+      note: addr.note || '',
+    });
+  }
+
+  protected toggleCustomAddress(): void {
+    const currentlyShowing = this.showAddressForm();
+    if (currentlyShowing) {
+      // Switching back to saved list
+      this.showAddressForm.set(false);
+      const curId = this.selectedAddressId();
+      const addr = this.savedAddresses().find((a) => a.id === curId) || this.savedAddresses()[0];
+      if (addr) {
+        this.selectSavedAddress(addr);
+      }
+    } else {
+      // Opening custom address form
+      this.showAddressForm.set(true);
+    }
+  }
+
+  protected editSelectedAddress(addr: SavedAddress, event: MouseEvent): void {
+    event.stopPropagation();
+    this.selectSavedAddress(addr);
+    this.showAddressForm.set(true);
   }
 
   protected selectMethod(option: PaymentOption): void {
@@ -843,6 +1070,7 @@ export class CheckoutComponent implements OnInit {
       storeId: g.storeId,
       sellerName: g.sellerName,
       lines: g.lines.map((l) => ({
+        variantId: l.variantId,
         product: l.product,
         quantity: l.quantity,
         lineTotal: l.lineTotal,
@@ -905,14 +1133,31 @@ export class CheckoutComponent implements OnInit {
     }),
   });
 
+  private readonly formValue = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
+  protected readonly districts = computed(() =>
+    this.provinces.find((province) => province.en === this.formValue().province)?.districts ?? [],
+  );
+
+  protected provinceChanged(): void {
+    this.form.controls.city.reset('');
+  }
+
+  protected readonly showValidationSummary = computed(() => {
+    this.formValue();
+    return this.attemptedSubmit() && this.form.invalid;
+  });
+
   protected readonly fullDeliveryAddress = computed(() => {
-    const { address, city, province, note } = this.form.getRawValue();
+    const { address, city, province, note } = this.formValue();
     return [address, city, province, note?.trim()].filter(Boolean).join(', ');
   });
 
   protected invalid(field: string): boolean {
     const control = this.form.get(field);
-    return Boolean(control && control.touched && control.invalid);
+    return Boolean(control && this.attemptedSubmit() && control.invalid);
   }
 
   getOrInitCheckoutKey(storeId: string): string {
@@ -953,9 +1198,11 @@ export class CheckoutComponent implements OnInit {
     this.error.set('');
     this.recoveryMessage.set('');
 
+    this.attemptedSubmit.set(true);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.error.set(this.translate.t('checkout.formError'));
+      const firstInvalid = Object.keys(this.form.controls).find((name) => this.form.get(name)?.invalid);
+      this.host.nativeElement.querySelector<HTMLInputElement>(`[formControlName="${firstInvalid}"]`)?.focus();
       return;
     }
 

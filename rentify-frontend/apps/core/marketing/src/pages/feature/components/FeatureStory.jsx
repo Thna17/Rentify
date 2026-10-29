@@ -45,10 +45,10 @@ const StoryStep = ({ index, active, title, body, onActive }) => {
         <p className="text-[15px] font-semibold tabular-nums text-[#0071e3]">
           {String(index + 1).padStart(2, '0')}
         </p>
-        <h3 className="mt-3 text-[32px] font-semibold leading-[1.1] tracking-[-0.025em] text-[#1d1d1f] md:text-[44px]">
+        <h3 className="mt-3 text-[26px] font-semibold leading-[1.12] tracking-[-0.025em] text-[#1d1d1f] md:text-[44px]">
           {title}
         </h3>
-        <p className="mt-4 max-w-md text-[19px] leading-[1.45] text-[#6e6e73]">{body}</p>
+        <p className="mt-3 max-w-md text-[16px] leading-[1.5] text-[#6e6e73] md:mt-4 md:text-[19px]">{body}</p>
       </div>
       <Reveal className="mx-auto mt-10 w-[64%] max-w-[280px] lg:hidden">
         <PhoneFrame>

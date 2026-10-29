@@ -3,6 +3,9 @@ import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { useAuth } from '@rentify/utils';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
+/** Which slice of the business the dashboard is focused on. */
+export type ChannelView = 'all' | 'marketplace' | 'storefront' | 'pos';
+
 export interface ChannelCapabilities {
   hasStorefront: boolean;
   hasMarketplace: boolean;
@@ -19,6 +22,9 @@ export interface ChannelContextType {
   hasPos: boolean;
   togglePos: (enabled?: boolean) => void;
   toggleMarketplace: (enabled?: boolean) => Promise<void>;
+  view: ChannelView;
+  setView: (view: ChannelView) => void;
+  availableViews: ChannelView[];
 }
 
 const defaultContext: ChannelContextType = {
@@ -31,6 +37,9 @@ const defaultContext: ChannelContextType = {
   hasPos: true,
   togglePos: () => undefined,
   toggleMarketplace: async () => undefined,
+  view: 'all',
+  setView: () => undefined,
+  availableViews: ['all'],
 };
 
 const ChannelContext = createContext<ChannelContextType>(defaultContext);
@@ -108,6 +117,30 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
     }
   };
 
+  // Focused view (All / one channel), remembered per browser; falls back to All if that channel turns off
+  const [savedView, setSavedView] = useState<ChannelView>(() => {
+    try {
+      return (localStorage.getItem('rentify_channel_view') as ChannelView) || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+  const availableViews: ChannelView[] = [
+    'all',
+    ...(hasMarketplace ? (['marketplace'] as const) : []),
+    ...(hasStorefront ? (['storefront'] as const) : []),
+    ...(posEnabled ? (['pos'] as const) : []),
+  ];
+  const view: ChannelView = availableViews.includes(savedView) ? savedView : 'all';
+  const setView = (next: ChannelView) => {
+    setSavedView(next);
+    try {
+      localStorage.setItem('rentify_channel_view', next);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   const channels: ChannelCapabilities = {
     hasStorefront,
     hasMarketplace,
@@ -126,6 +159,9 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
         hasPos: posEnabled,
         togglePos,
         toggleMarketplace,
+        view,
+        setView,
+        availableViews,
       }}
     >
       {children}

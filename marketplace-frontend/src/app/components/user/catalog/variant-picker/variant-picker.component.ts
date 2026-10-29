@@ -34,7 +34,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
                   [class.selected]="selectedOptions()[option.name] === val"
                   [class.out-of-stock]="isOptionCombinationOos(option.name, val)"
                   [attr.aria-checked]="selectedOptions()[option.name] === val"
-                  [attr.aria-disabled]="isOptionCombinationOos(option.name, val)"
+                  [disabled]="isOptionCombinationOos(option.name, val)"
                   (click)="selectOption(option.name, val)"
                   [title]="isOptionCombinationOos(option.name, val) ? t('catalog.outOfStock') : val"
                 >
@@ -75,13 +75,13 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
       .variant-groups {
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        margin: 14px 0 10px;
+        gap: 12px;
+        margin: 4px 0 2px;
       }
       .option-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
       }
       .option-header {
         display: flex;
@@ -107,13 +107,13 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 16px;
-        min-height: 40px;
+        padding: 6px 14px;
+        min-height: 36px;
         border: 1.5px solid var(--color-border);
         border-radius: var(--radius-sm, 6px);
         background: var(--color-surface, #fff);
         color: var(--color-text);
-        font-size: 13.5px;
+        font-size: 13px;
         font-weight: 500;
         cursor: pointer;
         transition: all 140ms ease;
@@ -149,9 +149,9 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 8px;
-        padding-top: 10px;
+        gap: 10px;
+        margin-top: 4px;
+        padding-top: 8px;
         border-top: 1px solid var(--color-border);
       }
       .sku-item {
@@ -282,6 +282,7 @@ export class VariantPickerComponent {
   }
 
   selectOption(name: string, value: string): void {
+    if (this.isOptionCombinationOos(name, value)) return;
     this.selectedOptions.update((prev) => ({
       ...prev,
       [name]: value,
@@ -301,7 +302,7 @@ export class VariantPickerComponent {
     if (matched) {
       return matched.stockQuantity === 0 || matched.status === 'out-of-stock';
     }
-    return false;
+    return true;
   }
 
   protected t(key: string, params?: Record<string, string | number>): string {

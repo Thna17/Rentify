@@ -37,7 +37,7 @@ const CORE_ICONS = {
   pos: Wallet,
 };
 
-const PlanCard = ({ plan, index, count, recommended }) => {
+const PlanCard = ({ plan, index, count, recommended, compact }) => {
   const { t } = useLanguage();
   const tierKey = planTierKey(plan, index, count);
   const free = Number(plan.price) === 0;
@@ -72,7 +72,7 @@ const PlanCard = ({ plan, index, count, recommended }) => {
         )}
       </div>
 
-      <h3 className="mt-3 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
+      <h3 className="mt-3 text-[22px] font-semibold md:text-[28px] tracking-[-0.02em] text-[#1d1d1f]">
         {plan.name}
       </h3>
       <p className="mt-1.5 text-[14px] font-medium text-[#0071e3]">
@@ -80,7 +80,7 @@ const PlanCard = ({ plan, index, count, recommended }) => {
       </p>
 
       <div className="mt-7 flex items-baseline gap-1.5">
-        <span className="text-[52px] font-semibold leading-none tracking-[-0.04em] text-[#1d1d1f]">
+        <span className="text-[40px] font-semibold leading-none md:text-[52px] tracking-[-0.04em] text-[#1d1d1f]">
           {free ? '$0' : `≈${formatPrice(plan.price)}`}
         </span>
         <span className="text-[17px] text-[#6e6e73]">{formatPeriod(plan, t)}</span>
@@ -100,7 +100,7 @@ const PlanCard = ({ plan, index, count, recommended }) => {
         {free ? 'Start Free' : `Start 14-Day Free Trial`}
       </ButtonLink>
 
-      <ul className="mt-8 flex-1 space-y-3.5 border-t border-black/10 pt-7">
+      <ul className={cn('mt-8 flex-1 space-y-3.5 border-t border-black/10 pt-7', compact && 'hidden md:block')}>
         {checklist.map(({ label, included }) => (
           <li
             key={label}
@@ -137,7 +137,8 @@ const PlanSkeleton = () => (
   <div className="h-[640px] animate-pulse rounded-[28px] bg-white ring-1 ring-black/[0.06]" />
 );
 
-const PlanCards = ({ plans, isLoading }) => {
+// compact hides the feature checklist on phones (used on the home page)
+const PlanCards = ({ plans, isLoading, compact = false }) => {
   const { t } = useLanguage();
   const recommendedIndex = plans.length > 2 ? 1 : plans.length - 1;
   const everyPlan = CORE_FEATURES.filter((feature) =>
@@ -178,13 +179,14 @@ const PlanCards = ({ plans, isLoading }) => {
               index={index}
               count={plans.length}
               recommended={index === recommendedIndex && plans.length > 1}
+              compact={compact}
             />
           </StaggerItem>
         ))}
       </Stagger>
 
       {everyPlan.length > 0 && (
-        <Reveal className="mt-16 text-center md:mt-20">
+        <Reveal className={cn('mt-16 text-center md:mt-20', compact && 'hidden md:block')}>
           <p className="text-[15px] font-semibold text-[#1d1d1f]">{t('site.pricing.everyPlan')}</p>
           <ul className="mt-6 flex flex-wrap justify-center gap-x-10 gap-y-5">
             {everyPlan.map((feature) => {

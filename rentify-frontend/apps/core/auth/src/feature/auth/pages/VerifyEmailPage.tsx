@@ -1,16 +1,13 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { useAuthLanguage } from '../context/AuthLanguageContext';
 import { useAuthConfig } from '../utils/authUtils';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import AuthLayout from '../components/AuthLayout';
 import VerifyOtpForm from '../components/VerifyOtpForm';
-import { maskContact } from '../utils/phoneUtils';
 import { ShoppingBag, Store, Sparkles } from 'lucide-react';
 import { cn } from '@rentify/utils';
 
 export default function VerifyEmailPage() {
-  const [searchParams] = useSearchParams();
   const { t, isKhmer } = useAuthLanguage();
   const { isWebsiteTemplate, isMarketplace, isHostedStorefrontBuyer, returnDomain } = useAuthConfig();
   const { content } = useWebsiteData();
@@ -26,11 +23,6 @@ export default function VerifyEmailPage() {
     content?.['Website Name'] ||
     content?.name ||
     fallbackStoreName;
-
-  const emailParam = searchParams.get('email');
-  const phoneParam = searchParams.get('phone') || searchParams.get('phoneNumber');
-  const rawDestination = phoneParam || emailParam || '';
-  const maskedDestination = rawDestination ? maskContact(rawDestination) : '';
 
   const getContextBadge = () => {
     if (isStoreCustomer) {
@@ -62,14 +54,10 @@ export default function VerifyEmailPage() {
   return (
     <AuthLayout
       badge={getContextBadge()}
-      title={t('verify.title')}
-      subtitle={
-        maskedDestination
-          ? t('verify.subtitle', { destination: maskedDestination })
-          : isKhmer
-          ? 'សូមបញ្ចូលលេខកូដសម្ងាត់ ៦ ខ្ទង់ដើម្បីបញ្ចប់ការផ្ទៀងផ្ទាត់'
-          : 'Enter the 6-digit security code to complete verification'
-      }
+      title={isKhmer ? t('verify.title') : 'Verify your account'}
+      subtitle={isKhmer
+        ? 'សូមបញ្ចូលលេខកូដសម្ងាត់ ៦ ខ្ទង់ដើម្បីបញ្ចប់ការផ្ទៀងផ្ទាត់'
+        : 'Enter the 6-digit code to verify your account.'}
     >
       <VerifyOtpForm />
     </AuthLayout>

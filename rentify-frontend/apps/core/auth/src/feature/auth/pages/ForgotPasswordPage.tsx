@@ -6,9 +6,7 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
-  CheckCircle2,
   KeyRound,
-  ShieldCheck,
   Mail,
   Smartphone,
   RotateCw,
@@ -61,7 +59,6 @@ export function ForgotPasswordPage() {
 
   const {
     error,
-    success,
     loading,
     resetStatus,
     handleRequestReset,
@@ -71,6 +68,7 @@ export function ForgotPasswordPage() {
     control,
     handleSubmit,
     setValue,
+    clearErrors,
     formState: { errors },
   } = useForm<ForgotPasswordFormData>({
     defaultValues: {
@@ -199,7 +197,7 @@ export function ForgotPasswordPage() {
             <Button
               type="button"
               onClick={handleProceedToReset}
-              className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] transition-all group"
+              className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-blue-600 active:scale-[0.99] transition-all group"
             >
               <div className="flex items-center justify-center gap-2">
                 <span className={isKhmer ? 'font-khmer text-base' : 'text-sm'}>
@@ -302,6 +300,8 @@ export function ForgotPasswordPage() {
                 onModeChange={(newMode) => {
                   setInputMode(newMode);
                   setValue('contact', '');
+                  clearErrors('contact');
+                  resetStatus();
                 }}
                 value={field.value}
                 onChange={field.onChange}
@@ -325,7 +325,7 @@ export function ForgotPasswordPage() {
           <Button
             type="submit"
             disabled={loading}
-            className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] transition-all duration-200 group"
+            className="relative h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-blue-600 active:scale-[0.99] transition-all duration-200 group"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">

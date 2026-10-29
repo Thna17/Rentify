@@ -49,7 +49,7 @@ const formatLocalPhone = (value: string) => {
 };
 
 const inputClass =
-  'h-12 rounded-xl border-slate-300 focus:border-blue-500 transition-colors duration-200';
+  'h-12 w-full rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400';
 
 function SignupPage() {
   const navigate = useNavigate();
@@ -159,7 +159,7 @@ function SignupPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6">
-      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-xl shadow-slate-200/60 lg:min-h-[680px] lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border-0 bg-white shadow-2xl shadow-slate-200/70 lg:min-h-[680px] lg:grid-cols-[0.9fr_1.1fr]">
         <aside
           className={cn(
             'relative hidden overflow-hidden p-12 lg:flex lg:flex-col lg:justify-between',
@@ -294,11 +294,11 @@ function SignupPage() {
                           <div className="relative">
                             <Input
                               {...field}
-                              placeholder="John Doe"
+                              placeholder="Enter your full name"
                               autoComplete="name"
                               className={cn(inputClass, 'pl-10')}
                             />
-                            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -377,13 +377,13 @@ function SignupPage() {
                                 {...field}
                                 type="email"
                                 autoComplete="email"
-                                placeholder="your.email@example.com"
+                                placeholder="name@example.com"
                                 className={cn(inputClass, 'pl-10')}
                               />
-                              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             </div>
                           ) : (
-                            <div className="flex h-12 overflow-hidden rounded-xl border border-slate-300 bg-white transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+                            <div className="flex h-12 w-full overflow-hidden rounded-xl border border-slate-300 bg-white transition-all duration-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 hover:border-slate-400">
                               <span className="flex select-none items-center gap-2 border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700">
                                 <span aria-hidden>🇰🇭</span>
                                 +855
@@ -434,7 +434,7 @@ function SignupPage() {
                               placeholder="At least 8 characters"
                               className={cn(inputClass, 'pl-10 pr-10')}
                             />
-                            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Button
                               type="button"
                               variant="ghost"
@@ -498,7 +498,7 @@ function SignupPage() {
                               placeholder="Re-enter your password"
                               className={cn(inputClass, 'pl-10 pr-10')}
                             />
-                            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Button
                               type="button"
                               variant="ghost"

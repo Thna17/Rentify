@@ -318,12 +318,12 @@ function LoginPage() {
                                 field.onChange(e.target.value);
                               }
                             }}
-                            className="h-12 pl-10 rounded-xl border-slate-300 placeholder:text-slate-400 text-slate-900 focus:border-blue-500 transition-colors duration-200"
+                            className="h-12 w-full pl-10 rounded-xl border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                           />
                           {inputMode === 'email' ? (
-                            <Mail className="absolute left-3 top-1/2 w-4 -translate-y-1/2 text-slate-400" />
+                            <Mail className="pointer-events-none absolute left-3 top-1/2 w-4 -translate-y-1/2 text-slate-400" />
                           ) : (
-                            <Phone className="absolute left-3 top-1/2 w-4 -translate-y-1/2 text-slate-400" />
+                            <Phone className="pointer-events-none absolute left-3 top-1/2 w-4 -translate-y-1/2 text-slate-400" />
                           )}
                         </div>
                       </FormControl>
@@ -362,9 +362,9 @@ function LoginPage() {
                             {...field}
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Password"
-                            className="h-12 pl-10 pr-10 rounded-xl border-slate-300 placeholder:text-slate-400 text-slate-900 focus:border-blue-500 transition-colors duration-200"
+                            className="h-12 w-full pl-10 pr-10 rounded-xl border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                           />
-                          <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <KeyRound className="pointer-events-none absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                           <Button
                             type="button"
                             variant="ghost"

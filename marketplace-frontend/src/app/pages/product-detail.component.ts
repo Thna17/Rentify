@@ -108,33 +108,13 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
           </div>
 
           <div class="info">
-            <span class="badge badge-soft">{{ p.categoryName }}</span>
-            <h1>{{ p.name }}</h1>
-
-            <app-variant-picker
-              [product]="p"
-              (variantChange)="onVariantChange($event)"
-              (skuChange)="onSkuChange($event)"
-            />
-
-            @if (effectiveReviewCount() > 0) {
-              <a class="rating-row rating-link" href="#reviews">
-                <ui-icon name="star" [size]="15" [filled]="true" class="stars" />
-                <span>{{ effectiveRating().toFixed(1) }}</span>
-                <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? ('product.verifiedReview' | translate) : ('product.verifiedReviews' | translate) }})</span>
+            <div class="product-title-group">
+              <h1>{{ p.name }}</h1>
+              <a class="seller-sub" [routerLink]="['/stores', p.storeId]">
+                <ui-icon name="store" [size]="14" />
+                <span>{{ p.sellerName }}</span>
               </a>
-            } @else {
-              <a class="rating-row no-reviews rating-link" href="#reviews">{{ 'product.noReviewsYet' | translate }}</a>
-            }
-
-            <a class="store-row card" [routerLink]="['/stores', p.storeId]">
-              <div class="store-avatar img-placeholder"></div>
-              <div>
-                <small>{{ 'nav.stores' | translate }}</small>
-                <strong>{{ p.sellerName }}</strong>
-              </div>
-              <span class="visit">{{ 'product.visitStore' | translate }} <ui-icon name="arrow-right" [size]="13" /></span>
-            </a>
+            </div>
 
             <div class="price-block">
               <span class="price">\${{ effectivePrice().toFixed(2) }}</span>
@@ -144,12 +124,11 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
               }
             </div>
 
-            <p class="desc">{{ p.description }}</p>
-
-            <div class="purchase-info" aria-label="Order information">
-              <div><ui-icon name="store" [size]="16" /><span><strong>{{ 'product.shipsFromSeller' | translate }}</strong><small>{{ 'product.shipsFromSellerSub' | translate }}</small></span></div>
-              <div><ui-icon name="credit-card" [size]="16" /><span><strong>{{ 'product.totalConfirmed' | translate }}</strong><small>{{ 'product.totalConfirmedSub' | translate }}</small></span></div>
-            </div>
+            <app-variant-picker
+              [product]="p"
+              (variantChange)="onVariantChange($event)"
+              (skuChange)="onSkuChange($event)"
+            />
 
             <div class="qty-avail-row">
               <div>
@@ -200,12 +179,27 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
                 [class.saved]="saved()"
                 (click)="toggleWishlist()"
                 [attr.aria-pressed]="saved()"
-                [attr.aria-label]="
-                  saved() ? ('product.removeFromWishlist' | translate) : ('product.saveToWishlist' | translate)
-                "
+                [attr.aria-label]="saved() ? ('product.removeFromWishlist' | translate) : ('product.saveToWishlist' | translate)"
               >
-                <ui-icon name="heart" [size]="16" [filled]="saved()" />
+                <ui-icon name="heart" [size]="18" [filled]="saved()" />
               </button>
+            </div>
+
+            @if (effectiveReviewCount() > 0) {
+              <a class="rating-row rating-link" href="#reviews">
+                <ui-icon name="star" [size]="15" [filled]="true" class="stars" />
+                <span>{{ effectiveRating().toFixed(1) }}</span>
+                <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? ('product.verifiedReview' | translate) : ('product.verifiedReviews' | translate) }})</span>
+              </a>
+            } @else {
+              <a class="rating-row no-reviews rating-link" href="#reviews">{{ 'product.noReviewsYet' | translate }}</a>
+            }
+
+            <p class="desc">{{ p.description }}</p>
+
+            <div class="purchase-info" aria-label="Order information">
+              <div><ui-icon name="store" [size]="16" /><span><strong>{{ 'product.shipsFromSeller' | translate }}</strong><small>{{ 'product.shipsFromSellerSub' | translate }}</small></span></div>
+              <div><ui-icon name="credit-card" [size]="16" /><span><strong>{{ 'product.totalConfirmed' | translate }}</strong><small>{{ 'product.totalConfirmedSub' | translate }}</small></span></div>
             </div>
 
             @if (feedback(); as message) {
@@ -480,7 +474,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
         aspect-ratio: 1; width: 100%;
         transition: border-color 150ms ease, transform 150ms ease;
       }
-      .shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      .shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
       .shot:hover { border-color: var(--color-muted); }
       .shot.active { border-color: var(--color-accent); transform: translateY(-1px); }
 
@@ -521,16 +515,53 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
         height: auto;
         border-radius: var(--radius-lg);
         font-size: 13px;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
       }
-      .product-photo { display: block; object-fit: cover; width: 100%; height: 100%; background: var(--color-bg-alt); }
+      .product-photo {
+        display: block;
+        object-fit: contain;
+        object-position: center;
+        width: 100%;
+        height: 100%;
+        padding: 16px;
+        background: #ffffff;
+      }
       .info {
         display: flex;
         flex-direction: column;
         gap: 12px;
       }
+      .product-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
       h1 {
         font-size: 30px;
         line-height: 1.15;
+        margin: 2px 0 0;
+      }
+      .seller-sub {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--color-muted, #7c7267);
+        font-size: 13.5px;
+        font-weight: 500;
+        text-decoration: none;
+        width: fit-content;
+        transition: color 150ms ease;
+      }
+      .seller-sub ui-icon {
+        color: var(--color-muted, #7c7267);
+        opacity: 0.8;
+      }
+      .seller-sub:hover {
+        color: var(--color-accent);
+      }
+      .seller-sub:hover ui-icon {
+        color: var(--color-accent);
       }
       .store-row {
         display: flex;
@@ -568,17 +599,18 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       .price-block {
         display: flex;
         align-items: baseline;
-        gap: 12px;
-        margin-top: 4px;
+        gap: 10px;
+        margin-top: 2px;
+        margin-bottom: -2px;
       }
       .price {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: 800;
         letter-spacing: -0.02em;
       }
       .was {
         color: var(--color-muted);
-        font-size: 17px;
+        font-size: 16px;
         text-decoration: line-through;
       }
       .desc {
@@ -594,22 +626,28 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       .purchase-info small { color: var(--color-muted); font-size: 11.5px; line-height: 1.4; }
       .qty-avail-row {
         display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        margin: 10px 0 4px;
+        align-items: center;
+        gap: 24px;
+        margin: 2px 0 0;
         flex-wrap: wrap;
+      }
+      .qty-avail-row > div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
       .qty-avail-row strong {
         font-size: 13px;
+        font-weight: 600;
       }
       .qty-stepper {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
-        padding: 7px 14px;
-        margin-top: 7px;
+        padding: 5px 10px;
+        margin-top: 0;
         width: fit-content;
       }
       .qty-stepper button {
@@ -625,8 +663,8 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       .avail {
         display: flex;
         align-items: center;
-        gap: 7px;
-        margin-top: 9px;
+        gap: 6px;
+        margin-top: 0;
         font-size: 13px;
         color: var(--color-text-secondary);
       }
@@ -643,7 +681,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       .buy-row {
         display: flex;
         gap: 10px;
-        margin-top: 8px;
+        margin-top: 4px;
       }
       .wish {
         width: 54px;
@@ -1330,6 +1368,7 @@ export class ProductDetailComponent {
 
   protected onVariantChange(variant: ProductVariantView): void {
     this.currentVariant.set(variant);
+    this.quantity.set(1);
     if (variant.image) {
       this.pinnedImage.set(variant.image);
     }
@@ -1390,7 +1429,7 @@ export class ProductDetailComponent {
       this.flyToCart.fly(current.image, source, current.name);
     }
 
-    if (!(await this.cart.add(effectiveProduct, units))) {
+    if (!(await this.cart.add(effectiveProduct, units, variant?.id))) {
       // cart.error carries the server's reason, e.g. "Only 3 left in stock".
       this.feedback.set('');
       return;

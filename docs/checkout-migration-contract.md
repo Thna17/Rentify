@@ -166,3 +166,36 @@ parity.
    restricted-product moderation, tax and delivery policy, and an admin case
    review workflow before public release. Decide whether a flat delivery fee
    is sufficient beyond the pilot or whether zones and weights are needed.
+
+### Marketplace checkout interaction
+
+The Angular checkout reveals required-field errors only after an explicit order
+attempt. Error slots retain their space to avoid moving delivery fields and the
+order button. Invalid submission focuses the first incomplete field; correcting
+the form clears the validation summary. Unavailable payment options are disabled
+and COD stays selected. The address review updates as delivery details change.
+
+Province/city and city/district use linked dropdowns from the repository's
+Cambodia address dataset. Changing province clears the district selection.
+Options display in the selected UI language and retain English address values
+for the existing checkout request contract.
+
+
+## 2026-10-28 variant-aware marketplace cart UI
+
+Current: the Angular cart preserves `(productId, variantId)` per line for guest
+storage, session mutations, adoption on sign-in, quantity updates, removal and
+checkout rendering. Variant products open their product page to choose options
+and quantity before adding. Cart and drawer retain the main product photo and
+show a selected variant thumbnail (when supplied) and option values below. The
+public catalog exposes the first canonical variant image. Image-only legacy
+`nicheAttributes.variants` entries are display references, not purchasable SKUs;
+the client no longer invents IDs for them. They require canonical variant data
+before stock-aware color/size purchases are possible. Commerce remains the
+price, availability and stock authority; existing cart routes accept variantId.
+
+Local verification blocker: after restarting Commerce to load the latest checked
+out code, the local API returned `Unknown column Product.moderationStatus`. The
+working-tree code and local DB schema are out of sync. No schema/data migration
+was run during this UI task. Reconcile using the repository migration runbook
+before claiming live end-to-end verification.

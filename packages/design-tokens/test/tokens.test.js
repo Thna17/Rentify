@@ -25,7 +25,7 @@ test('tokens schema: all required design token domains exist with valid types', 
   assert.ok(tokens.color.border.strong.value);
 
   // 2. Status colors (success, warning, danger, info)
-  const statusTypes = ['success', 'warning', 'danger', 'info'];
+  const statusTypes = ['success', 'warning', 'danger', 'info', 'neutral'];
   for (const st of statusTypes) {
     assert.ok(tokens.color.status[st].base.value, `status ${st} base must exist`);
     assert.ok(tokens.color.status[st].text.value, `status ${st} text must exist`);
@@ -105,4 +105,96 @@ test('css adapter: index.css contains all semantic variables and reduced-motion 
 
   // Reduced motion media query present
   assert.ok(cssContent.includes('@media (prefers-reduced-motion: reduce)'));
+});
+
+// CSS variable for a color token path, e.g. ['status', 'success', 'base'] -> --rentify-color-success-base
+const kebab = (key) => key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+function cssNameFor(path) {
+  if (path[0] === 'status') return `--rentify-color-${path[1]}-${kebab(path[2])}`;
+  return `--rentify-color-${path[0]}-${kebab(path[1])}`;
+}
+
+function colorEntries(group, path = []) {
+  return Object.entries(group).flatMap(([key, value]) =>
+    value && typeof value === 'object' && 'value' in value
+      ? [[[...path, key], value.value]]
+      : colorEntries(value, [...path, key])
+  );
+}
+
+function declarations(block) {
+  return Object.fromEntries(
+    [...block.matchAll(/(--rentify-[a-z0-9-]+):\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim().toLowerCase()])
+  );
+}
+
+const css = fs.readFileSync(path.resolve(__dirname, '../index.css'), 'utf8');
+const rootBlock = css.slice(css.indexOf(':root {'), css.indexOf('}', css.indexOf(':root {')));
+const darkBlock = css.slice(css.indexOf("[data-theme='dark'] {"), css.indexOf('}', css.indexOf("[data-theme='dark'] {")));
+const systemStart = css.indexOf("[data-theme='system'] {");
+const systemBlock = css.slice(systemStart, css.indexOf('}', systemStart));
+
+test('jade & saffron: brand values and new v1 tokens exist (02 §2)', () => {
+  assert.equal(tokens.color.brand.primary.value, '#0e6b5c');
+  assert.equal(tokens.color.brand.primaryHover.value, '#0a5549');
+  assert.equal(tokens.color.brand.primarySubtle.value, '#e3f2ee');
+  assert.equal(tokens.color.brand.accent.value, '#f2a516');
+  assert.equal(tokens.color.brand.accentSubtle.value, '#fdf3dc');
+  assert.equal(tokens.color.surface.canvas.value, '#faf8f4');
+  assert.equal(tokens.color.surface.inverse.value, '#111418');
+  assert.equal(tokens.color.border.input.value, '#8b867d');
+  assert.equal(tokens.color.status.neutral.base.value, '#5b616b');
+  assert.equal(tokens.color.price.sale.value, '#c2261c');
+  assert.equal(tokens.focus.ringColor.value, tokens.color.brand.primary.value);
+});
+
+test('css adapter: every light color token matches its :root variable', () => {
+  const declared = declarations(rootBlock);
+  for (const [tokenPath, value] of colorEntries(tokens.color)) {
+    const name = cssNameFor(tokenPath);
+    assert.equal(declared[name], value.toLowerCase(), `${name} must equal color.${tokenPath.join('.')}`);
+  }
+  assert.equal(declared['--rentify-focus-ring-color'], tokens.focus.ringColor.value);
+});
+
+test('dark theme: opt-in blocks match tokens.theme.dark and never apply to :root by default', () => {
+  const dark = declarations(darkBlock);
+  const system = declarations(systemBlock);
+  for (const [tokenPath, value] of colorEntries(tokens.theme.dark.color)) {
+    const name = cssNameFor(tokenPath);
+    assert.equal(dark[name], value.toLowerCase(), `[data-theme=dark] ${name}`);
+    assert.equal(system[name], value.toLowerCase(), `[data-theme=system] ${name}`);
+  }
+  assert.equal(dark['--rentify-focus-ring-color'], tokens.theme.dark.focus.ringColor.value);
+  // Apps that still hard-code light colors must not be darkened by the OS setting
+  assert.ok(!/prefers-color-scheme:\s*dark\)\s*{\s*:root/.test(css));
+});
+
+test('typography: Kantumruy Pro, JetBrains Mono and the Khmer line-height rule', () => {
+  assert.match(tokens.typography.fontFamily.body.value, /^'Kantumruy Pro'/);
+  assert.match(tokens.typography.fontFamily.mono.value, /^'JetBrains Mono'/);
+  assert.equal(tokens.typography.khmerLineHeightMultiplier.value, '1.15');
+  for (const step of ['display', 'h1', 'h2', 'h3', 'body', 'bodySm', 'label', 'caption', 'priceLg', 'price']) {
+    assert.ok(tokens.typography.scale[step].mobile.size, `scale ${step}`);
+    assert.ok(css.includes(`--rentify-text-${kebab(step)}-size:`), `css scale ${step}`);
+  }
+  assert.ok(css.includes(':lang(km) {'));
+  assert.ok(css.includes('--rentify-line-height-km-multiplier: 1.15;'));
+  // Captions are the smallest text anywhere (12px)
+  assert.equal(tokens.typography.scale.caption.mobile.size, '0.75rem');
+});
+
+test('shape and motion follow 02 §4', () => {
+  assert.deepEqual(
+    ['xs', 'sm', 'md', 'lg', 'xl'].map((key) => tokens.radius[key].value),
+    ['4px', '8px', '12px', '16px', '24px']
+  );
+  assert.equal(tokens.motion.durationFast.value, '120ms');
+  assert.equal(tokens.motion.durationSlow.value, '260ms');
+  assert.equal(tokens.layout.contentMax.value, '1280px');
+});
+
+test('versions agree between tokens.json and package.json', () => {
+  const pkg = require('../package.json');
+  assert.equal(tokens.version, pkg.version);
 });

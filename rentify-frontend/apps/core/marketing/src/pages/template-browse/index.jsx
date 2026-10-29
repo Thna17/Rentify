@@ -96,7 +96,7 @@ const BrowseTemplates = () => {
 
   return (
     <SiteLayout title={t('site.templates.title')}>
-      <section className="relative overflow-hidden bg-white pb-20 pt-16 md:pb-32 md:pt-24">
+      <section className="relative overflow-hidden bg-white pb-14 pt-10 md:pb-32 md:pt-24">
         <Container className="text-center">
           <Reveal y={16}>
             <Eyebrow>{t('site.templates.hero.eyebrow')}</Eyebrow>
@@ -174,7 +174,7 @@ const BrowseTemplates = () => {
             {INCLUDED.map(({ id, icon: Icon }) => (
               <StaggerItem key={id} className="text-center">
                 <Icon className="mx-auto h-9 w-9 text-[#1d1d1f]" strokeWidth={1.3} />
-                <p className="mt-5 text-[19px] font-semibold text-[#1d1d1f]">
+                <p className="mt-4 text-[17px] font-semibold text-[#1d1d1f] md:mt-5 md:text-[19px]">
                   {t(`site.templates.included.${id}.title`)}
                 </p>
                 <p className="mx-auto mt-1.5 max-w-[240px] text-[15px] leading-snug text-[#6e6e73]">

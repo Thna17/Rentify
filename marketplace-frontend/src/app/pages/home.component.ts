@@ -70,6 +70,28 @@ interface CategoryShelf {
                 }
               </span>
             </span>
+            <span class="cat-caption" aria-hidden="true">{{ categoryLabel(c) }}</span>
+          </a>
+        }
+        <!-- Phone only: the category bar hides its Stores / Gifts / Discount
+             pills on narrow screens, so they join this grid instead. -->
+        @for (s of mobileShortcuts; track s.key) {
+          <a
+            class="category-poster cat-shortcut"
+            [routerLink]="s.link"
+            [queryParams]="s.params"
+            [attr.aria-label]="s.label"
+          >
+            <span class="cat-visual">
+              <span class="cat-art">
+                @if (categoryPosterImage(s.key); as image) {
+                  <img [src]="image" alt="" loading="lazy" (error)="categoryPosterFailed(s.key)" />
+                } @else {
+                  <ui-icon [name]="s.icon" [size]="28" [strokeWidth]="1.6"></ui-icon>
+                }
+              </span>
+            </span>
+            <span class="cat-caption" aria-hidden="true">{{ s.label }}</span>
           </a>
         }
       </div>
@@ -185,6 +207,14 @@ interface CategoryShelf {
     <div class="phones" [class.solo]="!phones().length">
       <app-promo-card class="phones-promo" [promo]="promoSlots.smartphones" format="featured" />
       @if (phones().length) {
+        <div class="phone-scroll-affordance" aria-hidden="true">
+          <span class="scroll-dots">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </span>
+          <span class="scroll-hint-label">Scroll &gt;&gt;</span>
+        </div>
         <div class="phone-grid">
           @for (product of phones(); track product.id) {
             <app-product-card [product]="product" />
@@ -282,11 +312,15 @@ interface CategoryShelf {
     }
 
     @if (discoverProducts().length) {
-      <div class="discover-grid" #discoverGrid>
-        @for (product of discoverProducts(); track product.id) {
-          <app-product-card [product]="product" />
-        }
-      </div>
+      <!-- Re-keyed per department so switching chips replays the entrance;
+           "Show more" keeps the key, so only the new cards animate in. -->
+      @for (key of [discoverCategory() + '/' + discoverSubcategory()]; track key) {
+        <div class="discover-grid" #discoverGrid>
+          @for (product of discoverProducts(); track product.id; let i = $index) {
+            <app-product-card class="card-in" [style.--i]="i % 12" [product]="product" />
+          }
+        </div>
+      }
       <div class="discover-more">
         @if (discoverHasMore()) {
           <button class="more-btn" type="button" (click)="showMoreRows()">
@@ -329,6 +363,9 @@ interface CategoryShelf {
       height: 100%;
       min-height: 100%;
     }
+    .phone-scroll-affordance {
+      display: none;
+    }
     .phone-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -336,11 +373,88 @@ interface CategoryShelf {
       align-items: stretch;
     }
 
+    @media (min-width: 901px) {
+      .phones {
+        align-items: start;
+      }
+      .phone-grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(2, minmax(0, auto));
+        grid-auto-columns: calc((100% - 2 * 20px) / 3);
+        gap: 20px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        padding-bottom: 8px;
+      }
+      .phone-grid::-webkit-scrollbar {
+        display: none;
+      }
+      .phone-grid > * {
+        scroll-snap-align: start;
+      }
+      .phones-promo {
+        height: 100%;
+        min-height: 100%;
+      }
+    }
+
     @media (max-width: 900px) {
-      .phones { grid-template-columns: 1fr; }
-      .phones-promo { height: auto; min-height: 380px; }
-      .phone-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .phone-grid > :nth-child(n + 3) { display: none; }
+      .phones { grid-template-columns: 1fr; gap: 8px; }
+      .phones-promo { height: auto; min-height: 0; max-height: 160px; }
+      .phone-scroll-affordance {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 6px;
+        margin-top: 4px;
+        margin-bottom: 2px;
+        user-select: none;
+      }
+      .scroll-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .scroll-dots .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-border-strong, #d8cebf);
+        transition: all 180ms ease;
+      }
+      .scroll-dots .dot.active {
+        background: var(--color-accent);
+        width: 14px;
+        border-radius: 4px;
+      }
+      .scroll-hint-label {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--color-accent);
+        letter-spacing: .02em;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .phone-grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(2, minmax(0, auto));
+        grid-auto-columns: calc((100% - 12px) / 2);
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        padding-bottom: 6px;
+      }
+      .phone-grid::-webkit-scrollbar { display: none; }
+      .phone-grid > * { scroll-snap-align: start; }
+    }
+    @media (max-width: 520px) {
+      .phones-promo { max-height: 140px; }
     }
 
     /* ---------- flash deals */
@@ -387,7 +501,7 @@ interface CategoryShelf {
     .deal-left { font-size: 11px; color: var(--color-muted); }
     @media (max-width: 1400px) { .flash-grid { grid-auto-columns: calc((100% - 3 * 12px) / 4); } }
     @media (max-width: 1180px) {
-      .flash { grid-template-columns: 1fr; }
+      .flash { grid-template-columns: minmax(0, 1fr); }
       .flash-promo { display: none; }
     }
     @media (max-width: 900px) { .flash-grid { grid-auto-columns: 42%; } }
@@ -490,14 +604,26 @@ interface CategoryShelf {
       margin-top: 4px;
     }
 
+    /* One swipeable row instead of a wall of wrapped chips. It bleeds to the
+       page edge so the cut-off chip on the right signals "there's more". */
     .discover-filters {
       display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-      margin-top: 26px;
+      flex-wrap: nowrap;
+      gap: 8px;
+      margin: 22px calc(var(--page-gutter, 16px) * -1) 0;
+      padding: 2px var(--page-gutter, 16px) 4px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+      scroll-padding-inline: var(--page-gutter, 16px);
+      scrollbar-width: none;
     }
-    .discover-filters.subs { margin-top: 12px; }
+    .discover-filters::-webkit-scrollbar { display: none; }
+    .discover-filters.subs { margin-top: 8px; }
     .discover-filters .chip {
+      flex-shrink: 0;
+      white-space: nowrap;
+      scroll-snap-align: start;
       background: var(--color-surface, #fff);
       border: 1px solid var(--color-border, #e6ddd1);
       border-radius: 999px;
@@ -530,6 +656,12 @@ interface CategoryShelf {
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       margin-top: 28px;
     }
+    .card-in { animation: cardIn 460ms cubic-bezier(.2,.75,.25,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(14px) scale(.98); filter: blur(2px); }
+      to { opacity: 1; transform: none; filter: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .card-in { animation-duration: 1ms; animation-delay: 0ms; } }
     .discover-more {
       align-items: center;
       display: flex;
@@ -644,15 +776,40 @@ interface CategoryShelf {
     .cat-art img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform 220ms ease; }
     .cat-art ui-icon { color: #3d2b1a; opacity: .22; transform: scale(1.4); }
     .category-poster:hover .cat-art img { transform: scale(1.04); }
+    .cat-caption { display: none; }
+    .cat-shortcut { display: none; }
 
+    /* Phones: two rows of small outlined circles holding just the cut-out
+       object, name below. */
     @media (max-width: 640px) {
-      /* 74% meant one and a half tiles filled the screen, so the row read as a
-         single huge banner and nothing suggested there were seven of them.
-         At 40% two and a half are visible and the row is obviously scrollable. */
-      .category-poster { flex: 0 0 40%; }
-      .cat-name { font-size: 12.5px; }
+      .category-rail::before, .category-rail::after { display: none; }
+      .category-strip {
+        display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 14px 6px; overflow: visible;
+      }
+      .category-poster {
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        min-height: 44px; text-align: center;
+      }
+      .category-poster .cat-visual,
+      .category-poster[data-category] .cat-visual {
+        width: min(54px, 100%); aspect-ratio: 1; border-radius: 50%;
+        background: transparent; border: 0;
+      }
+      .category-poster:hover .cat-visual { box-shadow: none; transform: none; }
+      .cat-copy { display: none; }
+      .cat-shortcut { display: flex; }
+      .cat-shortcut .cat-art ui-icon { color: var(--color-accent); opacity: 1; }
+      .cat-art { inset: 0; width: auto; }
+      .cat-art img { width: 78%; height: 78%; }
+      .cat-art ui-icon { opacity: .5; transform: none; }
+      .cat-caption {
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        font-size: 11.5px; font-weight: 600; line-height: 1.25; color: var(--color-text);
+      }
     }
 
+    @media (min-width: 641px) {
     .category-poster[data-category="food-groceries"] .cat-visual { background: linear-gradient(115deg, #e8f3e2, #c7e3ba); }
     .category-poster[data-category="home-living"] .cat-visual { background: linear-gradient(115deg, #faf0dd, #eed8b2); }
     .category-poster[data-category="arts-culture"] .cat-visual { background: linear-gradient(115deg, #fff4d9, #ffdf9e); }
@@ -660,6 +817,7 @@ interface CategoryShelf {
     .category-poster[data-category="beauty-wellness"] .cat-visual { background: linear-gradient(115deg, #fdeaef, #f9c0d0); }
     .category-poster[data-category="electronics"] .cat-visual { background: linear-gradient(115deg, #e9f1fa, #c3daf0); }
     .category-poster[data-category="kids-family"] .cat-visual { background: linear-gradient(115deg, #f1ebfa, #d6c5ef); }
+    }
     .offers-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px 20px; border: 1px solid #e8ded2; border-radius: 12px; background: #fcf0e8; }
     .offers-strip strong { color: var(--color-accent); font-size: 14px; }
     .offers-strip p { margin: 4px 0 0; color: var(--color-text-secondary); font-size: 12px; }
@@ -718,9 +876,9 @@ interface CategoryShelf {
       background: rgba(255,255,255,.92); color: #28231f; font-size: 8.5px; font-weight: 800;
       letter-spacing: .04em; text-transform: uppercase; font-family: var(--font-body);
     }
-    .deal-name {
-      font-family: 'Anton', var(--font-heading), sans-serif; font-weight: 400;
-      font-size: 17px; line-height: 1.05; letter-spacing: .01em; text-transform: uppercase;
+    .deal-poster .deal-name {
+      font-family: var(--font-body); font-weight: 600;
+      font-size: 17px; line-height: 1.3; letter-spacing: -.01em;
     }
     .deal-count { font-size: 9.5px; color: rgba(255,255,255,.82); font-weight: 550; font-family: var(--font-body); }
     .deal-arrow {
@@ -1047,6 +1205,8 @@ export class HomeComponent {
   private readonly categoryIllustrations = new Set([
     'food-groceries', 'home-living', 'arts-culture', 'fashion',
     'beauty-wellness', 'electronics', 'kids-family',
+    // Generated shortcut artwork uses the same transparent PNGs as category tiles.
+    'stores', 'gifts', 'discount',
   ]);
   private readonly failedCategoryIllustrations = signal<ReadonlySet<string>>(new Set());
 
@@ -1079,6 +1239,13 @@ export class HomeComponent {
   protected categoryLabel(category: Category): string {
     return this.narrowTiles() ? category.shortName ?? category.name : category.name;
   }
+
+  /** Bar shortcuts the category menu drops on phones (see category-menu). */
+  protected readonly mobileShortcuts = [
+    { key: 'stores', label: 'Stores', icon: 'store', link: '/stores', params: {} },
+    { key: 'gifts', label: 'Gifts', icon: 'gift', link: '/categories/arts-culture', params: { sub: 'souvenirs-gifts' } },
+    { key: 'discount', label: 'Discount', icon: 'percent', link: '/products', params: { sale: '1' } },
+  ];
 
   protected categoryPosterImage(slug: string): string | null {
     return this.categoryIllustrations.has(slug) && !this.failedCategoryIllustrations().has(slug)
