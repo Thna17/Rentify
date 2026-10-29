@@ -24,6 +24,7 @@ import { Label } from '@rentify/shared/ui/label';
 import { Badge } from '@rentify/shared/ui/badge';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
 import { toast } from 'sonner';
+import SupportCases from './SupportCases';
 
 interface FAQItem {
   id: string;
@@ -110,6 +111,8 @@ export const SupportPage: React.FC = () => {
       />
 
       <div className="p-6 md:p-8 space-y-8">
+        <SupportCases />
+
         {/* Support Channel Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Email Support */}

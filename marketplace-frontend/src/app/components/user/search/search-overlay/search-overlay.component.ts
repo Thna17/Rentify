@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 import { CatalogService } from '../../../../core/catalog/catalog.service';
 import { SearchHistoryService } from '../../../../core/search/search-history.service';
 import { SearchTelemetryService } from '../../../../core/telemetry/search-telemetry.service';
+import { RentifyMarketplaceService } from '../../../../core/rentify/rentify-marketplace.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 
@@ -958,6 +959,7 @@ export class SearchOverlayComponent {
   protected readonly catalog = inject(CatalogService);
   protected readonly history = inject(SearchHistoryService);
   private readonly telemetry = inject(SearchTelemetryService);
+  private readonly rentify = inject(RentifyMarketplaceService);
   private readonly router = inject(Router);
 
   private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
@@ -1065,11 +1067,17 @@ export class SearchOverlayComponent {
     if (!cleaned) {
       return;
     }
-    this.telemetry.recordSearch({
+    const metric = this.telemetry.recordSearch({
       queryLength: cleaned.length,
       filterCount: 0,
       durationMs: 1.0,
       resultCount: this.products().length,
+    });
+    this.rentify.recordAnalyticsEvent({
+      eventName: 'marketplace.search_performed', occurredAt: new Date(metric.timestamp).toISOString(),
+      properties: { channel: 'marketplace', locale: document.documentElement.lang === 'km' ? 'km' : 'en', hasResults: metric.hasResults },
+      measures: { queryLength: metric.queryLength, filterCount: metric.filterCount,
+        resultCount: metric.resultCount, durationMs: metric.durationMs },
     });
     this.history.record(cleaned);
     void this.router.navigate(['/products'], {
@@ -1081,11 +1089,17 @@ export class SearchOverlayComponent {
   protected openProduct(id: string): void {
     // Record the term too: they searched, then acted on it.
     this.history.record(this.term());
-    this.telemetry.recordSearch({
+    const metric = this.telemetry.recordSearch({
       queryLength: this.query().length,
       filterCount: 0,
       durationMs: 1.0,
       resultCount: 1,
+    });
+    this.rentify.recordAnalyticsEvent({
+      eventName: 'marketplace.search_performed', occurredAt: new Date(metric.timestamp).toISOString(),
+      properties: { channel: 'marketplace', locale: document.documentElement.lang === 'km' ? 'km' : 'en', hasResults: true },
+      measures: { queryLength: metric.queryLength, filterCount: metric.filterCount,
+        resultCount: metric.resultCount, durationMs: metric.durationMs },
     });
     void this.router.navigate(['/product', id]);
     this.close.emit();

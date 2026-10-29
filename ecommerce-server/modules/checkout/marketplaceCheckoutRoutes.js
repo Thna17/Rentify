@@ -31,6 +31,10 @@ router.get('/marketplace/my-orders', verifyCoreBuyer, requireBuyer, controller.b
 router.get('/marketplace/my-orders/:orderId', verifyCoreBuyer, requireBuyer, controller.buyerOrder);
 router.get('/marketplace/my-orders/:orderId/events', verifyCoreBuyer, requireBuyer, controller.buyerOrderEvents);
 router.post('/marketplace/my-orders/:orderId/reports/:type', verifyCoreBuyer, requireBuyer, controller.buyerReport);
+router.get('/marketplace/reports/eligibility', verifyCoreBuyer, requireBuyer, controller.checkReportEligibility);
+router.post('/marketplace/reports', verifyCoreBuyer, requireBuyer, controller.submitReport);
+router.get('/marketplace/reports/my-reports', verifyCoreBuyer, requireBuyer, controller.myReports);
+router.get('/marketplace/reports/:id', verifyCoreBuyer, requireBuyer, controller.getReport);
 // This router is mounted at /api ahead of the storefront, product, category and
 // cart routers, so merchant authentication must stay scoped to /stores.
 // A bare router.use() would put every public /api request behind merchant sign-in.

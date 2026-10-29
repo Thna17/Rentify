@@ -1,5 +1,21 @@
 const { AuditLog } = require('../models');
-const { logger } = require('./logger');
+const { logger, redact } = require('./logger');
+
+const REDACTED_KEYS = /(password|secret|token|credential|recovery|otp|authorization|cookie)/i;
+const UNNECESSARY_PERSONAL_KEYS = /^(email|phoneNumber|address|buyerContact)$/i;
+
+function sanitizeAuditData(value, depth = 0) {
+  if (value == null || depth > 5) return value == null ? value : '[TRUNCATED]';
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.slice(0, 100).map((item) => sanitizeAuditData(item, depth + 1));
+  if (typeof value !== 'object') return typeof value === 'string' ? redact(value).slice(0, 1000) : value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key,
+    REDACTED_KEYS.test(key) || UNNECESSARY_PERSONAL_KEYS.test(key)
+      ? '[REDACTED]'
+      : sanitizeAuditData(item, depth + 1),
+  ]));
+}
 
 /**
  * Emits a structured privileged audit event.
@@ -30,12 +46,22 @@ async function emitAuditEvent({
   userAgent,
   status = 'SUCCESS',
   details,
+  actorRoles,
+  effectivePermissions,
+  reason,
+  sourceCaseId,
+  tenantScope,
+  approvalRequestId,
+  breakGlassGrantId,
+  safeBefore,
+  safeAfter,
   transaction,
 } = {}) {
-  const detailsStr = details
-    ? typeof details === 'string'
-      ? details
-      : JSON.stringify(details)
+  const safeDetails = sanitizeAuditData(details);
+  const detailsStr = safeDetails
+    ? typeof safeDetails === 'string'
+      ? safeDetails
+      : JSON.stringify(safeDetails)
     : null;
 
   // Log to structured JSON logger with correlation ID
@@ -49,6 +75,15 @@ async function emitAuditEvent({
     ipAddress,
     status,
     details: detailsStr,
+    actorRoles: actorRoles || (actorRole ? [actorRole] : []),
+    effectivePermissions: effectivePermissions || [],
+    reason: String(reason || (safeDetails && typeof safeDetails === 'object' && safeDetails.reason) || action).slice(0, 500),
+    sourceCaseId: sourceCaseId || null,
+    tenantScope: tenantScope || 'self/*',
+    approvalRequestId: approvalRequestId || null,
+    breakGlassGrantId: breakGlassGrantId || null,
+    safeBefore: sanitizeAuditData(safeBefore) || {},
+    safeAfter: sanitizeAuditData(safeAfter) || {},
   });
 
   try {
@@ -64,6 +99,15 @@ async function emitAuditEvent({
         userAgent: userAgent ? String(userAgent).slice(0, 255) : null,
         status: status || 'SUCCESS',
         details: detailsStr,
+        actorRoles: actorRoles || (actorRole ? [actorRole] : []),
+        effectivePermissions: effectivePermissions || [],
+        reason: String(reason || (safeDetails && typeof safeDetails === 'object' && safeDetails.reason) || action).slice(0, 500),
+        sourceCaseId: sourceCaseId || null,
+        tenantScope: tenantScope || 'self/*',
+        approvalRequestId: approvalRequestId || null,
+        breakGlassGrantId: breakGlassGrantId || null,
+        safeBefore: sanitizeAuditData(safeBefore) || {},
+        safeAfter: sanitizeAuditData(safeAfter) || {},
       },
       { transaction }
     );
@@ -81,4 +125,5 @@ async function emitAuditEvent({
 
 module.exports = {
   emitAuditEvent,
+  sanitizeAuditData,
 };

@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createVerifyCoreAdmin } = require('../../modules/admin/verifyCoreAdmin');
+const { requireAdminPermission } = require('../../modules/admin/verifyCoreAdmin');
 
 const response = () => ({
   status(code) { this.statusCode = code; return this; },
@@ -33,9 +34,25 @@ test('commerce operations prefer the Core session cookie over a stale bearer tok
       newAccessToken: 'rotated' } };
   } })(req, res, () => { nextCalled = true; });
   assert.deepEqual(submitted, { access: 'other-cookie', refresh: 'refresh' });
-  assert.deepEqual(req.user, { id: 'admin-id', role: 'admin' });
+  assert.deepEqual(req.user, { id: 'admin-id', role: 'admin', claims: [] });
   assert.equal(res.cookieSet.name, 'userAccessToken');
   assert.equal(nextCalled, true);
+});
+
+test('commerce operations extract scoped claims from Core token validation', async () => {
+  const req = { headers: { authorization: 'Bearer admin-token' }, cookies: {} };
+  const res = response();
+  let nextCalled = false;
+  await createVerifyCoreAdmin({
+    validate: async () => ({
+      data: {
+        valid: true,
+        entity: { id: 'admin-mod', type: 'admin', claims: ['catalog:moderate', 'support:case:read'] },
+      },
+    }),
+  })(req, res, () => { nextCalled = true; });
+  assert.equal(nextCalled, true);
+  assert.deepEqual(req.user.claims, ['catalog:moderate', 'support:case:read']);
 });
 
 test('commerce operations accept a bearer token when no session cookie exists', async () => {
@@ -48,6 +65,24 @@ test('commerce operations accept a bearer token when no session cookie exists', 
   } })(req, res, () => {});
   assert.deepEqual(submitted, { access: 'admin-token', refresh: undefined });
   assert.equal(req.user.id, 'admin-id');
+});
+
+test('commerce permission guards accept canonical Core permissions through explicit aliases', () => {
+  const cases = [
+    ['catalog:moderate', 'catalog.product.hold'],
+    ['support:case:read', 'support.case.read'],
+    ['support:case:write', 'support.case.update'],
+    ['support:dispute:resolve', 'support.case.resolve'],
+    ['seller:review', 'seller.application.read'],
+    ['maker_checker:approve', 'catalog.product.reject.approve'],
+  ];
+  for (const [commercePermission, corePermission] of cases) {
+    const req = { user: { id: 'scoped-operator', role: 'user', claims: [corePermission] } };
+    const res = response();
+    let nextCalled = false;
+    requireAdminPermission(commercePermission)(req, res, () => { nextCalled = true; });
+    assert.equal(nextCalled, true, `${corePermission} should satisfy ${commercePermission}`);
+  }
 });
 
 test('commerce operations fail closed when Core validation is unavailable', async () => {

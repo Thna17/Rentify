@@ -1,0 +1,208 @@
+{
+  "$schema": "./event-catalog.schema.json",
+  "catalogVersion": "1.0.0",
+  "effectiveDate": "2026-10-29",
+  "privacy": {
+    "classification": "aggregate-product-and-operational",
+    "prohibitedProperties": [
+      "name",
+      "email",
+      "phone",
+      "phoneNumber",
+      "address",
+      "query",
+      "searchText",
+      "description",
+      "notes",
+      "buyerId",
+      "userId",
+      "sessionId",
+      "accessToken",
+      "refreshToken",
+      "credential",
+      "qrString"
+    ],
+    "rules": [
+      "Never store free-form search text or customer contact data.",
+      "Use bounded enumerations and numeric measures instead of high-cardinality labels.",
+      "Store and resource identifiers may be used only by authoritative server-side operational events; browser product telemetry excludes subject identifiers.",
+      "Financial measures are grouped by ISO currency and represented in integer minor units."
+    ]
+  },
+  "events": [
+    {
+      "name": "merchant.activation_started",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "activation",
+      "source": "authoritative",
+      "requiredProperties": ["channel"],
+      "allowedProperties": ["channel", "result", "hasStorefront"]
+    },
+    {
+      "name": "merchant.activation_completed",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "activation",
+      "source": "authoritative",
+      "requiredProperties": ["channel", "result"],
+      "allowedProperties": ["channel", "result", "hasStorefront"]
+    },
+    {
+      "name": "marketplace.search_performed",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "search",
+      "source": "browser",
+      "requiredProperties": ["channel", "locale", "hasResults"],
+      "allowedProperties": ["channel", "locale", "hasResults"],
+      "allowedMeasures": ["queryLength", "filterCount", "resultCount", "durationMs"]
+    },
+    {
+      "name": "marketplace.discovery_viewed",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "discovery",
+      "source": "browser",
+      "requiredProperties": ["channel", "surface", "locale"],
+      "allowedProperties": ["channel", "surface", "locale"],
+      "allowedMeasures": ["visibleItems"]
+    },
+    {
+      "name": "cart.item_added",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "cart",
+      "source": "browser",
+      "requiredProperties": ["channel"],
+      "allowedProperties": ["channel", "locale"],
+      "allowedMeasures": ["quantity", "cartItemCount"]
+    },
+    {
+      "name": "cart.item_updated",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "cart",
+      "source": "browser",
+      "requiredProperties": ["channel"],
+      "allowedProperties": ["channel", "locale"],
+      "allowedMeasures": ["quantity", "cartItemCount"]
+    },
+    {
+      "name": "checkout.started",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "checkout",
+      "source": "browser",
+      "requiredProperties": ["channel", "paymentMethod"],
+      "allowedProperties": ["channel", "paymentMethod", "locale"],
+      "allowedMeasures": ["storeCount", "itemCount"]
+    },
+    {
+      "name": "checkout.completed",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "checkout",
+      "source": "authoritative",
+      "requiredProperties": ["channel", "paymentMethod", "currency"],
+      "allowedProperties": ["channel", "paymentMethod", "currency", "result"],
+      "allowedMeasures": ["orderTotalMinor", "itemCount"]
+    },
+    {
+      "name": "checkout.failed",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "checkout",
+      "source": "browser",
+      "requiredProperties": ["channel", "failureClass"],
+      "allowedProperties": ["channel", "failureClass", "locale"],
+      "allowedMeasures": ["storeCount", "itemCount"]
+    },
+    {
+      "name": "order.fulfillment_changed",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "fulfillment",
+      "source": "authoritative",
+      "requiredProperties": ["channel", "fromStatus", "toStatus"],
+      "allowedProperties": ["channel", "fromStatus", "toStatus", "result"]
+    },
+    {
+      "name": "order.cod_collected",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "cod",
+      "source": "authoritative",
+      "requiredProperties": ["currency"],
+      "allowedProperties": ["currency", "channel"],
+      "allowedMeasures": ["collectedMinor"]
+    },
+    {
+      "name": "order.refund_confirmed",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "refund",
+      "source": "authoritative",
+      "requiredProperties": ["currency"],
+      "allowedProperties": ["currency", "channel"],
+      "allowedMeasures": ["refundedMinor"]
+    },
+    {
+      "name": "support.case_opened",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "support",
+      "source": "authoritative",
+      "requiredProperties": ["caseType", "priority"],
+      "allowedProperties": ["caseType", "priority", "sourceSystem"]
+    },
+    {
+      "name": "support.case_resolved",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "support",
+      "source": "authoritative",
+      "requiredProperties": ["caseType", "priority", "withinSla"],
+      "allowedProperties": ["caseType", "priority", "withinSla", "resolutionCode"],
+      "allowedMeasures": ["resolutionDurationMs"]
+    },
+    {
+      "name": "catalog.moderation_decided",
+      "schemaVersion": "1.0.0",
+      "owner": "commerce",
+      "category": "moderation",
+      "source": "authoritative",
+      "requiredProperties": ["action", "reasonCode"],
+      "allowedProperties": ["action", "reasonCode", "appealState"]
+    },
+    {
+      "name": "notification.delivery_attempted",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "reliability",
+      "source": "authoritative",
+      "requiredProperties": ["channel", "result"],
+      "allowedProperties": ["channel", "result", "errorClass"],
+      "allowedMeasures": ["attemptNumber", "latencyMs"]
+    },
+    {
+      "name": "subscription.lifecycle_changed",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "subscription",
+      "source": "authoritative",
+      "requiredProperties": ["fromStatus", "toStatus", "planKey"],
+      "allowedProperties": ["fromStatus", "toStatus", "planKey", "reasonCode"]
+    },
+    {
+      "name": "subscription.payment_collected",
+      "schemaVersion": "1.0.0",
+      "owner": "core",
+      "category": "subscription",
+      "source": "authoritative",
+      "requiredProperties": ["currency", "provider"],
+      "allowedProperties": ["currency", "provider", "planKey"],
+      "allowedMeasures": ["collectedMinor", "providerFeeMinor"]
+    }
+  ]
+}

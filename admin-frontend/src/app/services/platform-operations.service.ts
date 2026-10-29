@@ -25,6 +25,16 @@ export class PlatformOperationsService {
     return this.http.get<T>(`${this.urls.commerce}/api/admin/operations/${resource}`,
       { params: this.params(query) });
   }
+  coreAnalytics(days = 30) {
+    return this.http.get<{ data: any }>(`${this.urls.core}/admin/operations/analytics`, {
+      params: this.params({ days }),
+    });
+  }
+  commerceAnalytics(days = 30) {
+    return this.http.get<{ data: any }>(`${this.urls.commerce}/api/admin/operations/analytics`, {
+      params: this.params({ days }),
+    });
+  }
   reviewHistory(storeId: string) {
     return this.http.get<{ data: { reviews: any[] } }>(
       `${this.urls.core}/admin/stores/${storeId}/seller-application`);

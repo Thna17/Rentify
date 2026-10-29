@@ -18,6 +18,22 @@ async execute(orderData, existingTransaction = null) {
   try {
     const result = await this.processOrder(orderData, transaction);
 
+    // P5-NOT-001: Transactional outbox event emission for order creation
+    try {
+      if (result && result.order) {
+        const { emitOrderCreated } = require('../../../../events');
+        await emitOrderCreated({
+          order: result.order,
+          buyerId: result.order.userId || result.order.customerId || null,
+          storeId: result.order.storeId,
+          itemsCount: (result.orderItems || []).length,
+          totalAmount: result.order.totalAmount,
+          currency: result.order.currency || 'USD',
+          salesChannel: this.getOrderType() || 'storefront',
+        }, { transaction });
+      }
+    } catch (_evtErr) {}
+
     if (newTransaction) {
       await transaction.commit();
     }
@@ -212,28 +228,11 @@ async execute(orderData, existingTransaction = null) {
     throw new Error("getOrderType must be implemented by subclass");
   }
 
-  // Common notification methods. Never lets a notification failure fail the
-  // order itself — the order is already committed by the time this runs.
+  // P5-NOT-001: Direct notification side-effects are decoupled from Commerce transactions.
+  // Commerce emits transactional outbox events (order.created) which the Core notification
+  // engine orchestrates according to merchant/buyer notification preferences.
   async sendNotifications(result, user, websiteId) {
-    try {
-      const buyerEmail = result.order.customerEmail || result.order.customerInfo?.email;
-      if (buyerEmail) {
-        await this.notificationService.sendOrderConfirmation(
-          buyerEmail,
-          result.order,
-          result.orderItems
-        );
-      }
-
-      const merchantContact = await getWebsiteOwnerContact(websiteId);
-      await this.notificationService.sendNewOrderNotification(
-        merchantContact,
-        result.order,
-        result.orderItems
-      );
-    } catch (error) {
-      console.error('Notification sending failed:', error);
-    }
+    return null;
   }
 }
 

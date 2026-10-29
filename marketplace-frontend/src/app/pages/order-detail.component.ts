@@ -21,6 +21,7 @@ import { NavbarComponent } from '../components/shared/layout/navbar/navbar.compo
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { OrderStatusBadgeComponent } from '../components/shared/orders/order-status-badge/order-status-badge.component';
+import { BuyerReportModalComponent } from '../components/shared/reports/buyer-report-modal.component';
 
 export interface TimelineEntry {
   type: string;
@@ -49,6 +50,7 @@ export interface TimelineEntry {
     FooterComponent,
     IconComponent,
     OrderStatusBadgeComponent,
+    BuyerReportModalComponent,
     TranslatePipe,
   ],
   template: `
@@ -270,7 +272,7 @@ export interface TimelineEntry {
                     <button
                       type="button"
                       class="btn btn-outline btn-sm"
-                      (click)="toggleReportForm('return_requested')"
+                      (click)="openReportModal('return')"
                     >
                       <ui-icon name="rotate-ccw" [size]="14" />
                       {{ 'orders.requestReturn' | translate }}
@@ -291,7 +293,7 @@ export interface TimelineEntry {
                   <button
                     type="button"
                     class="btn btn-ghost btn-sm complaint-link"
-                    (click)="toggleReportForm('complaint')"
+                    (click)="openReportModal('order')"
                   >
                     <ui-icon name="alert-circle" [size]="14" />
                     {{ 'orders.fileComplaint' | translate }}
@@ -424,6 +426,16 @@ export interface TimelineEntry {
             </section>
           </div>
         </div>
+      }
+
+      @if (showReportModal()) {
+        <buyer-report-modal
+          [subjectType]="reportModalSubjectType()"
+          [subjectId]="orderId"
+          [subjectTitle]="'Order #' + (order()?.orderNumber || orderId)"
+          (closed)="showReportModal.set(false)"
+          (submitted)="onReportSubmitted($event)"
+        />
       }
     </main>
 
@@ -863,6 +875,8 @@ export class OrderDetailComponent implements OnInit {
   readonly submittingReport = signal(false);
   readonly reportError = signal('');
   readonly escalated = signal(false);
+  readonly showReportModal = signal(false);
+  readonly reportModalSubjectType = signal<'order' | 'return'>('order');
 
   readonly reportForm = new FormGroup({
     reasonSelect: new FormControl('Damaged on arrival', {
@@ -1069,6 +1083,18 @@ export class OrderDetailComponent implements OnInit {
 
   escalateToSupport(): void {
     this.escalated.set(true);
+    this.openReportModal('order');
+  }
+
+  openReportModal(type: 'order' | 'return'): void {
+    this.reportModalSubjectType.set(type);
+    this.showReportModal.set(true);
+  }
+
+  onReportSubmitted(_report: any): void {
+    this.showReportModal.set(false);
+    this.escalated.set(true);
+    this.loadOrder();
   }
 
   deliveryStatusBadge(status?: string): OrderStatus {

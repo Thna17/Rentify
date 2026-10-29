@@ -51,6 +51,13 @@ export interface BuyerSession {
   isVerified: boolean;
 }
 
+export interface ProductAnalyticsEventInput {
+  eventName: 'marketplace.search_performed' | 'marketplace.discovery_viewed';
+  occurredAt: string;
+  properties: Record<string, string | boolean>;
+  measures: Record<string, number>;
+}
+
 export interface StoreCartItem {
   id?: string;
   productId: string;
@@ -186,6 +193,12 @@ export class RentifyMarketplaceService {
 
   get configured(): boolean {
     return Boolean(this.core && this.commerce && this.auth);
+  }
+
+  recordAnalyticsEvent(event: ProductAnalyticsEventInput): void {
+    this.http.post(`${this.commerce}/api/analytics/events`, event).subscribe({
+      error: () => undefined,
+    });
   }
 
   session(): Observable<{ user: BuyerSession }> {
@@ -326,6 +339,55 @@ export class RentifyMarketplaceService {
       `${this.commerce}/api/marketplace/my-orders/${orderId}/reports/${type}`,
       { reason, ...(evidence && evidence.length ? { evidence } : {}) },
       { headers: { 'Idempotency-Key': key } },
+    );
+  }
+
+  checkReportEligibility(
+    subjectType: 'order' | 'return' | 'product' | 'merchant',
+    subjectId: string,
+  ): Observable<{ success: boolean; data: import('../support/support.models').ReportEligibility }> {
+    return this.http.get<{ success: boolean; data: import('../support/support.models').ReportEligibility }>(
+      `${this.commerce}/api/marketplace/reports/eligibility`,
+      { params: { subjectType, subjectId } },
+    );
+  }
+
+  submitBuyerReport(
+    payload: import('../support/support.models').CreateBuyerReportPayload,
+    idempotencyKey?: string,
+  ): Observable<{ success: boolean; data: { duplicate: boolean; report: import('../support/support.models').BuyerReportResult; linkage: any } }> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    return this.http.post<{ success: boolean; data: { duplicate: boolean; report: import('../support/support.models').BuyerReportResult; linkage: any } }>(
+      `${this.commerce}/api/marketplace/reports`,
+      payload,
+      { headers },
+    );
+  }
+
+  getMyReports(
+    subjectType?: string,
+    page = 1,
+    limit = 20,
+  ): Observable<{ success: boolean; data: import('../support/support.models').BuyerReportResult[]; total: number }> {
+    const params: Record<string, string> = {
+      page: String(page),
+      limit: String(limit),
+    };
+    if (subjectType) params['subjectType'] = subjectType;
+    return this.http.get<{ success: boolean; data: import('../support/support.models').BuyerReportResult[]; total: number }>(
+      `${this.commerce}/api/marketplace/reports/my-reports`,
+      { params },
+    );
+  }
+
+  getReportDetails(
+    id: string,
+  ): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(
+      `${this.commerce}/api/marketplace/reports/${id}`,
     );
   }
 

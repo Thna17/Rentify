@@ -1,5 +1,5 @@
 // preferences-setting.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -11,31 +11,61 @@ import { Label } from '@rentify/shared/ui/label';
 import { Switch } from '@rentify/shared/ui/switch';
 import { Separator } from '@rentify/shared/ui/separator';
 import { Button } from '@rentify/shared/ui/button';
-import { Bell, Mail, MessageSquare, Megaphone, Save, Loader2, Store, TerminalSquare, ShoppingBag } from 'lucide-react';
+import { Bell, Mail, Send, Megaphone, Save, Loader2, Store, TerminalSquare, ShoppingBag } from 'lucide-react';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { useChannels } from '../../context/ChannelContext';
 
+// Notification preferences are stored by Core (/api/notifications/preferences)
+type NotificationPrefs = { locale: 'en' | 'km'; optionalEnabled: boolean; emailEnabled: boolean; telegramEnabled: boolean };
+
+const requestPrefs = async (method: 'GET' | 'PUT', body?: NotificationPrefs) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`${RENTIFY_API_BASE}/api/notifications/preferences`, {
+      method,
+      credentials: 'include',
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error('Request failed');
+    return (await response.json()).data as NotificationPrefs;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 export const PreferencesSetting = () => {
   const { hasPos, hasMarketplace, togglePos, toggleMarketplace } = useChannels();
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    marketingEmails: false,
-    securityAlerts: true,
-    rentalUpdates: true,
-    paymentReminders: true,
-  });
-
+  const [preferences, setPreferences] = useState<NotificationPrefs | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const loadPreferences = async () => {
+    setLoadError(false);
+    try {
+      setPreferences(await requestPrefs('GET'));
+    } catch {
+      setLoadError(true);
+    }
+  };
+  useEffect(() => { loadPreferences(); }, []);
+
   const handleSavePreferences = async () => {
+    if (!preferences) return;
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    toast.success('Preferences updated successfully');
+    try {
+      const { locale, optionalEnabled, emailEnabled, telegramEnabled } = preferences;
+      setPreferences(await requestPrefs('PUT', { locale, optionalEnabled, emailEnabled, telegramEnabled }));
+      toast.success('Preferences updated successfully');
+    } catch {
+      toast.error('Preferences could not be saved. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const PreferenceSwitch = ({ 
@@ -125,12 +155,12 @@ export const PreferencesSetting = () => {
             <div>
               <CardTitle className="text-lg font-semibold">Notification Settings</CardTitle>
               <CardDescription>
-                Manage your notification preferences across different channels
+                Security, legal and essential order notices always reach your inbox
               </CardDescription>
             </div>
             <Button
               onClick={handleSavePreferences}
-              disabled={isSaving}
+              disabled={isSaving || !preferences}
               className="flex items-center space-x-2"
             >
               {isSaving ? (
@@ -144,72 +174,86 @@ export const PreferencesSetting = () => {
         </CardHeader>
 
         <CardContent className="p-0 px-6">
+          {loadError && (
+            <div role="alert" className="py-4 text-sm text-muted-foreground">
+              Preferences could not be loaded.{' '}
+              <button type="button" className="font-medium text-foreground underline" onClick={loadPreferences}>Try again</button>
+            </div>
+          )}
+          {!preferences && !loadError && (
+            <p role="status" className="py-4 text-sm text-muted-foreground">Loading preferences…</p>
+          )}
+          {preferences && (
           <div className="divide-y divide-border">
             <PreferenceSwitch
               id="email-notifications"
-              checked={preferences.emailNotifications}
-              onCheckedChange={(checked) => setPreferences({...preferences, emailNotifications: checked})}
+              checked={preferences.emailEnabled}
+              onCheckedChange={(checked) => setPreferences({ ...preferences, emailEnabled: checked })}
               label="Email Notifications"
               description="Receive important updates via email"
               icon={<Mail className="h-4 w-4 text-gray-600" />}
             />
 
             <PreferenceSwitch
-              id="sms-notifications"
-              checked={preferences.smsNotifications}
-              onCheckedChange={(checked) => setPreferences({...preferences, smsNotifications: checked})}
-              label="SMS Notifications"
-              description="Get urgent alerts directly to your phone"
-              icon={<MessageSquare className="h-4 w-4 text-gray-600" />}
+              id="telegram-notifications"
+              checked={preferences.telegramEnabled}
+              onCheckedChange={(checked) => setPreferences({ ...preferences, telegramEnabled: checked })}
+              label="Telegram Notifications"
+              description="Get alerts in Telegram when delivery is available"
+              icon={<Send className="h-4 w-4 text-gray-600" />}
             />
 
             <PreferenceSwitch
-              id="marketing-emails"
-              checked={preferences.marketingEmails}
-              onCheckedChange={(checked) => setPreferences({...preferences, marketingEmails: checked})}
-              label="Marketing Updates"
-              description="Receive product updates, tips, and promotional offers"
+              id="optional-notifications"
+              checked={preferences.optionalEnabled}
+              onCheckedChange={(checked) => setPreferences({ ...preferences, optionalEnabled: checked })}
+              label="Optional Updates"
+              description="Receive product updates, tips, and other non-essential notices"
               icon={<Megaphone className="h-4 w-4 text-gray-600" />}
             />
           </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Notification Frequency */}
+      {/* Notification Language */}
+      {preferences && (
       <Card className="shadow-sm border-0 mt-6">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Notification Frequency</CardTitle>
+          <CardTitle className="text-lg font-semibold">Notification Language</CardTitle>
           <CardDescription>
-            Choose how often you want to receive digest emails
+            Choose the language your notifications are written in
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {['Daily', 'Weekly', 'Monthly'].map((frequency) => (
-              <div
-                key={frequency}
-                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                  frequency === 'Weekly' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
-                    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{frequency}</span>
-                  {frequency === 'Weekly' && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  {frequency === 'Daily' && 'Get updates every day'}
-                  {frequency === 'Weekly' && 'Receive a weekly summary'}
-                  {frequency === 'Monthly' && 'Monthly digest of activities'}
-                </p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="radiogroup" aria-label="Notification language">
+            {([['en', 'English', 'Notices in English'], ['km', 'ខ្មែរ', 'សេចក្ដីជូនដំណឹងជាភាសាខ្មែរ']] as const).map(([value, label, hint]) => {
+              const selected = preferences.locale === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setPreferences({ ...preferences, locale: value })}
+                  className={`border-2 rounded-lg p-4 text-left cursor-pointer transition-all ${
+                    selected
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                      : 'border-gray-200 dark:border-gray-800 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{label}</span>
+                    {selected && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">{hint}</p>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
+      )}
     </SettingsLayout>
   );
 };

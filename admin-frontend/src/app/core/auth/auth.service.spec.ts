@@ -61,6 +61,8 @@ describe('AuthService', () => {
         },
       },
     });
+    const accessReq = httpTesting.expectOne('http://localhost:3001/admin/access/me');
+    accessReq.flush({ data: { roles: ['platform_admin'], permissions: ['platform.audit.read'] } });
 
     const result = await loginPromise;
     expect(result.user?.id).toBe('admin-uuid-1');
@@ -83,6 +85,8 @@ describe('AuthService', () => {
         role: 'admin',
       },
     });
+    const accessReq = httpTesting.expectOne('http://localhost:3001/admin/access/me');
+    accessReq.flush({ data: { roles: ['platform_admin'], permissions: ['platform.audit.read'] } });
 
     const user1 = await userPromise1;
     expect(user1?.id).toBe('admin-uuid-2');
@@ -115,6 +119,8 @@ describe('AuthService', () => {
         role: 'admin',
       },
     });
+    const accessReq = httpTesting.expectOne('http://localhost:3001/admin/access/me');
+    accessReq.flush({ data: { roles: ['platform_admin'], permissions: ['platform.audit.read'] } });
 
     const updated = await refreshPromise;
     expect(updated?.id).toBe('admin-new');
@@ -181,5 +187,66 @@ describe('AuthService', () => {
     expect(apiErrorMessage(fullStandardEnvelope)).toBe('Admin sign-in required');
 
     expect(apiErrorMessage(new Error('Random error'), 'Default message')).toBe('Default message');
+  });
+
+  it('evaluates scoped claims strictly without assuming admin has every capability', () => {
+    // Unauthenticated
+    expect(service.hasPermission('catalog:moderate')).toBe(false);
+
+    // Authenticated admin with specific scoped claims
+    service.setUser({
+      id: 'scoped-admin-1',
+      name: 'Catalog Lead',
+      email: 'catalog@rentify.local',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      claims: ['catalog:moderate', 'inventory:adjust'],
+    });
+
+    expect(service.hasPermission('catalog:moderate')).toBe(true);
+    expect(service.canModerateCatalog()).toBe(true);
+    expect(service.canAdjustInventory()).toBe(true);
+    expect(service.hasPermission('support:case:write')).toBe(false);
+    expect(service.canWriteSupport()).toBe(false);
+    expect(service.canReviewSellers()).toBe(false);
+
+    // Canonical Core permissions satisfy transitional Commerce/Admin aliases.
+    service.setUser({
+      id: 'canonical-catalog-admin',
+      name: 'Canonical Catalog Lead',
+      email: 'canonical@rentify.local',
+      role: 'user',
+      status: 'ACTIVE',
+      claims: ['catalog.product.hold'],
+    });
+    expect(service.isAdmin()).toBe(true);
+    expect(service.canModerateCatalog()).toBe(true);
+    expect(service.canModerateReviews()).toBe(true);
+    expect(service.canWriteSupport()).toBe(false);
+
+    // Admin without claims array has zero scoped permissions (no broad assumption)
+    service.setUser({
+      id: 'unscoped-admin',
+      name: 'Unscoped Admin',
+      email: 'unscoped@rentify.local',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      claims: [],
+    });
+    expect(service.hasPermission('catalog:moderate')).toBe(false);
+    expect(service.hasPermission('seller:review')).toBe(false);
+
+    // Wildcard claim grants all capabilities
+    service.setUser({
+      id: 'super-admin',
+      name: 'Super Admin',
+      email: 'root@rentify.local',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      claims: ['*'],
+    });
+    expect(service.hasPermission('catalog:moderate')).toBe(true);
+    expect(service.hasPermission('support:dispute:resolve')).toBe(true);
+    expect(service.hasPermission('seller:review')).toBe(true);
   });
 });

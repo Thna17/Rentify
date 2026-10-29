@@ -21,8 +21,14 @@ router.get('/stores/:storeId/products/:productId', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.getOwn);
 router.post('/stores/:storeId/products', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.create);
+router.post('/stores/:storeId/products/evaluate-policy', verifyStoreActor,
+  createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.evaluatePolicy);
 router.get('/stores/:storeId/products/:productId/publication-status', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.getPublicationStatus);
+router.post('/stores/:storeId/products/:productId/appeal', verifyStoreActor,
+  createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.submitAppeal);
+router.get('/stores/:storeId/products/:productId/moderation-history', verifyStoreActor,
+  createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.getModerationHistory);
 router.patch('/stores/:storeId/products/:productId', verifyStoreActor,
   createRequireStoreAccess({ permissions: ['products', 'manage_products'] }), controller.update);
 router.get('/stores/:storeId/product-imports/template', verifyStoreActor,

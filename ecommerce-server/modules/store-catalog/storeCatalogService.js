@@ -1,7 +1,8 @@
+const { randomUUID } = require('node:crypto');
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/db');
 const {
-  Product, ProductOption, ProductVariant, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview,
+  Product, ProductOption, ProductVariant, StoreAccess, StoreDeliveryPolicy, WebsiteData, ProductReview, ProductModerationHistory,
 } = require('../../models');
 const { canonicalCategory } = require('../../config/marketplaceTaxonomy');
 
@@ -305,13 +306,27 @@ async function createInsideTransaction(store, input, transaction) {
     restaurant: 'food', cafe: 'beverage', fashion: 'clothing',
     skincare: 'cleanser', electronics: 'device', grocery: 'fresh',
   }[websiteNiche] || 'physical';
+
+  const { productModerationService } = require('../catalog');
+  const policyCheck = productModerationService.evaluateForSubmission({
+    name, description, tags: input.tags, marketplaceCategory,
+  });
+
+  const moderationStatus = policyCheck.compliant ? 'approved' : 'flagged';
+  const marketplaceVisibility = policyCheck.compliant ? input.marketplaceVisibility : false;
+  const prohibitedReasonCode = policyCheck.compliant ? null : policyCheck.primaryReasonCode;
+  const moderationNotes = policyCheck.compliant ? null : policyCheck.guidance;
+
   const product = await Product.create({
     storeId: store.storeId,
     websiteId: store.websiteId || null,
     websiteNiche,
     productType,
     name, description, price, marketplaceCategory, images,
-    marketplaceVisibility: input.marketplaceVisibility,
+    marketplaceVisibility,
+    moderationStatus,
+    prohibitedReasonCode,
+    moderationNotes,
     stockQuantity, status,
     currency: currency || 'USD',
     barcode: barcode || null,
@@ -319,6 +334,47 @@ async function createInsideTransaction(store, input, transaction) {
     hasVariants: Boolean(hasVariants),
     slug: await uniqueSlug(store.storeId, name, transaction),
   }, { transaction });
+
+  if (!policyCheck.compliant) {
+    if (typeof ProductModerationHistory?.create === 'function') {
+      await ProductModerationHistory.create({
+        id: randomUUID(),
+        productId: product.id,
+        storeId: store.storeId,
+        action: 'system_flag',
+        previousStatus: null,
+        newStatus: 'flagged',
+        reasonCode: policyCheck.primaryReasonCode,
+        reason: policyCheck.guidance,
+        actorId: 'system',
+        actorType: 'system',
+        idempotencyKey: `sys-flag-${product.id}-${Date.now()}`,
+      }, { transaction }).catch(() => {});
+    }
+    try {
+      const { eventOutboxService } = require('../events');
+      if (typeof eventOutboxService?.recordEvent === 'function') {
+        await eventOutboxService.recordEvent({
+          eventId: randomUUID(),
+          eventType: 'product.moderation_flagged',
+          schemaVersion: '1.0.0',
+          aggregateType: 'Product',
+          aggregateId: product.id,
+          aggregateVersion: 1,
+          occurredAt: new Date().toISOString(),
+          producer: 'ecommerce-server',
+          storeId: store.storeId,
+          payload: {
+            productId: product.id,
+            storeId: store.storeId,
+            moderationStatus: 'flagged',
+            reasonCode: policyCheck.primaryReasonCode,
+            guidance: policyCheck.guidance,
+          },
+        }, { transaction });
+      }
+    } catch (_err) {}
+  }
 
   if (!input.skipVariantCreation) {
     for (let i = 0; i < input.variants.length; i += 1) {
@@ -463,8 +519,71 @@ async function update(storeId, productId, input) {
         (changes.stockQuantity ?? product.stockQuantity) === 0) {
       fail('Add stock before publishing the product');
     }
+
+    let newlyFlagged = false;
+    let policyCheck = null;
+    if (changes.name !== undefined || changes.description !== undefined || changes.marketplaceCategory !== undefined) {
+      const { productModerationService } = require('../catalog');
+      policyCheck = productModerationService.evaluateForSubmission({
+        name: changes.name !== undefined ? changes.name : product.name,
+        description: changes.description !== undefined ? changes.description : product.description,
+        tags: changes.tags !== undefined ? changes.tags : product.tags,
+        marketplaceCategory: changes.marketplaceCategory !== undefined ? changes.marketplaceCategory : product.marketplaceCategory,
+      });
+      if (!policyCheck.compliant) {
+        changes.moderationStatus = 'flagged';
+        changes.marketplaceVisibility = false;
+        changes.prohibitedReasonCode = policyCheck.primaryReasonCode;
+        changes.moderationNotes = policyCheck.guidance;
+        changes.moderatedAt = new Date();
+        changes.moderatedBy = 'system';
+        newlyFlagged = true;
+      }
+    }
+
     if (!Object.keys(changes).length && !preparedVariants) fail('No product changes provided');
     const updated = await product.update({ ...changes, version: product.version + 1 }, { transaction });
+
+    if (newlyFlagged && policyCheck) {
+      if (typeof ProductModerationHistory?.create === 'function') {
+        await ProductModerationHistory.create({
+          id: randomUUID(),
+          productId: product.id,
+          storeId: product.storeId,
+          action: 'system_flag',
+          previousStatus: product.moderationStatus,
+          newStatus: 'flagged',
+          reasonCode: policyCheck.primaryReasonCode,
+          reason: policyCheck.guidance,
+          actorId: 'system',
+          actorType: 'system',
+          idempotencyKey: `sys-update-flag-${product.id}-${Date.now()}`,
+        }, { transaction }).catch(() => {});
+      }
+      try {
+        const { eventOutboxService } = require('../events');
+        if (typeof eventOutboxService?.recordEvent === 'function') {
+          await eventOutboxService.recordEvent({
+            eventId: randomUUID(),
+            eventType: 'product.moderation_flagged',
+            schemaVersion: '1.0.0',
+            aggregateType: 'Product',
+            aggregateId: product.id,
+            aggregateVersion: (product.version || 0) + 1,
+            occurredAt: new Date().toISOString(),
+            producer: 'ecommerce-server',
+            storeId: product.storeId,
+            payload: {
+              productId: product.id,
+              storeId: product.storeId,
+              moderationStatus: 'flagged',
+              reasonCode: policyCheck.primaryReasonCode,
+              guidance: policyCheck.guidance,
+            },
+          }, { transaction });
+        }
+      } catch (_err) {}
+    }
     if (preparedVariants) {
       const retainedIds = [];
       const byId = new Map((product.ProductVariants || []).map((entry) => [entry.id, entry]));
@@ -502,7 +621,9 @@ async function update(storeId, productId, input) {
 
 function eligibleProductWhere(query = {}) {
   const where = {
-    status: 'active', marketplaceCategory: { [Op.ne]: null },
+    status: 'active',
+    moderationStatus: 'approved',
+    marketplaceCategory: { [Op.ne]: null },
     [Op.or]: [
       { marketplaceVisibility: true },
       { marketplaceVisibility: null, '$storeAccess.marketplaceEnabled$': true },

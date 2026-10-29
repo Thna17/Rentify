@@ -1,5 +1,16 @@
 const service = require('./marketplaceCheckoutService');
 const { Product } = require('../../models');
+const { createAnalyticsEventService } = require('../analytics').analyticsEventService;
+
+const analytics = createAnalyticsEventService();
+const recordMetric = async (eventName, { storeId = null, properties = {}, measures = {} } = {}) => {
+  try {
+    await analytics.record({ eventName, storeId, occurredAt: new Date().toISOString(), properties, measures });
+  } catch (_error) {
+    // Product telemetry is intentionally non-authoritative. A metrics outage
+    // must never change cart, checkout, stock, or order behavior.
+  }
+};
 
 const wrap = (handler) => async (req, res, next) => {
   try { await handler(req, res); } catch (error) { next(error); }
@@ -16,13 +27,15 @@ module.exports = {
     req.params.storeId, req.body,
   ) })),
   getCart: wrap(async (req, res) => res.json({ carts: await service.getCart(getIdentifier(req), req.query.storeId) })),
-  setCartItem: wrap(async (req, res) => res.json({ carts: await service.setCartItem({
-    ...getIdentifier(req),
-    storeId: req.params.storeId,
-    productId: req.params.productId,
-    variantId: req.body.variantId,
-    quantity: req.body.quantity,
-  }) })),
+  setCartItem: wrap(async (req, res) => {
+    const carts = await service.setCartItem({
+      ...getIdentifier(req), storeId: req.params.storeId, productId: req.params.productId,
+      variantId: req.body.variantId, quantity: req.body.quantity,
+    });
+    await recordMetric('cart.item_updated', { storeId: req.params.storeId,
+      properties: { channel: 'marketplace' }, measures: { quantity: Math.max(0, Number(req.body.quantity) || 0) } });
+    res.json({ carts });
+  }),
   addToCart: wrap(async (req, res) => {
     let storeId = req.body?.storeId;
     if (req.body?.productId) {
@@ -40,14 +53,16 @@ module.exports = {
       storeId = product.storeId;
     }
     const quantity = typeof req.body?.quantity === 'number' ? req.body.quantity : 1;
-    res.status(201).json({ carts: await service.setCartItem({
+    const carts = await service.setCartItem({
       ...getIdentifier(req),
       storeId,
       productId: req.body?.productId,
       variantId: req.body?.variantId,
       quantity,
       mode: 'add',
-    }) });
+    });
+    await recordMetric('cart.item_added', { storeId, properties: { channel: 'marketplace' }, measures: { quantity } });
+    res.status(201).json({ carts });
   }),
   updateCartItem: wrap(async (req, res) => {
     let storeId = req.params.storeId || req.body?.storeId;
@@ -101,33 +116,119 @@ module.exports = {
     }) });
   }),
   checkout: wrap(async (req, res) => {
-    if (Array.isArray(req.body?.storeOrders) || Array.isArray(req.body?.stores)) {
-      const storeOrders = req.body.storeOrders || req.body.stores;
-      const result = await service.checkoutMultiStore({
-        buyerId: req.user.id,
-        storeOrders,
+    const storeOrders = req.body?.storeOrders || req.body?.stores;
+    const storeCount = Array.isArray(storeOrders) ? storeOrders.length : 1;
+    await recordMetric('checkout.started', { storeId: req.body?.storeId || null,
+      properties: { channel: 'marketplace', paymentMethod: 'cod' }, measures: { storeCount } });
+    try {
+      if (Array.isArray(storeOrders)) {
+        const result = await service.checkoutMultiStore({
+          buyerId: req.user.id,
+          storeOrders,
+          checkoutKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
+          customerInfo: req.body.customerInfo,
+          shippingInfo: req.body.shippingInfo,
+          atomic: req.body.atomic === true,
+        });
+        return res.status(201).json(result);
+      }
+      return res.status(201).json({ order: await service.checkout({
+        buyerId: req.user.id, storeId: req.body.storeId,
         checkoutKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
-        customerInfo: req.body.customerInfo,
-        shippingInfo: req.body.shippingInfo,
-        atomic: req.body.atomic === true,
-      });
-      return res.status(201).json(result);
+        expectedTotalAmount: req.body.expectedTotalAmount,
+        customerInfo: req.body.customerInfo, shippingInfo: req.body.shippingInfo,
+      }) });
+    } catch (error) {
+      const failureClass = error.statusCode === 409 ? 'stock_conflict'
+        : error.statusCode && error.statusCode < 500 ? 'validation' : 'server';
+      await recordMetric('checkout.failed', { storeId: req.body?.storeId || null,
+        properties: { channel: 'marketplace', failureClass }, measures: { storeCount } });
+      throw error;
     }
-    return res.status(201).json({ order: await service.checkout({
-      buyerId: req.user.id, storeId: req.body.storeId,
-      checkoutKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
-      expectedTotalAmount: req.body.expectedTotalAmount,
-      customerInfo: req.body.customerInfo, shippingInfo: req.body.shippingInfo,
-    }) });
   }),
   buyerOrders: wrap(async (req, res) => res.json({ orders: await service.buyerOrders(req.user.id) })),
   buyerOrder: wrap(async (req, res) => res.json({ order: await service.buyerOrder(req.user.id, req.params.orderId) })),
   buyerOrderEvents: wrap(async (req, res) => res.json({ events: await service.buyerOrderEvents(req.user.id, req.params.orderId) })),
-  buyerReport: wrap(async (req, res) => res.status(201).json({ event: await service.buyerReport({
-    buyerId: req.user.id, orderId: req.params.orderId,
-    eventKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
-    type: req.params.type, details: req.body,
-  }) })),
+  buyerReport: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const idempotencyKey = req.get('Idempotency-Key') || req.body?.idempotencyKey || null;
+    const correlationId = req.get('X-Correlation-ID') || null;
+    const subjectType = req.params.type === 'return_requested' ? 'return' : 'order';
+    const category = req.params.type === 'return_requested' ? 'return_claim' : 'order_complaint';
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason : (req.body?.notes || req.params.type);
+    const description = typeof req.body?.notes === 'string' ? req.body.notes : reason;
+    const evidence = req.body?.evidence || (req.body?.evidenceUrl ? [req.body.evidenceUrl] : []);
+
+    try {
+      const result = await buyerReportService.submitBuyerReport(
+        req.user.id,
+        {
+          subjectType,
+          subjectId: req.params.orderId,
+          category,
+          reason,
+          description: description && description.length >= 10 ? description : `${description} (additional details provided)`,
+          evidence,
+        },
+        { idempotencyKey, correlationId }
+      );
+      res.status(201).json({
+        success: true,
+        event: { id: result.report.id, type: req.params.type },
+        data: result,
+      });
+    } catch (err) {
+      // Fallback to legacy service if needed
+      if (err.code === 'REPORT_NOT_FOUND' || err.code === 'INVALID_SUBJECT_TYPE') {
+        const legacyEvent = await service.buyerReport({
+          buyerId: req.user.id, orderId: req.params.orderId,
+          eventKey: idempotencyKey,
+          type: req.params.type, details: req.body,
+        });
+        return res.status(201).json({ event: legacyEvent });
+      }
+      throw err;
+    }
+  }),
+  checkReportEligibility: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const result = await buyerReportService.evaluateEligibility(req.user.id, {
+      subjectType: req.query.subjectType,
+      subjectId: req.query.subjectId,
+    });
+    res.json({ success: true, data: result });
+  }),
+  submitReport: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const idempotencyKey = req.get('Idempotency-Key') || req.body?.idempotencyKey || null;
+    const correlationId = req.get('X-Correlation-ID') || null;
+    const result = await buyerReportService.submitBuyerReport(
+      req.user.id,
+      req.body,
+      { idempotencyKey, correlationId }
+    );
+    res.status(201).json({ success: true, data: result });
+  }),
+  myReports: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const result = await buyerReportService.listReports({
+      buyerId: req.user.id,
+      subjectType: req.query.subjectType,
+      page: Number.parseInt(req.query.page, 10) || 1,
+      limit: Number.parseInt(req.query.limit, 10) || 20,
+    });
+    res.json({ success: true, data: result.items, total: result.total, page: result.page, limit: result.limit });
+  }),
+  getReport: wrap(async (req, res) => {
+    const { buyerReportService } = require('../support');
+    const facts = await buyerReportService.getAuthoritativeFacts(req.params.id);
+    if (facts.report.buyerId !== req.user.id) {
+      const err = new Error('Unauthorized');
+      err.statusCode = 403;
+      throw err;
+    }
+    res.json({ success: true, data: facts });
+  }),
   merchantOrder: wrap(async (req, res) => res.json({ order: await service.merchantOrder(
     req.params.storeId, req.params.orderId,
   ) })),

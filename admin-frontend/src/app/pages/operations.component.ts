@@ -1,6 +1,6 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { apiErrorMessage } from '../core/auth/auth.service';
+import { AuthService, apiErrorMessage } from '../core/auth/auth.service';
 import { Page, PlatformOperationsService, Section } from '../services/platform-operations.service';
 
 type Column = { title: string; key: string; kind?: 'date' | 'money' | 'status' };
@@ -144,8 +144,8 @@ const checklist = [
         @if (drawerSection() === 'stores' || drawerSection() === 'dashboard') {
           <div class="ops-facts"><span>Store ID</span><b>{{item.id}}</b><span>Owner</span><b>{{item.owner?.name || '—'}}</b><span>Contact</span><b>{{item.owner?.email || item.owner?.phoneNumber || '—'}}</b><span>Contact verified</span><b>{{item.owner?.isVerified ? 'Yes' : 'No'}}</b><span>Category</span><b>{{item.primaryCategory || 'Missing'}}</b><span>Website</span><b>{{item.website?.name || 'Marketplace only'}}</b><span>Marketplace enabled</span><b>{{item.marketplaceEnabled ? 'Yes' : 'Opted out'}}</b><span>Approval</span><b>{{label(item.marketplaceApprovalStatus)}}</b><span>Store status</span><b>{{label(item.status)}}</b></div>
           <div class="ops-actions">
-            <button class="btn btn-default btn-sm" [disabled]="saving()" (click)="toggleStoreMarketplace(item, !item.marketplaceEnabled)">{{item.marketplaceEnabled ? 'Opt Out of Marketplace' : 'Enable Marketplace Listing'}}</button>
-            <button class="btn btn-sm" [class.btn-danger]="item.status === 'active'" [class.btn-primary]="item.status !== 'active'" [disabled]="saving()" (click)="toggleStoreStatus(item, item.status === 'active' ? 'suspended' : 'active')">{{item.status === 'active' ? 'Suspend Store' : 'Reactivate Store'}}</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="toggleStoreMarketplace(item, !item.marketplaceEnabled)">{{item.marketplaceEnabled ? 'Opt Out of Marketplace' : 'Enable Marketplace Listing'}}</button>
+            <button class="btn btn-sm" [class.btn-danger]="item.status === 'active'" [class.btn-primary]="item.status !== 'active'" [disabled]="saving() || !canReviewSellers()" (click)="toggleStoreStatus(item, item.status === 'active' ? 'suspended' : 'active')">{{item.status === 'active' ? 'Suspend Store' : 'Reactivate Store'}}</button>
           </div>
           <div class="ops-links" style="margin-top:14px;"><a [routerLink]="['/products']" [queryParams]="{storeId:item.id}" (click)="selected.set(null)">Products →</a><a [routerLink]="['/orders']" [queryParams]="{storeId:item.id}" (click)="selected.set(null)">Orders →</a></div>
           <h3>Seller application</h3>
@@ -154,12 +154,12 @@ const checklist = [
             <h3>Approval checklist</h3><p class="cell-sub">All checks are required for approval; Core records every decision.</p>
             @for (check of checklist; track check[0]) { <label class="ops-check"><input type="checkbox" [checked]="checks()[check[0]]" (change)="setCheck(check[0], $any($event.target).checked)">{{check[1]}}</label> }
             <label class="ops-field">Reason / requested changes<textarea class="input" rows="3" [value]="reason()" (input)="reason.set($any($event.target).value)"></textarea></label>
-            <div class="ops-actions"><button class="btn btn-primary" [disabled]="saving() || !canApprove(item)" (click)="decide(item,'approved')">Approve</button><button class="btn btn-default" [disabled]="saving()" (click)="decide(item,'needs_changes')">Needs changes</button><button class="btn btn-danger" [disabled]="saving()" (click)="decide(item,item.marketplaceApprovalStatus === 'approved' ? 'suspended' : 'rejected')">{{item.marketplaceApprovalStatus === 'approved' ? 'Suspend' : 'Reject'}}</button></div>
+            <div class="ops-actions"><button class="btn btn-primary" [disabled]="saving() || !canApprove(item)" (click)="decide(item,'approved')">Approve</button><button class="btn btn-default" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'needs_changes')">Needs changes</button><button class="btn btn-danger" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,item.marketplaceApprovalStatus === 'approved' ? 'suspended' : 'rejected')">{{item.marketplaceApprovalStatus === 'approved' ? 'Suspend' : 'Reject'}}</button></div>
           } @else {
             <p class="ops-empty">No formal seller application submitted yet.</p>
             <div class="ops-actions">
-              <button class="btn btn-primary btn-sm" [disabled]="saving()" (click)="decide(item,'approved')">Pre-Approve Store</button>
-              <button class="btn btn-danger btn-sm" [disabled]="saving()" (click)="decide(item,'suspended')">Suspend Seller</button>
+              <button class="btn btn-primary btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'approved')">Pre-Approve Store</button>
+              <button class="btn btn-danger btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'suspended')">Suspend Seller</button>
             </div>
           }
           <h3>Review history</h3>@for (review of history(); track review.id) { <div class="ops-history"><b>{{label(review.decision)}}</b><span>{{date(review.createdAt)}}</span><p>{{review.reason || 'Checklist approved'}}</p></div> } @empty { <p class="cell-sub">No manual reviews recorded.</p> }
@@ -170,18 +170,18 @@ const checklist = [
           <h3>Marketplace Listing Controls</h3>
           <p class="cell-sub">Admin hold delists product from the shared marketplace while preserving storefront catalog.</p>
           <div class="ops-actions">
-            <button class="btn btn-primary btn-sm" [disabled]="saving()" (click)="setProductVisibility(item, true)">Force List on Marketplace</button>
-            <button class="btn btn-danger btn-sm" [disabled]="saving()" (click)="setProductVisibility(item, false)">Hold / Delist from Marketplace</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving()" (click)="setProductVisibility(item, null)">Inherit Store Default</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, true)">Force List on Marketplace</button>
+            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, false)">Hold / Delist from Marketplace</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, null)">Inherit Store Default</button>
           </div>
           <h3>Catalog Status</h3>
           <div class="ops-actions">
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'active'" (click)="setProductStatus(item, 'active')">Set Active</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'archived'" (click)="setProductStatus(item, 'archived')">Archive / Takedown</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'active' || !canModerateCatalog()" (click)="setProductStatus(item, 'active')">Set Active</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'archived' || !canModerateCatalog()" (click)="setProductStatus(item, 'archived')">Archive / Takedown</button>
           </div>
           <h3>Inventory Restock</h3>
           <div class="ops-actions">
-            <button class="btn btn-default btn-sm" [disabled]="saving()" (click)="restockProduct(item, 20)">+20 Units Restock</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || !canAdjustInventory()" (click)="restockProduct(item, 20)">+20 Units Restock</button>
           </div>
           <div class="ops-links" style="margin-top:16px;"><a [routerLink]="['/orders']" [queryParams]="{storeId:item.storeId}" (click)="selected.set(null)">Store orders →</a></div>
         }
@@ -192,10 +192,10 @@ const checklist = [
           <div class="ops-copy" style="background:#f8fafc; border:1px solid var(--line); border-radius:8px; margin:10px 0;"><p>{{item.comment || 'No comment text provided.'}}</p></div>
           <h3>Moderation Actions</h3>
           <div class="ops-actions">
-            <button class="btn btn-primary btn-sm" [disabled]="saving() || item.status === 'published'" (click)="setReviewStatus(item, 'published')">Approve / Publish</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'flagged'" (click)="setReviewStatus(item, 'flagged')">Flag for Review</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'hidden'" (click)="setReviewStatus(item, 'hidden')">Hide Review</button>
-            <button class="btn btn-danger btn-sm" [disabled]="saving()" (click)="removeReview(item)">Delete Review</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving() || item.status === 'published' || !canModerateReviews()" (click)="setReviewStatus(item, 'published')">Approve / Publish</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'flagged' || !canModerateReviews()" (click)="setReviewStatus(item, 'flagged')">Flag for Review</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'hidden' || !canModerateReviews()" (click)="setReviewStatus(item, 'hidden')">Hide Review</button>
+            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canModerateReviews()" (click)="removeReview(item)">Delete Review</button>
           </div>
         }
 
@@ -210,9 +210,9 @@ const checklist = [
           <h3>Triage Resolution</h3>
           <label class="ops-field">Resolution notes / findings<textarea class="input" rows="3" [value]="resolutionNotes()" (input)="resolutionNotes.set($any($event.target).value)" placeholder="Enter findings, refund coordination, or dismissal reason..."></textarea></label>
           <div class="ops-actions">
-            <button class="btn btn-default btn-sm" [disabled]="saving()" (click)="triageReport(item, 'investigating')">Mark Investigating</button>
-            <button class="btn btn-primary btn-sm" [disabled]="saving()" (click)="triageReport(item, 'resolved')">Resolve Report</button>
-            <button class="btn btn-danger btn-sm" [disabled]="saving()" (click)="triageReport(item, 'dismissed')">Dismiss Report</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'investigating')">Mark Investigating</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'resolved')">Resolve Report</button>
+            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'dismissed')">Dismiss Report</button>
             <a class="btn btn-default btn-sm" [routerLink]="['/orders']" [queryParams]="{storeId: item.storeId}" (click)="selected.set(null)">Store orders →</a>
           </div>
         }
@@ -229,6 +229,14 @@ const checklist = [
 export class OperationsComponent implements OnInit {
   private readonly api = inject(PlatformOperationsService);
   private readonly route = inject(ActivatedRoute);
+  private readonly auth = inject(AuthService, { optional: true });
+
+  readonly canReviewSellers = computed(() => (this.auth?.user() ? this.auth.canReviewSellers() : true));
+  readonly canModerateCatalog = computed(() => (this.auth?.user() ? this.auth.canModerateCatalog() : true));
+  readonly canModerateReviews = computed(() => (this.auth?.user() ? this.auth.canModerateReviews() : true));
+  readonly canAdjustInventory = computed(() => (this.auth?.user() ? this.auth.canAdjustInventory() : true));
+  readonly canWriteSupport = computed(() => (this.auth?.user() ? this.auth.canWriteSupport() : true));
+
   readonly section = this.route.snapshot.data['section'] as Section | 'dashboard';
   readonly coreSource = new Set(['stores', 'users', 'websites', 'templates', 'subscriptions',
     'packages', 'plan-payments']).has(this.section);
@@ -344,7 +352,7 @@ export class OperationsComponent implements OnInit {
   }
   setCheck(key: string, value: boolean) { this.checks.update((old) => ({ ...old, [key]: value })); }
   canApprove(store: any) {
-    return Boolean(store.sellerApplication && store.owner?.isVerified && store.primaryCategory &&
+    return Boolean(this.canReviewSellers() && store.sellerApplication && store.owner?.isVerified && store.primaryCategory &&
       !store.needsCategoryReview && checklist.every(([key]) => this.checks()[key]));
   }
   decide(store: any, decision: string) {

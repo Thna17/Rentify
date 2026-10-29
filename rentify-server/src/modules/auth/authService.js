@@ -414,8 +414,17 @@ class AuthService {
       );
     }
 
-    // Administrator MFA Enforcement (P2-SEC-001)
-    if (entity.role === 'admin' && entity.mfaEnabled) {
+    // Platform operator MFA enforcement. Legacy administrators remain covered,
+    // and scoped operators cannot bypass MFA merely because User.role is "user".
+    let isPlatformOperator = entity.role === 'admin';
+    if (!isPlatformOperator && this.entityType === 'User') {
+      const { PlatformRoleGrant } = require('../../models');
+      isPlatformOperator = Boolean(await PlatformRoleGrant.findOne({
+        where: { userId: entity.id, status: 'active' }, transaction,
+      }));
+    }
+    let mfaVerified = false;
+    if (isPlatformOperator && entity.mfaEnabled) {
       if (entity.mfaLockUntil && entity.mfaLockUntil > Date.now()) {
         throw new ApiError(429, "Account temporarily locked due to failed MFA attempts. Try again later.");
       }
@@ -470,6 +479,7 @@ class AuthService {
 
       entity.mfaFailedAttempts = 0;
       entity.mfaLockUntil = null;
+      mfaVerified = true;
     }
 
     const nowIso = new Date().toISOString();
@@ -493,7 +503,7 @@ class AuthService {
           userId: entity.id,
           refreshToken: tokens.refreshToken,
           req,
-          isMfaVerified: Boolean(entity.mfaEnabled),
+          isMfaVerified: mfaVerified,
           transaction,
         });
       } catch (_e) {}
@@ -868,6 +878,38 @@ class AuthService {
     });
   }
 
+  async formatValidatedEntity(entity) {
+    let platformAccess = null;
+    if (this.entityName === 'User') {
+      const { resolvePlatformAccess } = require('../../middlewares/platformAuthorization');
+      platformAccess = await resolvePlatformAccess(entity.id);
+    }
+    const platformGrants = platformAccess?.grants?.filter((grant) => grant.scopeType === 'platform') || [];
+    const crossServiceRoles = platformAccess?.compatibilityAdmin
+      ? platformAccess.roles
+      : [...new Set(platformGrants.map((grant) => grant.role))];
+    const { permissionsForRole } = require('../../config/platformAuthorization');
+    const crossServicePermissions = platformAccess?.compatibilityAdmin
+      ? platformAccess.permissions
+      : [...new Set(crossServiceRoles.flatMap((role) => permissionsForRole(role)))];
+    // Commerce cannot yet enforce Core's resource-scoped grants. Export only
+    // platform-scoped grants and never propagate break-glass permissions.
+    const isPlatformOperator = Boolean(platformAccess?.compatibilityAdmin || platformGrants.length);
+    return {
+      id: entity.id,
+      email: entity.email,
+      phoneNumber: entity.phoneNumber,
+      telegramChatId: entity.telegramChatId,
+      name: entity.name,
+      isVerified: entity.isVerified,
+      type: isPlatformOperator ? 'admin' : entity.role,
+      role: entity.role,
+      permissions: isPlatformOperator ? crossServicePermissions : entity.permissions,
+      ...(isPlatformOperator && { platformRoles: crossServiceRoles }),
+      ...(this.storeIdRequired && { storeId: entity.storeId }),
+    };
+  }
+
 async #findExistingEntity(where, transaction) {
   return this.entityModel.findOne({ where, transaction });
 }
@@ -890,17 +932,7 @@ async #findExistingEntity(where, transaction) {
         if (entity) {
           return {
             valid: true,
-            entity: {
-              id: entity.id,
-              email: entity.email,
-              phoneNumber: entity.phoneNumber,
-              telegramChatId: entity.telegramChatId,
-              name: entity.name,
-              isVerified: entity.isVerified,
-              type: entity.role,
-              permissions: entity.permissions,
-              ...(this.storeIdRequired && { storeId: entity.storeId }),
-            },
+            entity: await this.formatValidatedEntity(entity),
           };
         }
       }
@@ -927,16 +959,7 @@ async #findExistingEntity(where, transaction) {
 
         return {
           valid: true,
-          entity: {
-            id: entity.id,
-            email: entity.email,
-            phoneNumber: entity.phoneNumber,
-            telegramChatId: entity.telegramChatId,
-            name: entity.name,
-            isVerified: entity.isVerified,
-            type: entity.role,
-            ...(this.storeIdRequired && { storeId: entity.storeId }),
-          },
+          entity: await this.formatValidatedEntity(entity),
           newAccessToken,
         };
       }

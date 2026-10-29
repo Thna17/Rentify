@@ -23,6 +23,39 @@ export class CommerceApiClient {
   }
 
   /**
+   * Get privacy-safe Commerce journey and financial metrics
+   * GET /api/admin/operations/analytics
+   */
+  async get_api_admin_operations_analytics(options: {
+    query?: {
+      days?: number;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data: Record<string, any>;
+    }>> {
+    return this.transport.request<{
+      data: Record<string, any>;
+    }>({
+      method: 'GET',
+      path: '/api/admin/operations/analytics',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_analytics */
+  async getApiAdminOperationsAnalytics(options: any = {}): Promise<ApiResponse<{
+      data: Record<string, any>;
+    }>> {
+    return (this as any).get_api_admin_operations_analytics(options);
+  }
+
+  /**
    * Privileged administrative inventory adjustment
    * POST /api/admin/operations/inventory/adjust
    */
@@ -53,6 +86,36 @@ export class CommerceApiClient {
   /** Alias for post_api_admin_operations_inventory_adjust */
   async postApiAdminOperationsInventoryAdjust(options: any): Promise<ApiResponse<any>> {
     return (this as any).post_api_admin_operations_inventory_adjust(options);
+  }
+
+  /**
+   * List products in moderation queue
+   * GET /api/admin/operations/moderation/queue
+   */
+  async get_api_admin_operations_moderation_queue(options: {
+    query?: {
+      limit?: number;
+      page?: number;
+      q?: string;
+      status?: "all_open" | "flagged" | "rejected" | "approved";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/admin/operations/moderation/queue',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_moderation_queue */
+  async getApiAdminOperationsModerationQueue(options: any = {}): Promise<ApiResponse<any>> {
+    return (this as any).get_api_admin_operations_moderation_queue(options);
   }
 
   /**
@@ -113,6 +176,101 @@ export class CommerceApiClient {
   /** Alias for patch_api_admin_operations_products_id */
   async patchApiAdminOperationsProductsId(options: any): Promise<ApiResponse<any>> {
     return (this as any).patch_api_admin_operations_products_id(options);
+  }
+
+  /**
+   * Review and decide on a merchant product appeal
+   * POST /api/admin/operations/products/{id}/appeal/decision
+   */
+  async post_api_admin_operations_products_id_appeal_decision(options: {
+    path: {
+      id: string;
+    };
+    body: {
+      decision: "approved" | "rejected";
+      evidence?: string;
+      reason?: string;
+      reasonCode?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/admin/operations/products/{id}/appeal/decision',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_operations_products_id_appeal_decision */
+  async postApiAdminOperationsProductsIdAppealDecision(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_admin_operations_products_id_appeal_decision(options);
+  }
+
+  /**
+   * Record moderator decision for product
+   * POST /api/admin/operations/products/{id}/moderation
+   */
+  async post_api_admin_operations_products_id_moderation(options: {
+    path: {
+      id: string;
+    };
+    body: {
+      decision: "approved" | "rejected" | "flagged";
+      evidence?: string;
+      reason?: string;
+      reasonCode?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/admin/operations/products/{id}/moderation',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_operations_products_id_moderation */
+  async postApiAdminOperationsProductsIdModeration(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_admin_operations_products_id_moderation(options);
+  }
+
+  /**
+   * View full immutable moderation audit history for product
+   * GET /api/admin/operations/products/{id}/moderation-history
+   */
+  async get_api_admin_operations_products_id_moderation_history(options: {
+    path: {
+      id: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/admin/operations/products/{id}/moderation-history',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_products_id_moderation_history */
+  async getApiAdminOperationsProductsIdModerationHistory(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_admin_operations_products_id_moderation_history(options);
   }
 
   /**
@@ -185,6 +343,60 @@ export class CommerceApiClient {
   /** Alias for patch_api_admin_operations_reports_id */
   async patchApiAdminOperationsReportsId(options: any): Promise<ApiResponse<any>> {
     return (this as any).patch_api_admin_operations_reports_id(options);
+  }
+
+  /**
+   * Get authoritative Commerce facts for Core support case investigation
+   * GET /api/admin/operations/reports/{id}/facts
+   */
+  async get_api_admin_operations_reports_id_facts(options: {
+    path: {
+      id: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/admin/operations/reports/{id}/facts',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_reports_id_facts */
+  async getApiAdminOperationsReportsIdFacts(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_admin_operations_reports_id_facts(options);
+  }
+
+  /**
+   * Retry linking a failed buyer report to Core SupportCase
+   * POST /api/admin/operations/reports/{id}/retry-linkage
+   */
+  async post_api_admin_operations_reports_id_retry_linkage(options: {
+    path: {
+      id: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/admin/operations/reports/{id}/retry-linkage',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_operations_reports_id_retry_linkage */
+  async postApiAdminOperationsReportsIdRetryLinkage(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_admin_operations_reports_id_retry_linkage(options);
   }
 
   /**
@@ -270,6 +482,39 @@ export class CommerceApiClient {
   /** Alias for get_api_admin_operations_resource */
   async getApiAdminOperationsResource(options: any): Promise<ApiResponse<any>> {
     return (this as any).get_api_admin_operations_resource(options);
+  }
+
+  /**
+   * Record an allowlisted privacy-safe product analytics event
+   * POST /api/analytics/events
+   */
+  async post_api_analytics_events(options: {
+    body: {
+      eventId?: string;
+      eventName: "marketplace.search_performed" | "marketplace.discovery_viewed" | "cart.item_added" | "cart.item_updated" | "checkout.started" | "checkout.failed";
+      measures?: Record<string, number>;
+      occurredAt?: string;
+      properties: Record<string, any>;
+      schemaVersion?: "1.0.0";
+      storeId?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/analytics/events',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_analytics_events */
+  async postApiAnalyticsEvents(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_analytics_events(options);
   }
 
   /**
@@ -2094,6 +2339,136 @@ export class CommerceApiClient {
   /** Alias for post_api_marketplace_products_productId_reviews */
   async postApiMarketplaceProductsProductIdReviews(options: any): Promise<ApiResponse<Commerce.ProductReview>> {
     return (this as any).post_api_marketplace_products_productId_reviews(options);
+  }
+
+  /**
+   * Submit buyer report linked to authoritative Core support case
+   * POST /api/marketplace/reports
+   */
+  async post_api_marketplace_reports(options: {
+    body: {
+      category: string;
+      description: string;
+      evidence?: Array<{
+        fileName?: string;
+        label?: string;
+        type?: string;
+        url?: string;
+      }>;
+      reason: string;
+      subjectId: string;
+      subjectType: "order" | "return" | "product" | "merchant";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/marketplace/reports',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_marketplace_reports */
+  async postApiMarketplaceReports(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_marketplace_reports(options);
+  }
+
+  /**
+   * Check eligibility and deadlines for filing a complaint or return report
+   * GET /api/marketplace/reports/eligibility
+   */
+  async get_api_marketplace_reports_eligibility(options: {
+    query?: {
+      subjectId: string;
+      subjectType: "order" | "return" | "product" | "merchant";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      data?: Record<string, any>;
+      success?: boolean;
+    }>({
+      method: 'GET',
+      path: '/api/marketplace/reports/eligibility',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_marketplace_reports_eligibility */
+  async getApiMarketplaceReportsEligibility(options: any = {}): Promise<ApiResponse<{
+      data?: Record<string, any>;
+      success?: boolean;
+    }>> {
+    return (this as any).get_api_marketplace_reports_eligibility(options);
+  }
+
+  /**
+   * List buyer's submitted reports and support case references
+   * GET /api/marketplace/reports/my-reports
+   */
+  async get_api_marketplace_reports_my_reports(options: {
+    query?: {
+      limit?: number;
+      page?: number;
+      subjectType?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/marketplace/reports/my-reports',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_marketplace_reports_my_reports */
+  async getApiMarketplaceReportsMyReports(options: any = {}): Promise<ApiResponse<any>> {
+    return (this as any).get_api_marketplace_reports_my_reports(options);
+  }
+
+  /**
+   * Get details of buyer report and linked Core case reference
+   * GET /api/marketplace/reports/{id}
+   */
+  async get_api_marketplace_reports_id(options: {
+    path: {
+      id: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/marketplace/reports/{id}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_marketplace_reports_id */
+  async getApiMarketplaceReportsId(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_marketplace_reports_id(options);
   }
 
   /**
@@ -4209,6 +4584,40 @@ export class CommerceApiClient {
   }
 
   /**
+   * Pre-submission evaluation of product content against restricted taxonomy
+   * POST /api/stores/{storeId}/products/evaluate-policy
+   */
+  async post_api_stores_storeId_products_evaluate_policy(options: {
+    path: {
+      storeId: string;
+    };
+    body: {
+      description?: string;
+      marketplaceCategory?: string;
+      name?: string;
+      tags?: Array<string>;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/products/evaluate-policy',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_products_evaluate_policy */
+  async postApiStoresStoreIdProductsEvaluatePolicy(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_stores_storeId_products_evaluate_policy(options);
+  }
+
+  /**
    * Update store product
    * PATCH /api/stores/{storeId}/products/{productId}
    */
@@ -4253,6 +4662,67 @@ export class CommerceApiClient {
   /** Alias for patch_api_stores_storeId_products_productId */
   async patchApiStoresStoreIdProductsProductId(options: any): Promise<ApiResponse<Commerce.Product>> {
     return (this as any).patch_api_stores_storeId_products_productId(options);
+  }
+
+  /**
+   * Submit a merchant appeal for a held or rejected product
+   * POST /api/stores/{storeId}/products/{productId}/appeal
+   */
+  async post_api_stores_storeId_products_productId_appeal(options: {
+    path: {
+      productId: string;
+      storeId: string;
+    };
+    body: {
+      evidenceUrls?: Array<string>;
+      reason: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/products/{productId}/appeal',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_products_productId_appeal */
+  async postApiStoresStoreIdProductsProductIdAppeal(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_stores_storeId_products_productId_appeal(options);
+  }
+
+  /**
+   * View immutable moderation audit history for product
+   * GET /api/stores/{storeId}/products/{productId}/moderation-history
+   */
+  async get_api_stores_storeId_products_productId_moderation_history(options: {
+    path: {
+      productId: string;
+      storeId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/products/{productId}/moderation-history',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_stores_storeId_products_productId_moderation_history */
+  async getApiStoresStoreIdProductsProductIdModerationHistory(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_stores_storeId_products_productId_moderation_history(options);
   }
 
   /**
