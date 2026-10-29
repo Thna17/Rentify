@@ -409,6 +409,19 @@ export namespace Commerce {
       };
       response: any;
     };
+    get_api_admin_operations_moderation_queue: {
+      method: 'GET';
+      path: '/api/admin/operations/moderation/queue';
+      parameters: {
+        query?: {
+          limit?: number;
+          page?: number;
+          q?: string;
+          status?: "all_open" | "flagged" | "rejected" | "approved";
+        };
+      };
+      response: any;
+    };
     get_api_admin_operations_overview: {
       method: 'GET';
       path: '/api/admin/operations/overview';
@@ -432,6 +445,48 @@ export namespace Commerce {
         reason?: string;
         status?: "active" | "draft" | "archived";
         stockQuantity?: number;
+      };
+      response: any;
+    };
+    post_api_admin_operations_products_id_appeal_decision: {
+      method: 'POST';
+      path: '/api/admin/operations/products/{id}/appeal/decision';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      body: {
+        decision: "approved" | "rejected";
+        evidence?: string;
+        reason?: string;
+        reasonCode?: string;
+      };
+      response: any;
+    };
+    post_api_admin_operations_products_id_moderation: {
+      method: 'POST';
+      path: '/api/admin/operations/products/{id}/moderation';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      body: {
+        decision: "approved" | "rejected" | "flagged";
+        evidence?: string;
+        reason?: string;
+        reasonCode?: string;
+      };
+      response: any;
+    };
+    get_api_admin_operations_products_id_moderation_history: {
+      method: 'GET';
+      path: '/api/admin/operations/products/{id}/moderation-history';
+      parameters: {
+        path: {
+          id: string;
+        };
       };
       response: any;
     };
@@ -462,6 +517,26 @@ export namespace Commerce {
       body: {
         resolutionNotes?: string;
         status?: "resolved" | "rejected" | "investigating";
+      };
+      response: any;
+    };
+    get_api_admin_operations_reports_id_facts: {
+      method: 'GET';
+      path: '/api/admin/operations/reports/{id}/facts';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      response: any;
+    };
+    post_api_admin_operations_reports_id_retry_linkage: {
+      method: 'POST';
+      path: '/api/admin/operations/reports/{id}/retry-linkage';
+      parameters: {
+        path: {
+          id: string;
+        };
       };
       response: any;
     };
@@ -1210,6 +1285,62 @@ export namespace Commerce {
         rating: number;
       };
       response: Commerce.ProductReview;
+    };
+    post_api_marketplace_reports: {
+      method: 'POST';
+      path: '/api/marketplace/reports';
+      parameters: {
+      };
+      body: {
+        category: string;
+        description: string;
+        evidence?: Array<{
+          fileName?: string;
+          label?: string;
+          type?: string;
+          url?: string;
+        }>;
+        reason: string;
+        subjectId: string;
+        subjectType: "order" | "return" | "product" | "merchant";
+      };
+      response: any;
+    };
+    get_api_marketplace_reports_eligibility: {
+      method: 'GET';
+      path: '/api/marketplace/reports/eligibility';
+      parameters: {
+        query?: {
+          subjectId: string;
+          subjectType: "order" | "return" | "product" | "merchant";
+        };
+      };
+      response: {
+        data?: Record<string, any>;
+        success?: boolean;
+      };
+    };
+    get_api_marketplace_reports_my_reports: {
+      method: 'GET';
+      path: '/api/marketplace/reports/my-reports';
+      parameters: {
+        query?: {
+          limit?: number;
+          page?: number;
+          subjectType?: string;
+        };
+      };
+      response: any;
+    };
+    get_api_marketplace_reports_id: {
+      method: 'GET';
+      path: '/api/marketplace/reports/{id}';
+      parameters: {
+        path: {
+          id: string;
+        };
+      };
+      response: any;
     };
     post_api_merchant_orders_orderId_cancel: {
       method: 'POST';
@@ -2076,6 +2207,22 @@ export namespace Commerce {
       };
       response: Commerce.Product;
     };
+    post_api_stores_storeId_products_evaluate_policy: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/products/evaluate-policy';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      body: {
+        description?: string;
+        marketplaceCategory?: string;
+        name?: string;
+        tags?: Array<string>;
+      };
+      response: any;
+    };
     patch_api_stores_storeId_products_productId: {
       method: 'PATCH';
       path: '/api/stores/{storeId}/products/{productId}';
@@ -2104,6 +2251,32 @@ export namespace Commerce {
         variants?: Array<Commerce.ProductVariantInput>;
       };
       response: Commerce.Product;
+    };
+    post_api_stores_storeId_products_productId_appeal: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/products/{productId}/appeal';
+      parameters: {
+        path: {
+          productId: string;
+          storeId: string;
+        };
+      };
+      body: {
+        evidenceUrls?: Array<string>;
+        reason: string;
+      };
+      response: any;
+    };
+    get_api_stores_storeId_products_productId_moderation_history: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/products/{productId}/moderation-history';
+      parameters: {
+        path: {
+          productId: string;
+          storeId: string;
+        };
+      };
+      response: any;
     };
     get_api_stores_storeId_products_productId_publication_status: {
       method: 'GET';

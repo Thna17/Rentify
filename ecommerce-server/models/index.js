@@ -31,12 +31,12 @@ const ProductImportJob = require('./ProductImportJob');
 const ProductModerationHistory = require('./ProductModerationHistory');
 const BuyerReport = require('./BuyerReport');
 
-Product.hasMany(ProductModerationHistory, { foreignKey: 'productId', as: 'ModerationHistories' });
-ProductModerationHistory.belongsTo(Product, { foreignKey: 'productId' });
+Product.hasMany(ProductModerationHistory, { foreignKey: 'productId', as: 'ModerationHistories', constraints: false });
+ProductModerationHistory.belongsTo(Product, { foreignKey: 'productId', constraints: false });
 
-Order.hasMany(BuyerReport, { foreignKey: 'orderId', as: 'BuyerReports' });
-BuyerReport.belongsTo(Order, { foreignKey: 'orderId', as: 'Order' });
-BuyerReport.belongsTo(Product, { foreignKey: 'productId', as: 'Product' });
+Order.hasMany(BuyerReport, { foreignKey: 'orderId', as: 'BuyerReports', constraints: false });
+BuyerReport.belongsTo(Order, { foreignKey: 'orderId', as: 'Order', constraints: false });
+BuyerReport.belongsTo(Product, { foreignKey: 'productId', as: 'Product', constraints: false });
 BuyerReport.belongsTo(StoreAccess, { foreignKey: 'storeId', targetKey: 'storeId', as: 'Store', constraints: false });
 
 Product.belongsTo(StoreAccess, {

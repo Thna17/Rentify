@@ -37,7 +37,7 @@ const BuyerReport = sequelize.define(
       allowNull: false,
     },
     orderId: {
-      type: DataTypes.STRING(64),
+      type: DataTypes.UUID,
       allowNull: true,
     },
     storeId: {
@@ -45,7 +45,7 @@ const BuyerReport = sequelize.define(
       allowNull: true,
     },
     productId: {
-      type: DataTypes.STRING(64),
+      type: DataTypes.UUID,
       allowNull: true,
     },
     category: {
