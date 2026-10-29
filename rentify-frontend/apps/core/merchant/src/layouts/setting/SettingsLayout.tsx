@@ -1,8 +1,16 @@
-// settings-layout.tsx
 import React from 'react';
-import { ArrowLeft, User, CreditCard, Users, Shield, Receipt, SlidersHorizontal } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronRight,
+  CreditCard,
+  Receipt,
+  Shield,
+  SlidersHorizontal,
+  User,
+  Users,
+} from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SettingsLayoutProps {
   title: string;
@@ -12,75 +20,89 @@ interface SettingsLayoutProps {
 }
 
 const SETTINGS_NAV_ITEMS = [
-  { name: 'Account', path: '/settings/account', icon: User },
-  { name: 'Payments', path: '/settings/payments', icon: CreditCard },
-  { name: 'Staff & Roles', path: '/settings/staff', icon: Users },
-  { name: 'Security', path: '/settings/security', icon: Shield },
-  { name: 'Billing', path: '/settings/billing', icon: Receipt },
-  { name: 'Preferences', path: '/settings/preferences', icon: SlidersHorizontal },
+  { name: 'Account', description: 'Profile and business details', path: '/settings/account', icon: User },
+  { name: 'Payments', description: 'Payout and payment methods', path: '/settings/payments', icon: CreditCard },
+  { name: 'Staff & Roles', description: 'Team access and permissions', path: '/settings/staff', icon: Users },
+  { name: 'Security', description: 'Password and active sessions', path: '/settings/security', icon: Shield },
+  { name: 'Billing', description: 'Plan, usage and invoices', path: '/settings/billing', icon: Receipt },
+  { name: 'Preferences', description: 'Language and notifications', path: '/settings/preferences', icon: SlidersHorizontal },
 ];
 
-export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
-  title,
-  description,
-  children,
-  icon,
-}) => {
+export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, description, children, icon }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-background py-6">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-        {/* Header with back button */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/overview')}
-            className="flex items-center space-x-2 text-muted-foreground hover:text-foreground mb-3 text-xs"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Dashboard</span>
-          </Button>
+    <main className="settings-page ds-page min-h-screen">
+      <div className="settings-page__container">
+        <Button variant="ghost" onClick={() => navigate('/overview')} className="settings-page__back">
+          <ArrowLeft aria-hidden="true" />
+          <span>Back to dashboard</span>
+        </Button>
 
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-900/60">
-              {React.cloneElement(icon as React.ReactElement, {
-                className: 'h-6 w-6',
-              })}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-              <p className="text-muted-foreground text-sm">{description}</p>
-            </div>
+        <header className="settings-page__hero">
+          <div className="settings-page__hero-icon" aria-hidden="true">
+            {React.cloneElement(icon as React.ReactElement, { className: 'h-6 w-6' })}
           </div>
+          <div className="min-w-0">
+            <p className="settings-page__eyebrow">Workspace settings</p>
+            <h1>{title}</h1>
+            <p className="settings-page__description">{description}</p>
+          </div>
+        </header>
 
-          {/* Sub-navigation Tabs */}
-          <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
-            {SETTINGS_NAV_ITEMS.map((tab) => {
-              const isActive = location.pathname === tab.path;
-              return (
-                <button
-                  key={tab.path}
-                  type="button"
-                  onClick={() => navigate(tab.path)}
-                  className={`flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-semibold'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  <span>{tab.name}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="settings-page__mobile-nav" aria-label="Settings sections">
+          {SETTINGS_NAV_ITEMS.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => navigate(item.path)}
+                aria-current={isActive ? 'page' : undefined}
+                className={isActive ? 'is-active' : undefined}
+              >
+                <item.icon aria-hidden="true" />
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Content */}
-        <div className="space-y-6">{children}</div>
+        <div className="settings-page__layout">
+          <aside className="settings-page__sidebar">
+            <div className="settings-page__sidebar-heading">
+              <span>Settings</span>
+              <small>Manage your workspace</small>
+            </div>
+            <nav aria-label="Settings sections">
+              {SETTINGS_NAV_ITEMS.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={isActive ? 'is-active' : undefined}
+                  >
+                    <span className="settings-page__nav-icon"><item.icon aria-hidden="true" /></span>
+                    <span className="settings-page__nav-copy">
+                      <strong>{item.name}</strong>
+                      <small>{item.description}</small>
+                    </span>
+                    <ChevronRight className="settings-page__nav-arrow" aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          <section className="settings-page__content" aria-label={`${title} content`}>
+            {children}
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
