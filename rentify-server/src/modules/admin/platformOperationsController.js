@@ -1,6 +1,9 @@
 const { Op } = require('sequelize');
 const { Store, User, Website, WebsiteTemplate, Subscription, Package,
   SellerApplication, SellerReview, Payment } = require('../../models');
+const approvalService = require('../../utils/adminApprovalService');
+const { emitAuditEvent } = require('../../utils/auditLogger');
+const { getCorrelationId } = require('../../utils/logger');
 
 const owner = { model: User, as: 'owner', attributes: ['id', 'name', 'email', 'phoneNumber', 'isVerified'] };
 const website = { model: Website, as: 'website', attributes: ['id', 'name', 'domain', 'status'] };
@@ -68,6 +71,10 @@ exports.overview = async (_req, res) => {
 exports.updateStore = async (req, res) => {
   const { storeId } = req.params;
   const { marketplaceEnabled, status, marketplaceApprovalStatus } = req.body;
+  if (marketplaceApprovalStatus === 'rejected') {
+    return res.status(400).json({ error: { code: 'VALIDATION_FAILED',
+      message: 'Use the seller review workflow to reject an application', fieldErrors: [], retryable: false } });
+  }
   const store = await Store.findByPk(storeId);
   if (!store) return res.status(404).json({ error: 'Store not found' });
   const updates = {};
@@ -79,11 +86,31 @@ exports.updateStore = async (req, res) => {
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ error: 'No valid updates provided' });
   }
+  const before = { marketplaceEnabled: store.marketplaceEnabled, status: store.status,
+    marketplaceApprovalStatus: store.marketplaceApprovalStatus, projectionVersion: store.projectionVersion };
+  let approval = null;
+  if (updates.status === 'closed' || updates.status === 'suspended' || updates.marketplaceApprovalStatus === 'suspended') {
+    const action = updates.status === 'closed' ? 'platform.store.close' : 'seller.store.suspend';
+    try {
+      approval = await approvalService.consume({ approvalId: req.body.approvalRequestId, action,
+        targetType: 'Store', targetId: storeId, requestedChange: updates, beforeVersion: store.projectionVersion });
+    } catch (error) {
+      const statusCode = error.code === 'APPROVAL_REQUIRED' ? 403 : 409;
+      return res.status(statusCode).json({ error: { code: error.code, message: error.message, fieldErrors: [], retryable: false } });
+    }
+  }
   updates.projectionVersion = store.projectionVersion + 1;
   await store.update(updates);
   const website = await Website.findOne({ where: { storeId }, attributes: ['id'] });
   const storeSyncService = require('../commerce-sync').storeSyncService;
   await storeSyncService.queueStore(store, { websiteId: website?.id || null });
   storeSyncService.syncStore(storeId).catch(() => {});
+  await emitAuditEvent({ correlationId: getCorrelationId(req), actorUserId: req.user.id,
+    actorRole: req.platformAccess.roles[0], actorRoles: req.platformAccess.roles,
+    effectivePermissions: req.platformAccess.effectivePermissions, action: 'PLATFORM_STORE_UPDATED',
+    resource: 'Store', resourceId: storeId, reason: req.body.reason,
+    sourceCaseId: req.body.sourceCaseId, tenantScope: req.platformAccess.tenantScope,
+    approvalRequestId: approval?.id, breakGlassGrantId: req.platformAccess.breakGlassGrantId,
+    safeBefore: before, safeAfter: { ...updates }, ipAddress: req.ip, userAgent: req.get?.('user-agent') });
   res.json({ success: true, data: store });
 };

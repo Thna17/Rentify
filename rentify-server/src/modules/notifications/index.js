@@ -4,4 +4,6 @@ module.exports = {
   get emailService() { return require('./emailService'); },
   get notificationService() { return require('./notificationService'); },
   get telegramService() { return require('./telegramService'); },
+  get durableNotificationService() { return require('./durableNotificationService'); },
+  get startDurableNotificationJob() { return require('./durableNotificationJob').startDurableNotificationJob; },
 };

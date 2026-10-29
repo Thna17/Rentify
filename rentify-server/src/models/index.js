@@ -21,6 +21,20 @@ const EventInbox = require('./EventInbox');
 const EventReplayAudit = require('./EventReplayAudit');
 const PaymentAttempt = require('./PaymentAttempt');
 const ProviderEvent = require('./ProviderEvent');
+const PlatformRoleGrant = require('./PlatformRoleGrant');
+const AdminApprovalRequest = require('./AdminApprovalRequest');
+const BreakGlassGrant = require('./BreakGlassGrant');
+const SupportCase = require('./SupportCase');
+const SupportCaseLink = require('./SupportCaseLink');
+const SupportCaseNote = require('./SupportCaseNote');
+const SupportCaseAttachment = require('./SupportCaseAttachment');
+const SupportCaseEvent = require('./SupportCaseEvent');
+const SupportIdempotency = require('./SupportIdempotency');
+const InboxNotification = require('./InboxNotification');
+const NotificationPreference = require('./NotificationPreference');
+const NotificationDelivery = require('./NotificationDelivery');
+const NotificationDeliveryAttempt = require('./NotificationDeliveryAttempt');
+const NotificationSourceEvent = require('./NotificationSourceEvent');
 
 PaymentAttempt.hasMany(ProviderEvent, { foreignKey: 'paymentAttemptId', as: 'providerEvents' });
 ProviderEvent.belongsTo(PaymentAttempt, { foreignKey: 'paymentAttemptId', as: 'paymentAttempt' });
@@ -125,6 +139,9 @@ User.hasMany(UserSession, { foreignKey: "userId", as: "sessions" });
 UserSession.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 AuditLog.belongsTo(User, { foreignKey: "actorUserId", as: "actor" });
+PlatformRoleGrant.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(PlatformRoleGrant, { foreignKey: 'userId', as: 'platformRoleGrants' });
+BreakGlassGrant.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 
 module.exports = {
@@ -151,4 +168,18 @@ module.exports = {
   EventReplayAudit,
   PaymentAttempt,
   ProviderEvent,
+  PlatformRoleGrant,
+  AdminApprovalRequest,
+  BreakGlassGrant,
+  SupportCase,
+  SupportCaseLink,
+  SupportCaseNote,
+  SupportCaseAttachment,
+  SupportCaseEvent,
+  SupportIdempotency,
+  InboxNotification,
+  NotificationPreference,
+  NotificationDelivery,
+  NotificationDeliveryAttempt,
+  NotificationSourceEvent,
 };
