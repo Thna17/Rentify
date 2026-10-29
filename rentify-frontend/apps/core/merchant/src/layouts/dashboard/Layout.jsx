@@ -134,7 +134,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   const sidebarTabs = platformTabs.filter((tab) => !tab.hideInSidebar);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="merchant-dashboard flex h-screen bg-muted/30">
       {/* Desktop Sidebar */}
       {!isMobile && (
         <AppSidebar
@@ -170,7 +170,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <SiteHeader
           currentTab={currentTabData}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -183,7 +183,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
           hasPos={channels.hasPos}
         />
         
-        <main className="flex-1 overflow-auto bg-background scrollbar-subtle">
+        <main className="flex-1 overflow-auto bg-muted/30 scrollbar-subtle">
           {store?.entitlements?.isGracePeriod && (
             <SubscriptionNotice
               tone="warning"

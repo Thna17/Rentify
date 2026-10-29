@@ -62,7 +62,7 @@ export function SiteHeader({
 
   return (
     <>
-    <header className="flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 text-foreground backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-3 xl:max-w-sm">
         {(!isSidebarOpen || isMobile) && (
           <Button
@@ -90,7 +90,7 @@ export function SiteHeader({
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder="Search pages…"
-            className="w-full bg-card pl-10 pr-9 h-10 rounded-xl border-transparent [box-shadow:var(--shadow-soft)] text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
+            className="h-10 w-full rounded-lg bg-background pl-10 pr-9 text-sm shadow-none placeholder:text-muted-foreground/70 [&::-webkit-search-cancel-button]:hidden"
           />
           {searchFilter && (
             <button
@@ -157,7 +157,7 @@ export function SiteHeader({
             href={POS_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-3.5 text-[13px] font-semibold text-background transition-opacity hover:opacity-90"
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
             <MonitorSmartphone className="h-4 w-4" />
             <span className="hidden sm:inline">Open POS</span>
