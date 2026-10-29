@@ -268,7 +268,9 @@ const Onboarding = () => {
               {t('onboarding.ui.setupTitle')}
             </h1>
             <p className="mt-4 text-[14px] leading-relaxed text-white/60">
-              {t('onboarding.ui.setupSubtitle')}
+              {isKhmer
+                ? t('onboarding.ui.setupSubtitle')
+                : `${steps.length === 4 ? 'Four' : 'Five'} quick steps to get your business online.`}
             </p>
           </div>
 
@@ -326,7 +328,7 @@ const Onboarding = () => {
                 <div className="mt-1.5 flex items-center justify-between gap-2">
                   <p className="truncate text-[15px] font-semibold">{formData.package.name}</p>
                   <span className="shrink-0 rounded-full bg-emerald-400/15 px-2.5 py-0.5 text-[11px] font-medium text-emerald-300">
-                    {isPaidPlan ? `$${Number(formData.package.price).toFixed(2)}` : t('onboarding.ui.freeTrial')}
+                    {isPaidPlan ? `$${Number(formData.package.price).toFixed(2)}/mo` : 'Free'}
                   </span>
                 </div>
               </div>
