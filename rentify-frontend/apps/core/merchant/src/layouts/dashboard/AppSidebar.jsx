@@ -54,9 +54,9 @@ export function AppSidebar({
   const storeName = store?.name || 'Your store';
 
   const sidebarContent = (
-    <div className="flex h-full w-[260px] flex-col bg-card text-foreground select-none">
+    <aside className="flex h-full w-[272px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground select-none">
       {/* Brand */}
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-foreground text-background">
             <span className="text-[15px] font-bold">R</span>
@@ -78,9 +78,9 @@ export function AppSidebar({
       </div>
 
       {/* Store + channel status */}
-      <div className="mx-3 mt-4 rounded-2xl bg-muted/70 p-3">
+      <div className="mx-3 mt-2 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card text-[13px] font-semibold shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-[13px] font-semibold shadow-sm">
             {storeName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -104,7 +104,7 @@ export function AppSidebar({
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 py-5 scrollbar-subtle">
+      <div className="flex-1 overflow-y-auto px-3 py-4 scrollbar-subtle">
         <NavMain
           items={filteredTabs}
           currentTab={currentTab}
@@ -120,13 +120,13 @@ export function AppSidebar({
       <div className="px-3 pb-3">
         <NavUser user={userData} onLogout={onLogout} />
       </div>
-    </div>
+    </aside>
   );
 
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-[260px] p-0">
+        <SheetContent side="left" className="w-[272px] p-0">
           {sidebarContent}
         </SheetContent>
       </Sheet>
