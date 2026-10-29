@@ -48,7 +48,10 @@ export class AdminLayoutComponent {
   readonly currentLang = this.translate.currentLang;
 
   readonly nav = [
-    { label: 'Overview', items: [{ path: '/dashboard', icon: 'grid', label: 'Dashboard' }] },
+    { label: 'Overview', items: [
+      { path: '/dashboard', icon: 'grid', label: 'Dashboard' },
+      { path: '/analytics', icon: 'pulse', label: 'Analytics' },
+    ] },
     { label: 'Trust & Operations', items: [
       { path: '/support/cases', icon: 'flag', label: 'Support & disputes' },
       { path: '/operations/catalog', icon: 'shield', label: 'Catalog moderation' },

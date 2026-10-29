@@ -5534,6 +5534,38 @@ paths:
         "200":
           description: Overview metrics
       operationId: get_api_admin_operations_overview
+  /api/admin/operations/analytics:
+    get:
+      tags:
+        - Platform Operations
+      summary: Get privacy-safe Commerce journey and financial metrics
+      description: Returns versioned search, discovery, cart, checkout, fulfillment,
+        COD, refund, cancellation, return, moderation and outbox measures. COD GMV and
+        collected COD remain merchant-commerce metrics and are not Rentify revenue.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 30
+      responses:
+        "200":
+          description: Versioned Commerce analytics projection
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: true
+      operationId: get_api_admin_operations_analytics
   /api/admin/operations/moderation/queue:
     get:
       tags:
@@ -6142,6 +6174,63 @@ paths:
           description: Webhook received
       operationId: post_api_telegram_webhook
       security: []
+  /api/analytics/events:
+    post:
+      tags:
+        - Product Analytics
+      summary: Record an allowlisted privacy-safe product analytics event
+      description: Accepts only cataloged bounded dimensions and numeric measures.
+        Free-form search text, contact data, addresses, credentials and subject IDs
+        are rejected. Reusing an event ID is an idempotent success.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventName, properties]
+              additionalProperties: false
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                eventName:
+                  type: string
+                  enum:
+                    - marketplace.search_performed
+                    - marketplace.discovery_viewed
+                    - cart.item_added
+                    - cart.item_updated
+                    - checkout.started
+                    - checkout.failed
+                schemaVersion:
+                  type: string
+                  enum: [1.0.0]
+                storeId:
+                  type: string
+                  format: uuid
+                occurredAt:
+                  type: string
+                  format: date-time
+                properties:
+                  type: object
+                  additionalProperties: true
+                measures:
+                  type: object
+                  additionalProperties:
+                    type: number
+                    minimum: 0
+      responses:
+        "202":
+          description: Event accepted
+        "200":
+          description: Duplicate event accepted without a second record
+        "400":
+          description: Event is not cataloged or contains prohibited data
+        "429":
+          description: Telemetry rate limit exceeded
+      operationId: post_api_analytics_events
 components:
   securitySchemes:
     bearerAuth:

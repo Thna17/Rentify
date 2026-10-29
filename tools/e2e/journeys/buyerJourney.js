@@ -3,6 +3,39 @@
 const assert = require('node:assert/strict');
 const { BrowserSession } = require('../browserShell');
 
+const RESPONSIVE_LOCALE_PROFILES = [
+  { name: 'desktop-en', locale: 'en', viewport: { width: 1440, height: 900 } },
+  { name: 'desktop-km', locale: 'km', viewport: { width: 1440, height: 900 } },
+  { name: 'mobile-en', locale: 'en', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+  { name: 'mobile-km', locale: 'km', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+];
+
+async function verifyResponsiveLocales(url, artifactCollector) {
+  for (const profile of RESPONSIVE_LOCALE_PROFILES) {
+    const browser = new BrowserSession({ artifactCollector, ...profile });
+    try {
+      await browser.init(`marketplace-${profile.name}`);
+      await browser.context.addInitScript((locale) => localStorage.setItem('appLanguage', locale), profile.locale);
+      const response = await browser.goto(url);
+      assert.equal(response.ok, true, `${profile.name} marketplace must load`);
+      await browser.waitForSelector('app-navbar');
+      const state = await browser.evaluate(() => ({
+        lang: document.documentElement.lang,
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        navbarVisible: Boolean(document.querySelector('app-navbar')),
+      }));
+      assert.equal(state.lang, profile.locale, `${profile.name} must apply the selected locale`);
+      assert.equal(state.navbarVisible, true, `${profile.name} must render navigation`);
+      assert.ok(state.documentWidth <= state.viewportWidth + 1,
+        `${profile.name} must not introduce horizontal page overflow (${state.documentWidth} > ${state.viewportWidth})`);
+      await browser.screenshot(`phase-5-marketplace-${profile.name}`);
+    } finally {
+      await browser.close(`phase-5-marketplace-${profile.name}`);
+    }
+  }
+}
+
 async function runBuyerJourney({ serverManager, contractValidator, artifactCollector }) {
   const browser = new BrowserSession({ artifactCollector });
   const scenario = serverManager.scenario;
@@ -10,6 +43,10 @@ async function runBuyerJourney({ serverManager, contractValidator, artifactColle
 
   try {
     artifactCollector.recordConsole('Starting Public Buyer Journey (@buyer, @golden, @contract)...');
+
+    // Required release matrix: exercise the real marketplace in both supported
+    // languages at representative desktop and mobile sizes before the golden flow.
+    await verifyResponsiveLocales(urls.marketplace, artifactCollector);
 
     // 1. Open the Marketplace home page in Playwright
     const homeResult = await browser.goto(urls.marketplace);

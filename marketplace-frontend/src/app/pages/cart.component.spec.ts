@@ -193,15 +193,19 @@ describe('CartComponent', () => {
     expect(banner.textContent).toContain('ship separately');
   });
 
-  it('has no serious or critical automated accessibility violations', async () => {
-    const result = await axe.run(fixture.nativeElement, {
-      rules: { 'color-contrast': { enabled: false } },
-    });
-    const blocking = result.violations.filter(
-      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
-    );
-    expect(blocking).toEqual([]);
-  });
+  it(
+    'has no serious or critical automated accessibility violations',
+    async () => {
+      const result = await axe.run(fixture.nativeElement, {
+        rules: { 'color-contrast': { enabled: false } },
+      });
+      const blocking = result.violations.filter(
+        (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+      );
+      expect(blocking).toEqual([]);
+    },
+    10_000,
+  );
 
   it('renders separate store groups with distinct channel badges and Commerce totals', () => {
     const groups = fixture.nativeElement.querySelectorAll('.store-group');

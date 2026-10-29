@@ -877,6 +877,27 @@ export namespace Core {
         recoveryCodesRemaining?: number;
       };
     };
+    getCorePlatformAnalytics: {
+      method: 'GET';
+      path: '/admin/operations/analytics';
+      parameters: {
+        query?: {
+          days?: number;
+        };
+      };
+      response: {
+        data: {
+          activation: Record<string, any>;
+          catalogVersion: string;
+          generatedAt: string;
+          notificationReliability: Record<string, any>;
+          revenue: Record<string, any>;
+          subscriptions: Record<string, any>;
+          support: Record<string, any>;
+          window: Record<string, any>;
+        };
+      };
+    };
     getAdminOverview: {
       method: 'GET';
       path: '/admin/operations/overview';

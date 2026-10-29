@@ -1004,6 +1004,12 @@ findings are resolved or accepted with owner/date.
 **Purpose:** ensure real customers can be protected and supported after an order
 or account stops following the happy path.
 
+**Current integration status (2026-10-29): NOT COMPLETE.** Both Phase 5 lanes
+and P5-ANA-001 are integrated, but P5-SUB-001 and the production-readiness gaps
+recorded in
+[`docs/audits/phase-5-final-completion.md`](audits/phase-5-final-completion.md)
+still block the exit gate.
+
 ### P5 work packages
 
 #### P5-TRUST-001 — Restricted-product enforcement

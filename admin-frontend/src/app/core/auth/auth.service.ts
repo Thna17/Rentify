@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { catchError, finalize, map, Observable, of } from 'rxjs';
+import { catchError, finalize, map, Observable, of, switchMap } from 'rxjs';
 import {
   ApiError,
   AuthResponse,
@@ -24,15 +24,30 @@ export class AuthService {
   readonly isAuthenticated = computed(() => Boolean(this.userState()));
   readonly isAdmin = computed(() => {
     const role = this.userState()?.role?.toUpperCase();
-    return role === 'ADMIN';
+    return role === 'ADMIN' || Boolean(this.userState()?.claims?.length);
   });
+
+  private readonly permissionAliases: Record<string, string[]> = {
+    'ops:overview:read': ['platform.audit.read', 'finance.subscription.read', 'seller.application.read'],
+    'support:case:read': ['support.case.read'],
+    'support:case:write': ['support.case.update'],
+    'support:dispute:resolve': ['support.case.resolve'],
+    'catalog:moderate': ['catalog.product.hold', 'catalog.product.reject.approve', 'catalog.appeal.decide'],
+    'review:moderate': ['catalog.product.hold'],
+    'inventory:adjust': ['platform.role.manage.approve'],
+    'seller:review': ['seller.application.read', 'seller.decision.approve'],
+    'maker_checker:approve': ['seller.decision.approve', 'catalog.product.reject.approve',
+      'finance.subscription.transition.approve', 'finance.reconciliation.repair.approve',
+      'platform.role.manage.approve', 'platform.identity.change.approve'],
+  };
 
   hasPermission(claim: string): boolean {
     const user = this.userState();
     if (!user) return false;
     // Admins and operators consume scoped permissions; wildcard '*' grants all claims
     const claims = Array.isArray(user.claims) ? user.claims : [];
-    return claims.includes(claim) || claims.includes('*');
+    const accepted = [claim, ...(this.permissionAliases[claim] || [])];
+    return claims.includes('*') || accepted.some((candidate) => claims.includes(candidate));
   }
 
   canViewSupport(): boolean {
@@ -86,28 +101,17 @@ export class AuthService {
         { email, password, expectedRole: 'ADMIN', mfaToken, recoveryCode },
       )
       .pipe(
-        map((res) => {
+        switchMap((res) => {
           if (res?.data?.mfaRequired) {
-            return {
+            return of({
               message: res.message || 'MFA verification required',
               mfaRequired: true,
               mfaChallengeToken: res.data.mfaChallengeToken,
-            };
+            });
           }
-          const u = res?.data?.user;
-          const authUser: AuthUser = {
-            id: u?.id || '',
-            name: u?.name || 'Administrator',
-            email: u?.email || email,
-            phone: u?.phoneNumber || undefined,
-            role: (u?.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : u?.role || 'ADMIN') as UserRole,
-            status: 'ACTIVE',
-            mfaEnabled: Boolean(u?.mfaEnabled),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          this.setUser(authUser);
-          return { message: res.message || 'Login successful', user: authUser };
+          return this.hydratePlatformAccess(res?.data?.user, email).pipe(map((authUser) => ({
+            message: res.message || 'Login successful', user: authUser,
+          })));
         }),
       );
   }
@@ -119,22 +123,9 @@ export class AuthService {
         { mfaChallengeToken, mfaToken, recoveryCode },
       )
       .pipe(
-        map((res) => {
-          const u = res?.data?.user;
-          const authUser: AuthUser = {
-            id: u?.id || '',
-            name: u?.name || 'Administrator',
-            email: u?.email || '',
-            phone: u?.phoneNumber || undefined,
-            role: (u?.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : u?.role || 'ADMIN') as UserRole,
-            status: 'ACTIVE',
-            mfaEnabled: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          this.setUser(authUser);
-          return { message: res.message || 'MFA verified successfully', user: authUser };
-        }),
+        switchMap((res) => this.hydratePlatformAccess(res?.data?.user, '', true).pipe(map((authUser) => ({
+          message: res.message || 'MFA verified successfully', user: authUser,
+        })))),
       );
   }
 
@@ -160,25 +151,31 @@ export class AuthService {
     }
 
     return this.rentify.session().pipe(
-      map(({ user }) => {
+      switchMap(({ user }) => {
         if (!user) {
           this.userState.set(null);
           this.checkedState.set(true);
-          return null;
+          return of(null);
         }
-        const authUser: AuthUser = {
-          id: user.id,
-          name: user.name,
-          email: user.email || '',
-          phone: user.phoneNumber || undefined,
-          role: (user.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : user.role) as UserRole,
-          status: 'ACTIVE',
-          mfaEnabled: Boolean(user.mfaEnabled),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        this.setUser(authUser);
-        return authUser;
+        return this.http.get<{ data: { roles: string[]; permissions: string[] } }>(
+          `${this.rentify.core}/admin/access/me`,
+        ).pipe(map(({ data }) => {
+          const authUser: AuthUser = {
+            id: user.id,
+            name: user.name,
+            email: user.email || '',
+            phone: user.phoneNumber || undefined,
+            role: (user.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : user.role) as UserRole,
+            status: 'ACTIVE',
+            mfaEnabled: Boolean(user.mfaEnabled),
+            claims: data.permissions || [],
+            platformRoles: data.roles || [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          this.setUser(authUser);
+          return authUser;
+        }));
       }),
       catchError(() => {
         this.userState.set(null);
@@ -196,6 +193,28 @@ export class AuthService {
   setUser(user: AuthUser | null) {
     this.userState.set(user);
     this.checkedState.set(true);
+  }
+
+  private hydratePlatformAccess(user: any, fallbackEmail = '', mfaVerified?: boolean): Observable<AuthUser> {
+    return this.http.get<{ data: { roles: string[]; permissions: string[] } }>(
+      `${this.rentify.core}/admin/access/me`,
+    ).pipe(map(({ data }) => {
+      const authUser: AuthUser = {
+        id: user?.id || '',
+        name: user?.name || 'Administrator',
+        email: user?.email || fallbackEmail,
+        phone: user?.phoneNumber || undefined,
+        role: (user?.role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : user?.role) as UserRole,
+        status: 'ACTIVE',
+        mfaEnabled: mfaVerified ?? Boolean(user?.mfaEnabled),
+        claims: data.permissions || [],
+        platformRoles: data.roles || [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      this.setUser(authUser);
+      return authUser;
+    }));
   }
 
   // --- Privileged Security & Session Controls (P2-SEC-001) ---

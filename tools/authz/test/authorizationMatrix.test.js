@@ -37,11 +37,20 @@ test('P2-AUTHZ-001 Acceptance: Matrix schema, operations count, and structural c
 
   assert.equal(result.valid, true, `Matrix should be valid: ${result.errors.join(', ')}`);
   assert.equal(result.errors.length, 0);
-  assert.equal(result.totalOperations, 310, 'Expected exactly 310 operations (118 Core + 192 Commerce)');
-  assert.equal(result.coreOperationsCount, 118, 'Core operations count must be 118');
-  assert.equal(result.commerceOperationsCount, 192, 'Commerce operations count must be 192');
+  const operationCount = (spec) => Object.values(spec.paths || {}).reduce(
+    (count, item) => count + ['get', 'post', 'put', 'patch', 'delete'].filter((method) => item[method]).length,
+    0,
+  );
+  const coreSpec = yaml.parse(fs.readFileSync(path.resolve(rootDir, 'docs/openapi/core.openapi.yaml'), 'utf8'));
+  const commerceSpec = yaml.parse(fs.readFileSync(path.resolve(rootDir, 'docs/openapi/commerce.openapi.yaml'), 'utf8'));
+  const expectedCore = operationCount(coreSpec);
+  const expectedCommerce = operationCount(commerceSpec);
+  assert.equal(result.totalOperations, expectedCore + expectedCommerce,
+    'Matrix operation count must equal the versioned OpenAPI contracts');
+  assert.equal(result.coreOperationsCount, expectedCore, 'Core operation count must match OpenAPI');
+  assert.equal(result.commerceOperationsCount, expectedCommerce, 'Commerce operation count must match OpenAPI');
 
-  // Assert all 11 required actors are defined
+  // Assert every required actor is defined.
   for (const actor of REQUIRED_ACTORS) {
     assert.ok(result.matrix.actors[actor], `Actor "${actor}" must be defined`);
   }

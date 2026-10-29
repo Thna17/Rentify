@@ -23,6 +23,39 @@ export class CommerceApiClient {
   }
 
   /**
+   * Get privacy-safe Commerce journey and financial metrics
+   * GET /api/admin/operations/analytics
+   */
+  async get_api_admin_operations_analytics(options: {
+    query?: {
+      days?: number;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data: Record<string, any>;
+    }>> {
+    return this.transport.request<{
+      data: Record<string, any>;
+    }>({
+      method: 'GET',
+      path: '/api/admin/operations/analytics',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_operations_analytics */
+  async getApiAdminOperationsAnalytics(options: any = {}): Promise<ApiResponse<{
+      data: Record<string, any>;
+    }>> {
+    return (this as any).get_api_admin_operations_analytics(options);
+  }
+
+  /**
    * Privileged administrative inventory adjustment
    * POST /api/admin/operations/inventory/adjust
    */
@@ -449,6 +482,39 @@ export class CommerceApiClient {
   /** Alias for get_api_admin_operations_resource */
   async getApiAdminOperationsResource(options: any): Promise<ApiResponse<any>> {
     return (this as any).get_api_admin_operations_resource(options);
+  }
+
+  /**
+   * Record an allowlisted privacy-safe product analytics event
+   * POST /api/analytics/events
+   */
+  async post_api_analytics_events(options: {
+    body: {
+      eventId?: string;
+      eventName: "marketplace.search_performed" | "marketplace.discovery_viewed" | "cart.item_added" | "cart.item_updated" | "checkout.started" | "checkout.failed";
+      measures?: Record<string, number>;
+      occurredAt?: string;
+      properties: Record<string, any>;
+      schemaVersion?: "1.0.0";
+      storeId?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/analytics/events',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_analytics_events */
+  async postApiAnalyticsEvents(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_analytics_events(options);
   }
 
   /**

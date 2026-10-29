@@ -9,6 +9,7 @@
     "ProductImportJob": ["store-catalog"],
     "ProductModerationHistory": ["catalog", "store-catalog"],
     "BuyerReport": ["support", "checkout", "orders", "admin"],
+    "ProductAnalyticsEvent": ["analytics"],
     "StoreDeliveryPolicy": ["checkout"],
     "Cart": ["cart"],
     "CartItem": ["cart"],

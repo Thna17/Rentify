@@ -8,6 +8,7 @@ const sellerReviewController = require('../stores').sellerReviewController;
 const operations = require('./platformOperationsController');
 const security = require('./adminSecurityController');
 const access = require('./adminAccessController');
+const analytics = require('../analytics').analyticsController;
 const { APPROVAL_ACTION_BY_NAME, permissionForStoreUpdate } = require('../../config/platformAuthorization');
 const safe = (handler) => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 
@@ -46,6 +47,7 @@ router.post('/break-glass', permission('platform.break_glass.use', platformScope
 router.delete('/break-glass/:grantId', permission('platform.break_glass.use', platformScope), requireRecentAuth, requireMfaVerified, safe(access.revokeBreakGlass));
 
 router.get('/operations/overview', permission(['platform.audit.read', 'finance.subscription.read', 'seller.application.read'], platformScope), safe(operations.overview));
+router.get('/operations/analytics', permission(['platform.audit.read', 'finance.subscription.read'], platformScope), safe(analytics.dashboard));
 router.get('/operations/:resource', requireResourceRead, safe(operations.list));
 router.patch('/operations/stores/:storeId', (req, res, next) =>
   permission(permissionForStoreUpdate(req.body), storeScope)(req, res, next),

@@ -386,6 +386,50 @@ export class CoreApiClient {
   }
 
   /**
+   * Get privacy-safe Core operational and subscription metrics
+   * GET /admin/operations/analytics
+   */
+  async getCorePlatformAnalytics(options: {
+    query?: {
+      days?: number;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      data: {
+        activation: Record<string, any>;
+        catalogVersion: string;
+        generatedAt: string;
+        notificationReliability: Record<string, any>;
+        revenue: Record<string, any>;
+        subscriptions: Record<string, any>;
+        support: Record<string, any>;
+        window: Record<string, any>;
+      };
+    }>> {
+    return this.transport.request<{
+      data: {
+        activation: Record<string, any>;
+        catalogVersion: string;
+        generatedAt: string;
+        notificationReliability: Record<string, any>;
+        revenue: Record<string, any>;
+        subscriptions: Record<string, any>;
+        support: Record<string, any>;
+        window: Record<string, any>;
+      };
+    }>({
+      method: 'GET',
+      path: '/admin/operations/analytics',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Platform administrator overview counts
    * GET /admin/operations/overview
    */

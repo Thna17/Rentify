@@ -8,6 +8,7 @@ const sessions = () => import('./pages/sessions.component').then((m) => m.Sessio
 const supportWorkspace = () => import('./pages/support/support-workspace.component').then((m) => m.SupportWorkspaceComponent);
 const catalogModeration = () => import('./pages/moderation/catalog-moderation.component').then((m) => m.CatalogModerationComponent);
 const makerChecker = () => import('./pages/maker-checker/maker-checker.component').then((m) => m.MakerCheckerComponent);
+const analytics = () => import('./pages/analytics/platform-analytics.component').then((m) => m.PlatformAnalyticsComponent);
 
 const sections = ['stores', 'users', 'websites', 'templates', 'subscriptions', 'packages',
   'plan-payments', 'products', 'orders', 'payments', 'reviews', 'billing'];
@@ -16,6 +17,7 @@ export const routes: Routes = [
   { path: '', canActivate: [adminGuard], component: AdminLayoutComponent, children: [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     { path: 'dashboard', loadComponent: operations, data: { section: 'dashboard' }, title: 'Overview | Rentify Admin' },
+    { path: 'analytics', loadComponent: analytics, title: 'Platform Analytics | Rentify Admin' },
     { path: 'security', loadComponent: security, title: 'Security & MFA | Rentify Admin' },
     { path: 'sessions', loadComponent: sessions, title: 'Active Sessions | Rentify Admin' },
 

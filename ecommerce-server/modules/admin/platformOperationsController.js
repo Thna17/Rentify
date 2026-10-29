@@ -86,6 +86,11 @@ exports.overview = async (_req, res) => {
     openMarketplaceOrders, flaggedReviews, buyerReports } });
 };
 
+exports.analytics = async (req, res) => {
+  const { createPlatformMetricsService } = require('../analytics').platformMetricsService;
+  res.json({ data: await createPlatformMetricsService().getDashboard(req.query) });
+};
+
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
   const { marketplaceVisibility, status, moderationStatus, stockQuantity, delta, reason, evidence } = req.body || {};

@@ -3,6 +3,23 @@ const { RENTIFY_API_BASE } = require('../../config/serviceUrls');
 const cookieConfig = require('../../config/cookieConfig');
 const { ApiError, formatErrorEnvelope } = require('../../utils/ApiError');
 
+// Temporary compatibility names used by the Phase 5 Commerce/Admin lane map
+// to the canonical Core permission contract. Core-issued dot permissions are
+// authoritative; callers never gain a permission merely by naming an alias.
+const PERMISSION_ALIASES = Object.freeze({
+  'ops:overview:read': ['platform.audit.read', 'finance.subscription.read', 'seller.application.read'],
+  'support:case:read': ['support.case.read'],
+  'support:case:write': ['support.case.update'],
+  'support:dispute:resolve': ['support.case.resolve'],
+  'catalog:moderate': ['catalog.product.hold', 'catalog.product.reject.approve', 'catalog.appeal.decide'],
+  'review:moderate': ['catalog.product.hold'],
+  'inventory:adjust': ['platform.role.manage.approve'],
+  'seller:review': ['seller.application.read', 'seller.decision.approve'],
+  'maker_checker:approve': ['seller.decision.approve', 'catalog.product.reject.approve',
+    'finance.subscription.transition.approve', 'finance.reconciliation.repair.approve',
+    'platform.role.manage.approve', 'platform.identity.change.approve'],
+});
+
 const sendError = (res, req, apiError) => {
   const { statusCode, body } = formatErrorEnvelope(apiError, req);
   res.setHeader?.('X-Correlation-ID', body.error.correlationId);
@@ -61,7 +78,8 @@ const requireAdminPermission = (requiredClaim) => (req, res, next) => {
   }
   const claims = Array.isArray(req.user.claims) ? req.user.claims : [];
   // Super admin role or wildcard '*' grants full access
-  if (req.user.role === 'super_admin' || claims.includes('*') || claims.includes(requiredClaim)) {
+  const accepted = [requiredClaim, ...(PERMISSION_ALIASES[requiredClaim] || [])];
+  if (req.user.role === 'super_admin' || claims.includes('*') || accepted.some((claim) => claims.includes(claim))) {
     return next();
   }
   return sendError(res, req, ApiError.forbidden(
@@ -74,4 +92,5 @@ module.exports = {
   verifyCoreAdmin: createVerifyCoreAdmin(),
   createVerifyCoreAdmin,
   requireAdminPermission,
+  PERMISSION_ALIASES,
 };

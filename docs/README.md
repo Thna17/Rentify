@@ -89,6 +89,9 @@ code so implementation work can proceed without relying on chat history.
   Rentify-only local setup, seller approval check, and buyer journey.
 - [Phase 5 release runbook](phase-5-release-runbook.md) — inventory, parity
   audits, staged release evidence, and retirement gates.
+- [Phase 5 final integration audit](audits/phase-5-final-completion.md) — merged
+  lane evidence, P5 analytics definitions, acceptance mapping, verification,
+  and the remaining blockers that keep the phase marked NOT COMPLETE.
 - [Notes and open questions](notes.md) — verified observations, unresolved
   choices, and items requiring product decisions.
 - [Platform admin operations](admin-operations.md) — live admin scope,
