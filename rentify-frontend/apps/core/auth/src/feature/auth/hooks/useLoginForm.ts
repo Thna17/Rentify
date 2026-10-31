@@ -242,7 +242,13 @@ export const useLoginForm = () => {
       setSuccess('login.success');
       window.location.assign(destination);
     } catch (err: any) {
-      setError('error.telegramLogin');
+      console.error('Telegram login failed:', err);
+      const apiMessage = err?.data?.error || err?.data?.message || err?.message;
+      if (apiMessage && typeof apiMessage === 'string' && !apiMessage.toLowerCase().includes('failed to fetch')) {
+        setError(apiMessage);
+      } else {
+        setError('error.telegramLogin');
+      }
     } finally {
       setLoading(false);
     }

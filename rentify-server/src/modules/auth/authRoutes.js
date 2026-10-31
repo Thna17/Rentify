@@ -19,6 +19,19 @@ const validateReturnUrl = (body = {}) => {
   if (candidate) resolveReturnUrl(candidate);
 };
 
+const userHasStore = async (userId, transaction) => {
+  const storeCount = await Store.count({
+    where: { ownerUserId: userId },
+    ...(transaction ? { transaction } : {}),
+  });
+  if (storeCount > 0) return true;
+  const websiteCount = await Website.count({
+    where: { userId },
+    ...(transaction ? { transaction } : {}),
+  });
+  return websiteCount > 0;
+};
+
 const asyncHandler = (fn) => async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
@@ -49,6 +62,7 @@ router.get(['/session', '/me'], verifyToken, async (req, res) => {
           websiteId: staff.websiteId,
           merchantId: staff.merchantId,
           permissions: staff.permissions,
+          hasStore: true,
         },
       });
     }
@@ -56,7 +70,13 @@ router.get(['/session', '/me'], verifyToken, async (req, res) => {
       attributes: ['id', 'name', 'email', 'phoneNumber', 'role', 'isVerified', 'mfaEnabled'],
     });
     if (!user) return res.status(401).json({ error: 'Session is no longer valid' });
-    return res.json({ user });
+    const hasStore = await userHasStore(user.id);
+    return res.json({
+      user: {
+        ...user.toJSON(),
+        hasStore,
+      },
+    });
   } catch (_error) {
     return res.status(500).json({ error: 'Could not load session' });
   }
@@ -92,11 +112,7 @@ router.post(
   transactionHandler(async (req, res, transaction) => {
     validateReturnUrl(req.body);
     const result = await userAuthService.verifyOtp(req.body, transaction);
-    const [storeCount, websiteCount] = await Promise.all([
-      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
-      Website.count({ where: { userId: result.entity.id }, transaction }),
-    ]);
-    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
+    const hasStore = await userHasStore(result.entity.id, transaction);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -182,11 +198,7 @@ router.post(
     // The Auth app needs this single, non-sensitive fact to choose a post-login
     // destination. It avoids a client-side follow-up request that can race the
     // cross-origin session cookie being set.
-    const [storeCount, websiteCount] = await Promise.all([
-      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
-      Website.count({ where: { userId: result.entity.id }, transaction }),
-    ]);
-    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
+    const hasStore = await userHasStore(result.entity.id, transaction);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -216,11 +228,7 @@ router.post(
       req,
       transaction,
     });
-    const [storeCount, websiteCount] = await Promise.all([
-      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
-      Website.count({ where: { userId: result.entity.id }, transaction }),
-    ]);
-    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
+    const hasStore = await userHasStore(result.entity.id, transaction);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -251,11 +259,7 @@ router.post(
       authData: req.body?.authData || req.body,
       transaction,
     });
-    const [storeCount, websiteCount] = await Promise.all([
-      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
-      Website.count({ where: { userId: result.entity.id }, transaction }),
-    ]);
-    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
+    const hasStore = await userHasStore(result.entity.id, transaction);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
