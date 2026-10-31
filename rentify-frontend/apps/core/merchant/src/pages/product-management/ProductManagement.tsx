@@ -128,27 +128,27 @@ const STATUS_FILTERS: Record<string, StatusFilterConfig> = {
   [PRODUCT_STATUS.ALL]: {
     label: 'dashboard.product.all_products',
     icon: <IconPackage className="h-4 w-4" />,
-    color: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+    color: 'bg-muted text-foreground hover:bg-muted',
   },
   [PRODUCT_STATUS.ACTIVE]: {
     label: 'dashboard.product.active',
-    color: 'bg-green-100 text-green-700 hover:bg-green-200',
+    color: 'bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] hover:bg-[var(--rentify-color-success-subtle)]',
   },
   [PRODUCT_STATUS.INACTIVE]: {
     label: 'dashboard.product.inactive',
-    color: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+    color: 'bg-muted text-foreground hover:bg-muted',
   },
   [PRODUCT_STATUS.LOW_STOCK]: {
     label: 'dashboard.product.low_stock',
-    color: 'bg-amber-100 text-amber-700 hover:bg-amber-200',
+    color: 'bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] hover:bg-[var(--rentify-color-warning-subtle)]',
   },
   [PRODUCT_STATUS.OUT_OF_STOCK]: {
     label: 'dashboard.product.out_of_stock',
-    color: 'bg-red-100 text-red-700 hover:bg-red-200',
+    color: 'bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)] hover:bg-[var(--rentify-color-danger-subtle)]',
   },
   [PRODUCT_STATUS.ARCHIVED]: {
     label: 'dashboard.product.archived',
-    color: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+    color: 'bg-accent text-primary-strong hover:bg-accent',
   },
 };
 
@@ -382,7 +382,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
                 e.stopPropagation();
                 table.getToggleAllPageRowsSelectedHandler()(e);
               }}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
           </div>
         ),
@@ -408,7 +408,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
                     toggleRowExpand(product.id, product, e as any);
                   }
                 }}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
               />
             </div>
           );
@@ -521,7 +521,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
           return (
             <div className="flex flex-wrap justify-center gap-1.5">
               {badges.onMarketplace && (
-                <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <Badge variant="secondary" className="text-xs bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] border-[var(--rentify-color-success-border)]">
                   Market ✓
                 </Badge>
               )}
@@ -648,7 +648,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
       <div className="flex items-start justify-between gap-3">
         {/* Product Image */}
         <div className="relative flex-shrink-0">
-          <div className="relative h-16 w-16 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden shadow-sm">
+          <div className="relative h-16 w-16 rounded-xl bg-gradient-to-br from-muted to-muted flex items-center justify-center overflow-hidden shadow-sm">
             {product.images?.[0]?.url ? (
               <img
                 src={product.images[0].url}
@@ -657,8 +657,8 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
               />
             ) : (
               <div className="flex flex-col items-center justify-center">
-                <IconPackage className="h-6 w-6 text-gray-400" />
-                <span className="text-[10px] text-gray-400 mt-1">{t('merchant.p.noImage')}</span>
+                <IconPackage className="h-6 w-6 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground mt-1">{t('merchant.p.noImage')}</span>
               </div>
             )}
           </div>
@@ -667,12 +667,12 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
           <div
             className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
               product.status === PRODUCT_STATUS.ACTIVE
-                ? 'bg-green-500'
+                ? 'bg-[var(--rentify-color-success-base)]'
                 : product.status === PRODUCT_STATUS.LOW_STOCK
-                ? 'bg-amber-500'
+                ? 'bg-[var(--rentify-color-warning-base)]'
                 : product.status === PRODUCT_STATUS.OUT_OF_STOCK
-                ? 'bg-red-500'
-                : 'bg-gray-400'
+                ? 'bg-[var(--rentify-color-danger-base)]'
+                : 'bg-muted-foreground'
             }`}
           />
         </div>
@@ -680,10 +680,10 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         {/* Product Info */}
         <div className="flex-1 min-w-0 space-y-2">
           <div>
-            <h4 className="font-semibold text-sm text-gray-900 truncate leading-tight">
+            <h4 className="font-semibold text-sm text-foreground truncate leading-tight">
               {product.name}
             </h4>
-            <p className="text-xs text-gray-500 truncate mt-0.5">
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
               {product.sku || 'No SKU'}
             </p>
           </div>
@@ -702,10 +702,10 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
               <div
                 className={`px-2 py-1 rounded-lg text-xs font-medium ${
                   product.stockQuantity === 0
-                    ? 'bg-red-50 text-red-700'
+                    ? 'bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)]'
                     : product.stockQuantity < 10
-                    ? 'bg-amber-50 text-amber-700'
-                    : 'bg-green-50 text-green-700'
+                    ? 'bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]'
+                    : 'bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)]'
                 }`}
               >
                 {product.stockQuantity} in stock
@@ -717,7 +717,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
           <div className="flex items-center justify-between">
             <Badge
               variant="outline"
-              className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-gray-200 text-gray-600"
+              className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-border text-muted-foreground"
             >
               {product.Category?.name || t('dashboard.product.uncategorized')}
             </Badge>
@@ -734,19 +734,19 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         <Button
           variant="ghost"
           size="icon"
-          className="flex-shrink-0 h-8 w-8 rounded-lg bg-white/50 backdrop-blur-sm border border-gray-200 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200"
+          className="flex-shrink-0 h-8 w-8 rounded-lg bg-white/50 backdrop-blur-sm border border-border hover:border-primary/30 hover:bg-primary/5 transition-all duration-200"
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
             handleProductAction('view', product);
           }}
         >
-          <IconEye className="h-4 w-4 text-gray-600" />
+          <IconEye className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>
 
       {/* Channel tags */}
       <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
-        {badges.onMarketplace && <Badge variant="secondary" className="text-[11px] bg-emerald-50 text-emerald-800 border-emerald-200">Market ✓</Badge>}
+        {badges.onMarketplace && <Badge variant="secondary" className="text-[11px] bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] border-[var(--rentify-color-success-border)]">Market ✓</Badge>}
         {badges.onStorefront && <Badge variant="outline" className="text-[11px]">Store ✓</Badge>}
         {badges.isOutOfStock && <Badge variant="destructive" className="text-[11px]">Out of stock</Badge>}
         {badges.isHidden && <Badge variant="outline" className="text-[11px] text-muted-foreground border-dashed">Hidden</Badge>}
@@ -888,19 +888,19 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
       ) : (
      <div className="p-4 sm:p-6 md:p-8 space-y-5">
         {disabledReason && !isGracePeriod && !isSuspended && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] p-4 text-xs sm:text-sm text-[var(--rentify-color-warning-text)] shadow-sm">
             <div className="flex items-center gap-2">
-              <IconAlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+              <IconAlertTriangle className="h-5 w-5 shrink-0 text-[var(--rentify-color-warning-text)]" />
               <span>{disabledReason}</span>
             </div>
-            <Button asChild size="sm" variant="outline" className="border-amber-400 bg-white hover:bg-amber-100 text-amber-900">
+            <Button asChild size="sm" variant="outline" className="border-[var(--rentify-color-warning-border)] bg-card hover:bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]">
               <a href="/settings/billing">{t('merchant.p.upgradePlan')}</a>
             </Button>
           </div>
         )}
         {/* Optimistic Lock Alert */}
         {optimisticLockData && (
-          <Alert variant="default" className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-600 dark:border-amber-500 [&>svg]:text-amber-600">
+          <Alert variant="default" className="mb-4 border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] [&>svg]:text-[var(--rentify-color-warning-text)]">
             <IconAlertTriangle className="h-4 w-4" />
             <AlertTitle>
               {t('dashboard.product.optimistic_lock_title')}

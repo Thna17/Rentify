@@ -32,7 +32,7 @@ export default function StoreCategoryPrompt({ store, onStoreChange }) {
   }
 
   if (!store?.needsCategoryReview) return null;
-  return <form onSubmit={save} className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4">
+  return <form onSubmit={save} className="mb-4 rounded-xl border border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] p-4">
     <label htmlFor="website-store-category" className="block font-semibold">Choose your Store’s primary category</label>
     <p className="mt-1 text-sm">This lets Rentify classify your Store for marketplace listings. Your products can use more specific categories.</p>
     <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -41,7 +41,7 @@ export default function StoreCategoryPrompt({ store, onStoreChange }) {
         <option value="">Choose a category</option>
         {categories.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
-      <button disabled={busy || !category} className="rounded-lg bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Save category</button>
+      <button disabled={busy || !category} className="rounded-lg bg-primary px-4 py-2 text-white disabled:opacity-50">Save category</button>
     </div>
     {message && <p role="status" className="mt-2 text-sm">{message}</p>}
   </form>;

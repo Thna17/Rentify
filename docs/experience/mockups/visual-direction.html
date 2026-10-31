@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visual direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Visual direction (ui-ux-design phase 5): the merchant dashboard as it is today ("Current blue")
+   next to the approved brand ("Jade & Saffron", packages/design-tokens v1, docs/experience/02).
+   Real data: NexTech Electronics on the local seed (2026-11-01). Structure is the shipped redesign. */
+:root {
+  --page: #e9e7e2; --chrome: #1d2126; --chrome-fg: #f2f2ef;
+}
+/* ---------- Current blue (apps/core/merchant/src/styles.css today) ---------- */
+[data-theme="blue"][data-mode="light"] {
+  --bg: #f9fafb; --card: #ffffff; --text: #181b1f; --text2: #3f444a; --muted: #66696f; --border: #dee2e5; --border-strong: #c9ced3; --border-input: #dee2e5;
+  --primary: #0e6ee6; --primary-fg: #ffffff; --primary-subtle: #e8f0fd;
+  --nav-active-bg: #0e6ee6; --nav-active-fg: #ffffff; --nav-fg: #4b5157;
+  --chip-on-bg: #181b1f; --chip-on-fg: #ffffff; --count-bg: #eef1f4; --count-fg: #181b1f;
+  --succ-bg: #e6f6ee; --succ-fg: #047857; --warn-bg: #fff3e0; --warn-fg: #b45309; --danger-bg: #fdecec; --danger-fg: #b91c1c; --info-bg: #e8f1fd; --info-fg: #1d5fb8;
+  --lowstock: #f77f00; --banner-bg: #fbe9ea; --banner-fg: #8a1c2b; --banner-btn: #8a1c2b; --banner-btn-fg: #ffffff;
+  --ch-market-bg: #fef3c7; --ch-market-fg: #b45309; --ch-store-bg: #e0f2fe; --ch-store-fg: #0369a1; --ch-pos-bg: #ede9fe; --ch-pos-fg: #6d28d9;
+}
+[data-theme="blue"][data-mode="dark"] {
+  --bg: #090909; --card: #121212; --text: #e4e4e4; --text2: #b9bcbf; --muted: #7a8185; --border: #2c3236; --border-strong: #3b4247; --border-input: #2c3236;
+  --primary: #00b7ff; --primary-fg: #090909; --primary-subtle: #0b2633;
+  --nav-active-bg: #00b7ff; --nav-active-fg: #090909; --nav-fg: #a5aaae;
+  --chip-on-bg: #e4e4e4; --chip-on-fg: #090909; --count-bg: #22272b; --count-fg: #e4e4e4;
+  --succ-bg: #0f2a1d; --succ-fg: #34d399; --warn-bg: #2b1d0a; --warn-fg: #f59e0b; --danger-bg: #2c1414; --danger-fg: #f87171; --info-bg: #0f1e33; --info-fg: #60a5fa;
+  --lowstock: #f77f00; --banner-bg: #2c1414; --banner-fg: #fca5a5; --banner-btn: #b91c1c; --banner-btn-fg: #ffffff;
+  --ch-market-bg: #2b1d0a; --ch-market-fg: #fbbf24; --ch-store-bg: #0c2633; --ch-store-fg: #38bdf8; --ch-pos-bg: #1e1633; --ch-pos-fg: #a78bfa;
+}
+/* ---------- Jade & Saffron (packages/design-tokens/index.css, tokens only) ---------- */
+[data-theme="jade"][data-mode="light"] {
+  --bg: #faf8f4; --card: #ffffff; --text: #111418; --text2: #4a4f57; --muted: #666a72; --border: #ece8e1; --border-strong: #ddd8cf; --border-input: #8b867d;
+  --primary: #0e6b5c; --primary-fg: #ffffff; --primary-subtle: #e3f2ee;
+  --nav-active-bg: #e3f2ee; --nav-active-fg: #0a5549; --nav-fg: #4a4f57;
+  --chip-on-bg: #0e6b5c; --chip-on-fg: #ffffff; --count-bg: #f2a516; --count-fg: #111418;
+  --succ-bg: #eaf6ee; --succ-fg: #14532d; --warn-bg: #fef5e7; --warn-fg: #78350f; --danger-bg: #fdecea; --danger-fg: #7f1d1d; --info-bg: #eaf1fb; --info-fg: #1e3a8a;
+  --lowstock: #78350f; --banner-bg: #fdecea; --banner-fg: #7f1d1d; --banner-btn: #c2261c; --banner-btn-fg: #ffffff;
+  --ch-market-bg: #f3f0ea; --ch-market-fg: #4a4f57; --ch-store-bg: #f3f0ea; --ch-store-fg: #4a4f57; --ch-pos-bg: #f3f0ea; --ch-pos-fg: #4a4f57;
+}
+[data-theme="jade"][data-mode="dark"] {
+  --bg: #0f1215; --card: #161a1f; --text: #f2f2ef; --text2: #c3c6cb; --muted: #8e939b; --border: #22272e; --border-strong: #2a3038; --border-input: #6b727c;
+  --primary: #2fa58e; --primary-fg: #0f1215; --primary-subtle: #14302b;
+  --nav-active-bg: #14302b; --nav-active-fg: #4fc7ae; --nav-fg: #c3c6cb;
+  --chip-on-bg: #2fa58e; --chip-on-fg: #0f1215; --count-bg: #f5b83d; --count-fg: #111418;
+  --succ-bg: #12261a; --succ-fg: #86efac; --warn-bg: #2a1f0a; --warn-fg: #fcd34d; --danger-bg: #2c1414; --danger-fg: #fca5a5; --info-bg: #0f1e33; --info-fg: #93c5fd;
+  --lowstock: #fcd34d; --banner-bg: #2c1414; --banner-fg: #fca5a5; --banner-btn: #f87171; --banner-btn-fg: #0f1215;
+  --ch-market-bg: #1e232a; --ch-market-fg: #c3c6cb; --ch-store-bg: #1e232a; --ch-store-fg: #c3c6cb; --ch-pos-bg: #1e232a; --ch-pos-fg: #c3c6cb;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: #111418; font-family: 'Kantumruy Pro', ui-sans-serif, system-ui, sans-serif; }
+.bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; background: var(--chrome); color: var(--chrome-fg); }
+.bar b { font-size: 14px; margin-right: 4px; }
+.seg { display: inline-flex; border: 1px solid #3a414b; border-radius: 10px; overflow: hidden; }
+.seg button { min-height: 36px; padding: 0 12px; border: 0; background: transparent; color: var(--chrome-fg); font: inherit; font-size: 13px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--chrome-fg); color: var(--chrome); font-weight: 600; }
+.stage { scroll-margin-top: 60px; display: flex; flex-wrap: wrap; gap: 24px; padding: 24px 16px; justify-content: center; align-items: flex-start; }
+.frame { background: var(--bg); color: var(--text); border-radius: 18px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,.18); }
+.frame.desk { width: min(1180px, 100%); height: 760px; display: flex; flex-direction: column; }
+.frame.phone { width: 375px; max-width: 100%; height: 780px; display: flex; flex-direction: column; border: 8px solid #111; }
+.cap { width: 100%; text-align: center; font-size: 13px; color: #4a4f57; margin: -12px 0 0; }
+
+/* app chrome */
+.hdr { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 16px; background: var(--card); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.mark { width: 30px; height: 30px; border-radius: 9px; background: var(--text); color: var(--card); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+[data-theme="jade"] .mark { background: var(--primary); color: var(--primary-fg); }
+.brand { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 15px; }
+.brand small { font-weight: 500; color: var(--muted); font-size: 13px; }
+.search { flex: 1; max-width: 460px; margin: 0 auto; height: 38px; border: 1px solid var(--border-input); border-radius: 10px; display: flex; align-items: center; padding: 0 12px; color: var(--muted); font-size: 13px; background: var(--card); }
+.ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: var(--text2); }
+.avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-strong); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--primary); }
+.body { flex: 1; min-height: 0; display: flex; }
+.side { width: 220px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--card); padding: 12px 10px; overflow: auto; }
+.side h6 { margin: 14px 10px 4px; font-size: 11px; font-weight: 500; color: var(--muted); }
+.nav { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 13.5px; color: var(--nav-fg); }
+.nav.on { background: var(--nav-active-bg); color: var(--nav-active-fg); font-weight: 600; }
+.nav .n { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--count-bg); color: var(--count-fg); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.nav .dot { width: 16px; height: 16px; border-radius: 4px; border: 1.6px solid currentColor; opacity: .6; }
+.main { flex: 1; min-width: 0; overflow: auto; padding: 20px 24px; }
+.phone .main { padding: 16px; }
+.bottom { display: flex; border-top: 1px solid var(--border); background: var(--card); flex-shrink: 0; }
+.bottom a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 10px; font-size: 11px; color: var(--muted); }
+.bottom a.on { color: var(--primary); font-weight: 600; }
+.bottom .dot { width: 18px; height: 18px; border-radius: 5px; border: 1.6px solid currentColor; }
+
+/* content */
+.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 14px; background: var(--banner-bg); color: var(--banner-fg); font-size: 13px; margin-bottom: 16px; }
+.banner .btn { background: var(--banner-btn); color: var(--banner-btn-fg); }
+h1 { font-size: 26px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.eyebrow { font-size: 13px; font-weight: 600; color: var(--muted); }
+.row-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 12px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.btn.primary { background: var(--primary); color: var(--primary-fg); }
+.btn.outline { background: var(--card); border-color: var(--border-strong); color: var(--text); }
+.chips { display: flex; gap: 8px; margin: 14px 0; overflow: auto; }
+.chip { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--card); color: var(--text2); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.chip.on { background: var(--chip-on-bg); color: var(--chip-on-fg); border-color: var(--chip-on-bg); }
+.chip .c { opacity: .7; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; overflow: auto; }
+.tab { padding: 10px 10px; font-size: 13.5px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.tab.on { color: var(--text); border-color: var(--primary); }
+.tab .c { background: var(--count-bg); color: var(--count-fg); border-radius: 999px; padding: 0 6px; font-size: 11px; }
+h2 { font-size: 15px; font-weight: 600; margin: 20px 0 10px; display: flex; justify-content: space-between; }
+h2 a { font-size: 13px; color: var(--primary); text-decoration: none; }
+[data-theme="jade"] h2 a { color: var(--nav-active-fg); }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.phone .grid4 { grid-template-columns: repeat(2, 1fr); }
+.tile { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; min-height: 86px; display: flex; flex-direction: column; justify-content: space-between; }
+.tile b { font-size: 22px; font-weight: 600; }
+.tile span { font-size: 13px; color: var(--muted); }
+.tile.hot { border-color: var(--warn-fg); }
+[data-theme="jade"] .tile.hot { border-color: var(--border); box-shadow: inset 4px 0 0 var(--count-bg); }
+.list { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--border); }
+.item:first-child { border-top: 0; }
+.item .t { font-weight: 600; font-size: 13.5px; }
+.item .m { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.item .end { margin-left: auto; text-align: right; font-weight: 600; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.p-succ { background: var(--succ-bg); color: var(--succ-fg); } .p-warn { background: var(--warn-bg); color: var(--warn-fg); }
+.p-danger { background: var(--danger-bg); color: var(--danger-fg); } .p-info { background: var(--info-bg); color: var(--info-fg); }
+.p-market { background: var(--ch-market-bg); color: var(--ch-market-fg); } .p-store { background: var(--ch-store-bg); color: var(--ch-store-fg); }
+.thumb { width: 44px; height: 44px; border-radius: 10px; background: var(--border); flex-shrink: 0; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+.phone .two { grid-template-columns: 1fr; }
+.sale { font-size: 12px; color: var(--muted); text-decoration: line-through; margin-left: 6px; font-weight: 400; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+.phone .hide-phone, .desk .hide-desk { display: none !important; }
+
+/* review notes */
+.notes { width: min(1180px, 100%); background: #fff; border-radius: 16px; padding: 18px 22px; font-size: 14px; line-height: 1.55; color: #111418; }
+.notes h3 { margin: 0 0 8px; font-size: 16px; }
+.notes table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0 14px; }
+.notes th, .notes td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ece8e1; vertical-align: top; }
+.ok { color: #14532d; font-weight: 600; } .bad { color: #7f1d1d; font-weight: 600; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; border: 1px solid rgba(0,0,0,.15); }
+</style>
+</head>
+<body>
+<div class="bar" role="toolbar" aria-label="Mockup controls">
+  <b>Visual direction</b>
+  <span class="seg" data-key="theme"><button data-v="blue">Current blue</button><button data-v="jade">Jade &amp; Saffron</button></span>
+  <span class="seg" data-key="mode"><button data-v="light">Light</button><button data-v="dark">Dark</button></span>
+  <span class="seg" data-key="screen"><button data-v="home">Home</button><button data-v="orders">Orders</button><button data-v="products">Products</button></span>
+</div>
+<div class="stage" id="stage"></div>
+
+<script>
+const state = { theme: 'jade', mode: 'light', screen: 'home' };
+try { Object.assign(state, JSON.parse(localStorage.getItem('rentify-visual-direction') || '{}')); } catch {}
+
+// NexTech Electronics, local seed data (orders and products as Commerce returns them)
+const ORDERS = [
+  { n: 'ORD-20261031-078C80AFB06126D7', buyer: 'Michael Tech Customer', ch: 'Marketplace', tab: 'To deliver', pay: ['Cash on delivery', 'warn'], total: '$181.00', items: 2, act: 'View' },
+  { n: 'ORD-20261031-21CC4974830EF791', buyer: 'Emily Watson', ch: 'Marketplace', tab: 'Done', pay: ['Cash collected', 'succ'], total: '$202.00', items: 1 },
+  { n: 'ORD-20260924-55D82AAF99BFEF33', buyer: 'Emily Watson', ch: 'Marketplace', tab: 'Problems', pay: ['Cash on delivery', 'warn'], total: '$352.00', items: 1, problem: 'Return requested' },
+  { n: 'ORD-20260923-NBPI', buyer: 'Michael Tech Customer', ch: 'Online store', tab: 'Waiting for payment', pay: ['Waiting for KHQR payment', 'info'], total: '$198.00', items: 2 },
+  { n: 'ORD-20260923-U0QW', buyer: 'Michael Tech Customer', ch: 'Online store', tab: 'Done', pay: ['Paid · KHQR', 'succ'], total: '$349.00', items: 1 },
+];
+const PRODUCTS = [
+  ['Apex Horizon Titanium Smartwatch', '$349.00', '$399.00', 30],
+  ['AuraSound Wireless ANC Headphones', '$199.00', '$249.00', 45],
+  ['ErgoLift Aluminum Laptop Stand', '$49.00', '$59.00', 55],
+  ['OmniPower 100W GaN Fast Charger', '$59.00', '$75.00', 70],
+  ['PulseBuds Pro True Wireless Earbuds', '$119.00', '$149.00', 60],
+  ['Vortex Mechanical 75% Keyboard', '$139.00', '$169.00', 40],
+];
+const MENU = [[null, [['Home', 'home'], ['Orders', 'orders', 1], ['Products', 'products'], ['Customers'], ['Reports'], ['Invoices']]],
+  ['Sales channels', [['Marketplace'], ['Online store'], ['Point of sale']]],
+  ['More', [['Returns & problems', null, 1], ['Share your store'], ['Settings'], ['Help']]]];
+
+const chPill = (ch) => `<span class="pill ${ch === 'Marketplace' ? 'p-market' : 'p-store'}">${ch}</span>`;
+const banner = () => `<div class="banner"><span><b>Subscription suspended.</b> Read-only access to past orders and invoices until 2027-01-28.</span><span class="btn">Settle subscription</span></div>`;
+const short = (n) => '#' + n.replace('ORD-', '').slice(0, 15) + (n.length > 20 ? '…' : '');
+
+function home(phone) {
+  return `${banner()}
+  <div class="eyebrow">NexTech Electronics</div><h1>Good morning, Alex</h1>
+  <div class="chips"><span class="chip on">All channels</span><span class="chip">Marketplace</span><span class="chip">Online store</span><span class="chip">POS</span></div>
+  <div class="two"><div>
+    <h2>Needs your attention</h2>
+    <div class="grid4">
+      <div class="tile hot"><b>1</b><span>To deliver</span></div><div class="tile"><b>0</b><span>Cash to collect</span></div>
+      <div class="tile hot"><b>1</b><span>Waiting for payment</span></div><div class="tile hot"><b>1</b><span>Problems</span></div>
+    </div>
+    <h2>Today <a href="#">Reports</a></h2>
+    <div class="grid3"><div class="tile"><span>Orders</span><b>2</b></div><div class="tile"><span>Sales</span><b>$383.00</b></div><div class="tile"><span>Cash to collect</span><b>$533.00</b></div></div>
+    <h2>Recent orders <a href="#">See all</a></h2>
+    <div class="list">${ORDERS.slice(0, phone ? 3 : 5).map((o) => `<div class="item"><div><div class="t">${short(o.n)}</div><div class="m">${o.buyer} · ${o.tab}</div><div class="pills">${chPill(o.ch)}<span class="pill p-${o.pay[1]}">${o.pay[0]}</span></div></div><div class="end">${o.total}</div></div>`).join('')}</div>
+  </div>
+  <div class="${phone ? 'hide-phone' : ''}">
+    <h2>Where you sell</h2>
+    <div class="list">
+      <div class="item"><div><div class="t">Rentify Market</div><div class="m">6 products shown to buyers</div></div><div class="end"><span class="pill p-succ">Listed</span></div></div>
+      <div class="item"><div><div class="t">Online store</div><div class="m mono">localhost:4600</div></div><div class="end" style="color:var(--primary)">Visit</div></div>
+      <div class="item"><div><div class="t">Point of sale</div><div class="m">Sell at your counter</div></div><div class="end">Open</div></div>
+    </div>
+    <h2>Low stock <a href="#">Manage</a></h2>
+    <div class="list"><div class="item"><div class="m">Every product has more than 3 in stock.</div></div></div>
+  </div></div>`;
+}
+
+function orders(phone) {
+  const shown = ORDERS;
+  return `${banner()}
+  <div class="row-h"><h1>Orders</h1><span><span class="btn outline">Export</span> <span class="btn primary">+ New order</span></span></div>
+  <div class="chips"><span class="chip on">All</span><span class="chip">Marketplace</span><span class="chip">Online store</span><span class="chip">POS</span><span class="chip">Invoice</span></div>
+  <div class="tabs"><span class="tab on">All work <span class="c">5</span></span><span class="tab">To deliver <span class="c">1</span></span><span class="tab">Cash to collect</span><span class="tab">Waiting for payment <span class="c">1</span></span><span class="tab">Problems <span class="c">1</span></span><span class="tab">Done <span class="c">2</span></span></div>
+  <div class="list">${shown.map((o) => `<div class="item"><div style="min-width:0"><div class="t">${short(o.n)}</div><div class="m">${o.buyer} · ${o.items} item${o.items > 1 ? 's' : ''}</div><div class="pills">${chPill(o.ch)}<span class="pill p-${o.pay[1]}">${o.pay[0]}</span>${o.problem ? `<span class="pill p-danger">${o.problem}</span>` : ''}</div></div><div class="end">${o.total}<div style="margin-top:6px">${o.tab === 'Waiting for payment' || o.tab === 'Done' || o.tab === 'To deliver' ? '<span class="btn outline" style="min-height:34px">View</span>' : '<span class="btn primary" style="min-height:34px">Open problem</span>'}</div></div></div>`).join('')}</div>
+  <p class="m" style="font-size:12px;color:var(--muted);margin-top:10px">"All work" shows every tab at once for this review; the app shows one tab at a time.</p>`;
+}
+
+function products(phone) {
+  return `${banner()}
+  <div class="row-h"><h1>Products</h1><span><span class="btn outline ${phone ? 'hide-phone' : ''}">Edit several</span> <span class="btn primary">+ Add product</span></span></div>
+  <div class="tabs" style="margin-top:12px"><span class="tab on">All products <span class="c">6</span></span><span class="tab">Categories</span></div>
+  <div class="search" style="max-width:none;margin:0">Search by name or SKU</div>
+  <div class="chips"><span class="chip on">All <span class="c">6</span></span><span class="chip">On sale <span class="c">6</span></span><span class="chip">Out of stock <span class="c">0</span></span><span class="chip">Hidden from marketplace <span class="c">0</span></span><span class="chip">Drafts <span class="c">0</span></span></div>
+  <div class="list">${PRODUCTS.map(([name, price, was, stock]) => `<div class="item"><span class="thumb"></span><div style="min-width:0"><div class="t">${name}</div><div class="m">${price}<span class="sale">${was}</span> · ${stock} in stock</div><div class="pills"><span class="pill p-succ">Market ✓</span><span class="pill p-succ">Store ✓</span></div></div><div class="end" style="color:var(--muted)">⋯</div></div>`).join('')}</div>`;
+}
+
+const SCREENS = { home, orders, products };
+
+function shell(kind) {
+  const phone = kind === 'phone';
+  const side = MENU.map(([h, items]) => `${h ? `<h6>${h}</h6>` : ''}${items.map(([l, k, n]) => `<div class="nav ${k === state.screen ? 'on' : ''}"><span class="dot"></span>${l}${n ? `<span class="n">${n}</span>` : ''}</div>`).join('')}`).join('');
+  return `<div class="frame ${kind}" data-theme="${state.theme}" data-mode="${state.mode}">
+    <div class="hdr">${phone ? '<span class="ico">☰</span>' : ''}<span class="mark">R</span><span class="brand">${phone ? '' : 'Rentify'}<small>NexTech Electronics</small></span>
+      ${phone ? '<span style="flex:1"></span><span class="ico">⌕</span>' : '<span class="search">Search orders, products, pages…</span>'}<span class="ico">🔔</span><span class="avatar">A</span></div>
+    <div class="body">${phone ? '' : `<nav class="side">${side}</nav>`}<main class="main">${SCREENS[state.screen](phone)}</main></div>
+    ${phone ? `<nav class="bottom">${[['Home', 'home'], ['Orders', 'orders'], ['Products', 'products'], ['POS'], ['Share']].map(([l, k]) => `<a class="${k === state.screen ? 'on' : ''}"><span class="dot"></span>${l}</a>`).join('')}</nav>` : ''}
+  </div>`;
+}
+
+// WCAG contrast of the pairs that matter, read from the live theme variables
+const hexToLum = (hex) => { const v = hex.replace('#', ''); const c = [0, 2, 4].map((i) => parseInt(v.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+const ratio = (a, b) => { const [x, y] = [hexToLum(a), hexToLum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+function contrastRows(frame) {
+  const cs = getComputedStyle(frame); const v = (n) => cs.getPropertyValue(n).trim();
+  const rows = [
+    ['Button text on main colour', '--primary-fg', '--primary', 4.5], ['Muted text on page', '--muted', '--bg', 4.5], ['Body text on page', '--text', '--bg', 4.5],
+    ['Active menu item', '--nav-active-fg', '--nav-active-bg', 4.5], ['Selected chip', '--chip-on-fg', '--chip-on-bg', 4.5], ['Menu count badge', '--count-fg', '--count-bg', 4.5],
+    ['"Cash on delivery" pill', '--warn-fg', '--warn-bg', 4.5], ['"Paid" pill', '--succ-fg', '--succ-bg', 4.5], ['"Waiting" pill', '--info-fg', '--info-bg', 4.5], ['"Return requested" pill', '--danger-fg', '--danger-bg', 4.5],
+    ['Low-stock warning as text', '--lowstock', '--card', 4.5], ['Input border on card (non-text)', '--border-input', '--card', 3],
+  ];
+  return rows.map(([label, fg, bg, need]) => { const r = ratio(v(fg), v(bg)); return `<tr><td>${label}</td><td><span class="sw" style="background:${v(fg)}"></span><span class="sw" style="background:${v(bg)}"></span><span class="mono">${v(fg)} / ${v(bg)}</span></td><td class="${r >= need ? 'ok' : 'bad'}">${r.toFixed(2)} : 1 ${r >= need ? 'passes' : `needs ${need}`}</td></tr>`; }).join('');
+}
+
+function render() {
+  document.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(state[seg.dataset.key] === b.dataset.v))));
+  const name = state.theme === 'jade' ? 'Jade & Saffron' : 'Current blue';
+  document.getElementById('stage').innerHTML = `${shell('desk')}${shell('phone')}<p class="cap">${name} · ${state.mode} · ${state.screen} — desktop 1180 px and phone 375 px</p>
+    <section class="notes"><h3>Contrast, ${name} (${state.mode})</h3><table><thead><tr><th>Pair</th><th>Colours</th><th>WCAG AA</th></tr></thead><tbody id="cr"></tbody></table>
+    <h3>What changes with Jade &amp; Saffron</h3>
+    <ul>
+      <li><b>One brand everywhere.</b> The tokens the apps already load (<span class="mono">packages/design-tokens</span>, docs/experience/02) instead of a dashboard blue and a marketplace indigo.</li>
+      <li><b>Calmer menu.</b> The current page is a light jade tint with dark jade text, not a solid blue bar; buttons stay solid jade.</li>
+      <li><b>Saffron only where something needs you:</b> menu counts and the edge of "Needs your attention" tiles with work in them. Never as text (it fails contrast as text).</li>
+      <li><b>Status colours from four tokens</b> (success, warning, danger, info), dark text on a light tint, all above 4.5 : 1. Channels become neutral labels, so colour means status only.</li>
+      <li><b>Warm neutrals</b> (canvas #FAF8F4) instead of cool grey, matching Khmer-first, local, warm (docs/experience/02).</li>
+      <li><b>Dark mode</b> from the tokens' own dark values, so it stays the same brand instead of switching to cyan.</li>
+    </ul></section>`;
+  document.getElementById('cr').innerHTML = contrastRows(document.querySelector('.frame.desk'));
+  try { localStorage.setItem('rentify-visual-direction', JSON.stringify(state)); } catch {}
+}
+
+document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return; state[seg.dataset.key] = b.dataset.v; render();
+}));
+render();
+</script>
+</body>
+</html>

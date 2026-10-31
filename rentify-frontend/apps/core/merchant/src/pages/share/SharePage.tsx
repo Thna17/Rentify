@@ -125,8 +125,8 @@ export const SharePage: React.FC = () => {
                     >
                       {copiedKey === target.key ? (
                         <>
-                          <Check className="h-4 w-4 text-emerald-600" />
-                          <span className="text-emerald-600 font-semibold">Copied</span>
+                          <Check className="h-4 w-4 text-[var(--rentify-color-success-text)]" />
+                          <span className="text-[var(--rentify-color-success-text)] font-semibold">Copied</span>
                         </>
                       ) : (
                         <>
@@ -142,7 +142,7 @@ export const SharePage: React.FC = () => {
                       className="min-h-[44px] h-11 text-xs sm:text-sm font-medium"
                     >
                       <a href={telegramUrl} target="_blank" rel="noopener noreferrer">
-                        <Send className="h-4 w-4 mr-2 text-sky-500" />
+                        <Send className="h-4 w-4 mr-2 text-[var(--rentify-color-info-text)]" />
                         <span>Telegram</span>
                       </a>
                     </Button>
@@ -153,7 +153,7 @@ export const SharePage: React.FC = () => {
                       className="min-h-[44px] h-11 text-xs sm:text-sm font-medium"
                     >
                       <a href={facebookUrl} target="_blank" rel="noopener noreferrer">
-                        <Share2 className="h-4 w-4 mr-2 text-blue-600" />
+                        <Share2 className="h-4 w-4 mr-2 text-primary-strong" />
                         <span>Facebook</span>
                       </a>
                     </Button>

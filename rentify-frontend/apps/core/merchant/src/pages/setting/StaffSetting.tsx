@@ -345,12 +345,12 @@ const StaffSetting: React.FC = () => {
 
         <CardContent className="space-y-6">
           {disabledReason && !isGracePeriod && !isSuspended && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] p-4 text-xs sm:text-sm text-[var(--rentify-color-warning-text)] shadow-sm">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                <AlertTriangle className="h-5 w-5 shrink-0 text-[var(--rentify-color-warning-text)]" />
                 <span>{disabledReason}</span>
               </div>
-              <Button asChild size="sm" variant="outline" className="border-amber-400 bg-white hover:bg-amber-100 text-amber-900">
+              <Button asChild size="sm" variant="outline" className="border-[var(--rentify-color-warning-border)] bg-card hover:bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]">
                 <a href="/settings/billing">{t('merchant.p.upgradePlan')}</a>
               </Button>
             </div>
@@ -359,7 +359,7 @@ const StaffSetting: React.FC = () => {
           {staffList.length > 0 && (
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t('merchant.p.searchStaffMembers')}
                 value={searchTerm}

@@ -65,19 +65,19 @@ export function BasicInformationForm({ invoiceData, updateField }) {
               <SelectContent>
                 <SelectItem value="cash">
                   <div className="flex items-center">
-                    <DollarSign className="w-4 h-4 mr-2 text-emerald-600" />
+                    <DollarSign className="w-4 h-4 mr-2 text-[var(--rentify-color-success-text)]" />
                     Cash
                   </div>
                 </SelectItem>
                 <SelectItem value="card">
                   <div className="flex items-center">
-                    <CreditCard className="w-4 h-4 mr-2 text-blue-600" />
+                    <CreditCard className="w-4 h-4 mr-2 text-primary-strong" />
                     Card
                   </div>
                 </SelectItem>
                 <SelectItem value="KHQR">
                   <div className="flex items-center">
-                    <QrCode className="w-4 h-4 mr-2 text-red-600" />
+                    <QrCode className="w-4 h-4 mr-2 text-[var(--rentify-color-danger-text)]" />
                     KHQR
                   </div>
                 </SelectItem>

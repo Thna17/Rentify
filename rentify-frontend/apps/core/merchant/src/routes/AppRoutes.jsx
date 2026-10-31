@@ -10,9 +10,9 @@ const routes = [
 ];
 
 const Loader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-100">
+  <div className="flex items-center justify-center min-h-screen bg-muted">
     <motion.div
-      className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"
+      className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}

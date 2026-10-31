@@ -39,22 +39,22 @@ export const SavingIndicator: React.FC<SavingIndicatorProps> = ({
   const statusConfig = {
     saving: {
       icon: Loader2,
-      bg: "bg-amber-50/90 border-amber-200 text-amber-800",
+      bg: "bg-[var(--rentify-color-warning-subtle)] border-[var(--rentify-color-warning-border)] text-[var(--rentify-color-warning-text)]",
       iconClass: "animate-spin"
     },
     saved: {
       icon: CheckCircle2,
-      bg: "bg-emerald-50/90 border-emerald-200 text-emerald-800",
+      bg: "bg-[var(--rentify-color-success-subtle)] border-[var(--rentify-color-success-border)] text-[var(--rentify-color-success-text)]",
       iconClass: ""
     },
     error: {
       icon: AlertCircle,
-      bg: "bg-red-50/90 border-red-200 text-red-800",
+      bg: "bg-[var(--rentify-color-danger-subtle)] border-[var(--rentify-color-danger-border)] text-[var(--rentify-color-danger-text)]",
       iconClass: ""
     },
     pending: {
       icon: Clock,
-      bg: "bg-blue-50/90 border-blue-200 text-blue-800",
+      bg: "bg-accent border-primary/30 text-primary-strong",
       iconClass: ""
     }
   };
@@ -114,7 +114,7 @@ export const SavingIndicator: React.FC<SavingIndicatorProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onRetry}
-                className="h-7 px-2 text-xs hover:bg-red-100"
+                className="h-7 px-2 text-xs hover:bg-[var(--rentify-color-danger-subtle)]"
               >
                 Retry
               </Button>

@@ -25,8 +25,8 @@ import { MobileBottomBar, bottomBarVisible } from './MobileBottomBar';
 import { useAttentionCounts } from '../../hooks/useAttentionCounts';
 
 const NOTICE_TONES = {
-  warning: { box: 'bg-amber-500/[0.08]', icon: 'bg-amber-500/15 text-amber-700', title: 'text-amber-900', action: 'bg-amber-900 text-amber-50 hover:bg-amber-950' },
-  danger: { box: 'bg-rose-500/[0.08]', icon: 'bg-rose-500/15 text-rose-700', title: 'text-rose-900', action: 'bg-rose-900 text-rose-50 hover:bg-rose-950' },
+  warning: { box: 'bg-[var(--rentify-color-warning-subtle)]', icon: 'bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]', title: 'text-[var(--rentify-color-warning-text)]', action: 'bg-foreground text-background hover:opacity-90' },
+  danger: { box: 'bg-[var(--rentify-color-danger-subtle)]', icon: 'bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)]', title: 'text-[var(--rentify-color-danger-text)]', action: 'bg-destructive text-destructive-foreground hover:opacity-90' },
 };
 
 // Compact, stroke-free subscription notice shown above every dashboard page
@@ -270,7 +270,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
             fallback={
               <div className="flex h-64 w-full items-center justify-center p-8">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   <span className="text-xs text-muted-foreground font-medium">{t('merchant.shell.loadingFeature')}</span>
                 </div>
               </div>

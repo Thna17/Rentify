@@ -72,9 +72,9 @@ export function ProductStatusBadge({
     <Select value={product.status} onValueChange={handleStatusChange}>
       <SelectTrigger
         className={`h-8 text-xs border-0 shadow-none hover:bg-muted/50 transition-colors ${
-          currentStatus.variant === 'success' ? 'text-green-600' :
-          currentStatus.variant === 'warning' ? 'text-amber-600' :
-          currentStatus.variant === 'destructive' ? 'text-red-600' :
+          currentStatus.variant === 'success' ? 'text-[var(--rentify-color-success-text)]' :
+          currentStatus.variant === 'warning' ? 'text-[var(--rentify-color-warning-text)]' :
+          currentStatus.variant === 'destructive' ? 'text-[var(--rentify-color-danger-text)]' :
           'text-muted-foreground'
         }`}
       >

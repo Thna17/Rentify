@@ -84,8 +84,8 @@ const copy = {
 type Copy = typeof copy.en;
 
 const TONE = {
-  storefront: 'bg-sky-500/10 text-sky-700',
-  marketplace: 'bg-amber-500/10 text-amber-700',
+  storefront: 'bg-[var(--rentify-color-info-subtle)] text-[var(--rentify-color-info-text)]',
+  marketplace: 'bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]',
 };
 
 const Surface = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -350,7 +350,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
                   const count = storeCounts[category.id] || 0;
                   return (
                     <li key={category.id} className="group flex min-h-[76px] items-center gap-3 rounded-2xl bg-muted p-3 pl-4 transition-colors hover:bg-foreground/[0.06]">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card text-sky-700 shadow-[var(--shadow-soft)]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card text-[var(--rentify-color-info-text)] shadow-[var(--shadow-soft)]">
                         <Folder className="h-[18px] w-[18px]" aria-hidden="true" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -380,12 +380,12 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
               </ul>
             )}
             {websiteId && !storeQuery.isLoading && storeCounts[''] > 0 && (
-              <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-amber-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="flex items-center gap-2.5 text-sm text-amber-900">
+              <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-[var(--rentify-color-warning-subtle)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="flex items-center gap-2.5 text-sm text-[var(--rentify-color-warning-text)]">
                   <Tag className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {text.uncategorised(storeCounts[''])}
                 </p>
-                <Link to="/products" className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-amber-900 hover:underline sm:self-auto">
+                <Link to="/products" className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-[var(--rentify-color-warning-text)] hover:underline sm:self-auto">
                   {text.assign}<ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
@@ -414,11 +414,11 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
             ) : (
               <div className="space-y-5">
                 {market.retired.length > 0 && (
-                  <div role="status" className="rounded-2xl bg-amber-500/10 p-4">
-                    <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+                  <div role="status" className="rounded-2xl bg-[var(--rentify-color-warning-subtle)] p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-[var(--rentify-color-warning-text)]">
                       <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />{text.retiredTitle}
                     </p>
-                    <p className="mt-1 text-[13px] leading-relaxed text-amber-900/80">{text.retired}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-[var(--rentify-color-warning-text)]">{text.retired}</p>
                     <ul className="mt-3 flex flex-wrap gap-2">
                       {market.retired.map((row) => (
                         <li key={row.name} className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-[13px] text-foreground">
@@ -439,14 +439,14 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
                         <li key={row.name} className="rounded-2xl bg-muted p-4">
                           <div className="flex items-center justify-between gap-3">
                             <span className="flex min-w-0 items-center gap-2.5">
-                              <Tag className="h-4 w-4 shrink-0 text-amber-700" aria-hidden="true" />
+                              <Tag className="h-4 w-4 shrink-0 text-[var(--rentify-color-warning-text)]" aria-hidden="true" />
                               <span className="truncate font-medium text-foreground" title={row.name}>{row.name}</span>
                             </span>
                             <span className="shrink-0 text-[12.5px] tabular-nums text-muted-foreground">{text.products(row.count)}</span>
                           </div>
                           {/* Share of this store's products, so the main categories stand out */}
                           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-card" aria-hidden="true">
-                            <div className="h-full rounded-full bg-amber-500/70" style={{ width: `${Math.max(6, (row.count / market.max) * 100)}%` }} />
+                            <div className="h-full rounded-full bg-[var(--rentify-color-warning-base)]" style={{ width: `${Math.max(6, (row.count / market.max) * 100)}%` }} />
                           </div>
                         </li>
                       ))}
@@ -516,7 +516,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
           </DialogHeader>
           <p className="text-sm leading-relaxed text-muted-foreground">{deleting ? text.confirmDelete(deleting.name) : ''}</p>
           {deleting && (storeCounts[deleting.id] || 0) > 0 && (
-            <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-900">{text.deleteMoves(storeCounts[deleting.id])}</p>
+            <p className="rounded-xl bg-[var(--rentify-color-warning-subtle)] px-3 py-2 text-sm text-[var(--rentify-color-warning-text)]">{text.deleteMoves(storeCounts[deleting.id])}</p>
           )}
           {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
           <DialogFooter>

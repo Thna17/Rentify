@@ -334,14 +334,14 @@ export const BillingSetting = () => {
         </CardHeader>
         <CardContent aria-live="polite">
           {paymentError ? (
-            <p role="alert" className="text-sm text-gray-500">
+            <p role="alert" className="text-sm text-muted-foreground">
               Payment history could not be loaded.{' '}
               <button type="button" className="font-medium text-foreground underline" onClick={loadPayments}>{t('merchant.p.tryAgain')}</button>
             </p>
           ) : payments === null ? (
-            <p role="status" className="text-sm text-gray-500">{t('merchant.p.loadingPaymentHistory')}</p>
+            <p role="status" className="text-sm text-muted-foreground">{t('merchant.p.loadingPaymentHistory')}</p>
           ) : payments.length === 0 ? (
-            <p className="text-sm text-gray-500">{t('merchant.p.noPlanPaymentsYet')}</p>
+            <p className="text-sm text-muted-foreground">{t('merchant.p.noPlanPaymentsYet')}</p>
           ) : (
           <div className="space-y-3">
             {payments.map((payment) => (
@@ -350,18 +350,18 @@ export const BillingSetting = () => {
                 className="flex items-center justify-between p-3 border rounded-lg"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Receipt className="h-4 w-4 text-gray-600" />
+                  <div className="p-2 bg-muted rounded-lg">
+                    <Receipt className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
                     <div className="font-medium">{formatPaymentAmount(payment)}</div>
-                    <div className="text-sm text-gray-500 flex items-center space-x-2">
+                    <div className="text-sm text-muted-foreground flex items-center space-x-2">
                       <Calendar className="h-3 w-3" />
                       <span>{new Date(payment.createdAt).toLocaleDateString('en-US')}</span>
                     </div>
                   </div>
                 </div>
-                <Badge variant="outline" className={payment.status === 'completed' ? 'bg-green-50 text-green-700' : ''}>
+                <Badge variant="outline" className={payment.status === 'completed' ? 'bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)]' : ''}>
                   {PAYMENT_STATUS[payment.status] || payment.status}
                 </Badge>
               </div>

@@ -122,9 +122,9 @@ export const SecuritySetting = () => {
                   aria-label={t(showPassword.current ? 'merchant.payments.hide' : 'merchant.payments.show')}
                 >
                   {showPassword.current ? (
-                    <EyeOff className="h-4 w-4 text-gray-500" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-500" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
@@ -150,9 +150,9 @@ export const SecuritySetting = () => {
                   aria-label={t(showPassword.new ? 'merchant.payments.hide' : 'merchant.payments.show')}
                 >
                   {showPassword.new ? (
-                    <EyeOff className="h-4 w-4 text-gray-500" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-500" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
@@ -178,9 +178,9 @@ export const SecuritySetting = () => {
                   aria-label={t(showPassword.confirm ? 'merchant.payments.hide' : 'merchant.payments.show')}
                 >
                   {showPassword.confirm ? (
-                    <EyeOff className="h-4 w-4 text-gray-500" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-500" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>

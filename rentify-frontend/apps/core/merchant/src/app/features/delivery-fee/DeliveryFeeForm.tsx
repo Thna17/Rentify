@@ -94,7 +94,7 @@ export function DeliveryFeeForm({ storeId, onSaved, block = false }: DeliveryFee
         <p
           id="delivery-fee-message"
           role={message.tone === 'error' ? 'alert' : 'status'}
-          className={`text-sm ${message.tone === 'error' ? 'text-destructive' : 'text-emerald-700'}`}
+          className={`text-sm ${message.tone === 'error' ? 'text-destructive' : 'text-[var(--rentify-color-success-text)]'}`}
         >
           {message.text}
         </p>

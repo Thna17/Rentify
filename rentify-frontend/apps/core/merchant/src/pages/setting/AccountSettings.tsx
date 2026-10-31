@@ -188,18 +188,18 @@ export const AccountSettings = () => {
 
         <CardContent className="space-y-6">
           {/* Avatar Section */}
-          <div className="flex items-center space-x-6 p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center space-x-6 p-4 bg-muted rounded-lg">
             <div className="relative">
               <Avatar className="h-20 w-20 border-2 border-white shadow-sm">
                 <AvatarImage src={avatarPreview || profile?.profileImage || profile?.avatar} />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-lg font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary text-white text-lg font-semibold">
                   {getInitials(profileData.name)}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
                 <div className="absolute -bottom-1 -right-1">
                   <Label htmlFor="avatar-upload" className="cursor-pointer">
-                    <div className="bg-blue-600 text-white p-1 rounded-full shadow-lg hover:bg-blue-700 transition-colors">
+                    <div className="bg-primary text-white p-1 rounded-full shadow-lg hover:bg-primary transition-colors">
                       <Upload className="h-3 w-3" />
                     </div>
                   </Label>
@@ -215,8 +215,8 @@ export const AccountSettings = () => {
             </div>
             
             <div className="flex-1">
-              <h3 className="font-medium text-gray-900">{t('merchant.p.profilePhoto')}</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="font-medium text-foreground">{t('merchant.p.profilePhoto')}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
                 {t('merchant.p.jpgGifOrPng')}
               </p>
               {isEditing && avatarPreview && (
@@ -224,7 +224,7 @@ export const AccountSettings = () => {
                   variant="ghost"
                   size="sm"
                   onClick={removeAvatar}
-                  className="mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="mt-2 text-[var(--rentify-color-danger-text)] hover:text-[var(--rentify-color-danger-text)] hover:bg-[var(--rentify-color-danger-subtle)]"
                 >
                   <X className="h-4 w-4 mr-1" />
                   {t('merchant.p.removePhoto')}
@@ -250,7 +250,7 @@ export const AccountSettings = () => {
                   onChange={handleProfileChange}
                   disabled={!isEditing}
                   placeholder={t('merchant.p.yourFullName')}
-                  className="disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="disabled:bg-muted disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -267,7 +267,7 @@ export const AccountSettings = () => {
                   onChange={handleProfileChange}
                   disabled={!isEditing}
                   placeholder="your@email.com"
-                  className="disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="disabled:bg-muted disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -283,7 +283,7 @@ export const AccountSettings = () => {
                   onChange={handleProfileChange}
                   disabled={!isEditing}
                   placeholder="+1 (555) 000-0000"
-                  className="disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="disabled:bg-muted disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -301,7 +301,7 @@ export const AccountSettings = () => {
                   onChange={handleProfileChange}
                   disabled={!isEditing}
                   placeholder={t('merchant.p.yourBusinessName')}
-                  className="disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="disabled:bg-muted disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -317,7 +317,7 @@ export const AccountSettings = () => {
                   onChange={handleProfileChange}
                   disabled={!isEditing}
                   placeholder="https://yourwebsite.com"
-                  className="disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="disabled:bg-muted disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -332,7 +332,7 @@ export const AccountSettings = () => {
                   onChange={handleProfileChange}
                   disabled={!isEditing}
                   placeholder={t('merchant.p.tellUsAboutYourself')}
-                  className="disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="disabled:bg-muted disabled:cursor-not-allowed"
                 />
               </div>
             </div>

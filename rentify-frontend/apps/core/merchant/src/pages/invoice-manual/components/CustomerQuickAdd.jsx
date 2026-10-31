@@ -88,7 +88,7 @@ export const CustomerQuickAdd = ({
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         {showSuccess ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
+            <CheckCircle2 className="w-16 h-16 text-[var(--rentify-color-success-text)] mb-4" />
             <h3 className="text-lg font-semibold">Customer Selected!</h3>
             <p className="text-muted-foreground">Customer information has been updated</p>
           </div>
@@ -107,7 +107,7 @@ export const CustomerQuickAdd = ({
             {/* Recent Customers Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Search className="w-4 h-4 text-blue-500" />
+                <Search className="w-4 h-4 text-primary-strong" />
                 <h3 className="font-semibold text-sm">{t('dashboard.invoices.recent_customers')}</h3>
               </div>
 
@@ -117,7 +117,7 @@ export const CustomerQuickAdd = ({
                   placeholder={t('dashboard.invoices.search_customers')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 focus-visible:ring-blue-500"
+                  className="pl-10 focus-visible:ring-ring"
                 />
               </div>
 
@@ -125,7 +125,7 @@ export const CustomerQuickAdd = ({
                 {filteredCustomers.map((customer, index) => (
                   <Card 
                     key={index}
-                    className="cursor-pointer transition-all hover:shadow-md hover:border-blue-200 active:scale-95"
+                    className="cursor-pointer transition-all hover:shadow-md hover:border-primary/30 active:scale-95"
                     onClick={() => handleCustomerSelect(customer)}
                   >
                     <CardContent className="p-3">
@@ -159,7 +159,7 @@ export const CustomerQuickAdd = ({
             {/* New Customer Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-green-500" />
+                <UserPlus className="w-4 h-4 text-[var(--rentify-color-success-text)]" />
                 <h3 className="font-semibold text-sm">{t('dashboard.invoices.new_customer')}</h3>
               </div>
 
@@ -173,7 +173,7 @@ export const CustomerQuickAdd = ({
                     value={newCustomer.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder={t('dashboard.invoices.customer_name_placeholder')}
-                    className="focus-visible:ring-green-500"
+                    className="focus-visible:ring-[var(--rentify-color-success-border)]"
                   />
                 </div>
 
@@ -187,7 +187,7 @@ export const CustomerQuickAdd = ({
                         value={newCustomer.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder={t('dashboard.invoices.phone_number_placeholder')}
-                        className="pl-10 focus-visible:ring-green-500"
+                        className="pl-10 focus-visible:ring-[var(--rentify-color-success-border)]"
                       />
                     </div>
                   </div>
@@ -201,7 +201,7 @@ export const CustomerQuickAdd = ({
                         value={newCustomer.email || ''}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder={t('dashboard.invoices.customer_email_placeholder')}
-                        className="pl-10 focus-visible:ring-green-500"
+                        className="pl-10 focus-visible:ring-[var(--rentify-color-success-border)]"
                       />
                     </div>
                   </div>
@@ -216,7 +216,7 @@ export const CustomerQuickAdd = ({
                       value={newCustomer.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       placeholder={t('dashboard.invoices.customer_address_placeholder')}
-                      className="pl-10 focus-visible:ring-green-500"
+                      className="pl-10 focus-visible:ring-[var(--rentify-color-success-border)]"
                     />
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export const CustomerQuickAdd = ({
                 <Button 
                   onClick={handleNewCustomerSave}
                   disabled={!newCustomer.name.trim()}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-[var(--rentify-color-success-base)] hover:bg-[var(--rentify-color-success-base)]"
                 >
                   {t('dashboard.invoices.save_customer')}
                 </Button>
