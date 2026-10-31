@@ -21,6 +21,7 @@
     "db:migrate:verify": "node migrations/runner.js verify",
     "db:audit-stores": "node scripts/auditStoreMapping.js",
     "db:audit-skus": "node scripts/auditProductSkus.js",
+    "db:backfill-default-skus": "node scripts/backfillDefaultSkus.js",
     "db:audit-orders": "node scripts/auditOrderSnapshots.js",
     "db:audit-inventory": "node scripts/auditInventoryBalances.js",
     "db:reconcile-legacy-website-orders": "node scripts/reconcileLegacyWebsiteStock.js",

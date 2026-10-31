@@ -283,7 +283,7 @@ into `platform-architecture.md` and remove stale notes.
    override lives (product vs. SKU), which price POS uses, how carts/orders
    snapshot it, and how compare-at prices behave. No UI ships until then.
 
-- (Open, 2026-10-31) Does a SKU block going live? Commerce launch facts
+- (Resolved 2026-10-31: keep the rule and backfill legacy products; see "2026-10-31 default SKUs for legacy simple products" below) Does a SKU block going live? Commerce launch facts
    (`store-access/launchFactsService.js`) count a Store's first product as
    done only when a valid product has a **variant** with a SKU
    (`hasValidSku`). Simple products have no variant rows, and since the
@@ -798,3 +798,32 @@ CutLuy is disabled, plan payments use ABA PayWay by default, with
 `PAYMENT_PROVIDER=khqr` selecting the direct Bakong fallback. Status checks use
 the provider recorded on each payment. This does not change marketplace checkout
 release gates.
+
+## 2026-10-31 default SKUs for legacy simple products
+
+- **Question:** does a SKU block going live? The merchant launch checklist
+  counts a Store's first product only when a valid product has a variant with
+  a SKU (`store-access/launchFactsService.js`, `hasValidSku`).
+- **Finding:** products created in the merchant app always get one. With the
+  SKU field empty, Commerce generates a SKU and a default variant
+  (`store-catalog/storeCatalogService.js`, `defaultSku`), so new merchants are
+  not affected. Products created before that (seed data and the older product
+  flow) have no variant rows. The canonical SKU migration (`20261025_014`) only
+  marked defaults on products that already had variants, so these stay blocked.
+  Locally that was 91 of 141 products, including all of Mekong Brew's.
+- **Decision:** keep the rule; fix the legacy data.
+  `npm run db:backfill-default-skus` (dry run by default, `-- --apply` to
+  write) gives each product without variants a default SKU, the same way
+  creation does. It keeps a product SKU that is unique in its Store, or
+  generates one, and gives the default variant **the same id as its product**.
+  For a product without variants, the inventory ledger already keyed its
+  balance by the product id, so existing balances, reservations and history
+  carry over with no ledger rewrite. The report lists every created variant;
+  rollback deletes those rows and clears `Product.sku` where the report says it
+  was set.
+- **Verified locally:** 91 default SKUs created and 50 products with variants
+  skipped. No product's stock or status changed. Mekong Brew's checklist went
+  from 5/9 to 9/9. A sale on a backfilled product updates the existing ledger
+  balance (24 → 23, rolled back).
+- **Before staging and the demo:** run the dry run and review the report
+  before `--apply`.
