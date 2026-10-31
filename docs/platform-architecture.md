@@ -61,8 +61,8 @@ override it on each product with a marketplace
 visibility switch. Turning the switch off removes only the marketplace
 listing, not the Product, storefront listing, or shared stock. Marketplace-only
 Stores publish through the marketplace channel. A requested marketplace
-listing becomes visible and purchasable only after Store-level seller approval
-and any applicable product moderation. Basic marketplace access is not gated
+listing becomes visible and purchasable once the Store is automatically listed
+(DEC-028) and any applicable product moderation passes. Basic marketplace access is not gated
 by a higher storefront subscription tier.
 
 Every Website receives a subdomain under a domain Rentify owns by default,
@@ -165,15 +165,14 @@ hold, split/deduction, refund, fee, and reconciliation capabilities before
 implementing online payments.
 
 **Seller access by channel:** A merchant may publish a storefront and accept
-COD orders after basic account and platform checks. Marketplace products may
-be prepared while seller approval is pending, but cannot be publicly
-purchasable there until Core approves the Store for marketplace selling.
-Approval is per Store, with product-level moderation for restricted or flagged
-items. A marketplace suspension removes marketplace selling; a platform-wide
+COD orders after basic account and platform checks. Marketplace listing is
+automatic (DEC-028): Core approves a Store as soon as its owner is verified and
+it has a primary category, with product-level moderation for restricted or
+flagged items. Admins moderate after listing. A marketplace suspension removes marketplace selling; a platform-wide
 safety suspension can stop both channels. An “unverified” badge does not
 replace marketplace approval.
 
-**Marketplace approval checklist for launch:** An admin checks verified seller
+**Marketplace review checklist (after listing, DEC-028):** When an admin reviews a listed Store, they check verified seller
 phone and email, responsible person or business identity, Store name and
 primary category, operating or pickup location, customer contact method, at
 least one clear product listing with price and stock, and the seller's stated

@@ -58,7 +58,7 @@ Progress "3 of 7 done". Each step: title, why, action button, status (✓ done /
 - Checklist mirror of admin's 7 points (DEC‑007): verified phone · verified email · responsible person / identity (upload ID or business registration; stored privately; show "Only Rentify reviewers can see this") · store name & primary category · operating/pickup location · customer contact method · ≥ 1 clear product with price & stock · accept COD/return/refund responsibility. Each line ✓ / missing with a Fix link.
 - "Preview my store page" (marketplace store page as buyers will see it).
 - While pending: products can be prepared; marketplace listing shows "Waiting for approval" on each product's channel row; storefront (if any) can already sell (platform‑architecture: seller access by channel).
-- Dev rule: `DEV_MARKETPLACE_AUTO_APPROVAL=true` auto‑approves locally — UI must show the same statuses.
+- Listing is automatic in every environment (DEC-028, supersedes the seller application before selling); the statuses above remain for admin moderation after listing.
 
 ## 5. Online store (website) management `/online-store`
 Overview card: status (Draft / Published / Suspended / Grace period), URL `name.rentifystore.shop` (copy, open, QR), template name, last published, buttons **Customize** · **Preview** · **Publish/Unpublish**.

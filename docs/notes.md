@@ -209,6 +209,10 @@ into `platform-architecture.md` and remove stale notes.
 
 ## Development seller rule (2026-09-24)
 
+> Superseded on 2026-10-31 by DEC-028: listing is automatic in every
+> environment and `DEV_MARKETPLACE_AUTO_APPROVAL` was removed. The entry below
+> is kept for history.
+
 - Core auto-approves only pending active Stores in development when the
   merchant has a verified email or phone and a valid selected primary Store
   category. The rule is enabled by `DEV_MARKETPLACE_AUTO_APPROVAL=true` and

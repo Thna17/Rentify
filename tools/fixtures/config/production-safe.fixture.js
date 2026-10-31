@@ -20,7 +20,6 @@ module.exports = {
   CORS_ALLOWED_ORIGINS: 'https://rentifymarket.com,https://auth.rentifymarket.com,https://dashboard.rentifymarket.com,https://admin.rentifymarket.com',
   AUTH_RETURN_URL_ALLOWLIST: 'https://rentifymarket.com,https://dashboard.rentifymarket.com,https://admin.rentifymarket.com',
   CUTLUY_ENABLED: 'false',
-  DEV_MARKETPLACE_AUTO_APPROVAL: 'false',
   CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'false',
   MARKETPLACE_COD_CHECKOUT_ENABLED: 'true',
   JWT_SECRET: 'prod_secret_jwt_key_99887766554433221100aabbccddeeff',

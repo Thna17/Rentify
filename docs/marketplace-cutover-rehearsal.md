@@ -8,10 +8,9 @@ not a production release.
 ## Local setup
 
 1. Start Core, Commerce, MySQL, Redis, Auth, and merchant apps with the root
-   Docker instructions. Compose sets `DEV_MARKETPLACE_AUTO_APPROVAL=true` for
-   Core and `MARKETPLACE_COD_CHECKOUT_ENABLED=true` for Commerce. Both are
-   development settings; Core refuses automatic seller approval outside
-   `NODE_ENV=development`.
+   Docker instructions. Compose sets `MARKETPLACE_COD_CHECKOUT_ENABLED=true` for
+   Commerce. Stores are listed automatically once the owner is verified and a
+   category is set (DEC-028).
 2. Start `marketplace-frontend` with `npm start` (inside `marketplace-frontend/`) and open
    `http://localhost:4500`. Its routes serve the designed marketplace UI on
    `/`, `/cart`, `/checkout`, and `/orders`. Localhost

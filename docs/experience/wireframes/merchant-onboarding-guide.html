@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merchant Setup Guide</title>
+<!--
+  Grayscale wireframe: the merchant setup guide after a Store is created.
+  Built from the ui-ux-design skill template. Mobile is the primary layout; use the top bar to switch to Desktop.
+  Builds on docs/experience 05 §3 (launch checklist), 06 §1 and §15 (Home, mobile bottom bar), 12 B1/B4/B7/B8.
+  Checklist items map to GET /api/stores/mine/launch-checklist (rentify-server/src/modules/stores/launchChecklistService.js).
+  Check: node ~/.claude/skills/ui-ux-design/scripts/check_wireframes.js docs/experience/wireframes/merchant-onboarding-guide.html
+-->
+<style>
+  :root { --bg:#fff; --ink:#111; --ink-2:#555; --ink-3:#6b6b6b; --line:#e3e3e3; --fill:#f3f3f3; --fill-2:#e9e9e9; --r:8px; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#d9d9d9; font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); }
+  a { color:inherit; text-decoration:none; }
+  .proto-bar { position:sticky; top:0; z-index:50; display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 16px; background:#222; color:#ddd; font-size:12px; }
+  .proto-bar strong { color:#fff; margin-right:8px; }
+  .proto-bar select, .proto-bar button { background:#333; color:#eee; border:1px solid #555; border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; }
+  .proto-bar button[aria-pressed="true"] { background:#eee; color:#111; }
+  .stage { padding:24px 16px 64px; display:flex; justify-content:center; }
+  .device { position:relative; background:var(--bg); width:100%; max-width:1280px; min-height:760px; border-radius:6px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.12); display:flex; flex-direction:column; }
+  .device.mobile { max-width:390px; }
+  .top { height:56px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; padding:0 16px; }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; min-width:0; }
+  .brand small { font-weight:500; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mark { width:22px; height:22px; border-radius:50%; border:2.5px solid var(--ink); flex:none; }
+  .search { flex:1; max-width:420px; margin:0 auto; height:36px; border-radius:999px; background:var(--fill); display:flex; align-items:center; padding:0 14px; color:var(--ink-3); white-space:nowrap; overflow:hidden; }
+  .spacer { flex:1; }
+  .icon-btn { width:36px; height:36px; border-radius:999px; display:grid; place-items:center; color:var(--ink-2); flex:none; }
+  .ico { width:18px; height:18px; border:1.8px solid currentColor; border-radius:5px; display:inline-block; flex:none; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:var(--fill-2); display:grid; place-items:center; font-size:12px; font-weight:600; color:var(--ink-2); flex:none; }
+  .btn { min-height:36px; padding:0 14px; border-radius:999px; border:1px solid var(--line); background:var(--bg); font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; font-size:13px; }
+  .btn.primary { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .btn.block { display:flex; width:100%; min-height:44px; }
+  .btn.ghost { border-color:transparent; color:var(--ink-2); }
+  .body { flex:1; display:flex; }
+  .side { width:240px; flex:none; border-right:1px solid var(--line); padding:12px; display:flex; flex-direction:column; gap:2px; }
+  .side h6 { margin:14px 12px 4px; font-size:12px; font-weight:600; color:var(--ink-3); }
+  .nav-item { display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:var(--r); color:var(--ink-2); font-weight:500; }
+  .nav-item.on { color:var(--ink); font-weight:700; background:var(--fill); }
+  .nav-item .tag { margin-left:auto; font-size:11px; border:1px solid var(--line); border-radius:999px; padding:0 6px; color:var(--ink-3); }
+  .main { flex:1; min-width:0; display:flex; justify-content:center; }
+  .col { width:100%; max-width:720px; padding:0 0 48px; }
+  .rail { width:300px; flex:none; padding:24px 20px; border-left:1px solid var(--line); display:flex; flex-direction:column; gap:16px; }
+  .page-head { padding:20px 16px 12px; } .page-head h1 { margin:0; font-size:22px; } .page-head p { margin:6px 0 0; color:var(--ink-2); }
+  .eyebrow { font-size:12px; color:var(--ink-3); font-weight:600; }
+  .sec { padding:8px 16px 16px; }
+  .sec h3 { margin:8px 0 10px; font-size:15px; }
+  .card { border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--bg); } .card h4 { margin:0 0 8px; }
+  .meta { color:var(--ink-3); font-size:13px; }
+  .ph { display:block; height:10px; border-radius:4px; background:var(--fill-2); margin:6px 0; } .ph.t { height:14px; width:70%; background:#d6d6d6; } .ph.s { width:45%; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tile { border:1px solid var(--line); border-radius:12px; padding:12px; min-height:74px; }
+  .tile b { display:block; font-size:18px; }
+  .banner { margin:12px 16px 0; border:1px dashed #9a9a9a; border-radius:10px; padding:10px 12px; display:flex; gap:10px; align-items:center; background:var(--fill); font-size:13px; }
+  .banner .btn { margin-left:auto; }
+  /* setup guide */
+  .guide { border:2px solid var(--ink); border-radius:14px; overflow:hidden; }
+  .guide-head { padding:14px 16px 10px; display:flex; gap:12px; align-items:flex-start; }
+  .guide-head h2 { margin:0; font-size:17px; }
+  .guide-head .btn { margin-left:auto; }
+  .bar { height:8px; border-radius:999px; background:var(--fill-2); margin:0 16px 4px; overflow:hidden; } .bar i { display:block; height:100%; background:var(--ink); }
+  .stage-h { padding:12px 16px 4px; font-size:12px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.04em; display:flex; justify-content:space-between; }
+  .step { display:flex; gap:12px; align-items:flex-start; padding:12px 16px; border-top:1px solid var(--line); min-height:52px; }
+  .step .st { width:24px; height:24px; border-radius:50%; border:2px solid var(--ink-3); display:grid; place-items:center; font-size:12px; font-weight:700; flex:none; margin-top:1px; }
+  .step.done .st { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .step.done .t { color:var(--ink-3); text-decoration:line-through; }
+  .step.wait .st { border-style:dashed; }
+  .step.fix .st { border-color:var(--ink); background:#fff; }
+  .step.lock .st { border-color:var(--fill-2); color:var(--ink-3); }
+  .step .t { font-weight:600; }
+  .step .why { color:var(--ink-2); font-size:13px; margin-top:2px; }
+  .step .act { margin-left:auto; flex:none; }
+  .step.open { background:var(--fill); }
+  .step.open .more { margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+  .chip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:999px; padding:1px 8px; font-size:12px; color:var(--ink-2); background:var(--bg); }
+  .chip.strong { border-color:var(--ink); color:var(--ink); font-weight:700; }
+  .note-box { border-left:3px solid var(--ink); background:var(--fill); padding:8px 12px; font-size:13px; border-radius:0 8px 8px 0; }
+  .guide-foot { border-top:1px solid var(--line); padding:10px 16px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--ink-2); }
+  .field label { display:block; font-weight:600; font-size:13px; margin-bottom:6px; }
+  .field .input { height:44px; border:1px solid var(--line); border-radius:8px; padding:0 12px; display:flex; align-items:center; color:var(--ink-3); background:var(--bg); }
+  .empty { text-align:center; padding:48px 24px; color:var(--ink-2); } .empty h2 { color:var(--ink); margin:12px 0 6px; font-size:18px; }
+  .empty .art { width:72px; height:72px; border-radius:16px; background:var(--fill-2); margin:0 auto; }
+  .empty .btn { margin-top:14px; }
+  .list-row { display:flex; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); min-height:52px; }
+  .list-row .act { margin-left:auto; }
+  .table { width:100%; border-collapse:collapse; font-size:13px; } .table th, .table td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .qr { width:120px; height:120px; background:repeating-linear-gradient(45deg,#ccc 0 6px,#eee 6px 12px); border-radius:8px; }
+  /* mobile bottom bar + sheets */
+  .bottom { display:none; }
+  .device.mobile .side, .device.mobile .rail, .device.mobile .search, .device.mobile .desk { display:none; }
+  .device.mobile .bottom { display:flex; border-top:1px solid var(--line); height:60px; position:sticky; bottom:0; background:var(--bg); }
+  .bottom a { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:11px; color:var(--ink-3); position:relative; } .bottom a.on { color:var(--ink); font-weight:700; }
+  .bottom .dot { position:absolute; top:8px; right:calc(50% - 16px); width:8px; height:8px; border-radius:50%; background:var(--ink); }
+  .mob { display:none; } .device.mobile .mob { display:inline-flex; }
+  .drawer-scrim { align-items:stretch; justify-content:flex-start; }
+  .device:not(.mobile) .drawer-scrim { display:none; }
+  .drawer { background:var(--bg); width:86%; max-width:320px; height:100%; overflow:auto; padding:8px 8px 20px; display:flex; flex-direction:column; gap:2px; }
+  .drawer h6 { margin:12px 12px 4px; font-size:12px; font-weight:600; color:var(--ink-3); }
+  .drawer-head { display:flex; gap:10px; align-items:center; padding:8px 8px 12px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+  .drawer .list-row { border:1px solid var(--line); border-radius:12px; margin:4px 4px 8px; }
+  .device.mobile .grid2.desk-only-2 { grid-template-columns:1fr; }
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; z-index:5; }
+  .sheet { background:var(--bg); width:100%; border-radius:16px 16px 0 0; padding:8px 16px 20px; max-height:88%; overflow:auto; }
+  .sheet .grab { width:40px; height:4px; border-radius:4px; background:var(--fill-2); margin:4px auto 12px; }
+  .sheet h2 { margin:0 0 4px; font-size:18px; }
+  .device:not(.mobile) .scrim { align-items:center; justify-content:center; }
+  .device:not(.mobile) .sheet { width:520px; border-radius:16px; }
+  .n { display:none; }
+  body.notes .n { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:#e0b400; color:#111; font:700 11px/1 system-ui; margin-left:6px; vertical-align:middle; }
+  .notes-panel { display:none; } body.notes .notes-panel { display:block; max-width:1280px; margin:0 auto; padding:0 16px 48px; }
+  .notes-panel ol { background:#fff7d6; border:1px solid #e6cf6a; border-radius:8px; padding:16px 16px 16px 40px; margin:0; font-size:13px; }
+  .doc { padding:20px; max-width:1100px; width:100%; }
+  .doc h1 { margin:0 0 8px; font-size:22px; } .doc h2 { font-size:16px; margin:24px 0 8px; }
+  .doc p, .doc li { color:var(--ink-2); }
+  .doc .table { display:block; overflow-x:auto; }
+  .doc code { word-break:break-word; }
+</style>
+</head>
+<body class="notes">
+<div class="proto-bar">
+  <strong>Setup guide · wireframe v3</strong>
+  <label>Screen <select id="screen"></select></label>
+  <button id="mob" aria-pressed="true">Mobile</button><button id="desk" aria-pressed="false">Desktop</button><button id="notes" aria-pressed="true">Notes</button>
+  <span style="flex:1"></span><span>Grayscale structure only · gray bars are placeholders · Aura Botanicals is the local seed store, shown as if new</span>
+</div>
+<div class="stage"><div class="device mobile" id="device"></div></div>
+<div class="notes-panel" id="notesPanel"></div>
+<script>
+/* ---------- configure ---------- */
+const STORE = "Aura Botanicals";
+// Bottom bar: shortcuts to the features used many times a day. The full menu stays in the ☰ drawer (decided in review).
+const BOTTOM = [["home_new","Home"],["orders_empty","Orders"],["products_empty","Products"],["pos_tab","POS"],["share","Share"]];
+// Desktop sidebar: today's sections, plus the two pages the guide needs (Rentify Market, Share).
+const SIDE = [
+  [null, [["home_new","Home"]]],
+  ["Sell", [["orders_empty","Orders"],["products_empty","Products"],["orders_empty","Marketplace orders"],["pos_tab","Point of sale"],["home_new","Online store"]]],
+  ["Grow", [["share","Share your store","new"],["home_new","Customers"],["home_new","Analytics"]]],
+  ["Money", [["home_new","Invoices"],["home_new","Billing"]]],
+  ["Settings", [["menu_drawer","Settings"],["menu_drawer","Help & setup guide"]]],
+];
+const SECTION = { done:"home_new", home_new:"home_new", home_progress:"home_new", step_sheet:"home_new", home_done:"home_new", staff_home:"home_new",
+  products_empty:"products_empty", orders_empty:"orders_empty", share:"share", menu_drawer:"home_new", pos_tab:"pos_tab" };
+
+/* ---------- helpers ---------- */
+const n = (k) => `<span class="n" title="See note ${k}">${k}</span>`;
+const ph = (cls="") => `<span class="ph ${cls}"></span>`;
+const field = (label, hint="") => `<div class="field"><label>${label}</label><div class="input">${hint}</div></div>`;
+
+function shell(active, inner, rail="", overlay="", opts={}) {
+  const sec = SECTION[active];
+  const side = SIDE.map(([h, items]) => `${h ? `<h6>${h}</h6>` : ""}${items.map(([k,l,tag]) =>
+    `<a class="nav-item ${sec===k && l!=="Point of sale" && l!=="Online store" && l!=="Customers" && l!=="Analytics" && l!=="Invoices" && l!=="Billing" && l!=="Settings" && l!=="Help & setup guide" ? "on" : ""}" href="#${k}"><span class="ico"></span>${l}${tag?`<span class="tag">${tag}</span>`:""}</a>`).join("")}`).join("");
+  const bottom = BOTTOM.map(([k,l]) => `<a href="#${k}" class="${sec===k?"on":""}"><span class="ico"></span>${l}${k==="home_new" && opts.homeDot ? '<span class="dot" aria-label="Setup not finished"></span>' : ""}</a>`).join("");
+  return `
+  <header class="top">
+    <a class="icon-btn mob" href="#menu_drawer" aria-label="Open menu">☰</a>
+    <a class="brand" href="#home_new"><span class="mark"></span><span>Rentify</span><small>· ${STORE}</small></a>
+    <a class="search" href="#home_new">Search orders, products, settings</a>
+    <span class="spacer mob"></span>
+    <a class="icon-btn mob" href="#home_new" aria-label="Search"><span class="ico"></span></a>
+    <a class="icon-btn" href="#home_new" aria-label="Notifications"><span class="ico"></span></a>
+    <a class="avatar" href="#menu_drawer" title="Account menu">SM</a>
+  </header>
+  <div class="body">
+    <nav class="side">${side}</nav>
+    <main class="main">${inner}</main>
+    ${rail ? `<aside class="rail">${rail}</aside>` : ""}
+  </div>
+  <nav class="bottom">${bottom}</nav>
+  ${overlay}`;
+}
+
+// One setup-guide step. state: todo | open | done | wait | fix | lock
+const STATE_MARK = { todo:"", open:"", done:"✓", wait:"…", fix:"!", lock:"–" };
+function step({ state="todo", title, why="", act="", more="" }) {
+  return `<div class="step ${state==="open"?"open":state}"><span class="st" aria-hidden="true">${STATE_MARK[state]}</span>
+    <div style="flex:1;min-width:0"><div class="t">${title}</div>${why?`<div class="why">${why}</div>`:""}${more?`<div class="more">${more}</div>`:""}</div>
+    ${act?`<div class="act">${act}</div>`:""}</div>`;
+}
+
+/* ---------- sitemap: where the guide lives and what it links to ---------- */
+const SITEMAP = [
+  ["marketing /onboarding/starter (finish step)", "Setup finished → hands off to the guide", "done", "Changed"],
+  ["merchant /overview", "Home with Setup guide (new store)", "home_new", "Changed"],
+  ["merchant /overview", "Home with Setup guide (in progress)", "home_progress", "Changed"],
+  ["merchant /overview (sheet)", "Quick step in a bottom sheet (delivery fee)", "step_sheet", "New overlay"],
+  ["merchant /overview", "Home after setup (guide finished)", "home_done", "Changed"],
+  ["merchant /overview (staff)", "Staff Home: tasks they are allowed to do", "staff_home", "Changed"],
+  ["merchant /products, /catalog", "Products, empty", "products_empty", "Changed empty state"],
+  ["merchant /orders, /marketplace-orders", "Orders, empty", "orders_empty", "Changed empty state"],
+  ["merchant /share (new route)", "Share your store", "share", "New page"],
+  ["merchant (mobile) ☰ menu", "Full menu as an overlay drawer + Setup guide entry", "menu_drawer", "Kept; adds Setup guide entry"],
+  ["merchant (mobile) POS tab", "POS shortcut: opens the register app", "pos_tab", "New bottom tab"],
+];
+
+/* ---------- screens ---------- */
+const SCREENS = {
+  sitemap: {
+    label: "Overview — what this wireframe covers",
+    html: () => `<div class="doc">
+      <h1>Merchant setup guide ${n(1)}</h1>
+      <p>What a merchant sees after creating a Store, until they are ready to take orders. Mobile first; switch to Desktop in the top bar. Every screen below is clickable.</p>
+      <h2>Screens ${n(2)}</h2>
+      <table class="table"><thead><tr><th>Route</th><th>Screen</th><th>Change</th></tr></thead>
+      <tbody>${SITEMAP.map(([r,s,k,c])=>`<tr><td><code>${r}</code></td><td><a href="#${k}"><u>${s}</u></a></td><td>${c}</td></tr>`).join("")}</tbody></table>
+      <h2>Guide steps and where their status comes from ${n(3)}</h2>
+      <table class="table"><thead><tr><th>Stage</th><th>Step the merchant sees</th><th>Backend checklist item</th><th>Counted</th></tr></thead><tbody>
+        <tr><td>1 Set up</td><td>Store name and category (done in onboarding)</td><td><code>store_details</code> + <code>primary_category</code></td><td>yes</td></tr>
+        <tr><td>1 Set up</td><td>Add your first product</td><td><code>first_product_sku</code></td><td>yes</td></tr>
+        <tr><td>1 Set up</td><td>Set your delivery fee</td><td><code>delivery_policy</code> (needs a change: today it also requires a seller application)</td><td>yes</td></tr>
+        <tr><td>2 Go live</td><td>On Rentify Market (automatic)</td><td><code>publication_marketplace</code></td><td>no — status only</td></tr>
+        <tr><td>2 Go live</td><td>Your online store is ready (storefront path)</td><td><code>storefront_readiness</code> / <code>publication_storefront</code></td><td>status only</td></tr>
+        <tr><td>2 Go live</td><td>Preview your store</td><td><code>preview</code></td><td>yes</td></tr>
+        <tr><td>Optional</td><td>Share your store · Try the POS · Invite staff</td><td>not tracked by the backend: links only, no tick</td><td>no</td></tr>
+        <tr><td>Not shown</td><td>Apply / Rentify review</td><td><code>seller_application</code>, <code>approval</code>, <code>return_policy</code>: removed by the product decision that marketplace listing is automatic</td><td>—</td></tr>
+        <tr><td>Not shown</td><td>Verify phone or email</td><td><code>verified_contact</code> is always complete: sign-in requires a verified account (email code, or phone code sent by Telegram; Google sign-in is verified)</td><td>—</td></tr>
+        <tr><td>Not shown</td><td>Telegram order alerts</td><td>Telegram webhook is turned off in <code>src/app.js</code>, so linking can't finish yet</td><td>—</td></tr>
+      </tbody></table>
+      <h2>Problems this fixes ${n(4)}</h2>
+      <table class="table"><thead><tr><th>#</th><th>Problem</th><th>Evidence</th><th>Principle</th></tr></thead><tbody>
+        <tr><td>P1</td><td>Setup ends on a generic screen: "Add and manage products from the merchant workspace".</td><td><code>marketing/.../Onboarding/StartSelling.jsx</code>, <code>startSellingCopy.js</code></td><td>Visibility of next step (Nielsen 1)</td></tr>
+        <tr><td>P2</td><td>Home shows zeros and charts to a new store; nothing says what to do first.</td><td><code>merchant/src/pages/overview/Overview.tsx</code></td><td>Next action, not raw data (docs/experience 06)</td></tr>
+        <tr><td>P3</td><td>A full launch checklist API and a Checklist component exist, but no screen uses them.</td><td><code>stores/launchChecklistService.js</code>, <code>libs/shared/src/ui/experience.tsx</code></td><td>—</td></tr>
+        <tr><td>P4</td><td>Marketplace listing is meant to be automatic, but outside development every new store stays "pending" and hidden from the marketplace and its checkout.</td><td><code>storeService.js</code> (approval only when <code>DEV_MARKETPLACE_AUTO_APPROVAL</code> and <code>NODE_ENV=development</code>); <code>publicStoreWhere</code>; <code>marketplaceRules.js</code></td><td>Product decision (automatic listing)</td></tr>
+        <tr><td>P5</td><td>The delivery fee, which checkout requires, is set inside the Products page.</td><td><code>StoreCatalogPage.jsx</code>; checkout issue "Seller has not posted a delivery fee"</td><td>Match the user's model (Nielsen 2)</td></tr>
+        <tr><td>P6</td><td>On mobile every page is behind a hamburger: about 20 items, mixed Khmer/English labels, a channel switcher that changes the menu.</td><td>Checked at 375px on localhost:4400</td><td>Jakob's law; Hick's law</td></tr>
+        <tr><td>P7</td><td>Empty pages: not checked in this pass (the seed store has data).</td><td>—</td><td>Say what was not verified</td></tr>
+      </tbody></table></div>`,
+    notes: [
+      "Scope: the first days after a Store exists. It does not redesign onboarding itself (that 5-step flow works on mobile) or the whole merchant navigation.",
+      "Every screen is listed here with its route. One route is new (/share), already planned in docs/experience 12 B8. The seller-application page is dropped: marketplace listing is automatic (product decision).",
+      "4 counted steps in 2 stages; one is already done after onboarding. Status comes from the existing backend checklist, so nothing is ticked just because someone tapped it. The marketplace listing is shown as an automatic status, not a task.",
+      "Problem register with evidence. P4 needs backend work so listing is automatic outside development too.",
+    ],
+  },
+
+  done: {
+    label: "1 · Setup finished (onboarding last step)",
+    html: () => `<header class="top"><a class="brand" href="#done"><span class="mark"></span>Rentify</a><span class="spacer"></span><span class="meta">Step 5 of 5</span></header>
+      <div class="main"><div class="col" style="max-width:520px">
+        <div class="page-head" style="text-align:center;padding-top:36px"><div class="empty" style="padding:0"><div class="art"></div></div>
+          <h1 style="margin-top:16px">${STORE} is created ${n(1)}</h1>
+          <p>2 more steps and buyers can order from you on Rentify Market.</p></div>
+        <div class="sec"><div class="card">
+          <div class="stage-h" style="padding:0 0 8px"><span>Your next steps</span><span>about 5 min</span></div>
+          ${step({ state:"todo", title:"Add your first product", why:"Photo, price and stock." })}
+          ${step({ state:"todo", title:"Set your delivery fee", why:"Buyers see it before they order." })}
+          ${step({ state:"done", title:"Listed on Rentify Market", why:"Done automatically. Buyers see your products as soon as you add them." })}
+        </div></div>
+        <div class="sec" style="display:flex;flex-direction:column;gap:10px">
+          <a class="btn primary block" href="#products_empty">Add your first product ${n(2)}</a>
+          <a class="btn block" href="#home_new">Go to my Home</a>
+          <p class="meta" style="text-align:center">You'll find these steps on your Home until they're done. ${n(3)}</p>
+        </div>
+      </div></div>`,
+    notes: [
+      "P1. Replaces the generic \"Your Store workspace is ready\" text with what is left and roughly how long it takes. The steps are the first not-done items of the real checklist, not a fixed list. The automatic listing is shown so the merchant knows there is nothing to apply for.",
+      "One primary action: the first unfinished step. Fitts's law: full-width 44px button at thumb height on mobile.",
+      "Sets the expectation that the guide follows them, so leaving this screen loses nothing (Mandel: reduce memory load).",
+    ],
+  },
+
+  home_new: {
+    label: "2 · Home — new store (1 of 4)",
+    html: () => shell("home_new", `<div class="col">
+      <div class="page-head"><div class="eyebrow">${STORE}</div><h1>Welcome, Sarah</h1><p>Let's get your store ready to sell.</p></div>
+      <div class="sec"><div class="guide">
+        <div class="guide-head"><div><h2>Set up your store ${n(1)}</h2><div class="meta">1 of 4 done · about 5 min</div></div></div>
+        <div class="bar"><i style="width:25%"></i></div>
+        <div class="stage-h"><span>1 · Set up</span><span>1 of 3</span></div>
+        ${step({ state:"open", title:"Add your first product", why:"Buyers can only order products with a photo, price and stock.",
+          more:`<div class="note-box">Tip: on your phone, take the photo first. You can add more details later.</div><a class="btn primary block" href="#products_empty">Add product</a>` })}
+        ${step({ state:"todo", title:"Set your delivery fee", act:`<a class="btn" href="#step_sheet">Set</a>` })}
+        ${step({ state:"done", title:"Store name and category" })}
+        <div class="stage-h"><span>2 · Go live ${n(2)}</span><span>0 of 1</span></div>
+        ${step({ state:"wait", title:"On Rentify Market", why:"Automatic. Your products appear once you add one and set a delivery fee." })}
+        ${step({ state:"lock", title:"Preview your store", why:"Available after your first product." })}
+        <div class="guide-foot"><span>Optional: share your store, try the POS, invite staff ${n(3)}</span><a class="btn ghost" href="#home_progress">Show</a></div>
+      </div></div>
+      <div class="sec"><h3>Where you sell ${n(4)}</h3>
+        <div class="list-row" style="border:1px solid var(--line);border-radius:12px 12px 0 0"><span class="ico"></span><div><b>Rentify Market</b><div class="meta">Listed · waiting for your first product</div></div></div>
+        <div class="list-row" style="border:1px solid var(--line);border-top:0"><span class="ico"></span><div><b>Point of sale</b><div class="meta">Ready when you add a product</div></div></div>
+        <div class="list-row" style="border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px"><span class="ico"></span><div><b>Online store</b><div class="meta">Being prepared · or "Not added" for marketplace-only stores</div></div></div>
+      </div>
+      <div class="sec meta">Sales numbers appear here after your first order. ${n(5)}</div>
+    </div>`, `<div class="card"><h4>Need help?</h4><p class="meta">Short guides for each step, in Khmer and English.</p><a class="btn" href="#menu_drawer">Help</a></div>`, "", { homeDot:true }),
+    notes: [
+      "P2, P3. The guide is the first thing on Home for a new store (docs/experience 05 §3, 12 B1). Progress counts the 4 required steps only. It can be hidden (see screen 3) and disappears when done.",
+      "No application or review stage: listing on Rentify Market is automatic (product decision). It is shown as a status with what it is waiting for, not as a task (Nielsen 1). Locked steps say what unlocks them (Nielsen 5).",
+      "Optional steps sit behind one line so they don't inflate the count or block \"ready\". The backend doesn't track them, so they are links without a tick.",
+      "Channel status uses plain words and says what each channel is waiting for instead of showing \"Off\".",
+      "Charts and zero KPIs are hidden until there is an order. Nothing is invented to fill the page.",
+    ],
+  },
+
+  home_progress: {
+    label: "3 · Home — in progress (2 of 4)",
+    html: () => shell("home_progress", `<div class="col">
+      <div class="page-head"><div class="eyebrow">${STORE}</div><h1>Good afternoon, Sarah</h1></div>
+      <div class="sec"><div class="guide">
+        <div class="guide-head"><div><h2>Set up your store</h2><div class="meta">2 of 4 done</div></div><a class="btn ghost" href="#home_progress">Hide ${n(1)}</a></div>
+        <div class="bar"><i style="width:50%"></i></div>
+        <div class="stage-h"><span>1 · Set up</span><span>2 of 3</span></div>
+        <div class="step done"><span class="st">✓</span><div style="flex:1"><div class="t">2 steps done</div></div><a class="btn ghost" href="#home_new">Show</a></div>
+        ${step({ state:"open", title:"Set your delivery fee", why:"Your product is ready, but buyers can't order until you set a delivery fee.",
+          more:`<a class="btn primary block" href="#step_sheet">Set delivery fee</a>` })}
+        <div class="stage-h"><span>2 · Go live</span><span>0 of 1</span></div>
+        ${step({ state:"wait", title:"On Rentify Market", why:`Automatic. Waiting for your delivery fee. ${n(2)}` })}
+        ${step({ state:"todo", title:"Preview your store", why:"See your store the way buyers do.", act:`<a class="btn" href="#home_progress">Preview</a>` })}
+        <div class="stage-h"><span>Optional ${n(3)}</span><span></span></div>
+        ${step({ state:"todo", title:"Share your store", why:"Your link and QR poster.", act:`<a class="btn" href="#share">Share</a>` })}
+        ${step({ state:"todo", title:"Try the point of sale", why:"For selling at your counter.", act:`<a class="btn" href="#pos_tab">Open</a>` })}
+        ${step({ state:"todo", title:"Invite staff", why:"Give a cashier or helper their own login.", act:`<a class="btn" href="#home_progress">Invite</a>` })}
+      </div></div>
+    </div>`, "", "", { homeDot:true }),
+    notes: [
+      "\"Hide\" collapses the card to one line on Home and is remembered on this device only (no backend field for it yet); it stays in the ☰ menu as \"Setup guide\" (docs/experience 10 O-022). Finished steps collapse to one row so the next action stays near the top on a phone.",
+      "Automatic steps show what they are waiting for, in a waiting state (dashed circle, \"…\"), so they don't read as something the merchant has to do (Nielsen 1).",
+      "Optional steps expanded. The backend doesn't track them, so they are links without a tick. Telegram order alerts are left out until the Telegram webhook is turned on.",
+    ],
+  },
+
+  step_sheet: {
+    label: "4 · Quick step in a sheet (delivery fee)",
+    html: () => shell("step_sheet", `<div class="col"><div class="page-head"><div class="eyebrow">${STORE}</div><h1>Welcome, Sarah</h1></div><div class="sec">${ph("t")}${ph()}${ph("s")}</div></div>`, "",
+      `<div class="scrim"><div class="sheet" role="dialog" aria-label="Set your delivery fee">
+        <div class="grab"></div>
+        <h2>Set your delivery fee ${n(1)}</h2>
+        <p class="meta">One flat fee for every marketplace order. Buyers see it before they order; you collect it with the cash on delivery.</p>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+          ${field("Delivery fee (USD)", "$ 1.50")}
+          <div class="meta">Most sellers in Phnom Penh charge between ${ph("s")} ${n(2)}</div>
+          <a class="btn primary block" href="#home_progress">Save and continue</a>
+          <a class="btn ghost block" href="#products_empty">Change it later in Settings › Delivery ${n(3)}</a>
+        </div>
+      </div></div>`),
+    notes: [
+      "P5. Short steps (like the delivery fee) open as a bottom sheet over Home, so the merchant finishes them without losing their place. Long steps (add product, seller application) go to their full page. Uses the existing ResponsiveDialog: sheet on mobile, dialog on desktop.",
+      "Placeholder: only show a typical range if Rentify has real data for it. Otherwise drop this line.",
+      "The fee needs one permanent, guessable home outside the guide. Today it lives inside Products (StoreCatalogPage). Proposal: Settings › Delivery — decision needed.",
+    ],
+  },
+
+  products_empty: {
+    label: "5 · Products — empty",
+    html: () => shell("products_empty", `<div class="col">
+      <div class="page-head" style="display:flex;align-items:center;gap:8px"><h1>Products</h1><span class="spacer"></span><a class="btn desk" href="#products_empty">Import CSV</a></div>
+      <div class="empty"><div class="art"></div><h2>Add your first product ${n(1)}</h2>
+        <p>Products appear on Rentify Market, your point of sale and your online store from one list.</p>
+        <a class="btn primary block" href="#products_empty" style="max-width:320px;margin:14px auto 0">Take a photo and add product ${n(2)}</a>
+        <p class="meta" style="margin-top:10px">or <a href="#products_empty"><u>add without a photo</u></a></p></div>
+    </div>`),
+    notes: [
+      "Empty state pattern from docs/experience 12 D: one sentence on what the page is for, one primary action. Explains the one-catalog model in a sentence.",
+      "Camera-first on mobile (docs/experience 06 §3.1 quick add). On desktop the label becomes \"Add product\" and CSV import is shown; on mobile CSV import is hidden.",
+    ],
+  },
+
+  orders_empty: {
+    label: "6 · Orders — empty",
+    html: () => shell("orders_empty", `<div class="col">
+      <div class="page-head"><h1>Orders</h1></div>
+      <div class="empty"><div class="art"></div><h2>No orders yet ${n(1)}</h2>
+        <p>Orders from Rentify Market, your point of sale and your online store all arrive here.</p>
+        <a class="btn primary" href="#share">Share your store</a>
+        <p class="meta" style="margin-top:10px">Your store is on Rentify Market once it has a product and a delivery fee. <a href="#home_progress"><u>See setup guide</u></a> ${n(2)}</p></div>
+    </div>`),
+    notes: [
+      "Copy from docs/experience 12 D (\"No orders yet. Share your store to get your first one.\").",
+      "If the store can't receive orders yet (no product or no delivery fee), the empty state says what's missing and links to the setup guide, instead of implying sharing alone will work.",
+    ],
+  },
+
+  share: {
+    label: "7 · Share your store",
+    html: () => shell("share", `<div class="col">
+      <div class="page-head"><h1>Share your store ${n(1)}</h1><p>Send your link to customers or print a QR poster.</p></div>
+      <div class="sec"><div class="card"><div class="meta">Rentify Market page</div><div style="margin:4px 0 10px">${ph("t")}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#share">Copy</a><a class="btn" href="#share">Telegram</a><a class="btn" href="#share">Facebook</a></div></div></div>
+      <div class="sec"><div class="card" style="display:flex;gap:14px;align-items:center"><div class="qr"></div>
+        <div><b>QR poster</b><p class="meta">"Scan to shop · Cash on delivery"</p><a class="btn" href="#share">Download</a> ${n(2)}</div></div></div>
+    </div>`),
+    notes: [
+      "docs/experience 12 B8. Uses the existing ShareSheet component (copy, Telegram, Facebook, QR). Shows the online-store link too when one exists.",
+      "Until the store has a product and a delivery fee, the link opens a page that can't take orders yet; this page should say so rather than hide the link.",
+    ],
+  },
+
+  menu_drawer: {
+    label: "8 · Menu (☰) — full menu over the page",
+    html: () => shell("menu_drawer", `<div class="col"><div class="page-head"><div class="eyebrow">${STORE}</div><h1>Good afternoon, Sarah</h1></div><div class="sec">${ph("t")}${ph()}${ph("s")}</div><div class="sec">${ph("t")}${ph()}</div></div>`, "",
+      `<div class="scrim drawer-scrim"><nav class="drawer" aria-label="Menu">
+        <div class="drawer-head"><span class="mark"></span><div style="flex:1;min-width:0"><b>${STORE}</b><div class="meta">Owner</div></div><a class="icon-btn" href="#home_progress" aria-label="Close menu">✕</a></div>
+        <a class="list-row" href="#home_progress"><span class="ico"></span><div><b>Setup guide ${n(1)}</b><div class="meta">2 of 4 done</div></div><span class="act chip">Continue</span></a>
+        <a class="nav-item on" href="#home_progress"><span class="ico"></span>Home</a>
+        <h6>Sell ${n(2)}</h6>
+        <a class="nav-item" href="#orders_empty"><span class="ico"></span>Orders</a>
+        <a class="nav-item" href="#products_empty"><span class="ico"></span>Products</a>
+        <a class="nav-item" href="#orders_empty"><span class="ico"></span>Marketplace orders</a>
+        <a class="nav-item" href="#pos_tab"><span class="ico"></span>Point of sale</a>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Online store</a>
+        <h6>Grow</h6>
+        <a class="nav-item" href="#share"><span class="ico"></span>Share your store<span class="tag">new</span></a>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Customers</a>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Analytics</a>
+        <h6>Money</h6>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Invoices</a>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Billing</a>
+        <h6>Account ${n(3)}</h6>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Settings</a>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Help</a>
+        <a class="nav-item" href="#home_progress"><span class="ico"></span>Language · ខ្មែរ / English</a>
+      </nav></div>`),
+    notes: [
+      "The Setup guide keeps a permanent entry at the top of the menu, so it can be found after the Home card is hidden or finished (docs/experience 10 O-022).",
+      "P6. The ☰ keeps the existing sidebar as the one full menu, opened as an overlay that slides over the current page, so the page underneath is kept (decided in review). It lists every feature, including the ones that also have a bottom tab, with the current page highlighted. Same groups and labels as the desktop sidebar.",
+      "Labels in one language at a time. The language switch lives here instead of mixing Khmer and English in one menu.",
+    ],
+  },
+
+  pos_tab: {
+    label: "11 · POS tab — opening the register app",
+    html: () => shell("pos_tab", `<div class="col"><div class="page-head"><h1>Point of sale</h1></div><div class="sec">${ph("t")}${ph()}</div></div>`, "",
+      `<div class="scrim"><div class="sheet" role="dialog" aria-label="Open the point of sale">
+        <div class="grab"></div>
+        <h2>Open the point of sale ${n(1)}</h2>
+        <p class="meta">The register opens in its own app, made for selling at your counter. Sales come off the same stock as your other channels.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+          <a class="btn primary block" href="#pos_tab">Open register</a>
+          <div class="meta">First time: you'll enter your opening cash and create a PIN. ${n(2)}</div>
+          <a class="btn ghost block" href="#home_progress">Not now</a>
+        </div>
+      </div></div>`),
+    notes: [
+      "The POS tab is a shortcut to the separate register app (localhost:4450 / rentify-pos). The first time, a short sheet says it opens a new app; after that the tab can open the register directly.",
+      "Matches what the register asks on first open (opening cash float and a 4–6 digit PIN), observed on localhost:4450.",
+    ],
+  },
+
+  home_done: {
+    label: "9 · Home — setup finished",
+    html: () => shell("home_done", `<div class="col">
+      <div class="page-head"><div class="eyebrow">${STORE}</div><h1>Good morning, Sarah</h1></div>
+      <div class="sec"><div class="card" style="display:flex;gap:12px;align-items:center"><span class="st" style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center">✓</span>
+        <div style="flex:1"><b>You're ready to sell ${n(1)}</b><div class="meta">Your store is live on Rentify Market.</div></div><a class="btn ghost" href="#home_done">Close</a></div></div>
+      <div class="sec"><h3>Needs your attention ${n(2)}</h3><div class="grid2">
+        <a class="tile" href="#orders_empty"><b>${ph("s")}</b>new orders</a><a class="tile" href="#orders_empty"><b>${ph("s")}</b>to ship</a></div></div>
+      <div class="sec"><h3>Today</h3>${ph("t")}${ph()}</div>
+    </div>`),
+    notes: [
+      "When every required step is done the card turns into one confirmation, and after it is closed it is gone from Home (still in the ☰ menu as Setup guide). Optional steps don't keep it open.",
+      "From here Home is the planned working Home (docs/experience 06 §1): attention tiles, today's numbers. Not part of this guide; shown so the hand-over is visible.",
+    ],
+  },
+
+  staff_home: {
+    label: "10 · Staff Home (cashier)",
+    html: () => shell("staff_home", `<div class="col">
+      <div class="page-head"><div class="eyebrow">${STORE} · Cashier</div><h1>Welcome, ${ph("s")}</h1></div>
+      <div class="sec"><div class="guide" style="border-width:1px">
+        <div class="guide-head"><div><h2>Get started ${n(1)}</h2><div class="meta">1 of 2 done</div></div></div>
+        ${step({ state:"done", title:"Join " + STORE })}
+        ${step({ state:"open", title:"Open the point of sale", why:"Ring up counter sales with KHQR or cash.",
+          more:`<a class="btn primary block" href="#staff_home">Open POS</a><div class="meta">Opens the register app. You'll set a cash float and a PIN the first time. ${n(2)}</div>` })}
+      </div></div>
+    </div>`),
+    notes: [
+      "Staff never see the owner's setup guide (they can't do most steps). They get a short guide built only from what their permissions allow; a cashier with only POS sees this.",
+      "Says what happens when the separate POS app opens, so the new tab and the shift setup aren't a surprise (observed on localhost:4450).",
+    ],
+  },
+};
+const GROUPS = {
+  "Overview": ["sitemap"],
+  "Hand-off": ["done"],
+  "Home": ["home_new","home_progress","step_sheet","home_done","staff_home"],
+  "Pages the guide links to": ["products_empty","orders_empty","share"],
+  "Mobile navigation": ["menu_drawer","pos_tab"],
+};
+
+/* ---------- runtime ---------- */
+const sel = document.getElementById("screen"), device = document.getElementById("device"), panel = document.getElementById("notesPanel");
+sel.innerHTML = Object.entries(GROUPS).map(([g,keys]) => `<optgroup label="${g}">${keys.map(k=>`<option value="${k}">${SCREENS[k].label}</option>`).join("")}</optgroup>`).join("");
+function render() {
+  const key = SCREENS[location.hash.slice(1)] ? location.hash.slice(1) : "sitemap";
+  const s = SCREENS[key]; sel.value = key; device.innerHTML = s.html();
+  panel.innerHTML = s.notes.length ? `<ol>${s.notes.map(t=>`<li>${t}</li>`).join("")}</ol>` : "";
+  window.scrollTo(0,0);
+}
+const setMode = (m) => { device.classList.toggle("mobile", m); document.getElementById("mob").setAttribute("aria-pressed", m); document.getElementById("desk").setAttribute("aria-pressed", !m); };
+sel.onchange = () => { location.hash = sel.value; };
+document.getElementById("desk").onclick = () => setMode(false);
+document.getElementById("mob").onclick = () => setMode(true);
+document.getElementById("notes").onclick = (e) => e.currentTarget.setAttribute("aria-pressed", document.body.classList.toggle("notes"));
+window.addEventListener("hashchange", render);
+setMode(true);
+render();
+</script>
+</body>
+</html>

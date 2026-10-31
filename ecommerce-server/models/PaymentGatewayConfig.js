@@ -15,7 +15,7 @@ const PaymentGatewayConfig = sequelize.define(
     },
     storeId: { type: DataTypes.UUID, allowNull: true },
     gateway: {
-      type: DataTypes.ENUM("khqr", "aba", "stripe"),
+      type: DataTypes.ENUM("khqr", "aba", "stripe", "cutluy"),
       allowNull: false,
     },
     enabled: {
