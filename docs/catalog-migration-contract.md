@@ -27,10 +27,10 @@ default-on `marketplaceEnabled`; explicit `true` or `false` overrides it.
 Public marketplace reads require an active Store, approved seller status,
 pilot entitlement, reviewed primary Store category, active Product, valid
 Product marketplace category, and effective marketplace visibility. Checkout
-also checks current stock and price. In local development Core grants approved
-status to pending Stores only after verified contact and primary category
-checks when `DEV_MARKETPLACE_AUTO_APPROVAL=true`. Rejected and suspended
-sellers remain blocked; production review is separate.
+also checks current stock and price. Core grants approved status to pending
+Stores automatically after verified contact and primary category checks
+(DEC-028). Rejected and suspended sellers remain blocked; admins review after
+listing.
 
 ## Rentify data checks
 

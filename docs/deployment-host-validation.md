@@ -74,7 +74,6 @@ The validator programmatically evaluates configurations against eight core polic
 - **CutLuy Deferral (DEC-027):** CutLuy QR payments are strictly deferred to Phase 9. `CUTLUY_ENABLED` must be `false` or unset in staging and production.
 - **Cash on Delivery (DEC-026):** COD is the sole accepted payment method for Release 1 online checkout. `MARKETPLACE_COD_CHECKOUT_ENABLED` must be `true`.
 - **Custom Domain Browse-Only Scope (DEC-003):** Custom domains are browse-only in Release 1; checkout occurs exclusively on `<store>.rentifystore.shop/checkout`. `CUSTOM_DOMAIN_CHECKOUT_ENABLED` must be `false` or unset.
-- **Seller Moderation Gate (DEC-007):** In production, seller onboarding requires manual admin review. `DEV_MARKETPLACE_AUTO_APPROVAL` must be `false` or unset.
 
 ### 2.9 Secret Presence & Zero-Credential Diagnostic Guarantee
 - **Mandatory Secrets:** Validates presence of `JWT_SECRET`, `JWT_REFRESH_SECRET`, `SESSION_SECRET`, `COOKIE_SECRET`, `INTERNAL_SERVICE_SECRET`, `PAYMENT_CONFIG_ENCRYPTION_KEY`, and `DB_PASSWORD`.

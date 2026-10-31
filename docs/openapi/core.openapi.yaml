@@ -927,7 +927,7 @@ paths:
       tags:
         - Stores
       summary: Get authoritative merchant launch checklist
-      description: Composes Core identity, Store, Website, seller-review, and Commerce catalog facts into safe checklist statuses and reason codes.
+      description: Composes Core identity, Store, Website and Commerce catalog facts into safe checklist statuses and reason codes. Version 2 (DEC-028) has no seller-application, return-policy or approval items; marketplace listing is automatic, so publication_marketplace reports what is still missing or an admin moderation outcome.
       operationId: getOwnStoreLaunchChecklist
       x-client-generation: false
       security:

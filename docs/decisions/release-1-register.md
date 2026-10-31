@@ -36,7 +36,7 @@ Formal human approval is conferred when the pull request introducing this regist
 | **DEC-004** | Marketplace & Storefront Delivery Fee Model | Merchant-configured flat rate per Store order ($1.50 local default) | Product Management Lead | $0 free shipping fallback |
 | **DEC-005** | Tax Display & Calculation Scope | Tax calculation disabled (`0.00%`); gross prices shown | Legal & Finance Lead | Tax calculation disabled |
 | **DEC-006** | Restricted Products & Moderation Rules | Strict prohibited list; admin moderation with status hidden | Head of Trust & Safety | Manual merchant onboarding only |
-| **DEC-007** | Seller Onboarding & Product Moderation | Mandatory admin verification checklist before public listing | Head of Trust & Safety | All seller listings remain pending |
+| **DEC-007** | Seller Onboarding & Product Moderation | **Superseded by DEC-028.** Was: mandatory admin verification checklist before public listing | Head of Trust & Safety | All seller listings remain pending |
 | **DEC-008** | Return Eligibility Window & Criteria | 7 calendar days from delivered; damaged/defective/wrong item | Customer Operations Lead | Returns handled offline by seller |
 | **DEC-009** | Return Response Deadlines & Evidence | 48 business hours response; buyer photo/video required | Customer Operations Lead | Escalates to admin immediately |
 | **DEC-010** | Refund Confirmation & Financial Responsibility | Seller holds 100% financial liability; direct cash/Bakong refund | Head of Finance & Commerce | Platform disclaims refund handling |
@@ -57,6 +57,7 @@ Formal human approval is conferred when the pull request introducing this regist
 | **DEC-025** | Account Deletion & Anonymization | Soft-delete with PII scrubbing; preserve financial aggregates | Legal & Data Protection Officer | Manual support database purge |
 | **DEC-026** | Release 1 Accepted Payment Methods | Strictly Cash on Delivery (COD) only for online checkout | Executive Platform Sponsor | COD only |
 | **DEC-027** | CutLuy QR Rollout Scope (Post-Launch) | Strictly deferred to Phase P9; seller-owned accounts only | Executive Platform Sponsor | CutLuy completely disabled in code |
+| **DEC-028** | Automatic Marketplace Listing (supersedes DEC-007) | Stores are listed automatically once the owner is verified and a category is set; admins moderate after listing | Product owner | Listing stays automatic; admins suspend individual Stores |
 
 ---
 
@@ -159,6 +160,7 @@ Formal human approval is conferred when the pull request introducing this regist
 ---
 
 ### DEC-007: Seller Onboarding and Product Moderation Workflows
+> **Superseded by [DEC-028](#dec-028-automatic-marketplace-listing) on 2026-10-31.** Kept for history. Product moderation for restricted items (DEC-006) still applies.
 - **Topic:** Requirements for approving merchants to sell on the shared marketplace.
 - **Current Verified Repository Behavior:** Core `Store` tracks `sellerApprovalStatus` (`pending`, `approved`, `rejected`, `suspended`). Development mode supports auto-approval via `DEV_MARKETPLACE_AUTO_APPROVAL=true`.
 - **Release 1 Decision:** Before any Store's products appear publicly on `rentifymarket.com`, a Rentify admin must complete the 7-point seller verification checklist: (1) Verified phone number via OTP; (2) Verified merchant email; (3) Business owner national ID or patent tax document; (4) Physical store location / pickup address; (5) Public customer contact info; (6) At least one valid product listing with price and stock; (7) Signed agreement to COD delivery, return, and refund standards. In local development, `DEV_MARKETPLACE_AUTO_APPROVAL=true` remains supported for test automation.
@@ -525,6 +527,20 @@ Formal human approval is conferred when the pull request introducing this regist
 - **Review Date:** 2027-02-01.
 - **Evidence Links:** [`docs/adr/0003-cutluy-qr-payments.md`](../adr/0003-cutluy-qr-payments.md), [`docs/ai-implementation-plan.md#phase-p9`](../ai-implementation-plan.md#phase-p9).
 - **Follow-up Work Package ID:** `P9-000`, `P9-ADP-001`.
+
+---
+
+### DEC-028: Automatic Marketplace Listing
+- **Topic:** Whether a Store needs an admin review before it can sell on the shared marketplace.
+- **Previous Behavior:** DEC-007 required an admin verification checklist before public listing. Core approved Stores automatically only in development (`DEV_MARKETPLACE_AUTO_APPROVAL=true` and `NODE_ENV=development`), and the host validator rejected that flag in production. The seller-application form in the merchant app was not reachable from any route.
+- **Decision:** Marketplace listing is automatic in every environment. Core approves a `pending` Store when it is active, has a primary category without a pending category review, and its owner account is verified (sign-in already requires a verified email, a phone verified by a Telegram code, or Google). There is no seller application or review step before selling. Admins moderate after listing with the existing tools (suspend, needs changes, reject, restricted-product moderation), and Core never moves a Store out of those admin states automatically. Buyers can only order once the Store has a product and a delivery fee, which the merchant setup guide asks for.
+- **Rejected Alternatives:** Manual review before listing (DEC-007): slows every new seller and needs a reviewer working the queue daily. Automatic listing with a "New seller" badge and review after listing: deferred; it can be added later without changing this rule.
+- **Status:** Decided by the product owner in review of the merchant setup guide plan.
+- **Named Human Approver:** Product owner (longMengchheang).
+- **Approval / Effective Date:** 2026-10-31; effective when merged.
+- **Risks Accepted:** No pre-moderation: a new Store and its products are public as soon as they are ready. Mitigations: admin suspension, restricted-product moderation (DEC-006), buyer reports.
+- **Affected Systems / Schemas / Contracts:** `rentify-server/src/modules/stores/storeService.js`, `stores/launchChecklistService.js` (checklist v2 without application, return-policy and approval items), `rentify-server/scripts/listPendingStores.js` (backfill), `tools/host-validator/policies.js` (DEC-007 rule removed).
+- **Evidence Links:** [`docs/specs/merchant-setup-guide.md`](../specs/merchant-setup-guide.md).
 
 ---
 

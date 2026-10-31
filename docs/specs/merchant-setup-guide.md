@@ -13,7 +13,7 @@ one delivery fee, and a preview. Marketplace listing happens automatically.
 
 | # | Decision | Notes |
 |---|---|---|
-| D1 | **Marketplace listing is automatic.** No seller application or review before selling. | Changes `AGENTS.md` rule 4 ("Seller approval still gates public marketplace selling"). Admins keep suspend and product moderation. |
+| D1 | **Marketplace listing is automatic.** No seller application or review before selling. | Recorded as DEC-028 (supersedes DEC-007); `AGENTS.md` rule 4 updated. Admins keep suspend and product moderation. No "New seller" badge for now. |
 | D2 | **Delivery fee stays a guide step** (no default fee). | Marketplace and storefront checkout both refuse orders without a `StoreDeliveryPolicy`. |
 | D3 | Guide = **4 counted steps in 2 stages**: Set up (store name and category ✓ from onboarding, first product, delivery fee) → Go live (preview). "On Rentify Market" and "Online store ready" show as automatic statuses, not tasks. | Optional, untracked: share, try POS, invite staff. |
 | D4 | **No verification step.** Sign-in already requires a verified account (email code, or phone code sent by Telegram; Google is verified). | |
