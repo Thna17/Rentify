@@ -19,6 +19,7 @@ export const NAV_ITEMS = [
   { to: '/templates', key: 'site.nav.templates' },
   { to: '/pricing', key: 'site.nav.pricing' },
   { to: '/live-demo', key: 'site.nav.liveDemo' },
+  { to: '/showcase', key: 'site.nav.showcase' },
   { to: '/about', key: 'site.nav.about' },
 ];
 
