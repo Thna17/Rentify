@@ -27,7 +27,7 @@ import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
 export const ItemQuickAdd = ({ onAddItem }) => {
   const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
+  const websiteId = websiteData?.websiteId;
   
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
