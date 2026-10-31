@@ -5,8 +5,6 @@ import {
   Edit,
   Mail,
   Trash2,
-  CheckCircle,
-  XCircle,
   Users,
   Filter,
   MoreHorizontal,
@@ -26,14 +24,7 @@ import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Badge } from '@rentify/shared/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@rentify/shared/ui/table';
+import { DataTable, StatusPill } from '../../components/data-table';
 import {
   Card,
   CardContent,
@@ -196,6 +187,134 @@ const StaffSetting: React.FC = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const staffColumns = [
+    {
+      id: 'member',
+      accessorFn: (staff: StaffMember) => staff.name || '',
+      header: t('merchant.p.staffMember'),
+      meta: { sortable: true, mobile: 'primary' },
+      cell: ({ row }: any) => {
+        const staff: StaffMember = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9 border">
+              <AvatarImage src={staff.avatar} alt="" />
+              <AvatarFallback className="bg-primary/10 font-medium text-primary">
+                {getInitials(staff.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-foreground">{staff.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{staff.role || t('merchant.table.staff.role')}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'contact',
+      accessorFn: (staff: StaffMember) => staff.email || '',
+      header: t('merchant.p.contact'),
+      meta: { mobileHideLabel: true, mobileCell: (staff: StaffMember) => staff.email || staff.phoneNumber || null },
+      cell: ({ row }: any) => (
+        <div className="min-w-0">
+          <p className="truncate text-foreground">{row.original.email}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {row.original.phoneNumber || t('merchant.table.staff.noPhone')}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: 'permissions',
+      header: t('merchant.p.permissions'),
+      meta: { mobile: 'badge' },
+      enableSorting: false,
+      cell: ({ row }: any) => {
+        const staff: StaffMember = row.original;
+        return (
+          <div className="flex max-w-xs flex-wrap gap-1">
+            {staff.permissions?.slice(0, 3).map((permission: string) => (
+              <Badge key={permission} variant="info" className="rounded-full text-xs">
+                {permissionsLabels[permission] || permission}
+              </Badge>
+            ))}
+            {staff.permissions?.length > 3 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="cursor-help rounded-full text-xs" tabIndex={0}>
+                    +{staff.permissions.length - 3}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="min-w-[120px] space-y-1">
+                    {staff.permissions.slice(3).map((p: string) => (
+                      <div key={p} className="text-xs">{permissionsLabels[p] || p}</div>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'status',
+      accessorFn: (staff: StaffMember) => (staff.isActive ? 1 : 0),
+      header: t('merchant.p.status'),
+      meta: { sortable: true, mobile: 'badge' },
+      cell: ({ row }: any) => (
+        row.original.isActive
+          ? <StatusPill tone="success">{t('merchant.p.active')}</StatusPill>
+          : <StatusPill tone="danger">{t('merchant.p.inactive')}</StatusPill>
+      ),
+    },
+    {
+      id: 'actions',
+      header: () => <span className="sr-only">{t('merchant.p.actions')}</span>,
+      meta: { label: t('merchant.p.actions'), align: 'right' },
+      enableSorting: false,
+      cell: ({ row }: any) => {
+        const staff: StaffMember = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:h-9 md:w-9" aria-label={t('merchant.table.staff.actionsFor', { name: staff.name })}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={() => handleOpenDialog(staff)}
+                className="flex min-h-11 cursor-pointer items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                {t('merchant.p.editStaff')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleResendInvite(staff.email)}
+                disabled={resendingEmail === staff.email}
+                className="flex min-h-11 cursor-pointer items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                {resendingEmail === staff.email ? t('merchant.table.staff.sending') : t('merchant.table.staff.resendInvite')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(staff.id)}
+                disabled={deletingId === staff.id}
+                className="flex min-h-11 cursor-pointer items-center gap-2 text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deletingId === staff.id ? t('merchant.table.staff.deleting') : t('merchant.table.staff.delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <SettingsLayout
       title={t('merchant.p.staffManagement')}
@@ -266,159 +385,26 @@ const StaffSetting: React.FC = () => {
           </div>
 
           {/* Staff Table */}
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-20 bg-gray-100 animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : filteredStaff.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-              <Users className="mb-4 h-12 w-12 text-gray-400" />
-              <h3 className="mb-2 text-lg font-semibold">{t('merchant.p.noStaffMembersFound')}</h3>
-              <p className="mb-6 text-gray-500 max-w-md">
-                {searchTerm
-                  ? 'Try adjusting your search criteria'
-                  : 'Get started by inviting your first team member'}
-              </p>
-              <Button onClick={() => handleOpenDialog()} className="gap-2">
-                <Plus className="h-4 w-4" />
-                {t('merchant.p.addStaffMember')}
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-lg border">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead className="font-semibold">{t('merchant.p.staffMember')}</TableHead>
-                    <TableHead className="font-semibold">{t('merchant.p.contact')}</TableHead>
-                    <TableHead className="font-semibold">{t('merchant.p.permissions')}</TableHead>
-                    <TableHead className="font-semibold">{t('merchant.p.status')}</TableHead>
-                    <TableHead className="text-right font-semibold">{t('merchant.p.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStaff.map((staff: StaffMember) => (
-                    <TableRow key={staff.id} className="border-b hover:bg-gray-50/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9 border">
-                            <AvatarImage src={staff.avatar} />
-                            <AvatarFallback className="bg-blue-100 font-medium text-blue-600">
-                              {getInitials(staff.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-gray-900">{staff.name}</p>
-                            <p className="text-sm text-gray-500">{staff.role || 'Staff Member'}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-gray-900">{staff.email}</p>
-                          <p className="text-sm text-gray-500">
-                            {staff.phoneNumber || 'No phone number'}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {staff.permissions?.slice(0, 3).map((permission: string) => (
-                            <Badge 
-                              key={permission} 
-                              variant="secondary" 
-                              className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              {permissionsLabels[permission] || permission}
-                            </Badge>
-                          ))}
-                          {staff.permissions?.length > 3 && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="outline" className="text-xs cursor-help">
-                                  +{staff.permissions.length - 3}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="space-y-1 min-w-[120px]">
-                                  {staff.permissions.slice(3).map((p: string) => (
-                                    <div key={p} className="text-xs text-gray-600">
-                                      {permissionsLabels[p] || p}
-                                    </div>
-                                  ))}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {staff.isActive ? (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <Badge 
-                                variant="outline" 
-                                className="border-green-200 bg-green-50 text-green-700 text-xs"
-                              >
-                                {t('merchant.p.active')}
-                              </Badge>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-4 w-4 text-red-500" />
-                              <Badge 
-                                variant="outline" 
-                                className="border-red-200 bg-red-50 text-red-700 text-xs"
-                              >
-                                {t('merchant.p.inactive')}
-                              </Badge>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem 
-                              onClick={() => handleOpenDialog(staff)}
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              <Edit className="h-4 w-4" />
-                              {t('merchant.p.editStaff')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleResendInvite(staff.email)}
-                              disabled={resendingEmail === staff.email}
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              <Mail className="h-4 w-4" />
-                              {resendingEmail === staff.email ? 'Sending...' : 'Resend Invite'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(staff.id)}
-                              disabled={deletingId === staff.id}
-                              className="flex items-center gap-2 text-red-600 cursor-pointer focus:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              {deletingId === staff.id ? 'Deleting...' : 'Delete'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <DataTable
+            ariaLabel={t('merchant.p.teamMembers')}
+            columns={staffColumns}
+            data={filteredStaff}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={refetch}
+            mobileInset="pl-12"
+            empty={{
+              icon: Users,
+              title: t('merchant.p.noStaffMembersFound'),
+              body: searchTerm ? t('merchant.table.staff.emptySearch') : t('merchant.table.staff.emptyInvite'),
+              action: !searchTerm && (
+                <Button onClick={() => handleOpenDialog()} className="h-11 gap-2" disabled={!canAddStaff}>
+                  <Plus className="h-4 w-4" />
+                  {t('merchant.p.addStaffMember')}
+                </Button>
+              ),
+            }}
+          />
 
           {/* Add/Edit Staff Dialog */}
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>

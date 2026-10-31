@@ -19,6 +19,7 @@ export const NAV_ITEMS = [
   { to: '/templates', key: 'site.nav.templates' },
   { to: '/pricing', key: 'site.nav.pricing' },
   { to: '/live-demo', key: 'site.nav.liveDemo' },
+  { to: '/showcase', key: 'site.nav.showcase' },
   { to: '/about', key: 'site.nav.about' },
 ];
 
@@ -181,14 +182,14 @@ const SiteHeader = () => {
         <Container className="flex h-12 items-center justify-between md:h-[52px]">
           <Wordmark />
 
-          <nav className="hidden items-center gap-7 lg:flex" aria-label={t('site.nav.mainLabel')}>
+          <nav className="hidden items-center gap-6 xl:flex 2xl:gap-8" aria-label={t('site.nav.mainLabel')}>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 aria-current={isActive(item.to) ? 'page' : undefined}
                 className={cn(
-                  'text-[13px] transition-colors',
+                  'whitespace-nowrap text-[13px] transition-colors',
                   isActive(item.to)
                     ? 'font-medium text-[#1d1d1f]'
                     : 'text-[#1d1d1f]/60 hover:text-[#1d1d1f]'
@@ -201,7 +202,7 @@ const SiteHeader = () => {
               href={MARKETPLACE_HREF}
               target="_blank"
               rel="noreferrer"
-              className="group inline-flex items-center gap-1.5 rounded-full border border-amber-200/90 bg-amber-50/90 px-3 py-1 text-[13px] font-medium text-amber-900 transition-all hover:border-amber-300 hover:bg-amber-100"
+              className="group inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-200/90 bg-amber-50/90 px-3 py-1 text-[13px] font-medium text-amber-900 transition-all hover:border-amber-300 hover:bg-amber-100"
             >
               <ShoppingBag className="h-3.5 w-3.5 text-amber-600" />
               <span>{t('site.nav.marketplace')}</span>
@@ -209,11 +210,11 @@ const SiteHeader = () => {
             </a>
           </nav>
 
-          <div className="hidden items-center gap-5 lg:flex">
+          <div className="hidden items-center gap-5 xl:flex">
             <LanguageToggle />
             <a
               href={AUTH_URL}
-              className="text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]"
+              className="whitespace-nowrap text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]"
             >
               {t('site.nav.signIn')}
             </a>
@@ -224,7 +225,7 @@ const SiteHeader = () => {
 
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center lg:hidden"
+            className="flex h-10 w-10 items-center justify-center xl:hidden"
             onClick={() => setOpen(true)}
             aria-label={t('site.nav.menu')}
             aria-expanded={open}
@@ -242,7 +243,7 @@ const SiteHeader = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className={cn('fixed inset-0 z-[60] overflow-y-auto bg-white antialiased md:hidden', font)}
+            className={cn('fixed inset-0 z-[60] overflow-y-auto bg-white antialiased xl:hidden', font)}
             role="dialog"
             aria-modal="true"
           >

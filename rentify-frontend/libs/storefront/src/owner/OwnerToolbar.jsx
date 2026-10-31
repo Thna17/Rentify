@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { ExternalLink, LayoutDashboard, Palette, Plus } from 'lucide-react';
 import { DASHBOARD_URL } from '@rentify/shared/config/urls';
 import { useStorefrontWebsite } from '../website';
 import { contentImages, contentText, getContentValue } from '../content';
@@ -181,33 +182,41 @@ export default function OwnerToolbar({ fields, editor, onEditorChange }) {
   // The panel shows the section editor, or one of the quick "add" forms.
   const mode = editor.section === ADD_PRODUCT ? 'product' : editor.section === ADD_CATEGORY ? 'category' : 'content';
   const heading = { product: t.newProduct, category: t.newCategory, content: t.title }[mode];
-  const quickButton = 'inline-flex min-h-9 items-center rounded-full px-3 font-medium text-foreground hover:bg-muted';
+  const quickButton = 'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-foreground/80 hover:bg-muted hover:text-foreground transition-colors';
 
   return (
     <>
-      <div className="fixed bottom-24 left-4 z-40 flex items-center gap-1 rounded-full border border-border bg-card/95 p-1 pl-3 text-sm shadow-[0_12px_32px_-12px_oklch(var(--foreground)/0.45)] backdrop-blur md:bottom-5">
-        <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.yourStore}</span>
+      <div className="fixed bottom-6 left-6 z-40 flex items-center gap-1.5 rounded-full border border-black/10 bg-background/95 p-1.5 pl-3.5 text-xs shadow-xl ring-1 ring-black/5 backdrop-blur-md transition-all">
+        <span className="flex items-center gap-1.5 pr-2 font-semibold uppercase tracking-wider text-[11px] text-muted-foreground border-r border-border/70">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          {t.yourStore}
+        </span>
         <button
           type="button"
           onClick={() => onEditorChange({ open: true, section: null })}
-          className="inline-flex min-h-9 items-center rounded-full bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90"
+          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-all hover:scale-[1.02]"
         >
-          {t.editStore}
+          <Palette className="h-3.5 w-3.5" />
+          <span>{t.editStore}</span>
         </button>
         <button type="button" onClick={() => onEditorChange({ open: true, section: ADD_PRODUCT })} className={quickButton}>
-          + {t.addProduct}
+          <Plus className="h-3.5 w-3.5" />
+          <span>{t.addProduct}</span>
         </button>
         <button type="button" onClick={() => onEditorChange({ open: true, section: ADD_CATEGORY })} className={`${quickButton} hidden sm:inline-flex`}>
-          + {t.addCategory}
+          <Plus className="h-3.5 w-3.5" />
+          <span>{t.addCategory}</span>
         </button>
         {DASHBOARD_URL && (
           <a
             href={DASHBOARD_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-9 items-center rounded-full px-3 font-medium text-foreground hover:bg-muted"
+            className={`${quickButton} border-l border-border/70 pl-2.5`}
           >
-            {t.dashboard}
+            <LayoutDashboard className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>{t.dashboard}</span>
+            <ExternalLink className="h-3 w-3 opacity-50" />
           </a>
         )}
       </div>

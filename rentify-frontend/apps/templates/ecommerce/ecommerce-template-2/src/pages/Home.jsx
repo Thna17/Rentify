@@ -3,6 +3,7 @@ import { PackageOpen } from 'lucide-react';
 import { useGetAllProductsQuery, useGetProductsByCategoryQuery } from '@rentify/storefront/api';
 import { useStorefrontCategories, useStorefrontWebsite } from '@rentify/storefront/website';
 import { trackStorefrontEvent } from '@rentify/storefront/analytics';
+import { LayoutSection, useSectionLayout } from '@rentify/storefront/preview';
 import { useI18n } from '../i18n';
 import { PATHS, catalogPath } from '../paths';
 import { getTemplateContent } from '../storeContent';
@@ -53,6 +54,7 @@ export default function Home() {
   const { categories } = useStorefrontCategories();
   const latest = useGetAllProductsQuery({ websiteId, page: 1, limit: ROW_LIMIT, sort: 'newest' }, { skip: !websiteId });
   const page = getTemplateContent(content, categories);
+  const layout = useSectionLayout(2);
   useDocumentTitle(null);
 
   useEffect(() => {
@@ -71,70 +73,86 @@ export default function Home() {
         note={page.hero.note}
         storyLink={Boolean(page.story.title)}
       />
-      {page.highlights.length ? <Highlights items={page.highlights} /> : <OwnerSectionPlaceholder section="Highlights" className="mt-8" />}
+      <div className="flex flex-col">
+        <LayoutSection layout={layout} id="highlights">
+          {page.highlights.length ? <Highlights items={page.highlights} /> : <OwnerSectionPlaceholder section="Highlights" className="mt-8" />}
+        </LayoutSection>
 
-      {categories.length > 0 ? (
-        <section aria-labelledby="shop-by-category" className="store-container relative mt-16 sm:mt-24">
-          <OwnerAddButton kind="category" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
-          <SectionTitle
-            id="shop-by-category"
-            title={t('home.categories')}
-            to={PATHS.PRODUCTS}
-            linkLabel={t('home.viewAllCategories')}
-          />
-          <CategoryCards categories={categories.slice(0, MAX_CATEGORY_CARDS)} />
-        </section>
-      ) : (
-        <div className="store-container mt-12 flex justify-end">
-          <OwnerAddButton kind="category" />
-        </div>
-      )}
+        <LayoutSection layout={layout} id="categories">
+          {categories.length > 0 ? (
+            <section aria-labelledby="shop-by-category" className="store-container relative mt-12 sm:mt-16">
+              <OwnerAddButton kind="category" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
+              <SectionTitle
+                id="shop-by-category"
+                title={t('home.categories')}
+                to={PATHS.PRODUCTS}
+                linkLabel={t('home.viewAllCategories')}
+              />
+              <CategoryCards categories={categories.slice(0, MAX_CATEGORY_CARDS)} />
+            </section>
+          ) : (
+            <div className="store-container mt-12 flex justify-end">
+              <OwnerAddButton kind="category" />
+            </div>
+          )}
+        </LayoutSection>
 
-      <section aria-labelledby="new-arrivals" className="store-container relative mt-16 sm:mt-24">
-        <OwnerAddButton kind="product" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
-        <SectionTitle id="new-arrivals" title={t('home.newArrivals')} to={storeIsEmpty ? null : catalogPath({ sort: 'newest' })} />
-        {latest.isLoading || !websiteId ? (
-          <ProductGridSkeleton count={ROW_LIMIT} layout="rail" />
-        ) : latest.isError ? (
-          <ErrorState onRetry={latest.refetch} />
-        ) : storeIsEmpty ? (
-          <EmptyState icon={PackageOpen} title={t('home.emptyTitle')} body={t('home.emptyBody')} />
-        ) : (
-          <ProductGrid products={products} layout="rail" priorityCount={2} />
-        )}
-      </section>
+        <LayoutSection layout={layout} id="newArrivals">
+          <section aria-labelledby="new-arrivals" className="store-container relative mt-14 sm:mt-16">
+            <OwnerAddButton kind="product" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
+            <SectionTitle id="new-arrivals" title={t('home.newArrivals')} to={storeIsEmpty ? null : catalogPath({ sort: 'newest' })} />
+            {latest.isLoading || !websiteId ? (
+              <ProductGridSkeleton count={ROW_LIMIT} layout="rail" />
+            ) : latest.isError ? (
+              <ErrorState onRetry={latest.refetch} />
+            ) : storeIsEmpty ? (
+              <EmptyState icon={PackageOpen} title={t('home.emptyTitle')} body={t('home.emptyBody')} />
+            ) : (
+              <ProductGrid products={products} layout="rail" priorityCount={2} />
+            )}
+          </section>
+        </LayoutSection>
 
-      {page.feature.title ? (
-        <div className="mt-14 sm:mt-20">
-          <FeatureBanner feature={page.feature} />
-        </div>
-      ) : (
-        <OwnerSectionPlaceholder section="Feature Banner" className="mt-14" />
-      )}
+        <LayoutSection layout={layout} id="feature">
+          {page.feature.title ? (
+            <div className="mt-14 sm:mt-20">
+              <FeatureBanner feature={page.feature} />
+            </div>
+          ) : (
+            <OwnerSectionPlaceholder section="Feature Banner" className="mt-14" />
+          )}
+        </LayoutSection>
 
-      {!storeIsEmpty && page.featured.category ? (
-        <FeaturedSection featured={page.featured} websiteId={websiteId} />
-      ) : (
-        <OwnerSectionPlaceholder section="Featured Products" className="mt-14" />
-      )}
+        <LayoutSection layout={layout} id="featured">
+          {!storeIsEmpty && page.featured.category ? (
+            <FeaturedSection featured={page.featured} websiteId={websiteId} />
+          ) : (
+            <OwnerSectionPlaceholder section="Featured Products" className="mt-14" />
+          )}
+        </LayoutSection>
 
-      {page.needs.items.length > 0 ? (
-        <section aria-labelledby="shop-by-need" className="store-container relative mt-16 sm:mt-24">
-          <OwnerEditButton section="Shop by Need" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
-          <SectionTitle id="shop-by-need" title={page.needs.title || t('home.concerns')} />
-          <NeedChips items={page.needs.items} />
-        </section>
-      ) : (
-        <OwnerSectionPlaceholder section="Shop by Need" className="mt-14" />
-      )}
+        <LayoutSection layout={layout} id="needs">
+          {page.needs.items.length > 0 ? (
+            <section aria-labelledby="shop-by-need" className="store-container relative mt-14 sm:mt-16">
+              <OwnerEditButton section="Shop by Need" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
+              <SectionTitle id="shop-by-need" title={page.needs.title || t('home.concerns')} />
+              <NeedChips items={page.needs.items} />
+            </section>
+          ) : (
+            <OwnerSectionPlaceholder section="Shop by Need" className="mt-14" />
+          )}
+        </LayoutSection>
 
-      {page.story.title ? (
-        <div className="mt-14 sm:mt-20">
-          <StoryBand story={page.story} />
-        </div>
-      ) : (
-        <OwnerSectionPlaceholder section="Our Story" className="mt-14" />
-      )}
+        <LayoutSection layout={layout} id="story">
+          {page.story.title ? (
+            <div className="mt-14 sm:mt-20">
+              <StoryBand story={page.story} />
+            </div>
+          ) : (
+            <OwnerSectionPlaceholder section="Our Story" className="mt-14" />
+          )}
+        </LayoutSection>
+      </div>
     </div>
   );
 }

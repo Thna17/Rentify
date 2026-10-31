@@ -13,7 +13,7 @@
 .atelier-image-placeholder { display: grid; place-items: center; height: 100%; min-height: 420px; background: linear-gradient(135deg,#e8ded0,#cfc0ac); color: #8d7862; }
 .atelier-image-placeholder span { font-size: clamp(7rem, 16vw, 15rem); opacity: .45; }
 .atelier-edit { position: absolute; top: 1rem; right: 1rem; }
-.atelier-content { max-width: 1440px; margin: auto; padding: 0 clamp(1.25rem, 5vw, 5rem); }
+.atelier-content { max-width: 1440px; margin: auto; padding: 0 clamp(1.25rem, 5vw, 5rem); display: flex; flex-direction: column; }
 .atelier-section { padding-top: clamp(4rem, 8vw, 8rem); }
 .atelier-empty-action { display: flex; justify-content: flex-end; padding-top: 2rem; }
 .atelier-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }

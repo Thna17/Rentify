@@ -17,6 +17,8 @@ export function useCustomers() {
 
   const [storeOrders, setStoreOrders] = useState([]);
   const [storeOrdersLoading, setStoreOrdersLoading] = useState(false);
+  const [storeOrdersError, setStoreOrdersError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const orderHistory = useGetOrderHistoryQuery(
     { websiteId, page: 1, limit: 200 },
@@ -27,24 +29,32 @@ export function useCustomers() {
     if (websiteId || !store?.id) return;
     let active = true;
     setStoreOrdersLoading(true);
+    setStoreOrdersError(false);
     fetch(`${ECOMMERCE_API_ROOT}/api/stores/${store.id}/marketplace-orders`, {
       credentials: 'include',
     })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (!res.ok) throw new Error('Request failed');
+        return res.json();
+      })
       .then((data) => {
         if (active && data?.orders) setStoreOrders(data.orders);
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (active) setStoreOrdersError(true);
+      })
       .finally(() => {
         if (active) setStoreOrdersLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [websiteId, store?.id]);
+  }, [websiteId, store?.id, reloadKey]);
 
   const orders = websiteId ? orderHistory.data?.orders || [] : storeOrders;
   const isLoading = websiteId ? orderHistory.isLoading : storeOrdersLoading;
+  const isError = websiteId ? Boolean(orderHistory.isError) : storeOrdersError;
+  const refetch = () => (websiteId ? orderHistory.refetch() : setReloadKey((key) => key + 1));
 
   const customers = useMemo(() => {
     const byContact = new Map();
@@ -80,7 +90,7 @@ export function useCustomers() {
     return [...byContact.values()].sort((a, b) => b.lastOrderAt - a.lastOrderAt);
   }, [orders]);
 
-  return { customers, isLoading };
+  return { customers, isLoading, isError, refetch };
 }
 
 export default useCustomers;

@@ -1,12 +1,18 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, FileSpreadsheet, Package, Pencil, Plus, Search, Truck } from 'lucide-react';
+import { ChevronDown, FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search, Truck } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
 import { Button } from '@rentify/shared/ui/button';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@rentify/shared/ui/dropdown-menu';
 import { useChannels } from '../../context/ChannelContext';
 import { useTranslation } from '@rentify/utils';
 
@@ -42,16 +48,84 @@ const storefrontState = (product, hasWebsite) => {
 };
 
 const TONES = {
-  success: 'bg-success/10 text-success',
-  warning: 'bg-warning/15 text-warning-foreground',
-  danger: 'bg-destructive/10 text-destructive',
-  muted: 'bg-muted text-muted-foreground',
+  success: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
+  warning: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
+  danger: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20',
+  muted: 'bg-muted/80 text-muted-foreground border border-border/60',
 };
+
+const DOT_TONES = {
+  success: 'bg-emerald-500',
+  warning: 'bg-amber-500',
+  danger: 'bg-rose-500',
+  muted: 'bg-muted-foreground/60',
+};
+
 const ChannelPill = ({ channel, state }) => (
-  <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${TONES[state.tone]}`}>
-    {channel && <><span className="font-semibold">{channel}</span> ·</>} {state.label}
+  <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES[state?.tone] || TONES.muted}`}>
+    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES[state?.tone] || DOT_TONES.muted}`} aria-hidden="true" />
+    {channel && <span className="font-semibold">{channel}</span>}
+    {channel && state?.label && <span className="opacity-40">·</span>}
+    {state?.label && <span>{state.label}</span>}
   </span>
 );
+
+/**
+ * Returns a consolidated channel status summary pill:
+ * - "Both" (when active on both Marketplace and Storefront)
+ * - "Marketplace" (when active only on Marketplace)
+ * - "Online Store" (when active only on Online Store)
+ * - "Draft" / "Hidden" (when not live)
+ */
+const ProductStatusBadge = ({ product, market, store, hasStorefront }) => {
+  const isMarketLive = market?.label === 'Live';
+  const isStoreLive = hasStorefront && store?.label === 'Live';
+
+  if (product.status !== 'active') {
+    return (
+      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.muted}`}>
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.muted}`} aria-hidden="true" />
+        <span>Draft</span>
+      </span>
+    );
+  }
+
+  if (isMarketLive && isStoreLive) {
+    return (
+      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.success}`}>
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.success}`} aria-hidden="true" />
+        <span>Both</span>
+      </span>
+    );
+  }
+
+  if (isStoreLive) {
+    return (
+      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.success}`}>
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.success}`} aria-hidden="true" />
+        <span>Online Store</span>
+      </span>
+    );
+  }
+
+  if (isMarketLive) {
+    return (
+      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.success}`}>
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.success}`} aria-hidden="true" />
+        <span>Marketplace</span>
+      </span>
+    );
+  }
+
+  // Not live on either (e.g. Hidden, In review, Waiting for approval)
+  const primaryState = market?.label !== 'Draft' ? market : store;
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES[primaryState?.tone] || TONES.muted}`}>
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES[primaryState?.tone] || DOT_TONES.muted}`} aria-hidden="true" />
+      <span>{primaryState?.label || 'Hidden'}</span>
+    </span>
+  );
+};
 
 export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const { t } = useTranslation();
@@ -303,19 +377,42 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                           </button>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex flex-wrap gap-1.5">
-                              <ChannelPill channel="Marketplace" state={market} />
-                              {hasWebsite(product) && <ChannelPill channel="Online store" state={store} />}
+                              <ProductStatusBadge
+                                product={product}
+                                market={market}
+                                store={store}
+                                hasStorefront={hasWebsite(product)}
+                              />
                             </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-11 w-11 shrink-0"
-                              aria-label={`Edit ${product.name}`}
-                              onClick={() => editProduct(product)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+                                  aria-label={`Actions for ${product.name}`}
+                                >
+                                  <MoreHorizontal className="h-5 w-5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  className="flex min-h-10 cursor-pointer items-center gap-2"
+                                  onClick={() => editProduct(product)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  <span>{t('merchant.p.editProduct')}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="flex min-h-10 cursor-pointer items-center gap-2"
+                                  disabled={busyId === product.id}
+                                  onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
+                                >
+                                  <span>{product.status === 'active' ? 'Unpublish' : 'Publish'}</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
 
@@ -323,30 +420,43 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                         <span className="hidden text-sm font-medium md:block">{money(product.price)}</span>
                         <span className={`hidden text-sm md:block ${lowStock ? 'font-medium text-destructive' : ''}`}>{stock}</span>
                         <div className="hidden flex-wrap gap-1.5 md:flex">
-                          <ChannelPill channel="Marketplace" state={market} />
-                          {hasWebsite(product) && <ChannelPill channel="Online store" state={store} />}
+                          <ProductStatusBadge
+                            product={product}
+                            market={market}
+                            store={store}
+                            hasStorefront={hasWebsite(product)}
+                          />
                         </div>
-                        <div className="hidden justify-end gap-1 md:flex">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-11"
-                            disabled={busyId === product.id}
-                            onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
-                          >
-                            {product.status === 'active' ? 'Unpublish' : 'Publish'}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-11 w-11"
-                            aria-label={`Edit ${product.name}`}
-                            onClick={() => editProduct(product)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                        <div className="hidden justify-end md:flex">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                                aria-label={`Actions for ${product.name}`}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem
+                                className="flex min-h-10 cursor-pointer items-center gap-2"
+                                onClick={() => editProduct(product)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span>{t('merchant.p.editProduct')}</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="flex min-h-10 cursor-pointer items-center gap-2"
+                                disabled={busyId === product.id}
+                                onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
+                              >
+                                <span>{product.status === 'active' ? 'Unpublish' : 'Publish'}</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </li>
 

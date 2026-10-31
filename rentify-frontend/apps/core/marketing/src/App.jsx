@@ -10,6 +10,7 @@ import Pricing from "./pages/pricing/Pricing";
 import Onboarding from "./pages/Onboarding/AdvancedOnboarding";
 
 import LiveDemoPage from "./pages/live-demo/LiveDemo";
+import ShowcasePage from "./pages/showcase/Showcase";
 // import NotFound from "./pages/NotFound";
 import BrowseTemplates from "./pages/template-browse";
 import TemplateDetailPage from "./pages/template-detail";
@@ -37,6 +38,7 @@ const App = () => (
 
               <Route path="/solutions" element={<Solutions />} />
               <Route path="/live-demo" element={<LiveDemoPage />} />
+              <Route path="/showcase" element={<ShowcasePage />} />
 
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about" element={<About />} />

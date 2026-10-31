@@ -81,7 +81,7 @@ const PlanCard = ({ plan, index, count, recommended, compact }) => {
 
       <div className="mt-7 flex items-baseline gap-1.5">
         <span className="text-[40px] font-semibold leading-none md:text-[52px] tracking-[-0.04em] text-[#1d1d1f]">
-          {free ? '$0' : `≈${formatPrice(plan.price)}`}
+          {free ? '$0' : formatPrice(plan.price)}
         </span>
         <span className="text-[17px] text-[#6e6e73]">{formatPeriod(plan, t)}</span>
       </div>

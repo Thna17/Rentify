@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import { previewTemplateId } from '@rentify/storefront/preview';
 
 /**
  * Templates this storefront can serve, keyed by `websiteTemplateId`. Each one
@@ -15,9 +16,14 @@ export const TEMPLATE_LOADERS = {
 
 const lazyTemplates = {};
 
-/** The lazily loaded template component for a website, or null when unsupported. */
+/**
+ * The lazily loaded template component for a website, or null when unsupported.
+ * The merchant's design preview (a framed `?previewTemplate=`) may ask for another
+ * template; it only changes the look of this page view, never what is saved.
+ */
 export const templateFor = (website) => {
-  const id = Number(website?.websiteTemplateId);
+  if (!website) return null;
+  const id = previewTemplateId() ?? Number(website.websiteTemplateId);
   const load = TEMPLATE_LOADERS[id];
   if (!load) return null;
   lazyTemplates[id] ??= lazy(load);
