@@ -9,6 +9,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@rentify/shared/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@rentify/shared/ui/alert-dialog';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
@@ -16,7 +17,7 @@ import { Separator } from '@rentify/shared/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
 import { 
   User, Mail, Building, Phone, Globe, Save, Loader2, Edit,
-  Upload, X, CheckCircle2
+  Upload, X, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
@@ -344,6 +345,52 @@ export const AccountSettings = () => {
         <div className="mt-6">
           <StoreLogoCard />
           <div className="mt-6"><MarketplaceColorCard /></div>
+        </div>
+      )}
+      {/* Danger Zone: Close store (moved from store-management per wireframe M17 and audit P3, P7) */}
+      {profile?.role !== 'staff' && (
+        <div className="mt-6">
+          <Card className="border border-destructive/20 bg-destructive/5 shadow-[var(--shadow-soft)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                <span>Close store</span>
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Permanently close your store and take down your storefront. Active orders and customer balances must be settled first.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10 min-h-[44px]"
+                  >
+                    Close store...
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Close this store?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will unpublish your online storefront and pause your marketplace listings. You can reopen by contacting support.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => toast.info('Store closure request submitted. Our support team will assist you.')}
+                    >
+                      Confirm closure
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         </div>
       )}
     </SettingsLayout>

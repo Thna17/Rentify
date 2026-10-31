@@ -13,13 +13,20 @@ import {
   useLazyCheckTelegramLinkCustomerQuery,
   useLoginWithTelegramMutation,
   useGetTelegramLoginConfigQuery,
+  useCreateTelegramSessionMutation,
+  useLazyGetTelegramSessionQuery,
 } from '@rentify/apis';
 import {
   sanitizePhoneNumber,
   formatCambodianPhone,
   validateCambodianPhone,
 } from '../utils/phoneUtils';
-import { useAuthConfig, loadTelegramWidget, requestTelegramAuth } from '../utils/authUtils';
+import {
+  useAuthConfig,
+  loadTelegramWidget,
+  requestTelegramAuth,
+  resolveAuthDestination,
+} from '../utils/authUtils';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 export const useSignupForm = () => {
@@ -54,21 +61,12 @@ export const useSignupForm = () => {
   const location = useLocation();
   const { websiteId } = useWebsiteData();
 
+  const authConfig = useAuthConfig();
   const {
     redirectUrl,
-    hasExplicitReturnUrl,
-    returnDomain,
     isWebsiteTemplate,
-    isHostedStorefrontBuyer,
     isMarketplace,
-  } = useAuthConfig();
-
-  const resolvePostSignupRedirect = () => {
-    if (isWebsiteTemplate || isHostedStorefrontBuyer || isMarketplace || hasExplicitReturnUrl) {
-      return redirectUrl;
-    }
-    return `${MARKETING_URL.replace(/\/+$/, '')}/start`;
-  };
+  } = authConfig;
 
   useEffect(() => {
     const otpParam = new URLSearchParams(window.location.search).get('otp');
@@ -233,15 +231,18 @@ export const useSignupForm = () => {
     };
 
     try {
-      if (isWebsiteTemplate) {
-        payload.storeId = websiteId;
-        await verifyCustomerOtpMutation(payload).unwrap();
-      } else {
-        await verifyOtpMutation(payload).unwrap();
-      }
+      const response: any = isWebsiteTemplate
+        ? await verifyCustomerOtpMutation(payload).unwrap()
+        : await verifyOtpMutation(payload).unwrap();
 
       setSuccess('verify.successRedirect');
-      const destination = resolvePostSignupRedirect();
+      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
+      const destination = resolveAuthDestination({
+        hasStore,
+        isStaff: false,
+        role: 'user',
+        config: authConfig,
+      });
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
@@ -260,19 +261,64 @@ export const useSignupForm = () => {
     });
   }, []);
 
+  const [createTelegramSession] = useCreateTelegramSessionMutation();
+  const [triggerGetTelegramSession] = useLazyGetTelegramSessionQuery();
+  const [telegramWaitingSession, setTelegramWaitingSession] = useState<{ token: string; botUrl: string } | null>(null);
+
+  const cancelTelegramLogin = () => {
+    setTelegramWaitingSession(null);
+  };
+
   const handleTelegramLogin = async () => {
-    if (!telegramConfig?.botId) return;
     setError('');
     setSuccess('');
 
     try {
-      const authData = await requestTelegramAuth(telegramConfig.botId);
-      if (!authData) return;
-      await loginWithTelegramMutation(authData).unwrap();
-      const destination = resolvePostSignupRedirect();
-      setSuccess('login.success');
-      window.location.assign(destination);
+      const sessionResult: any = await createTelegramSession({
+        returnUrl: authConfig.redirectUrl,
+      }).unwrap();
+
+      const token = sessionResult?.token;
+      const botUrl = sessionResult?.botUrl || `https://t.me/rentify168_bot?start=${token}`;
+      setTelegramWaitingSession({ token, botUrl });
+
+      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = botUrl;
+      } else {
+        window.open(botUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      let attempts = 0;
+      const maxAttempts = 60;
+      const pollTimer = setInterval(async () => {
+        attempts += 1;
+        try {
+          const pollRes: any = await triggerGetTelegramSession(token, false).unwrap();
+          if (pollRes?.status === 'authenticated') {
+            clearInterval(pollTimer);
+            setTelegramWaitingSession(null);
+            setSuccess('login.success');
+            setTimeout(() => {
+              window.location.assign(pollRes.destination || '/');
+            }, 600);
+          } else if (pollRes?.status === 'expired' || attempts >= maxAttempts) {
+            clearInterval(pollTimer);
+            setTelegramWaitingSession(null);
+            if (pollRes?.status === 'expired') {
+              setError('error.telegramLogin');
+            }
+          }
+        } catch (pollErr: any) {
+          if (pollErr?.status === 404 || attempts >= maxAttempts) {
+            clearInterval(pollTimer);
+            setTelegramWaitingSession(null);
+          }
+        }
+      }, 2000);
     } catch (err: any) {
+      console.error('Telegram signup session initiation failed:', err);
+      setTelegramWaitingSession(null);
       setError('error.telegramLogin');
     }
   };
@@ -298,6 +344,8 @@ export const useSignupForm = () => {
     handleVerifyOtp,
     checkTelegramLink,
     handleTelegramLogin,
+    telegramWaitingSession,
+    cancelTelegramLogin,
     telegramEnabled,
     formatCambodianPhone,
     validateCambodianPhone,

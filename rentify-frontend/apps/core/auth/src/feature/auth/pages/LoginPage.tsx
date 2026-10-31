@@ -55,6 +55,8 @@ function LoginPage() {
     handleLogin,
     handleGoogleLogin,
     handleTelegramLogin,
+    telegramWaitingSession,
+    cancelTelegramLogin,
     telegramEnabled,
     formatCambodianPhone,
     validateCambodianPhone,
@@ -459,6 +461,51 @@ function LoginPage() {
           </div>
         </main>
       </div>
+
+      {telegramWaitingSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 sm:p-7 text-center shadow-2xl border border-slate-100">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#229ED9]/10 text-[#229ED9] ring-8 ring-[#229ED9]/5">
+              <svg className="h-9 w-9" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.6 7.55c-.12.55-.45.68-.91.42l-2.47-1.82-1.19 1.15c-.13.13-.24.24-.49.24l.18-2.51 4.57-4.13c.2-.18-.04-.28-.31-.1l-5.65 3.56-2.44-.76c-.53-.16-.54-.53.11-.78l9.54-3.68c.44-.16.83.1.66.87z" />
+              </svg>
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900">
+              {isKhmer ? 'បន្តជាមួយ Telegram' : 'Continue with Telegram'}
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+              {isKhmer
+                ? 'សូមបើក Telegram រួចចុច Start (/start) ក្នុង @rentify168_bot ដើម្បីផ្ទៀងផ្ទាត់ការចូលគណនីរបស់អ្នក។'
+                : 'Please open Telegram and tap Start (/start) in @rentify168_bot to complete your login.'}
+            </p>
+
+            <div className="my-5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-xs font-medium text-slate-600 border border-slate-100">
+              <Loader2 className="h-4 w-4 animate-spin text-[#229ED9]" />
+              <span>{isKhmer ? 'កំពុងរង់ចាំការបញ្ជាក់ពី Telegram...' : 'Waiting for Telegram authorization...'}</span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                onClick={() => window.open(telegramWaitingSession.botUrl, '_blank', 'noopener,noreferrer')}
+                className="w-full rounded-xl bg-[#229ED9] hover:bg-[#1e8ec3] text-white py-2.5 font-medium shadow"
+              >
+                {isKhmer ? 'បើក @rentify168_bot' : 'Open @rentify168_bot'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={cancelTelegramLogin}
+                className="w-full rounded-xl text-slate-500 hover:text-slate-800"
+              >
+                {isKhmer ? 'បោះបង់' : 'Cancel'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

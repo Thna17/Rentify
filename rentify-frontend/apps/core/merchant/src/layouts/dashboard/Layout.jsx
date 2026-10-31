@@ -173,12 +173,8 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     navigate(`/${tabPath}`);
   };
 
-  // Each channel view shows only the sidebar items that belong to it. This
-  // filters navigation only — direct URLs still follow the access rules above.
-  const sidebarTabs = platformTabs
-    .filter((tab) => !tab.hideInSidebar)
-    .filter((tab) => !tab.views || tab.views.includes(view))
-    .map((tab) => (view !== 'all' && tab.inView?.[view] ? { ...tab, ...tab.inView[view], displayName: tab.inView[view].label || tab.displayName } : tab));
+  // Sidebar tabs are grouped by main places, channels and more (docs/experience wireframes M_MENU)
+  const sidebarTabs = platformTabs.filter((tab) => !tab.hideInSidebar);
 
   return (
     <Sheet open={isMobile && sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -306,6 +302,14 @@ export const DashboardLayout = () => {
   const [storeLoaded, setStoreLoaded] = useState(false);
   const { isAuthenticated, isLoading: authLoading, profile } = useAuth();
 
+  const effectiveWebsiteId =
+    websiteId ||
+    profile?.websiteId ||
+    profile?.roleSpecific?.websiteId ||
+    store?.websiteId ||
+    store?.website ||
+    null;
+
   useEffect(() => {
     if (!isAuthenticated) return;
     let active = true;
@@ -315,6 +319,12 @@ export const DashboardLayout = () => {
       .catch(() => { if (active) setStoreLoaded(true); });
     return () => { active = false; };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && storeLoaded && !websiteLoading && !effectiveWebsiteId && !store) {
+      window.location.replace(`${MARKETING_URL}/start`);
+    }
+  }, [isAuthenticated, authLoading, storeLoaded, websiteLoading, effectiveWebsiteId, store]);
 
   if (authLoading) {
     return <div className="min-h-screen grid place-items-center">{t('merchant.shell.loading')}</div>;
@@ -328,14 +338,6 @@ export const DashboardLayout = () => {
   if (websiteLoading || !storeLoaded) {
     return <div className="min-h-screen grid place-items-center">{t('merchant.shell.loadingYourStore')}</div>;
   }
-
-  const effectiveWebsiteId =
-    websiteId ||
-    profile?.websiteId ||
-    profile?.roleSpecific?.websiteId ||
-    store?.websiteId ||
-    store?.website ||
-    null;
 
   if (!effectiveWebsiteId && !store) {
     return (

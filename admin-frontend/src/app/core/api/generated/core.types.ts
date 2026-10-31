@@ -1269,6 +1269,53 @@ export namespace Core {
         enabled?: boolean;
       };
     };
+    authTelegramCallback: {
+      method: 'GET';
+      path: '/api/auth/telegram/callback';
+      parameters: {
+        query?: {
+          sessionToken?: string;
+          token?: string;
+        };
+      };
+      response: any;
+    };
+    authCreateTelegramSession: {
+      method: 'POST';
+      path: '/api/auth/telegram/session';
+      parameters: {
+      };
+      body?: {
+        returnUrl?: string;
+      };
+      response: {
+        botUrl?: string;
+        botUsername?: string;
+        expiresIn?: number;
+        success?: boolean;
+        token?: string;
+      };
+    };
+    authGetTelegramSession: {
+      method: 'GET';
+      path: '/api/auth/telegram/session/{token}';
+      parameters: {
+        path: {
+          token: string;
+        };
+      };
+      response: {
+        status?: string;
+      };
+    };
+    authTelegramWebhook: {
+      method: 'POST';
+      path: '/api/auth/telegram/webhook';
+      parameters: {
+      };
+      body: Record<string, any>;
+      response: any;
+    };
     authValidateToken: {
       method: 'POST';
       path: '/api/auth/validate-token';

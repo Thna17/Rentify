@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@rentify/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   IconPackage,
   IconAlertTriangle,
@@ -61,6 +61,12 @@ import { uploadProductImages } from '../../services/productImages';
 import { useShopCategories } from '../../hooks/useShopCategories';
 // @ts-expect-error Legacy JavaScript page has no declaration file yet.
 import StoreCatalogPage from './StoreCatalogPage';
+import CategoriesPage from '../categories/CategoriesPage';
+import {
+  ProductFilterChip,
+  filterProductsByChip,
+  computeChannelBadges,
+} from './productUtils';
 
 // Type definitions for product data
 interface ProductImage {
@@ -209,6 +215,35 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
     actionLoading,
     updateInventory,
   } = useProductManagement(websiteId || '');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'categories' ? 'categories' : 'products';
+  const [activeChip, setActiveChip] = React.useState<ProductFilterChip>('all');
+
+  const handleTabChange = (tab: 'products' | 'categories') => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === 'categories') {
+      next.set('tab', 'categories');
+    } else {
+      next.delete('tab');
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  const displayProducts = useMemo(() => {
+    return filterProductsByChip((products as any) || [], activeChip);
+  }, [products, activeChip]);
+
+  const chipCounts = useMemo(() => {
+    const list = (products as any) || [];
+    return {
+      all: list.length,
+      on_sale: list.filter((p: any) => typeof p.salePrice === 'number' && p.salePrice < p.price).length,
+      out_of_stock: list.filter((p: any) => p.stockQuantity <= 0).length,
+      hidden: list.filter((p: any) => p.marketplaceVisibility === false).length,
+      drafts: list.filter((p: any) => p.status === 'draft' || p.status === 'inactive').length,
+    };
+  }, [products]);
 
   const [entitlements, setEntitlements] = React.useState<any>(null);
 
@@ -492,17 +527,28 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         header: () => <div className="text-center">{t('merchant.p.channels')}</div>,
         cell: ({ row }: { row: any }) => {
           const product: Product = row.original;
-          const onMarketplace = product.marketplaceVisibility !== false;
+          const badges = computeChannelBadges(product as any, Boolean(websiteId));
           return (
-            <div className="flex flex-wrap justify-center gap-1">
-              {onMarketplace && (
-                <Badge variant="secondary" className="text-xs">{t('merchant.p.marketplace')}</Badge>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {badges.onMarketplace && (
+                <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  Market ✓
+                </Badge>
               )}
-              {websiteId && (
-                <Badge variant="outline" className="text-xs">{t('merchant.p.storefront')}</Badge>
+              {badges.onStorefront && (
+                <Badge variant="outline" className="text-xs">
+                  Store ✓
+                </Badge>
               )}
-              {!onMarketplace && !websiteId && (
-                <span className="text-xs text-muted-foreground">{t('merchant.p.hidden')}</span>
+              {badges.isOutOfStock && (
+                <Badge variant="destructive" className="text-xs">
+                  Out of stock
+                </Badge>
+              )}
+              {badges.isHidden && (
+                <Badge variant="outline" className="text-xs text-muted-foreground border-dashed">
+                  Hidden
+                </Badge>
               )}
             </div>
           );
@@ -605,8 +651,10 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
   ];
 
   // Mobile product card component
-  const MobileProductCard = ({ product }: { product: Product }) => (
-    <Card className="group relative p-4 mb-4 cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-300 hover:border-primary/20 rounded-xl bg-gradient-to-br from-white to-gray-50/50">
+  const MobileProductCard = ({ product }: { product: Product }) => {
+    const badges = computeChannelBadges(product as any, Boolean(websiteId));
+    return (
+    <Card className="group relative p-4 mb-3 cursor-pointer transition-all duration-200 hover:shadow-md border border-[var(--rentify-color-border-subtle,#ece8e1)] rounded-2xl bg-card">
       <div className="flex items-start justify-between gap-3">
         {/* Product Image */}
         <div className="relative flex-shrink-0">
@@ -706,15 +754,21 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         </Button>
       </div>
 
-      {/* Hover Effect Border */}
-      <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-primary/10 transition-all duration-300 pointer-events-none" />
+      {/* Channel tags */}
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
+        {badges.onMarketplace && <Badge variant="secondary" className="text-[11px] bg-emerald-50 text-emerald-800 border-emerald-200">Market ✓</Badge>}
+        {badges.onStorefront && <Badge variant="outline" className="text-[11px]">Store ✓</Badge>}
+        {badges.isOutOfStock && <Badge variant="destructive" className="text-[11px]">Out of stock</Badge>}
+        {badges.isHidden && <Badge variant="outline" className="text-[11px] text-muted-foreground border-dashed">Hidden</Badge>}
+      </div>
     </Card>
   );
+  };
 
   // Loading state
   
   const HeaderActions = () => (
-    <div className="flex flex-col sm:flex-row gap-3">
+    <div className="flex items-center gap-2">
       <Button
         variant="outline"
         onClick={() => {
@@ -726,24 +780,23 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         }}
         disabled={!canAddProduct}
         title={disabledReason || undefined}
-        className={`flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200 ${
-          !canAddProduct ? 'opacity-60 cursor-not-allowed' : ''
-        }`}
+        className="hidden sm:inline-flex items-center gap-2 h-10 border-[var(--rentify-color-border-subtle,#ece8e1)]"
       >
         <Upload className="h-4 w-4" />
-        <span className="hidden sm:inline">{t('merchant.p.bulkCreate')}</span>
+        <span>Import</span>
       </Button>
-      
-      <Button
-        variant="outline"
-        onClick={handleBulkExport}
-        disabled={selected.length === 0}
-        className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200"
-      >
-        <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">{t('merchant.p.export')}</span>
-      </Button>
-      
+
+      {selected.length > 0 && (
+        <Button
+          variant="outline"
+          onClick={handleBulkExport}
+          className="hidden sm:inline-flex items-center gap-2 h-10 border-[var(--rentify-color-border-subtle,#ece8e1)]"
+        >
+          <Download className="h-4 w-4" />
+          <span>Export ({selected.length})</span>
+        </Button>
+      )}
+
       <Button
         onClick={() => {
           if (!canAddProduct) {
@@ -754,14 +807,10 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         }}
         disabled={!canAddProduct}
         title={disabledReason || undefined}
-        className={`flex items-center gap-2 ${
-          !canAddProduct
-            ? 'opacity-60 cursor-not-allowed bg-slate-400'
-            : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
-        }`}
+        className="flex items-center gap-2 h-10 bg-primary text-primary-foreground hover:bg-primary/90"
       >
         <Plus className="h-4 w-4" />
-        <span>{t('merchant.p.addProduct2')}</span>
+        <span>Add product</span>
       </Button>
     </div>
   );
@@ -838,7 +887,79 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
           { label: t('dashboard.product.title') }
         ]}
       />
-     <div className="p-6 md:p-8 space-y-6">
+
+      {/* Wireframe M8/M10 Top Tabs: All products & Categories */}
+      <div className="border-b border-border/60 bg-background px-4 sm:px-6">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleTabChange('products')}
+            className={`flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'products'
+                ? 'border-primary text-primary font-semibold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>{t('dashboard.product.all_products') || 'All products'}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {totalItems}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('categories')}
+            className={`flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'categories'
+                ? 'border-primary text-primary font-semibold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>{t('dashboard.product.categories') || 'Categories'}</span>
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'categories' ? (
+        <div className="p-4 sm:p-6 md:p-8 space-y-4">
+          <div className="rounded-xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-muted/30 p-3 text-xs sm:text-sm text-muted-foreground">
+            Your own categories appear as menus on your online store. On Rentify Market every product also has one Rentify category.
+          </div>
+          <CategoriesPage />
+        </div>
+      ) : (
+     <div className="p-4 sm:p-6 md:p-8 space-y-5">
+        {/* Wireframe M8 Filter Chips: All · On sale · Out of stock · Hidden from marketplace · Drafts */}
+        <div className="flex flex-wrap items-center gap-2">
+          {(
+            [
+              { key: 'all', label: 'All', count: chipCounts.all },
+              { key: 'on_sale', label: `On sale (${chipCounts.on_sale})`, count: chipCounts.on_sale },
+              { key: 'out_of_stock', label: `Out of stock (${chipCounts.out_of_stock})`, count: chipCounts.out_of_stock },
+              { key: 'hidden', label: 'Hidden from marketplace', count: chipCounts.hidden },
+              { key: 'drafts', label: 'Drafts', count: chipCounts.drafts },
+            ] as const
+          ).map((chip) => {
+            const isActive = activeChip === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => setActiveChip(chip.key)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground font-semibold'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Select several to change price, stock or visibility together.
+        </p>
         {disabledReason && !isGracePeriod && !isSuspended && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
             <div className="flex items-center gap-2">
@@ -932,13 +1053,13 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         >
           {isMobile ? (
             <div className="space-y-3">
-              {products.map((product: any) => (
+              {displayProducts.map((product: any) => (
                 <MobileProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
             <ReusableTable
-              data={products}
+              data={displayProducts}
               columns={productColumns}
               isLoading={isLoading}
               isError={isError}
@@ -966,7 +1087,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
           )}
         </motion.div>
       </div>
-
+      )}
 
       {/* Product Detail Drawer */}
       <DetailDrawer
