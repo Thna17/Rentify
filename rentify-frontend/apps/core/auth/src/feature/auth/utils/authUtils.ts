@@ -44,6 +44,85 @@ export const useAuthConfig = () => {
   };
 };
 
+export interface ResolveDestinationOptions {
+  hasStore?: boolean;
+  isStaff?: boolean;
+  role?: string;
+  config: ReturnType<typeof useAuthConfig>;
+}
+
+export const resolveAuthDestination = ({
+  hasStore = false,
+  isStaff = false,
+  role = 'user',
+  config,
+}: ResolveDestinationOptions): string => {
+  const {
+    redirectUrl,
+    hasExplicitReturnUrl,
+    returnDomain,
+    adminDashboardHost,
+    isMarketplace,
+    isPOS,
+    isHostedStorefrontBuyer,
+    isWebsiteTemplate,
+  } = config;
+
+  const marketingHost = new URL(MARKETING_URL).host;
+  const dashboardHost = new URL(DASHBOARD_URL).host;
+  const marketplaceHost = new URL(MARKETPLACE_URL).host;
+  const marketingStartUrl = `${MARKETING_URL.replace(/\/+$/, '')}/start`;
+
+  const isBareMarketingRoot = (() => {
+    try {
+      const parsed = new URL(redirectUrl);
+      return returnDomain === marketingHost && (!parsed.pathname || parsed.pathname === '/');
+    } catch {
+      return false;
+    }
+  })();
+
+  if (role === 'admin') {
+    if (
+      hasExplicitReturnUrl &&
+      redirectUrl !== marketingStartUrl &&
+      redirectUrl !== MARKETING_URL &&
+      !isBareMarketingRoot
+    ) {
+      return redirectUrl;
+    }
+    return `${ADMIN_DASHBOARD_URL}/admin/dashboard`;
+  }
+
+  // Storefront buyers or marketplace buyers return to the store or marketplace
+  if (isWebsiteTemplate || isHostedStorefrontBuyer || isMarketplace || returnDomain === marketplaceHost) {
+    return redirectUrl;
+  }
+
+  // POS register
+  if (isPOS) {
+    if (hasStore || isStaff) {
+      return redirectUrl;
+    }
+    return marketingStartUrl;
+  }
+
+  // Merchant user with store or staff
+  if (hasStore || isStaff) {
+    if (
+      hasExplicitReturnUrl &&
+      !isBareMarketingRoot &&
+      returnDomain === dashboardHost
+    ) {
+      return redirectUrl;
+    }
+    return `${DASHBOARD_URL}/overview`;
+  }
+
+  // Merchant without a store: redirect directly to onboarding
+  return marketingStartUrl;
+};
+
 const TELEGRAM_WIDGET_SRC = 'https://telegram.org/js/telegram-widget.js?22';
 
 export const loadTelegramWidget = () =>

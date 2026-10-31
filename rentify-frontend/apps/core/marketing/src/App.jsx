@@ -17,12 +17,15 @@ import TemplateDetailPage from "./pages/template-detail";
 import useMarketingAuth from "./hooks/useMarketingAuth";
 
 // One onboarding only: every "create store" link lands on the sidebar flow.
-// If the merchant is already signed in, send them straight to their dashboard.
+// If the merchant is already signed in AND has a store, send them straight to their dashboard.
+// If they have no store yet, allow them to complete onboarding.
 function StartRedirect() {
-  const { isAuthenticated, dashboardHref } = useMarketingAuth();
+  const { isAuthenticated, user, dashboardHref, isLoading } = useMarketingAuth();
   const { search } = useLocation();
 
-  if (isAuthenticated) {
+  if (isLoading) return null;
+
+  if (isAuthenticated && user?.hasStore) {
     window.location.replace(dashboardHref);
     return null;
   }

@@ -19,7 +19,12 @@ import {
   formatCambodianPhone,
   validateCambodianPhone,
 } from '../utils/phoneUtils';
-import { useAuthConfig, loadTelegramWidget, requestTelegramAuth } from '../utils/authUtils';
+import {
+  useAuthConfig,
+  loadTelegramWidget,
+  requestTelegramAuth,
+  resolveAuthDestination,
+} from '../utils/authUtils';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 export const useSignupForm = () => {
@@ -54,21 +59,12 @@ export const useSignupForm = () => {
   const location = useLocation();
   const { websiteId } = useWebsiteData();
 
+  const authConfig = useAuthConfig();
   const {
     redirectUrl,
-    hasExplicitReturnUrl,
-    returnDomain,
     isWebsiteTemplate,
-    isHostedStorefrontBuyer,
     isMarketplace,
-  } = useAuthConfig();
-
-  const resolvePostSignupRedirect = () => {
-    if (isWebsiteTemplate || isHostedStorefrontBuyer || isMarketplace || hasExplicitReturnUrl) {
-      return redirectUrl;
-    }
-    return `${MARKETING_URL.replace(/\/+$/, '')}/start`;
-  };
+  } = authConfig;
 
   useEffect(() => {
     const otpParam = new URLSearchParams(window.location.search).get('otp');
@@ -233,15 +229,18 @@ export const useSignupForm = () => {
     };
 
     try {
-      if (isWebsiteTemplate) {
-        payload.storeId = websiteId;
-        await verifyCustomerOtpMutation(payload).unwrap();
-      } else {
-        await verifyOtpMutation(payload).unwrap();
-      }
+      const response: any = isWebsiteTemplate
+        ? await verifyCustomerOtpMutation(payload).unwrap()
+        : await verifyOtpMutation(payload).unwrap();
 
       setSuccess('verify.successRedirect');
-      const destination = resolvePostSignupRedirect();
+      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
+      const destination = resolveAuthDestination({
+        hasStore,
+        isStaff: false,
+        role: 'user',
+        config: authConfig,
+      });
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
@@ -268,12 +267,24 @@ export const useSignupForm = () => {
     try {
       const authData = await requestTelegramAuth(telegramConfig.botId);
       if (!authData) return;
-      await loginWithTelegramMutation(authData).unwrap();
-      const destination = resolvePostSignupRedirect();
+      const response: any = await loginWithTelegramMutation(authData).unwrap();
+      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
+      const destination = resolveAuthDestination({
+        hasStore,
+        isStaff: false,
+        role: 'user',
+        config: authConfig,
+      });
       setSuccess('login.success');
       window.location.assign(destination);
     } catch (err: any) {
-      setError('error.telegramLogin');
+      console.error('Telegram login failed:', err);
+      const apiMessage = err?.data?.error || err?.data?.message || err?.message;
+      if (apiMessage && typeof apiMessage === 'string' && !apiMessage.toLowerCase().includes('failed to fetch')) {
+        setError(apiMessage);
+      } else {
+        setError('error.telegramLogin');
+      }
     }
   };
 
