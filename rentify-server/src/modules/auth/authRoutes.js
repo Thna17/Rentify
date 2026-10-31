@@ -6,6 +6,9 @@ const { ApiError } = require("../../utils/errors");
 const router = express.Router();
 const userAuthService = new AuthService(User, "User");
 const staffAuthService = new AuthService(Staff, "Staff");
+const TelegramBotAuthService = require("./telegramBotAuthService");
+const telegramBotAuthService = new TelegramBotAuthService(userAuthService);
+const runtimeUrls = require("../../config/runtimeUrls");
 const { verifyAccessToken } = require("../../utils/jwtUtils");
 const transactionHandler = require("../../utils/transactionHandler");
 const responseHandler = require("../../utils/responseHandler");
@@ -246,10 +249,99 @@ router.post(
   })
 );
 
-// The bot id is the public prefix of the bot token; the widget needs it.
+// The bot id is the public prefix of the bot token; the widget or bot needs it.
 router.get("/telegram-login-config", (req, res) => {
-  const botId = (process.env.TELEGRAM_BOT_TOKEN || "").split(":")[0];
-  res.status(200).json({ enabled: Boolean(botId), botId: botId || null });
+  const botToken = process.env.TELEGRAM_BOT_TOKEN || "";
+  const botUsername = process.env.TELEGRAM_BOT_USERNAME || "rentify168_bot";
+  const botId = botToken.split(":")[0];
+  res.status(200).json({
+    enabled: Boolean(botToken),
+    botUsername,
+    botId: botId || null,
+    mode: "bot",
+  });
+});
+
+router.post("/telegram/session", async (req, res) => {
+  try {
+    const { returnUrl } = req.body || {};
+    if (returnUrl) validateReturnUrl({ returnUrl });
+    const session = await telegramBotAuthService.createSession({ returnUrl });
+    res.status(200).json({ success: true, ...session });
+  } catch (err) {
+    const status = err instanceof ApiError ? err.statusCode : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+router.get("/telegram/session/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const session = await telegramBotAuthService.getSession(token);
+    if (!session) {
+      return res.status(404).json({ status: "expired", message: "Session expired or not found" });
+    }
+    if (session.status === "authenticated") {
+      userAuthService.setAuthCookies(res, {
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      });
+      return res.status(200).json({
+        status: "authenticated",
+        user: session.user,
+        accessToken: session.accessToken,
+        hasStore: session.hasStore,
+        destination: session.destination,
+      });
+    }
+    return res.status(200).json({ status: "pending" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/telegram/callback", async (req, res) => {
+  try {
+    const sessionToken = req.query.sessionToken || req.query.token;
+    if (!sessionToken) {
+      return res.redirect(`${runtimeUrls.authUrl}/login?error=missing_token`);
+    }
+    const session = await telegramBotAuthService.getSession(sessionToken);
+    if (!session || session.status !== "authenticated") {
+      return res.redirect(`${runtimeUrls.authUrl}/login?error=session_expired`);
+    }
+    userAuthService.setAuthCookies(res, {
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    });
+    return res.redirect(session.destination);
+  } catch (err) {
+    return res.redirect(`${runtimeUrls.authUrl}/login?error=auth_failed`);
+  }
+});
+
+router.post("/telegram/webhook", async (req, res) => {
+  const secretHeader = req.headers["x-telegram-bot-api-secret-token"];
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (expectedSecret && secretHeader && secretHeader !== expectedSecret) {
+    return res.status(403).json({ error: "Invalid secret token" });
+  }
+
+  // Acknowledge Telegram immediately with 200 OK
+  res.sendStatus(200);
+
+  try {
+    const transaction = await sequelize.transaction();
+    try {
+      await telegramBotAuthService.handleWebhookUpdate(req.body, transaction);
+      await transaction.commit();
+    } catch (procErr) {
+      await transaction.rollback();
+      console.error("Telegram webhook process error:", procErr);
+    }
+  } catch (txErr) {
+    console.error("Telegram webhook transaction error:", txErr);
+  }
 });
 
 router.post(

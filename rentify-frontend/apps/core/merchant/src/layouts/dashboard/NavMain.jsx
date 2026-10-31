@@ -3,16 +3,16 @@ import { ArrowUpRight, Plus } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import React from 'react';
 
-// Grouped by what a merchant is doing, not by system module
-const SECTION_ORDER = ['overview', 'sell', 'store', 'channels', 'grow', 'money', 'settings'];
+// Sidebar groups match the wireframe M_MENU exactly:
+// 1. main (Home, Orders, Products, Customers, Reports, Invoices) - no section header
+// 2. channels (Marketplace, Online store, Point of sale) - "Sales channels"
+// 3. more (Returns & problems, Share your store, Settings, Help) - "More"
+const SECTION_ORDER = ['main', 'channels', 'more'];
 
 const DEFAULT_SECTION_TITLES = {
-  sell: 'Sell',
-  store: 'Online store',
+  main: '',
   channels: 'Sales channels',
-  grow: 'Customers & insights',
-  money: 'Money',
-  settings: 'Account',
+  more: 'More',
 };
 
 export function NavMain({ items, currentTab, onTabChange, extraChannelItems = [] }) {
@@ -43,7 +43,7 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
 
   const sectionItemsMap = {};
   items.forEach((item) => {
-    const sectionKey = item.section || 'overview';
+    const sectionKey = item.section || 'main';
     (sectionItemsMap[sectionKey] ||= []).push(item);
   });
   if (extraChannelItems.length) {
@@ -59,7 +59,7 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
     <nav className="flex flex-col gap-5 text-sm" aria-label={t('merchant.shell.sidebarNavigation')}>
       {orderedSections.map(({ key, items: sectionItems }) => (
         <div key={key} className="flex flex-col">
-          {key !== 'overview' && (
+          {key !== 'main' && (
             <div className="px-3 pb-1.5 text-[11px] font-medium text-muted-foreground/70 select-none">
               {getSectionTitle(key)}
             </div>

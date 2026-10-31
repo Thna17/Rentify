@@ -55,9 +55,10 @@ Formal human approval is conferred when the pull request introducing this regist
 | **DEC-023** | Accessibility Target Standard | WCAG 2.2 AA target on 5 golden journeys | QA & Accessibility Lead | Basic keyboard accessibility |
 | **DEC-024** | Privacy Policy & Data Retention | Orders: 7 years (statutory); sessions: 30 days; logs: 90 days | Legal & Data Protection Officer | Retain until manual deletion |
 | **DEC-025** | Account Deletion & Anonymization | Soft-delete with PII scrubbing; preserve financial aggregates | Legal & Data Protection Officer | Manual support database purge |
-| **DEC-026** | Release 1 Accepted Payment Methods | Strictly Cash on Delivery (COD) only for online checkout | Executive Platform Sponsor | COD only |
-| **DEC-027** | CutLuy QR Rollout Scope (Post-Launch) | Strictly deferred to Phase P9; seller-owned accounts only | Executive Platform Sponsor | CutLuy completely disabled in code |
+| **DEC-026** | Release 1 Accepted Payment Methods | **Superseded by DEC-029.** Was: strictly Cash on Delivery (COD) only for online checkout | Executive Platform Sponsor | COD only |
+| **DEC-027** | CutLuy QR Rollout Scope (Post-Launch) | **Superseded by DEC-029.** Was: strictly deferred to Phase P9; seller-owned accounts only | Executive Platform Sponsor | CutLuy completely disabled in code |
 | **DEC-028** | Automatic Marketplace Listing (supersedes DEC-007) | Stores are listed automatically once the owner is verified and a category is set; admins moderate after listing | Product owner | Listing stays automatic; admins suspend individual Stores |
+| **DEC-029** | Online Payment by KHQR through CutLuy (supersedes DEC-026, DEC-027) | Buyers pay by KHQR through the merchant's own CutLuy account (connects to ABA) or COD; CutLuy is the only online path; no refunds for now | Product owner | COD only |
 
 ---
 
@@ -499,6 +500,7 @@ Formal human approval is conferred when the pull request introducing this regist
 ---
 
 ### DEC-026: Release 1 Accepted Payment Methods (COD Only)
+- **Superseded:** by DEC-029 on 2026-10-31. Kept for history.
 - **Topic:** Scope of accepted payment methods for Release 1 buyer checkout.
 - **Current Verified Repository Behavior:** Verified in `checkout-migration-contract.md` and `platform-architecture.md`: buyer online checkout is Cash on Delivery (COD) only.
 - **Release 1 Decision:** **Cash on Delivery (COD) is the SOLE accepted buyer payment method** for both marketplace and hosted storefront online checkouts in Release 1. No online card or bank gateway is enabled for buyer checkout. Physical POS supports Cash and offline manual KHQR recording. Rentify does not hold buyer cash.
@@ -515,6 +517,7 @@ Formal human approval is conferred when the pull request introducing this regist
 ---
 
 ### DEC-027: Post-Launch Phase P9 CutLuy QR Rollout Scope and Prerequisites
+- **Superseded:** by DEC-029 on 2026-10-31. Kept for history; its two-account separation rule carries over.
 - **Topic:** Integration scope and prerequisite gates for CutLuy QR payments.
 - **Current Verified Repository Behavior:** Recorded in ADR 0003 and P9 documents: CutLuy QR integration is planned for Phase P9.
 - **Release 1 Decision:** CutLuy QR payments are **strictly deferred to Phase P9** post-launch. Release 1 shall not activate or expose CutLuy checkout routes. When delivered in Phase P9, CutLuy shall operate under strict two-account separation: Rentify's account handles merchant subscription billing; seller-owned CutLuy accounts handle buyer checkout with 100% direct settlement to sellers. CutLuy will never be used for platform escrow or fund commingling.
@@ -541,6 +544,20 @@ Formal human approval is conferred when the pull request introducing this regist
 - **Risks Accepted:** No pre-moderation: a new Store and its products are public as soon as they are ready. Mitigations: admin suspension, restricted-product moderation (DEC-006), buyer reports.
 - **Affected Systems / Schemas / Contracts:** `rentify-server/src/modules/stores/storeService.js`, `stores/launchChecklistService.js` (checklist v2 without application, return-policy and approval items), `rentify-server/scripts/listPendingStores.js` (backfill), `tools/host-validator/policies.js` (DEC-007 rule removed).
 - **Evidence Links:** [`docs/specs/merchant-setup-guide.md`](../specs/merchant-setup-guide.md).
+
+---
+
+### DEC-029: Online Payment by KHQR through CutLuy
+- **Topic:** How buyers pay online on the marketplace and online stores, and at the POS.
+- **Previous Behavior:** DEC-026 made online checkout COD only and DEC-027 deferred CutLuy to Phase P9. Meanwhile the code gained CutLuy KHQR (merchant settings, storefront checkout, marketplace `KHQR` method, webhook and status polling) and a separate ABA PayWay path for the marketplace behind `PAYWAY_ENABLED` (test only).
+- **Decision:** Buyers choose **KHQR** or **Cash on Delivery** at checkout. KHQR runs through the **merchant's own CutLuy account**, which connects to ABA; money settles directly to the merchant (DEC-027's two-account separation still applies: Rentify's CutLuy account is for subscription billing only). **CutLuy is the only online payment path**; the marketplace's direct ABA PayWay path is retired. One payment setting per merchant serves both channels: every merchant signs up through onboarding, which creates the online store and lists it on the marketplace (DEC-028), so the setting saved on the website is used by marketplace checkout too. POS takes cash or KHQR. An order is "paid" only when Commerce confirms the payment with CutLuy (webhook or status check), never on the buyer's or merchant's word. **No refunds for now:** paid orders cannot be cancelled from the dashboard. Orders that are never paid will get a time limit (cancel and release stock), to be built.
+- **Rejected Alternatives:** COD only (DEC-026): online payment is already built and buyers expect KHQR. Direct ABA PayWay on the marketplace: a second integration with different credentials and states for the same job. Per-Store payment settings: not needed while every merchant has a website.
+- **Status:** Decided by the product owner on 2026-10-31.
+- **Named Human Approver:** Product owner (longMengchheang).
+- **Approval / Effective Date:** 2026-10-31; effective when merged.
+- **Risks Accepted:** No refund path: a merchant who cannot fulfil a paid order must be helped by support. Unpaid KHQR orders hold stock until the time limit is built.
+- **Affected Systems / Schemas / Contracts:** `ecommerce-server/modules/payments/*` (config, webhook, status), `ecommerce-server/modules/checkout/marketplaceCheckoutService.js` (`KHQR` method, `ABA_PAYWAY` to retire), `ecommerce-server/modules/payments/aba/*`, `tools/host-validator/policies.js` (DEC-026/027 rules), marketplace checkout and payment page, storefront KHQR checkout, POS KHQR, merchant `/settings/payments`.
+- **Evidence Links:** [`docs/experience/wireframes/rentify-ux-redesign.html`](../experience/wireframes/rentify-ux-redesign.html) (screens M4b, M21b, K8, K8b, X3b), [`docs/specs/cutluy-payments-work-packet.md`](../specs/cutluy-payments-work-packet.md).
 
 ---
 

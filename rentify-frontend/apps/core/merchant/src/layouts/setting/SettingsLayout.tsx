@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  ArrowLeft,
   CreditCard,
   Receipt,
   Shield,
@@ -9,14 +8,13 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { Button } from '@rentify/shared/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SettingsLayoutProps {
   title: string;
   description: string;
   children: React.ReactNode;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 const SETTINGS_NAV_ITEMS = [
@@ -29,30 +27,25 @@ const SETTINGS_NAV_ITEMS = [
   { name: 'Preferences', path: '/settings/preferences', icon: SlidersHorizontal },
 ];
 
-export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, description, children, icon }) => {
+export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, description, children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   return (
-    <main className="settings-page ds-page min-h-screen">
-      <div className="settings-page__container">
-        <Button variant="ghost" onClick={() => navigate('/overview')} className="settings-page__back">
-          <ArrowLeft aria-hidden="true" />
-          <span>Back to dashboard</span>
-        </Button>
+    <div className="min-h-full">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 md:px-8 md:py-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">{title}</h1>
+          {description && (
+            <p className="mt-1 text-sm text-muted-foreground hidden sm:block max-w-2xl">{description}</p>
+          )}
+        </div>
 
-        <header className="settings-page__hero">
-          <div className="settings-page__hero-icon" aria-hidden="true">
-            {React.cloneElement(icon as React.ReactElement, { className: 'h-6 w-6' })}
-          </div>
-          <div className="min-w-0">
-            <p className="settings-page__eyebrow">Workspace settings</p>
-            <h1>{title}</h1>
-            <p className="settings-page__description">{description}</p>
-          </div>
-        </header>
-
-        <nav className="settings-page__nav" aria-label="Settings sections">
+        {/* Settings subnavigation tabs */}
+        <nav
+          className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-border [scrollbar-width:none]"
+          aria-label="Settings sections"
+        >
           {SETTINGS_NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -61,19 +54,23 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, descripti
                 type="button"
                 onClick={() => navigate(item.path)}
                 aria-current={isActive ? 'page' : undefined}
-                className={isActive ? 'is-active' : undefined}
+                className={`flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                }`}
               >
-                <item.icon aria-hidden="true" />
+                <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>{item.name}</span>
               </button>
             );
           })}
         </nav>
 
-        <section className="settings-page__content" aria-label={`${title} content`}>
+        <section aria-label={`${title} content`} className="space-y-6">
           {children}
         </section>
       </div>
-    </main>
+    </div>
   );
 };

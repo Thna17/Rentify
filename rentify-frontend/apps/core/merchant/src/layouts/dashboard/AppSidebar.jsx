@@ -10,21 +10,6 @@ import { useAccess } from '../../utils/access';
 import { useSetupGuide } from '../../app/features/setup-guide/SetupGuideContext';
 import React from 'react';
 
-// How the Store sells, in plain words: Amazon-style marketplace, Shopify-style own site, or both
-const channelMode = ({ hasMarketplace, hasStorefront }) => {
-  if (hasMarketplace && hasStorefront) return 'Marketplace + online store';
-  if (hasStorefront) return 'Online store';
-  if (hasMarketplace) return 'Marketplace seller';
-  return 'Getting started';
-};
-
-const ChannelDot = ({ on, label }) => (
-  <span className="flex items-center gap-1.5" title={`${label}: ${on ? 'on' : 'off'}`}>
-    <span className={`h-1.5 w-1.5 rounded-full ${on ? 'bg-emerald-500' : 'bg-foreground/20'}`} />
-    <span className={on ? 'text-foreground/70' : 'text-foreground/35'}>{label}</span>
-  </span>
-);
-
 export function AppSidebar({
   tabs,
   currentTab,
@@ -34,31 +19,24 @@ export function AppSidebar({
   isOpen,
   setOpen,
   hasStorefront = true,
-  channels = { hasStorefront: true, hasMarketplace: true, hasPos: true },
   store = null,
   searchFilter = '',
   isMobile = false,
 }) {
   const { t } = useTranslation();
   const access = useAccess();
-  const { view } = useChannels();
   const { guide, setHidden } = useSetupGuide();
   // The setup guide keeps a permanent way back in, even after it was hidden on Home.
   const showGuideEntry = access.isOwner && guide && !guide.complete;
 
   const filteredTabs = searchFilter.trim()
-    ? tabs.filter((t) => {
-        const title = (t.displayName || t.label || t.name).toLowerCase();
+    ? tabs.filter((item) => {
+        const title = (item.displayName || item.label || item.name || '').toLowerCase();
         return title.includes(searchFilter.toLowerCase().trim());
       })
     : tabs;
 
-  // Channels the Store doesn't use yet appear as a quiet "add" entry instead of a page
-  const extraChannelItems = view === 'all' && !hasStorefront && access.isOwner
-    ? [{ key: 'add-online-store', action: true, label: 'Add online store', href: `${MARKETING_URL}/onboarding/starter?step=template` }]
-    : [];
-
-  const storeName = store?.name || 'Your store';
+  const storeName = store?.name || 'Rentify';
 
   const sidebarContent = (
     <aside className="flex h-full w-[272px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground select-none">
@@ -82,33 +60,28 @@ export function AppSidebar({
         </Button>
       </div>
 
-      {/* Store + channel status */}
-      <div className="mx-3 mt-2 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-3">
+      {/* Store status block */}
+      <div className="mx-3 mt-1 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-[13px] font-semibold shadow-sm overflow-hidden">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-[13px] font-semibold shadow-xs overflow-hidden">
             {store?.logoUrl ? (
               <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain" />
             ) : (
               storeName.charAt(0).toUpperCase()
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-[13.5px] font-semibold leading-tight">{storeName}</p>
-            <p className="truncate text-[11.5px] text-muted-foreground">{channelMode(channels)}</p>
+            <p className="truncate text-[11px] text-muted-foreground mt-0.5">{access.isOwner ? 'Store Owner' : 'Staff'}</p>
           </div>
           <span
-            className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
               access.isOwner ? 'bg-foreground text-background' : 'bg-card text-foreground/70'
             }`}
             title={access.isOwner ? 'Store owner: full access' : 'Staff: access set by the store owner'}
           >
             {access.isOwner ? 'Owner' : 'Staff'}
           </span>
-        </div>
-        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium">
-          <ChannelDot on={channels.hasMarketplace} label={t('merchant.shell.marketplace')} />
-          <ChannelDot on={channels.hasStorefront} label={t('merchant.shell.onlineStore')} />
-          <ChannelDot on={channels.hasPos} label="POS" />
         </div>
       </div>
 
@@ -142,7 +115,6 @@ export function AppSidebar({
             onTabChange(path);
             if (isMobile) setOpen(false);
           }}
-          extraChannelItems={extraChannelItems}
         />
       </div>
 
@@ -155,10 +127,10 @@ export function AppSidebar({
 
   if (isMobile) {
     return (
-        <SheetContent id="merchant-mobile-navigation" side="left" aria-describedby={undefined} className="w-[260px] p-0">
-          <SheetTitle className="sr-only">{t('merchant.shell.sidebarNavigation')}</SheetTitle>
-          {sidebarContent}
-        </SheetContent>
+      <SheetContent id="merchant-mobile-navigation" side="left" aria-describedby={undefined} className="w-[260px] p-0">
+        <SheetTitle className="sr-only">{t('merchant.shell.sidebarNavigation')}</SheetTitle>
+        {sidebarContent}
+      </SheetContent>
     );
   }
 
