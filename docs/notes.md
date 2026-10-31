@@ -283,6 +283,21 @@ into `platform-architecture.md` and remove stale notes.
    override lives (product vs. SKU), which price POS uses, how carts/orders
    snapshot it, and how compare-at prices behave. No UI ships until then.
 
+- (Open, 2026-10-31) Does a SKU block going live? Commerce launch facts
+   (`store-access/launchFactsService.js`) count a Store's first product as
+   done only when a valid product has a **variant** with a SKU
+   (`hasValidSku`). Simple products have no variant rows, and since the
+   canonical SKU migration (`20261025_014`) their SKU lives on
+   `Product.sku`, which the check ignores. Checkout does not need a SKU
+   (order lines fall back to the product slug). Result: a Store that sells only
+   simple products can never finish the setup guide's first-product step, and
+   its `publication_marketplace` stays blocked. Locally, Mekong Brew has 11
+   active products, some in stock, and is blocked this way. Decide: (a) a SKU
+   is not required to go live (drop it from the check), or (b) it is, and the
+   check also accepts `Product.sku` on simple products. Until then the
+   merchant setup guide shows this case honestly as "Add a product code (SKU)"
+   with a link to Products, not as "Add your first product".
+
 - (Open, 2026-10-31) Storefront template switch and page layout. The merchant
    **Store design** page (`/customization`, merchant app
    `pages/store-design/`) previews the merchant's live store in every template

@@ -1390,7 +1390,7 @@
   "deployment.completed.marketTitle": "ទំព័រ Marketplace របស់អ្នក",
   "deployment.completed.marketDesc": "អ្នកទិញស្វែងរកហាង និងផលិតផលរបស់អ្នកនៅលើ Rentify Marketplace។",
   "deployment.completed.visitMarket": "មើលនៅលើ Marketplace",
-  "deployment.completed.marketPending": "កំពុងរង់ចាំការអនុម័តពី Rentify។ ទំព័ររបស់អ្នកនឹងបង្ហាញជាសាធារណៈក្រោយពេលអនុម័ត។",
+  "deployment.completed.marketPending": "ហាងរបស់អ្នកបានដាក់លក់ហើយ។ ទំព័ររបស់វានឹងបង្ហាញផលិតផលរបស់អ្នក នៅពេលអ្នកបន្ថែមផលិតផល និងកំណត់ថ្លៃដឹកជញ្ជូន។",
   "deployment.completed.marketLoading": "កំពុងពិនិត្យទំព័រ Marketplace របស់អ្នក…",
   "deployment.completed.websiteTitle": "ហាងអនឡាញរបស់អ្នក",
   "deployment.completed.visitSite": "មើលហាងអនឡាញ",
@@ -1519,5 +1519,18 @@
   "site.demo.tourTitle": "ចង់បានការណែនាំផ្ទាល់មែនទេ?",
   "site.demo.tourLead": "ឱ្យយើងណែនាំអ្នកអំពីវេទិកា តាមរយៈការបង្ហាញផ្ទាល់ខ្លួន",
   "site.demo.schedule": "កក់ពេលមើលការបង្ហាញផ្ទាល់",
-  "site.demo.chatSales": "ជជែកជាមួយផ្នែកលក់"
+  "site.demo.chatSales": "ជជែកជាមួយផ្នែកលក់",
+  "deployment.completed.nextTitle": "ជំហានបន្ទាប់របស់អ្នក",
+  "deployment.completed.nextTime": "ប្រហែល ៥ នាទី",
+  "deployment.completed.stepProduct": "បន្ថែមផលិតផលដំបូងរបស់អ្នក",
+  "deployment.completed.stepProductWhy": "រូបថត តម្លៃ និងស្តុក។",
+  "deployment.completed.stepFee": "កំណត់ថ្លៃដឹកជញ្ជូនរបស់អ្នក",
+  "deployment.completed.stepFeeWhy": "អ្នកទិញឃើញវាមុនពេលបញ្ជាទិញ។",
+  "deployment.completed.stepListed": "បានដាក់លក់នៅលើ Rentify Market",
+  "deployment.completed.stepListedWhy": "ធ្វើដោយស្វ័យប្រវត្តិ។ អ្នកទិញឃើញផលិតផលរបស់អ្នកភ្លាមៗពេលអ្នកបន្ថែមវា។",
+  "deployment.completed.ctaAddProduct": "បន្ថែមផលិតផលដំបូងរបស់អ្នក",
+  "deployment.completed.ctaSetFee": "កំណត់ថ្លៃដឹកជញ្ជូនរបស់អ្នក",
+  "deployment.completed.ctaHome": "ទៅទំព័រដើមរបស់ខ្ញុំ",
+  "deployment.completed.guideNote": "អ្នកនឹងឃើញជំហានទាំងនេះនៅលើទំព័រដើម រហូតដល់វារួចរាល់។",
+  "deployment.completed.done": "រួចរាល់"
 }

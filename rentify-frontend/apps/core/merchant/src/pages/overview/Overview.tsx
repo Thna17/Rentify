@@ -21,7 +21,10 @@ import { useChannels, type ChannelView } from '../../context/ChannelContext';
 import { CHANNEL_LABEL, formatMoney, useChannelOrders, type StoreOrder } from '../../hooks/useChannelOrders';
 import { useAccess, type StaffPermission } from '../../utils/access';
 import { Lock } from 'lucide-react';
-import { HOSTED_STOREFRONT_DOMAIN, MARKETING_URL, MARKETPLACE_URL, POS_URL } from '@rentify/shared/config/urls';
+import { MARKETING_URL } from '@rentify/shared/config/urls';
+import { marketplaceStoreUrl, openPosApp, storefrontDomain as storefrontDomainFor, storefrontUrl } from '../../utils/storeLinks';
+import { SetupGuideCard } from '../../app/features/setup-guide/SetupGuideCard';
+import { useSetupGuide } from '../../app/features/setup-guide/SetupGuideContext';
 
 const PERIODS: [string, string][] = [
   ['7d', '7 days'],
@@ -50,12 +53,6 @@ const greetingForHour = (hour: number) => {
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
 };
-
-const slugify = (value?: string) =>
-  String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '') || 'store-name';
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -200,29 +197,20 @@ export const Overview = () => {
   const greeting = useMemo(() => `${greetingForHour(new Date().getHours())}, ${firstName}`, [firstName]);
 
   const storeObj = store as Record<string, any> | null;
-  const rawStoreSlug = String(storeObj?.slug || '').trim();
-  const isAutoUuidSlug = /^store-[0-9a-f-]{20,}$/i.test(rawStoreSlug);
-  const storeSlug = slugify((!isAutoUuidSlug && rawStoreSlug) || storeObj?.name);
-  const storefrontDomain = storeObj?.websiteDomain || `${storeSlug}.${HOSTED_STOREFRONT_DOMAIN || 'mekhla.digital'}`;
-  const storefrontHref = /^https?:\/\//.test(storefrontDomain)
-    ? storefrontDomain
-    : `${/localhost|127\.0\.0\.1/.test(storefrontDomain) ? 'http' : 'https'}://${storefrontDomain}`;
-  const marketplaceShopHref = `${(MARKETPLACE_URL || 'https://rentify-market.mekhla.digital').replace(/\/+$/, '')}/stores/${(!isAutoUuidSlug && rawStoreSlug) || storeObj?.id || storeSlug}`;
-  const posUrl =
-    typeof window !== 'undefined' && window.location.hostname.includes('mekhla.digital') ? 'https://rentify-pos.mekhla.digital' : POS_URL;
+  const storefrontDomain = storefrontDomainFor(storeObj);
+  const storefrontHref = storefrontUrl(storeObj);
+  const marketplaceShopHref = marketplaceStoreUrl(storeObj);
   const templateOnboardingUrl = `${MARKETING_URL}/onboarding/starter?step=template`;
+  // Listing is automatic (DEC-028): approved means listed; anything other than pending is an admin decision.
   const approval = String(storeObj?.marketplaceApprovalStatus || '').toLowerCase();
-  const approvalLabel = approval ? approval.charAt(0).toUpperCase() + approval.slice(1) : 'Listed';
+  const approvalLabel = approval === 'approved' || !approval
+    ? t('merchant.setup.marketplaceListed')
+    : approval === 'pending' ? t('merchant.setup.marketplaceNotListed') : t('merchant.setup.marketplacePaused');
   const periodLabel = PERIODS.find(([v]) => v === period)?.[1] || '30 days';
-
-  const handleOpenPos = () => {
-    try {
-      localStorage.setItem('rentify_pos_visited', 'true');
-    } catch {
-      // ignore storage errors
-    }
-    window.open(posUrl, '_blank', 'noopener,noreferrer');
-  };
+  const handleOpenPos = openPosApp;
+  const { guide } = useSetupGuide();
+  // A new store has nothing to report yet: keep Home to the guide and channels until the first order.
+  const settingUp = Boolean(guide && !guide.complete && !loading && orders.length === 0);
 
   const openOrder = (order: StoreOrder) => navigate(order.channel === 'marketplace' ? '/marketplace-orders' : `/orders/${order.id}`);
 
@@ -323,6 +311,10 @@ export const Overview = () => {
           </div>
         </motion.div>
 
+        <motion.div {...fadeUp(0.02)}>
+          <SetupGuideCard />
+        </motion.div>
+
         {/* Channels: all three side by side, or the focused one full width */}
         <motion.section {...fadeUp(0.04)}>
           {view === 'all' ? (
@@ -340,6 +332,7 @@ export const Overview = () => {
         </motion.section>
 
         {/* Money for the selected channel(s) */}
+        {!settingUp && (
         <motion.section {...fadeUp(0.08)}>
           <SectionTitle title={t('merchant.p.money')} meta={`${view === 'all' ? 'All channels' : CHANNEL_LABEL[view]} · ${periodLabel}`} />
           {!canMoney ? (
@@ -363,9 +356,10 @@ export const Overview = () => {
             </div>
           )}
         </motion.section>
+        )}
 
         {/* Split + attention, two equal halves */}
-        {canOrders && (
+        {canOrders && !settingUp && (
         <motion.div {...fadeUp(0.12)} className={`grid grid-cols-1 gap-3 md:gap-4 ${canMoney || view !== 'all' ? 'lg:grid-cols-2' : ''}`}>
           {view === 'all' ? (canMoney && (
             <Surface>
@@ -450,7 +444,7 @@ export const Overview = () => {
         )}
 
         {/* Sales trend + best sellers */}
-        {canMoney && (
+        {canMoney && !settingUp && (
         <motion.div {...fadeUp(0.16)} className="grid grid-cols-1 gap-3 md:gap-4 xl:grid-cols-3">
           <div className="xl:col-span-2">
             <RevenueChart data={summary.trend} dateRange={summary.dateRange} isLoading={loading} />
@@ -460,7 +454,7 @@ export const Overview = () => {
         )}
 
         {/* Recent orders, each labelled with its channel */}
-        {canOrders && (
+        {canOrders && !settingUp && (
         <motion.div {...fadeUp(0.2)}>
           <Surface>
             <SectionTitle

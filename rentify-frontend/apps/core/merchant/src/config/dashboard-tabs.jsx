@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Gauge,
   Tags,
+  Share2,
 } from 'lucide-react';
 import { POS_URL } from '@rentify/shared/config/urls';
 
@@ -157,6 +158,17 @@ export const ALL_TABS = [
     permission: 'manage_pos',
     channel: 'pos',
     section: 'channels',
+  },
+
+  // --- Share: the Store's links and QR code (docs/specs/merchant-setup-guide.md) ---
+  {
+    name: 'merchant.setup.shareTitle',
+    label: 'Share your store',
+    icon: Share2,
+    path: 'share',
+    roles: ['admin', 'user', 'staff'],
+    permission: null,
+    section: 'grow',
   },
 
   // --- Customers ---

@@ -917,7 +917,7 @@
   "deployment.completed.marketTitle": "Your marketplace page",
   "deployment.completed.marketDesc": "Buyers find your store and products on Rentify Marketplace.",
   "deployment.completed.visitMarket": "Preview on marketplace",
-  "deployment.completed.marketPending": "Waiting for Rentify approval. Your page goes public once approved.",
+  "deployment.completed.marketPending": "Your store is listed. Its page shows your products once you add one and set a delivery fee.",
   "deployment.completed.marketLoading": "Checking your marketplace page…",
   "deployment.openTheDashboardToView": "Open the dashboard to view your storefront URL.",
   "deployment.openDashboard": "Open dashboard",
@@ -1115,5 +1115,18 @@
   "site.tour.ui.walkIn": "Walk-in",
   "site.tour.ui.stock": "Stock",
   "site.tour.ui.inStock": "in stock",
-  "site.tour.title": "Showcase"
+  "site.tour.title": "Showcase",
+  "deployment.completed.nextTitle": "Your next steps",
+  "deployment.completed.nextTime": "about 5 min",
+  "deployment.completed.stepProduct": "Add your first product",
+  "deployment.completed.stepProductWhy": "Photo, price and stock.",
+  "deployment.completed.stepFee": "Set your delivery fee",
+  "deployment.completed.stepFeeWhy": "Buyers see it before they order.",
+  "deployment.completed.stepListed": "Listed on Rentify Market",
+  "deployment.completed.stepListedWhy": "Done automatically. Buyers see your products as soon as you add them.",
+  "deployment.completed.ctaAddProduct": "Add your first product",
+  "deployment.completed.ctaSetFee": "Set your delivery fee",
+  "deployment.completed.ctaHome": "Go to my Home",
+  "deployment.completed.guideNote": "You will find these steps on your Home until they are done.",
+  "deployment.completed.done": "Done"
 }

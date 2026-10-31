@@ -35,7 +35,7 @@
     "test:template-2": "vitest run --mode development --config apps/templates/ecommerce/ecommerce-template-2/vite.config.ts",
     "test:template-3": "vitest run --mode development --config apps/templates/ecommerce/ecommerce-template-3/vite.config.ts",
     "test:storefront": "vitest run --mode development --config apps/storefront/vite.config.ts",
-    "test:unit": "npm run test:shared-ui && npm run test:marketing && npm run test:template-1 && npm run test:template-2 && npm run test:template-3 && npm run test:storefront",
+    "test:unit": "npm run test:shared-ui && npm run test:marketing && npm run test:merchant && npm run test:template-1 && npm run test:template-2 && npm run test:template-3 && npm run test:storefront",
     "test:integration": "node --test e2e/**/*.test.mjs",
     "test": "npm run test:unit && npm run test:integration",
     "secrets:scan": "node tools/secret-scan.mjs",

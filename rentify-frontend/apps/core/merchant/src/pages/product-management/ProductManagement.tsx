@@ -950,8 +950,12 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
               selected={selected}
               onSelectionChange={setSelected}
               emptyStateIcon={IconPackage}
-              emptyStateTitle={t('dashboard.product.no_products_found')}
-              emptyStateDescription={t('dashboard.product.adjust_filters')}
+              // No search or filter means the store truly has no products yet: say what the page is for.
+              emptyStateTitle={!searchTerm && filterStatus === PRODUCT_STATUS.ALL ? t('merchant.setup.productsEmptyTitle') : t('dashboard.product.no_products_found')}
+              emptyStateDescription={!searchTerm && filterStatus === PRODUCT_STATUS.ALL ? t('merchant.setup.productsEmptyBody') : t('dashboard.product.adjust_filters')}
+              emptyStateAction={!searchTerm && filterStatus === PRODUCT_STATUS.ALL ? (
+                <Button className="h-11" onClick={() => navigate('/products/create')}>{t('merchant.setup.actionAddProduct')}</Button>
+              ) : null}
               loadingSkeletonRows={8}
               renderSubComponent={renderSubComponent}
               expandedRows={expandedRows}

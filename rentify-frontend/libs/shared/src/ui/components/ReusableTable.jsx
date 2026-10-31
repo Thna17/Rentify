@@ -67,6 +67,8 @@ export function ReusableTable({
   emptyStateIcon = IconPackage,
   emptyStateTitle = 'No items found',
   emptyStateDescription = 'Try adjusting your filters or search terms',
+  // Optional next step shown under the description (e.g. "Add product" when there is nothing yet)
+  emptyStateAction = null,
   // Custom loading
   loadingSkeletonRows = 5,
   isMobile = false,
@@ -254,6 +256,7 @@ export function ReusableTable({
                       <p className="text-sm text-muted-foreground">
                         {emptyStateDescription}
                       </p>
+                      {emptyStateAction && <div className="mt-4">{emptyStateAction}</div>}
                     </div>
                   </TableCell>
                 </TableRow>

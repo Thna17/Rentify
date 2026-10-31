@@ -598,7 +598,13 @@ function OrderManagementContent({ websiteId }) {
             }}
             selected={selectedOrders}
             onSelectionChange={setSelectedOrders}
-            empty={{
+            // No search or filter means no orders at all yet: point to sharing the store.
+            empty={!searchTerm && tabValue === ORDER_STATUS.ALL && orderTypeFilter === ORDER_TYPE.ALL ? {
+              icon: IconReceipt,
+              title: t('merchant.setup.ordersEmptyTitle'),
+              body: t('merchant.setup.ordersEmptyBody'),
+              action: <Button className="mt-4 h-11" onClick={() => navigate('/share')}>{t('merchant.setup.ordersEmptyAction')}</Button>,
+            } : {
               icon: IconReceipt,
               title: t('dashboard.order.no_orders_found'),
               body: t('dashboard.order.adjust_filters'),

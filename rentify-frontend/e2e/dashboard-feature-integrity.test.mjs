@@ -22,9 +22,29 @@ test('all required dashboard configuration files exist and are non-empty', () =>
   }
 });
 
-// Returns the { ... } tab object that declares the given path.
-const tabBlock = (content, tabPath) =>
-  content.match(new RegExp(`\\{[^{}]*path:\\s*['"]${tabPath}['"][^{}]*\\}`))?.[0];
+// Returns the whole { ... } tab object that declares the given path, including nested
+// objects such as inView, by walking out to the enclosing braces.
+const tabBlock = (content, tabPath) => {
+  const at = content.search(new RegExp(`\\bpath:\\s*['"]${tabPath}['"]`));
+  if (at < 0) return undefined;
+  let start = at;
+  for (let depth = 0; start >= 0; start -= 1) {
+    if (content[start] === '}') depth += 1;
+    else if (content[start] === '{') {
+      if (depth === 0) break;
+      depth -= 1;
+    }
+  }
+  let end = at;
+  for (let depth = 0; end < content.length; end += 1) {
+    if (content[end] === '{') depth += 1;
+    else if (content[end] === '}') {
+      if (depth === 0) break;
+      depth -= 1;
+    }
+  }
+  return start >= 0 && end < content.length ? content.slice(start, end + 1) : undefined;
+};
 
 test('dashboard-tabs defines the Storefront sales channel for all relevant roles', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
@@ -32,7 +52,7 @@ test('dashboard-tabs defines the Storefront sales channel for all relevant roles
   // Sales channels live in the Channels section
   const storeMgmtBlock = tabBlock(content, 'store-management');
   assert.ok(storeMgmtBlock, 'Store management block must be found');
-  assert.match(storeMgmtBlock, /label:\s*['"]Storefront['"]/);
+  assert.match(storeMgmtBlock, /label:\s*['"]Online store['"]/);
   assert.match(storeMgmtBlock, /channel:\s*['"]storefront['"]/);
   assert.match(storeMgmtBlock, /section:\s*['"]channels['"]/);
 
