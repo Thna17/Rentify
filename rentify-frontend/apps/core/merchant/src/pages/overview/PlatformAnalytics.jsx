@@ -41,7 +41,11 @@ export default function PlatformAnalytics() {
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-[13px] font-medium text-muted-foreground">{view === 'all' ? 'All channels' : CHANNEL_LABEL[view]}</p>
-            <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-foreground md:text-[32px]">{t('merchant.p2.analytics')}</h1>
+            <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-foreground md:text-[32px]">Reports</h1>
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-dashed border-amber-500/50 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span>Needs backend · store-wide sales statistics (not tied to the website, no 50-order cap)</span>
+            </div>
           </div>
           <div role="radiogroup" aria-label={t('merchant.p.period')} className="flex w-max rounded-xl bg-muted p-1">
             {PERIODS.map(([value, label]) => (
