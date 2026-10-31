@@ -7,6 +7,7 @@ import {
   Globe,
   Menu,
   Printer,
+  QrCode as QrIcon,
   ScanBarcode,
   Search,
   ShoppingBag,
@@ -17,6 +18,7 @@ import {
 import { cn } from '@rentify/utils';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { EASE } from '../../../components/site/motion';
+import { QrCode } from '../../../components/site/mockups/PaymentMocks';
 import {
   HERO,
   MARKET_FEED,
@@ -50,6 +52,59 @@ const Row = ({ label, value, strong }) => (
     <span>{value}</span>
   </div>
 );
+
+const PaymentOptions = ({ method = 'khqr', onChange }) => {
+  const { t } = useLanguage();
+  return (
+    <div className="space-y-2">
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-[14px] border-2 p-3.5 transition-colors',
+          method === 'khqr' ? 'border-[#0071e3] bg-[#f5f9ff]' : 'border-black/[0.08] bg-white opacity-70'
+        )}
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f1fd] text-[#0071e3]">
+          <QrIcon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-semibold text-[#1d1d1f]">{t('site.tour.ui.khqr')}</p>
+          <p className="text-[11px] text-[#6e6e73]">{t('site.tour.ui.khqrScanToPay')}</p>
+        </div>
+        <span
+          className={cn(
+            'flex h-5 w-5 items-center justify-center rounded-full border',
+            method === 'khqr' ? 'border-[#0071e3] bg-[#0071e3]' : 'border-black/20'
+          )}
+        >
+          {method === 'khqr' && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+        </span>
+      </div>
+
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-[14px] border-2 p-3.5 transition-colors',
+          method === 'cod' ? 'border-[#0071e3] bg-[#f5f9ff]' : 'border-black/[0.08] bg-white opacity-70'
+        )}
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f5f5f7] text-[#1d1d1f]">
+          <Truck className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-medium text-[#1d1d1f]">{t('site.tour.ui.cod')}</p>
+          <p className="text-[11px] text-[#6e6e73]">{t('site.tour.ui.payOnDelivery')}</p>
+        </div>
+        <span
+          className={cn(
+            'flex h-5 w-5 items-center justify-center rounded-full border',
+            method === 'cod' ? 'border-[#0071e3] bg-[#0071e3]' : 'border-black/20'
+          )}
+        >
+          {method === 'cod' && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const CodOption = () => {
   const { t } = useLanguage();
@@ -177,7 +232,8 @@ export const MarketplaceScene = memo(({ step, stock }) => {
           ))}
         </div>
         <div className="mt-4">
-          <CodOption />
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[#6e6e73]">{t('site.tour.ui.paymentMethod')}</p>
+          <PaymentOptions method="cod" />
         </div>
         <div className="mt-auto space-y-3 pt-4">
           <Row label={t('site.tour.ui.total')} value={money(total)} strong />
@@ -276,7 +332,8 @@ export const StorefrontScene = memo(({ step, stock }) => {
           <Row label={t('site.tour.ui.total')} value={money(total)} strong />
         </div>
         <div className="mt-5">
-          <CodOption />
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[#7c2d12]/70">{t('site.tour.ui.paymentMethod')}</p>
+          <PaymentOptions method="khqr" />
         </div>
         <Tap on={step === 4} className="mt-auto">
           <div className="flex h-12 items-center justify-center rounded-full bg-[#c2410c] text-[15px] font-semibold text-white">
@@ -360,15 +417,31 @@ export const PosScene = memo(({ step, stock }) => {
               </motion.div>
             ))}
           </div>
-          <Row label={t('site.tour.ui.total')} value={money(due)} strong />
+          <div className="mt-3 space-y-2 border-t border-black/[0.06] pt-3">
+            <Row label={t('site.tour.ui.subtotal')} value={money(due * 0.9)} />
+            <Row label="Tax (10%)" value={money(due * 0.1)} />
+            <Row label={t('site.tour.ui.total')} value={money(due)} strong />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-center gap-2 rounded-xl border-2 border-[#0071e3] bg-[#f5f9ff] py-2.5 text-xs font-semibold text-[#0071e3]">
+              <QrIcon className="h-4 w-4" />
+              <span>KHQR</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-[#f5f5f7] py-2.5 text-xs font-semibold text-[#1d1d1f]">
+              <Banknote className="h-4 w-4 text-[#1a7f37]" />
+              <span>{t('site.tour.ui.cash')}</span>
+            </div>
+          </div>
+
           <Tap on={step === 3} className="mt-3">
             <div
               className={cn(
-                'flex h-12 items-center justify-center rounded-[14px] text-[15px] font-semibold text-white',
+                'flex h-11 items-center justify-center rounded-[14px] text-[15px] font-semibold text-white',
                 lines.length ? 'bg-[#0071e3]' : 'bg-[#0071e3]/40'
               )}
             >
-              {t('site.tour.ui.charge', { amount: money(due) })}
+              Charge {money(due)}
             </div>
           </Tap>
         </aside>
@@ -376,31 +449,33 @@ export const PosScene = memo(({ step, stock }) => {
 
       <Sheet open={step >= 4 && step <= 6} className="p-6">
         <div className="flex items-center gap-2 text-[#1d1d1f]">
-          <Banknote className="h-5 w-5 text-[#1a7f37]" />
-          <p className="text-[18px] font-semibold">{t('site.tour.ui.cash')}</p>
-          <span className="ml-auto text-[24px] font-semibold">{money(POS_TOTAL)}</span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f1fd] text-[#0071e3]">
+            <QrIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[17px] font-semibold text-[#1d1d1f]">Bakong KHQR</p>
+            <p className="text-[12px] text-[#6e6e73]">Scan to pay with any bank app</p>
+          </div>
+          <span className="ml-auto text-[22px] font-bold text-[#1d1d1f]">{money(POS_TOTAL)}</span>
         </div>
-        <div className="mt-5 grid grid-cols-4 gap-3">
-          {['$5', '$10', '$20', t('site.tour.ui.exact')].map((label, index) => (
-            <Tap key={label} on={step === 5 && index === 0}>
-              <div
-                className={cn(
-                  'flex h-14 items-center justify-center rounded-[14px] border text-[16px] font-semibold',
-                  step >= 5 && index === 0
-                    ? 'border-[#0071e3] bg-[#f5f9ff] text-[#0071e3]'
-                    : 'border-black/10 text-[#1d1d1f]'
-                )}
-              >
-                {label}
-              </div>
-            </Tap>
-          ))}
+
+        <div className="mt-5 flex flex-col items-center justify-center rounded-[20px] border border-black/[0.08] bg-[#f8f9fa] p-5">
+          <div className="relative flex w-44 flex-col items-center overflow-hidden rounded-[18px] bg-white p-3 shadow-sm ring-1 ring-black/5">
+            <div className="mb-2 flex w-full items-center justify-center rounded-lg bg-[#E1232E] py-1 text-center font-bold text-xs tracking-wider text-white">
+              KHQR
+            </div>
+            <QrCode className="aspect-square w-32" />
+            <p className="mt-2 text-center text-[11px] font-semibold text-[#1d1d1f]">{MUNCHIE.name}</p>
+            <p className="text-[12px] font-bold text-[#E1232E]">{money(POS_TOTAL)} USD</p>
+          </div>
+          <Tap on={step === 5} className="mt-4 w-full">
+            <div className="flex h-11 items-center justify-center rounded-xl bg-[#0071e3] text-sm font-semibold text-white">
+              Simulate Customer Scan
+            </div>
+          </Tap>
         </div>
-        <div className="mt-5 space-y-2 rounded-[16px] bg-[#f5f5f7] p-4">
-          <Row label={t('site.tour.ui.received')} value={step >= 5 ? money(TENDERED) : '—'} />
-          <Row label={t('site.tour.ui.change')} value={step >= 5 ? money(TENDERED - POS_TOTAL) : '—'} strong />
-        </div>
-        <Tap on={step === 6} className="mt-5">
+
+        <Tap on={step === 6} className="mt-4">
           <div className="flex h-12 items-center justify-center rounded-[14px] bg-[#1a7f37] text-[15px] font-semibold text-white">
             {t('site.tour.ui.completeSale')}
           </div>

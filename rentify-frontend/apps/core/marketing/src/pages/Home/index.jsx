@@ -54,8 +54,8 @@ const RentifyLaptopShowcase = React.lazy(() => import('./components/RentifyLapto
 const HeroSection = () => {
   const { t } = useLanguage();
   return (
-  <section className="relative overflow-hidden bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,#e8f0ff_0%,#ffffff_100%)] pb-16 pt-6 sm:pb-20 sm:pt-10 lg:py-20">
-    <div className="relative mx-auto grid w-full max-w-[1440px] items-center px-3 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:gap-10 lg:px-10">
+  <section className="relative overflow-hidden bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,#e8f0ff_0%,#ffffff_100%)] pb-16 pt-6 sm:pb-20 sm:pt-10 lg:py-24">
+    <div className="relative mx-auto grid w-full max-w-[1360px] items-center px-6 sm:px-10 lg:grid-cols-[1.05fr_1.15fr] lg:gap-14 lg:px-12 xl:px-16">
       <figure className="relative mx-auto w-full max-w-[1040px] lg:order-2 lg:min-w-0">
         <img
           src={heroProductMockup}

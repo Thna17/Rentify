@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Monitor, RefreshCw, Smartphone } from 'lucide-react';
+import { ExternalLink, Laptop, RefreshCw, Smartphone } from 'lucide-react';
 import { PREVIEW_MESSAGE } from '@rentify/storefront/preview';
 import { Button } from '@rentify/shared/ui/button';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
 
 const DESKTOP_WIDTH = 1280;
-const PHONE_WIDTH = 360;
+const PHONE_WIDTH = 390;
 const SLOW_AFTER_MS = 15000;
 
 /** The merchant's live store at a fixed CSS width, scaled down to fit its column. */
@@ -89,30 +89,41 @@ export function StorePreview({ storeUrl, templateId, layout, t }) {
   useEffect(() => setFrameSrc(src), [storeUrl, templateId]);
 
   const devices = [
-    { value: 'desktop', label: t('merchant.storeDesign.preview.desktop'), icon: Monitor },
+    { value: 'desktop', label: t('merchant.storeDesign.preview.desktop'), icon: Laptop },
     { value: 'phone', label: t('merchant.storeDesign.preview.phone'), icon: Smartphone },
   ];
 
   return (
     <section aria-label={t('merchant.storeDesign.preview.label')} className="min-w-0 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="group" aria-label={t('merchant.storeDesign.preview.device')} className="flex gap-1 rounded-xl bg-muted p-1 xl:hidden">
-          {devices.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={device === value}
-              onClick={() => setDevice(value)}
-              className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors ${
-                device === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {label}
-            </button>
-          ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        {/* Device Switcher Toggle: Laptop vs Phone */}
+        <div
+          role="group"
+          aria-label={t('merchant.storeDesign.preview.device')}
+          className="inline-flex items-center rounded-xl border border-border bg-muted/60 p-1 shadow-sm"
+        >
+          {devices.map(({ value, label, icon: Icon }) => {
+            const isActive = device === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => setDevice(value)}
+                className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
-        <Button asChild variant="ghost" className="ml-auto h-11">
+
+        <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-xs sm:text-sm">
           <a href={storeUrl} target="_blank" rel="noreferrer">
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
             {t('merchant.storeDesign.preview.openStore')}
@@ -120,33 +131,30 @@ export function StorePreview({ storeUrl, templateId, layout, t }) {
         </Button>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <div className={`${device === 'desktop' ? 'block' : 'hidden'} min-w-0 space-y-2 xl:block`}>
-          <p className="hidden text-xs font-medium uppercase tracking-wide text-muted-foreground xl:block">
-            {t('merchant.storeDesign.preview.desktop')}
-          </p>
-          <PreviewFrame
-            src={frameSrc}
-            width={DESKTOP_WIDTH}
-            height={900}
-            layout={layout}
-            title={t('merchant.storeDesign.preview.desktopFrame')}
-            t={t}
-          />
-        </div>
-        <div className={`${device === 'phone' ? 'block' : 'hidden'} min-w-0 space-y-2 xl:block`}>
-          <p className="hidden text-xs font-medium uppercase tracking-wide text-muted-foreground xl:block">
-            {t('merchant.storeDesign.preview.phoneWidth')}
-          </p>
-          <PreviewFrame
-            src={frameSrc}
-            width={PHONE_WIDTH}
-            height={740}
-            layout={layout}
-            title={t('merchant.storeDesign.preview.phoneFrame')}
-            t={t}
-          />
-        </div>
+      <div className="w-full">
+        {device === 'desktop' ? (
+          <div className="min-w-0 space-y-2">
+            <PreviewFrame
+              src={frameSrc}
+              width={DESKTOP_WIDTH}
+              height={850}
+              layout={layout}
+              title={t('merchant.storeDesign.preview.desktopFrame')}
+              t={t}
+            />
+          </div>
+        ) : (
+          <div className="mx-auto max-w-[420px] space-y-2">
+            <PreviewFrame
+              src={frameSrc}
+              width={PHONE_WIDTH}
+              height={780}
+              layout={layout}
+              title={t('merchant.storeDesign.preview.phoneFrame')}
+              t={t}
+            />
+          </div>
+        )}
       </div>
     </section>
   );

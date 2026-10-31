@@ -52,23 +52,6 @@ const SIZE_BUCKETS: { key: Exclude<SizeKey, ''>; label: string; test: (n: number
             <a routerLink="/">{{ 'nav.home' | translate }}</a><ui-icon name="chevron-right" [size]="12" /><span>{{ 'nav.stores' | translate }}</span>
           </nav>
           <h1>{{ 'stores.allStores' | translate }}</h1>
-          <p class="sub">
-            {{ 'stores.heroBody' | translate }}
-          </p>
-          <div class="stats">
-            <div class="stat">
-              <span class="stat-icon"><ui-icon name="store" [size]="20" /></span>
-              <div><strong>{{ allStoresCount() }}</strong><small>{{ 'nav.stores' | translate }}</small></div>
-            </div>
-            <div class="stat">
-              <span class="stat-icon"><ui-icon name="tag" [size]="20" /></span>
-              <div><strong>{{ productCount() }}</strong><small>{{ 'nav.products' | translate }}</small></div>
-            </div>
-            <div class="stat">
-              <span class="stat-icon"><ui-icon name="grid" [size]="20" /></span>
-              <div><strong>{{ categoryNames().length }}</strong><small>{{ 'nav.categories' | translate }}</small></div>
-            </div>
-          </div>
         </div>
 
         <div class="hero" [attr.aria-label]="'stores.supportLocalStores' | translate">
@@ -92,35 +75,6 @@ const SIZE_BUCKETS: { key: Exclude<SizeKey, ''>; label: string; test: (n: number
           </div>
         </div>
       </section>
-
-      @if (!hasFilters() && popularRows().length) {
-        <section class="container featured" [attr.aria-label]="'stores.featuredStores' | translate">
-          <h2 class="featured-title">{{ 'stores.featuredStores' | translate }}</h2>
-          <div class="featured-track">
-            @for (row of popularRows(); track row.store.id) {
-              <a class="featured-card" [routerLink]="['/stores', row.store.id]">
-                <div class="featured-cover" [class.no-img]="!row.cover">
-                  @if (row.cover) {
-                    <img [src]="row.cover" alt="" loading="lazy" />
-                  }
-                </div>
-                <div class="featured-info">
-                  @if (row.store.logoUrl) {
-                    <img class="mini-logo" [src]="row.store.logoUrl" alt="" loading="lazy" />
-                  } @else {
-                    <span class="mini-logo ph">{{ initials(row.store.name) }}</span>
-                  }
-                  <div class="featured-text">
-                    <strong>{{ row.store.name }}</strong>
-                    <small>{{ row.store.categoryName }}</small>
-                  </div>
-                </div>
-              </a>
-            }
-          </div>
-        </section>
-      }
-
 
       <div id="store-directory" class="container layout">
         <aside class="sidebar" [attr.aria-label]="'stores.storeFilters' | translate">

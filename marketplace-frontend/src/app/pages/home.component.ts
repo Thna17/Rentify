@@ -9,8 +9,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CatalogService } from '../core/catalog/catalog.service';
+import { CartService } from '../core/cart/cart.service';
+import { FlyToCartService } from '../core/cart/fly-to-cart.service';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
@@ -133,19 +135,42 @@ interface CategoryShelf {
           <div class="flash-grid">
             @for (product of flashDeals(); track product.id) {
               <a class="deal-card" [routerLink]="['/product', product.id]">
-                <span class="deal-img">
+                <div class="deal-img">
                   @if (product.image) {
                     <img [src]="product.image" [alt]="product.name" loading="lazy" />
+                  } @else {
+                    <div class="deal-placeholder" aria-hidden="true">{{ product.name.charAt(0) }}</div>
                   }
                   <span class="deal-off">-{{ discount(product) }}%</span>
-                </span>
-                <span class="deal-name">{{ product.name }}</span>
-                <span class="deal-price">
-                  <strong>\${{ product.price.toFixed(2) }}</strong>
-                  <s>\${{ product.compareAtPrice!.toFixed(2) }}</s>
-                </span>
-                <span class="deal-bar"><i [style.width.%]="stockLeft(product)"></i></span>
-                <small class="deal-left">{{ product.stock }} left</small>
+                </div>
+                <div class="deal-content">
+                  <span class="deal-name" [title]="product.name">{{ product.name }}</span>
+                  <span class="deal-seller">{{ product.sellerName }}</span>
+                  
+                  <div class="deal-bottom">
+                    <div class="deal-info-col">
+                      <div class="deal-price">
+                        <strong>\${{ product.price.toFixed(2) }}</strong>
+                        <s>\${{ product.compareAtPrice!.toFixed(2) }}</s>
+                      </div>
+                      <div class="deal-rating">
+                        <ui-icon name="star" [size]="12" [filled]="true" class="deal-star" />
+                        <span class="deal-score">{{ product.rating || '4.8' }}</span>
+                        <span class="deal-reviews">({{ product.reviewCount || 12 }})</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="deal-cart-btn"
+                      [disabled]="product.status === 'out-of-stock'"
+                      (click)="addToCart($event, product)"
+                      [attr.aria-label]="'Add ' + product.name + ' to cart'"
+                    >
+                      <ui-icon name="cart" [size]="16" />
+                    </button>
+                  </div>
+                </div>
               </a>
             }
           </div>
@@ -308,13 +333,33 @@ interface CategoryShelf {
 
 
     /* ---------- flash deals */
-    .flash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+    .flash {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      align-items: stretch;
+    }
     .flash-main {
+      display: flex;
+      flex-direction: column;
       background: var(--color-surface-raised); border: 1px solid var(--color-border);
       border-radius: var(--radius-lg); padding: 18px 20px 20px;
     }
 
-    .flash-head { margin-bottom: 14px; }
+    .flash-promo {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .flash-promo app-promo-card {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: 100%;
+      min-height: 100%;
+    }
+
+    .flash-head { margin-bottom: 16px; }
     .flash-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .flash-bolt { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #fff1ec; color: #f0562b; }
     .flash-timer {
@@ -323,38 +368,203 @@ interface CategoryShelf {
       font-size: 12.5px; font-variant-numeric: tabular-nums;
     }
     .flash-timer b { color: var(--color-text); font-weight: 700; }
-    .flash-grid { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 5 * 12px) / 6); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-    .flash-grid::-webkit-scrollbar { display: none; }
-    .deal-card { scroll-snap-align: start; }
+    
+    .flash-grid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: clamp(190px, 18vw, 220px);
+      gap: 14px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border-strong) transparent;
+      padding-bottom: 8px;
+    }
+    .flash-grid::-webkit-scrollbar { height: 6px; }
+    .flash-grid::-webkit-scrollbar-track { background: transparent; }
+    .flash-grid::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
+
     .deal-card {
-      display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 8px 12px;
-      border-radius: 14px; text-decoration: none; color: var(--color-text);
-      transition: background 180ms var(--ease-standard);
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 12px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 18px;
+      text-decoration: none;
+      color: var(--color-text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
     }
-    .deal-card:hover { background: var(--color-bg-alt); }
+    .deal-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      border-color: var(--color-border-strong);
+    }
+
     .deal-img {
-      position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
-      background: var(--color-bg-alt); margin-bottom: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f8fafc;
+      margin-bottom: 10px;
     }
-    .deal-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 400ms var(--ease-out); }
-    .deal-card:hover .deal-img img { transform: scale(1.05); }
+    .deal-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 8px;
+      transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .deal-placeholder {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--color-muted);
+      background: var(--color-bg-alt);
+    }
+    .deal-card:hover .deal-img img { transform: scale(1.06); }
+
     .deal-off {
-      position: absolute; top: 8px; left: 8px; padding: 2px 8px; border-radius: 999px;
-      background: #ef4444; color: #fff; font-size: 11px; font-weight: 700;
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+      z-index: 2;
     }
-    .deal-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .deal-price { display: flex; align-items: baseline; gap: 6px; }
-    .deal-price strong { font-size: 16px; color: #e0492a; }
-    .deal-price s { font-size: 12px; color: var(--color-muted); }
-    .deal-bar { height: 4px; border-radius: 999px; background: #fde4dc; overflow: hidden; }
-    .deal-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f97316, #ef4444); }
-    .deal-left { font-size: 11px; color: var(--color-muted); }
-    @media (max-width: 1400px) { .flash-grid { grid-auto-columns: calc((100% - 3 * 12px) / 4); } }
+
+    .deal-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+    .deal-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 36px;
+      margin-bottom: 2px;
+    }
+    .deal-seller {
+      font-size: 12px;
+      color: var(--color-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 10px;
+    }
+
+    .deal-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+    .deal-info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .deal-price {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .deal-price strong {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.01em;
+    }
+    .deal-price s {
+      font-size: 12px;
+      color: var(--color-muted);
+      font-weight: 400;
+    }
+    .deal-rating {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      color: var(--color-text);
+      font-weight: 500;
+    }
+    .deal-star {
+      color: #f59e0b;
+      flex-shrink: 0;
+    }
+    .deal-reviews {
+      color: var(--color-muted);
+      font-size: 11px;
+    }
+
+    .deal-cart-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      border: none;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+      transition: background 160ms ease, transform 160ms ease;
+    }
+    .deal-cart-btn:hover {
+      background: #1e293b;
+      transform: scale(1.08);
+    }
+    .deal-cart-btn:active {
+      transform: scale(0.95);
+    }
+    .deal-cart-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    @media (max-width: 1400px) {
+      .flash-grid { grid-auto-columns: clamp(180px, 20vw, 210px); }
+    }
     @media (max-width: 1180px) {
       .flash { grid-template-columns: minmax(0, 1fr); }
       .flash-promo { display: none; }
     }
-    @media (max-width: 900px) { .flash-grid { grid-auto-columns: 42%; } }
+    @media (max-width: 900px) {
+      .flash-grid { grid-auto-columns: clamp(160px, 42vw, 190px); gap: 10px; }
+      .deal-card { padding: 10px; border-radius: 16px; }
+      .deal-img { border-radius: 12px; }
+      .deal-name { font-size: 13px; min-height: 32px; }
+      .deal-price strong { font-size: 15px; }
+      .deal-cart-btn { width: 32px; height: 32px; }
+    }
 
     /* ---------- newsletter */
     .newsletter {
@@ -943,6 +1153,17 @@ interface CategoryShelf {
 export class HomeComponent {
   protected readonly catalog = inject(CatalogService);
   private readonly seo = inject(SeoService);
+  private readonly cart = inject(CartService);
+  private readonly flyToCart = inject(FlyToCartService);
+  private readonly router = inject(Router);
+
+  protected addToCart(event: MouseEvent, product: Product): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (product.status === 'out-of-stock') return;
+    this.cart.add(product);
+    this.flyToCart.fly(product.image, event.currentTarget as HTMLElement, product.name);
+  }
 
   constructor() {
     this.seo.setDefaultMetadata();
