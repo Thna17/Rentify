@@ -12,12 +12,11 @@ import { useTranslation } from '@rentify/utils';
 
 // Components
 import { StoreInfoSection } from './components/StoreInfoSection';
-import { QuickActionsSection } from './components/QuickActionsSection';
 import { ThemeCustomizationSection } from './components/ThemeCustomizationSection';
 import { SocialMediaSection } from './components/SocialMediaSection';
 import { CollectionsSection } from './components/CollectionsSection';
 import { SavingIndicator } from './components/SavingIndicator';
-import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+import { PageTitle } from '../../components/page/PagePrimitives';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 const parseContentText = (val: unknown): string => {
@@ -443,15 +442,9 @@ const handleFontChange = (field: string, value: string) => {
   if (!websiteData && !isFetching) {
     return (
       <div className="min-h-full">
-        <PageHeader
-          title={t('dashboard.store_management.title')}
-          description="Custom branded storefront website customization"
-          icon={Store}
-          breadcrumb={[
-            { label: 'Dashboard', href: '/overview' },
-            { label: t('dashboard.store_management.title') },
-          ]}
-        />
+        <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 md:px-8">
+          <PageTitle back={{ to: '/online-store', label: t('merchant.onlineStore.title') }} title={t('merchant.onlineStore.editTitle')} />
+        </div>
         <div className="p-6 max-w-2xl mx-auto mt-6">
           <div className="border border-border rounded-2xl bg-card p-8 text-center space-y-5 shadow-sm">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -480,12 +473,11 @@ const handleFontChange = (field: string, value: string) => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-800">
+        <div role="alert" className="rounded-xl border border-[var(--rentify-color-danger-border)] bg-[var(--rentify-color-danger-subtle)] p-4">
+          <div className="flex items-center gap-2 text-[var(--rentify-color-danger-text)]">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm font-medium">
-              {t('dashboard.store_management.failed_to_load')}:{' '}
-              {(error as any).data?.error || t('confirmation.error_alt')}
+              {t('dashboard.store_management.failed_to_load')}
             </span>
           </div>
         </div>
@@ -499,37 +491,34 @@ const handleFontChange = (field: string, value: string) => {
 
   return (
     <div className="min-h-full">
-      <PageHeader
-        title={t('dashboard.store_management.title')}
-        description={t('dashboard.store_management.description')}
-        icon={Store}
-        actions={
-          <Button asChild className="h-11">
-            <Link to="/customization">
-              <Palette className="h-4 w-4" aria-hidden="true" />
-              {t('merchant.storeDesign.title')}
-            </Link>
-          </Button>
-        }
-        breadcrumb={[
-          { label: 'Dashboard', href: '/overview' },
-          { label: t('dashboard.store_management.title') },
-        ]}
-      />
+      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 md:px-8">
+        <PageTitle
+          back={{ to: '/online-store', label: t('merchant.onlineStore.title') }}
+          title={t('merchant.onlineStore.editTitle')}
+          description={t('merchant.onlineStore.editSubtitle')}
+          actions={
+            <Button asChild variant="outline" className="min-h-[44px] rounded-xl">
+              <Link to="/customization">
+                <Palette className="h-4 w-4" aria-hidden="true" />
+                {t('merchant.storeDesign.title')}
+              </Link>
+            </Button>
+          }
+        />
+      </div>
 
       {updateError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2 text-red-800">
+        <div role="alert" className="mx-4 mb-6 rounded-xl border border-[var(--rentify-color-danger-border)] bg-[var(--rentify-color-danger-subtle)] p-4 sm:mx-6 md:mx-8">
+          <div className="flex items-center gap-2 text-[var(--rentify-color-danger-text)]">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm font-medium">
-              {t('dashboard.store_management.error_updating_content')}:{' '}
-              {(updateError as any).data?.error || t('confirmation.error_alt')}
+              {t('dashboard.store_management.error_updating_content')}
             </span>
           </div>
         </div>
       )}
 
-      <div className="p-6 md:p-8 space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 md:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <StoreInfoSection
             storeData={storeData}
@@ -541,10 +530,9 @@ const handleFontChange = (field: string, value: string) => {
             setTempValue={setTempValue}
             isUpdating={isLoading}
             t={t}
-            className="lg:col-span-2"
+            className="lg:col-span-3"
           />
 
-          <QuickActionsSection t={t} />
         </div>
 
         <ThemeCustomizationSection

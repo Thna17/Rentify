@@ -312,7 +312,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                         {themeConfig.colors?.accent || paletteTheme?.colors?.accent || '#F59E0B'}
                       </div>
                     </div>
-                    <div className="flex-1 min-w-[300px] p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div className="min-w-0 flex-1 rounded-xl border border-border bg-card p-5 shadow-sm sm:min-w-[300px]">
                       <div className="flex justify-between items-center mb-4">
                         <span className="font-semibold text-gray-900">{t('merchant.p2.buttonPreview')}</span>
                         <button 
