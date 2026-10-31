@@ -1,78 +1,29 @@
-import { useMemo, useState, useEffect } from 'react';
-import { useGetOrderHistoryQuery } from '@rentify/apis';
-import { useThemeService } from '@rentify/shared/hooks/useThemeService';
-import { useChannels } from '../context/ChannelContext';
-import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
+import { useMemo } from 'react';
+import { useChannelOrders } from './useChannelOrders';
 
 /**
- * Customers, derived from existing orders rather than a dedicated backend
- * endpoint — every buyer who has placed at least one order, grouped by
- * contact, with their order count and lifetime spend. No new data source,
- * just a different view of orders the merchant already has.
+ * Customers, derived from the Store's orders on every channel (GET /api/stores/:storeId/orders):
+ * each buyer who placed an order, grouped by name and contact, with order count, spend and the
+ * channels they bought from. Contact details arrive masked once an order is finished.
  */
 export function useCustomers() {
-  const { websiteData } = useThemeService();
-  const { store } = useChannels();
-  const websiteId = websiteData?.websiteId || null;
-
-  const [storeOrders, setStoreOrders] = useState([]);
-  const [storeOrdersLoading, setStoreOrdersLoading] = useState(false);
-  const [storeOrdersError, setStoreOrdersError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const orderHistory = useGetOrderHistoryQuery(
-    { websiteId, page: 1, limit: 200 },
-    { skip: !websiteId },
-  );
-
-  useEffect(() => {
-    if (websiteId || !store?.id) return;
-    let active = true;
-    setStoreOrdersLoading(true);
-    setStoreOrdersError(false);
-    fetch(`${ECOMMERCE_API_ROOT}/api/stores/${store.id}/marketplace-orders`, {
-      credentials: 'include',
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Request failed');
-        return res.json();
-      })
-      .then((data) => {
-        if (active && data?.orders) setStoreOrders(data.orders);
-      })
-      .catch(() => {
-        if (active) setStoreOrdersError(true);
-      })
-      .finally(() => {
-        if (active) setStoreOrdersLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [websiteId, store?.id, reloadKey]);
-
-  const orders = websiteId ? orderHistory.data?.orders || [] : storeOrders;
-  const isLoading = websiteId ? orderHistory.isLoading : storeOrdersLoading;
-  const isError = websiteId ? Boolean(orderHistory.isError) : storeOrdersError;
-  const refetch = () => (websiteId ? orderHistory.refetch() : setReloadKey((key) => key + 1));
+  const { orders, loading, error, reload } = useChannelOrders('all', 'all');
 
   const customers = useMemo(() => {
     const byContact = new Map();
-
     for (const order of orders) {
-      const name = order.shippingDetails?.name || order.customerName || 'Guest';
-      const email = order.shippingDetails?.email || order.customerEmail || '';
-      const phone = order.shippingDetails?.phone || order.customerPhone || '';
-      const key = email || phone || name;
-      if (!key) continue;
-
-      const existing = byContact.get(key);
-      const amount = parseFloat(order.totalAmount) || 0;
+      if (order.channel === 'pos' && !order.buyer?.phone && !order.buyer?.email) continue; // walk-in sales
+      const name = order.buyer?.name || '';
+      const phone = order.buyer?.phone || '';
+      const email = order.buyer?.email || '';
+      const key = `${name.toLowerCase()}|${phone || email}`;
+      const amount = order.status === 'cancelled' ? 0 : Number(order.totals?.total || 0);
       const createdAt = order.createdAt ? new Date(order.createdAt).getTime() : 0;
-
+      const existing = byContact.get(key);
       if (existing) {
         existing.orderCount += 1;
         existing.totalSpent += amount;
+        existing.channels.add(order.channel);
         if (createdAt > existing.lastOrderAt) existing.lastOrderAt = createdAt;
       } else {
         byContact.set(key, {
@@ -83,14 +34,14 @@ export function useCustomers() {
           orderCount: 1,
           totalSpent: amount,
           lastOrderAt: createdAt,
+          channels: new Set([order.channel]),
         });
       }
     }
-
     return [...byContact.values()].sort((a, b) => b.lastOrderAt - a.lastOrderAt);
   }, [orders]);
 
-  return { customers, isLoading, isError, refetch };
+  return { customers, isLoading: loading, isError: error, refetch: reload };
 }
 
 export default useCustomers;

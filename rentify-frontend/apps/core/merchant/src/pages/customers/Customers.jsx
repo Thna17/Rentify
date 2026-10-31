@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Search, Users, Phone, MessageSquare, ArrowLeft, X, ShoppingBag, ExternalLink } from 'lucide-react';
+import { Search, Users, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Input } from '@rentify/shared/ui/input';
-import { Button } from '@rentify/shared/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@rentify/shared/ui/sheet';
 import { useCustomers } from '../../hooks/useCustomers';
 import { useTranslation } from '@rentify/utils';
+import { FilterChips, PageShell, PageTitle } from '../../components/page/PagePrimitives';
 import { DataTable } from '../../components/data-table';
 import { formatMoney } from '../../hooks/useChannelOrders';
 
@@ -17,19 +17,7 @@ const initials = (name) =>
     .map((w) => w[0]?.toUpperCase())
     .join('') || '?';
 
-const maskPhone = (phone) => {
-  if (!phone) return '—';
-  const clean = String(phone).trim();
-  if (clean.length < 7) return clean;
-  return `${clean.slice(0, 3)} *** ${clean.slice(-3)}`;
-};
-
-const CHANNEL_CHIPS = [
-  { id: 'all', label: 'All' },
-  { id: 'marketplace', label: 'Marketplace' },
-  { id: 'storefront', label: 'Online store' },
-  { id: 'pos', label: 'POS' },
-];
+const CHANNEL_CHIPS = ['all', 'marketplace', 'storefront', 'pos'];
 
 export const Customers = () => {
   const { t, formatDate } = useTranslation();
@@ -41,7 +29,7 @@ export const Customers = () => {
   const visible = useMemo(() => {
     let list = customers;
     if (selectedChannel !== 'all') {
-      list = list.filter((c) => c.channel === selectedChannel || !c.channel);
+      list = list.filter((c) => c.channels.has(selectedChannel));
     }
     const term = query.trim().toLowerCase();
     if (!term) return list;
@@ -65,7 +53,7 @@ export const Customers = () => {
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary" aria-hidden="true">
             {initials(row.original.name)}
           </span>
-          <span className="truncate font-medium text-foreground hover:underline">{row.original.name}</span>
+          <span className="truncate font-medium text-foreground hover:underline">{row.original.name || t('merchant.orders.buyerUnknown')}</span>
         </button>
       ),
     },
@@ -99,7 +87,7 @@ export const Customers = () => {
       id: 'orders',
       accessorFn: (c) => c.orderCount,
       header: t('merchant.p.orders'),
-      meta: { sortable: true, align: 'right', mobileCell: (c) => `${t('merchant.p.orders')} ${c.orderCount}` },
+      meta: { sortable: true, align: 'right', mobileHideLabel: true, mobileCell: (c) => t('merchant.reports.orderCount', { count: c.orderCount }) },
       cell: ({ getValue }) => <span className="tabular-nums text-foreground">{getValue()}</span>,
     },
     {
@@ -112,35 +100,15 @@ export const Customers = () => {
   ], [t, formatDate]);
 
   return (
-    <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 md:p-8 space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('merchant.p.customers')}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {t('merchant.p.everyoneWhoHasOrdered')}
-          </p>
-        </div>
+    <PageShell>
+        <PageTitle title={t('merchant.p.customers')} description={t('merchant.p.everyoneWhoHasOrdered')} />
 
-        {/* Channel Filter Chips (wireframe M11) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {CHANNEL_CHIPS.map((chip) => {
-            const active = selectedChannel === chip.id;
-            return (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => setSelectedChannel(chip.id)}
-                className={`inline-flex min-h-[36px] shrink-0 items-center rounded-full px-4 text-xs font-semibold transition-all ${
-                  active
-                    ? 'bg-foreground text-background shadow-sm'
-                    : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
+        <FilterChips
+          label={t('merchant.orders.channelFilter')}
+          items={CHANNEL_CHIPS.map((id) => ({ id, label: t(`merchant.orders.channels.${id}`) }))}
+          value={selectedChannel}
+          onChange={setSelectedChannel}
+        />
 
         <DataTable
           title={t('merchant.table.customers.title')}
@@ -150,7 +118,7 @@ export const Customers = () => {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <Input
                 aria-label={t('merchant.p.customers')}
-                placeholder="Search name or phone"
+                placeholder={t('merchant.customers.search')}
                 className="h-11 pl-9"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -182,97 +150,65 @@ export const Customers = () => {
                       {initials(selectedCustomer.name)}
                     </span>
                     <div>
-                      <SheetTitle className="text-xl font-bold">{selectedCustomer.name}</SheetTitle>
-                      <p className="text-xs text-muted-foreground">Customer</p>
+                      <SheetTitle className="text-xl font-bold">{selectedCustomer.name || t('merchant.orders.buyerUnknown')}</SheetTitle>
                     </div>
                   </div>
                 </SheetHeader>
 
-                {/* Contact Card (wireframe M12: Masked phone + Call & Telegram actions) */}
-                <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Phone number</p>
-                    <p className="text-sm font-medium text-foreground tracking-wide font-mono">
-                      {maskPhone(selectedCustomer.phone)}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t('merchant.customers.contact')}</p>
+                    <p className="text-sm font-medium text-foreground">{selectedCustomer.phone || selectedCustomer.email || '—'}</p>
                   </div>
-                  {selectedCustomer.email && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm font-medium text-foreground">{selectedCustomer.email}</p>
-                    </div>
-                  )}
-                  <div className="flex gap-2 pt-1">
-                    {selectedCustomer.phone ? (
-                      <a
-                        href={`tel:${selectedCustomer.phone}`}
-                        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-semibold text-foreground transition hover:bg-muted"
-                      >
-                        <Phone className="h-4 w-4" />
-                        Call
-                      </a>
-                    ) : (
-                      <span className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-semibold text-muted-foreground opacity-50 cursor-not-allowed">
-                        <Phone className="h-4 w-4" />
-                        Call
-                      </span>
-                    )}
+                  {selectedCustomer.phone && !selectedCustomer.phone.includes('*') && (
                     <a
-                      href={selectedCustomer.phone ? `https://t.me/${selectedCustomer.phone.replace(/[^0-9]/g, '')}` : '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-semibold text-foreground transition hover:bg-muted"
+                      href={`tel:${selectedCustomer.phone}`}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-semibold text-foreground hover:bg-muted"
                     >
-                      <MessageSquare className="h-4 w-4" />
-                      Telegram
+                      <Phone className="h-4 w-4" aria-hidden="true" />
+                      {t('merchant.orders.detail.call')}
                     </a>
-                  </div>
+                  )}
+                  {selectedCustomer.phone?.includes('*') && (
+                    <p className="text-sm text-muted-foreground">{t('merchant.customers.masked')}</p>
+                  )}
                 </div>
 
-                {/* 3 KPI Tiles: Orders · Spent · Returns (wireframe M12) */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl border border-border bg-card p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Orders</p>
-                    <p className="mt-1 text-lg font-bold tabular-nums text-foreground">{selectedCustomer.orderCount || 1}</p>
+                <dl className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-border bg-card p-3">
+                    <dt className="text-sm text-muted-foreground">{t('merchant.p.orders')}</dt>
+                    <dd className="mt-1 text-lg font-semibold tabular-nums text-foreground">{selectedCustomer.orderCount}</dd>
                   </div>
-                  <div className="rounded-xl border border-border bg-card p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Spent</p>
-                    <p className="mt-1 text-lg font-bold tabular-nums text-foreground">{formatMoney(selectedCustomer.totalSpent || 0)}</p>
+                  <div className="rounded-xl border border-border bg-card p-3">
+                    <dt className="text-sm text-muted-foreground">{t('merchant.p.totalSpent')}</dt>
+                    <dd className="mt-1 text-lg font-semibold tabular-nums text-foreground">{formatMoney(selectedCustomer.totalSpent || 0)}</dd>
                   </div>
-                  <div className="rounded-xl border border-border bg-card p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Returns</p>
-                    <p className="mt-1 text-lg font-bold tabular-nums text-foreground">0</p>
-                  </div>
-                </div>
+                </dl>
 
-                {/* Orders section (wireframe M12) */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">Customer orders</h3>
-                  <div className="rounded-xl border border-border bg-card divide-y divide-border">
-                    <div className="flex items-center justify-between p-3.5">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Latest order</p>
-                        <p className="text-xs text-muted-foreground">
-                          {selectedCustomer.lastOrderAt ? formatDate(selectedCustomer.lastOrderAt, { dateStyle: 'medium' }) : 'Recent'}
-                        </p>
-                      </div>
-                      <Link
-                        to="/orders"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                        onClick={() => setSelectedCustomer(null)}
-                      >
-                        <span>View in orders</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Link>
-                    </div>
-                  </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    {t('merchant.customers.boughtFrom', {
+                      channels: [...selectedCustomer.channels].map((c) => t(`merchant.orders.channels.${c}`)).join(', '),
+                    })}
+                  </p>
+                  {selectedCustomer.lastOrderAt ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t('merchant.table.customers.lastOrder')} {formatDate(selectedCustomer.lastOrderAt, { dateStyle: 'medium' })}
+                    </p>
+                  ) : null}
+                  <Link
+                    to="/orders?tab=done"
+                    onClick={() => setSelectedCustomer(null)}
+                    className="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-foreground underline"
+                  >
+                    {t('merchant.customers.seeOrders')}
+                  </Link>
                 </div>
               </div>
             )}
           </SheetContent>
         </Sheet>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 
