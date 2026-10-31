@@ -9,6 +9,8 @@ import {
   CreditCard,
   LogOut,
   SlidersHorizontal,
+  Package,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -22,11 +24,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
 import { useChannels } from '../../context/ChannelContext';
 import { useAccess } from '../../utils/access';
+import { useChannelOrders, formatMoney } from '../../hooks/useChannelOrders';
+import { useGetManagedProductsQuery } from '@rentify/apis';
+import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { Button } from '@rentify/shared/ui/button';
 import { SheetTrigger } from '@rentify/shared/ui/sheet';
 import { Input } from '@rentify/shared/ui/input';
 import { NotificationDropdown } from './NotificationDropdown';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function SiteHeader({
@@ -45,6 +50,22 @@ export function SiteHeader({
   const { store } = useChannels();
   const storeName = store?.name || 'Rentify';
 
+  const { websiteData } = useThemeService();
+  const websiteId = websiteData?.websiteId;
+  const { orders } = useChannelOrders('all');
+  const { data: productsData } = useGetManagedProductsQuery(
+    { websiteId, page: 1, limit: 50 },
+    { skip: !websiteId }
+  );
+
+  const products = useMemo(() => {
+    if (!productsData) return [];
+    if (Array.isArray(productsData)) return productsData;
+    if (Array.isArray(productsData.products)) return productsData.products;
+    if (Array.isArray(productsData.data)) return productsData.data;
+    return [];
+  }, [productsData]);
+
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef(null);
@@ -54,12 +75,42 @@ export function SiteHeader({
     if (mobileSearchOpen) searchInputRef.current?.focus();
   }, [mobileSearchOpen]);
 
-  const filteredTabs = searchFilter.trim()
-    ? tabs.filter((item) => {
-        const title = (item.displayName || item.label || item.name || '').toLowerCase();
-        return title.includes(searchFilter.toLowerCase().trim());
+  // Wireframe M27: Search pages, products, and orders
+  const filteredTabs = useMemo(() => {
+    const q = searchFilter.trim().toLowerCase();
+    if (!q) return [];
+    return tabs.filter((item) => {
+      const title = (item.displayName || item.label || item.name || '').toLowerCase();
+      return title.includes(q);
+    });
+  }, [tabs, searchFilter]);
+
+  const matchingProducts = useMemo(() => {
+    const q = searchFilter.trim().toLowerCase();
+    if (!q) return [];
+    return products
+      .filter((p) => {
+        const name = (p.name || p.title || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        return name.includes(q) || cat.includes(q);
       })
-    : [];
+      .slice(0, 3);
+  }, [products, searchFilter]);
+
+  const matchingOrders = useMemo(() => {
+    const q = searchFilter.trim().toLowerCase();
+    if (!q) return [];
+    return orders
+      .filter((o) => {
+        const num = (o.orderNumber || o.id || '').toLowerCase();
+        const name = (o.customer?.name || o.buyerName || '').toLowerCase();
+        const phone = (o.customer?.phone || o.buyerPhone || '').toLowerCase();
+        return num.includes(q) || name.includes(q) || phone.includes(q);
+      })
+      .slice(0, 3);
+  }, [orders, searchFilter]);
+
+  const hasAnyMatches = filteredTabs.length > 0 || matchingProducts.length > 0 || matchingOrders.length > 0;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -84,13 +135,33 @@ export function SiteHeader({
     setMobileSearchOpen(false);
   };
 
+  const handleSelectProduct = (product) => {
+    navigate(product.id ? `/products/edit/${product.id}` : '/products');
+    setSearchFilter?.('');
+    setIsSearchFocused(false);
+    setMobileSearchOpen(false);
+  };
+
+  const handleSelectOrder = (order) => {
+    navigate(order.id ? `/orders/${order.id}` : '/orders');
+    setSearchFilter?.('');
+    setIsSearchFocused(false);
+    setMobileSearchOpen(false);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       setIsSearchFocused(false);
       setMobileSearchOpen(false);
       e.target.blur();
-    } else if (e.key === 'Enter' && filteredTabs.length > 0) {
-      handleSelectTab(filteredTabs[0].path);
+    } else if (e.key === 'Enter') {
+      if (filteredTabs.length > 0) {
+        handleSelectTab(filteredTabs[0].path);
+      } else if (matchingProducts.length > 0) {
+        handleSelectProduct(matchingProducts[0]);
+      } else if (matchingOrders.length > 0) {
+        handleSelectOrder(matchingOrders[0]);
+      }
       e.target.blur();
     }
   };
@@ -183,32 +254,105 @@ export function SiteHeader({
           </button>
         )}
 
-        {/* Search Results Dropdown */}
+        {/* Search Results Dropdown - Wireframe Screen M27 */}
         {isSearchFocused && searchFilter.trim() && (
-          <div className="absolute left-0 top-full mt-1.5 w-full rounded-xl bg-popover text-popover-foreground shadow-lg overflow-hidden z-50 py-1.5 max-h-80 overflow-y-auto scrollbar-subtle border border-border">
-            {filteredTabs.length > 0 ? (
-              filteredTabs.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.path}
-                    type="button"
-                    className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs sm:text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSelectTab(item.path);
-                    }}
-                  >
-                    {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
-                    <div className="flex-1 truncate">
-                      <span className="font-medium text-foreground">{item.displayName || item.label || item.name}</span>
+          <div className="absolute left-0 top-full mt-1.5 w-full rounded-2xl bg-popover text-popover-foreground shadow-lift overflow-hidden z-50 py-2 max-h-96 overflow-y-auto scrollbar-subtle border border-card-border">
+            {hasAnyMatches ? (
+              <>
+                {/* Products Group */}
+                {matchingProducts.length > 0 && (
+                  <div>
+                    <div className="px-3.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Products
                     </div>
-                  </button>
-                );
-              })
+                    {matchingProducts.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="w-full flex items-center justify-between gap-3 px-3.5 py-2 text-xs sm:text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectProduct(p);
+                        }}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Package className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="font-medium text-foreground truncate">{p.name || p.title}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                          {formatMoney(Number(p.price || 0))}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Orders Group */}
+                {matchingOrders.length > 0 && (
+                  <div className={matchingProducts.length > 0 ? 'mt-1 pt-1 border-t border-border/50' : ''}>
+                    <div className="px-3.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Orders
+                    </div>
+                    {matchingOrders.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        className="w-full flex items-center justify-between gap-3 px-3.5 py-2 text-xs sm:text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectOrder(o);
+                        }}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <ShoppingBag className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="min-w-0 truncate">
+                            <span className="font-semibold text-foreground">
+                              #{o.orderNumber || o.id?.slice(-6)}
+                            </span>
+                            <span className="text-muted-foreground text-xs ml-1.5 truncate">
+                              {o.customer?.name || o.buyerName || 'Customer'}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-foreground shrink-0 tabular-nums">
+                          {formatMoney(Number(o.totals?.total || 0))}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pages Group */}
+                {filteredTabs.length > 0 && (
+                  <div className={matchingProducts.length > 0 || matchingOrders.length > 0 ? 'mt-1 pt-1 border-t border-border/50' : ''}>
+                    <div className="px-3.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Pages
+                    </div>
+                    {filteredTabs.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.path}
+                          type="button"
+                          className="w-full flex items-center gap-3 px-3.5 py-2 text-xs sm:text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectTab(item.path);
+                          }}
+                        >
+                          {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+                          <div className="flex-1 truncate">
+                            <span className="font-medium text-foreground">{item.displayName || item.label || item.name}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="px-3 py-3 text-center text-xs text-muted-foreground">
-                {t('merchant.shell.noMenuFound')}
+              <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                No matches found for &ldquo;{searchFilter}&rdquo;
               </div>
             )}
           </div>
