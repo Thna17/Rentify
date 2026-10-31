@@ -140,7 +140,7 @@ export const ALL_TABS = [
     name: 'dashboard.settings.title',
     label: 'Settings',
     icon: Settings,
-    path: 'settings/account',
+    path: 'settings',
     roles: ['admin', 'user'],
     permission: 'settings',
     ownerOnly: true,

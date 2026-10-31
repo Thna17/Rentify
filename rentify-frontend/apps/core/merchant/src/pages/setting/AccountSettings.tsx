@@ -142,8 +142,8 @@ export const AccountSettings = () => {
 
   return (
     <SettingsLayout
-      title={t('merchant.p.accountSettings')}
-      description="Manage your personal and business information"
+      title={t('merchant.settings.sections.account.title')}
+      description={t('merchant.settings.sections.account.body')}
       icon={<User />}
     >
       <Card className="shadow-sm border-0">

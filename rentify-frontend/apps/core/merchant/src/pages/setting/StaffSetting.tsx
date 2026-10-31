@@ -317,8 +317,8 @@ const StaffSetting: React.FC = () => {
 
   return (
     <SettingsLayout
-      title={t('merchant.p.staffManagement')}
-      description="Manage your team members and their permissions"
+      title={t('merchant.settings.sections.staff.title')}
+      description={t('merchant.settings.sections.staff.body')}
       icon={<Users className="h-5 w-5" />}
     >
       <Card className="shadow-sm border-0">

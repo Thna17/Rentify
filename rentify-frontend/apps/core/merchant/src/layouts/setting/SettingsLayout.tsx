@@ -1,76 +1,72 @@
-import React from 'react';
-import {
-  CreditCard,
-  Receipt,
-  Shield,
-  SlidersHorizontal,
-  Truck,
-  User,
-  Users,
-} from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { NavLink } from 'react-router-dom';
+import { CreditCard, Receipt, Shield, SlidersHorizontal, Truck, User, Users, type LucideIcon } from 'lucide-react';
+import { useTranslation } from '@rentify/utils';
+import { PageTitle } from '../../components/page/PagePrimitives';
+
+export interface SettingsSection {
+  key: string;
+  path: string;
+  icon: LucideIcon;
+}
+
+/** Every settings section, in the order of the Settings list (redesign M21). */
+export const SETTINGS_SECTIONS: SettingsSection[] = [
+  { key: 'account', path: '/settings/account', icon: User },
+  { key: 'payments', path: '/settings/payments', icon: CreditCard },
+  { key: 'delivery', path: '/settings/delivery', icon: Truck },
+  { key: 'staff', path: '/settings/staff', icon: Users },
+  { key: 'billing', path: '/settings/billing', icon: Receipt },
+  { key: 'preferences', path: '/settings/preferences', icon: SlidersHorizontal },
+  { key: 'security', path: '/settings/security', icon: Shield },
+];
 
 interface SettingsLayoutProps {
   title: string;
-  description: string;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
+  description?: string;
+  children: ReactNode;
+  /** Kept for callers that still pass one; settings pages don't show page icons. */
+  icon?: ReactNode;
 }
 
-const SETTINGS_NAV_ITEMS = [
-  { name: 'Account', path: '/settings/account', icon: User },
-  { name: 'Payments', path: '/settings/payments', icon: CreditCard },
-  { name: 'Delivery', path: '/settings/delivery', icon: Truck },
-  { name: 'Staff & Roles', path: '/settings/staff', icon: Users },
-  { name: 'Security', path: '/settings/security', icon: Shield },
-  { name: 'Billing', path: '/settings/billing', icon: Receipt },
-  { name: 'Preferences', path: '/settings/preferences', icon: SlidersHorizontal },
-];
-
-export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, description, children }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
+/**
+ * The one settings shell (audit P11): the dashboard's own page frame, a back link to the
+ * Settings list on phones, and the section list beside the page from tablet width up.
+ */
+export function SettingsLayout({ title, description, children }: SettingsLayoutProps) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-full">
-      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 md:px-8 md:py-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">{title}</h1>
-          {description && (
-            <p className="mt-1 text-sm text-muted-foreground hidden sm:block max-w-2xl">{description}</p>
-          )}
-        </div>
-
-        {/* Settings subnavigation tabs */}
-        <nav
-          className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-border [scrollbar-width:none]"
-          aria-label="Settings sections"
-        >
-          {SETTINGS_NAV_ITEMS.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.path}
-                type="button"
-                onClick={() => navigate(item.path)}
-                aria-current={isActive ? 'page' : undefined}
-                className={`flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-colors cursor-pointer ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                }`}
-              >
-                <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 md:grid-cols-[220px_1fr] md:px-8 md:py-8">
+        <nav aria-label={t('merchant.settings.title')} className="hidden md:block">
+          <p className="mb-2 px-3 text-sm font-semibold text-foreground">{t('merchant.settings.title')}</p>
+          <ul className="space-y-0.5">
+            {SETTINGS_SECTIONS.map(({ key, path, icon: Icon }) => (
+              <li key={key}>
+                <NavLink
+                  to={path}
+                  className={({ isActive }) =>
+                    `flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-colors ${
+                      isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {t(`merchant.settings.sections.${key}.title`)}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
         </nav>
-
-        <section aria-label={`${title} content`} className="space-y-6">
-          {children}
-        </section>
+        <div className="min-w-0 space-y-5">
+          <PageTitle back={{ to: '/settings', label: t('merchant.settings.title'), phoneOnly: true }} title={title} description={description} />
+          <section aria-label={title} className="space-y-6">
+            {children}
+          </section>
+        </div>
       </div>
     </div>
   );
-};
+}
+
+export default SettingsLayout;

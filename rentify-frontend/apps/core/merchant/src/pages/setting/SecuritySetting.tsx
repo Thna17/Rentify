@@ -4,11 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rent
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { Switch } from '@rentify/shared/ui/switch';
-import { Separator } from '@rentify/shared/ui/separator';
-import { Badge } from '@rentify/shared/ui/badge';
 import { 
-  Shield, Lock, Smartphone, CheckCircle2, Loader2, QrCode, Eye, EyeOff
+  Shield, Lock, Loader2, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
@@ -20,11 +17,6 @@ export const SecuritySetting = () => {
   // Use the mutation hook
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
 
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorAuth: true,
-    loginAlerts: true,
-    suspiciousActivityDetection: true,
-  });
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -38,10 +30,6 @@ export const SecuritySetting = () => {
     confirm: false,
   });
 
-  const [activeSessions] = useState([
-    { id: 1, device: 'Chrome on Windows', location: 'New York, USA', lastActive: '2 hours ago', current: true },
-    { id: 2, device: 'Safari on iPhone', location: 'San Francisco, USA', lastActive: '3 days ago', current: false },
-  ]);
 
   const togglePasswordVisibility = (field: keyof typeof showPassword) => {
     setShowPassword(prev => ({
@@ -93,79 +81,17 @@ export const SecuritySetting = () => {
       toast.success(t('merchant.p.passwordUpdatedSuccessfully'));
     } catch (error: any) {
       // Handle API errors
-      const errorMessage = error.data?.message || 'Failed to update password';
-      toast.error(errorMessage);
+      toast.error(t(error?.status === 400 || error?.status === 401 ? 'merchant.settings.passwordRejected' : 'merchant.settings.passwordError'));
     }
   };
 
-  const revokeSession = (sessionId: number) => {
-    toast.success(`Session revoked successfully`);
-  };
 
   return (
     <SettingsLayout
-      title={t('merchant.p.securitySettings')}
-      description="Manage your account security and privacy settings"
+      title={t('merchant.settings.sections.security.title')}
+      description={t('merchant.settings.securityBody')}
       icon={<Shield />}
     >
-      {/* Two-Factor Authentication */}
-      <Card className="shadow-sm border-0">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">{t('merchant.p.twoFactorAuthentication')}</CardTitle>
-          <CardDescription>
-            {t('merchant.p.addAnExtraLayer')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Smartphone className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <Label htmlFor="2fa" className="text-sm font-medium cursor-pointer">
-                  {t('merchant.p.twoFactorAuthentication')}
-                </Label>
-                <div className="flex items-center space-x-2 mt-1">
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    {t('merchant.p.active')}
-                  </Badge>
-                  <span className="text-sm text-gray-500">{t('merchant.p.authenticatorApp')}</span>
-                </div>
-              </div>
-            </div>
-            <Switch
-              id="2fa"
-              checked={securitySettings.twoFactorAuth}
-              onCheckedChange={(checked) => 
-                setSecuritySettings({...securitySettings, twoFactorAuth: checked})
-              }
-            />
-          </div>
-
-          <Separator />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <QrCode className="h-5 w-5 mr-3" />
-              <div className="text-left">
-                <div className="font-medium">{t('merchant.p.setupAuthenticator')}</div>
-                <div className="text-sm text-gray-500">{t('merchant.p.useAnAuthenticatorApp')}</div>
-              </div>
-            </Button>
-
-            <Button variant="outline" className="justify-start h-auto p-4">
-              <Smartphone className="h-5 w-5 mr-3" />
-              <div className="text-left">
-                <div className="font-medium">{t('merchant.p.smsVerification')}</div>
-                <div className="text-sm text-gray-500">{t('merchant.p.receiveCodesViaSms')}</div>
-              </div>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Change Password */}
       <Card className="shadow-sm border-0">
         <CardHeader>
@@ -193,6 +119,7 @@ export const SecuritySetting = () => {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => togglePasswordVisibility('current')}
+                  aria-label={t(showPassword.current ? 'merchant.payments.hide' : 'merchant.payments.show')}
                 >
                   {showPassword.current ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
@@ -220,6 +147,7 @@ export const SecuritySetting = () => {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => togglePasswordVisibility('new')}
+                  aria-label={t(showPassword.new ? 'merchant.payments.hide' : 'merchant.payments.show')}
                 >
                   {showPassword.new ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
@@ -247,6 +175,7 @@ export const SecuritySetting = () => {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => togglePasswordVisibility('confirm')}
+                  aria-label={t(showPassword.confirm ? 'merchant.payments.hide' : 'merchant.payments.show')}
                 >
                   {showPassword.confirm ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
@@ -278,46 +207,6 @@ export const SecuritySetting = () => {
         </CardContent>
       </Card>
 
-      {/* Active Sessions */}
-      <Card className="shadow-sm border-0">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">{t('merchant.p.activeSessions')}</CardTitle>
-          <CardDescription>
-            {t('merchant.p.manageYourActiveLogin')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {activeSessions.map((session) => (
-              <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Smartphone className="h-4 w-4 text-gray-600" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{session.device}</div>
-                    <div className="text-sm text-gray-500">
-                      {session.location} • {session.lastActive}
-                      {session.current && (
-                        <Badge variant="secondary" className="ml-2">{t('merchant.p.current')}</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {!session.current && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => revokeSession(session.id)}
-                  >
-                    {t('merchant.p.revoke')}
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </SettingsLayout>
   );
 };

@@ -47,8 +47,8 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(findRedirect('support')).toBe('/help');
     });
 
-    it('redirects /settings to /settings/account', () => {
-      expect(findRedirect('settings')).toBe('/settings/account');
+    it('serves /settings as the Settings list (no redirect)', () => {
+      expect(findRedirect('settings')).toBeUndefined();
     });
   });
 
@@ -67,7 +67,7 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(channelTabs).toEqual(['marketplace', 'online-store', 'pos']);
 
       // Group 3 (more): Returns & problems, Share your store, Settings, Help
-      expect(moreTabs).toEqual(['returns', 'share', 'settings/account', 'help']);
+      expect(moreTabs).toEqual(['returns', 'share', 'settings', 'help']);
     });
   });
 
@@ -98,7 +98,7 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(paths).not.toContain('online-store');
       expect(paths).not.toContain('returns');
       expect(paths).not.toContain('share');
-      expect(paths).not.toContain('settings/account');
+      expect(paths).not.toContain('settings');
     });
   });
 });
