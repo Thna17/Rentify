@@ -76,8 +76,8 @@ exports.getInvoices = async (req, res) => {
         {
           model: Order,
           include: [
-            { model: OrderItem, include: [Product] },
-            { model: Payment },
+            { model: OrderItem, as: "OrderItems", include: [Product] },
+            { model: Payment, as: "Payment" },
             { model: ShippingDetail, as: "ShippingDetail" },
           ],
         },
@@ -111,8 +111,8 @@ exports.getInvoiceById = async (req, res) => {
         {
           model: Order,
           include: [
-            { model: OrderItem, include: [Product] },
-            { model: Payment },
+            { model: OrderItem, as: "OrderItems", include: [Product] },
+            { model: Payment, as: "Payment" },
             { model: ShippingDetail, as: "ShippingDetail" },
           ],
         },
@@ -296,8 +296,8 @@ exports.getPublicInvoice = async (req, res) => {
         {
           model: Order,
           include: [
-            { model: OrderItem, include: [Product] },
-            { model: Payment },
+            { model: OrderItem, as: "OrderItems", include: [Product] },
+            { model: Payment, as: "Payment" },
             { model: ShippingDetail, as: "ShippingDetail" },
           ],
         },
