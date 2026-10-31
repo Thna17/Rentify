@@ -66,7 +66,10 @@ class ProductService {
    * products created before the storefront appear on it.
    */
   static async attachStoreProductsToWebsite(storeId, websiteId) {
-    return Product.update({ websiteId }, { where: { storeId, websiteId: null } });
+    // This bulk update only links existing products. Validating Sequelize's
+    // partial update instance runs product-type hooks against default values
+    // and rejects valid non-ecommerce website niches, even with no products.
+    return Product.update({ websiteId }, { where: { storeId, websiteId: null }, validate: false });
   }
 
   constructor(websiteId, options = {}) {

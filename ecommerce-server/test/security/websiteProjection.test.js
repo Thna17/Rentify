@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 
 const { WebsiteData, WebsiteContent, Product } = require("../../models");
 const { websiteData } = require("../../modules/websites/websiteController");
+const ProductService = require("../../modules/catalog/ProductService");
 
 const response = () => ({
   statusCode: null,
@@ -38,4 +39,17 @@ test("website projection without a Store leaves products untouched", async (t) =
 
   assert.equal(res.statusCode, 200);
   assert.equal(updated, false);
+});
+
+test("linking products to a skincare website does not validate a partial product", async (t) => {
+  t.mock.method(WebsiteData, "findOne", async () => ({ niche: "skincare" }));
+  let updated;
+  t.mock.method(Product.queryInterface, "bulkUpdate", async (_table, values, where) => {
+    updated = { values, where };
+    return 0;
+  });
+
+  await ProductService.attachStoreProductsToWebsite("store-1", "site-1");
+  assert.equal(updated.values.websiteId, "site-1");
+  assert.deepEqual(updated.where, { storeId: "store-1", websiteId: null });
 });

@@ -45,6 +45,7 @@
 
     /* ---------- UI ---------- */
     --border: 0.91 0.006 250 / 1;
+    --card-border: rgba(0, 0, 0, 0.075);
     --input: 0.88 0.008 250 / 1;
     --ring: 0.56 0.2 258 / 1;
 
@@ -106,6 +107,7 @@
     --destructive-foreground: 0.99 0 0 / 1;
 
     --border: 0.3 0.012 240 / 1;
+    --card-border: rgba(255, 255, 255, 0.08);
     --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-lift: 0 8px 24px rgb(0 0 0 / 0.35);
     --input: 0.34 0.012 240 / 1;
@@ -226,10 +228,10 @@
    across every merchant page, so shared UI components match without
    editing each screen. */
 @layer components {
-  /* Cards: shadcn surface with a quiet outline and restrained elevation */
+  /* Cards: crisp subtle hairline surface with soft elevation */
   [data-slot='card'],
   .card {
-    border-color: oklch(var(--border) / 0.75);
+    border: 1px solid var(--card-border, rgba(0, 0, 0, 0.075)) !important;
     border-radius: 1rem;
     box-shadow: var(--shadow-soft);
     transition: box-shadow var(--duration) var(--ease-out),
@@ -274,7 +276,7 @@
   [data-slot='popover-content'],
   [data-slot='dropdown-menu-content'],
   [data-slot='select-content'] {
-    border-color: oklch(var(--border) / 0.8);
+    border: 1px solid var(--card-border, rgba(0, 0, 0, 0.075));
     border-radius: 1rem;
     box-shadow: var(--shadow-lift);
   }
@@ -696,13 +698,13 @@ button:not(:disabled):active,
 }
 
 #root :is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger']):hover:not(:disabled) {
-  border-color: oklch(var(--foreground) / 0.22);
+  border-color: oklch(var(--ring));
 }
 
 #root :is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger']):focus-visible {
   border-color: oklch(var(--ring));
   background-color: oklch(var(--card));
-  box-shadow: 0 0 0 3px oklch(var(--ring) / 0.18);
+  box-shadow: 0 0 0 3px oklch(0.56 0.2 258 / 0.18);
 }
 
 /* Khmer (P-I18N): Kantumruy Pro, taller lines so stacked vowels and subscript
