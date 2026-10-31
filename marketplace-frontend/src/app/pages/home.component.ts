@@ -201,22 +201,17 @@ interface CategoryShelf {
 
 
 
-  <section class="container section" [attr.aria-label]="'home.smartphones' | translate">
-    <div class="section-head">
-      <h2>{{ 'home.smartphones' | translate }}</h2>
-      <a routerLink="/products" [queryParams]="promoSlots.smartphones.params" class="see-all">{{ 'home.viewAll' | translate }} <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
-    </div>
-    <div class="phones" [class.solo]="!phones().length">
-      <app-promo-card class="phones-promo" [promo]="promoSlots.smartphones" format="featured" />
-      @if (phones().length) {
-        <div class="phone-grid" tabindex="0" role="region" [attr.aria-label]="'home.smartphonesScroll' | translate">
-          @for (product of phones(); track product.id) {
-            <app-product-card [product]="product" />
-          }
-        </div>
-      }
-    </div>
-  </section>
+  @if (phones().length) {
+    <section class="container section" [attr.aria-label]="'home.smartphones' | translate">
+      <app-product-rail
+        [title]="'home.smartphones' | translate"
+        [products]="phones()"
+        linkRoute="/products"
+        [linkParams]="promoSlots.smartphones.params ?? {}"
+        [linkLabel]="'home.viewAll' | translate"
+      />
+    </section>
+  }
 
   @if (trending().length) {
     <section class="container section">
@@ -310,45 +305,7 @@ interface CategoryShelf {
       .fc-grid app-promo-card { scroll-snap-align: start; }
     }
 
-    /* ---------- smartphones */
-    .phones {
-      display: grid;
-      grid-template-columns: 310px minmax(0, 1fr);
-      gap: 20px;
-      align-items: stretch;
-    }
-    .phones.solo { grid-template-columns: 1fr; }
-    .phones-promo {
-      display: block;
-      height: 560px;
-      min-height: 0;
-      align-self: start;
-    }
-    .phone-grid {
-      display: grid;
-      min-width: 0;
-      grid-template-columns: none;
-      grid-template-rows: repeat(2, auto);
-      grid-auto-flow: column;
-      grid-auto-columns: clamp(210px, 19vw, 260px);
-      align-items: stretch;
-      gap: 16px;
-      overflow-x: auto;
-      overscroll-behavior-x: contain;
-      scroll-snap-type: x proximity;
-      scroll-padding-inline: 2px;
-      padding: 2px 2px 12px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--color-border-strong) transparent;
-    }
-    .phone-grid > app-product-card { min-width: 0; scroll-snap-align: start; }
-    .phones { align-items: start; }
-    /* Keep the ad independent of the product grid’s intrinsic row heights. */
-    @media (max-width: 900px) {
-      .phones { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-      .phones-promo { height: 280px; }
-      .phone-grid { grid-auto-columns: clamp(170px, 42vw, 230px); gap: 12px; }
-    }
+
 
     /* ---------- flash deals */
     .flash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
@@ -670,11 +627,12 @@ interface CategoryShelf {
     .cat-art ui-icon { color: #3d2b1a; opacity: .22; transform: scale(1.4); }
     .category-poster:hover .cat-art img { transform: scale(1.04); }
     .cat-caption { display: none; }
-    .cat-shortcut { display: none; }
+    .category-poster.cat-shortcut { display: none; }
 
-    /* Phones: two rows of small outlined circles holding just the cut-out
-       object, name below. */
-    @media (max-width: 640px) {
+    /* Phones and tablets (the navbar collapses at 980px too): small round
+       tiles holding just the cut-out object, name below. Phones get two rows
+       of five; wider screens one row. */
+    @media (max-width: 980px) {
       .category-rail::before, .category-rail::after { display: none; }
       .category-strip {
         display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -691,7 +649,6 @@ interface CategoryShelf {
       }
       .category-poster:hover .cat-visual { box-shadow: none; transform: none; }
       .cat-copy { display: none; }
-      .cat-shortcut { display: flex; }
       .cat-shortcut .cat-art ui-icon { color: var(--color-accent); opacity: 1; }
       .cat-art { inset: 0; width: auto; }
       .cat-art img { width: 78%; height: 78%; }
@@ -701,8 +658,22 @@ interface CategoryShelf {
         font-size: 11.5px; font-weight: 600; line-height: 1.25; color: var(--color-text);
       }
     }
+    /* Stores / Gifts / Discount join the tiles exactly where the category bar
+       drops its own pills (700px), so they never show twice. */
+    @media (max-width: 700px) {
+      .category-poster.cat-shortcut { display: flex; }
+    }
+    @media (min-width: 641px) and (max-width: 980px) {
+      .category-strip {
+        grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+      .category-poster .cat-visual,
+      .category-poster[data-category] .cat-visual { width: min(68px, 100%); }
+      .cat-caption { font-size: 12.5px; }
+    }
 
-    @media (min-width: 641px) {
+    @media (min-width: 981px) {
     .category-poster[data-category="food-groceries"] .cat-visual { background: linear-gradient(115deg, #e8f3e2, #c7e3ba); }
     .category-poster[data-category="home-living"] .cat-visual { background: linear-gradient(115deg, #faf0dd, #eed8b2); }
     .category-poster[data-category="arts-culture"] .cat-visual { background: linear-gradient(115deg, #fff4d9, #ffdf9e); }
@@ -1126,7 +1097,7 @@ export class HomeComponent {
    * either wraps to two lines or gets clipped mid-word. Matches the category
    * nav row, which does the same thing at its own breakpoint.
    */
-  private readonly narrowQuery = globalThis.matchMedia?.('(max-width: 640px)');
+  private readonly narrowQuery = globalThis.matchMedia?.('(max-width: 980px)');
   protected readonly narrowTiles = signal(this.narrowQuery?.matches ?? false);
 
   /** Bar shortcuts the category menu drops on phones (see category-menu). */

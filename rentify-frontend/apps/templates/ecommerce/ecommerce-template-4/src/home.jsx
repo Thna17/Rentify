@@ -4,6 +4,7 @@ import { ArrowRight, PackageOpen } from 'lucide-react';
 import { useGetAllProductsQuery } from '@rentify/storefront/api';
 import { useStorefrontCategories, useStorefrontWebsite } from '@rentify/storefront/website';
 import { trackStorefrontEvent } from '@rentify/storefront/analytics';
+import { LayoutSection, useSectionLayout } from '@rentify/storefront/preview';
 import { OwnerAddButton, OwnerEditButton } from '@rentify/storefront/owner/StorefrontOwner';
 import { useI18n } from '../../ecommerce-template-1/src/i18n';
 import { catalogPath, PATHS } from '../../ecommerce-template-1/src/paths';
@@ -15,6 +16,7 @@ export default function Home() {
   const { t, language } = useI18n();
   const { websiteId, identity } = useStorefrontWebsite();
   const { categories } = useStorefrontCategories();
+  const layout = useSectionLayout(4);
   const latest = useGetAllProductsQuery({ websiteId, page: 1, limit: 8, sort: 'newest' }, { skip: !websiteId });
   const products = latest.data?.products || [];
   const khmer = language === 'kh';
@@ -36,6 +38,7 @@ export default function Home() {
       </div>
     </section>
     <div className="atelier-content">
+      <LayoutSection layout={layout} id="categories">
       {categories.length > 0 && <section className="atelier-section" aria-labelledby="atelier-categories">
         <div className="atelier-section-heading"><div><p className="atelier-eyebrow">{khmer ? 'ស្វែងយល់' : 'EXPLORE'}</p>
           <h2 id="atelier-categories">{t('home.categories')}</h2></div><OwnerAddButton kind="category" /></div>
@@ -44,6 +47,8 @@ export default function Home() {
             <strong>{category.name}</strong><ArrowRight size={18} aria-hidden="true" /></Link></li>)}</ul>
       </section>}
       {categories.length === 0 && <div className="atelier-empty-action"><OwnerAddButton kind="category" /></div>}
+      </LayoutSection>
+      <LayoutSection layout={layout} id="newArrivals">
       <section className="atelier-section" aria-labelledby="atelier-products">
         <div className="atelier-section-heading"><div><p className="atelier-eyebrow">{khmer ? 'ការប្រមូលរបស់យើង' : 'THE COLLECTION'}</p>
           <h2 id="atelier-products">{t('home.newArrivals')}</h2></div>
@@ -53,10 +58,13 @@ export default function Home() {
             <ProductGrid products={products} priorityCount={2} /> :
             <EmptyState icon={PackageOpen} title={t('home.emptyTitle')} body={t('home.emptyBody')} />}
       </section>
+      </LayoutSection>
+      <LayoutSection layout={layout} id="closing">
       <section className="atelier-closing"><span aria-hidden="true">✳</span>
         <p>{khmer ? 'សូមអរគុណដែលបានគាំទ្រហាងរបស់យើង។' : 'Thank you for shopping with us.'}</p>
         <Link to={PATHS.PRODUCTS}>{t('home.browse')} <ArrowRight size={16} aria-hidden="true" /></Link>
       </section>
+      </LayoutSection>
     </div>
   </div>;
 }

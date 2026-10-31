@@ -126,7 +126,7 @@ const SocialProof = () => {
       
       {/* Continuously moving business names */}
       <div
-        className="trusted-business-marquee mb-16 overflow-hidden"
+        className="trusted-business-marquee overflow-hidden"
         aria-label={t('site.home.social.marqueeLabel')}
       >
         <div className="trusted-business-track flex w-max items-center">
@@ -147,38 +147,6 @@ const SocialProof = () => {
             </div>
           ))}
         </div>
-      </div>
-      
-      {/* Enhanced testimonial */}
-      <div className="mx-auto max-w-3xl">
-        <Card className="bg-white border-0 shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-teal-500"></div>
-          <CardContent className="p-8 text-center">
-            <div className="relative">
-              <img 
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100&q=80"
-                alt="Srey Roth" 
-                className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-white shadow-lg"
-              />
-              <div className="absolute bottom-4 right-1/2 translate-x-12 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-white" />
-              </div>
-            </div>
-            <div className="text-4xl text-blue-400 mb-4">"</div>
-            <blockquote className="text-xl font-medium text-gray-800 leading-relaxed">
-              {t('site.home.social.quote')}
-            </blockquote>
-            <div className="mt-6">
-              <p className="font-semibold text-gray-900">Srey Roth</p>
-              <p className="text-sm text-muted-foreground">{t('site.home.social.role')}</p>
-              <div className="mt-2 flex justify-center items-center gap-1 text-yellow-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-current" />
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   </section>

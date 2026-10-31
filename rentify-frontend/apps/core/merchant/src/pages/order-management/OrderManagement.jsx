@@ -6,9 +6,6 @@ import { motion } from 'framer-motion';
 
 import {
   IconReceipt,
-  IconAlertTriangle,
-  IconLoader,
-  IconEye,
   IconCurrencyDollar,
 } from '@tabler/icons-react';
 
@@ -19,7 +16,7 @@ import { useRowExpansion } from '@rentify/shared/hooks/useRowExpansion';
 import { FilterBar } from '@rentify/shared/ui/components/FilterBar';
 import { BulkActionsBar } from '@rentify/shared/ui/components/BulkActionsBar';
 import { DetailDrawer } from '@rentify/shared/ui/components/DetailDrawer';
-import { ReusableTable } from '@rentify/shared/ui/components/ReusableTable';
+import { DataTable } from '../../components/data-table';
 import { StatusTabs } from '@rentify/shared/ui/components/StatusTabs';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
 
@@ -30,7 +27,6 @@ import MarketplaceOrders from './MarketplaceOrders';
 // Shadcn components
 import { Badge } from '@rentify/shared/ui/badge';
 import { Button } from '@rentify/shared/ui/button';
-import { Card } from '@rentify/shared/ui/card';
 import { Download, Plus, Upload, Receipt } from 'lucide-react';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 
@@ -65,7 +61,7 @@ const STATUS_FILTERS = {
 function OrderManagementContent({ websiteId }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isMobile, isTablet } = useResponsive();
+  const { isMobile } = useResponsive();
   const showSnackbar = useSnackbar();
 
   const {
@@ -149,117 +145,6 @@ function OrderManagementContent({ websiteId }) {
     showSnackbar(`Updated status for ${selectedOrders.length} orders to ${newStatus}`, 'success');
   }, [selectedOrders, showSnackbar, t]);
 
-  // Mobile Order Card Component
-  const MobileOrderCard = ({ order }) => {
-    const statusConfig = {
-      [ORDER_STATUS.PENDING]: { label: t('dashboard.order.pending'), variant: 'warning', color: 'bg-amber-500' },
-      [ORDER_STATUS.CONFIRMED]: { label: t('dashboard.order.confirmed'), variant: 'default', color: 'bg-blue-500' },
-      [ORDER_STATUS.COMPLETED]: { label: t('dashboard.order.completed'), variant: 'success', color: 'bg-green-500' },
-      [ORDER_STATUS.FULFILLED]: { label: t('dashboard.order.fulfilled'), variant: 'success', color: 'bg-green-500' },
-      [ORDER_STATUS.CANCELLED]: { label: t('dashboard.order.cancelled'), variant: 'destructive', color: 'bg-red-500' },
-    };
-
-    const typeConfig = {
-      [ORDER_TYPE.ONLINE]: { label: t('dashboard.order.online'), color: 'bg-blue-100 text-blue-700' },
-      [ORDER_TYPE.POS]: { label: t('dashboard.order.pos'), color: 'bg-green-100 text-green-700' },
-      [ORDER_TYPE.MANUAL]: { label: t('dashboard.order.manual'), color: 'bg-purple-100 text-purple-700' },
-    };
-
-    const paymentConfig = {
-      paid: { label: t('dashboard.order.paid'), color: 'bg-green-100 text-green-700' },
-      pending: { label: t('dashboard.order.pending'), color: 'bg-amber-100 text-amber-700' },
-      failed: { label: t('dashboard.order.failed'), color: 'bg-red-100 text-red-700' },
-      refunded: { label: t('dashboard.order.refunded'), color: 'bg-gray-100 text-gray-700' },
-    };
-
-    const status = statusConfig[order.status] || statusConfig[ORDER_STATUS.PENDING];
-    const type = typeConfig[order.orderType] || typeConfig[ORDER_TYPE.ONLINE];
-    const payment = paymentConfig[order.paymentStatus] || paymentConfig.pending;
-
-    return (
-      <Card className="group relative p-4 mb-4 cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-300 hover:border-primary/20 rounded-xl bg-gradient-to-br from-white to-gray-50/50">
-        <div className="flex items-start justify-between gap-3">
-          {/* Order Icon and Status */}
-          <div className="relative flex-shrink-0">
-            <div className="relative h-14 w-14 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shadow-sm">
-              <IconReceipt className="h-6 w-6 text-primary" />
-            </div>
-            
-            {/* Status Indicator Dot */}
-            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${status.color}`} />
-          </div>
-
-          {/* Order Info */}
-          <div className="flex-1 min-w-0 space-y-3">
-            {/* Header Row */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-bold text-sm text-gray-900 truncate leading-tight">
-                  #{order.id.slice(0, 8).toUpperCase()}
-                </h4>
-                <p className="text-xs text-gray-500 truncate mt-0.5">
-                  {order.shippingDetails?.name || t('dashboard.order.walk_in_customer')}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1 bg-gradient-to-r from-primary/10 to-primary/5 px-2 py-1 rounded-lg">
-                  <IconCurrencyDollar className="h-3 w-3 text-primary" />
-                  <span className="font-bold text-sm text-primary">${order.totalAmount}</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {new Date(order.orderDate).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Badges Row */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge 
-                variant={status.variant} 
-                className="text-xs px-2 py-1 capitalize"
-              >
-                {status.label}
-              </Badge>
-              
-              <span className={`text-xs px-2 py-1 rounded-full ${type.color}`}>
-                {type.label}
-              </span>
-              
-              <span className={`text-xs px-2 py-1 rounded-full ${payment.color}`}>
-                {payment.label}
-              </span>
-            </div>
-
-            {/* Items Summary */}
-            <div className="flex items-center justify-between text-xs text-gray-600">
-              <span>{order.items?.length || 0} items</span>
-              <span className="font-medium">{order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0} units</span>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="flex-shrink-0 h-8 w-8 rounded-lg bg-white/50 backdrop-blur-sm border border-gray-200 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleRowExpand(order.id, order);
-            }}
-          >
-            <IconEye className="h-4 w-4 text-gray-600" />
-          </Button>
-        </div>
-
-        {/* Hover Effect Border */}
-        <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-primary/10 transition-all duration-300 pointer-events-none" />
-      </Card>
-    );
-  };
-
   // Order columns definition
   const orderColumns = useMemo(() => [
     {
@@ -310,6 +195,7 @@ function OrderManagementContent({ websiteId }) {
     {
       accessorKey: 'id',
       header: t('dashboard.order.order_id'),
+      meta: { mobile: 'primary' },
       cell: ({ row }) => {
         const order = row.original;
         return (
@@ -325,6 +211,7 @@ function OrderManagementContent({ websiteId }) {
     {
       accessorKey: 'customer',
       header: t('dashboard.order.customer'),
+      meta: { mobileHideLabel: true, mobileCell: (order) => order.shippingDetails?.name || t('dashboard.order.walk_in_customer') },
       cell: ({ row }) => {
         const order = row.original;
         return (
@@ -345,6 +232,7 @@ function OrderManagementContent({ websiteId }) {
     {
       accessorKey: 'date',
       header: t('dashboard.order.date'),
+      meta: { mobileHideLabel: true },
       cell: ({ row }) => {
         const order = row.original;
         return (
@@ -363,6 +251,7 @@ function OrderManagementContent({ websiteId }) {
     },
     {
       accessorKey: 'amount',
+      meta: { label: t('dashboard.order.amount'), align: 'right', mobile: 'trailing' },
       header: () => <div className="text-right">{t('dashboard.order.amount')}</div>,
       cell: ({ row }) => {
         const order = row.original;
@@ -382,6 +271,7 @@ function OrderManagementContent({ websiteId }) {
     {
       accessorKey: 'type',
       header: t('dashboard.order.type'),
+      meta: { mobile: 'badge' },
       cell: ({ row }) => {
         const order = row.original;
         const typeConfig = {
@@ -408,6 +298,7 @@ function OrderManagementContent({ websiteId }) {
     },
     {
       accessorKey: 'status',
+      meta: { label: t('dashboard.order.status'), align: 'center', mobile: 'badge' },
       header: () => <div className="text-center">{t('dashboard.order.status')}</div>,
       cell: ({ row }) => {
         const order = row.original;
@@ -438,6 +329,7 @@ function OrderManagementContent({ websiteId }) {
     },
     {
       accessorKey: 'payment',
+      meta: { label: t('dashboard.order.payment'), align: 'center', mobile: 'badge' },
       header: () => <div className="text-center">{t('dashboard.order.payment')}</div>,
       cell: ({ row }) => {
         const order = row.original;
@@ -468,6 +360,18 @@ function OrderManagementContent({ websiteId }) {
     {
       id: 'quick_actions',
       header: () => <div className="text-center">{t('dashboard.order.actions')}</div>,
+      meta: {
+        label: t('dashboard.order.actions'),
+        // Phone cards skip the "no actions" placeholder so the status badges keep their room
+        mobileCell: (order) => (
+          <QuickActionsDropdown
+            order={order}
+            onAction={handleQuickAction}
+            onViewDetails={() => navigate(`/orders/${order.id}`)}
+            hideWhenEmpty
+          />
+        ),
+      },
       cell: ({ row }) => {
         const order = row.original;
         return (
@@ -575,12 +479,7 @@ function OrderManagementContent({ websiteId }) {
           ]}
         />
         <div className="p-6 md:p-8">
-          <ReusableTable
-            data={[]}
-            columns={orderColumns}
-            isLoading={true}
-            loadingSkeletonRows={8}
-          />
+          <DataTable columns={orderColumns} isLoading loadingRows={8} ariaLabel={t('dashboard.order.title')} />
         </div>
       </div>
     );
@@ -600,19 +499,14 @@ function OrderManagementContent({ websiteId }) {
           ]}
         />
         <div className="p-6 md:p-8">
-          <Card className="p-6 max-w-md w-full text-center">
-            <IconAlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">
-              {t('dashboard.order.error_loading')}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {t('dashboard.order.error_loading_description')}
-            </p>
-            <Button onClick={refetch}>
-              <IconLoader className="mr-2 h-4 w-4" />
-              {t('dashboard.order.retry')}
-            </Button>
-          </Card>
+          <DataTable
+            columns={orderColumns}
+            isError
+            onRetry={refetch}
+            errorTitle={t('dashboard.order.error_loading')}
+            errorBody={t('dashboard.order.error_loading_description')}
+            ariaLabel={t('dashboard.order.title')}
+          />
         </div>
       </div>
     );
@@ -688,37 +582,32 @@ function OrderManagementContent({ websiteId }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          {isMobile ? (
-            <div className="space-y-3">
-              {filteredOrders.map((order) => (
-                <MobileOrderCard key={order.id} order={order} />
-              ))}
-            </div>
-          ) : (
-            <ReusableTable
-              data={filteredOrders}
-              columns={orderColumns}
-              isLoading={isLoading}
-              isError={isError}
-              totalItems={totalOrders}
-              page={page}
-              rowsPerPage={rowsPerPage}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              selected={selectedOrders}
-              onSelectionChange={setSelectedOrders}
-              emptyStateIcon={IconReceipt}
-              emptyStateTitle={t('dashboard.order.no_orders_found')}
-              emptyStateDescription={t('dashboard.order.adjust_filters')}
-              loadingSkeletonRows={8}
-              renderSubComponent={isMobile ? undefined : renderSubComponent}
-              getRowCanExpand={isMobile ? undefined : () => true}
-              expandedRows={expandedRows}
-              onRowClick={(order) => toggleRowExpand(order.id, order)}
-              isMobile={isMobile}
-              isTablet={isTablet}
-            />
-          )}
+          <DataTable
+            ariaLabel={t('dashboard.order.title')}
+            data={filteredOrders}
+            columns={orderColumns}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={refetch}
+            pagination={{
+              page: page - 1,
+              pageSize: rowsPerPage,
+              total: totalOrders,
+              onPageChange: (next) => handleChangePage(null, next),
+              onPageSizeChange: (size) => handleChangeRowsPerPage({ target: { value: String(size) } }),
+            }}
+            selected={selectedOrders}
+            onSelectionChange={setSelectedOrders}
+            empty={{
+              icon: IconReceipt,
+              title: t('dashboard.order.no_orders_found'),
+              body: t('dashboard.order.adjust_filters'),
+            }}
+            loadingRows={8}
+            renderExpanded={isMobile ? undefined : renderSubComponent}
+            expandedRows={expandedRows}
+            onRowClick={(order) => toggleRowExpand(order.id, order)}
+          />
         </motion.div>
       </div>
 

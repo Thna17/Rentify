@@ -1,6 +1,8 @@
 // components/StoreManagement.tsx
 import { useState, useEffect } from 'react';
-import { Store, Save, AlertCircle } from 'lucide-react';
+import { Store, Save, AlertCircle, Palette } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@rentify/shared/ui/button';
 import {
   useUpdateWebsiteContentMutation,
   useGetWebsiteQuery,
@@ -501,6 +503,14 @@ const handleFontChange = (field: string, value: string) => {
         title={t('dashboard.store_management.title')}
         description={t('dashboard.store_management.description')}
         icon={Store}
+        actions={
+          <Button asChild className="h-11">
+            <Link to="/customization">
+              <Palette className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.storeDesign.title')}
+            </Link>
+          </Button>
+        }
         breadcrumb={[
           { label: 'Dashboard', href: '/overview' },
           { label: t('dashboard.store_management.title') },

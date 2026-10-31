@@ -3,6 +3,7 @@ import { PackageOpen } from 'lucide-react';
 import { useGetAllProductsQuery, useGetProductsByCategoryQuery } from '@rentify/storefront/api';
 import { useStorefrontCategories, useStorefrontWebsite } from '@rentify/storefront/website';
 import { trackStorefrontEvent } from '@rentify/storefront/analytics';
+import { LayoutSection, useSectionLayout } from '@rentify/storefront/preview';
 import { useI18n } from '../i18n';
 import { catalogPath } from '../paths';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -52,6 +53,7 @@ export default function Home() {
   const { t } = useI18n();
   const { websiteId, identity } = useStorefrontWebsite();
   const { categories } = useStorefrontCategories();
+  const layout = useSectionLayout(1);
   const latest = useGetAllProductsQuery(
     { websiteId, page: 1, limit: SECTION_LIMIT, sort: 'newest' },
     { skip: !websiteId }
@@ -74,39 +76,47 @@ export default function Home() {
       </div>
       {identity.heroImages.length === 0 && <OwnerSectionPlaceholder section="Hero" />}
 
-      {categories.length > 0 ? (
-        <section aria-labelledby="shop-by-category" className="store-container mt-8 sm:mt-10">
-          <SectionTitle id="shop-by-category" title={t('home.categories')} action={<OwnerAddButton kind="category" />} />
-          <CategoryShowcase categories={categories} />
-        </section>
-      ) : (
-        <div className="store-container mt-8 flex justify-end">
-          <OwnerAddButton kind="category" />
-        </div>
-      )}
+      <div className="flex flex-col">
+        <LayoutSection layout={layout} id="categories">
+          {categories.length > 0 ? (
+            <section aria-labelledby="shop-by-category" className="store-container mt-8 sm:mt-10">
+              <SectionTitle id="shop-by-category" title={t('home.categories')} action={<OwnerAddButton kind="category" />} />
+              <CategoryShowcase categories={categories} />
+            </section>
+          ) : (
+            <div className="store-container mt-8 flex justify-end">
+              <OwnerAddButton kind="category" />
+            </div>
+          )}
+        </LayoutSection>
 
-      <section aria-labelledby="new-arrivals" className="store-container mt-8 sm:mt-10">
-        <SectionTitle
-          id="new-arrivals"
-          title={t('home.newArrivals')}
-          to={storeIsEmpty ? null : catalogPath({ sort: 'newest' })}
-          action={<OwnerAddButton kind="product" />}
-        />
-        {latest.isLoading || !websiteId ? (
-          <ProductGridSkeleton count={4} />
-        ) : latest.isError ? (
-          <ErrorState onRetry={latest.refetch} />
-        ) : storeIsEmpty ? (
-          <EmptyState icon={PackageOpen} title={t('home.emptyTitle')} body={t('home.emptyBody')} />
-        ) : (
-          <ProductGrid products={products} priorityCount={2} />
-        )}
-      </section>
+        <LayoutSection layout={layout} id="newArrivals">
+          <section aria-labelledby="new-arrivals" className="store-container mt-8 sm:mt-10">
+            <SectionTitle
+              id="new-arrivals"
+              title={t('home.newArrivals')}
+              to={storeIsEmpty ? null : catalogPath({ sort: 'newest' })}
+              action={<OwnerAddButton kind="product" />}
+            />
+            {latest.isLoading || !websiteId ? (
+              <ProductGridSkeleton count={4} />
+            ) : latest.isError ? (
+              <ErrorState onRetry={latest.refetch} />
+            ) : storeIsEmpty ? (
+              <EmptyState icon={PackageOpen} title={t('home.emptyTitle')} body={t('home.emptyBody')} />
+            ) : (
+              <ProductGrid products={products} priorityCount={2} />
+            )}
+          </section>
+        </LayoutSection>
 
-      {!storeIsEmpty &&
-        categories
-          .slice(0, MAX_CATEGORY_SECTIONS)
-          .map((category) => <CategorySection key={category.id} category={category} websiteId={websiteId} />)}
+        <LayoutSection layout={layout} id="categoryRows">
+          {!storeIsEmpty &&
+            categories
+              .slice(0, MAX_CATEGORY_SECTIONS)
+              .map((category) => <CategorySection key={category.id} category={category} websiteId={websiteId} />)}
+        </LayoutSection>
+      </div>
     </div>
   );
 }

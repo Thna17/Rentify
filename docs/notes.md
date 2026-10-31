@@ -279,6 +279,40 @@ into `platform-architecture.md` and remove stale notes.
    override lives (product vs. SKU), which price POS uses, how carts/orders
    snapshot it, and how compare-at prices behave. No UI ships until then.
 
+- (Open, 2026-10-31) Storefront template switch and page layout. The merchant
+   **Store design** page (`/customization`, merchant app
+   `pages/store-design/`) previews the merchant's live store in every template
+   at desktop and 360px width, and lets them show, hide and reorder home-page
+   sections. Two Core contracts are missing, so "Use this template" and
+   "Save layout" are shown disabled with a reason:
+   1. **Switch template.** `Website.templateId` is set only at creation. The
+      `updateWebsite` hook in `@rentify/apis` points at
+      `PATCH /api/websites/:templateId/:userId`, which Core does not route.
+      Proposal: `PUT /api/websites/:websiteId/template { templateId }`
+      (owner only; `templateId` must be a `WebsiteTemplate` the storefront
+      serves, `websiteTemplateId` 1–4) → `{ websiteTemplateId }`; updates
+      `Website.templateId`, syncs Commerce, clears the website cache. It must
+      not touch `WebsiteContents`, so store info, logo, contact and social
+      links, categories, products and the theme stay as they are. Content
+      labels that only one template reads (for example `Menu Title`) are kept
+      and simply unused by the others.
+   2. **Save page layout.** No field stores section order or visibility.
+      Proposal: a `Page Layout` entry in `storefrontContentFields.js`, value
+      `{ [websiteTemplateId]: "categories,-newArrivals,..." }` (comma list of
+      section ids from `TEMPLATE_SECTIONS` in `libs/storefront/src/preview.jsx`;
+      `-` hides a section; the hero is always first), saved through the
+      existing `PUT /api/websites/:websiteId/storefront-content`. Templates
+      already read layout through `useSectionLayout`; once the field exists it
+      becomes the source outside the preview.
+   Until then the layout draft is kept in the merchant's browser only, and
+   shoppers always see each template's default order.
+   Preview mechanics: the storefront honours `?previewTemplate=` and
+   `?previewLayout=` (plus a `rentify:storefront-preview` postMessage) only
+   while framed; they change the look of that page view, never saved data.
+   Data model gaps found while mapping: no template renders sub-categories
+   (categories have no parent in Core or Commerce today); template names and
+   descriptions come from Core's `WebsiteTemplate` rows in English only.
+
 ## Documentation practice
 
 Record a dated decision and its reason when an open question is resolved.
