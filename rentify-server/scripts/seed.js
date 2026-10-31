@@ -102,7 +102,7 @@ async function seedCore() {
     {
       id: GROWTH_PKG_ID,
       name: 'Starter',
-      price: 5.0,
+      price: 0.1,
       duration: '1 month',
       features: [
         'basic-dashboard',
