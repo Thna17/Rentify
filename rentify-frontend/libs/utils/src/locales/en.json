@@ -1805,7 +1805,7 @@
       "topicAccount": "Account, Staff, & Permissions"
     },
     "table": {
-      "showing": "Showing {{from}}–{{to}} of {{total}} records",
+      "showing": "Showing {{from}}–{{to}} of {{total}}",
       "rowsPerPage": "Rows per page",
       "pageOf": "Page {{page}} of {{pages}}",
       "firstPage": "First page",
@@ -2186,7 +2186,8 @@
         "problems": "Something needs your answer. Read the report below.",
         "failed": "Delivery failed: {{reason}}. Retry when the buyer agrees.",
         "done": "Nothing left to do.",
-        "cancelled": "This order was cancelled."
+        "cancelled": "This order was cancelled.",
+        "confirmOnline": "Confirm the order so the buyer knows it is coming, then deliver it."
       },
       "actions": {
         "markDelivered": "Mark delivered",
@@ -2195,14 +2196,16 @@
         "deliveryProblem": "Delivery problem",
         "retryDelivery": "Deliver again",
         "recordRefund": "Record a refund",
-        "view": "View"
+        "view": "View",
+        "confirm": "Confirm order"
       },
       "done": {
         "delivered": "Marked as delivered",
         "cashRecorded": "Cash recorded. The order is paid.",
         "failed": "Delivery problem recorded",
         "retry": "Delivery restarted",
-        "refund": "Refund recorded"
+        "refund": "Refund recorded",
+        "confirmed": "Order confirmed. The buyer is told it is coming."
       },
       "errors": {
         "changed": "This order changed. We loaded the latest version — check it and try again.",
@@ -2272,6 +2275,277 @@
         "completed": "Completed"
       },
       "itemOne": "1 item"
+    },
+    "home": {
+      "greeting": {
+        "morning": "Good morning, {{name}}",
+        "afternoon": "Good afternoon, {{name}}",
+        "evening": "Good evening, {{name}}"
+      },
+      "allChannels": "All channels",
+      "afterFirstOrder": "Sales and reports appear here after your first order.",
+      "loadError": "We couldn't load your store overview",
+      "attention": "Needs your attention",
+      "today": "Today",
+      "reports": "Reports",
+      "ordersToday": "Orders",
+      "salesToday": "Sales",
+      "whereYouSell": "Where you sell",
+      "marketplace": "Rentify Market",
+      "productsShown": "{{count}} products shown to buyers",
+      "noAddress": "No web address yet",
+      "visit": "Visit",
+      "pos": "Point of sale",
+      "posDetail": "Sell at your counter with the same stock",
+      "openRegister": "Open",
+      "recentOrders": "Recent orders",
+      "seeAll": "See all",
+      "noOrders": "No orders yet",
+      "lowStock": "Low stock",
+      "manage": "Manage",
+      "stockOk": "Every product has more than 3 in stock.",
+      "soldOut": "Sold out",
+      "left": "{{count}} left"
+    },
+    "marketplace": {
+      "title": "Rentify Market",
+      "subtitle": "Your store on the shared marketplace. Listing is automatic.",
+      "listing": "Your listing",
+      "status": {
+        "listed": "Listed",
+        "pending": "Getting ready",
+        "paused": "Paused by Rentify",
+        "off": "Turned off",
+        "unknown": "Status unavailable"
+      },
+      "statusBody": {
+        "listed": "Buyers can find your store and order from it.",
+        "pending": "Your store appears as soon as setup is finished: store details, a product and a delivery fee.",
+        "paused": "Rentify paused your listing. Buyers can’t order until it is resolved. Contact us to find out why.",
+        "off": "Your store is not shown on the marketplace.",
+        "unknown": "We couldn't read your listing status. Try again later."
+      },
+      "viewStorePage": "View my store page",
+      "share": "Share link",
+      "products": "Your products on the marketplace",
+      "shown": "Shown",
+      "hidden": "Hidden",
+      "loadError": "We couldn't load your products",
+      "noneShown": "No products are shown to buyers yet",
+      "noneHidden": "Every product is shown to buyers",
+      "addProduct": "Add product",
+      "soldOut": "Shown · sold out — buyers can’t order it",
+      "inStock": "{{price}} · {{count}} in stock",
+      "reason": {
+        "draft": "Hidden · not for sale (draft)",
+        "review": "Hidden · waiting for Rentify review",
+        "removed": "Hidden · removed by Rentify",
+        "turned_off": "Hidden · you turned it off for the marketplace",
+        "no_category": "Hidden · choose a marketplace category"
+      },
+      "delivery": "Delivery",
+      "fee": "{{fee}} per order",
+      "feeMissing": "Not set — buyers can’t check out until you set it",
+      "feeUnknown": "Set the flat fee buyers pay per order"
+    },
+    "help": {
+      "title": "Help",
+      "subtitle": "Find answers, follow your support cases and reach the Rentify team.",
+      "search": "Search questions",
+      "contact": "Contact Rentify",
+      "email": "Email",
+      "cases": "Your support cases",
+      "questions": "Common questions",
+      "noMatch": "No questions match “{{query}}”. Try another word or contact us.",
+      "faq": {
+        "cod": {
+          "q": "How do I take cash on delivery?",
+          "a": "Deliver the order, then open it in Orders and tap Mark delivered. When you have the cash, tap Record cash. Only record cash you have in hand."
+        },
+        "khqr": {
+          "q": "How do buyers pay with KHQR?",
+          "a": "Connect your CutLuy account in Settings › Payments. Buyers then scan a KHQR code with their banking app and the money goes to your account through CutLuy. An order shows Paid only after the payment is confirmed. Paid orders can’t be refunded in Rentify yet."
+        },
+        "returns": {
+          "q": "How do buyers return an item?",
+          "a": "Buyers can ask to return an item within 7 days of delivery if it is damaged, defective, wrong, or not as described, with photos. You have 48 business hours to answer. Requests appear in Returns & problems."
+        },
+        "marketplace": {
+          "q": "How do my products appear on Rentify Market?",
+          "a": "Listing is automatic. Once your store details, a product and a delivery fee are set, your store is listed. Each product is shown unless you turn it off, it is a draft, or Rentify is reviewing it. See Marketplace for the reason a product is hidden."
+        },
+        "pos": {
+          "q": "Does the POS use the same stock?",
+          "a": "Yes. Your store has one stock count. A sale at the counter, on the marketplace or in your online store takes from the same number."
+        },
+        "staff": {
+          "q": "Can staff use the POS without seeing my settings?",
+          "a": "Yes. In Settings › Staff & roles, invite a person and tick only what they may do, for example POS and Orders."
+        }
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Sales, products, channels and how buyers paid.",
+      "period": "Period",
+      "periods": {
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "all": "All time"
+      },
+      "tabs": {
+        "sales": "Sales",
+        "products": "Products",
+        "channels": "Channels",
+        "payments": "Payments"
+      },
+      "limited": "Based on your latest {{count}} orders.",
+      "loadError": "We couldn't load your reports",
+      "kpi": {
+        "sales": "Sales",
+        "orders": "Orders",
+        "ordersSub": "Not counting cancelled",
+        "average": "Average order",
+        "averageSub": "Sales ÷ orders",
+        "refunded": "Refunded",
+        "refundedSub": "Refunds you recorded"
+      },
+      "salesByDay": "Sales by day",
+      "bestSellers": "Best sellers",
+      "noSales": "No sales in this period",
+      "sold": "{{count}} sold",
+      "byChannel": "Sales by channel",
+      "channelLine": "{{orders}} orders · average {{average}} · refunded {{refunded}}",
+      "howPaid": "How buyers paid",
+      "orderCount": "{{count}} orders",
+      "payments": {
+        "khqr": "Paid by KHQR",
+        "cashCollected": "Cash collected on delivery",
+        "cashCounter": "Paid at the counter",
+        "cashToCollect": "Cash still to collect",
+        "waiting": "Waiting for payment"
+      }
+    },
+    "returns": {
+      "title": "Returns & problems",
+      "subtitle": "Buyers who reported a problem, and deliveries that failed.",
+      "empty": "No problems to answer",
+      "emptyBody": "Return requests, complaints and failed deliveries show up here.",
+      "policy": "Buyers can ask to return an item within 7 days of delivery. Answer within 48 business hours."
+    },
+    "onlineStore": {
+      "title": "Online store",
+      "subtitle": "Your own store on the web.",
+      "loadError": "We couldn't load your online store",
+      "state": {
+        "live": "Live",
+        "setting_up": "Setting up",
+        "paused": "Paused",
+        "failed": "Not published",
+        "unavailable": "Unavailable"
+      },
+      "stateBody": {
+        "live": "Buyers can visit your store and order.",
+        "setting_up": "Your store is being prepared. It opens to buyers when it is published.",
+        "paused": "Your online store is paused. Check Plan & billing or contact us.",
+        "failed": "Your store couldn't be published. Contact us and we'll fix it.",
+        "unavailable": "Your online store is not available."
+      },
+      "yourStore": "Your store",
+      "design": "Template and page layout",
+      "designBody": "Pick a template and order the home page sections",
+      "content": "Look and content",
+      "contentBody": "Store text, colours, fonts, social links, collections",
+      "details": "Store details",
+      "detailsBody": "Name, logo and contact",
+      "editTitle": "Look and content",
+      "editSubtitle": "Text, colours, fonts, social links and collections on your online store.",
+      "domainNote": "If you connect your own domain, buyers can browse there and check out on your Rentify address."
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "How buyers can pay you",
+      "cod": "Cash on delivery",
+      "alwaysOn": "Always on",
+      "codBody": "You collect cash when you deliver and record it on the order.",
+      "khqr": "KHQR online",
+      "khqrBody": "Buyers scan and pay with their banking app. Money goes to your account through CutLuy (ABA).",
+      "status": {
+        "connected": "Connected",
+        "keyMissing": "API key needed",
+        "off": "Not connected",
+        "unknown": "Couldn't check"
+      },
+      "connection": "Connection",
+      "businessName": "Name buyers see when paying",
+      "businessNameHint": "Shown in the buyer's banking app.",
+      "apiKey": "CutLuy API key",
+      "keySaved": "A key is saved. Leave empty to keep it.",
+      "apiKeyHint": "From your CutLuy account. We check it with CutLuy when you save.",
+      "advanced": "Advanced: webhook",
+      "webhookSecret": "Webhook secret",
+      "webhookUrl": "Webhook address to paste in CutLuy",
+      "webhookHint": "Lets CutLuy tell Rentify the moment a buyer pays.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyError": "Couldn't copy. Select the address and copy it.",
+      "show": "Show",
+      "hide": "Hide",
+      "scope": "Used for your online store and your Rentify Market page.",
+      "turnOn": "Connect KHQR",
+      "turnOff": "Turn off KHQR",
+      "keyRequired": "Enter your CutLuy API key first.",
+      "keyRejected": "CutLuy rejected this key. Check it in your CutLuy account.",
+      "saveError": "We couldn't save your payment settings. Try again.",
+      "saved": "Payment settings saved",
+      "turnedOff": "KHQR payments turned off"
+    },
+    "settings": {
+      "title": "Settings",
+      "securityBody": "Change your password.",
+      "passwordRejected": "Your current password is not right. Check it and try again.",
+      "passwordError": "We couldn't change your password. Try again.",
+      "sections": {
+        "account": {
+          "title": "Store profile",
+          "body": "Your name, store logo and contact"
+        },
+        "payments": {
+          "title": "Payments",
+          "body": "Cash on delivery and KHQR through CutLuy"
+        },
+        "delivery": {
+          "title": "Delivery fee",
+          "body": "The flat fee buyers pay per order"
+        },
+        "staff": {
+          "title": "Staff & roles",
+          "body": "People who help you and what they can do"
+        },
+        "billing": {
+          "title": "Plan & billing",
+          "body": "Your plan, what you used, invoices from Rentify"
+        },
+        "preferences": {
+          "title": "Language & notifications",
+          "body": "ខ្មែរ / English, alerts for new orders"
+        },
+        "security": {
+          "title": "Account & security",
+          "body": "Your password"
+        }
+      }
+    },
+    "customers": {
+      "search": "Search name or phone",
+      "contact": "Contact",
+      "masked": "Contact details are hidden once an order is finished.",
+      "boughtFrom": "Bought from: {{channels}}",
+      "seeOrders": "See orders"
+    },
+    "products": {
+      "moreActions": "More actions"
     }
   }
 }

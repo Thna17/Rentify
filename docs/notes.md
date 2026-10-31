@@ -829,3 +829,37 @@ release gates.
   balance (24 → 23, rolled back).
 - **Before staging and the demo:** run the dry run and review the report
   before `--apply`.
+
+## 2026-11-01 merchant dashboard redesign review
+
+A review of the merchant dashboard after the redesign PRs (#51–#66) found broken
+actions, invented states and internal text on screen. Fixed in
+`fix/merchant-redesign-refinement`. What is still open:
+
+- (Open) Two order lifecycles. COD delivery orders use Commerce's
+  `allowedActions` (`/api/stores/:storeId/orders/:id/actions/*`: delivered,
+  delivery failed, retry, collect cash, record refund) and have no confirm
+  step. Orders paid online follow the order state machine through
+  `/api/merchant/orders/:id/{confirm,process,complete}`. The inbox shows both
+  correctly, but one contract would be simpler. `confirm` requires
+  `Payment.status === 'completed'`, while some KHQR paths record `paid`; see
+  item 3 of `docs/specs/cutluy-payments-work-packet.md`.
+- (Open) No buyer email when a merchant confirms or cancels. The controller
+  called `emailService.sendStatusUpdateEmail`, which never existed; every
+  confirm and cancel returned 400 after committing. The call is removed.
+- (Open) Orders seeded with `deliveryStatus: 'out_for_delivery'`
+  (`seedTechMarketplace.js`) have no allowed action; they show under To
+  deliver with View only. RX-C02 decides whether that step exists.
+- (Open) Returns & problems lists orders with buyer reports or failed
+  deliveries from the order projection. Case handling with the 48-hour reply
+  deadline (DEC-009) needs a per-Store buyer-report endpoint (RX-C01).
+- (Open) Reports reads the latest 250 orders (`listStoreOrders` limit); the
+  page says so when the limit is reached. Store-wide statistics need an
+  endpoint.
+- (Open) `/online-store/edit` restores the storefront editor that PR #64 removed
+  as dead code (it was the live `/store-management` page). Its sections still use
+  raw palette colours and `bg-white`, so dark mode is off there; tokenize it.
+- (Open) On phones a toast sits over the order page's action bar for a few
+  seconds after an action.
+- Settings › Payments returns 404 from `GET /api/payment-config/:websiteId` when
+  no gateway is enabled; the page reads that as "Not connected".
