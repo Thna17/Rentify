@@ -72,6 +72,12 @@ Verify: `npm run verify:frontend` (lint, typecheck, unit tests, build); `e2e/das
 
 Verify: the same checks as phase B, plus every merchant page at 360px with no horizontal scroll.
 
+**Built (recorded during the build):**
+- `layouts/dashboard/MobileBottomBar.tsx`: shown at 900px and below, as the last item of the dashboard column, so content never scrolls under it. Tabs are filtered by permission (Orders: manage_orders, Products: manage_products, POS: manage_pos and POS turned on); Home and Share are always shown. 56px-high targets; safe-area padding at the bottom. Hidden on `/products/create`, `/products/edit/*` and `/customization`.
+- POS tab: the first tap opens a sheet explaining the register app (opening cash and PIN on first use); "Open register" opens it and is remembered (`rentify_pos_visited`), so later taps open the app directly.
+- Toasts: the merchant app called `toast()` in many places but never mounted a toast host, so no toast was ever shown. The dashboard layout now mounts the shared `Toaster`: bottom-centre on phones, 72px up so it clears the bar; top-right on desktop.
+- **Not built:** the new-order badge on Orders. There is no lightweight "new orders" count; computing it in the layout would fetch every order list on every page. Needs a count endpoint first.
+
 ## Order and size
 
 A → B → C, one PR each into `develop`. B can start in parallel with A using a local
