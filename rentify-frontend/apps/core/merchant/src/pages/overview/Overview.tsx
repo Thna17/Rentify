@@ -65,7 +65,7 @@ const OwnerHome = () => {
   const [channel, setChannel] = useState<HomeChannel>('all');
   const { orders, loading, error, reload } = useChannelOrders('all', 'all');
   const listing = useMarketplaceListing();
-  const { guide } = useSetupGuide();
+  const { guide, hidden: guideHidden, setHidden: setGuideHidden } = useSetupGuide();
 
   const chips = useMemo(() => {
     const list: { id: HomeChannel; label: string }[] = [{ id: 'all', label: t('merchant.home.allChannels') }];
@@ -105,6 +105,21 @@ const OwnerHome = () => {
       </div>
 
       {chips.length > 2 && <FilterChips label={t('merchant.orders.channelFilter')} items={chips} value={channel} onChange={setChannel} />}
+
+      {/* The setup guide can be hidden; while it is unfinished, Home keeps a way back to it */}
+      {guide && !guide.complete && guideHidden && (
+        <button
+          type="button"
+          onClick={() => setGuideHidden(false)}
+          className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 text-left text-sm shadow-[var(--shadow-soft)] hover:bg-muted/40"
+        >
+          <span>
+            <span className="font-semibold text-foreground">{t('merchant.setup.menuEntry')}</span>
+            <span className="text-muted-foreground"> · {t('merchant.setup.progress', { done: guide.doneCount, total: guide.totalCount })}</span>
+          </span>
+          <span className="font-semibold text-foreground">{t('merchant.setup.continue')}</span>
+        </button>
+      )}
 
       {settingUp && (
         <div className="space-y-2">

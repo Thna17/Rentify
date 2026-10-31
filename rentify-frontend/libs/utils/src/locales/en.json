@@ -1420,7 +1420,10 @@
       "noStoreYet": "You do not have an active store yet. Create your store to get started with marketplace or storefront selling.",
       "publicOnceApproved": "Public once Rentify approves your store",
       "yourStoreOnMarketplace": "Your store on Rentify Marketplace",
-      "language": "Language"
+      "language": "Language",
+      "closeMenu": "Close menu",
+      "ordersToAct": "orders to act on",
+      "problemsToAnswer": "problems to answer"
     },
     "p": {
       "addProduct": "Add product",
