@@ -558,6 +558,110 @@ paths:
                     example: "1234567890"
       security: []
 
+  /api/auth/telegram/session:
+    post:
+      tags:
+        - Auth
+      summary: Create Telegram bot auth session
+      operationId: authCreateTelegramSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                returnUrl:
+                  type: string
+      responses:
+        '200':
+          description: Telegram session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  token:
+                    type: string
+                  botUsername:
+                    type: string
+                  botUrl:
+                    type: string
+                  expiresIn:
+                    type: integer
+      security: []
+
+  /api/auth/telegram/session/{token}:
+    get:
+      tags:
+        - Auth
+      summary: Get Telegram bot auth session status
+      operationId: authGetTelegramSession
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      security: []
+
+  /api/auth/telegram/callback:
+    get:
+      tags:
+        - Auth
+      summary: Handle Telegram bot return callback
+      operationId: authTelegramCallback
+      parameters:
+        - name: sessionToken
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK or redirect info
+        '302':
+          description: Redirect to destination
+      security: []
+
+  /api/auth/telegram/webhook:
+    post:
+      tags:
+        - Auth
+      summary: Handle Telegram bot webhook updates
+      operationId: authTelegramWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook received
+        '403':
+          description: Invalid secret token
+      security: []
+
   /api/auth/login/telegram:
     post:
       tags:

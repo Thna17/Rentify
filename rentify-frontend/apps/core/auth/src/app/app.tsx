@@ -6,6 +6,7 @@ import SignupPage from '../feature/auth/pages/SignupPage';
 import VerifyEmailPage from '../feature/auth/pages/VerifyEmailPage';
 import ForgotPasswordPage from '../feature/auth/pages/ForgotPasswordPage';
 import ResetPasswordPage from '../feature/auth/pages/ResetPasswordPage';
+import TelegramCallbackPage from '../feature/auth/pages/TelegramCallbackPage';
 
 const App: React.FC = () => {
   return (
@@ -16,6 +17,8 @@ const App: React.FC = () => {
         <Route path="/signin" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/register" element={<SignupPage />} />
+        <Route path="/auth/telegram/callback" element={<TelegramCallbackPage />} />
+        <Route path="/login/telegram/callback" element={<TelegramCallbackPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
