@@ -184,6 +184,7 @@ const M_SECTION = {
   m_customers: "m_customers", m_customer: "m_customers", m_reports: "m_reports",
   m_invoices: "m_invoices", m_invoice_new: "m_invoices",
   m_marketplace: "m_marketplace", m_online: "m_online", m_design: "m_online", m_pos_open: "m_pos_open",
+  m_order_paid: "m_orders", m_payments: "m_settings",
   m_share: "m_share", m_settings: "m_settings", m_settings_page: "m_settings", m_staff_settings: "m_settings", m_billing: "m_settings", m_help: "m_help",
 };
 function mShell(active, inner, rail = "", overlay = "", opts = {}) {
@@ -214,7 +215,7 @@ function mShell(active, inner, rail = "", overlay = "", opts = {}) {
 /* ---------- marketplace shell (buyer) ---------- */
 const K_BOTTOM = [["k_home", "Home"], ["k_categories", "Categories"], ["k_orders", "Orders"], ["k_wishlist", "Saved"], ["k_account", "Account"]];
 const K_SECTION = { k_home: "k_home", k_search: "k_categories", k_categories: "k_categories", k_product: "k_categories", k_store: "k_categories", k_stores: "k_categories",
-  k_cart: "k_home", k_checkout: "k_home", k_placed: "k_orders", k_orders: "k_orders", k_order: "k_orders", k_report: "k_orders",
+  k_cart: "k_home", k_checkout: "k_home", k_pay: "k_home", k_placed: "k_orders", k_orders: "k_orders", k_order: "k_orders", k_report: "k_orders",
   k_wishlist: "k_wishlist", k_account: "k_account", k_signin: "k_account", k_help: "k_account", k_sell: "k_account" };
 function kShell(active, inner, overlay = "", opts = {}) {
   const sec = K_SECTION[active];
@@ -253,6 +254,7 @@ const SITEMAP = [
   ["Merchant", "/overview (new store)", "Home with setup guide", "m_home_new", "Keep (phase B)", ""],
   ["Merchant", "/orders + /marketplace-orders", "Orders — one inbox", "m_orders", "Merge; /marketplace-orders → /orders?channel=marketplace", ""],
   ["Merchant", "/orders/:id (+ marketplace rows)", "Order detail", "m_order", "Merge marketplace order detail here", ""],
+  ["Merchant", "/orders/:id (paid online)", "Order detail — paid by KHQR", "m_order_paid", "No cash step when paid online", "Refund of a KHQR payment"],
   ["Merchant", "— (inside order rows)", "Returns & problems", "m_returns", "New page", "List of buyer reports per Store"],
   ["Merchant", "—", "Problem detail", "m_return", "New page", "Same endpoint"],
   ["Merchant", "/products, /catalog, /products/manage", "Products — one list", "m_products", "Merge; /catalog, /products/manage → /products", ""],
@@ -272,7 +274,7 @@ const SITEMAP = [
   ["Merchant", "/settings/account, /delivery, /preferences, /security", "A settings page", "m_settings_page", "Same shell", ""],
   ["Merchant", "/settings/staff", "Staff & roles", "m_staff_settings", "Same shell", ""],
   ["Merchant", "/settings/billing + /usage/*", "Plan & billing", "m_billing", "Merge; /usage/* → /settings/billing", ""],
-  ["Merchant", "/settings/payments", "— removed", "m_settings", "Hidden in R1 (DEC-026/027); decision needed", ""],
+  ["Merchant", "/settings/payments", "Payments (KHQR via CutLuy)", "m_payments", "Keep · status first, plain words", "Config per Store, not per website"],
   ["Merchant", "/help", "Help", "m_help", "Keep", ""],
   ["Merchant", "header", "Menu, search, notifications", "m_menu", "Tools in header; places in menu", ""],
   ["Merchant", "—", "Staff (cashier) home", "m_staff", "Permission-trimmed", ""],
@@ -283,7 +285,8 @@ const SITEMAP = [
   ["Marketplace", "/product/:id", "Product page", "k_product", "Delivery fee + COD near price; no SKU", ""],
   ["Marketplace", "/stores, /stores/:id", "Store page", "k_store", "Trust card", "Store ratings exist? verify"],
   ["Marketplace", "/cart", "Cart (grouped by Store)", "k_cart", "Keep", ""],
-  ["Marketplace", "/checkout (+ shipping/payment/review)", "Checkout — one page, COD", "k_checkout", "COD only (DEC-026)", ""],
+  ["Marketplace", "/checkout (+ shipping/payment/review)", "Checkout — one page", "k_checkout", "Choose KHQR or cash on delivery", ""],
+  ["Marketplace", "/checkout/aba/:orderId", "Pay with KHQR", "k_pay", "Keep · same pattern as the online store", "Unpaid-order timeout"],
   ["Marketplace", "/order-success", "Order placed", "k_placed", "Keep", ""],
   ["Marketplace", "/orders, /my-orders", "My orders", "k_orders", "Keep", ""],
   ["Marketplace", "/orders/:id", "Order detail + tracking", "k_order", "Keep", ""],
@@ -295,6 +298,7 @@ const SITEMAP = [
   ["POS", "/entry", "Open shift", "p_open", "Keep · plain words", ""],
   ["POS", "/sell", "Sell (phone layout)", "p_sell", "Fix phone layout", ""],
   ["POS", "/sell (pay)", "Take payment", "p_pay", "Cash or KHQR at the counter", ""],
+  ["POS", "/sell (KHQR)", "KHQR at the counter", "p_khqr", "Say what happens after 2 minutes", ""],
   ["POS", "/sell (done)", "Sale complete / receipt", "p_done", "Keep", ""],
   ["POS", "/tickets", "Held sales", "p_tickets", "Rename", ""],
   ["POS", "/returns", "Returns", "p_returns", "Keep", ""],
@@ -315,7 +319,7 @@ const SCREENS = {
         <li><b>One place per job.</b> One Orders inbox, one Products list, one Online store, one Settings (billing included).</li>
         <li><b>No global channel switcher.</b> Channels are filters inside Home, Orders and Reports.</li>
         <li><b>Places in the menu, tools in the header.</b> Header: ☰ · store · search · notifications · account. Phone bottom bar: Home · Orders · Products · POS · Share.</li>
-        <li><b>Marketplace listing is automatic</b> (DEC-028). <b>Online checkout is cash on delivery only</b> (DEC-026); POS takes cash or KHQR at the counter.</li>
+        <li><b>Marketplace listing is automatic</b> (DEC-028). <b>Buyers pay by KHQR or cash on delivery.</b> Online payment is live through CutLuy (connects to ABA); POS takes cash or KHQR. An order shows "Paid" only when Commerce confirms the payment. ${n(5)}</li>
         <li><b>Store design works</b> (template switch and layout save) — backend to be built from the separate prompt.</li>
         <li><b>New pages are fully designed</b>; dashed "Needs backend" chips mark what needs API work.</li>
       </ul>
@@ -331,7 +335,7 @@ const SCREENS = {
         <tr><td>P5</td><td>Global channel mode</td><td>Removed; filters in <a href="#m_home"><u>Home</u></a>, <a href="#m_orders"><u>Orders</u></a>, <a href="#m_reports"><u>Reports</u></a></td></tr>
         <tr><td>P6</td><td>~230 px of chrome on phones</td><td>Header is one row; no breadcrumbs, page icons or subtitles on phones</td></tr>
         <tr><td>P7</td><td>Internal words (DEC-003, "Invoice Generator", "usage events")</td><td>Plain-language labels everywhere</td></tr>
-        <tr><td>P8</td><td>Online-payment UI vs COD-only rule</td><td>Not designed; decision needed (merchant CutLuy, marketplace ABA PayWay)</td></tr>
+        <tr><td>P8</td><td>Online-payment settings in technical words ("Payment Gateway Settings")</td><td><a href="#m_payments"><u>Payments</u></a>, <a href="#k_checkout"><u>Checkout</u></a>, <a href="#k_pay"><u>Pay with KHQR</u></a>, <a href="#m_order_paid"><u>Paid order</u></a>, <a href="#p_khqr"><u>POS KHQR</u></a></td></tr>
         <tr><td>P9</td><td>No invoice list</td><td><a href="#m_invoices"><u>Invoices</u></a></td></tr>
         <tr><td>P10</td><td>Icon-only actions</td><td>Every action has a text label</td></tr>
         <tr><td>P11</td><td>Settings in a different shell</td><td><a href="#m_settings"><u>Settings</u></a></td></tr>
@@ -343,7 +347,8 @@ const SCREENS = {
       </tbody></table></div>`,
     notes: [
       "Scope agreed: merchant dashboard, buyer marketplace and POS app, mobile first. Storefront templates are not part of this pass.",
-      "Decisions confirmed in review on 2026-10-31. The online-payment conflict (P8) is the one open product decision.",
+      "Decisions confirmed in review on 2026-10-31, including online payment: KHQR through CutLuy (connects to ABA) is implemented and in scope. DEC-026/027 (COD only, CutLuy deferred) are outdated and need a superseding decision entry.",
+      "Open payment questions: the marketplace checkout calls ABA PayWay directly (PAYWAY_ENABLED, marked test-only) while the online store and settings use the Store's CutLuy key — this design assumes one path, the Store's CutLuy connection, everywhere. No refund of a KHQR payment and no timeout for orders that are never paid were found in Commerce.",
       "Every user-reachable route is mapped. Redirects keep old links working (rename labels, not URLs).",
       "Problem numbers match docs/audits/2026-10-31-merchant-dashboard-ux-audit.md; K = marketplace, X = POS (found in this pass).",
     ],
@@ -407,13 +412,13 @@ const SCREENS = {
       ${chips(["All", "Marketplace", "Online store", "POS", "Invoice"])}
       ${tabs(["To confirm (3)", "To deliver", "Cash to collect", "Done", "Cancelled", "Problems"])}
       ${row(`#${ph("xs")} <span class="pill">Marketplace</span>`, `${ph("s")} · 2 items · COD`, `<b>${ph("xs")}</b><br><a class="btn sm" href="#m_order_action">Confirm</a>`, "m_order")}
-      ${row(`#${ph("xs")} <span class="pill">Online store</span>`, `${ph("s")} · 1 item · COD`, `<b>${ph("xs")}</b><br><a class="btn sm" href="#m_order_action">Confirm</a>`, "m_order")}
+      ${row(`#${ph("xs")} <span class="pill">Online store</span>`, `${ph("s")} · 1 item · <b>Paid · KHQR</b>`, `<b>${ph("xs")}</b><br><a class="btn sm" href="#m_order_paid">Confirm</a>`, "m_order_paid")}
       ${row(`#${ph("xs")} <span class="pill">Invoice</span>`, `${ph("s")} · due ${ph("xs")}`, `<b>${ph("xs")}</b><br><span class="pill">Unpaid</span>`, "m_order")}
       <div class="sec meta">Showing 3 · <a href="#m_orders"><u>Load more</u></a> ${n(2)}</div>
     </div>`),
     notes: [
       "P1: one inbox for every channel; /marketplace-orders redirects here with the Marketplace chip on. Channel is a chip on each row, not a separate page.",
-      "Tabs follow the work, not the database status (docs/experience 06 §2). Rows are cards on phones and a table on desktop; each row's main action is right there. Export moves to a labelled button (P10).",
+      "Tabs follow the work, not the database status (docs/experience 06 §2). Rows are cards on phones and a table on desktop; each row's main action is right there. Export moves to a labelled button (P10). Each row says how it is paid in words (\"COD\", \"Paid · KHQR\", \"Waiting for KHQR payment\"); orders paid online never appear under Cash to collect.",
     ],
   },
   m_order: {
@@ -438,6 +443,28 @@ const SCREENS = {
     notes: [
       "The order shows its next step in words (Nielsen 1). Only states backed by real events are shown; delivered and paid stay separate (CLAUDE.md: delivered ≠ paid). Items and prices use Mekong Brew's seed products; the order itself is a placeholder.",
       "One main action in a sticky bar at thumb height (Fitts). Destructive actions are secondary and confirm with a reason (docs/experience 06).",
+    ],
+  },
+  m_order_paid: {
+    label: "M4b · Order detail — paid by KHQR",
+    html: () => mShell("m_order_paid", `<div class="col">
+      <a class="back" href="#m_orders">‹ Orders</a>
+      ${head(`Order #${ph("xs")}`, "", `<span class="pill">Online store</span>`)}
+      <div class="sec"><div class="card"><b>Paid $8.25 by KHQR ${n(1)}</b><div class="meta">Confirmed by CutLuy · ${ph("xs")} · Ref ${ph("xs")}</div></div></div>
+      <div class="sec"><div class="card"><h4>What happens next</h4><div class="steps">
+        <div class="stepi done"><span class="dot"></span><div>Placed and paid</div></div>
+        <div class="stepi now"><span class="dot"></span><div><b>Confirm the order</b><div class="meta">The buyer has paid. Confirm, then deliver. Nothing to collect.</div></div></div>
+        <div class="stepi"><span class="dot"></span><div>Deliver</div></div>
+      </div></div></div>
+      <div class="sec"><h3>Items</h3>${row("Caffè Latte", "2 × $2.75", "$5.50")}${row("Butter Croissant", "1 × $1.75", "$1.75")}
+        <div class="row"><div class="grow meta">Delivery fee</div><div class="end">$1.00</div></div>
+        <div class="row"><div class="grow"><b>Total · paid by KHQR</b></div><div class="end"><b>$8.25</b></div></div></div>
+      <div class="sec"><h3>If you can't fulfil it ${n(2)}</h3><div class="card"><div class="meta">Cancelling a paid order means the buyer must get their money back.</div> ${need("refund of a KHQR payment through CutLuy")}</div></div>
+      <div class="sticky-bar"><a class="btn ghost" href="#m_order_paid">Cancel & refund</a><a class="btn primary" style="flex:1" href="#m_order_paid">Confirm order</a></div>
+    </div>`),
+    notes: [
+      "The payment line comes first because it changes what the merchant does: paid online means no cash step. \"Paid\" appears only after Commerce confirms the payment with CutLuy (webhook or status check), never because the buyer says so. A KHQR order not yet paid shows \"Waiting for payment\" and no Confirm button.",
+      "Commerce has no refund for KHQR payments yet. Until it does, cancelling a paid order must tell the merchant how the buyer gets the money back; the button stays hidden or explains the manual step. Error prevention (Nielsen 5).",
     ],
   },
   m_order_action: {
@@ -551,13 +578,14 @@ const SCREENS = {
       ${head("Reports " + n(1))}
       <div class="sec">${need("store-wide sales statistics (not tied to the website, no 50-order cap)")} ${n(2)}</div>
       ${chips(["Last 7 days", "30 days", "90 days", "This year"], 1)}
-      ${tabs(["Sales", "Products", "Channels", "Cash to collect"])}
+      ${tabs(["Sales", "Products", "Channels", "Payments"])}
       <div class="sec"><div class="grid4"><div class="tile"><span class="meta">Sales</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Orders</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Average order</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Refunded</span><b>${ph("xs")}</b></div></div></div>
       <div class="sec"><div class="card" style="height:180px"><div class="meta">Sales by day</div></div></div>
+      <div class="sec"><h3>How buyers paid</h3>${row("Paid by KHQR", `${ph("xs")} orders`, ph("xs"))}${row("Cash collected", `${ph("xs")} orders`, ph("xs"))}${row("Cash still to collect", `${ph("xs")} orders`, ph("xs"), "m_orders")}</div>
       <div class="sec"><h3>Best sellers</h3>${row("Butter Croissant", `${ph("xs")} sold`, ph("xs"))}${row("Caffè Latte", `${ph("xs")} sold`, ph("xs"))}</div>
     </div>`),
     notes: [
-      "P12: Reports replaces Analytics and answers new questions instead of repeating Home: products, channel split and cash still to collect (docs/experience 06 §9). /analytics redirects here.",
+      "P12: Reports replaces Analytics and answers new questions instead of repeating Home: products, channel split and how buyers paid — KHQR, cash collected, cash still to collect (docs/experience 06 §9). /analytics redirects here.",
       "Today's stats endpoint is keyed by website (marketplace-only stores get nothing) and Home computes totals from at most 50 orders. Real Reports need a store-wide statistics endpoint.",
     ],
   },
@@ -668,15 +696,36 @@ const SCREENS = {
       ${row("Store profile", "Name, logo, contact, category · close the store", "›", "m_settings_page")}
       ${row("Delivery & returns", "Delivery fee, return policy", "›", "m_settings_page")}
       ${row("Staff & roles", "People who help you and what they can do", "›", "m_staff_settings")}
+      ${row("Payments", "Take KHQR payments online · Connected", `<span class="pill">On</span> ›`, "m_payments")}
       ${row("Plan & billing", "Your plan, what you've used, invoices from Rentify", "›", "m_billing")}
       ${row("Notifications", "New-order alerts by email and Telegram", "›", "m_settings_page")}
       ${row("Account & security", "Your name, password, signed-in devices", "›", "m_settings_page")}
       ${row("Language", "ខ្មែរ / English", "›", "m_settings_page")}
-      <div class="sec meta">Online payments are not offered in this release (cash on delivery only). ${n(2)}</div>
     </div>`),
     notes: [
       "P11: all settings in the dashboard's own shell (no separate \"Back to dashboard\" layout). On phones this list is the page; on desktop it becomes a left list with the section on the right. Each row says what is inside.",
-      "P8: Payments (CutLuy KHQR) is left out — DEC-026/027 say online checkout is COD only and CutLuy is deferred. Recent develop commits add PayWay and CutLuy; that needs a product decision before any payment UI is designed.",
+    ],
+  },
+  m_payments: {
+    label: "M21b · Settings › Payments",
+    html: () => mShell("m_payments", `<div class="col">
+      <a class="back" href="#m_settings">‹ Settings</a>${head("Payments " + n(1), "How buyers can pay you")}
+      <div class="sec"><div class="card"><b>Cash on delivery</b><div class="meta">Always on. You collect cash and record it on the order.</div></div></div>
+      <div class="sec"><div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>KHQR online ${n(2)}</b><span class="pill strong">Connected</span></div>
+        <div class="meta">Buyers scan and pay with their banking app. Money goes to your account through CutLuy (ABA). Last checked ${ph("xs")}.</div></div></div>
+      <div class="sec"><h3>Connection</h3><div class="form" style="padding:0">
+        ${field("Name buyers see when paying", "Mekong Brew", "Shown in the buyer's banking app")}
+        ${field("CutLuy API key", "•••• •••• 4f2a", "From your CutLuy account › Developers. We check it when you save.")}
+        <details class="card"><summary><b>Advanced</b> · webhook secret</summary><div class="meta">${ph()}</div></details>
+      </div></div>
+      <div class="sec">${need("payment settings per Store (today keyed by website, so marketplace-only stores cannot connect)")} ${n(3)}</div>
+      <div class="sec"><a class="btn ghost block" href="#m_payments">Turn off KHQR</a></div>
+      <div class="sticky-bar"><a class="btn" href="#m_payments">Test connection</a><a class="btn primary" style="flex:1" href="#m_settings">Save</a></div>
+    </div>`),
+    notes: [
+      "P8/P7: today's page is titled \"Payment Gateway Settings\". It becomes \"Payments\" and answers the merchant's question first: how can buyers pay me, and is it working?",
+      "Status is the first thing on the card (Not connected · Checking · Connected · Key rejected — check it in CutLuy). Commerce already validates the key with CutLuy on save; the status uses that result, never an assumed one.",
+      "The config route is GET/PUT /api/payment-config/:websiteId, so a Store without an online store (e.g. Cloth Store) has nowhere to save it. Marketplace KHQR needs the setting on the Store.",
     ],
   },
   m_settings_page: {
@@ -857,28 +906,54 @@ const SCREENS = {
     notes: ["One store per order (DEC-012/013): the cart is grouped by store, each with its own delivery fee, total and checkout button, so a buyer never wonders why there are two orders."],
   },
   k_checkout: {
-    label: "K8 · Checkout (one page, COD)",
+    label: "K8 · Checkout (one page)",
     html: () => kShell("k_checkout", `<div class="col">
       <a class="back" href="#k_cart">‹ Cart</a>${head("Checkout · Skincare Store " + n(1))}
       <div class="form">
         ${field("Your name", "Emily Watson")}
         ${field("Phone", "+855 12 999 888", "The store calls you before delivery")}
         ${field("Delivery address", "", "Street, house number, landmark", true)}
-        <div class="card"><b>Pay cash on delivery ${n(2)}</b><div class="meta">Pay the courier when your order arrives.</div></div>
+        <div><b>How do you want to pay? ${n(2)}</b></div>
+        <label class="card" style="display:flex;gap:10px"><span aria-hidden="true">◉</span><span><b>Pay now with KHQR</b><span class="meta" style="display:block">Scan with your banking app. The store is told you've paid.</span></span></label>
+        <label class="card" style="display:flex;gap:10px"><span aria-hidden="true">○</span><span><b>Cash on delivery</b><span class="meta" style="display:block">Pay the courier when your order arrives.</span></span></label>
         <div class="card">${row("Yellow Smoothing Shampoo 1L", "1 × $13.99", "$13.99", "", "")}<div class="row"><div class="grow meta">Delivery</div><div class="end">$${ph("xs")}</div></div></div>
       </div>
-      <div class="sticky-bar"><div class="grow"><b>${ph("xs")}</b><div class="meta">to pay on delivery</div></div><a class="btn primary" href="#k_placed">Place order</a></div>
+      <div class="sticky-bar"><div class="grow"><b>${ph("xs")}</b><div class="meta">total</div></div><a class="btn primary" href="#k_pay">Pay with KHQR</a></div>
     </div>`, "", { noBottom: true }),
     notes: [
       "K2: checkout today is split over /checkout/shipping, /payment and /review; it becomes one short page (Baymard: ~12 form fields). Fields are prefilled from the buyer's account (seed: Emily Watson).",
-      "COD only, per DEC-026. The code currently offers ABA PayWay when a store enables it; not designed until the payment decision is made.",
+      "Two choices, each with one sentence on what happens. KHQR is offered only when the store has payments connected (GET /payments/public-methods); otherwise the page shows cash on delivery alone, without an empty choice. The main button names the action: \"Pay with KHQR\" or \"Place order\". One store per order (DEC-012/013) means one payment per checkout.",
+    ],
+  },
+  k_pay: {
+    label: "K8b · Pay with KHQR",
+    html: () => kShell("k_pay", `<div class="col">
+      <div class="sec" style="text-align:center">
+        <div class="meta">Skincare Store · Order #${ph("xs")}</div>
+        <h1>$${ph("xs")} ${n(1)}</h1>
+        <div class="card" style="width:220px;height:220px;margin:12px auto;display:grid;place-items:center"><span class="meta">KHQR code</span></div>
+        <div class="meta" role="status">Waiting for your payment… we check automatically. ${n(2)}</div>
+        <div class="meta">Code expires in ${ph("xs")}</div>
+      </div>
+      <div class="sec"><a class="btn primary block" href="#k_placed">Open in my banking app</a>
+        <div class="grid2" style="margin-top:8px"><a class="btn" href="#k_placed">I've paid — check now</a><a class="btn" href="#k_pay">Copy code</a></div></div>
+      <div class="sec"><h3>If something goes wrong ${n(3)}</h3>
+        <div class="card"><b>Code expired</b><div class="meta">Nothing was charged.</div><a class="btn sm" href="#k_pay">Get a new code</a></div>
+        <div class="card" style="margin-top:8px"><b>We couldn't reach the payment service</b><div class="meta">If you already paid, your order will update when it's confirmed.</div><a class="btn sm" href="#k_pay">Try again</a> <a class="btn sm ghost" href="#k_orders">My orders</a></div>
+      </div>
+      <div class="sec">${need("what happens to an order that is never paid (cancel after a time limit and release stock)")}</div>
+    </div>`, "", { noBottom: true }),
+    notes: [
+      "One pattern for marketplace and online store (today: /checkout/aba/:orderId and the storefront KHQR page). Amount and store come first so the buyer can check them against their banking app.",
+      "The page polls Commerce (fast for 2 minutes, then slower). \"Paid\" is shown only after Commerce confirms; returning from the banking app just triggers another check. On phones the main button opens the banking app (deeplink), since a buyer can't scan their own screen.",
+      "Expired and error states say whether money was taken. Today the test badge (\"Test mode\") must not reach production buyers.",
     ],
   },
   k_placed: {
     label: "K9 · Order placed",
     html: () => kShell("k_placed", `<div class="col"><div class="empty"><div class="art"></div><h2>Order placed ${n(1)}</h2><p>Skincare Store will call you to confirm, then deliver. Pay ${ph("xs")} in cash when it arrives.</p>
       <a class="btn primary block" href="#k_order">Track this order</a><a class="btn ghost block" href="#k_home">Keep shopping</a></div></div>`),
-    notes: ["Says exactly what happens next and how much to have ready in cash."],
+    notes: ["Says exactly what happens next and how much to have ready in cash. After a KHQR payment the same screen reads \"Paid $… by KHQR · nothing to pay on delivery\"."],
   },
   k_orders: {
     label: "K10 · My orders",
@@ -983,11 +1058,26 @@ const SCREENS = {
     label: "X3 · POS — take payment",
     html: () => pShell("p_pay", `<div class="col"><div class="sec">${ph()}</div></div>
       <div class="scrim"><div class="sheet"><div class="grab"></div><h2>$6.25 ${n(1)}</h2>
-        ${tabs(["Cash", "KHQR"], 0)}
+        <div class="tabs"><a class="tab on" href="#p_pay">Cash</a><a class="tab" href="#p_khqr">KHQR</a></div>
         <div class="form" style="padding:12px 0">${field("Cash received", "$10.00")}<div class="card"><b>Change: $3.75</b></div>
         <div class="keypad">${["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫"].map((k) => `<span>${k}</span>`).join("")}</div>
         <a class="btn primary block" href="#p_done">Done · $3.75 change</a></div></div></div>`, { noNav: true }),
-    notes: ["Cash or KHQR at the counter (in person; DEC-026 restricts online checkout only). The change is computed and shown large; a keypad avoids the phone keyboard covering the total."],
+    notes: ["Cash or KHQR at the counter. The change is computed and shown large; a keypad avoids the phone keyboard covering the total."],
+  },
+  p_khqr: {
+    label: "X3b · POS — KHQR at the counter",
+    html: () => pShell("p_khqr", `<div class="col"><div class="sec">${ph()}</div></div>
+      <div class="scrim"><div class="sheet"><div class="grab"></div><h2>$6.25 ${n(1)}</h2>
+        <div class="tabs"><a class="tab" href="#p_pay">Cash</a><a class="tab on" href="#p_khqr">KHQR</a></div>
+        <div class="card" style="width:200px;height:200px;margin:12px auto;display:grid;place-items:center"><span class="meta">KHQR code</span></div>
+        <p class="meta" role="status" style="text-align:center">Turn the screen to the customer. Waiting for payment… ${n(2)}</p>
+        <div class="card"><b>Not confirmed after 2 minutes?</b><div class="meta">Ask to see the customer's receipt, then check again. Don't hand over goods until it says Paid.</div>
+          <div class="grid2" style="margin-top:8px"><a class="btn" href="#p_done">Check again</a><a class="btn" href="#p_pay">Take cash instead</a></div></div>
+      </div></div>`, { noNav: true }),
+    notes: [
+      "The QR is the biggest thing on the sheet and the total stays visible above it. The sale completes by itself when Commerce reports the payment as paid.",
+      "Today polling stops silently after 2 minutes and the sheet just sits there. It must say so and give two clear ways on: check again, or switch to cash. Visibility of system status (Nielsen 1).",
+    ],
   },
   p_done: {
     label: "X4 · POS — sale complete",
@@ -1026,10 +1116,10 @@ const SCREENS = {
 
 const GROUPS = {
   "Overview": ["overview"],
-  "Merchant dashboard": ["m_home", "m_home_new", "m_orders", "m_order", "m_order_action", "m_returns", "m_return", "m_products", "m_product_form", "m_categories", "m_customers", "m_customer", "m_reports", "m_invoices", "m_invoice_new", "m_marketplace", "m_online", "m_design", "m_pos_open", "m_share", "m_settings", "m_settings_page", "m_staff_settings", "m_billing", "m_help"],
+  "Merchant dashboard": ["m_home", "m_home_new", "m_orders", "m_order", "m_order_paid", "m_order_action", "m_returns", "m_return", "m_products", "m_product_form", "m_categories", "m_customers", "m_customer", "m_reports", "m_invoices", "m_invoice_new", "m_marketplace", "m_online", "m_design", "m_pos_open", "m_share", "m_settings", "m_payments", "m_settings_page", "m_staff_settings", "m_billing", "m_help"],
   "Merchant overlays & states": ["m_menu", "m_search", "m_notifications", "m_staff", "m_states"],
-  "Buyer marketplace": ["k_home", "k_search", "k_categories", "k_product", "k_store", "k_stores", "k_cart", "k_checkout", "k_placed", "k_orders", "k_order", "k_report", "k_wishlist", "k_account", "k_signin", "k_help", "k_sell"],
-  "POS app": ["p_open", "p_sell", "p_pay", "p_done", "p_tickets", "p_returns", "p_register", "p_lock"],
+  "Buyer marketplace": ["k_home", "k_search", "k_categories", "k_product", "k_store", "k_stores", "k_cart", "k_checkout", "k_pay", "k_placed", "k_orders", "k_order", "k_report", "k_wishlist", "k_account", "k_signin", "k_help", "k_sell"],
+  "POS app": ["p_open", "p_sell", "p_pay", "p_khqr", "p_done", "p_tickets", "p_returns", "p_register", "p_lock"],
 };
 
 /* ---------- runtime ---------- */

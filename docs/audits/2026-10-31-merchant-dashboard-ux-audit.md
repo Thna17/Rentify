@@ -42,7 +42,7 @@ key actions disabled or missing · **Duplicate** same job as another screen · *
 | `/share` | Share your store | Complete | Phase B. |
 | `/help` | Support & help centre | Complete | Support cases (real), email/Telegram contact, FAQ. |
 | `/settings/account` | Account | Complete | Profile, logo, marketplace colour. |
-| `/settings/payments` | Payment gateway (CutLuy KHQR) | **Violates DEC-026/027** | Release 1 online checkout is COD only; CutLuy and online-payment UI must not be shown. |
+| `/settings/payments` | Payment gateway (CutLuy KHQR) | Partial | **Corrected 2026-10-31:** first recorded as violating DEC-026/027 (COD only). The product owner confirmed online payment through CutLuy (connects to ABA) is implemented and in scope, so DEC-026/027 are outdated. Remaining issues: technical title ("Payment Gateway Settings"), settings keyed by website so marketplace-only stores cannot connect. |
 | `/settings/delivery` | Delivery fee | Complete | Phase B. |
 | `/settings/staff` | Staff & roles | Complete | |
 | `/settings/security` | Security | Complete | |
@@ -82,7 +82,7 @@ menu drawer (phones), notifications dropdown, language switcher, open-store menu
 | P5 | A global channel mode silently changes menu and pages. | Channel switcher row on every page | Visibility of state (1); Hick's law |
 | P6 | Phone screens spend ~230 px of 812 on chrome before content. | Header (6 controls) + channel row + breadcrumb + page icon + subtitle (screenshots) | Content first; Fitts |
 | P7 | Internal and technical words shown to merchants. | "Custom Domain (DEC-003)…", "Invoice Generator", "Payment Gateway Settings", "Usage events" | User's language (Nielsen 2) |
-| P8 | Online-payment UI shown although Release 1 is COD only. | `/settings/payments` CutLuy KHQR | Product rule DEC-026/027 |
+| P8 | ~~Online-payment UI shown although Release 1 is COD only.~~ Corrected: online payment is in scope. Payment settings use technical words and only work for stores with a website; no KHQR refund; no timeout for unpaid orders; POS KHQR stops checking after 2 min without saying so. | `/settings/payments`, `paymentConfigRoutes` (`:websiteId`), POS.jsx `pollPaymentStatus` | User's language (Nielsen 2); visibility of status (1) |
 | P9 | Invoices: no way to find a past invoice. | `/invoices` is a create form only | Recognition; dead end |
 | P10 | Icon-only actions and stacked full-width secondary buttons. | Orders export/import (screenshot) | Labels (WCAG 2.5.3, 1.1.1) |
 | P11 | Settings use a different page shell from the rest. | "Back to dashboard", hero, chip row | Consistency (Mandel 3) |
