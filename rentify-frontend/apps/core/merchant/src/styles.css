@@ -45,7 +45,7 @@
 
     /* ---------- UI ---------- */
     --border: 0.91 0.006 250 / 1;
-    --card-border: rgba(0, 0, 0, 0.075);
+    --card-border: var(--rentify-color-border-subtle, #ece8e1);
     --input: 0.88 0.008 250 / 1;
     --ring: 0.56 0.2 258 / 1;
 
@@ -231,7 +231,7 @@
   /* Cards: crisp subtle hairline surface with soft elevation */
   [data-slot='card'],
   .card {
-    border: 1px solid var(--card-border, rgba(0, 0, 0, 0.075)) !important;
+    border: 1px solid var(--card-border, var(--rentify-color-border-subtle, #ece8e1)) !important;
     border-radius: 1rem;
     box-shadow: var(--shadow-soft);
     transition: box-shadow var(--duration) var(--ease-out),
@@ -276,7 +276,7 @@
   [data-slot='popover-content'],
   [data-slot='dropdown-menu-content'],
   [data-slot='select-content'] {
-    border: 1px solid var(--card-border, rgba(0, 0, 0, 0.075));
+    border: 1px solid var(--card-border, var(--rentify-color-border-subtle, #ece8e1));
     border-radius: 1rem;
     box-shadow: var(--shadow-lift);
   }
