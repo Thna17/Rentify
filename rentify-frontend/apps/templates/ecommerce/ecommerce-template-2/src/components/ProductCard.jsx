@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Loader2, ShoppingBag } from 'lucide-react';
-import { getProductImages, getStockState, toAmount } from '@rentify/storefront/commerce';
+import { getProductImages, getStockState, hasSelectableOptions, toAmount } from '@rentify/storefront/commerce';
 import { useI18n } from '../i18n';
 import { productPath } from '../paths';
 import { ProductImage } from './ProductImage';
@@ -54,7 +54,7 @@ export function ProductCard({ product, onAdd, priority = false, showCategory = t
   const href = productPath(product.id);
   const image = getProductImages(product, name)[0];
   const stock = getCardStock(product);
-  const needsOptions = activeVariants(product).length > 0;
+  const needsOptions = hasSelectableOptions(product);
   const badge = getProductBadge(product);
 
   const handleAdd = async () => {

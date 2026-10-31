@@ -44,6 +44,7 @@ export function ProductPurchasePanel({ product, onAdd }) {
   const { t } = useI18n();
   const variants = useMemo(() => activeVariantsOf(product), [product]);
   const options = useMemo(() => optionsOf(product), [product]);
+  const hasOptions = options.length > 0;
   const hasVariants = variants.length > 0;
 
   const [selected, setSelected] = useState(() => initialSelection(product));
@@ -62,7 +63,7 @@ export function ProductPurchasePanel({ product, onAdd }) {
   const canAdd = stock.purchasable && effectiveQuantity > 0 && status.state !== 'adding';
 
   const isValueAvailable = (optionName, value) =>
-    !hasVariants ||
+    !hasOptions ||
     variants.some((candidate) => {
       const next = { ...selected, [optionName]: value };
       return (
@@ -85,7 +86,7 @@ export function ProductPurchasePanel({ product, onAdd }) {
         product,
         variantId: variant?.id,
         quantity: effectiveQuantity,
-        selectedOptions: hasVariants ? selected : {},
+        selectedOptions: hasOptions ? selected : {},
       });
       setStatus({ state: 'added', error: '' });
       window.setTimeout(() => setStatus((current) => (current.state === 'added' ? { state: 'idle', error: '' } : current)), 2000);
@@ -98,14 +99,14 @@ export function ProductPurchasePanel({ product, onAdd }) {
     <form onSubmit={add} className="space-y-6" aria-label={product.name}>
       <div className="space-y-2">
         <Price amount={price} compareAt={compareAt} size="lg" />
-        {hasVariants && !variant ? (
+        {hasOptions && !variant ? (
           <p className="text-sm font-medium text-error">{t('product.combinationUnavailable')}</p>
         ) : (
           <StockLabel stock={stock} className="text-sm" />
         )}
       </div>
 
-      {hasVariants &&
+      {hasOptions &&
         options.map((option) => (
           <fieldset key={option.id || option.name}>
             <legend className="mb-2 text-sm font-medium text-foreground">
@@ -160,7 +161,7 @@ export function ProductPurchasePanel({ product, onAdd }) {
           ) : (
             <ShoppingBag className="h-5 w-5" aria-hidden="true" />
           )}
-          {!stock.purchasable && !(hasVariants && !variant)
+          {!stock.purchasable && !(hasOptions && !variant)
             ? t('product.outOfStock')
             : status.state === 'adding'
               ? t('product.adding')

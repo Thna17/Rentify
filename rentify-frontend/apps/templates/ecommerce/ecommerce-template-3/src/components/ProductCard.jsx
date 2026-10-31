@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Loader2, Plus } from 'lucide-react';
-import { getProductImages, getStockState, toAmount } from '@rentify/storefront/commerce';
+import { getProductImages, getStockState, hasSelectableOptions, toAmount } from '@rentify/storefront/commerce';
 import { useI18n } from '../i18n';
 import { productPath } from '../paths';
 import { ProductImage } from './ProductImage';
@@ -59,7 +59,7 @@ export function QuickAdd({ product, onAdd, size = 'md', className = '' }) {
   const reset = useRef(null);
   const name = product?.name || '';
   const stock = getCardStock(product);
-  const needsOptions = activeVariants(product).length > 0;
+  const needsOptions = hasSelectableOptions(product);
   const dimension = size === 'sm' ? 'h-9 w-9' : 'h-11 w-11';
 
   useEffect(() => () => window.clearTimeout(reset.current), []);

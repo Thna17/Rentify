@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Loader2, Plus } from 'lucide-react';
-import { getProductImages } from '@rentify/storefront/commerce';
+import { getProductImages, hasSelectableOptions } from '@rentify/storefront/commerce';
 import { useI18n } from '../i18n';
 import { productPath } from '../paths';
 import { useAddToCart } from '../hooks/useAddToCart';
@@ -20,7 +20,7 @@ function RowCard({ product, onAdd }) {
   const href = productPath(product.id);
   const image = getProductImages(product, name)[0];
   const stock = getCardStock(product);
-  const needsOptions = hasOptions(product);
+  const needsOptions = hasSelectableOptions(product);
 
   const add = async () => {
     if (state === 'adding' || !stock.purchasable) return;
