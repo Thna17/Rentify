@@ -10,6 +10,7 @@ export const TEMPLATE_LOADERS = {
   1: () => import('../../templates/ecommerce/ecommerce-template-1/src/entry'),
   2: () => import('../../templates/ecommerce/ecommerce-template-2/src/entry'),
   3: () => import('../../templates/ecommerce/ecommerce-template-3/src/entry'),
+  4: () => import('../../templates/ecommerce/ecommerce-template-4/src/entry'),
 };
 
 const lazyTemplates = {};

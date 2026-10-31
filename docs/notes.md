@@ -710,3 +710,13 @@ These are **proposed**, not approved design decisions. `@rentify/design-tokens` 
 - **Open:** the Gmail app password in the local `rentify-server/.env` is
   rejected by Gmail (535 BadCredentials); real delivery needs a new app
   password or a `RESEND_API_KEY`.
+
+## Atelier storefront template
+
+- The shared storefront includes template 4, Atelier, with a new editorial
+  home page and the existing catalog, product, cart and checkout flows. Its
+  design uses the merchant's own images, identity and product data.
+- Core migration `20261031_019_atelier_storefront_template.js` registers the
+  selectable template. Deploy the Core and storefront changes together and
+  apply the migration through the normal release process before selecting it.
+  The template illustration in the picker is illustrative, not a live demo.
