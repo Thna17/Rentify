@@ -827,3 +827,24 @@ release gates.
   balance (24 → 23, rolled back).
 - **Before staging and the demo:** run the dry run and review the report
   before `--apply`.
+
+## Open: CutLuy webhook contract and unpaid-order timeout (2026-10-31)
+
+- The product owner selected **15 minutes** for the unpaid KHQR order timeout.
+  This is a decision, not an implemented cancellation or stock-release worker.
+- CutLuy's [API documentation](https://cutluy.com/docs) describes a webhook
+  event whose payment is under `data.payment`; `X-CutLuy-Signature` signs the
+  timestamp and raw request body using HMAC-SHA256. The current Commerce
+  handler reads status and references from the top level or `data` and its
+  route has no signature verification. The JSON middleware also does not
+  retain the raw body. A documented `payment.completed` event would therefore
+  be acknowledged without confirming the payment; an unverified payload in
+  the legacy shape can reach fulfillment. Treat the existing webhook as unsafe
+  until the provider contract and secret provisioning are verified and the
+  handler is corrected and tested.
+- **Open:** confirm the CutLuy account-specific webhook signing secret setup,
+  event delivery and status contract in the merchant sandbox, including what
+  happens if a buyer pays near or after the timeout. Do not enable the new
+  payment flow or automatically release stock based on an assumed contract.
+- Direct ABA PayWay code is to be retained for possible future use, but remains
+  inactive for the CutLuy launch as directed by the product owner.
