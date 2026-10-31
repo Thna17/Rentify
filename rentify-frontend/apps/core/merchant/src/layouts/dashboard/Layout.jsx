@@ -173,12 +173,8 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     navigate(`/${tabPath}`);
   };
 
-  // Each channel view shows only the sidebar items that belong to it. This
-  // filters navigation only — direct URLs still follow the access rules above.
-  const sidebarTabs = platformTabs
-    .filter((tab) => !tab.hideInSidebar)
-    .filter((tab) => !tab.views || tab.views.includes(view))
-    .map((tab) => (view !== 'all' && tab.inView?.[view] ? { ...tab, ...tab.inView[view], displayName: tab.inView[view].label || tab.displayName } : tab));
+  // Sidebar tabs are grouped by main places, channels and more (docs/experience wireframes M_MENU)
+  const sidebarTabs = platformTabs.filter((tab) => !tab.hideInSidebar);
 
   return (
     <Sheet open={isMobile && sidebarOpen} onOpenChange={setSidebarOpen}>

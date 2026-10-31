@@ -1,4 +1,4 @@
-// components/PageHeader.tsx
+import React from 'react';
 import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 
@@ -21,24 +21,24 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full border-b border-border/40 bg-gradient-to-r from-white to-gray-50/30 dark:from-card dark:to-card/50 backdrop-blur-sm p-6 md:p-8"
+      className="w-full border-b border-border/40 bg-card/60 backdrop-blur-sm p-4 sm:p-6 md:p-8"
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex-1">
-          {/* Breadcrumb */}
+        <div className="flex-1 min-w-0">
+          {/* Breadcrumb - hidden on phones */}
           {breadcrumb && (
-            <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-3">
+            <nav className="hidden sm:flex items-center space-x-2 text-sm text-muted-foreground mb-3" aria-label="Breadcrumb">
               {breadcrumb.map((item, index) => (
                 <div key={index} className="flex items-center">
                   {item.href ? (
-                    <a href={item.href} className="hover:text-gray-700 transition-colors">
+                    <a href={item.href} className="hover:text-foreground transition-colors">
                       {item.label}
                     </a>
                   ) : (
-                    <span className="text-gray-900 font-medium">{item.label}</span>
+                    <span className="text-foreground font-medium">{item.label}</span>
                   )}
                   {index < breadcrumb.length - 1 && (
-                    <span className="mx-2">/</span>
+                    <span className="mx-2 text-muted-foreground/60">/</span>
                   )}
                 </div>
               ))}
@@ -48,16 +48,16 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           {/* Title Section */}
           <div className="flex items-center gap-4">
             {Icon && (
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                <Icon className="h-6 w-6 text-white" />
+              <div className="hidden sm:flex p-3 bg-primary/10 text-primary rounded-xl shadow-xs shrink-0">
+                <Icon className="h-6 w-6" />
               </div>
             )}
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground tracking-tight truncate">
                 {title}
               </h1>
               {description && (
-                <p className="text-gray-600 mt-2 max-w-3xl leading-relaxed">
+                <p className="hidden sm:block text-muted-foreground mt-1.5 max-w-3xl leading-relaxed text-sm">
                   {description}
                 </p>
               )}
@@ -67,7 +67,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         
         {/* Actions */}
         {actions && (
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             {actions}
           </div>
         )}
