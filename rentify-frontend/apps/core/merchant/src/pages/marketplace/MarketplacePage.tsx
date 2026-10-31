@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from '@rentify/utils';
 import {
   ExternalLink,
@@ -19,30 +19,37 @@ import { Button } from '@rentify/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { Badge } from '@rentify/shared/ui/badge';
 import { marketplaceStoreUrl } from '../../utils/storeLinks';
-import { useGetProductsQuery } from '@rentify/apis';
-import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
 
 export const MarketplacePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { store } = useChannels();
-  const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
+  const storeId = store?.id;
 
   const [productFilter, setProductFilter] = useState<'shown' | 'hidden'>('shown');
 
-  const { data: productsResponse, isLoading: isLoadingProducts } = useGetProductsQuery(
-    websiteId,
-    { skip: !websiteId }
-  );
+  const [rawProducts, setRawProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [productsError, setProductsError] = useState(false);
 
-  const rawProducts = useMemo(() => {
-    if (!productsResponse) return [];
-    if (Array.isArray(productsResponse)) return productsResponse;
-    if (Array.isArray(productsResponse.products)) return productsResponse.products;
-    if (Array.isArray(productsResponse.data)) return productsResponse.data;
-    return [];
-  }, [productsResponse]);
+  useEffect(() => {
+    if (!storeId) { setRawProducts([]); return; }
+    const controller = new AbortController();
+    setIsLoadingProducts(true);
+    setProductsError(false);
+    fetch(`${ECOMMERCE_API_ROOT}/api/stores/${encodeURIComponent(storeId)}/products?limit=500`, {
+      credentials: 'include', signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Failed to load products');
+        return response.json();
+      })
+      .then((data) => setRawProducts(Array.isArray(data.products) ? data.products : []))
+      .catch(() => { if (!controller.signal.aborted) setProductsError(true); })
+      .finally(() => { if (!controller.signal.aborted) setIsLoadingProducts(false); });
+    return () => controller.abort();
+  }, [storeId]);
 
   const storeObj = store as Record<string, any> | null;
   const approval = String(storeObj?.marketplaceApprovalStatus || '').toLowerCase();
@@ -199,6 +206,8 @@ export const MarketplacePage: React.FC = () => {
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <span>Loading products...</span>
               </div>
+            ) : productsError ? (
+              <p role="alert">Unable to load products. Please try again later.</p>
             ) : productFilter === 'shown' ? (
               shownProducts.length === 0 ? (
                 <div className="p-8 text-center space-y-2">
