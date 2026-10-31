@@ -60,12 +60,14 @@ export const TopProducts = ({ products = [], isLoading }) => {
           ))}
         </ul>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+        <div className="flex items-center gap-3 rounded-2xl bg-muted/50 px-4 py-3 xl:flex-1 xl:flex-col xl:justify-center xl:py-12 xl:text-center">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
             <Package className="h-5 w-5" />
           </span>
-          <p className="text-sm font-medium text-foreground">No sales yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Your best sellers will show up here.</p>
+          <div>
+            <p className="text-sm font-medium text-foreground">No sales yet</p>
+            <p className="text-xs text-muted-foreground">Your best sellers will show up here.</p>
+          </div>
         </div>
       )}
     </Card>

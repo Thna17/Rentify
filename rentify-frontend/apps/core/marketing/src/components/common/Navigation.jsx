@@ -133,13 +133,13 @@ const Navigation = () => {
                   className="flex h-10 items-center gap-1.5 rounded-lg border-slate-200 bg-white/70 px-3 text-sm text-slate-700 transition-all duration-200 hover:border-fuchsia-300 hover:text-fuchsia-600 xl:h-12 xl:gap-3 xl:rounded-xl xl:px-5 xl:text-base"
                 >
                   <Globe className="h-4 w-4 xl:h-5 xl:w-5" />
-                  <span className="font-medium">{language}</span>
+                  <span className="font-medium">{language === 'KH' ? 'ភាសាខ្មែរ' : 'English'}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-32 rounded-xl">
                 <DropdownMenuItem onClick={toggleLanguage} className="cursor-pointer">
-                  {language === 'EN' ? 'ខ្មែរ' : 'English'}
+                  {language === 'EN' ? 'ភាសាខ្មែរ' : 'English'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -227,7 +227,7 @@ const Navigation = () => {
                       className="flex h-11 items-center gap-2 rounded-xl"
                     >
                       <Globe className="h-4 w-4" />
-                      <span>{language}</span>
+                      <span>{language === 'KH' ? 'ភាសាខ្មែរ' : 'English'}</span>
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </div>

@@ -157,7 +157,7 @@ export class ErrorSanitizerService {
             ? 'ចំនួនស្តុកទំនិញមិនគ្រប់គ្រាន់ទេ។ សូមពិនិត្យកន្ត្រករបស់អ្នក។'
             : backendMsg;
         }
-        return backendMsg;
+        return this.matchesLanguage(backendMsg) ? backendMsg : catalog.conflict;
       }
       return catalog.conflict;
     }
@@ -172,13 +172,18 @@ export class ErrorSanitizerService {
       return catalog.serverError;
     }
 
-    // Check if backend returned a safe message
+    // Check if backend returned a safe message. Backend copy is English only,
+    // so Khmer shoppers get the localized fallback instead.
     const backendMsg = this.extractBackendMessage(err);
-    if (backendMsg && !this.isTechnical(backendMsg) && !this.isRawKey(backendMsg)) {
+    if (backendMsg && !this.isTechnical(backendMsg) && !this.isRawKey(backendMsg) && this.matchesLanguage(backendMsg)) {
       return backendMsg;
     }
 
     return fallback;
+  }
+
+  private matchesLanguage(message: string): boolean {
+    return this.translate.currentLang() !== 'km' || /[\u1780-\u17FF]/.test(message);
   }
 
   private extractBackendMessage(err: HttpErrorResponse): string | null {

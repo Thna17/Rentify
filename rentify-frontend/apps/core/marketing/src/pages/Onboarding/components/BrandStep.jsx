@@ -21,7 +21,7 @@ const toFeatureList = (features) => {
 };
 
 // Same shape TemplatePickStep saved, so deployment keeps working
-const toTemplate = (template) => {
+export const toTemplate = (template) => {
   const media = getTemplateMedia(template);
   return {
     id: template.id,

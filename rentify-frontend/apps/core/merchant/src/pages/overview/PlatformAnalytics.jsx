@@ -5,6 +5,7 @@ import { RevenueChart } from './components/RevenueChart';
 import { ChannelBadge, Kpi, SectionTitle, Surface } from './Overview';
 import { useChannels } from '../../context/ChannelContext';
 import { CHANNEL_LABEL, formatMoney, useChannelOrders } from '../../hooks/useChannelOrders';
+import { useTranslation } from '@rentify/utils';
 
 const PERIODS = [
   ['7d', '7 days'],
@@ -17,6 +18,7 @@ const num = (value) => Number(value || 0);
 
 /** Store analytics from recorded orders only. "All channels" compares channels; a focused view drills into one. */
 export default function PlatformAnalytics() {
+  const { t } = useTranslation();
   const { view } = useChannels();
   const [period, setPeriod] = useState('30d');
   const { orders, loading, error, summary } = useChannelOrders(period);
@@ -39,9 +41,9 @@ export default function PlatformAnalytics() {
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-[13px] font-medium text-muted-foreground">{view === 'all' ? 'All channels' : CHANNEL_LABEL[view]}</p>
-            <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-foreground md:text-[32px]">Analytics</h1>
+            <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-foreground md:text-[32px]">{t('merchant.p2.analytics')}</h1>
           </div>
-          <div role="radiogroup" aria-label="Period" className="flex w-max rounded-xl bg-muted p-1">
+          <div role="radiogroup" aria-label={t('merchant.p.period')} className="flex w-max rounded-xl bg-muted p-1">
             {PERIODS.map(([value, label]) => (
               <button
                 key={value}
@@ -61,22 +63,22 @@ export default function PlatformAnalytics() {
 
         {error ? (
           <Surface className="text-center">
-            <p className="text-base font-semibold text-foreground">Couldn't load analytics</p>
-            <p className="mt-1 text-sm text-muted-foreground">Please try again in a moment.</p>
+            <p className="text-base font-semibold text-foreground">{t('merchant.p2.couldnTLoadAnalytics')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('merchant.p2.pleaseTryAgainIn')}</p>
           </Surface>
         ) : (
           <>
             <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-              <SectionTitle title="Money" meta={periodLabel} />
+              <SectionTitle title={t('merchant.p.money')} meta={periodLabel} />
               <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
-                <Kpi label="Sales" value={formatMoney(summary.sales)} sub={`${summary.orderCount} orders`} loading={loading} />
-                <Kpi label="Average order" value={formatMoney(summary.averageOrder)} sub="Sales ÷ orders" loading={loading} />
-                <Kpi label="Paid" value={formatMoney(summary.paid)} sub={`Net after refunds ${formatMoney(summary.net)}`} loading={loading} />
-                <Kpi label="Refunded" value={formatMoney(summary.refunded)} sub="Recorded refunds" loading={loading} />
+                <Kpi label={t('merchant.p.sales')} value={formatMoney(summary.sales)} sub={`${summary.orderCount} orders`} loading={loading} />
+                <Kpi label={t('merchant.p2.averageOrder')} value={formatMoney(summary.averageOrder)} sub="Sales ÷ orders" loading={loading} />
+                <Kpi label={t('merchant.p.paid')} value={formatMoney(summary.paid)} sub={`Net after refunds ${formatMoney(summary.net)}`} loading={loading} />
+                <Kpi label={t('merchant.p.refunded')} value={formatMoney(summary.refunded)} sub="Recorded refunds" loading={loading} />
               </div>
               {view === 'marketplace' && (
                 <p className="mt-3 text-[12.5px] text-muted-foreground">
-                  Marketplace fee: none recorded on your orders, so paid amounts are what you keep.
+                  {t('merchant.p2.marketplaceFeeNoneRecorded')}
                 </p>
               )}
             </motion.section>
@@ -84,20 +86,20 @@ export default function PlatformAnalytics() {
             {view === 'all' && (
               <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
                 <Surface>
-                  <SectionTitle title="Compare channels" meta={periodLabel} />
+                  <SectionTitle title={t('merchant.p2.compareChannels')} meta={periodLabel} />
                   {rows.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No sales in this period yet.</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">{t('merchant.p.noSalesInThis')}</p>
                   ) : (
                     <div className="-mx-2 overflow-x-auto">
                       <table className="w-full min-w-[560px] text-[13.5px]">
                         <thead>
                           <tr className="text-left text-[12px] font-medium text-muted-foreground">
-                            <th className="px-2 pb-2 font-medium">Channel</th>
-                            <th className="px-2 pb-2 text-right font-medium">Orders</th>
-                            <th className="px-2 pb-2 text-right font-medium">Sales</th>
-                            <th className="px-2 pb-2 text-right font-medium">Avg order</th>
-                            <th className="px-2 pb-2 text-right font-medium">Paid</th>
-                            <th className="px-2 pb-2 text-right font-medium">Refunded</th>
+                            <th className="px-2 pb-2 font-medium">{t('merchant.p2.channel')}</th>
+                            <th className="px-2 pb-2 text-right font-medium">{t('merchant.p.orders')}</th>
+                            <th className="px-2 pb-2 text-right font-medium">{t('merchant.p.sales')}</th>
+                            <th className="px-2 pb-2 text-right font-medium">{t('merchant.p2.avgOrder')}</th>
+                            <th className="px-2 pb-2 text-right font-medium">{t('merchant.p.paid')}</th>
+                            <th className="px-2 pb-2 text-right font-medium">{t('merchant.p.refunded')}</th>
                           </tr>
                         </thead>
                         <tbody>

@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [CommonModule, RouterLink, NavbarComponent, FooterComponent, IconComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, NavbarComponent, FooterComponent, IconComponent],
   template: `
   <app-navbar></app-navbar>
 
@@ -16,26 +17,26 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
     <div class="mission-grid">
       <div class="mission-card">
         <div class="mission-icon"><ui-icon name="leaf" [size]="22" color="var(--color-accent)"></ui-icon></div>
-        <h3>Our mission</h3>
-        <p>To create a direct, fair, and sustainable bridge between Cambodian artisans and the world — so tradition can thrive alongside modern livelihoods.</p>
+        <h3>{{ 'about.ourMission' | translate }}</h3>
+        <p>{{ 'about.missionBody' | translate }}</p>
       </div>
       <div class="mission-card">
         <div class="mission-icon"><ui-icon name="award" [size]="22" color="var(--color-accent)"></ui-icon></div>
-        <h3>Our promise</h3>
-        <p>Every product is verified for authenticity and origin. Sellers keep the majority of every sale, and buyers receive a certificate of provenance.</p>
+        <h3>{{ 'about.ourPromise' | translate }}</h3>
+        <p>{{ 'about.promiseBody' | translate }}</p>
       </div>
       <div class="mission-card">
         <div class="mission-icon"><ui-icon name="users" [size]="22" color="var(--color-accent)"></ui-icon></div>
-        <h3>Our community</h3>
-        <p>Over 1,200 artisans across 25 provinces — weavers, potters, farmers, and woodworkers — trust Rentify Marketplace to bring their work to new markets.</p>
+        <h3>{{ 'about.ourCommunity' | translate }}</h3>
+        <p>{{ 'about.communityBody' | translate }}</p>
       </div>
     </div>
   </section>
 
   <section class="container timeline-section">
     <div class="section-head-center">
-      <h2>How we got here</h2>
-      <p>A short history of building something that matters.</p>
+      <h2>{{ 'about.howWeGotHere' | translate }}</h2>
+      <p>{{ 'about.historyBody' | translate }}</p>
     </div>
     <div class="timeline">
       <div class="timeline-item" *ngFor="let t of timeline">
@@ -51,7 +52,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
   <section class="container values-section">
     <div class="section-head-center">
-      <h2>What we stand for</h2>
+      <h2>{{ 'about.whatWeStandFor' | translate }}</h2>
     </div>
     <div class="values-grid">
       <div class="value-card" *ngFor="let v of values">
@@ -64,12 +65,12 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
   <section class="container cta-banner">
     <div>
-      <h2>Join the movement</h2>
-      <p>Whether you shop, sell, or simply share our story — you're helping keep Cambodian craft alive.</p>
+      <h2>{{ 'about.joinTheMovement' | translate }}</h2>
+      <p>{{ 'about.joinBody' | translate }}</p>
     </div>
     <div class="cta-actions">
-      <button class="btn btn-primary btn-lg" routerLink="/products">Shop the Collection</button>
-      <a class="btn btn-outline-light btn-lg" routerLink="/become-a-seller">Become a Seller</a>
+      <button class="btn btn-primary btn-lg" routerLink="/products">{{ 'about.shopCollection' | translate }}</button>
+      <a class="btn btn-outline-light btn-lg" routerLink="/become-a-seller">{{ 'about.becomeSeller' | translate }}</a>
     </div>
   </section>
 

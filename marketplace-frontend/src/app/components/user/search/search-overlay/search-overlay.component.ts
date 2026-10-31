@@ -15,6 +15,7 @@ import { SearchHistoryService } from '../../../../core/search/search-history.ser
 import { SearchTelemetryService } from '../../../../core/telemetry/search-telemetry.service';
 import { RentifyMarketplaceService } from '../../../../core/rentify/rentify-marketplace.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../../../../core/i18n/category-text.pipe';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 
 /** Curated, not computed — these are the terms worth steering people toward. */
@@ -47,13 +48,13 @@ type ResultItem = { kind: 'product' | 'store'; id: string };
  */
 @Component({
   selector: 'app-search-overlay',
-  imports: [FormsModule, IconComponent, TranslatePipe],
+  imports: [CategoryTextPipe, FormsModule, IconComponent, TranslatePipe],
   template: `
     <div
       class="scrim"
       role="dialog"
       aria-modal="true"
-      aria-label="Search Rentify Marketplace"
+      [attr.aria-label]="'searchOverlay.label' | translate"
       animate.leave="scrim-leave"
       (click)="close.emit()"
     >
@@ -76,12 +77,12 @@ type ResultItem = { kind: 'product' | 'store'; id: string };
               autocomplete="off"
             />
             @if (term()) {
-              <button type="button" class="clear" (click)="clearTerm()" aria-label="Clear search">
+              <button type="button" class="clear" (click)="clearTerm()" [attr.aria-label]="'searchOverlay.clear' | translate">
                 <ui-icon name="x" [size]="12" />
               </button>
             }
           </label>
-          <button type="button" class="dismiss" (click)="close.emit()" aria-label="Close search">
+          <button type="button" class="dismiss" (click)="close.emit()" [attr.aria-label]="'searchOverlay.close' | translate">
             <kbd class="dismiss-key">Esc</kbd>
             <span class="dismiss-cancel">{{ 'search.cancel' | translate }}</span>
           </button>
@@ -269,7 +270,7 @@ type ResultItem = { kind: 'product' | 'store'; id: string };
                   <button type="button" class="category" (click)="openCategory(category.slug)">
                     <span class="cat-icon"><ui-icon [name]="category.icon" [size]="17" /></span>
                     <span class="cat-text">
-                      <span class="cat-name">{{ category.name }}</span>
+                      <span class="cat-name">{{ category | categoryText }}</span>
                       @if (catalog.loaded() && !catalog.productError()) {
                         <span class="cat-count">{{
                           'category.productCount' | translate:{ count: catalog.countByCategory(category.slug) }

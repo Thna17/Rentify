@@ -12,3 +12,4 @@ declare const __HOSTED_STOREFRONT_BUYER_ENABLED__: boolean;
 declare module '@rentify/apis';
 declare module '@rentify/utils';
 declare module 'redux-persist/integration/react';
+declare module '@rentify/utils/i18n/languagePreference';

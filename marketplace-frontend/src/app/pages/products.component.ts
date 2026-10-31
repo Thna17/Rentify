@@ -7,6 +7,7 @@ import { SearchTelemetryService } from '../core/telemetry/search-telemetry.servi
 import { SeoService } from '../core/seo/seo.service';
 import { TranslateService } from '../core/i18n/translate.service';
 import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../core/i18n/category-text.pipe';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
@@ -26,7 +27,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
     '(document:keydown.escape)': 'closeMenu(); filtersOpen.set(false)',
     '(document:click)': 'onDocumentClick($event)',
   },
-  imports: [
+  imports: [CategoryTextPipe,
     RouterLink,
     NavbarComponent,
     FooterComponent,
@@ -38,7 +39,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
     <app-navbar />
 
     <header class="container products-head">
-      <nav class="crumbs" aria-label="Breadcrumb">
+      <nav class="crumbs" [attr.aria-label]="'common.breadcrumb' | translate">
         <a routerLink="/">{{ 'nav.home' | translate }}</a>
         <ui-icon name="chevron-right" [size]="12" />
         @if (categoryName(); as name) {
@@ -58,7 +59,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
       </div>
     </header>
 
-    <div class="container toolbar" aria-label="Product filters">
+    <div class="container toolbar" [attr.aria-label]="'products.productFilters' | translate">
       <button type="button" class="tool filters-btn" [class.active]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">
         <ui-icon name="filter" [size]="15" /> {{ 'catalog.filters' | translate }}
         @if (sidebarCount()) { <span class="count">{{ sidebarCount() }}</span> }
@@ -157,7 +158,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
 
     <div class="container shop-layout" [class.with-side]="filtersOpen()">
       @if (filtersOpen()) {
-        <aside class="side" aria-label="Filters" animate.enter="side-in">
+        <aside class="side" [attr.aria-label]="'catalog.filters' | translate" animate.enter="side-in">
           <div class="side-head"><ui-icon name="filter" [size]="16" /> {{ 'catalog.filters' | translate }}</div>
 
           <div class="group">
@@ -167,7 +168,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
             </button>
             @for (cat of categories; track cat.slug) {
               <button type="button" class="row" [class.on]="category() === cat.slug" (click)="setCategory(cat.slug)">
-                {{ cat.name }} <span>{{ countFor({ category: cat.slug }) }}</span>
+                {{ cat | categoryText }} <span>{{ countFor({ category: cat.slug }) }}</span>
               </button>
             }
           </div>
@@ -177,7 +178,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
               <h3>{{ 'catalog.subCategory' | translate }}</h3>
               <button type="button" class="row" [class.on]="!subcategory()" (click)="setSub(null)">{{ 'catalog.all' | translate }}</button>
               @for (sub of subcategories(); track sub.slug) {
-                <button type="button" class="row" [class.on]="subcategory() === sub.slug" (click)="setSub(sub.slug)">{{ sub.name }}</button>
+                <button type="button" class="row" [class.on]="subcategory() === sub.slug" (click)="setSub(sub.slug)">{{ sub | categoryText }}</button>
               }
             </div>
           }
@@ -191,9 +192,9 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
               </label>
             }
             <div class="range">
-              <input #min type="number" min="0" placeholder="Min" [value]="minPrice() ?? ''" [attr.aria-label]="'catalog.minPrice' | translate" />
+              <input #min type="number" min="0" [placeholder]="'catalog.minPrice' | translate" [value]="minPrice() ?? ''" [attr.aria-label]="'catalog.minPrice' | translate" />
               <span>–</span>
-              <input #max type="number" min="0" placeholder="Max" [value]="maxPrice() ?? ''" [attr.aria-label]="'catalog.maxPrice' | translate" />
+              <input #max type="number" min="0" [placeholder]="'catalog.maxPrice' | translate" [value]="maxPrice() ?? ''" [attr.aria-label]="'catalog.maxPrice' | translate" />
               <button type="button" class="go" (click)="applyRange(min.value, max.value)" [attr.aria-label]="'catalog.applyPrice' | translate"><ui-icon name="arrow-right" [size]="14" /></button>
             </div>
           </div>
@@ -231,7 +232,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
         <div class="catalog-state error-state" role="alert">
           <div class="state-icon"><ui-icon name="alert-circle" [size]="30" /></div>
           <h2>{{ 'state.couldNotLoad' | translate }}</h2>
-          <p>{{ catalog.productError() }}</p>
+          <p>{{ catalog.productError() | translate }}</p>
           <button class="btn btn-primary" type="button" (click)="catalog.load()">
             {{ 'state.tryAgain' | translate }}
           </button>
@@ -270,7 +271,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
             <div class="recovery-chips">
               @for (cat of categories.slice(0, 6); track cat.slug) {
                 <button type="button" class="recovery-chip" (click)="setCategory(cat.slug)">
-                  <ui-icon [name]="cat.icon" [size]="12" /> {{ cat.name }}
+                  <ui-icon [name]="cat.icon" [size]="12" /> {{ cat | categoryText }}
                 </button>
               }
             </div>

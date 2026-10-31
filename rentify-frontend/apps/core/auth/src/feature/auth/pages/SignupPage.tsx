@@ -32,6 +32,8 @@ import {
   Bot,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
+import { LanguageToggle } from '../components/LanguageToggle';
 
 interface SignupFormData {
   name: string;
@@ -57,6 +59,7 @@ function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [inputMode, setInputMode] = useState<'email' | 'phone'>('email');
+  const { t, isKhmer } = useAuthLanguage();
 
   const {
     step,
@@ -100,12 +103,12 @@ function SignupPage() {
 
   const strengthLabel =
     passwordStrength < 25
-      ? { text: 'Weak', color: 'text-red-600', bar: 'bg-red-500' }
+      ? { text: t('signup.strength.weak'), color: 'text-red-600', bar: 'bg-red-500' }
       : passwordStrength < 50
-      ? { text: 'Fair', color: 'text-orange-600', bar: 'bg-orange-500' }
+      ? { text: t('signup.strength.fair'), color: 'text-orange-600', bar: 'bg-orange-500' }
       : passwordStrength < 75
-      ? { text: 'Good', color: 'text-yellow-600', bar: 'bg-yellow-500' }
-      : { text: 'Strong', color: 'text-green-600', bar: 'bg-green-500' };
+      ? { text: t('signup.strength.good'), color: 'text-yellow-600', bar: 'bg-yellow-500' }
+      : { text: t('signup.strength.strong'), color: 'text-green-600', bar: 'bg-green-500' };
 
   const switchMode = (mode: 'email' | 'phone') => {
     if (mode === inputMode) return;
@@ -126,39 +129,39 @@ function SignupPage() {
   };
 
   const steps = [
-    { label: 'Details', value: 'signup', icon: User },
+    { label: t('signup.step.details'), value: 'signup', icon: User },
     ...(verificationMethod === 'telegram'
-      ? [{ label: 'Telegram', value: 'link', icon: Bot }]
+      ? [{ label: t('signup.step.telegram'), value: 'link', icon: Bot }]
       : []),
-    { label: 'Verify', value: 'verify', icon: Shield },
+    { label: t('signup.step.verify'), value: 'verify', icon: Shield },
   ];
   const activeStepIndex = steps.findIndex((s) => s.value === step);
 
   const title = isWebsiteTemplate
-    ? 'Create customer account'
+    ? t('signup.title.customerAccount')
     : isMarketplace
-    ? 'Create your Rentify account'
-    : 'Create merchant account';
+    ? t('signup.title.rentifyAccount')
+    : t('signup.title.merchantAccount');
   const subtitle = isWebsiteTemplate
-    ? 'Sign up for a seamless shopping experience.'
+    ? t('signup.subtitle.customerAccount')
     : isMarketplace
-    ? 'One account for the marketplace and Rentify stores.'
-    : 'Set up your online store in minutes.';
+    ? t('signup.subtitle.rentifyAccount')
+    : t('signup.subtitle.merchantAccount');
 
   const stepHeading = {
     signup: { title, subtitle },
     link: {
-      title: 'Link Telegram',
-      subtitle: 'Connect Telegram to receive your verification code.',
+      title: t('signup.linkTitle'),
+      subtitle: t('signup.linkSubtitle'),
     },
     verify: {
-      title: 'Verify your account',
-      subtitle: 'Enter the 6-digit code we sent you.',
+      title: t('verify.accountTitle'),
+      subtitle: t('signup.verifySubtitle'),
     },
   }[step];
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6">
+    <div lang={isKhmer ? 'km' : 'en'} className={cn('relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6', isKhmer && 'font-khmer')}>
       <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border-0 bg-white shadow-2xl shadow-slate-200/70 lg:min-h-[680px] lg:grid-cols-[0.9fr_1.1fr]">
         <aside
           className={cn(
@@ -190,11 +193,10 @@ function SignupPage() {
               Rentify
             </p>
             <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight tracking-tight text-slate-900">
-              Start selling and shopping in minutes.
+              {t('signup.heroTitle')}
             </h1>
             <p className="mt-5 max-w-sm text-base leading-7 text-slate-500">
-              Create one account to manage your store, reach the marketplace,
-              and serve your customers.
+              {t('signup.heroSubtitle')}
             </p>
           </div>
 
@@ -237,6 +239,9 @@ function SignupPage() {
 
         <main className="flex items-center px-6 py-10 sm:px-12 sm:py-12 lg:px-16 lg:py-16">
           <div className="mx-auto w-full max-w-[460px]">
+            <div className="mb-6 flex justify-end">
+              <LanguageToggle />
+            </div>
             <div className="mb-8">
               <div
                 className={cn(
@@ -251,7 +256,7 @@ function SignupPage() {
                 )}
               </div>
               <p className="text-sm font-semibold text-blue-600 lg:hidden">
-                RENTIFY · Step {activeStepIndex + 1} of {steps.length}
+                RENTIFY · {t('signup.stepOf', { current: activeStepIndex + 1, total: steps.length })}
               </p>
               <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
                 {stepHeading.title}
@@ -264,7 +269,7 @@ function SignupPage() {
             {!domainValid && (
               <Alert variant="destructive" className="mb-5 rounded-xl">
                 <AlertDescription>
-                  The domain is not valid. Please check your website URL.
+                  {t('error.domainInvalid')}
                 </AlertDescription>
               </Alert>
             )}
@@ -279,22 +284,22 @@ function SignupPage() {
                     control={form.control}
                     name="name"
                     rules={{
-                      required: 'Name is required',
+                      required: t('error.nameRequired'),
                       minLength: {
                         value: 2,
-                        message: 'Name must be at least 2 characters',
+                        message: t('error.nameMin'),
                       },
                     }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-700 font-medium">
-                          Full name
+                          {t('signup.label.name')}
                         </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
                               {...field}
-                              placeholder="Enter your full name"
+                              placeholder={t('signup.placeholder.nameEnter')}
                               autoComplete="name"
                               className={cn(inputClass, 'pl-10')}
                             />
@@ -333,7 +338,7 @@ function SignupPage() {
                           ) : (
                             <Phone className="h-4 w-4" />
                           )}
-                          {mode === 'email' ? 'Email' : 'Phone'}
+                          {mode === 'email' ? t('auth.email') : t('auth.phoneShort')}
                         </span>
                       </button>
                     ))}
@@ -356,19 +361,19 @@ function SignupPage() {
                     rules={{
                       required:
                         inputMode === 'email'
-                          ? 'Email is required'
-                          : 'Phone number is required',
+                          ? t('error.emailRequired')
+                          : t('error.phoneRequired'),
                       validate: (value) =>
                         inputMode === 'email'
                           ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-                            'Please enter a valid email address'
+                            t('error.invalidEmail')
                           : validateCambodianPhone(toFullPhone(value)) ||
-                            'Please enter a valid Cambodian phone number',
+                            t('error.invalidPhone'),
                     }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-700 font-medium">
-                          {inputMode === 'email' ? 'Email address' : 'Phone number'}
+                          {inputMode === 'email' ? t('login.tab.email') : t('login.tab.phone')}
                         </FormLabel>
                         <FormControl>
                           {inputMode === 'email' ? (
@@ -377,7 +382,7 @@ function SignupPage() {
                                 {...field}
                                 type="email"
                                 autoComplete="email"
-                                placeholder="name@example.com"
+                                placeholder={t('auth.emailPlaceholder')}
                                 className={cn(inputClass, 'pl-10')}
                               />
                               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -414,16 +419,16 @@ function SignupPage() {
                     control={form.control}
                     name="password"
                     rules={{
-                      required: 'Password is required',
+                      required: t('error.passwordRequired'),
                       minLength: {
                         value: 8,
-                        message: 'Password must be at least 8 characters',
+                        message: t('error.passwordMin'),
                       },
                     }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-700 font-medium">
-                          Password
+                          {t('login.label.password')}
                         </FormLabel>
                         <FormControl>
                           <div className="relative">
@@ -431,7 +436,7 @@ function SignupPage() {
                               {...field}
                               type={showPassword ? 'text' : 'password'}
                               autoComplete="new-password"
-                              placeholder="At least 8 characters"
+                              placeholder={t('signup.tip.length')}
                               className={cn(inputClass, 'pl-10 pr-10')}
                             />
                             <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -439,7 +444,7 @@ function SignupPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-xl"
                               onClick={() => setShowPassword(!showPassword)}
                             >
@@ -480,14 +485,14 @@ function SignupPage() {
                     control={form.control}
                     name="confirmPassword"
                     rules={{
-                      required: 'Please confirm your password',
+                      required: t('error.confirmRequired'),
                       validate: (value) =>
-                        value === password || 'Passwords do not match',
+                        value === password || t('error.passwordMatch'),
                     }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-700 font-medium">
-                          Confirm password
+                          {t('signup.label.confirmPassword')}
                         </FormLabel>
                         <FormControl>
                           <div className="relative">
@@ -495,7 +500,7 @@ function SignupPage() {
                               {...field}
                               type={showConfirmPassword ? 'text' : 'password'}
                               autoComplete="new-password"
-                              placeholder="Re-enter your password"
+                              placeholder={t('signup.placeholder.confirmPassword')}
                               className={cn(inputClass, 'pl-10 pr-10')}
                             />
                             <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -503,7 +508,7 @@ function SignupPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                              aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-xl"
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             >
@@ -537,11 +542,11 @@ function SignupPage() {
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Creating account...
+                        {t('action.signingUp')}
                       </>
                     ) : (
                       <>
-                        Create account
+                        {t('action.signUp')}
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
                       </>
                     )}
@@ -549,14 +554,14 @@ function SignupPage() {
 
                   <div className="text-center pt-4 border-t border-slate-200">
                     <p className="text-sm text-slate-600">
-                      Already have an account?{' '}
+                      {t('signup.hasAccount')}{' '}
                       <Button
                         type="button"
                         variant="link"
                         className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-700"
                         onClick={() => navigate({ pathname: '/', search: location.search })}
                       >
-                        Sign in
+                        {t('action.signIn')}
                       </Button>
                     </p>
                   </div>
@@ -618,6 +623,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
   loading = false,
   botLink = 'https://t.me/rentify_customer_bot',
 }) => {
+  const { t } = useAuthLanguage();
   return (
     <div className="space-y-6">
       <Button
@@ -626,18 +632,18 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
         className="p-0 h-auto text-slate-600 hover:text-slate-900"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
+        {t('action.back')}
       </Button>
 
       <Alert className="rounded-xl bg-blue-50 border-blue-200">
         <Bot className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
-          Telegram verification required for secure authentication
+          {t('signup.telegramRequired')}
         </AlertDescription>
       </Alert>
 
       <div className="space-y-4">
-        <h3 className="font-semibold text-lg">Link your Telegram account</h3>
+        <h3 className="font-semibold text-lg">{t('signup.linkHeading')}</h3>
 
         <div className="space-y-3">
           <div className="flex items-start gap-3">
@@ -645,7 +651,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
               1
             </div>
             <p className="text-sm">
-              <strong>Open Telegram</strong> and search for{' '}
+              <strong>{t('signup.linkStep1Strong')}</strong> {t('signup.linkStep1')}{' '}
               <a
                 href={botLink}
                 target="_blank"
@@ -662,8 +668,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
               2
             </div>
             <p className="text-sm">
-              <strong>Start a chat</strong> with the bot by clicking the "Start"
-              button
+              <strong>{t('signup.linkStep2Strong')}</strong> {t('signup.linkStep2')}
             </p>
           </div>
 
@@ -672,7 +677,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
               3
             </div>
             <p className="text-sm">
-              <strong>Share your phone number</strong> when prompted by the bot
+              <strong>{t('signup.linkStep3Strong')}</strong> {t('signup.linkStep3')}
             </p>
           </div>
         </div>
@@ -684,7 +689,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
           className="w-full h-12 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold"
         >
           <Bot className="w-4 h-4 mr-2" />
-          Open Telegram Bot
+          {t('signup.openBot')}
         </Button>
 
         <Button
@@ -698,7 +703,7 @@ const TelegramLinkStep: React.FC<TelegramLinkStepProps> = ({
           ) : (
             <CheckCircle className="w-4 h-4 mr-2" />
           )}
-          I've Linked My Telegram
+          {t('signup.linkedConfirm')}
         </Button>
       </div>
     </div>
@@ -729,6 +734,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
   onVerify,
   onResend,
 }) => {
+  const { t } = useAuthLanguage();
   const [resendTime, setResendTime] = useState(0);
 
   const handleResend = () => {
@@ -752,7 +758,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
         className="p-0 h-auto text-slate-600 hover:text-slate-900"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
+        {t('action.back')}
       </Button>
 
       <Alert className="rounded-xl bg-blue-50 border-blue-200">
@@ -763,15 +769,15 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
         )}
         <AlertDescription className="text-blue-800">
           {verificationMethod === 'email'
-            ? `We sent a 6-digit verification code to ${email}`
-            : `Check your Telegram for the verification code`}
+            ? t('verify.subtitle', { destination: email })
+            : t('signup.checkTelegram')}
         </AlertDescription>
       </Alert>
 
       <div className="space-y-4">
         <div>
           <label className="text-sm font-medium text-slate-700">
-            Verification Code
+            {t('verify.codeLabel')}
           </label>
           <Input
             value={otp}
@@ -798,13 +804,13 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
           ) : (
-            'Verify Account'
+            t('signup.verifyAccount')
           )}
         </Button>
 
         <div className="text-center">
           <p className="text-sm text-slate-600 mb-2">
-            Didn't receive the code?
+            {t('verify.didNotReceive')}
           </p>
           <Button
             variant="link"
@@ -812,7 +818,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
             disabled={loading || resendTime > 0}
             className="text-blue-600"
           >
-            {resendTime > 0 ? `Resend in ${resendTime}s` : 'Resend Code'}
+            {resendTime > 0 ? t('verify.resendIn', { seconds: resendTime }) : t('action.resendCode')}
           </Button>
         </div>
       </div>

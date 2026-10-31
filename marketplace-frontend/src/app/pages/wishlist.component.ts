@@ -7,10 +7,12 @@ import { NavbarComponent } from '../components/shared/layout/navbar/navbar.compo
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { TranslateService } from '../core/i18n/translate.service';
 
 @Component({
   selector: 'app-wishlist',
-  imports: [
+  imports: [TranslatePipe,
     RouterLink,
     NavbarComponent,
     FooterComponent,
@@ -24,7 +26,7 @@ import { ProductCardComponent } from '../components/user/catalog/product-card/pr
       <section class="container wishlist">
         <div class="head-row">
           <div>
-            <h1>Your wishlist</h1>
+            <h1>{{ 'wishlist.title' | translate }}</h1>
             <p class="sub">
               {{ wishlist.count() }} saved
               {{ wishlist.count() === 1 ? 'item' : 'items' }}
@@ -33,10 +35,10 @@ import { ProductCardComponent } from '../components/user/catalog/product-card/pr
           </div>
           <div class="head-actions">
             <button class="btn btn-outline btn-sm" (click)="moveAllToCart()">
-              <ui-icon name="cart" [size]="14" /> Move all to cart
+              <ui-icon name="cart" [size]="14" /> {{ 'wishlist.moveAllToCart' | translate }}
             </button>
             <button class="btn btn-ghost btn-sm" (click)="clearWishlist()">
-              Clear wishlist
+              {{ 'wishlist.clear' | translate }}
             </button>
           </div>
         </div>
@@ -51,7 +53,7 @@ import { ProductCardComponent } from '../components/user/catalog/product-card/pr
           <p class="feedback" role="status">
             <ui-icon name="check-circle" [size]="14" />
             {{ moved }} {{ moved === 1 ? 'item' : 'items' }} moved to your cart.
-            <a routerLink="/cart">View cart</a>
+            <a routerLink="/cart">{{ 'product.viewCart' | translate }}</a>
           </p>
         }
       </section>
@@ -60,12 +62,12 @@ import { ProductCardComponent } from '../components/user/catalog/product-card/pr
         <div class="empty-image img-placeholder">
           <ui-icon name="heart" [size]="40" />
         </div>
-        <h1>Your wishlist is empty</h1>
+        <h1>{{ 'wishlist.emptyTitle' | translate }}</h1>
         <p>
-          Tap the heart on any product to save it here for later.
+          {{ 'wishlist.emptyBody' | translate }}
         </p>
         <button class="btn btn-primary btn-lg" routerLink="/products">
-          Browse Products
+          {{ 'wishlist.browseProducts' | translate }}
         </button>
       </section>
     }
@@ -160,13 +162,14 @@ import { ProductCardComponent } from '../components/user/catalog/product-card/pr
   ],
 })
 export class WishlistComponent {
+  private readonly translate = inject(TranslateService);
   protected readonly wishlist = inject(WishlistService);
   private readonly cart = inject(CartService);
 
   protected readonly movedCount = signal(0);
 
   protected clearWishlist(): void {
-    if (window.confirm('Remove every saved item from this device?')) {
+    if (window.confirm(this.translate.t('wishlist.confirmClear'))) {
       this.wishlist.clear();
     }
   }

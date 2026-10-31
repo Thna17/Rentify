@@ -261,6 +261,23 @@ into `platform-architecture.md` and remove stale notes.
    only say "no marketplace fee recorded". Persist the per-order commission and
    expose it in `orderProjection.totals` before any fee is charged, so the
    marketplace view can show gross, fee and net per order.
+7. (2026-10-29) ABA PayWay KHQR was ported from KhmerCraft for **local testing
+   only** (`ecommerce-server/modules/payments/aba`, marketplace
+   `/checkout/aba/:orderId`). It is inert unless `PAYWAY_ENABLED=true`; with the
+   flag off checkout rejects `ABA_PAYWAY` and stays COD-only, so DEC-026 is
+   unchanged. The existing KHQR/Bakong strategy in `modules/payments` is left
+   frozen, not removed. Before any buyer sees it: a decision replacing DEC-026,
+   seller-owned settlement (no platform holding of buyer funds, per DEC-027's
+   principle), refund handling for PayWay orders, and a public callback URL.
+   Payment is only marked paid after Commerce asks ABA (`check-transaction-2`);
+   the browser return and the webhook payload are never trusted.
+
+- (Open, 2026-10-29) Per-channel product price. Merchants asked to set a
+   different price on the marketplace and on their online store. Today a
+   product has one `price` (and one stock count) used by every channel, and the
+   merchant UI says so. A channel price needs a contract first: where the
+   override lives (product vs. SKU), which price POS uses, how carts/orders
+   snapshot it, and how compare-at prices behave. No UI ships until then.
 
 ## Documentation practice
 
@@ -720,3 +737,11 @@ These are **proposed**, not approved design decisions. `@rentify/design-tokens` 
   selectable template. Deploy the Core and storefront changes together and
   apply the migration through the normal release process before selecting it.
   The template illustration in the picker is illustrative, not a live demo.
+
+## Subscription provider merge (2026-10-31)
+
+**Current:** Core preserves the explicitly enabled CutLuy subscription flow. When
+CutLuy is disabled, plan payments use ABA PayWay by default, with
+`PAYMENT_PROVIDER=khqr` selecting the direct Bakong fallback. Status checks use
+the provider recorded on each payment. This does not change marketplace checkout
+release gates.

@@ -118,7 +118,9 @@ module.exports = {
   checkout: wrap(async (req, res) => {
     const storeOrders = req.body?.storeOrders || req.body?.stores;
     const storeCount = Array.isArray(storeOrders) ? storeOrders.length : 1;
-    await recordMetric('checkout.started', { storeId: req.body?.storeId || null,
+    // The analytics catalog only knows COD; test-only ABA PayWay checkouts are not counted
+    const countMetric = req.body?.paymentMethod !== 'ABA_PAYWAY';
+    if (countMetric) await recordMetric('checkout.started', { storeId: req.body?.storeId || null,
       properties: { channel: 'marketplace', paymentMethod: 'cod' }, measures: { storeCount } });
     try {
       if (Array.isArray(storeOrders)) {
@@ -129,6 +131,7 @@ module.exports = {
           customerInfo: req.body.customerInfo,
           shippingInfo: req.body.shippingInfo,
           atomic: req.body.atomic === true,
+          paymentMethod: req.body.paymentMethod,
         });
         return res.status(201).json(result);
       }
@@ -137,11 +140,12 @@ module.exports = {
         checkoutKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
         expectedTotalAmount: req.body.expectedTotalAmount,
         customerInfo: req.body.customerInfo, shippingInfo: req.body.shippingInfo,
+        paymentMethod: req.body.paymentMethod,
       }) });
     } catch (error) {
       const failureClass = error.statusCode === 409 ? 'stock_conflict'
         : error.statusCode && error.statusCode < 500 ? 'validation' : 'server';
-      await recordMetric('checkout.failed', { storeId: req.body?.storeId || null,
+      if (countMetric) await recordMetric('checkout.failed', { storeId: req.body?.storeId || null,
         properties: { channel: 'marketplace', failureClass }, measures: { storeCount } });
       throw error;
     }

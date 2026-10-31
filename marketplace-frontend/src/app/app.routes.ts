@@ -85,6 +85,14 @@ export const routes: Routes = [
     title: 'Checkout | Rentify Marketplace',
   },
   {
+    // ABA PayWay KHQR (test-only; the server rejects it unless PAYWAY_ENABLED=true)
+    path: 'checkout/aba/:orderId',
+    canActivate: [buyerGuard],
+    loadComponent: () =>
+      import('./pages/aba-payment.component').then((m) => m.AbaPaymentComponent),
+    title: 'Pay with ABA | Rentify Marketplace',
+  },
+  {
     path: 'checkout/pay/:orderNumber',
     pathMatch: 'full',
     redirectTo: 'checkout',

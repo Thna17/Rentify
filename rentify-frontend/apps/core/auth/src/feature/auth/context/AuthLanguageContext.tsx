@@ -1,4 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, type PropsWithChildren } from 'react';
+import {
+  applyDocumentLanguage,
+  formatDate,
+  formatNumber,
+  interpolate,
+  readLanguagePreference,
+  resolveMessage,
+  subscribeLanguagePreference,
+  writeLanguagePreference,
+} from '@rentify/utils/i18n/languagePreference';
 
 export type Language = 'EN' | 'KH';
 
@@ -8,6 +18,8 @@ export interface AuthLanguageContextValue {
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
+  formatDate: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) => string;
 }
 
 const translations: Record<Language, Record<string, string>> = {
@@ -170,6 +182,91 @@ const translations: Record<Language, Record<string, string>> = {
     // Security & Footer
     'footer.security': 'Bank-grade 256-bit encryption • KHQR Bakong compatible • PCI DSS compliant',
     'footer.copyright': '© 2026 Rentify. All rights reserved.',
+    'auth.searchCountry': 'Search country...',
+    'auth.noCountryFound': 'No country found',
+    'auth.suggestions': 'Suggestions:',
+    'auth.localNumberHint': 'Enter local number (e.g. 012 345 678 or 096 984 9988)',
+    'verify.newCodeSent': 'A new verification code has been sent',
+    'auth.codeSentTo': 'Code sent to',
+    'auth.change': 'Change',
+    'verify.pasteHint': 'Type or paste the 6-digit code directly',
+    'verify.smsDelayed': 'SMS delayed or not received?',
+    'reset.successTitle': 'Password Reset Successfully!',
+    'auth.resettingFor': 'Resetting for:',
+    'reset.codeLabel': '6-Digit Verification Code',
+    'error.otpAllDigits': 'Please enter all 6 digits',
+    'error.passwordMin': 'Password must be at least 8 characters',
+    'error.confirmRequired': 'Please confirm your password',
+    'verify.enterCodeHint': 'Enter the 6-digit code to verify your account.',
+    'lang.label': 'Language',
+    'brand.storefront': 'Storefront',
+    'brand.workspace': 'Rentify workspace',
+    'login.subtitle.workspace': 'Sign in to continue to your Rentify workspace.',
+    'login.continueGoogle': 'Continue with Google',
+    'login.success': 'Signed in. Taking you to your account…',
+    'auth.hidePassword': 'Hide password',
+    'auth.showPassword': 'Show password',
+    'auth.selectCountry': 'Select country code',
+    'auth.clearInput': 'Clear input',
+    'badge.storeNamed': '{storeName} store',
+    'badge.storeCustomer': 'Store customer',
+    'error.contactRequired': 'Email or phone number is required',
+    'error.notVerified': 'Your account is not verified yet. Verify it to sign in.',
+    'error.telegramLogin': 'We couldn’t sign you in with Telegram. Please try again.',
+    'error.googleLogin': 'We couldn’t sign you in with Google. Please try again.',
+    'error.resetSendFailed': 'We couldn’t send reset instructions. Please try again.',
+    'error.resetFailed': 'We couldn’t reset your password. Check your verification code and try again.',
+    'error.nameRequired': 'Please enter your full name',
+    'error.nameMin': 'Name must be at least 2 characters',
+    'error.emailRequired': 'Email is required',
+    'error.phoneRequired': 'Phone number is required',
+    'error.signupFailed': 'We couldn’t create your account. Please try again.',
+    'error.phoneTaken': 'This phone number is already registered. Sign in or use another number.',
+    'error.emailTaken': 'This email address is already registered. Sign in or use another email.',
+    'error.signupDataMissing': 'Your sign-up details were lost. Please start again.',
+    'error.otpSendTelegram': 'We couldn’t send the code by Telegram. Check that your Telegram is linked.',
+    'error.otpSendEmail': 'We couldn’t send the code by email. Please try again.',
+    'error.domainInvalid': 'This website address isn’t valid. Please check the URL.',
+    'forgot.sentEmail': 'Reset instructions were sent to your email.',
+    'forgot.sentPhone': 'Reset instructions were sent to your phone.',
+    'signup.telegramLinked': 'Telegram linked.',
+    'signup.linkTelegramPrompt': 'Link your Telegram account to receive your code.',
+    'signup.otpSentEmail': 'Code sent. Please check your email.',
+    'signup.step.details': 'Details',
+    'signup.step.telegram': 'Telegram',
+    'signup.step.verify': 'Verify',
+    'signup.title.customerAccount': 'Create customer account',
+    'signup.title.rentifyAccount': 'Create your Rentify account',
+    'signup.title.merchantAccount': 'Create merchant account',
+    'signup.subtitle.customerAccount': 'Sign up for a smooth shopping experience.',
+    'signup.subtitle.rentifyAccount': 'One account for the marketplace and Rentify stores.',
+    'signup.subtitle.merchantAccount': 'Set up your online store in minutes.',
+    'signup.linkTitle': 'Link Telegram',
+    'signup.linkSubtitle': 'Connect Telegram to receive your verification code.',
+    'signup.verifySubtitle': 'Enter the 6-digit code we sent you.',
+    'signup.heroTitle': 'Start selling and shopping in minutes.',
+    'signup.heroSubtitle': 'Create one account to manage your store, reach the marketplace, and serve your customers.',
+    'signup.stepOf': 'Step {current} of {total}',
+    'signup.placeholder.nameEnter': 'Enter your full name',
+    'signup.telegramRequired': 'Telegram verification is required to secure your account',
+    'signup.linkHeading': 'Link your Telegram account',
+    'signup.linkStep1Strong': 'Open Telegram',
+    'signup.linkStep1': 'and search for',
+    'signup.linkStep2Strong': 'Start a chat',
+    'signup.linkStep2': 'with the bot by tapping “Start”',
+    'signup.linkStep3Strong': 'Share your phone number',
+    'signup.linkStep3': 'when the bot asks',
+    'signup.openBot': 'Open Telegram bot',
+    'signup.linkedConfirm': 'I’ve linked my Telegram',
+    'signup.checkTelegram': 'Check Telegram for your verification code',
+    'signup.verifyAccount': 'Verify account',
+    'verify.codeLabel': 'Verification code',
+    'verify.accountTitle': 'Verify your account',
+    'verify.resent': 'A new code is on its way.',
+    'verify.successRedirect': 'Verified. Taking you to your account…',
+    'action.back': 'Back',
+    'auth.phoneShort': 'Phone',
+    'forgot.resendCode': 'Resend code',
   },
   KH: {
     'workspace.title': "អ្វីៗដែលអាជីវកម្មរបស់អ្នកត្រូវការ នៅក្នុងកន្លែងតែមួយ។",
@@ -328,68 +425,134 @@ const translations: Record<Language, Record<string, string>> = {
     // Security & Footer
     'footer.security': 'ប្រព័ន្ធសុវត្ថិភាពអ៊ិនគ្រីប 256-bit • គាំទ្រ KHQR បាគង • អនុលោមតាម PCI DSS',
     'footer.copyright': '© ២០២៦ Rentify. រក្សាសិទ្ធិគ្រប់យ៉ាង។',
+    'auth.searchCountry': 'ស្វែងរកប្រទេស...',
+    'auth.noCountryFound': 'រកមិនឃើញប្រទេស',
+    'auth.suggestions': 'ជ្រើសរើសដែន៖',
+    'auth.localNumberHint': 'បញ្ចូលលេខក្នុងស្រុក (ឧ. 012 345 678 ឬ 096 984 9988)',
+    'verify.newCodeSent': 'លេខកូដថ្មីត្រូវបានផ្ញើជូនហើយ',
+    'auth.codeSentTo': 'លេខកូដត្រូវបានផ្ញើទៅ',
+    'auth.change': 'ប្តូរ',
+    'verify.pasteHint': 'អ្នកអាចចម្លង ឬវាយបញ្ចូលលេខកូដ ៦ ខ្ទង់ដោយផ្ទាល់',
+    'verify.smsDelayed': 'មិនទាន់ទទួលបានសារ SMS ឬយឺតយ៉ាវ?',
+    'reset.successTitle': 'ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ!',
+    'auth.resettingFor': 'កំណត់ពាក្យសម្ងាត់សម្រាប់៖',
+    'reset.codeLabel': 'លេខកូដផ្ទៀងផ្ទាត់ ៦ ខ្ទង់',
+    'error.otpAllDigits': 'សូមបញ្ចូលលេខកូដទាំង ៦ ខ្ទង់',
+    'error.passwordMin': 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច ៨ តួអក្សរ',
+    'error.confirmRequired': 'សូមបញ្ជាក់ពាក្យសម្ងាត់',
+    'verify.enterCodeHint': 'សូមបញ្ចូលលេខកូដសម្ងាត់ ៦ ខ្ទង់ដើម្បីបញ្ចប់ការផ្ទៀងផ្ទាត់',
+    'lang.label': 'ភាសា',
+    'brand.storefront': 'ហាងអនឡាញ',
+    'brand.workspace': 'កន្លែងធ្វើការ Rentify',
+    'login.subtitle.workspace': 'ចូលគណនីដើម្បីបន្តទៅកន្លែងធ្វើការ Rentify របស់អ្នក។',
+    'login.continueGoogle': 'បន្តជាមួយ Google',
+    'login.success': 'បានចូលគណនីហើយ។ កំពុងនាំអ្នកទៅគណនីរបស់អ្នក…',
+    'auth.hidePassword': 'លាក់ពាក្យសម្ងាត់',
+    'auth.showPassword': 'បង្ហាញពាក្យសម្ងាត់',
+    'auth.selectCountry': 'ជ្រើសរើសលេខកូដប្រទេស',
+    'auth.clearInput': 'សម្អាតការបញ្ចូល',
+    'badge.storeNamed': 'ហាង {storeName}',
+    'badge.storeCustomer': 'អតិថិជនហាង',
+    'error.contactRequired': 'សូមបញ្ចូលអ៊ីមែល ឬលេខទូរស័ព្ទ',
+    'error.notVerified': 'គណនីរបស់អ្នកមិនទាន់បានផ្ទៀងផ្ទាត់នៅឡើយទេ។ សូមផ្ទៀងផ្ទាត់ដើម្បីចូលគណនី។',
+    'error.telegramLogin': 'មិនអាចចូលគណនីតាម Telegram បានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'error.googleLogin': 'មិនអាចចូលគណនីតាម Google បានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'error.resetSendFailed': 'មិនអាចផ្ញើការណែនាំកំណត់ពាក្យសម្ងាត់ឡើងវិញបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'error.resetFailed': 'មិនអាចកំណត់ពាក្យសម្ងាត់ឡើងវិញបានទេ។ សូមពិនិត្យលេខកូដផ្ទៀងផ្ទាត់ ហើយព្យាយាមម្តងទៀត។',
+    'error.nameRequired': 'សូមបញ្ចូលឈ្មោះពេញរបស់អ្នក',
+    'error.nameMin': 'ឈ្មោះត្រូវមានយ៉ាងតិច ២ តួអក្សរ',
+    'error.emailRequired': 'សូមបញ្ចូលអ៊ីមែល',
+    'error.phoneRequired': 'សូមបញ្ចូលលេខទូរស័ព្ទ',
+    'error.signupFailed': 'មិនអាចបង្កើតគណនីរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'error.phoneTaken': 'លេខទូរស័ព្ទនេះបានចុះឈ្មោះរួចហើយ។ សូមចូលគណនី ឬប្រើលេខផ្សេង។',
+    'error.emailTaken': 'អ៊ីមែលនេះបានចុះឈ្មោះរួចហើយ។ សូមចូលគណនី ឬប្រើអ៊ីមែលផ្សេង។',
+    'error.signupDataMissing': 'ព័ត៌មានចុះឈ្មោះរបស់អ្នកបានបាត់។ សូមចាប់ផ្តើមម្តងទៀត។',
+    'error.otpSendTelegram': 'មិនអាចផ្ញើលេខកូដតាម Telegram បានទេ។ សូមពិនិត្យថា Telegram របស់អ្នកបានភ្ជាប់ហើយ។',
+    'error.otpSendEmail': 'មិនអាចផ្ញើលេខកូដតាមអ៊ីមែលបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'error.domainInvalid': 'អាសយដ្ឋានគេហទំព័រនេះមិនត្រឹមត្រូវទេ។ សូមពិនិត្យ URL ម្តងទៀត។',
+    'forgot.sentEmail': 'ការណែនាំកំណត់ពាក្យសម្ងាត់ឡើងវិញត្រូវបានផ្ញើទៅអ៊ីមែលរបស់អ្នកហើយ។',
+    'forgot.sentPhone': 'ការណែនាំកំណត់ពាក្យសម្ងាត់ឡើងវិញត្រូវបានផ្ញើទៅទូរស័ព្ទរបស់អ្នកហើយ។',
+    'signup.telegramLinked': 'បានភ្ជាប់ Telegram ហើយ។',
+    'signup.linkTelegramPrompt': 'សូមភ្ជាប់គណនី Telegram របស់អ្នកដើម្បីទទួលលេខកូដ។',
+    'signup.otpSentEmail': 'បានផ្ញើលេខកូដហើយ។ សូមពិនិត្យអ៊ីមែលរបស់អ្នក។',
+    'signup.step.details': 'ព័ត៌មាន',
+    'signup.step.telegram': 'Telegram',
+    'signup.step.verify': 'ផ្ទៀងផ្ទាត់',
+    'signup.title.customerAccount': 'បង្កើតគណនីអតិថិជន',
+    'signup.title.rentifyAccount': 'បង្កើតគណនី Rentify របស់អ្នក',
+    'signup.title.merchantAccount': 'បង្កើតគណនីអ្នកលក់',
+    'signup.subtitle.customerAccount': 'ចុះឈ្មោះដើម្បីទិញទំនិញបានយ៉ាងងាយស្រួល។',
+    'signup.subtitle.rentifyAccount': 'គណនីតែមួយសម្រាប់ទីផ្សារ និងហាងនានានៅលើ Rentify។',
+    'signup.subtitle.merchantAccount': 'រៀបចំហាងអនឡាញរបស់អ្នកក្នុងរយៈពេលប៉ុន្មាននាទី។',
+    'signup.linkTitle': 'ភ្ជាប់ Telegram',
+    'signup.linkSubtitle': 'ភ្ជាប់ Telegram ដើម្បីទទួលលេខកូដផ្ទៀងផ្ទាត់។',
+    'signup.verifySubtitle': 'បញ្ចូលលេខកូដ ៦ ខ្ទង់ដែលយើងបានផ្ញើជូនអ្នក។',
+    'signup.heroTitle': 'ចាប់ផ្តើមលក់ និងទិញទំនិញក្នុងរយៈពេលប៉ុន្មាននាទី។',
+    'signup.heroSubtitle': 'បង្កើតគណនីតែមួយដើម្បីគ្រប់គ្រងហាង ចូលទីផ្សារ និងបម្រើអតិថិជនរបស់អ្នក។',
+    'signup.stepOf': 'ជំហាន {current} នៃ {total}',
+    'signup.placeholder.nameEnter': 'បញ្ចូលឈ្មោះពេញរបស់អ្នក',
+    'signup.telegramRequired': 'ត្រូវផ្ទៀងផ្ទាត់តាម Telegram ដើម្បីការពារគណនីរបស់អ្នក',
+    'signup.linkHeading': 'ភ្ជាប់គណនី Telegram របស់អ្នក',
+    'signup.linkStep1Strong': 'បើក Telegram',
+    'signup.linkStep1': 'ហើយស្វែងរក',
+    'signup.linkStep2Strong': 'ចាប់ផ្តើមជជែក',
+    'signup.linkStep2': 'ជាមួយបូតដោយចុច “Start”',
+    'signup.linkStep3Strong': 'ចែករំលែកលេខទូរស័ព្ទរបស់អ្នក',
+    'signup.linkStep3': 'នៅពេលបូតស្នើសុំ',
+    'signup.openBot': 'បើកបូត Telegram',
+    'signup.linkedConfirm': 'ខ្ញុំបានភ្ជាប់ Telegram រួចហើយ',
+    'signup.checkTelegram': 'សូមពិនិត្យ Telegram ដើម្បីយកលេខកូដផ្ទៀងផ្ទាត់',
+    'signup.verifyAccount': 'ផ្ទៀងផ្ទាត់គណនី',
+    'verify.codeLabel': 'លេខកូដផ្ទៀងផ្ទាត់',
+    'verify.accountTitle': 'ផ្ទៀងផ្ទាត់គណនីរបស់អ្នក',
+    'verify.resent': 'លេខកូដថ្មីកំពុងផ្ញើទៅអ្នក។',
+    'verify.successRedirect': 'បានផ្ទៀងផ្ទាត់ហើយ។ កំពុងនាំអ្នកទៅគណនីរបស់អ្នក…',
+    'action.back': 'ត្រឡប់ក្រោយ',
+    'auth.phoneShort': 'ទូរស័ព្ទ',
+    'forgot.resendCode': 'ផ្ញើលេខកូដម្តងទៀត',
+    'verify.success': 'បានផ្ទៀងផ្ទាត់គណនីហើយ។ កំពុងបញ្ជូនបន្ត…',
   },
 };
+
+const catalogs = { en: translations.EN, km: translations.KH };
 
 const AuthLanguageContext = createContext<AuthLanguageContextValue | undefined>(undefined);
 
 export const AuthLanguageProvider: React.FC<PropsWithChildren> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('rentify_auth_lang');
-      if (saved === 'KH' || saved === 'EN') return saved;
-      // Auto-detect Khmer browser preference
-      if (typeof navigator !== 'undefined' && navigator.language && /^k[mh]/i.test(navigator.language)) {
-        return 'KH';
-      }
-    }
-    return 'EN';
-  });
+  const [lang, setLang] = useState<'en' | 'km'>(readLanguagePreference);
+  const language: Language = lang === 'km' ? 'KH' : 'EN';
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('rentify_auth_lang', lang);
-      document.documentElement.lang = lang === 'KH' ? 'km' : 'en';
-      if (lang === 'KH') {
-        document.body.classList.add('font-khmer');
-      } else {
-        document.body.classList.remove('font-khmer');
-      }
-    }
+  useEffect(() => {
+    applyDocumentLanguage(lang);
+    document.body.classList.toggle('font-khmer', lang === 'km');
+  }, [lang]);
+
+  useEffect(() => subscribeLanguagePreference(setLang), []);
+
+  const setLanguage = (next: Language) => {
+    setLang(writeLanguagePreference(next));
   };
 
   const toggleLanguage = () => {
     setLanguage(language === 'EN' ? 'KH' : 'EN');
   };
 
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.lang = language === 'KH' ? 'km' : 'en';
-      if (language === 'KH') {
-        document.body.classList.add('font-khmer');
-      } else {
-        document.body.classList.remove('font-khmer');
-      }
-    }
-  }, [language]);
-
   const t = (key: string, params?: Record<string, string | number>): string => {
-    const dict = translations[language] || translations.EN;
-    let template = dict[key] || translations.EN[key] || key;
-
-    if (params) {
-      Object.entries(params).forEach(([paramKey, val]) => {
-        template = template.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(val));
-      });
-    }
-
-    return template;
+    const message = resolveMessage(catalogs, lang, key, params);
+    return message === undefined ? key : interpolate(message, params);
   };
 
   const value = useMemo(
-    () => ({ language, isKhmer: language === 'KH', setLanguage, toggleLanguage, t }),
-    [language]
+    () => ({
+      language,
+      isKhmer: language === 'KH',
+      setLanguage,
+      toggleLanguage,
+      t,
+      formatNumber: (n: number, options?: Intl.NumberFormatOptions) => formatNumber(lang, n, options),
+      formatDate: (d: Date | string | number, options?: Intl.DateTimeFormatOptions) => formatDate(lang, d, options),
+    }),
+    [lang]
   );
 
   return (

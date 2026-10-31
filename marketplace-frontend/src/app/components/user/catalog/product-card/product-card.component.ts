@@ -12,6 +12,7 @@ import { FlyToCartService } from '../../../../core/cart/fly-to-cart.service';
 import { WishlistService } from '../../../../core/wishlist/wishlist.service';
 import { Product } from '../../../../core/catalog/catalog.models';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 /**
  * The single product card used on the homepage, products page, wishlist,
@@ -23,7 +24,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
  */
 @Component({
   selector: 'app-product-card',
-  imports: [RouterLink, IconComponent],
+  imports: [TranslatePipe, RouterLink, IconComponent],
   template: `
     <article
       class="product-card card card-hover"
@@ -44,7 +45,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         }
 
         @if (product().status === 'out-of-stock') {
-          <span class="stock-badge badge badge-neutral">Out of stock</span>
+          <span class="stock-badge badge badge-neutral">{{ 'catalog.outOfStock' | translate }}</span>
         } @else if (product().status === 'low-stock') {
           <span class="stock-badge badge badge-low-stock"
             >Only {{ product().stock }} left</span
@@ -222,6 +223,19 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         position: relative;
         overflow: hidden;
         background: var(--color-bg-alt);
+      }
+      /* Fix the image area before the image loads, so a two-row rail never
+         sizes its rows from a portrait upload's intrinsic height. */
+      .product-card:not(.editorial) .thumb-wrap {
+        aspect-ratio: 1;
+        flex: 0 0 auto;
+      }
+      .product-card:not(.editorial) .product-thumb {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
       }
       /* A packshot carries its own background — usually white — and the card's
          cream showed as a hard edge around it wherever the photo did not reach.
@@ -424,6 +438,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
       }
       .price-row {
         display: flex;
+        gap: 8px;
         align-items: center;
         justify-content: space-between;
         margin-top: auto;
@@ -680,11 +695,25 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         border-radius: 999px !important; font-size: 11px !important; padding: 2px 8px !important;
       }
       :host:not(:host-context(.product-list)) .cart-add {
-        width: 34px !important; height: 34px !important; min-width: 0 !important; padding: 0 !important;
+        width: 44px !important; height: 44px !important; min-width: 44px !important; flex: 0 0 44px; padding: 0 !important;
         border-radius: 999px !important; background: var(--color-text) !important; justify-content: center;
       }
       :host:not(:host-context(.product-list)) .cart-add:hover:not(:disabled) { background: var(--color-accent) !important; }
       :host:not(:host-context(.product-list)) .cart-label { display: none !important; }
+      .prices { min-width: 0; flex-wrap: wrap; }
+      .price, .was { white-space: nowrap; }
+      .cart-add {
+        flex: 0 0 44px;
+        min-width: 44px !important;
+        width: 44px !important;
+        height: 44px !important;
+      }
+      @media (max-width: 640px) {
+        .prices { flex-direction: column; align-items: flex-start; gap: 2px; }
+        :host-context(.product-list) .cart-add {
+          min-width: 44px; width: 44px; height: 44px; flex: 0 0 44px;
+        }
+      }
       .wish-btn { opacity: 0; transition: opacity 180ms ease; }
       .product-card:hover .wish-btn, .wish-btn.saved, .wish-btn:focus-visible { opacity: 1; }
       @media (hover: none) { .wish-btn { opacity: 1; } }

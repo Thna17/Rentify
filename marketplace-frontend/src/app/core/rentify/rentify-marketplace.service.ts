@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { PaymentMethod } from '../api/api.models';
 
 
 const isLocal = () =>
@@ -36,11 +37,14 @@ export interface RentifyProduct {
 }
 
 export interface RentifyStore {
+  marketplaceColor?: string;
   id: string;
   name: string;
   slug: string;
   primaryCategory: string;
   logoUrl?: string | null;
+  /** The store's own live website, when it has one. */
+  websiteUrl?: string | null;
 }
 
 export interface BuyerSession {
@@ -115,6 +119,30 @@ export interface MarketplaceOrder {
   createdAt?: string;
   items: { productId: string; name: string; quantity: number; total: string }[];
   payment: { status: string; amountDue: string; collectedAmount: string; refundedAmount: string } | null;
+}
+
+/** KHQR returned by Commerce for an ABA PayWay order (test-only). */
+export interface AbaPaywayTransaction {
+  orderId: string;
+  orderNumber: string | null;
+  tranId: string;
+  amount: number;
+  currency: string;
+  qrImage: string;
+  qrString: string;
+  deeplink?: string;
+  // Local PAYWAY_MOCK only: the QR is fake and the page offers a "mark as paid" button
+  mock?: boolean;
+  expiresAt: string;
+}
+
+export interface AbaPaywayStatus {
+  orderId: string;
+  orderNumber: string | null;
+  paymentStatus: string;
+  paid: boolean;
+  amount: string;
+  currency: string;
 }
 
 export interface MarketplaceOrderEvent {
@@ -286,6 +314,7 @@ export class RentifyMarketplaceService {
     phone: string,
     address: string,
     key: string,
+    paymentMethod: PaymentMethod = 'COD',
   ): Observable<{ order: MarketplaceOrder }> {
     return this.http.post<{ order: MarketplaceOrder }>(
       `${this.commerce}/api/marketplace/checkout`,
@@ -294,9 +323,27 @@ export class RentifyMarketplaceService {
         expectedTotalAmount,
         customerInfo: { name, phone },
         shippingInfo: { address },
+        paymentMethod,
       },
       { headers: { 'Idempotency-Key': key } },
     );
+  }
+
+  // ABA PayWay is test-only (DEC-026): the server says whether it is switched on
+  abaConfig(): Observable<{ enabled: boolean; currency: string }> {
+    return this.http.get<{ enabled: boolean; currency: string }>(`${this.commerce}/api/payments/aba-payway/config`);
+  }
+
+  abaCheckout(orderId: string): Observable<AbaPaywayTransaction> {
+    return this.http.post<AbaPaywayTransaction>(`${this.commerce}/api/payments/aba-payway/checkout`, { orderId });
+  }
+
+  abaStatus(orderId: string): Observable<AbaPaywayStatus> {
+    return this.http.get<AbaPaywayStatus>(`${this.commerce}/api/payments/aba-payway/status/${orderId}`);
+  }
+
+  abaMockApprove(orderId: string): Observable<AbaPaywayStatus> {
+    return this.http.post<AbaPaywayStatus>(`${this.commerce}/api/payments/aba-payway/mock/approve/${orderId}`, {});
   }
 
   orders(): Observable<{ orders: MarketplaceOrder[] }> {

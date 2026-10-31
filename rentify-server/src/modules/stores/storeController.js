@@ -1,4 +1,5 @@
 const storeService = require('./storeService');
+const { hostedStorefrontUrl } = require('../../utils/hostedStorefrontOrigin');
 const storeSyncService = require('../commerce-sync').storeSyncService;
 const { asyncHandler } = require('../../utils/helpers');
 const { STORE_CATEGORIES } = require('./storeCategories');
@@ -13,10 +14,27 @@ exports.listPublicStores = asyncHandler(async (req, res) => {
   return res.json({ success: true, data: stores });
 });
 
+// A live online store is public already, so shoppers on the marketplace can be sent there
+const liveWebsiteUrl = async (storeId) => {
+  const { Website } = require('../../models');
+  const website = await Website.findOne({
+    where: { storeId, status: 'active' },
+    attributes: ['domain', 'subdomain'],
+  });
+  if (website?.subdomain) return hostedStorefrontUrl(website.subdomain);
+  if (website?.domain) {
+    if (/^https?:\/\//.test(website.domain)) return website.domain;
+    return `${/localhost|127\.0\.0\.1/.test(website.domain) ? 'http' : 'https'}://${website.domain}`;
+  }
+  return null;
+};
+
 exports.getPublicStore = asyncHandler(async (req, res) => {
   const store = await storeService.getPublicStore(req.params.storeId);
   if (!store) return res.status(404).json({ message: 'Store not found' });
-  return res.json({ success: true, data: store });
+  const plain = typeof store.toJSON === 'function' ? store.toJSON() : { ...store };
+  const websiteUrl = await liveWebsiteUrl(plain.id).catch(() => null);
+  return res.json({ success: true, data: { ...plain, websiteUrl } });
 });
 
 exports.getOwnStore = asyncHandler(async (req, res) => {
@@ -27,7 +45,7 @@ exports.getOwnStore = asyncHandler(async (req, res) => {
     const { Website } = require('../../models');
     website = await Website.findOne({
       where: { storeId: store.id },
-      attributes: ['id', 'domain', 'status', 'templateId', 'subscriptionId'],
+      attributes: ['id', 'domain', 'subdomain', 'status', 'templateId', 'subscriptionId'],
     });
   } catch {
     // Ignore if Website lookup fails in isolated test contexts
@@ -45,7 +63,9 @@ exports.getOwnStore = asyncHandler(async (req, res) => {
     data: {
       ...plain,
       websiteId: website?.id || plain.websiteId || null,
-      websiteDomain: website?.domain || null,
+      // A website published on its Rentify subdomain may have no custom domain yet
+      websiteDomain: website?.domain
+        || (website?.subdomain ? new URL(hostedStorefrontUrl(website.subdomain)).host : null),
       websiteStatus: website?.status || null,
       entitlements,
     },
@@ -110,6 +130,7 @@ exports.updateOwnStore = asyncHandler(async (req, res) => {
     primaryCategory: body.primaryCategory,
     marketplaceEnabled: body.marketplaceEnabled,
     logoUrl: body.logoUrl,
+    marketplaceColor: body.marketplaceColor,
   });
   await storeSyncService.syncStore(store.id).catch(() => {});
   return res.json({ success: true, data: store });

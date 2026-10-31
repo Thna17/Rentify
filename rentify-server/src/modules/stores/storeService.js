@@ -1,3 +1,4 @@
+const { marketplaceColor: validateMarketplaceColor } = require('./marketplaceColors');
 const { randomUUID } = require('node:crypto');
 const { Op } = require('sequelize');
 const { Store, User, Staff, Website } = require('../../models');
@@ -43,7 +44,7 @@ class StoreService {
     marketplaceEntitlement: 'pilot', needsCategoryReview: false,
   };
 
-  publicStoreAttributes = ['id', 'name', 'slug', 'primaryCategory', 'logoUrl'];
+  publicStoreAttributes = ['id', 'name', 'slug', 'primaryCategory', 'logoUrl', 'marketplaceColor'];
 
   async listPublicStores(ids) {
     if (typeof ids !== 'string' || !ids.trim()) return [];
@@ -182,8 +183,17 @@ class StoreService {
     });
   }
 
-  async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled, logoUrl }) {
+  async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled, logoUrl, marketplaceColor }) {
     const changes = {};
+    if (marketplaceColor !== undefined) {
+      const color = validateMarketplaceColor(marketplaceColor);
+      if (!color) {
+        const error = new Error('Choose one of the supported marketplace colors');
+        error.statusCode = 400;
+        throw error;
+      }
+      changes.marketplaceColor = color;
+    }
     if (logoUrl !== undefined) {
       const logo = storeLogoUrl(logoUrl);
       if (logo === undefined) {

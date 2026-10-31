@@ -10,6 +10,8 @@ import { filter, map, startWith } from 'rxjs';
 import { CatalogService } from '../../../../core/catalog/catalog.service';
 import { Category } from '../../../../core/catalog/catalog.models';
 import { IconComponent } from '../../ui/icon/icon.component';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../../../../core/i18n/category-text.pipe';
 
 /**
  * The category navigation row.
@@ -38,7 +40,7 @@ const CLOSE_DELAY_MS = 220;
 
 @Component({
   selector: 'app-category-menu',
-  imports: [RouterLink, RouterLinkActive, IconComponent],
+  imports: [CategoryTextPipe, TranslatePipe, RouterLink, RouterLinkActive, IconComponent],
   template: `
     <div class="cat-bar" (mouseleave)="scheduleClose()">
       <!-- Projected, not owned: the button belongs to the navbar, which holds
@@ -46,7 +48,7 @@ const CLOSE_DELAY_MS = 220;
            scrolls horizontally on a phone, and a control inside a scroller
            slides away with the content. -->
       <div class="cat-lead"><ng-content select="[nav-lead]" /></div>
-      <nav class="cat-row container" aria-label="Product categories">
+      <nav class="cat-row container" [attr.aria-label]="'catMenu.productCategories' | translate">
         <div class="cat-items">
           @for (category of categories; track category.slug) {
           <a
@@ -69,13 +71,13 @@ const CLOSE_DELAY_MS = 220;
           <span class="cat-divider" aria-hidden="true"></span>
 
           <a class="shortcut shortcut-store" routerLink="/stores" (click)="close()">
-            <ui-icon name="store" [size]="13" /> Stores
+            <ui-icon name="store" [size]="13" /> {{ 'nav.stores' | translate }}
           </a>
           <a class="shortcut shortcut-gift" routerLink="/categories/arts-culture" [queryParams]="{ sub: 'souvenirs-gifts' }" (click)="close()">
-            <ui-icon name="gift" [size]="13" /> Gifts
+            <ui-icon name="gift" [size]="13" /> {{ 'nav.gifts' | translate }}
           </a>
           <a class="shortcut shortcut-sale" routerLink="/products" [queryParams]="{ sale: '1' }" (click)="close()">
-            <ui-icon name="percent" [size]="13" /> Discount
+            <ui-icon name="percent" [size]="13" /> {{ 'catMenu.discount' | translate }}
           </a>
         </div>
       </nav>
@@ -84,7 +86,7 @@ const CLOSE_DELAY_MS = 220;
         <div class="panel" role="menu" animate.leave="panel-leave">
           <div class="panel-inner container">
             <div class="col by-type">
-              <h4>Subcategories</h4>
+              <h4>{{ 'catMenu.subcategories' | translate }}</h4>
               <div class="subcategory-grid">
                 @for (sub of cat.subcategories; track sub.slug) {
                   @let count = catalog.countBySubcategory(cat.slug, sub.slug);
@@ -95,7 +97,7 @@ const CLOSE_DELAY_MS = 220;
                     (click)="close()"
                     [class.empty]="count === 0"
                   >
-                    <span class="sub-label">{{ sub.name }}</span>
+                    <span class="sub-label">{{ sub | categoryText }}</span>
                     <em>{{ count }}</em>
                     <ui-icon name="chevron-right" [size]="14" />
                   </a>
@@ -104,7 +106,7 @@ const CLOSE_DELAY_MS = 220;
             </div>
 
             <div class="col shop-by">
-              <h4>Shop by</h4>
+              <h4>{{ 'catMenu.shopBy' | translate }}</h4>
               @for (entry of shopBy; track entry.label) {
                 <a
                   class="type-link"
@@ -118,14 +120,14 @@ const CLOSE_DELAY_MS = 220;
             </div>
 
             <aside class="promo" [style.--category-image]="'url(/categories/' + cat.slug + '.png)'">
-              <h3>{{ cat.name }}</h3>
-              <p>{{ cat.tagline }}</p>
+              <h3>{{ cat | categoryText }}</h3>
+              <p>{{ cat | categoryText: 'tagline' }}</p>
               <a
                 class="promo-cta"
                 [routerLink]="['/categories', cat.slug]"
                 (click)="close()"
               >
-                Shop {{ cat.name }} <ui-icon name="arrow-right" [size]="14" />
+                {{ 'catMenu.shopCategory' | translate: { name: (cat | categoryText) } }} <ui-icon name="arrow-right" [size]="14" />
               </a>
             </aside>
           </div>

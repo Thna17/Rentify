@@ -16,6 +16,7 @@ import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { useChannels } from '../../context/ChannelContext';
+import { useTranslation } from '@rentify/utils';
 
 // Notification preferences are stored by Core (/api/notifications/preferences)
 type NotificationPrefs = { locale: 'en' | 'km'; optionalEnabled: boolean; emailEnabled: boolean; telegramEnabled: boolean };
@@ -39,6 +40,7 @@ const requestPrefs = async (method: 'GET' | 'PUT', body?: NotificationPrefs) => 
 };
 
 export const PreferencesSetting = () => {
+  const { t } = useTranslation();
   const { hasPos, hasMarketplace, togglePos, toggleMarketplace } = useChannels();
   const [preferences, setPreferences] = useState<NotificationPrefs | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -60,9 +62,9 @@ export const PreferencesSetting = () => {
     try {
       const { locale, optionalEnabled, emailEnabled, telegramEnabled } = preferences;
       setPreferences(await requestPrefs('PUT', { locale, optionalEnabled, emailEnabled, telegramEnabled }));
-      toast.success('Preferences updated successfully');
+      toast.success(t('merchant.p.preferencesUpdatedSuccessfully'));
     } catch {
-      toast.error('Preferences could not be saved. Try again.');
+      toast.error(t('merchant.p.preferencesCouldNotBe'));
     } finally {
       setIsSaving(false);
     }
@@ -105,7 +107,7 @@ export const PreferencesSetting = () => {
 
   return (
     <SettingsLayout
-      title="Preferences"
+      title={t('merchant.p.preferences')}
       description="Manage sales channels and account notification preferences"
       icon={<Bell />}
     >
@@ -114,10 +116,10 @@ export const PreferencesSetting = () => {
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Store className="h-5 w-5 text-primary" />
-            Sales Channels
+            {t('merchant.p.salesChannels')}
           </CardTitle>
           <CardDescription>
-            Enable or disable sales channels and operational tools for your store
+            {t('merchant.p.enableOrDisableSales')}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0 px-6">
@@ -129,7 +131,7 @@ export const PreferencesSetting = () => {
                 togglePos(checked);
                 toast.success(checked ? 'POS channel enabled in sidebar' : 'POS channel disabled in sidebar');
               }}
-              label="Point of Sale (POS)"
+              label={t('merchant.p.pointOfSalePos')}
               description="Enable in-person counter checkout, cash collection, and barcode terminal in dashboard"
               icon={<TerminalSquare className="h-4 w-4 text-purple-600" />}
             />
@@ -140,7 +142,7 @@ export const PreferencesSetting = () => {
                 toggleMarketplace(checked);
                 toast.success(checked ? 'Marketplace listing enabled' : 'Marketplace listing disabled');
               }}
-              label="Rentify Marketplace"
+              label={t('merchant.p.rentifyMarketplace2')}
               description="List eligible store products in the central Rentify marketplace"
               icon={<ShoppingBag className="h-4 w-4 text-emerald-600" />}
             />
@@ -153,9 +155,9 @@ export const PreferencesSetting = () => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg font-semibold">Notification Settings</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('merchant.p.notificationSettings')}</CardTitle>
               <CardDescription>
-                Security, legal and essential order notices always reach your inbox
+                {t('merchant.p.securityLegalAndEssential')}
               </CardDescription>
             </div>
             <Button
@@ -177,11 +179,11 @@ export const PreferencesSetting = () => {
           {loadError && (
             <div role="alert" className="py-4 text-sm text-muted-foreground">
               Preferences could not be loaded.{' '}
-              <button type="button" className="font-medium text-foreground underline" onClick={loadPreferences}>Try again</button>
+              <button type="button" className="font-medium text-foreground underline" onClick={loadPreferences}>{t('merchant.p.tryAgain')}</button>
             </div>
           )}
           {!preferences && !loadError && (
-            <p role="status" className="py-4 text-sm text-muted-foreground">Loading preferences…</p>
+            <p role="status" className="py-4 text-sm text-muted-foreground">{t('merchant.p.loadingPreferences')}</p>
           )}
           {preferences && (
           <div className="divide-y divide-border">
@@ -189,7 +191,7 @@ export const PreferencesSetting = () => {
               id="email-notifications"
               checked={preferences.emailEnabled}
               onCheckedChange={(checked) => setPreferences({ ...preferences, emailEnabled: checked })}
-              label="Email Notifications"
+              label={t('merchant.p.emailNotifications')}
               description="Receive important updates via email"
               icon={<Mail className="h-4 w-4 text-gray-600" />}
             />
@@ -198,7 +200,7 @@ export const PreferencesSetting = () => {
               id="telegram-notifications"
               checked={preferences.telegramEnabled}
               onCheckedChange={(checked) => setPreferences({ ...preferences, telegramEnabled: checked })}
-              label="Telegram Notifications"
+              label={t('merchant.p.telegramNotifications')}
               description="Get alerts in Telegram when delivery is available"
               icon={<Send className="h-4 w-4 text-gray-600" />}
             />
@@ -207,7 +209,7 @@ export const PreferencesSetting = () => {
               id="optional-notifications"
               checked={preferences.optionalEnabled}
               onCheckedChange={(checked) => setPreferences({ ...preferences, optionalEnabled: checked })}
-              label="Optional Updates"
+              label={t('merchant.p.optionalUpdates')}
               description="Receive product updates, tips, and other non-essential notices"
               icon={<Megaphone className="h-4 w-4 text-gray-600" />}
             />
@@ -220,13 +222,13 @@ export const PreferencesSetting = () => {
       {preferences && (
       <Card className="shadow-sm border-0 mt-6">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Notification Language</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('merchant.p.notificationLanguage')}</CardTitle>
           <CardDescription>
-            Choose the language your notifications are written in
+            {t('merchant.p.chooseTheLanguageYour')}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="radiogroup" aria-label="Notification language">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="radiogroup" aria-label={t('merchant.p.notificationLanguage2')}>
             {([['en', 'English', 'Notices in English'], ['km', 'ខ្មែរ', 'សេចក្ដីជូនដំណឹងជាភាសាខ្មែរ']] as const).map(([value, label, hint]) => {
               const selected = preferences.locale === value;
               return (

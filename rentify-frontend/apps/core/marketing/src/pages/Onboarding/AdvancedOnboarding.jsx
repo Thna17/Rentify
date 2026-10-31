@@ -7,7 +7,7 @@ import { LanguageToggle, Wordmark } from '../../components/site/SiteHeader';
 import { EASE } from '../../components/site/motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import EssentialsStep from './components/EssentialsStep';
-import BrandStep from './components/BrandStep';
+import BrandStep, { toTemplate } from './components/BrandStep';
 import PricingStep from './components/PricingStep';
 import PlanPaymentStep from './components/PlanPaymentStep';
 import DeploymentStep from './DeploymentStep/DeploymentStep';
@@ -19,14 +19,32 @@ import {
   Briefcase,
   Check,
   Cloud,
-  Palette,
   CreditCard,
+  Palette,
   Rocket,
   ShieldCheck,
 } from 'lucide-react';
-import { useGetPackagesQuery } from '@rentify/apis';
+import { useGetPackagesQuery, useGetTemplatesQuery } from '@rentify/apis';
 import { isEssentialsComplete } from './businessDetails';
 import { resolvePackage } from './resolvePackage';
+
+// One form is enough to open a store: Rentify picks a template that suits the
+// category and starts the Free plan. Design and plan change later in the dashboard.
+const TEMPLATE_HINTS = [
+  { match: /beauty|skin|cosmetic/i, template: /skin|beauty/i },
+  { match: /food|beverage|cafe|coffee|drink|grocer/i, template: /coffee|cafe|food/i },
+  { match: /electronic|tech|phone|gadget/i, template: /tech|electronic/i },
+];
+const limitsOf = (plan) => {
+  if (!plan?.limits) return {};
+  if (typeof plan.limits !== 'string') return plan.limits;
+  try { return JSON.parse(plan.limits); } catch { return {}; }
+};
+const pickTemplate = (templates, category = '') => {
+  const hint = TEMPLATE_HINTS.find((item) => item.match.test(category));
+  const byHint = hint && templates.find((item) => hint.template.test(`${item.name} ${item.category}`));
+  return byHint || templates.find((item) => item.category === 'ecommerce') || templates[0] || null;
+};
 
 const Onboarding = () => {
   const { t, language } = useLanguage();
@@ -45,10 +63,14 @@ const Onboarding = () => {
   const isKhmer = language === 'KH';
 
   const { data: packageList } = useGetPackagesQuery();
-  const packageData = useMemo(
-    () => resolvePackage(Array.isArray(packageList) ? packageList : packageList?.data, requestedPackage),
-    [packageList, requestedPackage]
-  );
+  const { data: apiTemplates = [] } = useGetTemplatesQuery();
+  const templates = useMemo(() => apiTemplates.map(toTemplate), [apiTemplates]);
+  const packageData = useMemo(() => {
+    const list = Array.isArray(packageList) ? packageList : packageList?.data;
+    // The plan named in the link (e.g. /onboarding/pro), else Starter: a plan
+    // with its own storefront and a free trial, so nothing is due today
+    return resolvePackage(list, requestedPackage);
+  }, [packageList, requestedPackage]);
 
   const [formData, setFormData] = useState(() => {
     const savedData = localStorage.getItem('rentify-onboarding');
@@ -76,25 +98,25 @@ const Onboarding = () => {
         };
   });
 
-  // Use the package Core has for this link. Progress saved in the browser may
-  // hold a package from an older database, so replace it when it differs,
-  // unless the merchant picked a plan in step 3 that Core still has.
-  const packages = Array.isArray(packageList) ? packageList : packageList?.data;
-  const keepsChosenPlan =
-    formData.packageChosen && packages?.some((item) => item.id === formData.package?.id);
+  // Rentify fills design and plan in; anything the merchant picks themselves wins
   useEffect(() => {
-    if (packageData && !keepsChosenPlan && formData.package?.id !== packageData.id) {
+    if (packageData && !formData.packageChosen && formData.package?.id !== packageData.id) {
       setFormData((prev) => ({
         ...prev,
         package: packageData,
-        pricing: {
-          ...prev.pricing,
-          basePrice: packageData.price || 0,
-          totalPrice: 0, // Free trial
-        },
+        pricing: { ...prev.pricing, basePrice: packageData.price || 0, totalPrice: 0 },
       }));
     }
-  }, [packageData, keepsChosenPlan, formData.package?.id]);
+  }, [packageData, formData.packageChosen, formData.package?.id]);
+
+  const category = formData.businessDetails?.primaryCategory;
+  useEffect(() => {
+    if (formData.templateChosen) return;
+    const template = pickTemplate(templates, category);
+    if (template && template.id !== formData.template?.id) {
+      setFormData((prev) => ({ ...prev, template }));
+    }
+  }, [templates, category, formData.templateChosen, formData.template?.id]);
 
   // Auto-fill contact details if the user is already authenticated
   useEffect(() => {
@@ -117,8 +139,9 @@ const Onboarding = () => {
       .catch(() => undefined);
   }, []);
 
-  // Paid plans get a KHQR payment step before the store is created
+  // Every paid plan, trial or not, pays with KHQR before the store is created
   const isPaidPlan = Number(formData.package?.price || 0) > 0;
+  const fill = (key, name) => t(key).replace('{name}', name || '');
   const steps = useMemo(
     () => [
       {
@@ -131,14 +154,18 @@ const Onboarding = () => {
       {
         id: 2,
         title: t('onboarding.brand.step'),
-        description: t('onboarding.brand.stepDesc'),
+        description: formData.template
+          ? fill('onboarding.auto.design', formData.template.name)
+          : t('onboarding.brand.stepDesc'),
         icon: Palette,
         component: BrandStep,
       },
       {
         id: 3,
         title: t('onboarding.plan.step'),
-        description: t('onboarding.plan.stepDesc'),
+        description: formData.package
+          ? fill('onboarding.auto.plan', formData.package.name)
+          : t('onboarding.plan.stepDesc'),
         icon: CreditCard,
         component: PricingStep,
       },
@@ -161,14 +188,12 @@ const Onboarding = () => {
         component: DeploymentStep,
       },
     ],
-    [t, isPaidPlan]
+    [t, isPaidPlan, formData.template, formData.package]
   );
 
   const isFinalStep = currentStep === steps.length;
   const CurrentStepComponent = steps[currentStep - 1].component;
-  const stepLabel = `${t('onboarding.step')} ${currentStep} ${t(
-    'onboarding.of'
-  )} ${steps.length}`;
+  const stepLabel = `${t('onboarding.step')} ${currentStep} ${t('onboarding.of')} ${steps.length}`;
 
   // Auto-save logic
   useEffect(() => {
@@ -186,14 +211,23 @@ const Onboarding = () => {
   }, [currentStep]);
 
   const updateFormData = useCallback((stepData) => {
-    setFormData((prev) => ({ ...prev, ...stepData }));
+    setFormData((prev) => ({
+      ...prev,
+      ...stepData,
+      ...('template' in stepData ? { templateChosen: true } : {}),
+    }));
   }, []);
 
   const nextStep = useCallback(() => {
-    if (!isFinalStep) {
-      setCurrentStep((prev) => prev + 1);
+    if (isFinalStep) return;
+    if (steps[currentStep - 1]?.id === 1) {
+      // Design and plan are already filled in; they stay one click away in the list
+      const next = steps.findIndex((item) => item.id === 'payment' || item.id === 'deploy');
+      setCurrentStep(next + 1);
+      return;
     }
-  }, [isFinalStep]);
+    setCurrentStep((prev) => prev + 1);
+  }, [isFinalStep, steps, currentStep]);
 
   const prevStep = useCallback(() => {
     if (currentStep > 1) {
@@ -201,24 +235,37 @@ const Onboarding = () => {
     }
   }, [currentStep]);
 
-  const isStepComplete = useCallback(() => {
-    switch (currentStep) {
-      case 1:
-        return isEssentialsComplete(formData.businessDetails);
-      case 2:
-        return !!formData.template;
-      case 3:
-        return !!formData.package;
-      case 4:
-        // Payment step (paid plans only): the KHQR payment for this plan is complete
-        return !isPaidPlan || formData.payment?.packageId === formData.package?.id;
-      default:
-        return true;
-    }
-  }, [currentStep, formData]);
+  const isComplete = useCallback(
+    (step) => {
+      switch (steps[step - 1]?.id) {
+        case 1:
+          return isEssentialsComplete(formData.businessDetails) && !!formData.template && !!formData.package;
+        case 2:
+          return !!formData.template;
+        case 3:
+          return !!formData.package;
+        case 'payment':
+          return formData.payment?.packageId === formData.package?.id;
+        default:
+          return true;
+      }
+    },
+    [formData, steps]
+  );
+
+  const isStepComplete = useCallback(() => isComplete(currentStep), [isComplete, currentStep]);
+
+  // A step can be opened when every step before it is finished, so finished
+  // steps stay reachable after going back, without clicking Continue each time.
+  const canOpenStep = useCallback(
+    (number) => Array.from({ length: number - 1 }, (_, i) => i + 1).every(isComplete),
+    [isComplete]
+  );
 
   const continueLabel =
-    currentStep === 3 ? t(isPaidPlan ? 'onboarding.plan.continuePay' : 'onboarding.ui.startTrial') : t('onboarding.continue');
+    steps[currentStep - 1]?.id === 1 || steps[currentStep - 1]?.id === 3
+      ? t(isPaidPlan ? 'onboarding.plan.continuePay' : 'onboarding.ui.startTrial')
+      : t('onboarding.continue');
 
   const progress = (currentStep / steps.length) * 100;
 
@@ -277,18 +324,19 @@ const Onboarding = () => {
           <nav className="relative space-y-1" aria-label="Progress">
             {steps.map((step, index) => {
               const number = index + 1;
-              const done = currentStep > number;
               const active = currentStep === number;
+              const done = !active && isComplete(number) && number < steps.length;
+              const reachable = active || canOpenStep(number);
               return (
                 <button
                   key={step.id}
                   type="button"
-                  disabled={!done}
-                  onClick={() => done && setCurrentStep(number)}
+                  disabled={!reachable}
+                  onClick={() => reachable && setCurrentStep(number)}
                   aria-current={active ? 'step' : undefined}
                   className={cn(
                     'relative flex w-full items-center gap-3.5 rounded-2xl px-3 py-3 text-left transition-colors',
-                    active ? 'text-white' : done ? 'text-white/80 hover:bg-white/[0.06]' : 'cursor-default text-white/40'
+                    active ? 'text-white' : reachable ? 'text-white/80 hover:bg-white/[0.06]' : 'cursor-default text-white/40'
                   )}
                 >
                   {active && (
@@ -358,6 +406,13 @@ const Onboarding = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.45, ease: EASE }}
+                    onKeyDown={(event) => {
+                      // Fields aren't inside a <form>, so Enter in a text field moves on like Continue
+                      if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+                      if (event.target.tagName !== 'INPUT' || ['checkbox', 'radio', 'file'].includes(event.target.type)) return;
+                      event.preventDefault();
+                      if (!isFinalStep && isStepComplete()) nextStep();
+                    }}
                   >
                     <CurrentStepComponent data={formData} onUpdate={updateFormData} onNext={nextStep} />
                   </motion.div>

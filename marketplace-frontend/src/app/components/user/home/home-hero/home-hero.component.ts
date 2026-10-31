@@ -5,6 +5,8 @@ import { Category } from '../../../../core/catalog/catalog.models';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { PromoCardComponent } from '../../../shared/ui/promo-card/promo-card.component';
 import { Promo } from '../../../../core/promos/promo.models';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../../../../core/i18n/category-text.pipe';
 
 const OPEN_DELAY_MS = 60;
 const CLOSE_DELAY_MS = 180;
@@ -18,12 +20,12 @@ const SLIDE_MS = 6000;
  */
 @Component({
   selector: 'app-home-hero',
-  imports: [RouterLink, IconComponent, PromoCardComponent],
+  imports: [CategoryTextPipe, TranslatePipe, RouterLink, IconComponent, PromoCardComponent],
   template: `
     <section class="container hero-grid">
-      <aside class="cat-side" (mouseleave)="scheduleClose()" aria-label="All categories">
+      <aside class="cat-side" (mouseleave)="scheduleClose()" [attr.aria-label]="'search.allCategories' | translate">
         <a class="cat-head" routerLink="/categories">
-          <ui-icon name="grid" [size]="16" /> All Categories
+          <ui-icon name="grid" [size]="16" /> {{ 'homeHero.allCategories' | translate }}
           <ui-icon class="chev" name="chevron-right" [size]="14" />
         </a>
         <nav class="cat-list">
@@ -37,14 +39,14 @@ const SLIDE_MS = 6000;
               [attr.aria-expanded]="openSlug() === c.slug"
             >
               <ui-icon [name]="c.icon" [size]="17" [strokeWidth]="1.6" />
-              <span>{{ c.name }}</span>
+              <span>{{ c | categoryText }}</span>
               @if (c.subcategories.length) {
                 <ui-icon class="chev" name="chevron-right" [size]="13" />
               }
             </a>
           }
           <a class="cat-row more" routerLink="/categories">
-            <ui-icon name="list" [size]="17" /> <span>View more</span>
+            <ui-icon name="list" [size]="17" /> <span>{{ 'homeHero.viewMore' | translate }}</span>
           </a>
         </nav>
 
@@ -53,25 +55,25 @@ const SLIDE_MS = 6000;
             <div class="mega-cols">
               <div class="mega-links">
                 <a class="mega-title" [routerLink]="['/categories', cat.slug]">
-                  {{ cat.name }} <ui-icon name="arrow-right" [size]="14" />
+                  {{ cat | categoryText }} <ui-icon name="arrow-right" [size]="14" />
                 </a>
-                <p class="mega-desc">{{ cat.description }}</p>
+                <p class="mega-desc">{{ cat | categoryText: 'description' }}</p>
                 <div class="mega-grid">
                   @for (sub of cat.subcategories; track sub.slug) {
                     <a
                       routerLink="/products"
                       [queryParams]="{ category: cat.slug, subcategory: sub.slug }"
                       (click)="close()"
-                    >{{ sub.name }}</a>
+                    >{{ sub | categoryText }}</a>
                   }
                 </div>
               </div>
               <aside class="mega-feature">
                 <img [src]="'/categories/' + cat.slug + '.png'" alt="" loading="lazy" />
-                <h3>{{ cat.name }}</h3>
-                <p>{{ cat.tagline }}</p>
+                <h3>{{ cat | categoryText }}</h3>
+                <p>{{ cat | categoryText: 'tagline' }}</p>
                 <a class="mega-feature-cta" [routerLink]="['/categories', cat.slug]" (click)="close()">
-                  Shop now <ui-icon name="arrow-right" [size]="14" />
+                  {{ 'homeHero.shopNow' | translate }} <ui-icon name="arrow-right" [size]="14" />
                 </a>
               </aside>
             </div>
@@ -97,7 +99,7 @@ const SLIDE_MS = 6000;
             </span>
           </a>
         }
-        <div class="dots" role="group" aria-label="Featured collections">
+        <div class="dots" role="group" [attr.aria-label]="'homeHero.featuredCollections' | translate">
           @for (s of slides; track s.title; let i = $index) {
             <button
               type="button"

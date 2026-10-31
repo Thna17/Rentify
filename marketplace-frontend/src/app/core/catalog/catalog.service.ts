@@ -104,7 +104,7 @@ export class CatalogService {
     } catch {
       this.products.set([]);
       this.productError.set(
-        'We could not load the marketplace right now. Please try again.',
+        'catalog.loadProductsFailed',
       );
     } finally {
       this.loaded.set(true);
@@ -153,7 +153,7 @@ export class CatalogService {
     } catch {
       this._stores.set([]);
       this.storeError.set(
-        'We could not load stores right now. Please try again.',
+        'catalog.loadStoresFailed',
       );
     } finally {
       this.storesLoaded.set(true);
@@ -537,13 +537,16 @@ const toStoreFromRentify = (api: RentifyStore): Store => ({
   slug: api.slug || api.id,
   name: api.name,
   location: 'Cambodia',
-  rating: 4.9,
-  reviewCount: 16,
+  // No store-review data exists yet; never show a made-up rating
+  rating: 0,
+  reviewCount: 0,
+  websiteUrl: /^https?:\/\//.test(api.websiteUrl || '') ? api.websiteUrl : null,
   categoryName: classifyCategory(api.primaryCategory || 'General').categoryName,
   description: `${api.name} on Rentify Marketplace`,
   tagline: `${api.name} Storefront`,
   announcement: '',
   theme: 'FOREST',
+  marketplaceColor: ['#4f46e5', '#275643', '#963827', '#9a691b', '#263750'].includes(api.marketplaceColor || '') ? api.marketplaceColor : '#4f46e5',
   phoneNumber: '',
   showContact: false,
   // The store's own https logo from Core; the bundled logos cover the demo stores without one.

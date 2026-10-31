@@ -2,184 +2,186 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService, apiErrorMessage } from '../core/auth/auth.service';
 import { Page, PlatformOperationsService, Section } from '../services/platform-operations.service';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { TranslateService } from '../core/i18n/translate.service';
 
 type Column = { title: string; key: string; kind?: 'date' | 'money' | 'status' };
 const definitions: Record<Section, { title: string; subtitle: string; columns: Column[] }> = {
-  stores: { title: 'Stores & seller review', subtitle: 'Core Store records; a website is optional and approval gates marketplace selling.',
-    columns: [{ title: 'Store', key: 'name' }, { title: 'Owner', key: 'owner' },
-      { title: 'Category', key: 'primaryCategory' }, { title: 'Website', key: 'website' },
-      { title: 'Marketplace', key: 'marketplaceApprovalStatus', kind: 'status' },
-      { title: 'Store status', key: 'status', kind: 'status' }] },
-  users: { title: 'Platform users', subtitle: 'Shared buyer and merchant accounts from Core identity.',
-    columns: [{ title: 'Name', key: 'name' }, { title: 'Email', key: 'email' },
-      { title: 'Phone', key: 'phoneNumber' }, { title: 'Role', key: 'role' },
-      { title: 'Verified', key: 'isVerified' }, { title: 'Joined', key: 'createdAt', kind: 'date' }] },
-  websites: { title: 'Storefront websites', subtitle: 'Optional Website channel linked to a canonical Store.',
-    columns: [{ title: 'Website', key: 'name' }, { title: 'Domain', key: 'domain' },
-      { title: 'Store ID', key: 'storeId' }, { title: 'Status', key: 'status', kind: 'status' },
-      { title: 'Last deployment', key: 'lastDeployment', kind: 'date' }] },
-  templates: { title: 'Storefront templates', subtitle: 'Core template catalog.',
-    columns: [{ title: 'Name', key: 'name' }, { title: 'Category', key: 'category' },
-      { title: 'Framework', key: 'framework' }, { title: 'Created', key: 'createdAt', kind: 'date' }] },
-  subscriptions: { title: 'Subscriptions', subtitle: 'Core subscription access and billing cycle state.',
-    columns: [{ title: 'Subscription ID', key: 'id' }, { title: 'Website ID', key: 'websiteId' },
-      { title: 'Plan', key: 'Package.name' }, { title: 'Status', key: 'status', kind: 'status' },
-      { title: 'Start', key: 'startDate', kind: 'date' }, { title: 'End', key: 'endDate', kind: 'date' }] },
-  packages: { title: 'Plans', subtitle: 'Current package definitions from Core.',
-    columns: [{ title: 'Name', key: 'name' }, { title: 'Price', key: 'price', kind: 'money' },
-      { title: 'Duration', key: 'duration' }] },
-  'plan-payments': { title: 'Plan payments', subtitle: 'Subscription payments recorded by Core; separate from customer orders.',
-    columns: [{ title: 'Payment ID', key: 'id' }, { title: 'User ID', key: 'userId' },
-      { title: 'Amount', key: 'amount', kind: 'money' }, { title: 'Method', key: 'paymentMethod' },
-      { title: 'Status', key: 'status', kind: 'status' }, { title: 'Date', key: 'createdAt', kind: 'date' }] },
-  products: { title: 'Shared catalog', subtitle: 'Canonical Commerce products and marketplace visibility override.',
-    columns: [{ title: 'Product', key: 'name' }, { title: 'Store ID', key: 'storeId' },
-      { title: 'Marketplace category', key: 'marketplaceCategory' },
-      { title: 'Price', key: 'price', kind: 'money' }, { title: 'Stock', key: 'stockQuantity' },
-      { title: 'Listing override', key: 'marketplaceVisibility' },
-      { title: 'Status', key: 'status', kind: 'status' }] },
-  orders: { title: 'Orders across channels', subtitle: 'Marketplace, storefront and POS order facts; merchant owns fulfillment.',
-    columns: [{ title: 'Order', key: 'orderNumber' }, { title: 'Store ID', key: 'storeId' },
-      { title: 'Channel', key: 'salesChannel' }, { title: 'Total', key: 'totalAmount', kind: 'money' },
-      { title: 'Payment', key: 'Payment.status', kind: 'status' },
-      { title: 'Delivery', key: 'deliveryStatus', kind: 'status' },
-      { title: 'Placed', key: 'createdAt', kind: 'date' }] },
-  payments: { title: 'Customer payment records', subtitle: 'Commerce payment evidence; COD cash stays with merchants.',
-    columns: [{ title: 'Payment ID', key: 'id' }, { title: 'Order ID', key: 'orderId' },
-      { title: 'Method', key: 'paymentMethod' }, { title: 'Amount', key: 'amount', kind: 'money' },
-      { title: 'Status', key: 'status', kind: 'status' }, { title: 'Date', key: 'createdAt', kind: 'date' }] },
-  reviews: { title: 'Product reviews', subtitle: 'Buyer feedback and current moderation status.',
-    columns: [{ title: 'Buyer', key: 'buyerName' }, { title: 'Product ID', key: 'productId' },
-      { title: 'Rating', key: 'rating' }, { title: 'Comment', key: 'comment' },
-      { title: 'Status', key: 'status', kind: 'status' }, { title: 'Date', key: 'createdAt', kind: 'date' }] },
-  reports: { title: 'Buyer reports', subtitle: 'Order complaints and return requests recorded by Commerce.',
-    columns: [{ title: 'Type', key: 'type' }, { title: 'Order ID', key: 'orderId' },
-      { title: 'Store ID', key: 'storeId' }, { title: 'Reason', key: 'details.reason' },
-      { title: 'Status', key: 'details.status', kind: 'status' },
-      { title: 'Date', key: 'createdAt', kind: 'date' }] },
-  billing: { title: 'Usage statements', subtitle: 'Commerce usage billing, distinct from customer payments.',
-    columns: [{ title: 'Statement ID', key: 'id' }, { title: 'Store ID', key: 'storeId' },
-      { title: 'Month', key: 'month' }, { title: 'Amount', key: 'totalAmount', kind: 'money' },
-      { title: 'Status', key: 'status', kind: 'status' }] },
+  stores: { title: 'opsText.storesSellerReview', subtitle: 'opsText.coreStoreRecordsAWebsite',
+    columns: [{ title: 'opsText.store', key: 'name' }, { title: 'opsText.owner', key: 'owner' },
+      { title: 'opsText.category', key: 'primaryCategory' }, { title: 'opsText.website', key: 'website' },
+      { title: 'opsText.marketplace', key: 'marketplaceApprovalStatus', kind: 'status' },
+      { title: 'opsText.storeStatus', key: 'status', kind: 'status' }] },
+  users: { title: 'opsText.platformUsers', subtitle: 'opsText.sharedBuyerAndMerchantAccounts',
+    columns: [{ title: 'opsText.name', key: 'name' }, { title: 'opsText.email', key: 'email' },
+      { title: 'opsText.phone', key: 'phoneNumber' }, { title: 'opsText.role', key: 'role' },
+      { title: 'opsText.verified', key: 'isVerified' }, { title: 'opsText.joined', key: 'createdAt', kind: 'date' }] },
+  websites: { title: 'opsText.storefrontWebsites', subtitle: 'opsText.optionalWebsiteChannelLinkedTo',
+    columns: [{ title: 'opsText.website', key: 'name' }, { title: 'opsText.domain', key: 'domain' },
+      { title: 'opsText.storeId', key: 'storeId' }, { title: 'opsText.status', key: 'status', kind: 'status' },
+      { title: 'opsText.lastDeployment', key: 'lastDeployment', kind: 'date' }] },
+  templates: { title: 'opsText.storefrontTemplates', subtitle: 'opsText.coreTemplateCatalog',
+    columns: [{ title: 'opsText.name', key: 'name' }, { title: 'opsText.category', key: 'category' },
+      { title: 'opsText.framework', key: 'framework' }, { title: 'opsText.created', key: 'createdAt', kind: 'date' }] },
+  subscriptions: { title: 'opsText.subscriptions', subtitle: 'opsText.coreSubscriptionAccessAndBilling',
+    columns: [{ title: 'opsText.subscriptionId', key: 'id' }, { title: 'opsText.websiteId', key: 'websiteId' },
+      { title: 'opsText.plan', key: 'Package.name' }, { title: 'opsText.status', key: 'status', kind: 'status' },
+      { title: 'opsText.start', key: 'startDate', kind: 'date' }, { title: 'opsText.end', key: 'endDate', kind: 'date' }] },
+  packages: { title: 'opsText.plans', subtitle: 'opsText.currentPackageDefinitionsFromCore',
+    columns: [{ title: 'opsText.name', key: 'name' }, { title: 'opsText.price', key: 'price', kind: 'money' },
+      { title: 'opsText.duration', key: 'duration' }] },
+  'plan-payments': { title: 'opsText.planPayments', subtitle: 'opsText.subscriptionPaymentsRecordedByCore',
+    columns: [{ title: 'opsText.paymentId', key: 'id' }, { title: 'opsText.userId', key: 'userId' },
+      { title: 'opsText.amount', key: 'amount', kind: 'money' }, { title: 'opsText.method', key: 'paymentMethod' },
+      { title: 'opsText.status', key: 'status', kind: 'status' }, { title: 'opsText.date', key: 'createdAt', kind: 'date' }] },
+  products: { title: 'opsText.sharedCatalog', subtitle: 'opsText.canonicalCommerceProductsAndMarketplace',
+    columns: [{ title: 'opsText.product', key: 'name' }, { title: 'opsText.storeId', key: 'storeId' },
+      { title: 'opsText.marketplaceCategory', key: 'marketplaceCategory' },
+      { title: 'opsText.price', key: 'price', kind: 'money' }, { title: 'opsText.stock', key: 'stockQuantity' },
+      { title: 'opsText.listingOverride', key: 'marketplaceVisibility' },
+      { title: 'opsText.status', key: 'status', kind: 'status' }] },
+  orders: { title: 'opsText.ordersAcrossChannels', subtitle: 'opsText.marketplaceStorefrontAndPosOrder',
+    columns: [{ title: 'opsText.order', key: 'orderNumber' }, { title: 'opsText.storeId', key: 'storeId' },
+      { title: 'opsText.channel', key: 'salesChannel' }, { title: 'opsText.total', key: 'totalAmount', kind: 'money' },
+      { title: 'opsText.payment', key: 'Payment.status', kind: 'status' },
+      { title: 'opsText.delivery', key: 'deliveryStatus', kind: 'status' },
+      { title: 'opsText.placed', key: 'createdAt', kind: 'date' }] },
+  payments: { title: 'opsText.customerPaymentRecords', subtitle: 'opsText.commercePaymentEvidenceCodCash',
+    columns: [{ title: 'opsText.paymentId', key: 'id' }, { title: 'opsText.orderId', key: 'orderId' },
+      { title: 'opsText.method', key: 'paymentMethod' }, { title: 'opsText.amount', key: 'amount', kind: 'money' },
+      { title: 'opsText.status', key: 'status', kind: 'status' }, { title: 'opsText.date', key: 'createdAt', kind: 'date' }] },
+  reviews: { title: 'opsText.productReviews', subtitle: 'opsText.buyerFeedbackAndCurrentModeration',
+    columns: [{ title: 'opsText.buyer', key: 'buyerName' }, { title: 'opsText.productId', key: 'productId' },
+      { title: 'opsText.rating', key: 'rating' }, { title: 'opsText.comment', key: 'comment' },
+      { title: 'opsText.status', key: 'status', kind: 'status' }, { title: 'opsText.date', key: 'createdAt', kind: 'date' }] },
+  reports: { title: 'opsText.buyerReports', subtitle: 'opsText.orderComplaintsAndReturnRequests',
+    columns: [{ title: 'opsText.type', key: 'type' }, { title: 'opsText.orderId', key: 'orderId' },
+      { title: 'opsText.storeId', key: 'storeId' }, { title: 'opsText.reason', key: 'details.reason' },
+      { title: 'opsText.status', key: 'details.status', kind: 'status' },
+      { title: 'opsText.date', key: 'createdAt', kind: 'date' }] },
+  billing: { title: 'opsText.usageStatements', subtitle: 'opsText.commerceUsageBillingDistinctFrom',
+    columns: [{ title: 'opsText.statementId', key: 'id' }, { title: 'opsText.storeId', key: 'storeId' },
+      { title: 'opsText.month', key: 'month' }, { title: 'opsText.amount', key: 'totalAmount', kind: 'money' },
+      { title: 'opsText.status', key: 'status', kind: 'status' }] },
 };
 const checklist = [
-  ['accountVerified', 'Merchant contact verified'],
-  ['identityReviewed', 'Seller identity reviewed'],
-  ['storeDetailsReviewed', 'Store and pickup details reviewed'],
-  ['sampleProductReviewed', 'Sample product reviewed'],
-  ['fulfillmentReviewed', 'Delivery, COD, returns and refunds reviewed'],
-  ['restrictedProductsReviewed', 'Restricted products checked'],
+  ['accountVerified', 'opsText.check.accountVerified'],
+  ['identityReviewed', 'opsText.check.identityReviewed'],
+  ['storeDetailsReviewed', 'opsText.check.storeDetailsReviewed'],
+  ['sampleProductReviewed', 'opsText.check.sampleProductReviewed'],
+  ['fulfillmentReviewed', 'opsText.check.fulfillmentReviewed'],
+  ['restrictedProductsReviewed', 'opsText.check.restrictedProductsReviewed'],
 ] as const;
 
 @Component({
   standalone: true,
-  imports: [RouterLink],
+  imports: [TranslatePipe, RouterLink],
   template: `
     @if (section === 'dashboard') {
-      <div class="page-head"><div><p class="ops-eyebrow">OPERATIONS / LIVE</p><h1 class="page-title">Platform overview</h1><p class="page-sub">Operational counts from Core and Commerce. Direct administrative triage and moderation.</p></div></div>
+      <div class="page-head"><div><p class="ops-eyebrow">{{ 'ops.eyebrow' | translate }}</p><h1 class="page-title">{{ 'ops.platformOverview' | translate }}</h1><p class="page-sub">{{ 'ops.overviewLead' | translate }}</p></div></div>
       @if (coreError()) { <div class="ops-alert">Core unavailable: {{coreError()}}</div> }
       @if (commerceError()) { <div class="ops-alert">Commerce unavailable: {{commerceError()}}</div> }
       <div class="ops-stats">
-        <a routerLink="/stores"><small>Stores</small><strong>{{coreOverview()?.['storeCount'] ?? '—'}}</strong><span>{{coreOverview()?.['activeStores'] ?? '—'}} active</span></a>
-        <a routerLink="/stores" [queryParams]="{status:'pending'}"><small>Pending seller applications</small><strong>{{coreOverview()?.['pendingSellers'] ?? '—'}}</strong><span>Approval gates marketplace selling</span></a>
-        <a routerLink="/websites"><small>Storefront websites</small><strong>{{coreOverview()?.['websiteCount'] ?? '—'}}</strong><span>Optional sales channel</span></a>
-        <a routerLink="/users"><small>Users</small><strong>{{coreOverview()?.['userCount'] ?? '—'}}</strong><span>Shared identity</span></a>
-        <a routerLink="/products"><small>Catalog products</small><strong>{{commerceOverview()?.['productCount'] ?? '—'}}</strong><span>Canonical merchant products</span></a>
-        <a routerLink="/orders"><small>Marketplace orders</small><strong>{{commerceOverview()?.['marketplaceOrders'] ?? '—'}}</strong><span>{{commerceOverview()?.['openMarketplaceOrders'] ?? '—'}} open</span></a>
-        <a routerLink="/reports"><small>Buyer reports</small><strong>{{commerceOverview()?.['buyerReports'] ?? '—'}}</strong><span>Complaints and returns</span></a>
-        <a routerLink="/subscriptions"><small>Active subscriptions</small><strong>{{coreOverview()?.['activeSubscriptions'] ?? '—'}}</strong><span>{{coreOverview()?.['pendingPlanPayments'] ?? '—'}} plan payments pending</span></a>
+        <a routerLink="/stores"><small>{{ 'ops.stores' | translate }}</small><strong>{{coreOverview()?.['storeCount'] ?? '—'}}</strong><span>{{coreOverview()?.['activeStores'] ?? '—'}} active</span></a>
+        <a routerLink="/stores" [queryParams]="{status:'pending'}"><small>{{ 'ops.pendingSellerApplications' | translate }}</small><strong>{{coreOverview()?.['pendingSellers'] ?? '—'}}</strong><span>{{ 'ops.approvalGates' | translate }}</span></a>
+        <a routerLink="/websites"><small>{{ 'ops.storefrontWebsites' | translate }}</small><strong>{{coreOverview()?.['websiteCount'] ?? '—'}}</strong><span>{{ 'ops.optionalSalesChannel' | translate }}</span></a>
+        <a routerLink="/users"><small>{{ 'nav.users' | translate }}</small><strong>{{coreOverview()?.['userCount'] ?? '—'}}</strong><span>{{ 'ops.sharedIdentity' | translate }}</span></a>
+        <a routerLink="/products"><small>{{ 'ops.catalogProducts' | translate }}</small><strong>{{commerceOverview()?.['productCount'] ?? '—'}}</strong><span>{{ 'ops.canonicalProducts' | translate }}</span></a>
+        <a routerLink="/orders"><small>{{ 'ops.marketplaceOrders' | translate }}</small><strong>{{commerceOverview()?.['marketplaceOrders'] ?? '—'}}</strong><span>{{commerceOverview()?.['openMarketplaceOrders'] ?? '—'}} open</span></a>
+        <a routerLink="/reports"><small>{{ 'ops.buyerReports' | translate }}</small><strong>{{commerceOverview()?.['buyerReports'] ?? '—'}}</strong><span>{{ 'ops.complaintsAndReturns' | translate }}</span></a>
+        <a routerLink="/subscriptions"><small>{{ 'ops.activeSubscriptions' | translate }}</small><strong>{{coreOverview()?.['activeSubscriptions'] ?? '—'}}</strong><span>{{coreOverview()?.['pendingPlanPayments'] ?? '—'}} plan payments pending</span></a>
       </div>
       <div class="ops-panels">
         <section class="card">
-          <div class="ops-panel-head"><div><h2>Priority Action Queue</h2><p>Items requiring administrative attention</p></div><a [routerLink]="queueTab() === 'sellers' ? '/stores' : queueTab() === 'reviews' ? '/reviews' : '/reports'">View all →</a></div>
+          <div class="ops-panel-head"><div><h2>{{ 'ops.priorityQueue' | translate }}</h2><p>{{ 'ops.priorityQueueLead' | translate }}</p></div><a [routerLink]="queueTab() === 'sellers' ? '/stores' : queueTab() === 'reviews' ? '/reviews' : '/reports'">View all →</a></div>
           <div class="ops-queue-tabs">
             <button class="ops-queue-tab" [class.active]="queueTab() === 'sellers'" (click)="queueTab.set('sellers')">Pending Sellers ({{pendingStores().length}})</button>
             <button class="ops-queue-tab" [class.active]="queueTab() === 'reviews'" (click)="queueTab.set('reviews')">Flagged Reviews ({{flaggedReviews().length}})</button>
             <button class="ops-queue-tab" [class.active]="queueTab() === 'reports'" (click)="queueTab.set('reports')">Buyer Reports ({{openReports().length}})</button>
           </div>
           @if (queueTab() === 'sellers') {
-            @for (store of pendingStores(); track store.id) { <button class="ops-queue-row" (click)="openItem(store, 'stores')"><span class="thumb">{{store.name[0]}}</span><span><b>{{store.name}}</b><small>{{store.primaryCategory || 'Category missing'}} · {{store.owner?.email || 'No email'}}</small></span><em>Review →</em></button> }
-            @empty { <p class="ops-empty">{{queueError() || 'No pending seller applications.'}}</p> }
+            @for (store of pendingStores(); track store.id) { <button class="ops-queue-row" (click)="openItem(store, 'stores')"><span class="thumb">{{store.name[0]}}</span><span><b>{{store.name}}</b><small>{{store.primaryCategory || ('ops.categoryMissing' | translate)}} · {{store.owner?.email || ('ops.noEmail' | translate)}}</small></span><em>{{ 'ops.reviewArrow' | translate }}</em></button> }
+            @empty { <p class="ops-empty">{{queueError() || ('ops.noPendingApplications' | translate)}}</p> }
           }
           @if (queueTab() === 'reviews') {
-            @for (rev of flaggedReviews(); track rev.id) { <button class="ops-queue-row" (click)="openItem(rev, 'reviews')"><span class="thumb">★</span><span><b>{{rev.buyerName}} ({{rev.rating}}★)</b><small>{{rev.comment || 'No comment'}}</small></span><em>Moderate →</em></button> }
-            @empty { <p class="ops-empty">No flagged reviews requiring moderation.</p> }
+            @for (rev of flaggedReviews(); track rev.id) { <button class="ops-queue-row" (click)="openItem(rev, 'reviews')"><span class="thumb">★</span><span><b>{{rev.buyerName}} ({{rev.rating}}★)</b><small>{{rev.comment || ('ops.noComment' | translate)}}</small></span><em>{{ 'ops.moderateArrow' | translate }}</em></button> }
+            @empty { <p class="ops-empty">{{ 'ops.noFlaggedReviews' | translate }}</p> }
           }
           @if (queueTab() === 'reports') {
-            @for (rep of openReports(); track rep.id) { <button class="ops-queue-row" (click)="openItem(rep, 'reports')"><span class="thumb">⚠</span><span><b>{{label(rep.type)}} · Order {{rep.orderId?.slice(0,8)}}</b><small>{{rep.details?.reason || 'No details'}}</small></span><em>Triage →</em></button> }
-            @empty { <p class="ops-empty">No open buyer reports.</p> }
+            @for (rep of openReports(); track rep.id) { <button class="ops-queue-row" (click)="openItem(rep, 'reports')"><span class="thumb">⚠</span><span><b>{{label(rep.type)}} · {{ 'ops.orderShort' | translate: { id: rep.orderId?.slice(0,8) ?? '' } }}</b><small>{{rep.details?.reason || ('ops.noDetails' | translate)}}</small></span><em>{{ 'ops.triageArrow' | translate }}</em></button> }
+            @empty { <p class="ops-empty">{{ 'ops.noOpenReports' | translate }}</p> }
           }
         </section>
-        <section class="card"><div class="ops-panel-head"><div><h2>Payment boundary</h2><p>Current marketplace launch model</p></div></div><div class="ops-copy"><p>Marketplace orders use cash on delivery. Merchants deliver, collect cash, and handle returns and refunds. Rentify records order state and charges subscriptions separately.</p><p>Online marketplace settlement, seller payouts, and commission are future capabilities and are not shown as current platform income.</p></div></section>
+        <section class="card"><div class="ops-panel-head"><div><h2>{{ 'ops.paymentBoundary' | translate }}</h2><p>{{ 'ops.launchModel' | translate }}</p></div></div><div class="ops-copy"><p>{{ 'ops.codModel' | translate }}</p><p>{{ 'ops.futureSettlement' | translate }}</p></div></section>
       </div>
     } @else {
-      <div class="page-head"><div><p class="ops-eyebrow">{{coreSource ? 'CORE' : 'COMMERCE'}} / LIVE</p><h1 class="page-title">{{definition.title}}</h1><p class="page-sub">{{definition.subtitle}}</p></div></div>
-      @if (storeFilter) { <div class="ops-filter">Filtered to Store {{storeFilter}} <a [routerLink]="'/' + section">Clear</a></div> }
-      <div class="ops-toolbar"><form (submit)="search($event)"><input class="input" aria-label="Search records" placeholder="Search records" [value]="query()" (input)="query.set($any($event.target).value)"><button class="btn btn-primary" type="submit">Search</button></form>
-        @if (section === 'stores') { <select class="input" aria-label="Approval status" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">All approval states</option><option value="pending">Pending application</option><option value="approved">Approved</option><option value="needs_changes">Needs changes</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option></select> }
-        @if (section === 'orders') { <select class="input" aria-label="Sales channel" [value]="channel()" (change)="changeChannel($any($event.target).value)"><option value="">All channels</option><option value="marketplace">Marketplace</option><option value="storefront">Storefront</option><option value="pos">POS</option></select> }
+      <div class="page-head"><div><p class="ops-eyebrow">{{coreSource ? 'CORE' : 'COMMERCE'}} / {{ 'ops.live' | translate }}</p><h1 class="page-title">{{definition.title | translate}}</h1><p class="page-sub">{{definition.subtitle | translate}}</p></div></div>
+      @if (storeFilter) { <div class="ops-filter">Filtered to Store {{storeFilter}} <a [routerLink]="'/' + section">{{ 'common.clear' | translate }}</a></div> }
+      <div class="ops-toolbar"><form (submit)="search($event)"><input class="input" [attr.aria-label]="'ops.searchRecords' | translate" [placeholder]="'ops.searchRecords' | translate" [value]="query()" (input)="query.set($any($event.target).value)"><button class="btn btn-primary" type="submit">{{ 'common.search' | translate }}</button></form>
+        @if (section === 'stores') { <select class="input" [attr.aria-label]="'ops.approvalStatus' | translate" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">{{ 'ops.allApprovalStates' | translate }}</option><option value="pending">{{ 'ops.pendingApplication' | translate }}</option><option value="approved">{{ 'ops.approved' | translate }}</option><option value="needs_changes">{{ 'ops.needsChanges' | translate }}</option><option value="rejected">{{ 'ops.rejected' | translate }}</option><option value="suspended">{{ 'ops.suspended' | translate }}</option></select> }
+        @if (section === 'orders') { <select class="input" [attr.aria-label]="'ops.salesChannel' | translate" [value]="channel()" (change)="changeChannel($any($event.target).value)"><option value="">{{ 'ops.allChannels' | translate }}</option><option value="marketplace">{{ 'ops.marketplace' | translate }}</option><option value="storefront">{{ 'ops.storefront' | translate }}</option><option value="pos">{{ 'ops.pos' | translate }}</option></select> }
         @if (section === 'products') {
-          <select class="input" aria-label="Product status" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">All catalog statuses</option><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived / Held</option><option value="out_of_stock">Out of stock</option><option value="low_stock">Low stock</option></select>
-          <select class="input" aria-label="Marketplace listing override" [value]="visibility()" (change)="changeVisibility($any($event.target).value)"><option value="">All visibility states</option><option value="listed">Marketplace Listed (Force On)</option><option value="held">Marketplace Held (Force Off)</option><option value="default">Store Default</option></select>
+          <select class="input" [attr.aria-label]="'ops.productStatus' | translate" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">{{ 'ops.allCatalogStatuses' | translate }}</option><option value="active">{{ 'common.active' | translate }}</option><option value="draft">{{ 'ops.draft' | translate }}</option><option value="archived">{{ 'ops.archivedHeld' | translate }}</option><option value="out_of_stock">{{ 'ops.outOfStock' | translate }}</option><option value="low_stock">{{ 'ops.lowStock' | translate }}</option></select>
+          <select class="input" [attr.aria-label]="'ops.listingOverrideFilter' | translate" [value]="visibility()" (change)="changeVisibility($any($event.target).value)"><option value="">{{ 'ops.allVisibilityStates' | translate }}</option><option value="listed">{{ 'ops.forceOn' | translate }}</option><option value="held">{{ 'ops.forceOff' | translate }}</option><option value="default">{{ 'ops.storeDefault' | translate }}</option></select>
         }
-        @if (section === 'reviews') { <select class="input" aria-label="Review status" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">All review statuses</option><option value="flagged">Flagged</option><option value="published">Published</option><option value="hidden">Hidden</option></select> }
-        @if (section === 'reports') { <select class="input" aria-label="Triage status" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">All triage statuses</option><option value="open">Open</option><option value="investigating">Investigating</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></select> }
+        @if (section === 'reviews') { <select class="input" [attr.aria-label]="'ops.reviewStatus' | translate" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">{{ 'ops.allReviewStatuses' | translate }}</option><option value="flagged">{{ 'ops.flagged' | translate }}</option><option value="published">{{ 'ops.published' | translate }}</option><option value="hidden">{{ 'ops.hidden' | translate }}</option></select> }
+        @if (section === 'reports') { <select class="input" [attr.aria-label]="'ops.triageStatus' | translate" [value]="status()" (change)="changeStatus($any($event.target).value)"><option value="">{{ 'ops.allTriageStatuses' | translate }}</option><option value="open">{{ 'status.open' | translate }}</option><option value="investigating">{{ 'ops.investigating' | translate }}</option><option value="resolved">{{ 'status.resolved' | translate }}</option><option value="dismissed">{{ 'status.dismissed' | translate }}</option></select> }
       </div>
-      @if (error()) { <div class="ops-alert">{{error()}} <button class="btn btn-default btn-sm" (click)="load()">Retry</button></div> }
-      @if (loading()) { <div class="card ops-empty">Loading live records…</div> }
+      @if (error()) { <div class="ops-alert">{{error()}} <button class="btn btn-default btn-sm" (click)="load()">{{ 'common.retry' | translate }}</button></div> }
+      @if (loading()) { <div class="card ops-empty">{{ 'ops.loadingLiveRecords' | translate }}</div> }
       @if (!loading() && !error()) {
-        <div class="card ops-table-scroll"><table class="tbl"><thead><tr>@for (column of definition.columns; track column.title) { <th>{{column.title}}</th> } @if (actionable.has(section)) { <th>Action</th> }</tr></thead><tbody>
+        <div class="card ops-table-scroll"><table class="tbl"><thead><tr>@for (column of definition.columns; track column.title) { <th>{{column.title | translate}}</th> } @if (actionable.has(section)) { <th>{{ 'common.action' | translate }}</th> }</tr></thead><tbody>
           @for (row of rows(); track row.id) { <tr>@for (column of definition.columns; track column.title) { <td><span [class.ops-pill]="column.kind === 'status'" [class]="statusClass(row, column)">{{cell(row, column)}}</span></td> }
-            @if (actionable.has(section)) { <td><button class="btn btn-default btn-sm" (click)="openItem(row, section)">Inspect</button></td> }
-          </tr> } @empty { <tr><td colspan="10"><p class="ops-empty">No matching live records.</p></td></tr> }
+            @if (actionable.has(section)) { <td><button class="btn btn-default btn-sm" (click)="openItem(row, section)">{{ 'ops.inspect' | translate }}</button></td> }
+          </tr> } @empty { <tr><td colspan="10"><p class="ops-empty">{{ 'ops.noMatchingRecords' | translate }}</p></td></tr> }
         </tbody></table></div>
-        <div class="ops-pagination"><span>{{total()}} records · page {{page()}} of {{pages()}}</span><div><button class="btn btn-default btn-sm" [disabled]="page() <= 1" (click)="goPage(page()-1)">Previous</button><button class="btn btn-default btn-sm" [disabled]="page() >= pages()" (click)="goPage(page()+1)">Next</button></div></div>
+        <div class="ops-pagination"><span>{{total()}} records · page {{page()}} of {{pages()}}</span><div><button class="btn btn-default btn-sm" [disabled]="page() <= 1" (click)="goPage(page()-1)">{{ 'common.previous' | translate }}</button><button class="btn btn-default btn-sm" [disabled]="page() >= pages()" (click)="goPage(page()+1)">{{ 'common.next' | translate }}</button></div></div>
       }
     }
     @if (selected(); as item) {
-      <div class="drawer-back" (click)="selected.set(null)"></div><aside class="drawer ops-drawer"><div class="drawer-head"><b>{{item.name || item.orderNumber || item.buyerName || item.type || item.id}}</b><button class="icon-btn" aria-label="Close" (click)="selected.set(null)">✕</button></div><div class="drawer-body">
+      <div class="drawer-back" (click)="selected.set(null)"></div><aside class="drawer ops-drawer"><div class="drawer-head"><b>{{item.name || item.orderNumber || item.buyerName || item.type || item.id}}</b><button class="icon-btn" [attr.aria-label]="'common.close' | translate" (click)="selected.set(null)">✕</button></div><div class="drawer-body">
         @if (actionSuccess()) { <div class="ops-success">{{actionSuccess()}}</div> }
         @if (decisionError()) { <div class="ops-alert">{{decisionError()}}</div> }
 
         @if (drawerSection() === 'stores' || drawerSection() === 'dashboard') {
-          <div class="ops-facts"><span>Store ID</span><b>{{item.id}}</b><span>Owner</span><b>{{item.owner?.name || '—'}}</b><span>Contact</span><b>{{item.owner?.email || item.owner?.phoneNumber || '—'}}</b><span>Contact verified</span><b>{{item.owner?.isVerified ? 'Yes' : 'No'}}</b><span>Category</span><b>{{item.primaryCategory || 'Missing'}}</b><span>Website</span><b>{{item.website?.name || 'Marketplace only'}}</b><span>Marketplace enabled</span><b>{{item.marketplaceEnabled ? 'Yes' : 'Opted out'}}</b><span>Approval</span><b>{{label(item.marketplaceApprovalStatus)}}</b><span>Store status</span><b>{{label(item.status)}}</b></div>
+          <div class="ops-facts"><span>{{ 'ops.storeId' | translate }}</span><b>{{item.id}}</b><span>{{ 'ops.owner' | translate }}</span><b>{{item.owner?.name || '—'}}</b><span>{{ 'ops.contact' | translate }}</span><b>{{item.owner?.email || item.owner?.phoneNumber || '—'}}</b><span>{{ 'ops.contactVerified' | translate }}</span><b>{{item.owner?.isVerified ? 'Yes' : 'No'}}</b><span>{{ 'moderation.productCategory' | translate }}</span><b>{{item.primaryCategory || 'Missing'}}</b><span>{{ 'ops.website' | translate }}</span><b>{{item.website?.name || 'Marketplace only'}}</b><span>{{ 'ops.marketplaceEnabled' | translate }}</span><b>{{item.marketplaceEnabled ? 'Yes' : 'Opted out'}}</b><span>{{ 'ops.approval' | translate }}</span><b>{{label(item.marketplaceApprovalStatus)}}</b><span>{{ 'ops.storeStatus' | translate }}</span><b>{{label(item.status)}}</b></div>
           <div class="ops-actions">
             <button class="btn btn-default btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="toggleStoreMarketplace(item, !item.marketplaceEnabled)">{{item.marketplaceEnabled ? 'Opt Out of Marketplace' : 'Enable Marketplace Listing'}}</button>
             <button class="btn btn-sm" [class.btn-danger]="item.status === 'active'" [class.btn-primary]="item.status !== 'active'" [disabled]="saving() || !canReviewSellers()" (click)="toggleStoreStatus(item, item.status === 'active' ? 'suspended' : 'active')">{{item.status === 'active' ? 'Suspend Store' : 'Reactivate Store'}}</button>
           </div>
           <div class="ops-links" style="margin-top:14px;"><a [routerLink]="['/products']" [queryParams]="{storeId:item.id}" (click)="selected.set(null)">Products →</a><a [routerLink]="['/orders']" [queryParams]="{storeId:item.id}" (click)="selected.set(null)">Orders →</a></div>
-          <h3>Seller application</h3>
+          <h3>{{ 'ops.sellerApplication' | translate }}</h3>
           @if (item.sellerApplication; as app) {
-            <div class="ops-facts"><span>Responsible person</span><b>{{app.responsibleName}}</b><span>Pickup</span><b>{{app.pickupLocation}}</b><span>Buyer contact</span><b>{{app.buyerContact}}</b><span>Sample product</span><b>{{app.sampleProductDescription}}</b></div>
-            <h3>Approval checklist</h3><p class="cell-sub">All checks are required for approval; Core records every decision.</p>
-            @for (check of checklist; track check[0]) { <label class="ops-check"><input type="checkbox" [checked]="checks()[check[0]]" (change)="setCheck(check[0], $any($event.target).checked)">{{check[1]}}</label> }
-            <label class="ops-field">Reason / requested changes<textarea class="input" rows="3" [value]="reason()" (input)="reason.set($any($event.target).value)"></textarea></label>
-            <div class="ops-actions"><button class="btn btn-primary" [disabled]="saving() || !canApprove(item)" (click)="decide(item,'approved')">Approve</button><button class="btn btn-default" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'needs_changes')">Needs changes</button><button class="btn btn-danger" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,item.marketplaceApprovalStatus === 'approved' ? 'suspended' : 'rejected')">{{item.marketplaceApprovalStatus === 'approved' ? 'Suspend' : 'Reject'}}</button></div>
+            <div class="ops-facts"><span>{{ 'ops.responsiblePerson' | translate }}</span><b>{{app.responsibleName}}</b><span>{{ 'ops.pickup' | translate }}</span><b>{{app.pickupLocation}}</b><span>{{ 'ops.buyerContact' | translate }}</span><b>{{app.buyerContact}}</b><span>{{ 'ops.sampleProduct' | translate }}</span><b>{{app.sampleProductDescription}}</b></div>
+            <h3>{{ 'ops.approvalChecklist' | translate }}</h3><p class="cell-sub">{{ 'ops.checklistNote' | translate }}</p>
+            @for (check of checklist; track check[0]) { <label class="ops-check"><input type="checkbox" [checked]="checks()[check[0]]" (change)="setCheck(check[0], $any($event.target).checked)">{{check[1] | translate}}</label> }
+            <label class="ops-field">{{ 'ops.reasonChanges' | translate }}<textarea class="input" rows="3" [value]="reason()" (input)="reason.set($any($event.target).value)"></textarea></label>
+            <div class="ops-actions"><button class="btn btn-primary" [disabled]="saving() || !canApprove(item)" (click)="decide(item,'approved')">{{ 'ops.approve' | translate }}</button><button class="btn btn-default" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'needs_changes')">{{ 'ops.needsChanges' | translate }}</button><button class="btn btn-danger" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,item.marketplaceApprovalStatus === 'approved' ? 'suspended' : 'rejected')">{{item.marketplaceApprovalStatus === 'approved' ? 'Suspend' : 'Reject'}}</button></div>
           } @else {
-            <p class="ops-empty">No formal seller application submitted yet.</p>
+            <p class="ops-empty">{{ 'ops.noApplication' | translate }}</p>
             <div class="ops-actions">
-              <button class="btn btn-primary btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'approved')">Pre-Approve Store</button>
-              <button class="btn btn-danger btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'suspended')">Suspend Seller</button>
+              <button class="btn btn-primary btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'approved')">{{ 'ops.preApproveStore' | translate }}</button>
+              <button class="btn btn-danger btn-sm" [disabled]="saving() || !canReviewSellers()" (click)="decide(item,'suspended')">{{ 'ops.suspendSeller' | translate }}</button>
             </div>
           }
-          <h3>Review history</h3>@for (review of history(); track review.id) { <div class="ops-history"><b>{{label(review.decision)}}</b><span>{{date(review.createdAt)}}</span><p>{{review.reason || 'Checklist approved'}}</p></div> } @empty { <p class="cell-sub">No manual reviews recorded.</p> }
+          <h3>{{ 'ops.reviewHistory' | translate }}</h3>@for (review of history(); track review.id) { <div class="ops-history"><b>{{label(review.decision)}}</b><span>{{date(review.createdAt)}}</span><p>{{review.reason || 'Checklist approved'}}</p></div> } @empty { <p class="cell-sub">{{ 'ops.noManualReviews' | translate }}</p> }
         }
 
         @if (drawerSection() === 'products') {
-          <div class="ops-facts"><span>Product ID</span><b>{{item.id}}</b><span>Store ID</span><b>{{item.storeId || '—'}}</b><span>Slug</span><b>{{item.slug || '—'}}</b><span>Category</span><b>{{item.marketplaceCategory || '—'}}</b><span>Price</span><b>{{money(item.price)}}</b><span>Stock</span><b>{{item.stockQuantity}} units</b><span>Status</span><b>{{label(item.status)}}</b><span>Listing override</span><b>{{item.marketplaceVisibility === null ? 'Store default' : item.marketplaceVisibility ? 'Force On' : 'Force Off (Held)'}}</b><span>Created</span><b>{{date(item.createdAt)}}</b></div>
-          <h3>Marketplace Listing Controls</h3>
-          <p class="cell-sub">Admin hold delists product from the shared marketplace while preserving storefront catalog.</p>
+          <div class="ops-facts"><span>{{ 'ops.productId' | translate }}</span><b>{{item.id}}</b><span>{{ 'ops.storeId' | translate }}</span><b>{{item.storeId || '—'}}</b><span>{{ 'ops.slug' | translate }}</span><b>{{item.slug || '—'}}</b><span>{{ 'moderation.productCategory' | translate }}</span><b>{{item.marketplaceCategory || '—'}}</b><span>{{ 'moderation.productPrice' | translate }}</span><b>{{money(item.price)}}</b><span>{{ 'ops.stock' | translate }}</span><b>{{item.stockQuantity}} units</b><span>{{ 'common.status' | translate }}</span><b>{{label(item.status)}}</b><span>{{ 'ops.listingOverride' | translate }}</span><b>{{item.marketplaceVisibility === null ? 'Store default' : item.marketplaceVisibility ? 'Force On' : 'Force Off (Held)'}}</b><span>{{ 'common.created' | translate }}</span><b>{{date(item.createdAt)}}</b></div>
+          <h3>{{ 'ops.listingControls' | translate }}</h3>
+          <p class="cell-sub">{{ 'ops.holdNote' | translate }}</p>
           <div class="ops-actions">
-            <button class="btn btn-primary btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, true)">Force List on Marketplace</button>
-            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, false)">Hold / Delist from Marketplace</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, null)">Inherit Store Default</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, true)">{{ 'ops.forceList' | translate }}</button>
+            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, false)">{{ 'ops.holdDelist' | translate }}</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || !canModerateCatalog()" (click)="setProductVisibility(item, null)">{{ 'ops.inheritDefault' | translate }}</button>
           </div>
-          <h3>Catalog Status</h3>
+          <h3>{{ 'ops.catalogStatus' | translate }}</h3>
           <div class="ops-actions">
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'active' || !canModerateCatalog()" (click)="setProductStatus(item, 'active')">Set Active</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'archived' || !canModerateCatalog()" (click)="setProductStatus(item, 'archived')">Archive / Takedown</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'active' || !canModerateCatalog()" (click)="setProductStatus(item, 'active')">{{ 'ops.setActive' | translate }}</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'archived' || !canModerateCatalog()" (click)="setProductStatus(item, 'archived')">{{ 'ops.archiveTakedown' | translate }}</button>
           </div>
-          <h3>Inventory Restock</h3>
+          <h3>{{ 'ops.inventoryRestock' | translate }}</h3>
           <div class="ops-actions">
             <button class="btn btn-default btn-sm" [disabled]="saving() || !canAdjustInventory()" (click)="restockProduct(item, 20)">+20 Units Restock</button>
           </div>
@@ -187,39 +189,39 @@ const checklist = [
         }
 
         @if (drawerSection() === 'reviews') {
-          <div class="ops-facts"><span>Review ID</span><b>{{item.id}}</b><span>Buyer</span><b>{{item.buyerName}}</b><span>Product ID</span><b>{{item.productId}}</b><span>Store ID</span><b>{{item.storeId}}</b><span>Rating</span><b>{{item.rating}} / 5 ★</b><span>Verified buyer</span><b>{{item.isVerifiedPurchase ? 'Yes' : 'No'}}</b><span>Status</span><b>{{label(item.status)}}</b><span>Date</span><b>{{date(item.createdAt)}}</b></div>
-          <h3>Review Comment</h3>
-          <div class="ops-copy" style="background:#f8fafc; border:1px solid var(--line); border-radius:8px; margin:10px 0;"><p>{{item.comment || 'No comment text provided.'}}</p></div>
-          <h3>Moderation Actions</h3>
+          <div class="ops-facts"><span>{{ 'ops.reviewId' | translate }}</span><b>{{item.id}}</b><span>{{ 'support.msgSenderBuyer' | translate }}</span><b>{{item.buyerName}}</b><span>{{ 'ops.productId' | translate }}</span><b>{{item.productId}}</b><span>{{ 'ops.storeId' | translate }}</span><b>{{item.storeId}}</b><span>{{ 'ops.rating' | translate }}</span><b>{{item.rating}} / 5 ★</b><span>{{ 'ops.verifiedBuyer' | translate }}</span><b>{{item.isVerifiedPurchase ? 'Yes' : 'No'}}</b><span>{{ 'common.status' | translate }}</span><b>{{label(item.status)}}</b><span>{{ 'common.date' | translate }}</span><b>{{date(item.createdAt)}}</b></div>
+          <h3>{{ 'ops.reviewComment' | translate }}</h3>
+          <div class="ops-copy" style="background:#f8fafc; border:1px solid var(--line); border-radius:8px; margin:10px 0;"><p>{{item.comment || ('ops.noCommentText' | translate)}}</p></div>
+          <h3>{{ 'ops.moderationActions' | translate }}</h3>
           <div class="ops-actions">
-            <button class="btn btn-primary btn-sm" [disabled]="saving() || item.status === 'published' || !canModerateReviews()" (click)="setReviewStatus(item, 'published')">Approve / Publish</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'flagged' || !canModerateReviews()" (click)="setReviewStatus(item, 'flagged')">Flag for Review</button>
-            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'hidden' || !canModerateReviews()" (click)="setReviewStatus(item, 'hidden')">Hide Review</button>
-            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canModerateReviews()" (click)="removeReview(item)">Delete Review</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving() || item.status === 'published' || !canModerateReviews()" (click)="setReviewStatus(item, 'published')">{{ 'ops.approvePublish' | translate }}</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'flagged' || !canModerateReviews()" (click)="setReviewStatus(item, 'flagged')">{{ 'ops.flagForReview' | translate }}</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || item.status === 'hidden' || !canModerateReviews()" (click)="setReviewStatus(item, 'hidden')">{{ 'ops.hideReview' | translate }}</button>
+            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canModerateReviews()" (click)="removeReview(item)">{{ 'ops.deleteReview' | translate }}</button>
           </div>
         }
 
         @if (drawerSection() === 'reports') {
-          <div class="ops-facts"><span>Report ID</span><b>{{item.id}}</b><span>Order ID</span><b>{{item.orderId}}</b><span>Store ID</span><b>{{item.storeId}}</b><span>Actor ID</span><b>{{item.actorId}}</b><span>Report type</span><b>{{label(item.type)}}</b><span>Current status</span><b>{{label(item.details?.status || 'open')}}</b><span>Reported</span><b>{{date(item.createdAt)}}</b></div>
-          <h3>Complaint Details</h3>
-          <div class="ops-copy" style="background:#fffcf5; border:1px solid #fed7aa; border-radius:8px; margin:10px 0;"><p>{{item.details?.reason || 'No specific complaint reason submitted.'}}</p></div>
+          <div class="ops-facts"><span>{{ 'ops.reportId' | translate }}</span><b>{{item.id}}</b><span>{{ 'ops.orderId' | translate }}</span><b>{{item.orderId}}</b><span>{{ 'ops.storeId' | translate }}</span><b>{{item.storeId}}</b><span>{{ 'ops.actorId' | translate }}</span><b>{{item.actorId}}</b><span>{{ 'ops.reportType' | translate }}</span><b>{{label(item.type)}}</b><span>{{ 'ops.currentStatus' | translate }}</span><b>{{label(item.details?.status || 'open')}}</b><span>{{ 'ops.reported' | translate }}</span><b>{{date(item.createdAt)}}</b></div>
+          <h3>{{ 'ops.complaintDetails' | translate }}</h3>
+          <div class="ops-copy" style="background:#fffcf5; border:1px solid #fed7aa; border-radius:8px; margin:10px 0;"><p>{{item.details?.reason || ('ops.noComplaintReason' | translate)}}</p></div>
           @if (item.details?.resolvedAt) {
-            <h3>Resolution Recorded</h3>
-            <div class="ops-history"><b>Resolved by {{item.details.resolvedBy}}</b><span>{{date(item.details.resolvedAt)}}</span><p>{{item.details.resolutionNotes || 'Resolved without extra notes'}}</p></div>
+            <h3>{{ 'ops.resolutionRecorded' | translate }}</h3>
+            <div class="ops-history"><b>{{ 'ops.resolvedBy' | translate: { name: item.details.resolvedBy } }}</b><span>{{date(item.details.resolvedAt)}}</span><p>{{item.details.resolutionNotes || ('ops.resolvedNoNotes' | translate)}}</p></div>
           }
-          <h3>Triage Resolution</h3>
-          <label class="ops-field">Resolution notes / findings<textarea class="input" rows="3" [value]="resolutionNotes()" (input)="resolutionNotes.set($any($event.target).value)" placeholder="Enter findings, refund coordination, or dismissal reason..."></textarea></label>
+          <h3>{{ 'ops.triageResolution' | translate }}</h3>
+          <label class="ops-field">{{ 'ops.resolutionNotes' | translate }}<textarea class="input" rows="3" [value]="resolutionNotes()" (input)="resolutionNotes.set($any($event.target).value)" [placeholder]="'ops.findingsPlaceholder' | translate"></textarea></label>
           <div class="ops-actions">
-            <button class="btn btn-default btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'investigating')">Mark Investigating</button>
-            <button class="btn btn-primary btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'resolved')">Resolve Report</button>
-            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'dismissed')">Dismiss Report</button>
+            <button class="btn btn-default btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'investigating')">{{ 'ops.markInvestigating' | translate }}</button>
+            <button class="btn btn-primary btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'resolved')">{{ 'ops.resolveReport' | translate }}</button>
+            <button class="btn btn-danger btn-sm" [disabled]="saving() || !canWriteSupport()" (click)="triageReport(item, 'dismissed')">{{ 'ops.dismissReport' | translate }}</button>
             <a class="btn btn-default btn-sm" [routerLink]="['/orders']" [queryParams]="{storeId: item.storeId}" (click)="selected.set(null)">Store orders →</a>
           </div>
         }
 
         @if (drawerSection() === 'orders') {
-          <div class="ops-facts"><span>Order ID</span><b>{{item.id}}</b><span>Buyer ID</span><b>{{item.buyerId || '—'}}</b><span>Store ID</span><b>{{item.storeId}}</b><span>Channel</span><b>{{label(item.salesChannel)}}</b><span>Status</span><b>{{label(item.status)}}</b><span>Delivery</span><b>{{label(item.deliveryStatus)}}</b><span>Payment</span><b>{{item.Payment?.paymentMethod || '—'}} · {{item.Payment?.status || '—'}}</b><span>Delivery fee</span><b>{{money(item.shippingFee,item.currency)}}</b><span>Total</span><b>{{money(item.totalAmount,item.currency)}}</b></div>
-          <h3>Items</h3>
+          <div class="ops-facts"><span>{{ 'ops.orderId' | translate }}</span><b>{{item.id}}</b><span>{{ 'ops.buyerId' | translate }}</span><b>{{item.buyerId || '—'}}</b><span>{{ 'ops.storeId' | translate }}</span><b>{{item.storeId}}</b><span>{{ 'ops.channel' | translate }}</span><b>{{label(item.salesChannel)}}</b><span>{{ 'common.status' | translate }}</span><b>{{label(item.status)}}</b><span>{{ 'ops.delivery' | translate }}</span><b>{{label(item.deliveryStatus)}}</b><span>{{ 'ops.payment' | translate }}</span><b>{{item.Payment?.paymentMethod || '—'}} · {{item.Payment?.status || '—'}}</b><span>{{ 'ops.deliveryFee' | translate }}</span><b>{{money(item.shippingFee,item.currency)}}</b><span>{{ 'ops.total' | translate }}</span><b>{{money(item.totalAmount,item.currency)}}</b></div>
+          <h3>{{ 'ops.items' | translate }}</h3>
           @for (part of item.OrderItems || []; track part.id) { <div class="ops-history"><b>{{part.name}}</b><span>× {{part.quantity}} · {{money(part.total,item.currency)}}</span></div> }
         }
       </div></aside>
@@ -228,6 +230,7 @@ const checklist = [
 })
 export class OperationsComponent implements OnInit {
   private readonly api = inject(PlatformOperationsService);
+  private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService, { optional: true });
 
@@ -276,15 +279,24 @@ export class OperationsComponent implements OnInit {
   pages() { return Math.max(1, Math.ceil(this.total() / 20)); }
   date(value: string | null) { return value ? new Date(value).toLocaleDateString() : '—'; }
   money(value: string | number, currency = 'USD') { return `${currency} ${Number(value || 0).toFixed(2)}`; }
-  label(value: string) { return String(value || '—').replaceAll('_', ' ').replace(/\b\w/g, (x) => x.toUpperCase()); }
+  // Backend status codes get a catalog label (status.<code>); unknown codes fall back to Title Case.
+  label(value: string) {
+    const key = `status.${value}`;
+    const text = value ? this.translate.t(key) : key;
+    if (text !== key) return text;
+    return String(value || '—').replaceAll('_', ' ').replace(/\b\w/g, (x) => x.toUpperCase());
+  }
+  visibilityLabel(value: boolean | null | undefined): string {
+    return this.translate.t(value === null || value === undefined ? 'ops.storeDefault' : value ? 'ops.forceOnShort' : 'ops.forceOffHeld');
+  }
   cell(row: any, column: Column): string {
     if (column.key === 'owner') return row.owner?.email || row.owner?.phoneNumber || '—';
-    if (column.key === 'website') return row.website?.name || 'Marketplace only';
+    if (column.key === 'website') return row.website?.name || this.translate.t('ops.marketplaceOnly');
     if (column.key === 'details.status') return this.label(row.details?.status || 'open');
     if (column.key === 'details.reason') return row.details?.reason || '—';
     const value = column.key.split('.').reduce((part, key) => part?.[key], row);
-    if (column.key === 'isVerified') return value ? 'Yes' : 'No';
-    if (column.key === 'marketplaceVisibility') return value === null ? 'Store default' : value ? 'Force On' : 'Force Off (Held)';
+    if (column.key === 'isVerified') return this.translate.t(value ? 'common.yes' : 'common.no');
+    if (column.key === 'marketplaceVisibility') return this.visibilityLabel(value);
     if (column.kind === 'date') return this.date(value);
     if (column.kind === 'money') return this.money(value, row.currency || 'USD');
     if (column.kind === 'status') return this.label(value);
@@ -313,18 +325,18 @@ export class OperationsComponent implements OnInit {
       : this.api.commerce<Page<any>>(this.section, params);
     request.subscribe({ next: (result) => { this.rows.set(result.data); this.total.set(result.total); this.loading.set(false); },
       error: (e) => { this.rows.set([]); this.total.set(0);
-        this.error.set(apiErrorMessage(e, 'Unable to load live records.')); this.loading.set(false); } });
+        this.error.set(apiErrorMessage(e, this.translate.t('ops.err.loadRecords'))); this.loading.set(false); } });
   }
   private loadOverview() {
     this.api.core<{data:Record<string,number>}>('overview').subscribe({
       next: (r) => this.coreOverview.set(r.data),
-      error: (e) => this.coreError.set(apiErrorMessage(e, 'Core request failed')) });
+      error: (e) => this.coreError.set(apiErrorMessage(e, this.translate.t('ops.err.core'))) });
     this.api.commerce<{data:Record<string,number>}>('overview').subscribe({
       next: (r) => this.commerceOverview.set(r.data),
-      error: (e) => this.commerceError.set(apiErrorMessage(e, 'Commerce request failed')) });
+      error: (e) => this.commerceError.set(apiErrorMessage(e, this.translate.t('ops.err.commerce'))) });
     this.api.core<Page<any>>('stores', { applicationStatus: 'pending', limit: 5 }).subscribe({
       next: (r) => this.pendingStores.set(r.data),
-      error: (e) => this.queueError.set(apiErrorMessage(e, 'Seller queue unavailable')) });
+      error: (e) => this.queueError.set(apiErrorMessage(e, this.translate.t('ops.err.queue'))) });
     this.api.commerce<Page<any>>('reviews', { status: 'flagged', limit: 5 }).subscribe({
       next: (r) => this.flaggedReviews.set(r.data),
       error: () => {} });
@@ -348,7 +360,7 @@ export class OperationsComponent implements OnInit {
     this.checks.set(Object.fromEntries(checklist.map(([key]) => [key, false])));
     if (store.sellerApplication) this.api.reviewHistory(store.id).subscribe({
       next: (r) => this.history.set(r.data.reviews),
-      error: (e) => this.decisionError.set(apiErrorMessage(e, 'Could not load review history')) });
+      error: (e) => this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.history'))) });
   }
   setCheck(key: string, value: boolean) { this.checks.update((old) => ({ ...old, [key]: value })); }
   canApprove(store: any) {
@@ -361,12 +373,12 @@ export class OperationsComponent implements OnInit {
     this.api.reviewSeller(store.id, decision, this.checks(), this.reason().trim()).subscribe({
       next: () => {
         this.saving.set(false);
-        this.actionSuccess.set(`Seller status updated to ${decision}.`);
+        this.actionSuccess.set(this.translate.t('ops.ok.sellerStatus', { status: this.label(decision) }));
         store.marketplaceApprovalStatus = decision;
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not save seller decision.')); },
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.sellerDecision'))); },
     });
   }
   toggleStoreMarketplace(store: any, enabled: boolean) {
@@ -375,11 +387,11 @@ export class OperationsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         store.marketplaceEnabled = enabled;
-        this.actionSuccess.set(`Marketplace listing ${enabled ? 'enabled' : 'opted out'}.`);
+        this.actionSuccess.set(this.translate.t(enabled ? 'ops.ok.listingEnabled' : 'ops.ok.listingOptedOut'));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not update marketplace listing setting.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.listingSetting'))); }
     });
   }
   toggleStoreStatus(store: any, status: 'active' | 'suspended') {
@@ -388,11 +400,11 @@ export class OperationsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         store.status = status;
-        this.actionSuccess.set(`Store status updated to ${status}.`);
+        this.actionSuccess.set(this.translate.t('ops.ok.storeStatus', { status: this.label(status) }));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not update store status.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.storeStatus'))); }
     });
   }
   setProductVisibility(product: any, marketplaceVisibility: boolean | null) {
@@ -401,11 +413,11 @@ export class OperationsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         product.marketplaceVisibility = marketplaceVisibility;
-        this.actionSuccess.set(`Product listing override updated to ${marketplaceVisibility === null ? 'Store default' : marketplaceVisibility ? 'Force On' : 'Force Off (Held)'}.`);
+        this.actionSuccess.set(this.translate.t('ops.ok.listingOverride', { value: this.visibilityLabel(marketplaceVisibility) }));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not update product marketplace visibility.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.visibility'))); }
     });
   }
   setProductStatus(product: any, status: string) {
@@ -414,11 +426,11 @@ export class OperationsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         product.status = status;
-        this.actionSuccess.set(`Product catalog status updated to ${status}.`);
+        this.actionSuccess.set(this.translate.t('ops.ok.productStatus', { status: this.label(status) }));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not update product status.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.productStatus'))); }
     });
   }
   restockProduct(product: any, addQuantity: number) {
@@ -429,11 +441,11 @@ export class OperationsComponent implements OnInit {
         this.saving.set(false);
         product.stockQuantity = newStock;
         if (product.status === 'out_of_stock' && newStock > 0) product.status = 'active';
-        this.actionSuccess.set(`Added ${addQuantity} units (new stock: ${newStock}).`);
+        this.actionSuccess.set(this.translate.t('ops.ok.restocked', { count: addQuantity, stock: newStock }));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not restock product.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.restock'))); }
     });
   }
   setReviewStatus(review: any, status: 'published' | 'hidden' | 'flagged') {
@@ -442,11 +454,11 @@ export class OperationsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         review.status = status;
-        this.actionSuccess.set(`Review status updated to ${status}.`);
+        this.actionSuccess.set(this.translate.t('ops.ok.reviewStatus', { status: this.label(status) }));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not moderate review.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.moderateReview'))); }
     });
   }
   removeReview(review: any) {
@@ -458,7 +470,7 @@ export class OperationsComponent implements OnInit {
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not delete review.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.deleteReview'))); }
     });
   }
   triageReport(report: any, status: 'investigating' | 'resolved' | 'dismissed') {
@@ -471,11 +483,11 @@ export class OperationsComponent implements OnInit {
         report.details.status = status;
         report.details.resolutionNotes = notes;
         report.details.resolvedAt = new Date().toISOString();
-        this.actionSuccess.set(`Report triage status marked as ${status}.`);
+        this.actionSuccess.set(this.translate.t('ops.ok.reportStatus', { status: this.label(status) }));
         this.load();
       },
       error: (e) => { this.saving.set(false);
-        this.decisionError.set(apiErrorMessage(e, 'Could not triage report.')); }
+        this.decisionError.set(apiErrorMessage(e, this.translate.t('ops.err.triage'))); }
     });
   }
 }

@@ -14,7 +14,7 @@ test('a store logo must be an https link, and can be cleared', () => {
 });
 
 test('the public store fields include the logo but nothing private', () => {
-  assert.deepEqual(storeService.publicStoreAttributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl']);
+  assert.deepEqual(storeService.publicStoreAttributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl', 'marketplaceColor']);
 });
 
 test('updating a store rejects an unsafe logo before touching the database', async () => {
@@ -22,4 +22,8 @@ test('updating a store rejects an unsafe logo before touching the database', asy
     storeService.updateOwnStore({ ownerUserId: 'u', logoUrl: 'javascript:alert(1)' }),
     (error) => error.statusCode === 400 && /https/.test(error.message)
   );
+});
+
+test('updating a store rejects unsupported marketplace colors before database access', async () => {
+  await assert.rejects(storeService.updateOwnStore({ ownerUserId: 'u', marketplaceColor: '#ffffff' }), error => error.statusCode === 400);
 });

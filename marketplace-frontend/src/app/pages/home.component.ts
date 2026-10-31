@@ -21,6 +21,8 @@ import { HomeHeroComponent } from '../components/user/home/home-hero/home-hero.c
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
 import { Category, Product, isCuratedProduct, isCuratedStore } from '../core/catalog/catalog.models';
 import { SeoService } from '../core/seo/seo.service';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../core/i18n/category-text.pipe';
 
 interface CategoryShelf {
   slug: string;
@@ -33,7 +35,7 @@ interface CategoryShelf {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductRailComponent, ProductCardComponent, HomeHeroComponent, PromoCardComponent],
+  imports: [CategoryTextPipe, TranslatePipe, CommonModule, RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductRailComponent, ProductCardComponent, HomeHeroComponent, PromoCardComponent],
   template: `
   <app-navbar></app-navbar>
 
@@ -41,8 +43,8 @@ interface CategoryShelf {
 
   <section class="container section category-section">
     <div class="section-head">
-      <h2>Popular categories</h2>
-      <a routerLink="/categories" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+      <h2>{{ 'home.popularCategories' | translate }}</h2>
+      <a routerLink="/categories" class="see-all">{{ 'home.viewAll' | translate }} <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
     </div>
     <div
       class="category-rail"
@@ -55,11 +57,11 @@ interface CategoryShelf {
             class="category-poster"
             [attr.data-category]="c.slug"
             [routerLink]="['/categories', c.slug]"
-            [attr.aria-label]="c.name"
+            [attr.aria-label]="c | categoryText"
           >
             <span class="cat-visual">
               <span class="cat-copy">
-                <span class="cat-name">{{ categoryLabel(c) }}</span>
+                <span class="cat-name">{{ c | categoryText: (narrowTiles() ? 'shortName' : 'name') }}</span>
                 <span class="cat-go"><ui-icon name="arrow-right" [size]="15"></ui-icon></span>
               </span>
               <span class="cat-art">
@@ -70,7 +72,7 @@ interface CategoryShelf {
                 }
               </span>
             </span>
-            <span class="cat-caption" aria-hidden="true">{{ categoryLabel(c) }}</span>
+            <span class="cat-caption" aria-hidden="true">{{ c | categoryText: (narrowTiles() ? 'shortName' : 'name') }}</span>
           </a>
         }
         <!-- Phone only: the category bar hides its Stores / Gifts / Discount
@@ -80,7 +82,7 @@ interface CategoryShelf {
             class="category-poster cat-shortcut"
             [routerLink]="s.link"
             [queryParams]="s.params"
-            [attr.aria-label]="s.label"
+            [attr.aria-label]="s.label | translate"
           >
             <span class="cat-visual">
               <span class="cat-art">
@@ -91,7 +93,7 @@ interface CategoryShelf {
                 }
               </span>
             </span>
-            <span class="cat-caption" aria-hidden="true">{{ s.label }}</span>
+            <span class="cat-caption" aria-hidden="true">{{ s.label | translate }}</span>
           </a>
         }
       </div>
@@ -105,28 +107,28 @@ interface CategoryShelf {
     <section class="container catalog-notice" role="alert">
       <ui-icon name="alert-circle" [size]="18" />
       <div>
-        <strong>Products are temporarily unavailable</strong>
-        <span>{{ catalog.productError() }}</span>
+        <strong>{{ 'home.productsUnavailable' | translate }}</strong>
+        <span>{{ catalog.productError() | translate }}</span>
       </div>
       <button type="button" class="btn btn-outline btn-sm" (click)="catalog.load()">
-        Try again
+        {{ 'state.tryAgain' | translate }}
       </button>
     </section>
   }
 
-  <section class="container section" aria-label="Seller offers">
+  <section class="container section" [attr.aria-label]="'home.sellerOffers' | translate">
     @if (flashDeals().length) {
       <div class="flash">
         <div class="flash-main">
           <div class="section-head flash-head">
             <div class="flash-title">
               <span class="flash-bolt"><ui-icon name="tag" [size]="18" /></span>
-              <h2>Flash deals</h2>
-              <span class="flash-timer" aria-label="Deals refresh at midnight">
-                Ends in <b>{{ countdown().h }}</b>:<b>{{ countdown().m }}</b>:<b>{{ countdown().s }}</b>
+              <h2>{{ 'home.flashDeals' | translate }}</h2>
+              <span class="flash-timer" [attr.aria-label]="'home.dealsRefresh' | translate">
+                {{ 'home.endsIn' | translate }} <b>{{ countdown().h }}</b>:<b>{{ countdown().m }}</b>:<b>{{ countdown().s }}</b>
               </span>
             </div>
-            <a routerLink="/products" [queryParams]="{ sale: '1' }" class="see-all">View all deals <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+            <a routerLink="/products" [queryParams]="{ sale: '1' }" class="see-all">{{ 'home.viewAllDeals' | translate }} <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
           </div>
           <div class="flash-grid">
             @for (product of flashDeals(); track product.id) {
@@ -154,8 +156,8 @@ interface CategoryShelf {
 
     @if (dealCategories().length) {
       <div class="section-head">
-        <h2>Best deals</h2>
-        <a routerLink="/products" [queryParams]="{ sale: '1' }" class="see-all">Shop all deals <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+        <h2>{{ 'home.bestDeals' | translate }}</h2>
+        <a routerLink="/products" [queryParams]="{ sale: '1' }" class="see-all">{{ 'home.shopAllDeals' | translate }} <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
       </div>
       <div class="deals-strip">
         @for (deal of dealCategories(); track deal.category.slug) {
@@ -172,11 +174,11 @@ interface CategoryShelf {
               <div class="deal-top">
                 <span class="deal-icon"><ui-icon [name]="deal.category.icon" [size]="15"></ui-icon></span>
                 @if (deal.hasDeal) {
-                  <span class="deal-badge">On sale</span>
+                  <span class="deal-badge">{{ 'catalog.onSaleOnly' | translate }}</span>
                 }
               </div>
               @if (!dealPoster(deal.category.slug)) {
-                <span class="deal-name">{{ deal.category.name }}</span>
+                <span class="deal-name">{{ deal.category | categoryText }}</span>
               }
               <span class="deal-count">
                 {{ deal.storeCount }} store{{ deal.storeCount === 1 ? '' : 's' }} ·
@@ -190,8 +192,8 @@ interface CategoryShelf {
     } @else {
       <div class="offers-strip">
         <ui-icon name="tag" [size]="20" />
-        <div><strong>Explore seller offers</strong><p>Discover special offers from local sellers.</p></div>
-        <a class="see-all" routerLink="/products" [queryParams]="{ sale: '1' }">Shop deals <ui-icon name="arrow-right" [size]="14" /></a>
+        <div><strong>{{ 'home.exploreSellerOffers' | translate }}</strong><p>{{ 'home.sellerOffersBody' | translate }}</p></div>
+        <a class="see-all" routerLink="/products" [queryParams]="{ sale: '1' }">{{ 'home.shopDeals' | translate }} <ui-icon name="arrow-right" [size]="14" /></a>
       </div>
     }
     }
@@ -199,23 +201,15 @@ interface CategoryShelf {
 
 
 
-  <section class="container section" aria-label="Smartphones">
+  <section class="container section" [attr.aria-label]="'home.smartphones' | translate">
     <div class="section-head">
-      <h2>Smartphones</h2>
-      <a routerLink="/products" [queryParams]="promoSlots.smartphones.params" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
+      <h2>{{ 'home.smartphones' | translate }}</h2>
+      <a routerLink="/products" [queryParams]="promoSlots.smartphones.params" class="see-all">{{ 'home.viewAll' | translate }} <ui-icon name="arrow-right" [size]="14"></ui-icon></a>
     </div>
     <div class="phones" [class.solo]="!phones().length">
       <app-promo-card class="phones-promo" [promo]="promoSlots.smartphones" format="featured" />
       @if (phones().length) {
-        <div class="phone-scroll-affordance" aria-hidden="true">
-          <span class="scroll-dots">
-            <span class="dot active"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-          </span>
-          <span class="scroll-hint-label">Scroll &gt;&gt;</span>
-        </div>
-        <div class="phone-grid">
+        <div class="phone-grid" tabindex="0" role="region" [attr.aria-label]="'home.smartphonesScroll' | translate">
           @for (product of phones(); track product.id) {
             <app-product-card [product]="product" />
           }
@@ -227,7 +221,7 @@ interface CategoryShelf {
   @if (trending().length) {
     <section class="container section">
       <app-product-rail
-        title="Trending products"
+        [title]="'home.trendingProducts' | translate"
         [products]="trending()"
         linkRoute="/products"
         [linkParams]="{ sort: 'featured' }"
@@ -236,64 +230,31 @@ interface CategoryShelf {
     </section>
   }
 
-
-  <section class="container section">
-    <div class="section-head"><h2>Popular stores</h2><a routerLink="/stores" class="see-all">View all <ui-icon name="arrow-right" [size]="14"></ui-icon></a></div>
-    <div class="stores-marquee" role="region" aria-label="Popular stores">
-      <div class="stores-track">
-        @for (group of [0, 1]; track group) {
-          <div class="stores-row" [attr.aria-hidden]="group === 1 ? 'true' : null">
-            @for (s of stores(); track s.id) {
-              <a class="store-chip" [routerLink]="['/stores', s.id]" [attr.tabindex]="group === 1 ? -1 : null">
-                @if (s.logoUrl) {
-                  <img class="store-logo" [src]="s.logoUrl" [alt]="s.name + ' logo'" loading="lazy" />
-                } @else {
-                  <div class="store-logo img-placeholder">{{ initials(s.name) }}</div>
-                }
-                <div class="store-info">
-                  <strong>{{ s.name }}</strong>
-                  <div class="rating-row">
-                    @if (s.reviewCount > 0) {
-                      <ui-icon name="star" [size]="12" [filled]="true" color="var(--color-gold)"></ui-icon> {{ s.rating }} ·
-                    } @else {
-                      New store ·
-                    }
-                    {{ s.location }}
-                  </div>
-                </div>
-              </a>
-            }
-          </div>
-        }
-      </div>
-    </div>
-  </section>
-
   <section class="container section discover">
     <header class="discover-head">
-      <h2>Recommended for you</h2>
+      <h2>{{ 'home.recommendedForYou' | translate }}</h2>
       <p>{{ catalog.allProducts().length }} products from {{ discoverStoreCount() }} Cambodian sellers</p>
     </header>
 
-    <div class="discover-filters" role="group" aria-label="Filter by department">
+    <div class="discover-filters" role="group" [attr.aria-label]="'home.filterByDepartment' | translate">
       <button
         type="button"
         class="chip"
         [class.active]="discoverCategory() === 'all'"
         (click)="selectDiscoverCategory('all')"
-      >All <span>{{ catalog.allProducts().length }}</span></button>
+      >{{ 'catalog.all' | translate }} <span>{{ catalog.allProducts().length }}</span></button>
       @for (c of discoverCategories(); track c.slug) {
         <button
           type="button"
           class="chip"
           [class.active]="discoverCategory() === c.slug"
           (click)="selectDiscoverCategory(c.slug)"
-        >{{ c.name }} <span>{{ c.count }}</span></button>
+        >{{ c | categoryText }} <span>{{ c.count }}</span></button>
       }
     </div>
 
     @if (discoverSubcategories().length) {
-      <div class="discover-filters subs" role="group" aria-label="Filter by sub-category">
+      <div class="discover-filters subs" role="group" [attr.aria-label]="'home.filterBySubCategory' | translate">
         <button
           type="button"
           class="chip sub"
@@ -324,7 +285,7 @@ interface CategoryShelf {
       <div class="discover-more">
         @if (discoverHasMore()) {
           <button class="more-btn" type="button" (click)="showMoreRows()">
-            Show more <ui-icon name="arrow-right" [size]="14" />
+            {{ 'home.showMore' | translate }} <ui-icon name="arrow-right" [size]="14" />
           </button>
         }
         <a class="more-hint" routerLink="/products" [queryParams]="discoverLinkParams()">
@@ -332,7 +293,7 @@ interface CategoryShelf {
         </a>
       </div>
     } @else {
-      <p class="discover-empty">Nothing in this department yet.</p>
+      <p class="discover-empty">{{ 'home.nothingInDepartment' | translate }}</p>
     }
   </section>
 
@@ -358,103 +319,35 @@ interface CategoryShelf {
     }
     .phones.solo { grid-template-columns: 1fr; }
     .phones-promo {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      min-height: 100%;
-    }
-    .phone-scroll-affordance {
-      display: none;
+      display: block;
+      height: 560px;
+      min-height: 0;
+      align-self: start;
     }
     .phone-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
+      min-width: 0;
+      grid-template-columns: none;
+      grid-template-rows: repeat(2, auto);
+      grid-auto-flow: column;
+      grid-auto-columns: clamp(210px, 19vw, 260px);
       align-items: stretch;
+      gap: 16px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+      scroll-padding-inline: 2px;
+      padding: 2px 2px 12px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border-strong) transparent;
     }
-
-    @media (min-width: 901px) {
-      .phones {
-        align-items: start;
-      }
-      .phone-grid {
-        display: grid;
-        grid-auto-flow: column;
-        grid-template-rows: repeat(2, minmax(0, auto));
-        grid-auto-columns: calc((100% - 2 * 20px) / 3);
-        gap: 20px;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-        padding-bottom: 8px;
-      }
-      .phone-grid::-webkit-scrollbar {
-        display: none;
-      }
-      .phone-grid > * {
-        scroll-snap-align: start;
-      }
-      .phones-promo {
-        height: 100%;
-        min-height: 100%;
-      }
-    }
-
+    .phone-grid > app-product-card { min-width: 0; scroll-snap-align: start; }
+    .phones { align-items: start; }
+    /* Keep the ad independent of the product grid’s intrinsic row heights. */
     @media (max-width: 900px) {
-      .phones { grid-template-columns: 1fr; gap: 8px; }
-      .phones-promo { height: auto; min-height: 0; max-height: 160px; }
-      .phone-scroll-affordance {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 4px 6px;
-        margin-top: 4px;
-        margin-bottom: 2px;
-        user-select: none;
-      }
-      .scroll-dots {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .scroll-dots .dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--color-border-strong, #d8cebf);
-        transition: all 180ms ease;
-      }
-      .scroll-dots .dot.active {
-        background: var(--color-accent);
-        width: 14px;
-        border-radius: 4px;
-      }
-      .scroll-hint-label {
-        font-size: 11.5px;
-        font-weight: 700;
-        color: var(--color-accent);
-        letter-spacing: .02em;
-        text-transform: uppercase;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .phone-grid {
-        display: grid;
-        grid-auto-flow: column;
-        grid-template-rows: repeat(2, minmax(0, auto));
-        grid-auto-columns: calc((100% - 12px) / 2);
-        gap: 12px;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-        padding-bottom: 6px;
-      }
-      .phone-grid::-webkit-scrollbar { display: none; }
-      .phone-grid > * { scroll-snap-align: start; }
-    }
-    @media (max-width: 520px) {
-      .phones-promo { max-height: 140px; }
+      .phones { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+      .phones-promo { height: 280px; }
+      .phone-grid { grid-auto-columns: clamp(170px, 42vw, 230px); gap: 12px; }
     }
 
     /* ---------- flash deals */
@@ -1236,15 +1129,11 @@ export class HomeComponent {
   private readonly narrowQuery = globalThis.matchMedia?.('(max-width: 640px)');
   protected readonly narrowTiles = signal(this.narrowQuery?.matches ?? false);
 
-  protected categoryLabel(category: Category): string {
-    return this.narrowTiles() ? category.shortName ?? category.name : category.name;
-  }
-
   /** Bar shortcuts the category menu drops on phones (see category-menu). */
   protected readonly mobileShortcuts = [
-    { key: 'stores', label: 'Stores', icon: 'store', link: '/stores', params: {} },
-    { key: 'gifts', label: 'Gifts', icon: 'gift', link: '/categories/arts-culture', params: { sub: 'souvenirs-gifts' } },
-    { key: 'discount', label: 'Discount', icon: 'percent', link: '/products', params: { sale: '1' } },
+    { key: 'stores', label: 'nav.stores', icon: 'store', link: '/stores', params: {} },
+    { key: 'gifts', label: 'nav.gifts', icon: 'gift', link: '/categories/arts-culture', params: { sub: 'souvenirs-gifts' } },
+    { key: 'discount', label: 'catMenu.discount', icon: 'percent', link: '/products', params: { sale: '1' } },
   ];
 
   protected categoryPosterImage(slug: string): string | null {

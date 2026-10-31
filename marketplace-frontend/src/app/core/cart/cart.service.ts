@@ -134,10 +134,11 @@ export class CartService {
             isPriceStale,
             available: it.available,
             stockLimit,
+            // Catalog keys; the cart page translates them with { count: stockLimit }.
             stockWarning: !it.available
-              ? 'Out of stock'
+              ? 'catalog.outOfStock'
               : stockLimit !== undefined && stockLimit < it.quantity
-                ? `Only ${stockLimit} available`
+                ? 'cart.onlyNAvailable'
                 : undefined,
             lineTotal: round(currentPrice * it.quantity),
             optionValues: backendVar?.optionValues || known?.productVariants?.find(v => v.id === it.variantId)?.optionValues,
@@ -481,7 +482,7 @@ export class CartService {
     } catch (err: unknown) {
       const isTimeout = (err as any)?.name === 'TimeoutError';
       if (isTimeout) {
-        this.error.set('Network timeout: could not refresh cart. Please retry.');
+        this.error.set('cart.refreshTimeout');
       }
     }
   }
@@ -496,18 +497,19 @@ export class CartService {
 
     const variant = product.productVariants?.find(v => v.id === variantId);
     if ((product.hasVariants || (product.productVariants?.length || 0) > 1) && !variant) {
-      this.error.set('Choose your product options before adding to cart.');
+      this.error.set('cart.chooseOptions');
       return false;
     }
     const stock = variant?.stockQuantity ?? product.stock;
     if (product.status === 'out-of-stock' || quantity < 1 || !Number.isInteger(quantity) || stock < quantity || variant?.status === 'archived') {
-      this.error.set('This product is out of stock.');
+      this.error.set('cart.productOutOfStock');
       return false;
     }
 
     this.localProductCache.set(product.id, product);
 
     if (!this.signedIn()) {
+      const previousItems = this.guestItems();
       this.guestItems.update((items) => {
         const existing = items.find((item) => item.productId === product.id && (item.variantId || null) === (variantId || null));
         const newQty = Math.min((existing?.quantity || 0) + quantity, stock);
@@ -528,10 +530,15 @@ export class CartService {
       const persist$ = product.storeId
         ? this.rentify.setQuantity(product.storeId, product.id, targetQty, variantId)
         : this.rentify.addItem(product.id, quantity, product.storeId, variantId);
-      await firstValueFrom(persist$).then((res) => {
+      try {
+        const res = await firstValueFrom(persist$);
         if (res?.carts) this.storeCarts.set(res.carts);
-      }).catch(() => {});
-      return true;
+        return true;
+      } catch (error: unknown) {
+        this.guestItems.set(previousItems);
+        this.error.set(cartErrorMessage(error));
+        return false;
+      }
     }
 
     try {
@@ -780,7 +787,11 @@ const clamp = (quantity: number, product: Product) =>
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
+// Returns a catalog key: backend text only picks the message and is never shown.
 export const cartErrorMessage = (error: unknown): string => {
   const body = (error as { error?: { error?: string; message?: string } })?.error;
-  return body?.error || body?.message || 'Could not update your cart. Please try again.';
+  const raw = `${body?.error ?? ''} ${body?.message ?? ''}`;
+  if (/price or delivery fee changed/i.test(raw)) return 'cart.issueStaleQuote';
+  if (/stock/i.test(raw)) return 'cart.issueStockInsufficient';
+  return 'cart.updateFailed';
 };

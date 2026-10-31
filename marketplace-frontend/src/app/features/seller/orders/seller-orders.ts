@@ -8,6 +8,7 @@ import { NavbarComponent } from '../../../components/shared/layout/navbar/navbar
 import { FooterComponent } from '../../../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../../../components/shared/ui/icon/icon.component';
 import { OrderStatusBadgeComponent } from '../../../components/shared/orders/order-status-badge/order-status-badge.component';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 const FILTERS: { value: OrderStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
@@ -35,7 +36,7 @@ const ACTION_LABELS: Record<string, { label: string; style: string }> = {
  */
 @Component({
   selector: 'app-seller-orders',
-  imports: [
+  imports: [TranslatePipe,
     DatePipe,
     NavbarComponent,
     FooterComponent,
@@ -77,7 +78,7 @@ const ACTION_LABELS: Record<string, { label: string; style: string }> = {
         <p class="muted">Loading orders…</p>
       } @else if (error(); as message) {
         <p class="error" role="alert">
-          <ui-icon name="alert-circle" [size]="14" /> {{ message }}
+          <ui-icon name="alert-circle" [size]="14" /> {{ message | translate }}
         </p>
       } @else if (orders().length === 0) {
         <div class="empty card">

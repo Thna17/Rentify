@@ -199,3 +199,34 @@ out code, the local API returned `Unknown column Product.moderationStatus`. The
 working-tree code and local DB schema are out of sync. No schema/data migration
 was run during this UI task. Reconcile using the repository migration runbook
 before claiming live end-to-end verification.
+
+
+## 2026-10-29 PayWay sandbox integration verification
+
+Current local development: the existing KhmerCraft-derived PayWay adapters are
+connected for buyer checkout and seller plan payments. Ignored local env files
+use the existing sandbox configuration; no production payment enablement or
+credential commit was performed. Buyer checkout remains flag-gated by
+PAYWAY_ENABLED; the default Release 1 behavior remains COD. Seller plans use
+PAYMENT_PROVIDER=payway locally.
+
+Provider confirmation now rejects unsuccessful lookups and requires matching
+original amount, payment currency and transaction reference before accepting
+PAID. Core's /api/payment/payway/callback treats callbacks only as lookup hints.
+The development skip-payment shortcut does not apply to PayWay payments.
+Verification follows https://developer.payway.com.kh/check-transaction-14530826e0
+and https://developer.payway.com.kh/aba-qr-api-3158158f0 .
+
+Nine mocked gateway tests pass across Core and Commerce. The marketplace build
+also passes. Live sandbox lookup authenticated, but QR creation for both flows
+returned provider code 21, “End of API lifetime.” No payment was made, no QR was
+scanned and no order/subscription was marked paid during verification. The
+provider rejection must be resolved before calling live QR checkout complete.
+This test does not establish production readiness, seller settlement correctness,
+or full idempotency/retry and refund reconciliation.
+
+### Marketplace cart host regression (October 29, 2026)
+
+Commerce normalizes configured central platform origins to hostnames, matching request host extraction. This prevents a legacy WebsiteData `localhost` domain from misclassifying the central marketplace as a browse-only custom domain and returning `CUSTOM_DOMAIN_CART_DISABLED`. Registered merchant custom domains still fail closed for cart mutations. The marketplace guest Add to Cart flow now rolls back its optimistic item and reports an error when Commerce rejects persistence; it only reports success after the API accepts the item.
+
+The shared Commerce taxonomy also recognizes existing catalog aliases (including Phones & Tablets → Phones & Devices, clothing, beauty and school-supply labels) rather than rejecting these displayed listings during cart eligibility checks. Unknown categories remain rejected; existing product records and category labels are preserved.

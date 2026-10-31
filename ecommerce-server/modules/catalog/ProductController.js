@@ -394,7 +394,7 @@ static parseCSVFile(filePath) {
         websiteId: req.params.websiteId || req.query.websiteId,
       });
       const whereCondition = await service.resolveStoreWhere();
-      const where = { ...whereCondition, status: 'active' };
+      const where = { ...whereCondition, status: 'active', storefrontVisibility: { [Op.ne]: false } };
 
       // Build search conditions based on field
       if (field === 'all' || field === 'name') {

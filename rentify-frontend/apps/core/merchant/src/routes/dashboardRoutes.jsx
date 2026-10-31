@@ -7,8 +7,11 @@ const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
+const BulkProductManagement = lazy(() =>
+  import('../pages/product-management/ProductManagement').then((module) => ({ default: module.BulkProductManagement })));
 const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
+const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
 const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
@@ -39,7 +42,9 @@ export const dashboardRoutes = {
     { path: 'customization', element: <Navigate to="/store-management" replace /> },
     { path: 'customization/:id', element: <Navigate to="/store-management" replace /> },
     { path: 'products', element: <ProductManagement /> },
+    { path: 'products/manage', element: <BulkProductManagement /> },
     { path: 'catalog', element: <StoreCatalogPage /> },
+    { path: 'categories', element: <CategoriesPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },

@@ -33,7 +33,8 @@ const CENTRAL_HOSTS = new Set(
     .filter(Boolean)
     .map((u) => {
       try {
-        return new URL(u).host.toLowerCase();
+        // Match the hostname used by extractHostFromRequest and classification.
+        return new URL(u).hostname.toLowerCase();
       } catch {
         return null;
       }

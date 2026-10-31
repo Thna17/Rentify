@@ -28,19 +28,20 @@ export const useAuth = () => {
     .find(row => row.startsWith('authType='))
     ?.split('=')[1]);
 
-  // A persisted profile only counts if it belongs to the current sign-in type; after switching
-  // accounts (e.g. owner -> staff) the old profile must be refetched, not reused
+  // A persisted profile only counts if it belongs to the current sign-in type
   const hasCurrentProfile = !!auth.profile && auth.role === authRole;
 
-  // Initialize all profile queries with conditional skipping
-  const userProfile = useGetUserQuery(undefined, { 
-    skip: !authRole || authRole !== 'user' || hasCurrentProfile 
+  // The persisted profile is only a first paint. It is always re-checked once per page load
+  // (RTK Query shares the request between every useAuth caller), because signing in as a
+  // different account of the same type (owner -> another owner) keeps the same role.
+  const userProfile = useGetUserQuery(undefined, {
+    skip: !authRole || authRole !== 'user',
   });
-  const staffProfile = useGetStaffQuery(undefined, { 
-    skip: !authRole || authRole !== 'staff' || hasCurrentProfile 
+  const staffProfile = useGetStaffQuery(undefined, {
+    skip: !authRole || authRole !== 'staff',
   });
-  const customerProfile = useGetCustomerQuery(undefined, { 
-    skip: !authRole || authRole !== 'customer' || hasCurrentProfile 
+  const customerProfile = useGetCustomerQuery(undefined, {
+    skip: !authRole || authRole !== 'customer',
   });
   
   // Select active profile based on authRole

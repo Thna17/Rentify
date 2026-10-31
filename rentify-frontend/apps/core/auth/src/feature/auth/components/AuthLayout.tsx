@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthLanguage } from '../context/AuthLanguageContext';
+import { LanguageToggle } from './LanguageToggle';
 import { useAuthConfig } from '../utils/authUtils';
 import {
   Store,
@@ -29,7 +30,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   backUrl,
   backLabel,
 }) => {
-  const { language, setLanguage, t, isKhmer } = useAuthLanguage();
+  const { t, isKhmer } = useAuthLanguage();
   const {
     isWebsiteTemplate,
     isHostedStorefrontBuyer,
@@ -110,37 +111,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               </span>
             </Link>
 
-            {/* Language Selector Pill */}
-            <div className="flex items-center rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setLanguage('EN')}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all',
-                  language === 'EN'
-                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                )}
-                aria-label="Switch to English"
-              >
-                <span>🇬🇧</span>
-                <span>EN</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage('KH')}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold font-khmer transition-all',
-                  language === 'KH'
-                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                )}
-                aria-label="Switch to Khmer"
-              >
-                <span>🇰🇭</span>
-                <span>ខ្មែរ</span>
-              </button>
-            </div>
+            <LanguageToggle />
           </header>
 
           {/* Form Content Wrapper */}
@@ -150,9 +121,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 mb-3">
                 <Store className="h-6 w-6 text-violet-600" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Rentify</h2>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">{t('brand.name')}</h2>
               <p className={cn('text-xs text-slate-500 mt-0.5', isKhmer && 'font-khmer')}>
-                {isCustomerFlow ? 'Storefront' : 'Rentify workspace'}
+                {isCustomerFlow ? t('brand.storefront') : t('brand.workspace')}
               </p>
             </div>
 

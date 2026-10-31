@@ -58,7 +58,7 @@ import { SeoService } from '../core/seo/seo.service';
         @if (cart.error()) {
           <div class="cart-error-banner" role="alert">
             <ui-icon name="info" [size]="18" />
-            <span>{{ cart.error() }}</span>
+            <span>{{ cart.error() | translate }}</span>
             <button type="button" class="btn btn-outline btn-sm" (click)="cart.retry()">
               {{ 'cart.retry' | translate }}
             </button>
@@ -138,7 +138,7 @@ import { SeoService } from '../core/seo/seo.service';
                         </a>
 
                         <div class="selected-variant-preview">
-                          @if (line.variantImage) { <img [src]="line.variantImage" alt="Selected variant" /> }
+                          @if (line.variantImage) { <img [src]="line.variantImage" [alt]="'cartDrawer.selectedVariant' | translate" /> }
                           @for (option of line.optionValues | keyvalue; track option.key) {
                             <span>{{ option.key }}: {{ option.value }}</span>
                           }
@@ -166,14 +166,14 @@ import { SeoService } from '../core/seo/seo.service';
                         @if (!line.available) {
                           <span class="stock-badge oos">{{ 'cart.outOfStock' | translate }}</span>
                         } @else if (line.stockWarning) {
-                          <span class="stock-badge low">{{ line.stockWarning }}</span>
+                          <span class="stock-badge low">{{ line.stockWarning | translate: { count: line.stockLimit ?? 0 } }}</span>
                         }
 
                         <div class="qty-stepper">
                           <button
                             type="button"
                             (click)="cart.changeQuantity(line.product.id, -1, line.variantId)"
-                            aria-label="Decrease quantity"
+                            [attr.aria-label]="'product.decreaseQty' | translate"
                           >
                             <ui-icon name="minus" [size]="13" />
                           </button>
@@ -186,7 +186,7 @@ import { SeoService } from '../core/seo/seo.service';
                               (line.stockLimit !== undefined &&
                                 line.quantity >= line.stockLimit)
                             "
-                            aria-label="Increase quantity"
+                            [attr.aria-label]="'product.increaseQty' | translate"
                           >
                             <ui-icon name="plus" [size]="13" />
                           </button>
@@ -374,14 +374,14 @@ import { SeoService } from '../core/seo/seo.service';
               @if (!isAuthenticated()) {
                 <p class="login-note">
                   <ui-icon name="lock" [size]="13" />
-                  Browse and add items without an account. Sign in or create one when you check out.
+                  {{ 'cart.guestNote' | translate }}
                 </p>
               }
 
               <div class="trust-list">
-                <div><ui-icon name="package" [size]="14" /> Items stay grouped by seller</div>
-                <div><ui-icon name="check" [size]="14" /> Authoritative totals calculated by Commerce</div>
-                <div><ui-icon name="shield" [size]="14" /> Cash on Delivery (COD) payment</div>
+                <div><ui-icon name="package" [size]="14" /> {{ 'cart.groupedBySeller' | translate }}</div>
+                <div><ui-icon name="check" [size]="14" /> {{ 'cart.totalsByCommerce' | translate }}</div>
+                <div><ui-icon name="shield" [size]="14" /> {{ 'cart.codPayment' | translate }}</div>
               </div>
             </div>
           </div>
@@ -410,7 +410,7 @@ import { SeoService } from '../core/seo/seo.service';
     @if (recommended().length) {
       <section class="container section cart-suggestions">
         <app-product-rail
-          [title]="cart.isEmpty() ? 'Popular right now' : 'Goes well with your cart'"
+          [title]="(cart.isEmpty() ? 'cart.popularNow' : 'cart.goesWell') | translate"
           [products]="recommended()"
           linkRoute="/products"
           linkLabel="See all products"
@@ -1157,7 +1157,8 @@ export class CartComponent {
     if (issue.includes('empty')) {
       return this.translate.t('cart.issueEmpty');
     }
-    return issue;
+    // Unrecognised backend text is never shown to buyers.
+    return this.translate.t('cart.issueGeneric');
   }
 
   protected moveToWishlist(line: StoreCartGroupLine): void {

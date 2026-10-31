@@ -82,7 +82,15 @@ export function ReusableTable({
         newRowSelection[index] = true;
       }
     });
-    setRowSelection(newRowSelection);
+    // Defaults like `selected = []` are new arrays every render; only set state
+    // when the selection really changed, or this effect re-renders forever.
+    setRowSelection((current) => {
+      const currentKeys = Object.keys(current).filter((key) => current[key]);
+      const nextKeys = Object.keys(newRowSelection);
+      const same = currentKeys.length === nextKeys.length &&
+        nextKeys.every((key) => current[key]);
+      return same ? current : newRowSelection;
+    });
   }, [selected, data]);
 
   const handleRowSelectionChange = (updater) => {

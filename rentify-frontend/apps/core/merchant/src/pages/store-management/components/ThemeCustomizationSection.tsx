@@ -15,6 +15,7 @@ import {
 import { ColorPicker } from './ColorPicker';
 import { FontSelector } from './FontSelector';
 import { templateThemes } from '@rentify/shared/themes/index';
+import { useTranslation } from '@rentify/utils';
 
 interface ThemeCustomizationSectionProps {
   storeData: any;
@@ -141,7 +142,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     {t('dashboard.store_management.color_palette')}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    Select a pre-designed color palette
+                    {t('merchant.p2.selectAPreDesigned')}
                   </p>
                 </div>
               </div>
@@ -204,7 +205,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     {t('dashboard.store_management.colors')}
                   </h4>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    Customize your primary, secondary, and accent colors
+                    {t('merchant.p2.customizeYourPrimarySecondary')}
                   </p>
                 </div>
               </div>
@@ -313,7 +314,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     </div>
                     <div className="flex-1 min-w-[300px] p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="font-semibold text-gray-900">Button Preview</span>
+                        <span className="font-semibold text-gray-900">{t('merchant.p2.buttonPreview')}</span>
                         <button 
                           className="px-4 py-2.5 rounded-lg text-white font-medium shadow-sm transition-all duration-200 hover:shadow"
                           style={{ backgroundColor: themeConfig.colors?.primary || paletteTheme?.colors?.primary || '#3B82F6' }}
@@ -347,7 +348,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     {t('dashboard.store_management.typography')}
                   </h4>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    Choose fonts for headings and body text
+                    {t('merchant.p2.chooseFontsForHeadings')}
                   </p>
                 </div>
               </div>
@@ -375,14 +376,14 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                         {t('dashboard.store_management.primary_font')}
                       </label>
                       <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                        Headings
+                        {t('merchant.p2.headings')}
                       </span>
                     </div>
             <FontSelector
   value={themeConfig.typography?.fontFamily?.primary || paletteTheme?.typography?.fontFamily?.primary || 'Inter'}
   onChange={(value) => handleFontChange?.('theme.typography.fontFamily.primary', value)}
-  placeholder="Select primary font..."
-  label="Main font for headings and titles"
+  placeholder={t('merchant.p2.selectPrimaryFont')}
+  label={t('merchant.p2.mainFontForHeadings')}
 />
                   </div>
                   
@@ -395,14 +396,14 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                         {t('dashboard.store_management.secondary_font')}
                       </label>
                       <span className="ml-2 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded">
-                        Body Text
+                        {t('merchant.p2.bodyText')}
                       </span>
                     </div>
                     <FontSelector
                       value={themeConfig.typography?.fontFamily?.secondary || paletteTheme?.typography?.fontFamily?.secondary || 'Inter'}
                       onChange={(value) => handleFontChange?.('theme.typography.fontFamily.secondary', value)}
-                      placeholder="Select secondary font..."
-                      label="Font for body text and paragraphs"
+                      placeholder={t('merchant.p2.selectSecondaryFont')}
+                      label={t('merchant.p2.fontForBodyText')}
                     />
                   </div>
                 </div>
@@ -413,41 +414,41 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     <div className="p-1.5 bg-gray-100 rounded">
                       <Type className="h-3.5 w-3.5 text-gray-600" />
                     </div>
-                    Font Preview
+                    {t('merchant.p2.fontPreview')}
                   </h4>
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Primary Font Preview */}
                       <div className="p-4 bg-white rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-3">Primary Font</div>
+                        <div className="text-xs text-gray-500 mb-3">{t('merchant.p2.primaryFont')}</div>
                         <div 
                           className="space-y-3"
                           style={{ fontFamily: themeConfig.typography?.fontFamily?.primary || paletteTheme?.typography?.fontFamily?.primary || 'Inter' }}
                         >
-                          <h1 className="text-3xl font-bold text-gray-900">Heading 1</h1>
-                          <h2 className="text-2xl font-semibold text-gray-800">Heading 2</h2>
-                          <h3 className="text-xl font-medium text-gray-700">Heading 3</h3>
+                          <h1 className="text-3xl font-bold text-gray-900">{t('merchant.p2.heading1')}</h1>
+                          <h2 className="text-2xl font-semibold text-gray-800">{t('merchant.p2.heading2')}</h2>
+                          <h3 className="text-xl font-medium text-gray-700">{t('merchant.p2.heading3')}</h3>
                           <p className="text-base text-gray-600 leading-relaxed">
-                            This is how your headings will look with the selected primary font.
+                            {t('merchant.p2.thisIsHowYour')}
                           </p>
                         </div>
                       </div>
                       
                       {/* Secondary Font Preview */}
                       <div className="p-4 bg-white rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-3">Secondary Font</div>
+                        <div className="text-xs text-gray-500 mb-3">{t('merchant.p2.secondaryFont')}</div>
                         <div 
                           className="space-y-3"
                           style={{ fontFamily: themeConfig.typography?.fontFamily?.secondary || paletteTheme?.typography?.fontFamily?.secondary || 'Inter' }}
                         >
                           <p className="text-lg text-gray-700 leading-relaxed">
-                            This is how your body text will appear. Good typography makes content more readable and engaging.
+                            {t('merchant.p2.thisIsHowYour2')}
                           </p>
                           <p className="text-base text-gray-600 leading-relaxed">
-                            Paragraphs with the secondary font should be easy to read and comfortable for long-form content.
+                            {t('merchant.p2.paragraphsWithTheSecondary')}
                           </p>
                           <p className="text-sm text-gray-500 leading-relaxed">
-                            Smaller text and captions will use this font as well.
+                            {t('merchant.p2.smallerTextAndCaptions')}
                           </p>
                         </div>
                       </div>
@@ -455,26 +456,25 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     
                     {/* Combined Preview */}
                     <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <div className="text-xs text-gray-500 mb-3">Combined Preview</div>
+                      <div className="text-xs text-gray-500 mb-3">{t('merchant.p2.combinedPreview')}</div>
                       <div className="space-y-4">
                         <div 
                           className="text-2xl font-bold text-gray-900"
                           style={{ fontFamily: themeConfig.typography?.fontFamily?.primary || paletteTheme?.typography?.fontFamily?.primary || 'Inter' }}
                         >
-                          Welcome to Your Store
+                          {t('merchant.p2.welcomeToYourStore')}
                         </div>
                         <div 
                           className="text-base text-gray-600 leading-relaxed"
                           style={{ fontFamily: themeConfig.typography?.fontFamily?.secondary || paletteTheme?.typography?.fontFamily?.secondary || 'Inter' }}
                         >
-                          This is a preview of how your store's typography will look with the selected fonts. 
-                          The primary font is used for headings and the secondary font for body text, creating a harmonious visual hierarchy.
+                          {t('merchant.p2.thisIsAPreview')}
                         </div>
                         <button 
                           className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg mt-2"
                           style={{ fontFamily: themeConfig.typography?.fontFamily?.primary || paletteTheme?.typography?.fontFamily?.primary || 'Inter' }}
                         >
-                          Shop Now
+                          {t('merchant.p2.shopNow')}
                         </button>
                       </div>
                     </div>
@@ -499,7 +499,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     {t('dashboard.store_management.spacing')}
                   </h4>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    Adjust spacing between elements
+                    {t('merchant.p2.adjustSpacingBetweenElements')}
                   </p>
                 </div>
               </div>
@@ -577,7 +577,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                 
                 {/* Spacing Preview */}
                 <div className="p-5 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 mt-6">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Spacing Preview</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('merchant.p2.spacingPreview')}</h4>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       {['xs', 'sm', 'md', 'lg'].map((size) => (
@@ -624,7 +624,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                     {t('dashboard.store_management.border_radius')}
                   </h4>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    Customize corner rounding
+                    {t('merchant.p2.customizeCornerRounding')}
                   </p>
                 </div>
               </div>
@@ -702,7 +702,7 @@ export const ThemeCustomizationSection: React.FC<ThemeCustomizationSectionProps>
                 
                 {/* Border Radius Preview */}
                 <div className="p-5 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 mt-6">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Border Radius Preview</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4">{t('merchant.p2.borderRadiusPreview')}</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {['sm', 'md', 'lg', 'full'].map((size) => (
                       <div key={size} className="text-center">
@@ -761,7 +761,7 @@ const SpacingField: React.FC<any> = ({
             onClick={() => onEdit(field, value)}
             className="text-xs text-blue-600 hover:text-blue-700 font-medium"
           >
-            Edit
+            {t('merchant.p2.edit')}
           </button>
         )}
       </div>
@@ -830,7 +830,7 @@ const BorderRadiusField: React.FC<any> = ({
             onClick={() => onEdit(field, value)}
             className="text-xs text-blue-600 hover:text-blue-700 font-medium"
           >
-            Edit
+            {t('merchant.p2.edit')}
           </button>
         )}
       </div>

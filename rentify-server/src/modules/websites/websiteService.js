@@ -101,6 +101,8 @@ class WebsiteService {
           transaction
         );
       await website.update({ subscriptionId: subscription.id }, { transaction });
+      // A paid subscription comes back without its Package; the Commerce projection needs it
+      if (!subscription.Package) subscription.Package = packageData;
 
       // Prepare data for external services
       website._ecommerceData = {

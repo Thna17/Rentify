@@ -9,6 +9,7 @@ import { RentifyMarketplaceService } from '../core/rentify/rentify-marketplace.s
 import { SeoService } from '../core/seo/seo.service';
 import { TranslateService } from '../core/i18n/translate.service';
 import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../core/i18n/category-text.pipe';
 import { Product, ProductSort } from '../core/catalog/catalog.models';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
@@ -42,7 +43,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
 
 @Component({
   selector: 'app-store-detail',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductCardComponent, BuyerReportModalComponent, TranslatePipe],
+  imports: [CategoryTextPipe, RouterLink, NavbarComponent, FooterComponent, IconComponent, ProductCardComponent, BuyerReportModalComponent, TranslatePipe],
   template: `
     <app-navbar />
 
@@ -55,11 +56,11 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
       <section class="container missing" role="alert">
         <ui-icon name="alert-circle" [size]="32" />
         <h1>{{ 'state.couldNotLoadStore' | translate }}</h1>
-        <p>{{ catalog.storeError() }}</p>
+        <p>{{ catalog.storeError() | translate }}</p>
         <button class="btn btn-primary" type="button" (click)="catalog.loadStores()">{{ 'state.tryAgain' | translate }}</button>
       </section>
     } @else if (store(); as s) {
-      <main class="store-theme" [class.theme-clay]="s.theme === 'CLAY'" [class.theme-gold]="s.theme === 'GOLD'" [class.theme-midnight]="s.theme === 'MIDNIGHT'">
+      <main class="store-theme" [style.--store-accent]="s.marketplaceColor || '#4f46e5'">
         <!-- A seller browsing their own storefront saw exactly what a shopper
              saw, with no way back to the dashboard and no sign of which of the
              two they were looking at. -->
@@ -86,12 +87,18 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
             <div class="store-banner" [class.has-cover]="s.bannerUrl" [style.background-image]="s.bannerUrl ? 'linear-gradient(90deg, rgba(18,28,23,.9), rgba(18,28,23,.42)), url(' + s.bannerUrl + ')' : null">
               <div class="identity">
                 <div class="store-logo">
-                  @if (s.logoUrl) { <img [src]="s.logoUrl" [alt]="s.name + ' logo'" /> } @else { {{ initials(s.name) }} }
+                  @if (s.logoUrl) { <img [src]="s.logoUrl" [alt]="'storeDetail.logoAlt' | translate: { name: s.name }" /> } @else { {{ initials(s.name) }} }
                 </div>
                 <div class="identity-copy">
                   <span class="verified"><ui-icon name="store" [size]="13" /> {{ 'store.marketplaceStore' | translate }}</span>
                   <h1>{{ s.name }}</h1>
                   <p class="store-tagline">{{ s.tagline || s.description }}</p>
+                  @if (s.websiteUrl) {
+                    <a class="visit-website" [href]="s.websiteUrl" target="_blank" rel="noopener">
+                      <ui-icon name="globe" [size]="15" /> {{ 'store.visitWebsite' | translate }}
+                      <ui-icon name="external-link" [size]="13" />
+                    </a>
+                  }
                   <div class="meta">
                     <span><ui-icon name="map-pin" [size]="14" /> {{ s.location }}</span>
                     @if (s.reviewCount > 0) {
@@ -106,8 +113,8 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
 
               <div class="store-actions">
                 <a class="btn btn-primary" href="#products" (click)="scrollToSection('products', $event)">{{ 'store.shopStore' | translate:{ name: s.name } }}</a>
-                <button type="button" class="btn btn-outline" disabled title="Store following will be available when account sync is ready"><ui-icon name="heart" [size]="15" /> Follow soon</button>
-                <button type="button" class="btn btn-outline" (click)="showReportModal.set(true)" title="Report store issue or policy concern">
+                <button type="button" class="btn btn-outline" disabled [title]="'storeDetail.followUnavailable' | translate"><ui-icon name="heart" [size]="15" /> {{ 'storeDetail.followSoon' | translate }}</button>
+                <button type="button" class="btn btn-outline" (click)="showReportModal.set(true)" [title]="'storeDetail.reportIssue' | translate">
                   <ui-icon name="flag" [size]="14" /> {{ 'store.reportStore' | translate }}
                 </button>
               </div>
@@ -115,19 +122,19 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
           </div>
         </section>
 
-        <nav class="store-nav" aria-label="Store navigation">
+        <nav class="store-nav" [attr.aria-label]="'storeDetail.storeNavigation' | translate">
           <div class="container store-nav-inner">
-            <button type="button" [class.active]="activeSection() === 'products'" (click)="scrollToSection('products')">Products</button>
-            <button type="button" [class.active]="activeSection() === 'about'" (click)="scrollToSection('about')">About</button>
-            <button type="button" [class.active]="activeSection() === 'reviews'" (click)="scrollToSection('reviews')">Reviews</button>
-            <span class="store-status"><i></i> {{ products().length ? 'Products available' : 'No active listings' }}</span>
+            <button type="button" [class.active]="activeSection() === 'products'" (click)="scrollToSection('products')">{{ 'nav.products' | translate }}</button>
+            <button type="button" [class.active]="activeSection() === 'about'" (click)="scrollToSection('about')">{{ 'nav.about' | translate }}</button>
+            <button type="button" [class.active]="activeSection() === 'reviews'" (click)="scrollToSection('reviews')">{{ 'storeDetail.reviews' | translate }}</button>
+            <span class="store-status"><i></i> {{ (products().length ? 'storeDetail.productsAvailable' : 'storeDetail.noActiveListings') | translate }}</span>
           </div>
         </nav>
 
         @if (featuredProducts().length) {
           <section class="container featured-section">
             <header class="products-head">
-              <div><span class="eyebrow">Chosen by the seller</span><h2>Featured at {{ s.name }}</h2></div>
+              <div><span class="eyebrow">{{ 'storeDetail.chosenBySeller' | translate }}</span><h2>{{ 'storeDetail.featuredAt' | translate: { name: s.name } }}</h2></div>
               <span>{{ featuredProducts().length }} picks</span>
             </header>
             <div class="product-grid featured-grid">
@@ -156,7 +163,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
           </header>
 
           @if (categories().length > 1) {
-            <div class="category-tabs" aria-label="Product categories">
+            <div class="category-tabs" [attr.aria-label]="'catMenu.productCategories' | translate">
               <button [class.active]="!activeCategory()" (click)="activeCategory.set(null)">{{ 'store.allProducts' | translate }} <span>{{ products().length }}</span></button>
               @for (category of categories(); track category) {
                 <button [class.active]="activeCategory() === category" (click)="activeCategory.set(category)">
@@ -174,7 +181,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
             @for (group of groupedProducts(); track group.label) {
               <div class="product-group">
                 @if (groupedProducts().length > 1) {
-                  <h3 class="group-heading">{{ group.label }} <span>{{ group.products.length }}</span></h3>
+                  <h3 class="group-heading">{{ groupLabel(group.label) | categoryText }} <span>{{ group.products.length }}</span></h3>
                 }
                 <div class="product-grid">
                   @for (product of group.products; track product.id) {
@@ -192,7 +199,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
           <div class="story">
             <span class="eyebrow">{{ 'store.behindStore' | translate }}</span>
             <h2>{{ 'store.aboutStore' | translate:{ name: s.name } }}</h2>
-            <p>{{ s.description || 'This seller has not added a full store story yet.' }}</p>
+            <p>{{ s.description || ('storeDetail.noStory' | translate) }}</p>
           </div>
           <div class="facts">
             <div><span>01</span><strong>{{ 'store.storeOwnedListings' | translate }}</strong><small>{{ 'store.storeOwnedListingsSub' | translate }}</small></div>
@@ -208,10 +215,10 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
         <section class="container reviews-section" id="reviews">
           @if (s.reviewCount > 0) {
             <div><span class="rating-number">{{ s.rating }}</span><span class="stars">★★★★★</span><small>Based on {{ s.reviewCount }} customer reviews</small></div>
-            <div class="review-note"><strong>Customer review details are being connected.</strong><p>Only completed-order reviews will be labeled Verified Purchase.</p></div>
+            <div class="review-note"><strong>{{ 'storeDetail.reviewsConnecting' | translate }}</strong><p>{{ 'storeDetail.verifiedNote' | translate }}</p></div>
           } @else {
-            <div><span class="rating-number">New</span><small>No customer reviews yet</small></div>
-            <div class="review-note"><strong>Be the first to review this store’s products.</strong><p>Review eligibility will be available after a completed order.</p></div>
+            <div><span class="rating-number">{{ 'storeDetail.new' | translate }}</span><small>{{ 'common.noReviewsYet' | translate }}</small></div>
+            <div class="review-note"><strong>{{ 'storeDetail.beFirst' | translate }}</strong><p>{{ 'storeDetail.eligibility' | translate }}</p></div>
           }
         </section>
 
@@ -237,10 +244,7 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
   `,
   styles: [`
     .store-intro { padding: 10px 0 12px; background: #f7f2e9; }
-    .store-theme { --store-accent: #275643; --store-soft: #e8f0eb; }
-    .store-theme.theme-clay { --store-accent: #963827; --store-soft: #f6e9e4; }
-    .store-theme.theme-gold { --store-accent: #9a691b; --store-soft: #f7efdc; }
-    .store-theme.theme-midnight { --store-accent: #263750; --store-soft: #e8edf4; }
+    .store-theme { --store-accent: #4f46e5; --color-accent: var(--store-accent); --store-soft: color-mix(in srgb, var(--store-accent) 10%, white); }
     .owner-bar { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 12px; padding: 9px 18px; background: var(--color-forest); color: #fff; font-size: 12.5px; }
     .owner-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: var(--radius-full); background: rgba(255, 255, 255, .16); font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
     .owner-copy { color: rgba(255, 255, 255, .82); }
@@ -275,6 +279,8 @@ const sortProducts = (products: Product[], sort: ProductSort): Product[] => {
     .identity-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; max-width: 760px; }
     .verified { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: var(--radius-full); background: var(--color-success-soft); color: var(--color-success); font-size: 9.5px; font-weight: 750; }
     .store-tagline { font-size: clamp(13px, 1.3vw, 17px) !important; }
+      .visit-website { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 6px; padding: 0 16px; border-radius: 999px; background: var(--color-surface, #fff); color: var(--color-text); font-size: 14px; font-weight: 600; text-decoration: none; }
+      .visit-website:hover { opacity: .9; }
     .identity-copy h1 { font-size: clamp(25px,2.5vw,36px); line-height: 1.05; }
     .identity-copy > p { max-width: 700px; color: var(--color-text-secondary); font-size: 12.5px; line-height: 1.45; }
     .meta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--color-muted); font-size: 10.5px; }
@@ -417,6 +423,12 @@ export class StoreDetailComponent {
       a.label === 'More from this store' ? 1 : b.label === 'More from this store' ? -1 : a.label.localeCompare(b.label),
     );
   });
+  /** Group headings: the two fallback buckets are UI copy, the rest are sub-category names. */
+  protected groupLabel(label: string): string {
+    if (label === 'More from this store') return this.translate.t('storeDetail.moreFromStore');
+    if (label === 'All') return this.translate.t('catalog.all');
+    return label;
+  }
   private lastRequestedStoreId = '';
 
   /**

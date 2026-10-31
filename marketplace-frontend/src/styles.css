@@ -995,6 +995,14 @@ html[lang="km"] h1, html[lang="km"] h2, html[lang="km"] h3, html[lang="km"] h4 {
 html[lang="km"] button, html[lang="km"] .btn, html[lang="km"] a {
   word-break: break-word;
 }
+html[lang="km"] :is(button, input, select, textarea) {
+  font-family: inherit;
+  line-height: 1.5;
+}
+/* overflow:hidden on a single line cuts off marks above and below the base line */
+html[lang="km"] :is(.truncate, .line-clamp-1, .line-clamp-2, .line-clamp-3) {
+  padding-block: 0.12em;
+}
 
 /* Accessible Touch Targets for Touch Screens (WCAG 2.5.5 / 2.5.8) */
 @media (pointer: coarse) {
@@ -1019,4 +1027,9 @@ html[lang="km"] button, html[lang="km"] .btn, html[lang="km"] a {
     box-sizing: border-box;
     overflow-x: clip;
   }
+}
+/* Letter-spacing and all-caps styling are Latin conventions; on Khmer they pull
+   stacked marks apart. */
+html[lang="km"] :is([class*="tracking-"], .uppercase, .eyebrow) {
+  letter-spacing: normal;
 }

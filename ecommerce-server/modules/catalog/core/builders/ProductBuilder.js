@@ -66,9 +66,10 @@ class ProductBuilder {
     return this;
   }
 
-  setMarketplaceCategory(category, visibility) {
+  setMarketplaceCategory(category, visibility, storefrontVisibility) {
     this.productData.marketplaceCategory = category;
     if (visibility !== undefined) this.productData.marketplaceVisibility = visibility;
+    if (typeof storefrontVisibility === 'boolean') this.productData.storefrontVisibility = storefrontVisibility;
     return this;
   }
 

@@ -90,6 +90,7 @@ export function ResetPasswordPage() {
     phoneNumber,
     handleResetPassword,
     clearError,
+    tokenInvalid,
   } = useResetPassword();
 
   const {
@@ -211,9 +212,7 @@ export function ResetPasswordPage() {
   };
 
   // Detect whether error indicates an expired or invalid token
-  const isExpiredOrInvalidToken = Boolean(
-    error && /expired|invalid|token|not found|malformed|used/i.test(error)
-  );
+  const isExpiredOrInvalidToken = tokenInvalid;
 
   // Destination contact display
   const rawContact = contactMethod === 'email' ? email : phoneNumber;
@@ -225,7 +224,7 @@ export function ResetPasswordPage() {
       return (
         <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
           <ShoppingBag className="h-3.5 w-3.5" />
-          <span>{storeName ? `${storeName} Store` : 'Store Customer'}</span>
+          <span>{storeName ? t('badge.storeNamed', { storeName }) : t('badge.storeCustomer')}</span>
         </div>
       );
     }
@@ -260,7 +259,7 @@ export function ResetPasswordPage() {
 
           <div className="space-y-2">
             <h2 className={cn('text-xl font-bold tracking-tight text-slate-900', isKhmer && 'font-khmer text-2xl')}>
-              {isKhmer ? 'ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ!' : 'Password Reset Successfully!'}
+              {t('reset.successTitle')}
             </h2>
             <p className={cn('text-sm text-slate-600 leading-relaxed max-w-sm mx-auto', isKhmer && 'font-khmer')}>
               {t('reset.success')}
@@ -340,7 +339,7 @@ export function ResetPasswordPage() {
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                 <p className={cn('text-xs text-slate-600', isKhmer && 'font-khmer text-sm')}>
-                  {isKhmer ? 'កំណត់ពាក្យសម្ងាត់សម្រាប់៖' : 'Resetting for:'}{' '}
+                  {t('auth.resettingFor')}{' '}
                   <strong className="font-semibold text-slate-900">{maskedContactDisplay}</strong>
                 </p>
               </div>
@@ -349,7 +348,7 @@ export function ResetPasswordPage() {
                 onClick={() => navigate({ pathname: '/forgot-password', search: location.search })}
                 className={cn('text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors', isKhmer && 'font-khmer')}
               >
-                {isKhmer ? 'ប្តូរ' : 'Change'}
+                {t('auth.change')}
               </button>
             </div>
           )}
@@ -376,7 +375,7 @@ export function ResetPasswordPage() {
                 isKhmer && 'text-sm font-medium tracking-normal font-khmer'
               )}
             >
-              {isKhmer ? 'លេខកូដផ្ទៀងផ្ទាត់ ៦ ខ្ទង់' : '6-Digit Verification Code'}
+              {t('reset.codeLabel')}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -431,7 +430,7 @@ export function ResetPasswordPage() {
                   control={control}
                   rules={{
                     required: t('error.otpRequired'),
-                    validate: (val) => (val && val.length === 6) || (isKhmer ? 'សូមបញ្ចូលលេខកូដទាំង ៦ ខ្ទង់' : 'Please enter all 6 digits'),
+                    validate: (val) => (val && val.length === 6) || t('error.otpAllDigits'),
                   }}
                   render={() => <></>}
                 />
@@ -465,7 +464,7 @@ export function ResetPasswordPage() {
                 required: t('error.passwordRequired'),
                 minLength: {
                   value: 8,
-                  message: isKhmer ? 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច ៨ តួអក្សរ' : 'Password must be at least 8 characters',
+                  message: t('error.passwordMin'),
                 },
               }}
               render={({ field }) => (
@@ -593,7 +592,7 @@ export function ResetPasswordPage() {
               name="confirmPassword"
               control={control}
               rules={{
-                required: isKhmer ? 'សូមបញ្ជាក់ពាក្យសម្ងាត់' : 'Please confirm your password',
+                required: t('error.confirmRequired'),
                 validate: (value) =>
                   value === passwordValue || t('error.passwordMatch'),
               }}

@@ -1,56 +1,70 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import enTranslations from '../locales/en.json';
 import khTranslations from '../locales/kh.json';
+import {
+  applyDocumentLanguage,
+  formatDate,
+  formatNumber,
+  interpolate,
+  readLanguagePreference,
+  resolveMessage,
+  subscribeLanguagePreference,
+  writeLanguagePreference,
+} from '@rentify/utils/i18n/languagePreference';
 
-const translations = {
-  EN: enTranslations,
-  KH: khTranslations,
+// The marketing locale files contain both legacy flat keys and nested keys;
+// resolveMessage reads both.
+const catalogs = {
+  en: enTranslations,
+  km: khTranslations,
 };
+
+// Marketing components compare against 'EN' | 'KH'; the shared preference
+// stores 'en' | 'km'.
+const toLegacy = (lang) => (lang === 'km' ? 'KH' : 'EN');
 
 const LanguageContext = createContext(undefined);
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState(() => {
-    try {
-      return localStorage.getItem('rentify-language') === 'KH' ? 'KH' : 'EN';
-    } catch {
-      return 'EN';
-    }
-  });
-
-  const toggleLanguage = () => {
-    setLanguage((current) => (current === 'EN' ? 'KH' : 'EN'));
-  };
+  const [lang, setLang] = useState(readLanguagePreference);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rentify-language', language);
-    } catch {
-      // Language still works for the current page when storage is unavailable.
-    }
-    document.documentElement.lang = language === 'KH' ? 'km' : 'en';
-  }, [language]);
+    applyDocumentLanguage(lang);
+  }, [lang]);
 
-  const t = (key) => {
-    const dictionary = translations[language];
-    const directTranslation = dictionary[key];
-    if (directTranslation) return directTranslation;
+  useEffect(() => subscribeLanguagePreference(setLang), []);
 
-    // The marketing locale files contain both legacy flat keys and nested
-    // keys. Supporting both keeps every navigation and onboarding label
-    // readable while the catalogue is consolidated.
-    return (
-      key.split('.').reduce((value, part) => value?.[part], dictionary) || key
-    );
-  };
+  const setLanguage = useCallback((value) => {
+    setLang(writeLanguagePreference(value));
+  }, []);
 
-  return (
-    <LanguageContext.Provider
-      value={{ language, setLanguage, toggleLanguage, t }}
-    >
-      {children}
-    </LanguageContext.Provider>
+  const toggleLanguage = useCallback(() => {
+    setLang((current) => writeLanguagePreference(current === 'km' ? 'en' : 'km'));
+  }, []);
+
+  const t = useCallback(
+    (key, params) => {
+      const message = resolveMessage(catalogs, lang, key, params);
+      return message === undefined ? key : interpolate(message, params);
+    },
+    [lang],
   );
+
+  const value = useMemo(
+    () => ({
+      lang,
+      language: toLegacy(lang),
+      isKhmer: lang === 'km',
+      setLanguage,
+      toggleLanguage,
+      t,
+      formatNumber: (number, options) => formatNumber(lang, number, options),
+      formatDate: (date, options) => formatDate(lang, date, options),
+    }),
+    [lang, setLanguage, toggleLanguage, t],
+  );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
 export const useLanguage = () => {

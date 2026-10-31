@@ -63,7 +63,7 @@ const PlanCard = ({ plan, index, count, recommended, compact }) => {
           </span>
         ) : free ? (
           <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-700">
-            Free Forever
+            {t('site.plans.freeForever')}
           </span>
         ) : (
           <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-700">
@@ -76,7 +76,7 @@ const PlanCard = ({ plan, index, count, recommended, compact }) => {
         {plan.name}
       </h3>
       <p className="mt-1.5 text-[14px] font-medium text-[#0071e3]">
-        Who it’s for: <span className="font-normal text-[#424245]">{whoItsFor}</span>
+        {t('site.plans.whoFor')} <span className="font-normal text-[#424245]">{whoItsFor}</span>
       </p>
 
       <div className="mt-7 flex items-baseline gap-1.5">
@@ -125,7 +125,7 @@ const PlanCard = ({ plan, index, count, recommended, compact }) => {
 
       <div className="mt-7 rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[13px]">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold text-[#1d1d1f]">Commission</span>
+          <span className="font-semibold text-[#1d1d1f]">{t('site.plans.commission')}</span>
           <span className="font-medium text-[#424245]">{commission}</span>
         </div>
       </div>

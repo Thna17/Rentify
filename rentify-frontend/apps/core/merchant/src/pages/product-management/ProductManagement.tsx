@@ -487,6 +487,27 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         },
       },
       {
+        id: 'channels',
+        header: () => <div className="text-center">{t('merchant.p.channels')}</div>,
+        cell: ({ row }: { row: any }) => {
+          const product: Product = row.original;
+          const onMarketplace = product.marketplaceVisibility !== false;
+          return (
+            <div className="flex flex-wrap justify-center gap-1">
+              {onMarketplace && (
+                <Badge variant="secondary" className="text-xs">{t('merchant.p.marketplace')}</Badge>
+              )}
+              {websiteId && (
+                <Badge variant="outline" className="text-xs">{t('merchant.p.storefront')}</Badge>
+              )}
+              {!onMarketplace && !websiteId && (
+                <span className="text-xs text-muted-foreground">{t('merchant.p.hidden')}</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: 'status',
         header: () => (
           <div className="text-center">{t('dashboard.product.status')}</div>
@@ -598,7 +619,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <IconPackage className="h-6 w-6 text-gray-400" />
-                <span className="text-[10px] text-gray-400 mt-1">No Image</span>
+                <span className="text-[10px] text-gray-400 mt-1">{t('merchant.p.noImage')}</span>
               </div>
             )}
           </div>
@@ -709,7 +730,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         }`}
       >
         <Upload className="h-4 w-4" />
-        <span className="hidden sm:inline">Bulk Create</span>
+        <span className="hidden sm:inline">{t('merchant.p.bulkCreate')}</span>
       </Button>
       
       <Button
@@ -719,7 +740,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200"
       >
         <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">Export</span>
+        <span className="hidden sm:inline">{t('merchant.p.export')}</span>
       </Button>
       
       <Button
@@ -739,7 +760,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         }`}
       >
         <Plus className="h-4 w-4" />
-        <span>Add Product</span>
+        <span>{t('merchant.p.addProduct2')}</span>
       </Button>
     </div>
   );
@@ -817,14 +838,14 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         ]}
       />
      <div className="p-6 md:p-8 space-y-6">
-        {disabledReason && (
+        {disabledReason && !isGracePeriod && !isSuspended && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
             <div className="flex items-center gap-2">
               <IconAlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
               <span>{disabledReason}</span>
             </div>
             <Button asChild size="sm" variant="outline" className="border-amber-400 bg-white hover:bg-amber-100 text-amber-900">
-              <a href="/settings/billing">Upgrade Plan</a>
+              <a href="/settings/billing">{t('merchant.p.upgradePlan')}</a>
             </Button>
           </div>
         )}
@@ -947,7 +968,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         open={state.isProductDetailOpen}
         onOpenChange={state.setIsProductDetailOpen}
         selectedItem={(state.selectedProductDetail as any) || undefined}
-        title="Product Details"
+        title={t('merchant.p.productDetails')}
         description="Complete product information and actions"
         renderDetail={(product: Product) => (
           <ProductRowDetail
@@ -1053,14 +1074,16 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
   );
 }
 
+// Every Store gets the same simple product list; the older table with bulk
+// create/export stays one link away at /products/manage for website stores.
 export function ProductManagement(): JSX.Element {
+  return <StoreCatalogPage />;
+}
+
+export function BulkProductManagement(): JSX.Element {
   const { websiteData } = useThemeService();
   const websiteId = websiteData?.websiteId;
-
-  if (!websiteId) {
-    return <StoreCatalogPage />;
-  }
-
+  if (!websiteId) return <StoreCatalogPage />;
   return <ProductManagementContent websiteId={websiteId} />;
 }
 

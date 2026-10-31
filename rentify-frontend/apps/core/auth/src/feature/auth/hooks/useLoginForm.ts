@@ -43,11 +43,12 @@ const parseJwtPayload = (token?: string) => {
 };
 
 export const useLoginForm = () => {
-  const { t, isKhmer } = useAuthLanguage();
+  const { t } = useAuthLanguage();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [inputMode, setInputMode] = useState<'email' | 'phone'>('email');
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const { websiteId, userEmail, userPhoneNumber, staffs } = useWebsiteData();
 
@@ -75,6 +76,7 @@ export const useLoginForm = () => {
 
   const handleLogin = async (data: { contact: string; password: string }) => {
     setError('');
+    setNeedsVerification(false);
     setSuccess('');
     setLoading(true);
 
@@ -88,8 +90,8 @@ export const useLoginForm = () => {
     if (!isEmail && !isPhone) {
       setError(
         inputMode === 'phone'
-          ? t('error.invalidPhone')
-          : t('error.invalidEmail')
+          ? 'error.invalidPhone'
+          : 'error.invalidEmail'
       );
       setLoading(false);
       return;
@@ -206,23 +208,23 @@ export const useLoginForm = () => {
         }
       }
 
-      setSuccess(
-        isKhmer
-          ? 'ចូលគណនីជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
-          : 'Login successful! Redirecting...'
-      );
+      setSuccess('login.success');
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
     } catch (err: any) {
+      // Backend text is only used to pick a catalog message, never shown.
       const rawMsg = err?.data?.error || err?.data?.message || err?.message || '';
-      let mappedError = rawMsg || t('error.invalidCredentials');
+      let mappedError = 'error.invalidCredentials';
 
       const lower = String(rawMsg).toLowerCase();
-      if (lower.includes('not found') || lower.includes('does not exist')) {
+      if (lower.includes('not verified')) {
+        mappedError = 'error.notVerified';
+        setNeedsVerification(true);
+      } else if (lower.includes('not found') || lower.includes('does not exist')) {
         mappedError = inputMode === 'phone'
-          ? t('error.phoneNotFound')
-          : t('error.emailNotFound');
+          ? 'error.phoneNotFound'
+          : 'error.emailNotFound';
       } else if (
         lower.includes('password') ||
         lower.includes('credential') ||
@@ -230,14 +232,14 @@ export const useLoginForm = () => {
         lower.includes('invalid email') ||
         lower.includes('invalid phone')
       ) {
-        mappedError = t('error.incorrectPassword');
+        mappedError = 'error.incorrectPassword';
       } else if (
         lower.includes('disabled') ||
         lower.includes('deactivated') ||
         lower.includes('inactive') ||
         lower.includes('suspended')
       ) {
-        mappedError = t('error.accountDisabled');
+        mappedError = 'error.accountDisabled';
       }
 
       setError(mappedError);
@@ -265,12 +267,12 @@ export const useLoginForm = () => {
           : response?.data?.hasStore
           ? `${DASHBOARD_URL}/overview`
           : `${MARKETING_URL}/start`;
-      setSuccess('Login successful! Redirecting...');
+      setSuccess('login.success');
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
     } catch (err: any) {
-      setError(err?.data?.error || 'Telegram login failed. Please try again.');
+      setError('error.telegramLogin');
     } finally {
       setLoading(false);
     }
@@ -291,12 +293,12 @@ export const useLoginForm = () => {
       //   storeId: isWebsiteTemplate ? websiteId : undefined
       // }).unwrap();
 
-      setSuccess('Google login successful! Redirecting...');
+      setSuccess('login.success');
       setTimeout(() => {
         window.location.href = redirectUrl;
       }, 1500);
     } catch (err: any) {
-      setError(err?.data?.error || 'Google login failed. Please try again.');
+      setError('error.googleLogin');
     } finally {
       setLoading(false);
     }
@@ -312,9 +314,11 @@ export const useLoginForm = () => {
     });
   };
 
+  // error/success hold catalog keys so they follow a language switch.
   return {
-    error,
-    success,
+    error: error && t(error),
+    success: success && t(success),
+    needsVerification,
     loading,
     inputMode,
     setInputMode,

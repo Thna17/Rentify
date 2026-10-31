@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
@@ -75,19 +76,19 @@ const makeScreenMaterial = (dashboardTexture, marketplaceTexture) => new THREE.S
 // The storefront story shown after the camera dives into the laptop screen
 const STORE_CAPTIONS = [
   {
-    eyebrow: 'Home storefront',
-    title: 'A store with your own brand.',
-    body: 'Show your products in a storefront made for your business.',
+    eyebrow: 'site.showcase.homeEyebrow',
+    title: 'site.showcase.homeTitle',
+    body: 'site.showcase.homeBody',
   },
   {
-    eyebrow: 'Phone storefront',
-    title: 'Sell what your customers love.',
-    body: 'Create a storefront for every kind of product you sell.',
+    eyebrow: 'site.showcase.phoneEyebrow',
+    title: 'site.showcase.phoneTitle',
+    body: 'site.showcase.phoneBody',
   },
   {
-    eyebrow: 'Checkout',
-    title: 'Paid by KHQR, confirmed for you.',
-    body: 'Customers scan and pay with their bank app. The payment is confirmed automatically.',
+    eyebrow: 'site.showcase.checkoutEyebrow',
+    title: 'site.showcase.checkoutTitle',
+    body: 'site.showcase.checkoutBody',
   },
 ];
 
@@ -451,6 +452,7 @@ const prepareRealMacBook = (gltf, screenMaterial, finish) => {
 };
 
 const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
+  const { t } = useLanguage();
   const finish = FINISHES[variant] || FINISHES.silver;
   const sectionRef = useRef(null);
   const canvasHostRef = useRef(null);
@@ -485,7 +487,7 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.88;
-    renderer.domElement.setAttribute('aria-label', 'Scroll-controlled 3D Rentify laptop');
+    renderer.domElement.setAttribute('aria-label', t('site.showcase.canvasLabel'));
     host.appendChild(renderer.domElement);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
@@ -553,11 +555,17 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       modelLift: 0,
     };
     let activeModel = null;
+    // How much the laptop is shrunk to fit the screen width (1 on wide screens).
+    // Camera aims scale with it, so a small phone laptop is framed the same way.
+    let fitScale = 1;
+    const isNarrow = () => fitScale < 0.95;
+    const restTarget = () => (isNarrow() ? 0.82 * fitScale + 0.08 : 0.82);
 
     const showModel = (model) => {
       activeModel = model;
       scene.add(model.root);
       resize();
+      if (motion.open === 0) motion.cameraTargetY = restTarget();
     };
 
     const dracoLoader = new DRACOLoader();
@@ -578,10 +586,13 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         const baseScale = 3.55 / Math.max(size.x, size.z);
-        const basePositionY = -bounds.min.y * baseScale - 0.08;
-        const basePositionX = -center.x * baseScale;
-        prepared.root.position.set(basePositionX, basePositionY, -center.z * baseScale);
-        showModel({ ...prepared, baseScale, basePositionY, basePositionX });
+        // Centre the model inside a pivot so the opening spin turns it around its
+        // own middle instead of swinging it off one edge of the screen.
+        prepared.root.scale.setScalar(baseScale);
+        prepared.root.position.set(-center.x * baseScale, -bounds.min.y * baseScale, -center.z * baseScale);
+        const pivot = new THREE.Group();
+        pivot.add(prepared.root);
+        showModel({ ...prepared, root: pivot, baseScale: 1, basePositionY: -0.08, basePositionX: 0 });
       },
       undefined,
       showCodedLaptop
@@ -594,11 +605,15 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
       if (!activeModel) return;
-      const isPhone = window.innerWidth < 640;
-      const scale = isPhone ? 0.6 : window.innerWidth < 1024 ? 0.88 : 1;
+      // Fit the 3.55-unit laptop into 80% of what the resting camera can see,
+      // so tall phone and tablet screens never crop it.
+      const visibleWidth = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 5.7 * camera.aspect;
+      const scale = Math.min(1, (visibleWidth * 0.8) / 3.55);
+      fitScale = scale;
       activeModel.root.scale.setScalar(activeModel.baseScale * scale);
     };
-    const observer = new ResizeObserver(resize);
+    const fitAim = () => { if (motion.open === 0) motion.cameraTargetY = restTarget(); };
+    const observer = new ResizeObserver(() => { resize(); fitAim(); });
     observer.observe(host);
     resize();
 
@@ -659,16 +674,17 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       .to(
         camera.position,
         {
+          // Narrow screens already show the laptop edge to edge, so only nudge in
           z: () => {
-            if (window.innerWidth < 640) return 4.0;
+            if (isNarrow()) return 5.3;
             return window.innerWidth / window.innerHeight < 1.4 ? 5.2 : 3.9;
           },
-          y: () => (window.innerWidth < 640 ? 1.3 : 1.35),
+          y: () => (isNarrow() ? 1.28 : 1.35),
           duration: 0.8,
         },
         2.1
       )
-      .to(motion, { cameraTargetY: () => (window.innerWidth < 640 ? 1.05 : 1.1), duration: 0.8 }, 2.1)
+      .to(motion, { cameraTargetY: () => (isNarrow() ? 1.05 * fitScale - 0.12 : 1.1), duration: 0.8 }, 2.1)
       .to(captions[0], { autoAlpha: 1, y: 0, duration: 0.25 }, 2.7)
       .to(captions[0], { autoAlpha: 0, y: -12, duration: 0.15 }, 3.35)
       .to(motion, { screen: 2, duration: 0.55 }, 3.4)
@@ -680,11 +696,11 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
       // 3. Back to the dashboard and the whole laptop
       .to(motion, { screen: 4, duration: 0.55 }, 5.05)
       .to(camera.position, { z: 5.7, y: 1.28, duration: 0.9 }, 5.2)
-      .to(motion, { cameraTargetY: 0.82, duration: 0.9 }, 5.2)
+      .to(motion, { cameraTargetY: restTarget, duration: 0.9 }, 5.2)
       // 4. The laptop moves right, dashboard features appear on the left, led by POS
       .to(motion, { slide: 1, duration: 0.6 }, 6.1)
       // Below lg the features sit under the laptop, so tilt the camera to lift the laptop into the top half
-      .to(motion, { cameraTargetY: () => (window.innerWidth < 1024 ? 0.28 : 0.82), duration: 0.6 }, 6.1)
+      .to(motion, { cameraTargetY: () => (window.innerWidth < 1024 ? restTarget() - 0.6 * fitScale : 0.82), duration: 0.6 }, 6.1)
       .fromTo(featurePanel, { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.4 }, 6.3)
       .to(motion, { screen: 5, duration: 0.55 }, 6.4)
       .to(featureItems[0], { opacity: 1, duration: 0.2 }, 6.45)
@@ -721,56 +737,56 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
   return (
     <section
       ref={sectionRef}
-      aria-label="Rentify product experience"
+      aria-label={t('site.showcase.label')}
       className="relative h-[960vh] bg-[#f8f6f2]"
     >
       <div className="sticky top-0 h-screen overflow-hidden">
         <div ref={canvasLayerRef} className="absolute inset-0 z-10">
           <div ref={canvasHostRef} className="absolute inset-0" />
 
-          <div ref={introRef} className="pointer-events-none absolute inset-x-5 top-[6vh] text-center sm:top-[7vh]">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">One connected platform</p>
+          <div ref={introRef} className="pointer-events-none absolute inset-x-5 top-[16vh] text-center sm:top-[15vh] lg:top-[7vh]">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">{t('site.showcase.eyebrow')}</p>
             <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-5xl lg:text-6xl">
-              Your whole business, on one screen.
+              {t('site.showcase.title')}
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">Scroll to open it up.</p>
+            <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">{t('site.showcase.scrollHint')}</p>
           </div>
 
           <div ref={dashboardLabelRef} className="pointer-events-none absolute inset-x-5 top-[8vh] text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">Merchant dashboard</p>
-            <h3 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 sm:text-5xl">Manage everything.</h3>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">{t('site.showcase.dashboardEyebrow')}</p>
+            <h3 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 sm:text-5xl">{t('site.showcase.dashboardTitle')}</h3>
           </div>
 
           <div ref={marketplaceLabelRef} className="pointer-events-none absolute inset-x-5 top-[8vh] text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">Your storefront</p>
-            <h3 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 sm:text-5xl">Make it yours.</h3>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">{t('site.showcase.storefrontEyebrow')}</p>
+            <h3 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 sm:text-5xl">{t('site.showcase.storefrontTitle')}</h3>
           </div>
 
           <div
             ref={featurePanelRef}
             className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] sm:inset-x-8 sm:bottom-8 sm:p-6 lg:inset-x-auto lg:border-0 lg:shadow-none lg:bottom-auto lg:left-[6vw] lg:top-1/2 lg:w-[380px] lg:-translate-y-1/2 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600 lg:text-sm lg:tracking-[0.18em]">Inside the dashboard</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600 lg:text-sm lg:tracking-[0.18em]">{t('site.showcase.posEyebrow')}</p>
             <h3 className="mt-1.5 text-xl font-bold leading-tight tracking-[-0.03em] text-slate-950 sm:text-2xl lg:mt-3 lg:text-5xl">
-              Sell at the counter, too.
+              {t('site.showcase.posTitle')}
             </h3>
             <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 lg:mt-8 lg:block lg:space-y-5">
               {[
-                ['Point of sale', 'Ring up in-store sales in seconds on any laptop or tablet.'],
-                ['KHQR and cash', 'Take payment by KHQR or cash right at the counter.'],
-                ['One stock count', 'In-store sales draw from the same products as your online store.'],
-                ['Orders and reports', 'Every sale lands in one list, ready for your reports.'],
+                ['site.showcase.posItem1Title', 'site.showcase.posItem1Body'],
+                ['site.showcase.posItem2Title', 'site.showcase.posItem2Body'],
+                ['site.showcase.posItem3Title', 'site.showcase.posItem3Body'],
+                ['site.showcase.posItem4Title', 'site.showcase.posItem4Body'],
               ].map(([title, body]) => (
                 <li key={title} data-feature className="border-l-2 border-blue-600/30 pl-2.5 lg:pl-4">
-                  <p className="text-[13px] font-semibold leading-snug text-slate-950 lg:text-lg">{title}</p>
-                  <p className="mt-0.5 text-[11.5px] leading-[1.4] text-slate-500 line-clamp-3 lg:mt-1 lg:text-base lg:leading-6 lg:line-clamp-none">{body}</p>
+                  <p className="text-[13px] font-semibold leading-snug text-slate-950 lg:text-lg">{t(title)}</p>
+                  <p className="mt-0.5 text-[11.5px] leading-[1.4] text-slate-500 line-clamp-3 lg:mt-1 lg:text-base lg:leading-6 lg:line-clamp-none">{t(body)}</p>
                 </li>
               ))}
             </ul>
           </div>
 
           <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full lg:block border border-white/70 bg-white/70 px-4 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur">
-            {modelStatus} · Scroll to explore
+            {modelStatus} · {t('site.showcase.scrollExplore')}
           </div>
         </div>
 
@@ -783,12 +799,12 @@ const RentifyLaptopShowcase = ({ variant = 'silver' }) => {
             >
               <div className="mx-auto flex max-w-[1500px] flex-col gap-3 px-5 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:px-[6vw]">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">{caption.eyebrow}</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">{t(caption.eyebrow)}</p>
                   <h3 className="mt-2 text-2xl font-bold leading-tight tracking-[-0.03em] text-slate-950 sm:text-4xl">
-                    {caption.title}
+                    {t(caption.title)}
                   </h3>
                 </div>
-                <p className="max-w-md text-base leading-7 text-slate-500">{caption.body}</p>
+                <p className="max-w-md text-base leading-7 text-slate-500">{t(caption.body)}</p>
               </div>
             </div>
           ))}

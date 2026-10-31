@@ -23,6 +23,8 @@ export const emptyDraft = Object.freeze({
   location: '',
   templateId: '',
   packageId: '',
+  // Who the saved draft belongs to, so a different account on this browser starts clean
+  ownerId: '',
   step: STEPS.ACCOUNT,
 });
 

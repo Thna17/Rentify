@@ -4,7 +4,7 @@ import { ECOMMERCE_API_ROOT } from '../apiBase';
 
 export const categoryApi = createApi({
   reducerPath: 'categoryApi',
-  baseQuery: fetchBaseQuery({ baseUrl: `${ECOMMERCE_API_ROOT}/api/categories` }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${ECOMMERCE_API_ROOT}/api/categories`, credentials: 'include' }),
   tagTypes: ['Category'],
   endpoints: (builder) => ({
     // GET categories by websiteId

@@ -1,109 +1,101 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import { CheckCircle, AlertCircle, Clock, Info } from 'lucide-react';
 
-export default function DeploymentLog({ t, language, details = [] }) {
-  const scrollRef = useRef(null);
-
-  // Auto-scroll to latest log
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+export default function DeploymentLog({ t, language, details }) {
+  const getLogIcon = (type) => {
+    switch (type) {
+      case 'error': return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'warning': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      case 'info': return <Info className="w-4 h-4 text-blue-500" />;
+      default: return <CheckCircle className="w-4 h-4 text-green-500" />;
     }
-  }, [details.length]);
-
-  const formatTime = (timestamp) => {
-    if (!timestamp) {
-      return new Date().toLocaleTimeString([], {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    }
-    const date = new Date(timestamp);
-    return isNaN(date.getTime())
-      ? timestamp
-      : date.toLocaleTimeString([], {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
   };
 
-  const getBadge = (type) => {
+  const getLogColor = (type) => {
     switch (type) {
-      case 'error':
-        return <span className="font-semibold text-rose-400">[ERR]</span>;
-      case 'warning':
-        return <span className="font-semibold text-amber-400">[WRN]</span>;
-      case 'success':
-        return <span className="font-semibold text-emerald-400">[OK]</span>;
-      default:
-        return <span className="font-semibold text-sky-400">[INF]</span>;
+      case 'error': return 'bg-red-50 border-red-200';
+      case 'warning': return 'bg-yellow-50 border-yellow-200';
+      case 'info': return 'bg-blue-50 border-blue-200';
+      default: return 'bg-green-50 border-green-200';
     }
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#0b0f17] text-white shadow-xl ring-1 ring-white/10">
-      {/* Console Window Header */}
-      <div className="flex h-11 items-center justify-between border-b border-white/10 bg-white/[0.04] px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
-            <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
-            <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h4 className={`font-semibold text-gray-900 ${language === 'KH' ? 'font-khmer' : ''}`}>
+            {t('deployment.log.title')}
+          </h4>
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4 text-gray-500" />
+            <span className={`text-sm text-gray-600 ${language === 'KH' ? 'font-khmer' : ''}`}>
+              {t('deployment.liveLogs')}
+            </span>
           </div>
-          <span className="ml-3 font-mono text-[12px] text-white/60">
-            rentify-provision · live activity
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
-            Live Stream
-          </span>
         </div>
       </div>
 
-      {/* Terminal Output */}
-      <div
-        ref={scrollRef}
-        className="max-h-56 min-h-36 overflow-y-auto p-4 font-mono text-[12.5px] leading-relaxed text-slate-300"
-      >
+      <div className="max-h-80 overflow-y-auto">
         {details.length === 0 ? (
-          <div className="flex items-center gap-2 text-white/40">
-            <span className="inline-block h-3 w-1.5 animate-pulse bg-[#0071e3]" />
-            <span>Initializing automated build pipeline…</span>
+          <div className="p-8 text-center">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Info className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className={`text-gray-500 ${language === 'KH' ? 'font-khmer' : ''}`}>
+              {t('deployment.log.empty')}
+            </p>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {details.map((detail, idx) => (
-              <div key={detail.id || idx} className="flex items-start gap-2.5">
-                <span className="shrink-0 text-[11px] text-white/35">
-                  {formatTime(detail.timestamp)}
-                </span>
-                <span className="shrink-0 text-[11px]">
-                  {getBadge(detail.type)}
-                </span>
-                <span className="break-words text-white/90">
-                  {detail.message}
-                </span>
+          <div className="p-4 space-y-3">
+            {details.map((detail) => (
+              <div
+                key={detail.id}
+                className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 hover:shadow-sm ${getLogColor(detail.type)}`}
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  {getLogIcon(detail.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm ${language === 'KH' ? 'font-khmer' : ''} ${
+                    detail.type === 'error' ? 'text-red-800' :
+                    detail.type === 'warning' ? 'text-yellow-800' :
+                    'text-gray-800'
+                  }`}>
+                    {detail.message}
+                  </p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <span className="text-xs text-gray-500 font-mono">
+                      {detail.timestamp}
+                    </span>
+                    {detail.type === 'error' && (
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                        {t('common.error')}
+                      </span>
+                    )}
+                    {detail.type === 'warning' && (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                        {t('common.warning')}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
-            <div className="flex items-center gap-2 pt-1 text-white/40">
-              <span className="inline-block h-3 w-1.5 animate-pulse bg-[#0071e3]" />
-              <span className="text-[11px] text-white/50">Provisioning services…</span>
-            </div>
           </div>
         )}
       </div>
 
-      {/* Console Window Footer */}
-      <div className="flex items-center justify-between border-t border-white/5 bg-white/[0.02] px-4 py-2 text-[11px] text-white/40">
-        <span>TLS Encrypted · Zero-Downtime Infrastructure</span>
-        <span>{details.length} events logged</span>
-      </div>
+      {details.length > 0 && (
+        <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
+          <p className={`text-xs text-gray-600 text-center ${language === 'KH' ? 'font-khmer' : ''}`}>
+            {language === 'KH' 
+              ? `កំណត់ហេតុសរុប: ${details.length}`
+              : `Total logs: ${details.length}`
+            }
+          </p>
+        </div>
+      )}
     </div>
   );
 }

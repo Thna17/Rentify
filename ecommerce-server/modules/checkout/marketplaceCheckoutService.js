@@ -55,9 +55,22 @@ async function findOrderByKey(checkoutKey, buyerId, transaction = null) {
   return orderView(order, items, payment);
 }
 
+// ABA PayWay is test-only (DEC-026 keeps Release 1 COD-only); anything else falls back to COD
+const paywayEnabled = () => String(process.env.PAYWAY_ENABLED || '').toLowerCase() === 'true';
+function resolvePaymentMethod(requested) {
+  const value = String(requested || 'COD').toUpperCase();
+  if (value === 'ABA_PAYWAY') {
+    if (!paywayEnabled()) fail('ABA PayWay is not available', 400, 'PAYMENT_METHOD_UNAVAILABLE');
+    return 'ABA_PAYWAY';
+  }
+  if (value !== 'COD') fail('Unsupported payment method', 400, 'PAYMENT_METHOD_UNAVAILABLE');
+  return 'COD';
+}
+
 async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, customerInfo, shippingInfo,
-  channel = 'marketplace' }) {
+  channel = 'marketplace', paymentMethod: requestedMethod }) {
   uuid(buyerId, 'buyer'); uuid(storeId, 'Store'); validIdempotencyKey(checkoutKey);
+  const paymentMethod = resolvePaymentMethod(requestedMethod);
   if (expectedTotalAmount === undefined || expectedTotalAmount === null) fail('Expected cart total is required');
   const expectedTotal = cents(expectedTotalAmount);
   const name = requiredText(customerInfo?.name, 'customer name', 120);
@@ -238,8 +251,10 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         customerInfo: { name, phone }, shippingInfo: { address }, stockDeducted: true,
         orderSnapshot,
         metadata: {
-          paymentMethod: 'cod',
-          deliveryTerms: 'Seller delivers and collects cash directly',
+          paymentMethod: paymentMethod.toLowerCase(),
+          deliveryTerms: paymentMethod === 'COD'
+            ? 'Seller delivers and collects cash directly'
+            : 'Buyer pays by ABA PayWay (test); seller delivers',
           deliveryPolicyVersion: policy.version,
           commission: '0.00',
           snapshot: orderSnapshot,
@@ -279,7 +294,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
       }
       const payment = await Payment.create({
         orderId: order.id, storeId, amount: dollars(total), currency: 'USD',
-        paymentMethod: 'COD', status: 'pending', collectedAmount: '0.00', refundedAmount: '0.00',
+        paymentMethod, status: 'pending', collectedAmount: '0.00', refundedAmount: '0.00',
       }, { transaction });
       await CartItem.destroy({ where: { cartId: cart.id }, transaction });
       await Cart.destroy({ where: { id: cart.id }, transaction });
@@ -345,6 +360,7 @@ async function checkoutMultiStore({
   shippingInfo,
   channel = 'marketplace',
   atomic = false,
+  paymentMethod,
 }) {
   uuid(buyerId, 'buyer');
   validIdempotencyKey(checkoutKey);
@@ -369,6 +385,7 @@ async function checkoutMultiStore({
         customerInfo: storeOrder.customerInfo || customerInfo,
         shippingInfo: storeOrder.shippingInfo || shippingInfo,
         channel,
+        paymentMethod,
       });
       results.successfulOrders.push(order);
     } catch (error) {

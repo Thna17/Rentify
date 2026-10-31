@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { useAuth } from '@rentify/utils';
+import { useAuth, useTranslation } from '@rentify/utils';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -185,6 +185,7 @@ const RETURNS_GUIDE: Record<Exclude<ChannelView, 'all'>, { title: string; steps:
 };
 
 export const Overview = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile } = useAuth() as { profile?: { name?: string } };
   const { store, hasStorefront, hasMarketplace, hasPos, togglePos, toggleMarketplace, view } = useChannels();
@@ -203,7 +204,9 @@ export const Overview = () => {
   const isAutoUuidSlug = /^store-[0-9a-f-]{20,}$/i.test(rawStoreSlug);
   const storeSlug = slugify((!isAutoUuidSlug && rawStoreSlug) || storeObj?.name);
   const storefrontDomain = storeObj?.websiteDomain || `${storeSlug}.${HOSTED_STOREFRONT_DOMAIN || 'mekhla.digital'}`;
-  const storefrontHref = /^https?:\/\//.test(storefrontDomain) ? storefrontDomain : `https://${storefrontDomain}`;
+  const storefrontHref = /^https?:\/\//.test(storefrontDomain)
+    ? storefrontDomain
+    : `${/localhost|127\.0\.0\.1/.test(storefrontDomain) ? 'http' : 'https'}://${storefrontDomain}`;
   const marketplaceShopHref = `${(MARKETPLACE_URL || 'https://rentify-market.mekhla.digital').replace(/\/+$/, '')}/stores/${(!isAutoUuidSlug && rawStoreSlug) || storeObj?.id || storeSlug}`;
   const posUrl =
     typeof window !== 'undefined' && window.location.hostname.includes('mekhla.digital') ? 'https://rentify-pos.mekhla.digital' : POS_URL;
@@ -293,7 +296,7 @@ export const Overview = () => {
             <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-foreground md:text-[32px]">{greeting}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div role="radiogroup" aria-label="Period" className="flex rounded-xl bg-muted p-1">
+            <div role="radiogroup" aria-label={t('merchant.p.period')} className="flex rounded-xl bg-muted p-1">
               {PERIODS.map(([value, label]) => (
                 <button
                   key={value}
@@ -315,7 +318,7 @@ export const Overview = () => {
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-card px-4 text-[13px] font-semibold text-foreground shadow-[var(--shadow-soft)] hover:bg-muted"
             >
               <Package className="h-4 w-4" />
-              Add product
+              {t('merchant.p.addProduct')}
             </button>}
           </div>
         </motion.div>
@@ -324,7 +327,7 @@ export const Overview = () => {
         <motion.section {...fadeUp(0.04)}>
           {view === 'all' ? (
             <>
-              <SectionTitle title="Where you sell" meta={`${activeCount} of 3 on · one catalog, one stock count`} />
+              <SectionTitle title={t('merchant.p.whereYouSell')} meta={`${activeCount} of 3 on · one catalog, one stock count`} />
               <div className="grid gap-3 md:grid-cols-3 md:gap-4">
                 <ChannelCard {...cards.marketplace} />
                 <ChannelCard {...cards.storefront} />
@@ -338,25 +341,25 @@ export const Overview = () => {
 
         {/* Money for the selected channel(s) */}
         <motion.section {...fadeUp(0.08)}>
-          <SectionTitle title="Money" meta={`${view === 'all' ? 'All channels' : CHANNEL_LABEL[view]} · ${periodLabel}`} />
+          <SectionTitle title={t('merchant.p.money')} meta={`${view === 'all' ? 'All channels' : CHANNEL_LABEL[view]} · ${periodLabel}`} />
           {!canMoney ? (
             <Surface className="flex items-center gap-3 text-[13.5px] text-muted-foreground">
               <Lock className="h-4 w-4 shrink-0" />
-              Sales and money are shown to people with Analytics access. Ask the store owner if you need it.
+              {t('merchant.p.salesAndMoneyAre')}
             </Surface>
           ) : error ? (
-            <Surface className="text-center text-sm text-muted-foreground">Couldn't load orders. Try again in a moment.</Surface>
+            <Surface className="text-center text-sm text-muted-foreground">{t('merchant.p.couldnTLoadOrders')}</Surface>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
               <Kpi
-                label="Sales"
+                label={t('merchant.p.sales')}
                 value={formatMoney(summary.sales)}
                 sub={`${summary.orderCount} order${summary.orderCount === 1 ? '' : 's'} · avg ${formatMoney(summary.averageOrder)}`}
                 loading={loading}
               />
-              <Kpi label="Paid" value={formatMoney(summary.paid)} sub={`Net after refunds ${formatMoney(summary.net)}`} loading={loading} />
-              <Kpi label="Awaiting payment" value={formatMoney(summary.awaiting)} sub="Not yet collected" loading={loading} />
-              <Kpi label="Refunded" value={formatMoney(summary.refunded)} sub="Recorded refunds" loading={loading} />
+              <Kpi label={t('merchant.p.paid')} value={formatMoney(summary.paid)} sub={`Net after refunds ${formatMoney(summary.net)}`} loading={loading} />
+              <Kpi label={t('merchant.p.awaitingPayment')} value={formatMoney(summary.awaiting)} sub="Not yet collected" loading={loading} />
+              <Kpi label={t('merchant.p.refunded')} value={formatMoney(summary.refunded)} sub="Recorded refunds" loading={loading} />
             </div>
           )}
         </motion.section>
@@ -366,9 +369,9 @@ export const Overview = () => {
         <motion.div {...fadeUp(0.12)} className={`grid grid-cols-1 gap-3 md:gap-4 ${canMoney || view !== 'all' ? 'lg:grid-cols-2' : ''}`}>
           {view === 'all' ? (canMoney && (
             <Surface>
-              <SectionTitle title="Sales by channel" meta={periodLabel} />
+              <SectionTitle title={t('merchant.p.salesByChannel')} meta={periodLabel} />
               {summary.byChannel.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No sales in this period yet.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">{t('merchant.p.noSalesInThis')}</p>
               ) : (
                 <ul className="space-y-4">
                   {summary.byChannel.map((row) => (
@@ -404,7 +407,7 @@ export const Overview = () => {
           )}
 
           <Surface>
-            <SectionTitle title="Needs attention" meta={summary.attention.length ? `${summary.attention.length} open` : undefined} />
+            <SectionTitle title={t('merchant.p.needsAttention')} meta={summary.attention.length ? `${summary.attention.length} open` : undefined} />
             {loading ? (
               <div className="space-y-2">
                 {[0, 1, 2].map((i) => (
@@ -412,10 +415,12 @@ export const Overview = () => {
                 ))}
               </div>
             ) : summary.attention.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                <CheckCircle2 className="h-7 w-7 text-emerald-500" />
-                <p className="text-sm font-medium text-foreground">All caught up</p>
-                <p className="text-xs text-muted-foreground">Returns, complaints and cash to collect show up here.</p>
+              <div className="flex items-center gap-3 rounded-2xl bg-muted/50 px-4 py-3">
+                <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-500" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t('merchant.p.allCaughtUp')}</p>
+                  <p className="text-xs text-muted-foreground">{t('merchant.p.returnsComplaintsAndCash')}</p>
+                </div>
               </div>
             ) : (
               <ul className="space-y-1.5">
@@ -459,10 +464,10 @@ export const Overview = () => {
         <motion.div {...fadeUp(0.2)}>
           <Surface>
             <SectionTitle
-              title="Recent orders"
+              title={t('merchant.p.recentOrders')}
               meta={
                 <button type="button" onClick={() => navigate('/orders')} className="font-semibold text-primary hover:underline">
-                  View all
+                  {t('merchant.p.viewAll')}
                 </button>
               }
             />
@@ -475,7 +480,7 @@ export const Overview = () => {
             ) : recent.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-muted-foreground">
                 <ClipboardList className="h-8 w-8 opacity-40" />
-                <p className="text-sm">No orders in this period.</p>
+                <p className="text-sm">{t('merchant.p.noOrdersInThis')}</p>
               </div>
             ) : (
               <ul className="space-y-1">
