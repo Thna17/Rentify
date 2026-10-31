@@ -130,6 +130,7 @@ jobs:
       MARKETING_URL: https://www.rentify.test
       MARKETPLACE_URL: https://market.rentify.test
       ADMIN_DASHBOARD_URL: https://admin.rentify.test
+      POS_URL: https://pos.rentify.test
       STOREFRONT_ORIGIN: https://store.rentify.test
       VITE_RENTIFY_API_URL: https://api.rentify.test
       VITE_ECOMMERCE_API_URL: https://commerce.rentify.test
@@ -138,6 +139,7 @@ jobs:
       VITE_MARKETING_URL: https://www.rentify.test
       VITE_MARKETPLACE_URL: https://market.rentify.test
       VITE_ADMIN_DASHBOARD_URL: https://admin.rentify.test
+      VITE_POS_URL: https://pos.rentify.test
       VITE_STOREFRONT_ORIGIN: https://store.rentify.test
       VITE_HOSTED_STOREFRONT_DOMAIN: stores.rentify.test
     steps:
