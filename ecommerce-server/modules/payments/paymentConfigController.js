@@ -1,5 +1,6 @@
-const { PaymentGatewayConfig } = require("../../models");
+const { PaymentGatewayConfig, StoreAccess } = require("../../models");
 const axios = require("axios");
+const { Op } = require("sequelize");
 const { encryptSecrets, decryptSecrets, splitConfig, sanitizeConfig } = require("./paymentConfigEncryption");
 
 const sanitizeRecord = (record) => {
@@ -22,6 +23,7 @@ exports.getPublicPaymentMethods = async (req, res) => {
     const configs = await PaymentGatewayConfig.findAll({
       where: { websiteId, enabled: true },
       attributes: ["gateway", "enabled", "config"],
+      order: [["updatedAt", "DESC"]],
     });
 
     const paymentMethods = ["COD"];
@@ -45,13 +47,23 @@ exports.getPublicPaymentMethods = async (req, res) => {
 exports.getPaymentConfig = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const configs = await PaymentGatewayConfig.findAll({ where: { websiteId } });
+    const configs = await PaymentGatewayConfig.findAll({
+      where: { websiteId },
+      order: [["updatedAt", "DESC"]],
+    });
 
     if (!configs || configs.length === 0) {
       return res.status(404).json({ error: "No payment gateway config found" });
     }
 
-    res.json(configs.map(sanitizeRecord));
+    const seen = new Set();
+    const uniqueConfigs = configs.filter((c) => {
+      if (seen.has(c.gateway)) return false;
+      seen.add(c.gateway);
+      return true;
+    });
+
+    res.json(uniqueConfigs.map(sanitizeRecord));
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch payment configs" });
   }
@@ -66,12 +78,21 @@ exports.updatePaymentConfig = async (req, res) => {
       return res.status(400).json({ error: "paymentGateways is required" });
     }
 
+    let storeId = null;
+    if (StoreAccess) {
+      const store = await StoreAccess.findOne({ where: { websiteId } });
+      storeId = store?.storeId || null;
+    }
+
     for (const [gateway, data] of Object.entries(paymentGateways)) {
       if (!["khqr", "aba", "stripe", "cutluy"].includes(gateway) || !data || typeof data !== "object") {
         return res.status(400).json({ error: "Invalid payment gateway configuration" });
       }
 
-      const existing = await PaymentGatewayConfig.findOne({ where: { websiteId, gateway } });
+      const existing = await PaymentGatewayConfig.findOne({
+        where: { websiteId, gateway },
+        order: [["updatedAt", "DESC"]],
+      });
       const { publicConfig, secrets: submittedSecrets } = splitConfig(data);
       const existingConfig = existing?.config || {};
       const { publicConfig: existingPublicConfig, secrets: legacySecrets } = splitConfig(existingConfig);
@@ -140,23 +161,47 @@ exports.updatePaymentConfig = async (req, res) => {
         }
       }
 
-      await PaymentGatewayConfig.upsert(
-        {
+      const configPayload = {
+        ...existingPublicConfig,
+        ...publicConfig,
+        ...(Object.keys(secrets).length ? { encryptedSecrets: encryptSecrets(secrets) } : {}),
+      };
+
+      if (existing) {
+        await existing.update({
+          enabled: Boolean(data.enabled),
+          config: configPayload,
+          ...(storeId ? { storeId } : {}),
+        });
+        await PaymentGatewayConfig.destroy({
+          where: {
+            websiteId,
+            gateway,
+            id: { [Op.ne]: existing.id },
+          },
+        });
+      } else {
+        await PaymentGatewayConfig.create({
           websiteId,
+          storeId,
           gateway,
           enabled: Boolean(data.enabled),
-          config: {
-            ...existingPublicConfig,
-            ...publicConfig,
-            ...(Object.keys(secrets).length ? { encryptedSecrets: encryptSecrets(secrets) } : {}),
-          },
-        },
-        { conflictFields: ["websiteId", "gateway"] }
-      );
+          config: configPayload,
+        });
+      }
     }
 
-    const updatedConfigs = await PaymentGatewayConfig.findAll({ where: { websiteId } });
-    res.json(updatedConfigs.map(sanitizeRecord));
+    const updatedConfigs = await PaymentGatewayConfig.findAll({
+      where: { websiteId },
+      order: [["updatedAt", "DESC"]],
+    });
+    const seen = new Set();
+    const uniqueUpdated = updatedConfigs.filter((c) => {
+      if (seen.has(c.gateway)) return false;
+      seen.add(c.gateway);
+      return true;
+    });
+    res.json(uniqueUpdated.map(sanitizeRecord));
   } catch (error) {
     if (error.code === "PAYMENT_CONFIG_ENCRYPTION_KEY_INVALID") {
       return res.status(503).json({ error: "Payment configuration encryption is not configured" });
