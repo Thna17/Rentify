@@ -20,7 +20,7 @@ import {
   useResendOtpCustomerMutation,
 } from '@rentify/apis';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
-import { useAuthConfig } from '../utils/authUtils';
+import { useAuthConfig, resolveAuthDestination } from '../utils/authUtils';
 import { useAuthLanguage } from '../context/AuthLanguageContext';
 import { getSafeReturnUrl } from '../utils/returnUrl';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
@@ -34,7 +34,8 @@ export default function VerifyOtpForm() {
   const navigate = useNavigate();
   const { t, isKhmer } = useAuthLanguage();
   const { websiteId } = useWebsiteData();
-  const { isWebsiteTemplate, isHostedStorefrontBuyer } = useAuthConfig();
+  const authConfig = useAuthConfig();
+  const { isWebsiteTemplate, isHostedStorefrontBuyer } = authConfig;
 
   const isCustomerFlow = isWebsiteTemplate || isHostedStorefrontBuyer;
 
@@ -165,21 +166,29 @@ export default function VerifyOtpForm() {
       if (emailParam) payload.email = emailParam;
       if (sanitizedPhone) payload.phoneNumber = sanitizedPhone;
 
+      let response: any;
       if (isCustomerFlow && websiteId) {
         payload.storeId = websiteId;
         try {
-          await verifyCustomerOtp(payload).unwrap();
+          response = await verifyCustomerOtp(payload).unwrap();
         } catch {
-          await verifyOtp(payload).unwrap();
+          response = await verifyOtp(payload).unwrap();
         }
       } else {
-        await verifyOtp(payload).unwrap();
+        response = await verifyOtp(payload).unwrap();
       }
 
       setSuccess('verify.success');
+      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
+      const destination = resolveAuthDestination({
+        hasStore,
+        isStaff: false,
+        role: 'user',
+        config: authConfig,
+      });
 
       setTimeout(() => {
-        window.location.href = redirect;
+        window.location.href = destination;
       }, 1500);
     } catch (err: any) {
       const message = String(err?.data?.error || err?.data?.message || '');

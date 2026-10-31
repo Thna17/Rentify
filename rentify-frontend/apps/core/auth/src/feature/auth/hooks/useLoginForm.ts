@@ -19,6 +19,7 @@ import {
   useAuthConfig,
   loadTelegramWidget,
   requestTelegramAuth,
+  resolveAuthDestination,
 } from '../utils/authUtils';
 import {
   DASHBOARD_URL,
@@ -56,6 +57,7 @@ export const useLoginForm = () => {
 
   const { websiteId, userEmail, userPhoneNumber, staffs } = useWebsiteData();
 
+  const authConfig = useAuthConfig();
   const {
     returnDomain,
     redirectUrl,
@@ -63,7 +65,7 @@ export const useLoginForm = () => {
     adminDashboardHost,
     isWebsiteTemplate,
     isHostedStorefrontBuyer,
-  } = useAuthConfig();
+  } = authConfig;
   const marketingHost = new URL(MARKETING_URL).host;
   const marketplaceHost = new URL(MARKETPLACE_URL).host;
 
@@ -165,55 +167,15 @@ export const useLoginForm = () => {
         }
       }
 
-      const userRole = response?.data?.user?.role || parseJwtPayload(response?.data?.accessToken)?.role;
-      const isAdmin = userRole === 'admin';
+      const userRole = response?.data?.user?.role || parseJwtPayload(response?.data?.accessToken)?.role || 'user';
       const isStaffSuccess = selectedLogin === loginStaffMutation || userRole === 'staff';
-      const dashboardHost = new URL(DASHBOARD_URL).host;
-      const posHost = POS_URL ? new URL(POS_URL).host : '';
-      const marketingStartUrl = `${MARKETING_URL.replace(/\/+$/, '')}/start`;
-      const isBareMarketingRoot = (() => {
-        try {
-          const parsed = new URL(redirectUrl);
-          return (
-            returnDomain === marketingHost &&
-            (!parsed.pathname || parsed.pathname === '/')
-          );
-        } catch {
-          return false;
-        }
-      })();
-
-      let destination = redirectUrl;
-
-      if (isAdmin) {
-        if (hasExplicitReturnUrl && redirectUrl !== marketingStartUrl && redirectUrl !== MARKETING_URL && !isBareMarketingRoot) {
-          destination = redirectUrl;
-        } else {
-          destination = `${ADMIN_DASHBOARD_URL}/admin/dashboard`;
-        }
-      } else if (hasExplicitReturnUrl && !isBareMarketingRoot) {
-        if (returnDomain === adminDashboardHost) {
-          destination = response?.data?.hasStore || isStaffSuccess
-            ? `${DASHBOARD_URL}/overview`
-            : marketingStartUrl;
-        } else if (
-          (returnDomain === dashboardHost || (posHost && returnDomain === posHost)) &&
-          !response?.data?.hasStore &&
-          !isStaffSuccess
-        ) {
-          destination = marketingStartUrl;
-        } else {
-          destination = redirectUrl;
-        }
-      } else {
-        if (isStaffSuccess || response?.data?.hasStore) {
-          destination = `${DASHBOARD_URL}/overview`;
-        } else if (isWebsiteTemplate) {
-          destination = redirectUrl;
-        } else {
-          destination = marketingStartUrl;
-        }
-      }
+      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
+      const destination = resolveAuthDestination({
+        hasStore,
+        isStaff: isStaffSuccess,
+        role: userRole,
+        config: authConfig,
+      });
 
       setSuccess('login.success');
       setTimeout(() => {
@@ -269,12 +231,14 @@ export const useLoginForm = () => {
       }
       const response: any = await loginWithTelegramMutation(authData).unwrap();
       const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
-      const destination =
-        hasExplicitReturnUrl || isHostedStorefrontBuyer || isWebsiteTemplate || returnDomain === marketplaceHost
-          ? redirectUrl
-          : hasStore
-          ? `${DASHBOARD_URL}/overview`
-          : `${MARKETING_URL}/start`;
+      const userRole = response?.data?.user?.role || parseJwtPayload(response?.data?.accessToken)?.role || 'user';
+      const isStaffSuccess = userRole === 'staff';
+      const destination = resolveAuthDestination({
+        hasStore,
+        isStaff: isStaffSuccess,
+        role: userRole,
+        config: authConfig,
+      });
       setSuccess('login.success');
       window.location.assign(destination);
     } catch (err: any) {

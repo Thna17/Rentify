@@ -337,6 +337,12 @@ export const DashboardLayout = () => {
     store?.website ||
     null;
 
+  useEffect(() => {
+    if (storeLoaded && !websiteLoading && !effectiveWebsiteId && !store) {
+      window.location.replace(`${MARKETING_URL}/start`);
+    }
+  }, [storeLoaded, websiteLoading, effectiveWebsiteId, store]);
+
   if (!effectiveWebsiteId && !store) {
     return (
       <main className="min-h-screen grid place-items-center text-center p-6">

@@ -92,6 +92,11 @@ router.post(
   transactionHandler(async (req, res, transaction) => {
     validateReturnUrl(req.body);
     const result = await userAuthService.verifyOtp(req.body, transaction);
+    const [storeCount, websiteCount] = await Promise.all([
+      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
+      Website.count({ where: { userId: result.entity.id }, transaction }),
+    ]);
+    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -102,6 +107,7 @@ router.post(
       {
         user: result.entity,
         accessToken: result.accessToken,
+        hasStore,
       },
       "Verification successful"
     );
@@ -176,12 +182,11 @@ router.post(
     // The Auth app needs this single, non-sensitive fact to choose a post-login
     // destination. It avoids a client-side follow-up request that can race the
     // cross-origin session cookie being set.
-    const hasStore = Boolean(
-      await Store.count({
-        where: { ownerUserId: result.entity.id },
-        transaction,
-      })
-    );
+    const [storeCount, websiteCount] = await Promise.all([
+      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
+      Website.count({ where: { userId: result.entity.id }, transaction }),
+    ]);
+    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -211,12 +216,11 @@ router.post(
       req,
       transaction,
     });
-    const hasStore = Boolean(
-      await Store.count({
-        where: { ownerUserId: result.entity.id },
-        transaction,
-      })
-    );
+    const [storeCount, websiteCount] = await Promise.all([
+      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
+      Website.count({ where: { userId: result.entity.id }, transaction }),
+    ]);
+    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -247,12 +251,11 @@ router.post(
       authData: req.body?.authData || req.body,
       transaction,
     });
-    const hasStore = Boolean(
-      await Store.count({
-        where: { ownerUserId: result.entity.id },
-        transaction,
-      })
-    );
+    const [storeCount, websiteCount] = await Promise.all([
+      Store.count({ where: { ownerUserId: result.entity.id }, transaction }),
+      Website.count({ where: { userId: result.entity.id }, transaction }),
+    ]);
+    const hasStore = Boolean(storeCount > 0 || websiteCount > 0);
     userAuthService.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
