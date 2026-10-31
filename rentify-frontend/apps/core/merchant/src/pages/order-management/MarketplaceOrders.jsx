@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@rentify/shared/ui/select';
+import { useTranslation } from '@rentify/utils';
 
 const api = `${ECOMMERCE_API_ROOT}/api`;
 const fieldClass = 'border-transparent [box-shadow:var(--shadow-soft)] bg-background';
@@ -26,6 +27,7 @@ async function request(url, options = {}) {
 }
 
 export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
+  const { t } = useTranslation();
   const [storeId, setStoreId] = useState(suppliedStoreId || null);
   const [orders, setOrders] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -101,7 +103,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
       <div className="flex h-64 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <span className="text-xs font-medium text-muted-foreground">Loading COD orders…</span>
+          <span className="text-xs font-medium text-muted-foreground">{t('merchant.p.loadingMarketplaceOrders')}</span>
         </div>
       </div>
     );
@@ -112,9 +114,9 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
       <div className="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 space-y-6 md:space-y-8">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-[28px] font-semibold tracking-tight text-foreground">COD orders</h1>
+            <h1 className="text-[28px] font-semibold tracking-tight text-foreground">{t('merchant.p.marketplaceOrders')}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Deliver orders, collect cash directly, and record any refund.
+              {t('merchant.p.buyersPayCashOn')}
             </p>
           </div>
           <Button
@@ -124,7 +126,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
             className="h-10 border-transparent [box-shadow:var(--shadow-soft)] bg-card text-foreground hover:bg-muted/60"
           >
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            {t('merchant.p.refresh')}
           </Button>
         </div>
 
@@ -136,9 +138,10 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
 
         {!orders.length && (
           <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
-            <CardContent className="p-16 flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+            <CardContent className="px-6 py-12 flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
               <PackageSearch className="h-8 w-8 opacity-40" />
-              <p className="text-sm">No COD orders yet.</p>
+              <p className="text-sm font-medium text-foreground">{t('merchant.p.noMarketplaceOrdersYet')}</p>
+              <p className="max-w-xs text-xs">{t('merchant.p.whenABuyerOrders')}</p>
             </CardContent>
           </Card>
         )}
@@ -190,12 +193,12 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                     <div className="space-y-4 border-t border-border pt-5">
                       <Button type="button" disabled={busy} onClick={() => act('delivered')} className="h-10">
                         <CheckCircle2 className="h-4 w-4" />
-                        Mark delivered
+                        {t('merchant.p.markDelivered')}
                       </Button>
 
                       <form onSubmit={(event) => { event.preventDefault(); act('delivery_failed', { reason, resolution }); }} className="grid gap-3">
                         <div className="space-y-1.5">
-                          <Label htmlFor="failed-reason">Failed delivery reason</Label>
+                          <Label htmlFor="failed-reason">{t('merchant.p.failedDeliveryReason')}</Label>
                           <Input
                             id="failed-reason"
                             required
@@ -206,14 +209,14 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                           />
                         </div>
                         <div className="space-y-1.5 w-fit">
-                          <Label>Next step</Label>
+                          <Label>{t('merchant.p.nextStep')}</Label>
                           <Select value={resolution} onValueChange={setResolution}>
                             <SelectTrigger className={`w-full h-9 ${fieldClass}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="retry">Wait for buyer-approved retry</SelectItem>
-                              <SelectItem value="cancel">Cancel and restore stock</SelectItem>
+                              <SelectItem value="retry">{t('merchant.p.waitForBuyerApproved')}</SelectItem>
+                              <SelectItem value="cancel">{t('merchant.p.cancelAndRestoreStock')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -222,7 +225,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                           disabled={busy}
                           className="w-fit border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
                         >
-                          Record failed delivery
+                          {t('merchant.p.recordFailedDelivery')}
                         </Button>
                       </form>
                     </div>
@@ -232,7 +235,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                     <div className="space-y-3 border-t border-border pt-5">
                       <label className="flex items-center gap-2 text-sm text-foreground">
                         <Checkbox checked={buyerAgreed} onCheckedChange={(value) => setBuyerAgreed(Boolean(value))} />
-                        Buyer agreed to another delivery attempt
+                        {t('merchant.p.buyerAgreedToAnother')}
                       </label>
                       <Button
                         type="button"
@@ -241,7 +244,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                         className="border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
                       >
                         <Undo2 className="h-4 w-4" />
-                        Retry delivery
+                        {t('merchant.p.retryDelivery')}
                       </Button>
                     </div>
                   )}
@@ -256,14 +259,14 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
 
                   {selected.payment?.status === 'paid' && (
                     <form onSubmit={(event) => { event.preventDefault(); act('confirm_refund', refund); }} className="grid gap-3 border-t border-border pt-5">
-                      <h4 className="text-sm font-semibold text-foreground">Record direct refund</h4>
+                      <h4 className="text-sm font-semibold text-foreground">{t('merchant.p.recordDirectRefund')}</h4>
                       <Input
                         required
                         type="number"
                         min="0.01"
                         max={Number(selected.payment.collectedAmount) - Number(selected.payment.refundedAmount)}
                         step="0.01"
-                        placeholder="Amount (USD)"
+                        placeholder={t('merchant.p.amountUsd')}
                         value={refund.amount}
                         onChange={(event) => setRefund({ ...refund, amount: event.target.value })}
                         className={fieldClass}
@@ -271,7 +274,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                       <Input
                         required
                         maxLength={80}
-                        placeholder="Refund method"
+                        placeholder={t('merchant.p.refundMethod')}
                         value={refund.method}
                         onChange={(event) => setRefund({ ...refund, method: event.target.value })}
                         className={fieldClass}
@@ -279,7 +282,7 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                       <Input
                         required
                         maxLength={500}
-                        placeholder="Confirmation reference"
+                        placeholder={t('merchant.p.confirmationReference')}
                         value={refund.confirmation}
                         onChange={(event) => setRefund({ ...refund, confirmation: event.target.value })}
                         className={fieldClass}
@@ -289,14 +292,14 @@ export default function MarketplaceOrders({ storeId: suppliedStoreId }) {
                         disabled={busy}
                         className="w-fit border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
                       >
-                        Confirm refund
+                        {t('merchant.p.confirmRefund')}
                       </Button>
                     </form>
                   )}
 
                   <div className="border-t border-border pt-5">
-                    <h4 className="text-sm font-semibold text-foreground">Activity</h4>
-                    {!events.length && <p className="text-sm text-muted-foreground mt-2">No activity recorded yet.</p>}
+                    <h4 className="text-sm font-semibold text-foreground">{t('merchant.p.activity')}</h4>
+                    {!events.length && <p className="text-sm text-muted-foreground mt-2">{t('merchant.p.noActivityRecordedYet')}</p>}
                     {events.map((event) => (
                       <p key={event.id} className="mt-2 text-sm text-muted-foreground">
                         {event.type.replaceAll('_', ' ')} · {new Date(event.createdAt).toLocaleString()}

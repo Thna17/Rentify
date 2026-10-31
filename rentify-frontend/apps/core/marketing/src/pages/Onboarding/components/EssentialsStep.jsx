@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Lightbulb } from 'lucide-react';
-import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { Globe, Lightbulb } from 'lucide-react';
+import { HOSTED_STOREFRONT_DOMAIN, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { businessDetailErrors } from '../businessDetails';
 import { Field, NoteCard, SectionHeading, SelectField, inputClass } from './OnboardingFields';
@@ -20,6 +20,12 @@ const EssentialsStep = ({ data, onUpdate }) => {
   const [emailTouched, setEmailTouched] = useState(false);
   const phoneError = touched && businessDetailErrors(details).contact;
   const emailError = emailTouched && businessDetailErrors(details).email;
+  // A suggestion only: Core reserves the unique hosted address when publishing.
+  const domainLabel = String(details.name || '')
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '');
+  const suggestedDomain = `${domainLabel.length >= 3 ? domainLabel : 'your-store'}.${HOSTED_STOREFRONT_DOMAIN}`;
 
   useEffect(() => {
     fetch(`${RENTIFY_API_BASE}/api/stores/categories`)
@@ -49,6 +55,20 @@ const EssentialsStep = ({ data, onUpdate }) => {
             autoComplete="organization"
             className={inputClass}
           />
+        </Field>
+
+        <Field
+          label={t('onboarding.essentials.domain')}
+          htmlFor="store-domain-preview"
+          hint={t('onboarding.essentials.domainHint')}
+          full
+        >
+          <div className="flex min-h-[52px] min-w-0 items-center gap-3 rounded-xl border border-black/[0.1] bg-[#f5f5f7] px-4 sm:min-h-[54px]">
+            <Globe aria-hidden="true" className="h-[18px] w-[18px] shrink-0 text-[#0071e3]" />
+            <output id="store-domain-preview" htmlFor="store-name" aria-live="polite" className="min-w-0 break-all text-[14px] font-medium text-[#1d1d1f]">
+              {suggestedDomain}
+            </output>
+          </div>
         </Field>
 
         <Field label={t('onboarding.essentials.category')} htmlFor="store-category" required>

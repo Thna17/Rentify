@@ -33,7 +33,7 @@ export const BreakdownPage = () => {
     eventType: eventType === "ALL" ? undefined : eventType,
     page,
     pageSize: 10,
-  });
+  }, { skip: !websiteId });
 
   if (websiteLoading) return <LoadingState />;
   if (!websiteId) {
@@ -41,8 +41,8 @@ export const BreakdownPage = () => {
       <div className="p-6">
         <UsageTabs />
         <EmptyState
-          title="No store selected"
-          description="Select or create a store to see usage breakdown."
+          title="Nothing metered yet"
+          description="Usage is recorded for online stores, such as storage and page views. Your marketplace store has nothing to break down."
         />
       </div>
     );

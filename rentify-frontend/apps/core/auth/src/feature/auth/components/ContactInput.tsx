@@ -184,7 +184,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
           >
             <Phone className="h-3.5 w-3.5" />
             <span className={isKhmer ? 'font-khmer text-sm' : ''}>
-              {isKhmer ? 'លេខទូរស័ព្ទ' : 'Phone'}
+              {t('auth.phoneShort')}
             </span>
           </button>
 
@@ -201,7 +201,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
           >
             <Mail className="h-3.5 w-3.5" />
             <span className={isKhmer ? 'font-khmer text-sm' : ''}>
-              {isKhmer ? 'អ៊ីមែល' : 'Email'}
+              {t('auth.email')}
             </span>
           </button>
         </div>
@@ -225,7 +225,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
               disabled={disabled}
               onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
               className="flex h-full items-center gap-1.5 border-r border-slate-200 bg-slate-50/80 px-3 hover:bg-slate-100 transition-colors rounded-l-xl select-none"
-              aria-label="Select Country Code"
+              aria-label={t('auth.selectCountry')}
             >
               <span className="text-base leading-none" role="img" aria-label={selectedCountry.name}>
                 {selectedCountry.flag}
@@ -246,7 +246,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
                     type="text"
                     value={countrySearchQuery}
                     onChange={(e) => setCountrySearchQuery(e.target.value)}
-                    placeholder={isKhmer ? 'ស្វែងរកប្រទេស...' : 'Search country...'}
+                    placeholder={t('auth.searchCountry')}
                     className={cn(
                       'w-full rounded-lg border border-slate-200 pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none',
                       isKhmer && 'font-khmer'
@@ -287,7 +287,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
                   ))}
                   {filteredCountries.length === 0 && (
                     <p className="p-2 text-center text-xs text-slate-400">
-                      {isKhmer ? 'រកមិនឃើញប្រទេស' : 'No country found'}
+                      {t('auth.noCountryFound')}
                     </p>
                   )}
                 </div>
@@ -353,7 +353,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
               type="button"
               onClick={handleClear}
               className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-              aria-label="Clear input"
+              aria-label={t('auth.clearInput')}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -365,7 +365,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
       {mode === 'email' && !value.includes('@') && value.trim().length > 0 && (
         <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-0.5 animate-in fade-in-50">
           <span className={cn('text-[11px] text-slate-600 mr-1 flex-shrink-0', isKhmer && 'font-khmer text-slate-600')}>
-            {isKhmer ? 'ជ្រើសរើសដែន៖' : 'Suggestions:'}
+            {t('auth.suggestions')}
           </span>
           {COMMON_EMAIL_DOMAINS.map((domain) => (
             <button
@@ -390,9 +390,7 @@ export const ContactInput: React.FC<ContactInputProps> = ({
       {/* Local hint for phone numbers */}
       {mode === 'phone' && isCambodia && !error && (
         <p className={cn('text-[11px] text-slate-600', isKhmer && 'font-khmer text-slate-600')}>
-          {isKhmer
-            ? 'បញ្ចូលលេខក្នុងស្រុក (ឧ. 012 345 678 ឬ 096 984 9988)'
-            : 'Enter local number (e.g. 012 345 678 or 096 984 9988)'}
+          {t('auth.localNumberHint')}
         </p>
       )}
     </div>

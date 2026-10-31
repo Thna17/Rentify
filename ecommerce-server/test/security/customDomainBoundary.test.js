@@ -292,3 +292,17 @@ test('P2-HOST-003 Commerce: Host context strictly ignores request body data', ()
   };
   assert.equal(extractHostFromRequest(reqBodySpoof), 'pottery-studio.com');
 });
+
+// Regression: configured local origins include a port, while request extraction
+// returns a hostname. A legacy WebsiteData domain must not override platform hosts.
+test('central marketplace localhost is not misclassified as a registered custom domain', async () => {
+  assert.equal(classifyCommerceHost(extractHostFromRequest({ get: h => h === 'origin' ? 'http://localhost:4500' : null }), { website: { domain: 'localhost', status: 'active' } }).type, 'CENTRAL_PLATFORM');
+  const { WebsiteData } = require('../../models');
+  const original = WebsiteData.findOne;
+  let queried = false; let passed = false;
+  WebsiteData.findOne = async () => { queried = true; return { domain: 'localhost', status: 'active' }; };
+  try {
+    await enforceCustomDomainBoundary('cart')({ get: h => h === 'origin' ? 'http://localhost:4500' : null }, { status: () => { throw Error('Platform cart should be allowed'); } }, () => { passed = true; });
+    assert.equal(passed, true); assert.equal(queried, false);
+  } finally { WebsiteData.findOne = original; }
+});

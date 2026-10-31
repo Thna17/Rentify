@@ -47,13 +47,13 @@ type FilterTab = 'all' | 'pending' | 'delivered' | 'completed' | 'issues';
             [placeholder]="'orders.searchPlaceholder' | translate"
             [value]="searchQuery()"
             (input)="onSearchInput($event)"
-            aria-label="Filter orders"
+            [attr.aria-label]="'orders.filterOrders' | translate"
           />
         </div>
       </header>
 
       <!-- Filter Tabs -->
-      <nav class="filter-tabs" role="tablist" aria-label="Order status filters">
+      <nav class="filter-tabs" role="tablist" [attr.aria-label]="'orders.statusFilters' | translate">
         <button
           type="button"
           class="tab"
@@ -120,29 +120,29 @@ type FilterTab = 'all' | 'pending' | 'delivered' | 'completed' | 'issues';
       @if (loading()) {
         <div class="card state-card">
           <ui-icon name="loader" [size]="24" class="spin" />
-          <p class="muted">Loading your orders…</p>
+          <p class="muted">{{ 'orders.loading' | translate }}</p>
         </div>
       } @else if (error(); as message) {
         <div class="card state-card error" role="alert">
           <ui-icon name="alert-circle" [size]="24" />
-          <p>{{ message }}</p>
+          <p>{{ message | translate }}</p>
           <button class="btn btn-outline btn-sm" (click)="load()">
-            Retry
+            {{ 'cart.retry' | translate }}
           </button>
         </div>
       } @else if (filteredOrders().length === 0) {
-        <div class="empty card" role="region" aria-label="No orders">
+        <div class="empty card" role="region" [attr.aria-label]="'orders.noOrders' | translate">
           <div class="empty-image img-placeholder">
             <ui-icon name="package" [size]="34" />
           </div>
           <h2>{{ 'orders.emptyTitle' | translate }}</h2>
           <p>{{ 'orders.emptyDesc' | translate }}</p>
           <button class="btn btn-primary" routerLink="/products">
-            Start shopping
+            {{ 'orders.startShopping' | translate }}
           </button>
         </div>
       } @else {
-        <div class="list" role="feed" aria-label="Orders list">
+        <div class="list" role="feed" [attr.aria-label]="'orders.list' | translate">
           @for (order of filteredOrders(); track order.id) {
             <article class="card order" [attr.aria-label]="'Order ' + order.orderNumber">
               <header>

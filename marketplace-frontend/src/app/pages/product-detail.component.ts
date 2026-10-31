@@ -9,6 +9,7 @@ import { WishlistService } from '../core/wishlist/wishlist.service';
 import { AuthService } from '../core/auth/auth.service';
 import { SeoService } from '../core/seo/seo.service';
 import { TranslateService } from '../core/i18n/translate.service';
+import { ErrorSanitizerService } from '../core/i18n/error-sanitizer.service';
 import { TranslatePipe } from '../core/i18n/translate.pipe';
 import {
   RentifyMarketplaceService,
@@ -50,33 +51,34 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       <section class="container missing" role="alert">
         <ui-icon name="alert-circle" [size]="32" />
         <h1>{{ 'state.couldNotLoadProduct' | translate }}</h1>
-        <p>{{ catalog.productError() }}</p>
+        <p>{{ catalog.productError() | translate }}</p>
         <button class="btn btn-primary" type="button" (click)="catalog.load()">{{ 'state.tryAgain' | translate }}</button>
       </section>
     } @else if (product(); as p) {
       <section class="container detail">
-        <nav class="crumbs">
-          <a routerLink="/">{{ 'nav.home' | translate }}</a> <span>›</span>
-          <a routerLink="/products">{{ 'nav.products' | translate }}</a> <span>›</span>
+        <nav class="crumbs" [attr.aria-label]="'common.breadcrumb' | translate">
+          <a routerLink="/">{{ 'nav.home' | translate }}</a> <span class="sep" aria-hidden="true">›</span>
+          <a routerLink="/products">{{ 'nav.products' | translate }}</a> <span class="sep" aria-hidden="true">›</span>
           <a routerLink="/products" [queryParams]="{ category: p.categorySlug }">{{
             p.categoryName
           }}</a>
-          <span>›</span> <span>{{ p.name }}</span>
+          <span class="sep" aria-hidden="true">›</span> <span class="crumb-current" aria-current="page">{{ p.name }}</span>
         </nav>
 
         <div class="product-layout">
           <div class="gallery">
             @if (galleryShots(p).length > 1) {
-              <div class="shot-rail" role="group" aria-label="Product photos">
+              <div class="shot-rail" role="group" [attr.aria-label]="'product.productPhotos' | translate">
                 @for (shot of galleryShots(p); track shot; let i = $index) {
                   <button
                     type="button"
                     class="shot"
                     [class.active]="shownImage(p) === shot"
+                    [attr.aria-pressed]="shownImage(p) === shot"
                     (click)="pickImage(shot)"
-                    [attr.aria-label]="'Photo ' + (i + 1)"
+                    [attr.aria-label]="'product.photoN' | translate: { n: i + 1 }"
                   >
-                    <img [src]="shot" alt="" />
+                    <img [src]="shot" alt="" loading="lazy" />
                   </button>
                 }
               </div>
@@ -92,12 +94,12 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
                   (click)="zoomOpen.set(true)"
                   tabindex="0"
                   (keydown.enter)="zoomOpen.set(true)"
-                  title="Click to zoom photo"
-                  aria-label="Product photo, click to zoom"
+                  [title]="'product.clickToZoom' | translate"
+                  [attr.aria-label]="'product.photoClickToZoom' | translate"
                 />
               } @else {
                 <div class="main-image img-placeholder error-img">
-                  <ui-icon name="image" [size]="40" />
+                  <ui-icon name="image" [size]="36" />
                   <span>{{ p.name }}</span>
                   <small>{{ 'state.imageLoadFailed' | translate }}</small>
                 </div>
@@ -108,105 +110,113 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
           </div>
 
           <div class="info">
-            <div class="product-title-group">
-              <h1>{{ p.name }}</h1>
+            <header class="title-block">
               <a class="seller-sub" [routerLink]="['/stores', p.storeId]">
                 <ui-icon name="store" [size]="14" />
                 <span>{{ p.sellerName }}</span>
+                <ui-icon class="seller-chevron" name="chevron-right" [size]="12" />
               </a>
-            </div>
-
-            <div class="price-block">
-              <span class="price">\${{ effectivePrice().toFixed(2) }}</span>
-              @if (effectiveCompareAt(); as was) {
-                <span class="was">\${{ was.toFixed(2) }}</span>
-                <span class="badge badge-gold">-{{ effectiveDiscount() }}%</span>
+              <h1>{{ p.name }}</h1>
+              @if (effectiveReviewCount() > 0) {
+                <a class="rating-row rating-link" href="#reviews">
+                  <ui-icon name="star" [size]="14" [filled]="true" class="stars" />
+                  <span class="rating-value">{{ effectiveRating().toFixed(1) }}</span>
+                  <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? ('product.verifiedReview' | translate) : ('product.verifiedReviews' | translate) }})</span>
+                </a>
+              } @else {
+                <a class="rating-row no-reviews rating-link" href="#reviews">{{ 'product.noReviewsYet' | translate }}</a>
               }
+            </header>
+
+            <div class="price-stock">
+              <div class="price-block">
+                <span class="price">\${{ effectivePrice().toFixed(2) }}</span>
+                @if (effectiveCompareAt(); as was) {
+                  <span class="was">\${{ was.toFixed(2) }}</span>
+                  <span class="discount">-{{ effectiveDiscount() }}%</span>
+                }
+              </div>
+              <!-- One stock line for the selected variant; the picker no longer
+                   repeats it, so the shopper never reads two counts. -->
+              <p
+                class="stock"
+                [class.low]="effectiveStatus() === 'low-stock'"
+                [class.out]="effectiveStatus() === 'out-of-stock'"
+                aria-live="polite"
+              >
+                <span class="dot" aria-hidden="true"></span>
+                @if (effectiveStatus() === 'out-of-stock') {
+                  {{ 'catalog.outOfStock' | translate }}
+                } @else if (effectiveStatus() === 'low-stock') {
+                  {{ 'catalog.lowStock' | translate:{ count: effectiveStock() } }}
+                } @else {
+                  {{ 'product.inStockItems' | translate:{ count: effectiveStock() } }}
+                }
+              </p>
             </div>
 
             <app-variant-picker
+              class="options"
               [product]="p"
               (variantChange)="onVariantChange($event)"
               (skuChange)="onSkuChange($event)"
             />
 
-            <div class="qty-avail-row">
-              <div>
-                <strong>{{ 'product.quantity' | translate }}</strong>
-                <div class="qty-stepper">
-                  <button
-                    type="button"
-                    (click)="step(-1)"
-                    [disabled]="quantity() <= 1 || effectiveStatus() === 'out-of-stock'"
-                    [attr.aria-label]="'product.decreaseQty' | translate"
-                  >
-                    <ui-icon name="minus" [size]="14" />
-                  </button>
-                  <span aria-live="polite">{{ quantity() }}</span>
-                  <button
-                    type="button"
-                    (click)="step(1)"
-                    [disabled]="quantity() >= effectiveStock()"
-                    [attr.aria-label]="'product.increaseQty' | translate"
-                  >
-                    <ui-icon name="plus" [size]="14" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <strong>{{ 'catalog.availability' | translate }}</strong>
-                @if (effectiveStatus() === 'out-of-stock') {
-                  <div class="avail out">{{ 'catalog.outOfStock' | translate }}</div>
-                } @else {
-                  <div class="avail">
-                    <span class="dot"></span> {{ effectiveStock() }} {{ 'product.inStockItems' | translate:{ count: effectiveStock() } }}
-                  </div>
-                }
-              </div>
-            </div>
-
             <div class="buy-row">
+              <div class="qty-stepper" role="group" [attr.aria-label]="'product.quantity' | translate">
+                <button
+                  type="button"
+                  (click)="step(-1)"
+                  [disabled]="quantity() <= 1 || effectiveStatus() === 'out-of-stock'"
+                  [attr.aria-label]="'product.decreaseQty' | translate"
+                >
+                  <ui-icon name="minus" [size]="14" />
+                </button>
+                <span class="qty-value" aria-live="polite">{{ quantity() }}</span>
+                <button
+                  type="button"
+                  (click)="step(1)"
+                  [disabled]="quantity() >= effectiveStock()"
+                  [attr.aria-label]="'product.increaseQty' | translate"
+                >
+                  <ui-icon name="plus" [size]="14" />
+                </button>
+              </div>
               <button
-                class="btn btn-primary btn-lg btn-block"
+                class="btn add-btn"
                 [disabled]="effectiveStatus() === 'out-of-stock'"
                 (click)="addToCart($event)"
               >
-                <ui-icon name="cart" [size]="16" color="#fff" />
+                <ui-icon name="cart" [size]="17" />
                 {{ effectiveStatus() === 'out-of-stock' ? ('catalog.outOfStock' | translate) : ('product.addToCart' | translate) }}
               </button>
               <button
-                class="btn btn-outline btn-lg wish"
+                class="btn wish"
                 [class.saved]="saved()"
                 (click)="toggleWishlist()"
                 [attr.aria-pressed]="saved()"
                 [attr.aria-label]="saved() ? ('product.removeFromWishlist' | translate) : ('product.saveToWishlist' | translate)"
+                [title]="saved() ? ('product.removeFromWishlist' | translate) : ('product.saveToWishlist' | translate)"
               >
-                <ui-icon name="heart" [size]="18" [filled]="saved()" />
+                <ui-icon name="heart" [size]="19" [filled]="saved()" />
               </button>
-            </div>
-
-            @if (effectiveReviewCount() > 0) {
-              <a class="rating-row rating-link" href="#reviews">
-                <ui-icon name="star" [size]="15" [filled]="true" class="stars" />
-                <span>{{ effectiveRating().toFixed(1) }}</span>
-                <span class="count">({{ effectiveReviewCount() }} {{ effectiveReviewCount() === 1 ? ('product.verifiedReview' | translate) : ('product.verifiedReviews' | translate) }})</span>
-              </a>
-            } @else {
-              <a class="rating-row no-reviews rating-link" href="#reviews">{{ 'product.noReviewsYet' | translate }}</a>
-            }
-
-            <p class="desc">{{ p.description }}</p>
-
-            <div class="purchase-info" aria-label="Order information">
-              <div><ui-icon name="store" [size]="16" /><span><strong>{{ 'product.shipsFromSeller' | translate }}</strong><small>{{ 'product.shipsFromSellerSub' | translate }}</small></span></div>
-              <div><ui-icon name="credit-card" [size]="16" /><span><strong>{{ 'product.totalConfirmed' | translate }}</strong><small>{{ 'product.totalConfirmedSub' | translate }}</small></span></div>
             </div>
 
             @if (feedback(); as message) {
               <p class="feedback" role="status">
-                <ui-icon name="check-circle" [size]="14" /> {{ message }}
-                <a routerLink="/cart">View cart</a>
+                <ui-icon name="check-circle" [size]="15" />
+                <span>{{ message }}</span>
+                <a routerLink="/cart">{{ 'product.viewCart' | translate }}</a>
               </p>
+            }
+
+            <ul class="purchase-info" [attr.aria-label]="'product.orderInformation' | translate">
+              <li><ui-icon name="store" [size]="16" /><span><strong>{{ 'product.shipsFromSeller' | translate }}</strong><small>{{ 'product.shipsFromSellerSub' | translate }}</small></span></li>
+              <li><ui-icon name="info" [size]="16" /><span><strong>{{ 'product.totalConfirmed' | translate }}</strong><small>{{ 'product.totalConfirmedSub' | translate }}</small></span></li>
+            </ul>
+
+            @if (p.description) {
+              <p class="desc">{{ p.description }}</p>
             }
 
             <div class="report-action-row">
@@ -214,9 +224,9 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
                 type="button"
                 class="btn-report-listing"
                 (click)="showReportModal.set(true)"
-                title="Report issue or policy concern about this listing"
+                [title]="'product.reportListing' | translate"
               >
-                <ui-icon name="flag" [size]="13" />
+                <ui-icon name="alert-circle" [size]="13" />
                 <span>{{ 'product.reportListing' | translate }}</span>
               </button>
             </div>
@@ -227,8 +237,8 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       <!-- Customer Reviews & Ratings Section -->
       <section class="container reviews-section" id="reviews">
         <div class="reviews-section-header">
-          <h2>Customer Reviews & Ratings</h2>
-          <p class="section-subtitle">Real experiences shared by verified shoppers on Rentify Marketplace</p>
+          <h2>{{ 'product.customerReviews' | translate }}</h2>
+          <p class="section-subtitle">{{ 'product.verifiedShoppers' | translate }}</p>
         </div>
 
         <div class="reviews-summary-grid">
@@ -258,46 +268,46 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
 
           <div class="write-review-prompt card">
             @if (auth.isAuthenticated()) {
-              <h3>Leave Feedback</h3>
-              <p>Have you received this item? Help other buyers make informed choices.</p>
-              <a href="#write-review" class="btn btn-outline btn-block">Write a Review</a>
+              <h3>{{ 'product.leaveFeedback' | translate }}</h3>
+              <p>{{ 'product.leaveFeedbackSub' | translate }}</p>
+              <a href="#write-review" class="btn btn-outline btn-block">{{ 'product.writeReview' | translate }}</a>
             } @else {
-              <h3>Reviewed by Real Buyers</h3>
-              <p>Sign in to your Rentify account to submit a rating and verified review.</p>
-              <a [href]="auth.getLoginUrl()" class="btn btn-primary btn-block">Sign In to Review</a>
+              <h3>{{ 'product.reviewedByRealBuyers' | translate }}</h3>
+              <p>{{ 'product.signInToReviewSub' | translate }}</p>
+              <a [href]="auth.getLoginUrl()" class="btn btn-primary btn-block">{{ 'product.signInToReview' | translate }}</a>
             }
           </div>
         </div>
 
         @if (auth.isAuthenticated()) {
           <div class="review-form-card card" id="write-review">
-            <h3>Write a Review</h3>
-            <p class="form-desc">Share details about the craftsmanship, fit, or delivery from this seller.</p>
+            <h3>{{ 'product.writeReview' | translate }}</h3>
+            <p class="form-desc">{{ 'product.shareDetails' | translate }}</p>
 
             @if (reviewFeedback()) {
               <div class="alert-box alert-success" role="status">
                 <ui-icon name="check-circle" [size]="16" />
-                <span>{{ reviewFeedback() }}</span>
+                <span>{{ reviewFeedback() | translate }}</span>
               </div>
             }
             @if (reviewError()) {
               <div class="alert-box alert-danger" role="alert">
                 <ui-icon name="alert-circle" [size]="16" />
-                <span>{{ reviewError() }}</span>
+                <span>{{ reviewError() | translate }}</span>
               </div>
             }
 
             <form (submit)="handleReviewSubmit($event)" class="review-form">
               <div class="form-field">
-                <label class="field-label">Overall Rating</label>
-                <div class="star-picker" role="radiogroup" aria-label="Select star rating">
+                <label class="field-label">{{ 'product.overallRating' | translate }}</label>
+                <div class="star-picker" role="radiogroup" [attr.aria-label]="'product.selectStarRating' | translate">
                   @for (star of [1, 2, 3, 4, 5]; track star) {
                     <button
                       type="button"
                       class="star-pick-btn"
                       [class.active]="star <= newRating()"
                       (click)="setNewRating(star)"
-                      [attr.aria-label]="star + ' stars'"
+                      [attr.aria-label]="'product.starsN' | translate: { count: star }"
                     >
                       <ui-icon name="star" [size]="22" [filled]="star <= newRating()" />
                     </button>
@@ -307,12 +317,12 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
               </div>
 
               <div class="form-field">
-                <label class="field-label" for="review-comment">Review Details</label>
+                <label class="field-label" for="review-comment">{{ 'product.reviewDetails' | translate }}</label>
                 <textarea
                   id="review-comment"
                   rows="3"
                   class="review-textarea"
-                  placeholder="Describe your experience with this item..."
+                  [placeholder]="'product.reviewPlaceholder' | translate"
                   [value]="newComment()"
                   (input)="onCommentInput($event)"
                   maxlength="2000"
@@ -337,18 +347,18 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
         }
 
         <div class="reviews-feed">
-          <h3>Recent Customer Reviews</h3>
+          <h3>{{ 'product.recentReviews' | translate }}</h3>
 
           @if (reviewsLoading()) {
             <div class="feed-state">
               <ui-icon name="loader" class="spin" [size]="24" />
-              <span>Loading reviews...</span>
+              <span>{{ 'product.loadingReviews' | translate }}</span>
             </div>
           } @else if (reviews().length === 0) {
             <div class="feed-empty card">
               <ui-icon name="star" [size]="32" class="empty-star" />
-              <h4>No customer reviews yet</h4>
-              <p>Be the first customer to purchase and review this item.</p>
+              <h4>{{ 'common.noReviewsYet' | translate }}</h4>
+              <p>{{ 'product.beFirstReview' | translate }}</p>
             </div>
           } @else {
             <div class="reviews-list">
@@ -362,7 +372,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
                           <strong>{{ rev.buyerName || 'Verified Buyer' }}</strong>
                           @if (rev.isVerifiedPurchase) {
                             <span class="verified-tag">
-                              <ui-icon name="check-circle" [size]="12" /> Verified Purchase
+                              <ui-icon name="check-circle" [size]="12" /> {{ 'product.verifiedPurchase' | translate }}
                             </span>
                           }
                         </div>
@@ -386,7 +396,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       @if (related().length) {
         <section class="container related-section">
           <app-product-rail
-            [title]="'More from ' + p.categoryName"
+            [title]="'product.moreFrom' | translate: { category: p.categoryName }"
             [products]="related()"
             linkRoute="/products"
             [linkParams]="{ category: p.categorySlug }"
@@ -414,7 +424,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
         class="lightbox"
         role="dialog"
         aria-modal="true"
-        aria-label="Enlarged product image"
+        [attr.aria-label]="'product.enlargedImage' | translate"
         (click)="zoomOpen.set(false)"
       >
         <div class="lightbox-content" (click)="$event.stopPropagation()">
@@ -422,7 +432,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
             type="button"
             class="lightbox-close"
             (click)="zoomOpen.set(false)"
-            aria-label="Close zoom"
+            [attr.aria-label]="'product.closeZoom' | translate"
           >
             <ui-icon name="x" [size]="20" />
           </button>
@@ -444,277 +454,338 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
   `,
   styles: [
     `
+      /* The product section takes Rentify's jade brand from the shared tokens.
+         Scoped to .detail so the navbar and footer keep their own palette;
+         the variant picker inherits it through --color-accent. */
       .detail {
-        padding: 26px 32px 0;
+        --color-accent: var(--rentify-color-brand-primary);
+        --color-accent-hover: var(--rentify-color-brand-primary-hover);
+        --color-accent-soft: var(--rentify-color-brand-primary-subtle);
+        --pd-brand-active: var(--rentify-color-brand-primary-active);
+        --pd-on-brand: var(--rentify-color-text-inverse);
+        padding: 20px var(--page-gutter) 0;
+      }
+      .detail :focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
       }
       .crumbs {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        align-items: center;
+        gap: 6px;
         font-size: 12.5px;
         color: var(--color-muted);
         margin-bottom: 20px;
+        min-width: 0;
+        white-space: nowrap;
       }
-      .crumbs a:hover {
-        color: var(--color-accent);
+      .crumbs a { flex-shrink: 0; transition: color var(--dur-fast) ease; }
+      .crumbs a:hover { color: var(--color-accent); }
+      .crumbs .sep { color: var(--color-muted-2); }
+      .crumb-current {
+        color: var(--color-text-secondary);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      /* Thumbnail rail down the left of the main photo, the way a phone listing
-         usually reads. Collapses above the image on narrow screens. */
-      .gallery { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 12px; align-items: start; }
-      .gallery:has(.shot-rail) .main-image { grid-column: 2; }
-      .gallery:not(:has(.shot-rail)) { grid-template-columns: minmax(0, 1fr); }
-      .shot-rail {
-        display: flex; flex-direction: column; gap: 9px;
-        max-height: 520px; overflow-y: auto; scrollbar-width: none;
-      }
-      .shot-rail::-webkit-scrollbar { display: none; }
-      .shot {
-        background: var(--color-bg-alt); border: 1.5px solid var(--color-border);
-        border-radius: 10px; cursor: pointer; overflow: hidden; padding: 0;
-        aspect-ratio: 1; width: 100%;
-        transition: border-color 150ms ease, transform 150ms ease;
-      }
-      .shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
-      .shot:hover { border-color: var(--color-muted); }
-      .shot.active { border-color: var(--color-accent); transform: translateY(-1px); }
-
-      /* Colour swatches: the photo itself is the swatch, so the shopper sees the
-         finish rather than guessing from a name. */
-      .variant-picker { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 2px; }
-      .variant-label {
-        color: var(--color-text-secondary); font-size: 12.5px; font-weight: 650;
-        letter-spacing: .02em; text-transform: uppercase;
-      }
-      .variant-chosen { color: var(--color-text); margin-left: 8px; text-transform: none; }
-      .swatches { display: flex; flex-wrap: wrap; gap: 9px; }
-      .swatch {
-        background: none; border: 2px solid transparent; border-radius: 50%; cursor: pointer;
-        height: 38px; width: 38px; padding: 3px;
-        transition: border-color 150ms ease, transform 150ms ease;
-      }
-      .swatch-dot {
-        display: block; width: 100%; height: 100%; border-radius: 50%;
-        border: 1px solid rgba(0, 0, 0, .12); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5);
-      }
-      .swatch:hover { transform: scale(1.08); }
-      .swatch.active { border-color: var(--color-accent); }
 
       .product-layout {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 40px;
+        grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+        gap: clamp(28px, 4.5vw, 72px);
         align-items: start;
       }
-      /* Same square box and same cover as the product card, so a product does
-         not change shape when you click it. It used to be a fixed 460px tall
-         with object-fit: contain, which showed the whole image letterboxed
-         while the card showed a cropped one - the same photo looking like two
-         different photos either side of a click. */
+
+      /* Thumbnail rail down the left of the main photo, the way a phone listing
+         usually reads. Moves below the image on tablet and phone. */
+      .gallery { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; align-items: start; }
+      .gallery:has(.shot-rail) .main-image { grid-column: 2; }
+      .gallery:not(:has(.shot-rail)) { grid-template-columns: minmax(0, 1fr); }
+      .shot-rail {
+        display: flex; flex-direction: column; gap: 10px;
+        max-height: 560px; overflow-y: auto; scrollbar-width: none;
+        padding: 2px;
+      }
+      .shot-rail::-webkit-scrollbar { display: none; }
+      .shot {
+        background: var(--color-surface); border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; padding: 4px;
+        aspect-ratio: 1; width: 100%; flex-shrink: 0;
+        transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+      }
+      .shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
+      .shot:hover { border-color: var(--color-border-strong); }
+      .shot.active { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+
+      /* Same square box as the product card, so a product does not change
+         shape when you click it. */
       .main-image {
         aspect-ratio: 1;
+        width: 100%;
         height: auto;
         border-radius: var(--radius-lg);
         font-size: 13px;
         overflow: hidden;
         border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        cursor: zoom-in;
       }
       .product-photo {
         display: block;
         object-fit: contain;
         object-position: center;
-        width: 100%;
-        height: 100%;
-        padding: 16px;
-        background: #ffffff;
+        padding: clamp(16px, 3vw, 36px);
+        transition: transform var(--dur-slow) var(--ease-out);
       }
+      @media (hover: hover) {
+        .product-photo:hover { transform: scale(1.015); }
+      }
+      .img-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-muted);
+        background: var(--color-bg-alt);
+        text-align: center;
+        padding: 20px;
+      }
+      .error-img {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* ---------------------------------------------------------- info */
       .info {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 18px;
+        min-width: 0;
+        max-width: 540px;
       }
-      .product-title-group {
+      @media (min-width: 1024px) {
+        .info { position: sticky; top: calc(var(--header-h) + 24px); }
+      }
+      .title-block {
         display: flex;
         flex-direction: column;
+        align-items: flex-start;
         gap: 6px;
-      }
-      h1 {
-        font-size: 30px;
-        line-height: 1.15;
-        margin: 2px 0 0;
       }
       .seller-sub {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        color: var(--color-muted, #7c7267);
-        font-size: 13.5px;
-        font-weight: 500;
+        min-height: 28px;
+        color: var(--color-text-secondary);
+        font-size: 13px;
+        font-weight: 600;
         text-decoration: none;
-        width: fit-content;
-        transition: color 150ms ease;
+        max-width: 100%;
+        transition: color var(--dur-fast) ease;
       }
-      .seller-sub ui-icon {
-        color: var(--color-muted, #7c7267);
-        opacity: 0.8;
+      .seller-sub span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .seller-sub ui-icon { color: var(--color-muted); flex-shrink: 0; transition: color var(--dur-fast) ease, transform var(--dur-fast) ease; }
+      .seller-sub:hover, .seller-sub:hover ui-icon { color: var(--color-accent); }
+      .seller-sub:hover .seller-chevron { transform: translateX(2px); }
+      .info h1 {
+        font-size: clamp(22px, 2.3vw, 30px);
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.022em;
+        margin: 0;
+        overflow-wrap: anywhere;
       }
-      .seller-sub:hover {
-        color: var(--color-accent);
-      }
-      .seller-sub:hover ui-icon {
-        color: var(--color-accent);
-      }
-      .store-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
-        color: var(--color-text);
-      }
-      .store-row:hover {
-        border-color: var(--color-border-strong);
-      }
-      .store-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-      .store-row small {
-        display: block;
-        color: var(--color-muted);
-        font-size: 11.5px;
-      }
-      .store-row strong {
-        font-size: 14px;
-      }
-      .visit {
-        margin-left: auto;
+      .rating-row {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        color: var(--color-accent);
+        min-height: 24px;
         font-size: 13px;
-        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+      .rating-row .stars { color: var(--color-gold); }
+      .rating-value { color: var(--color-text); font-weight: 650; }
+      .rating-row .count { color: var(--color-muted); }
+      .no-reviews { color: var(--color-muted); font-size: 12.5px; }
+      .rating-link { text-decoration: none; transition: color var(--dur-fast) ease; }
+      .rating-link:hover, .rating-link:hover .count { color: var(--color-accent); }
+
+      .price-stock {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--color-border);
       }
       .price-block {
         display: flex;
         align-items: baseline;
-        gap: 10px;
-        margin-top: 2px;
-        margin-bottom: -2px;
+        flex-wrap: wrap;
+        gap: 4px 10px;
       }
       .price {
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: -0.02em;
+        font-size: clamp(24px, 2.2vw, 28px);
+        font-weight: 750;
+        letter-spacing: -0.025em;
+        font-variant-numeric: tabular-nums;
+        color: var(--color-text);
       }
       .was {
         color: var(--color-muted);
-        font-size: 16px;
+        font-size: 15px;
         text-decoration: line-through;
+        font-variant-numeric: tabular-nums;
       }
-      .desc {
-        color: var(--color-text-secondary);
-        font-size: 14.5px;
-        line-height: 1.7;
+      .discount {
+        align-self: center;
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+        font-size: 12px;
+        font-weight: 700;
       }
-      .no-reviews { color: var(--color-muted); font-size: 12.5px; }
-      .purchase-info { border-block: 1px solid var(--color-border); display: grid; gap: 10px; margin-top: 3px; padding: 12px 0; }
-      .purchase-info > div { align-items: flex-start; color: var(--color-accent); display: flex; gap: 10px; }
-      .purchase-info span { display: grid; gap: 2px; }
-      .purchase-info strong { color: var(--color-text); font-size: 12.5px; }
-      .purchase-info small { color: var(--color-muted); font-size: 11.5px; line-height: 1.4; }
-      .qty-avail-row {
-        display: flex;
+      .stock {
+        display: inline-flex;
         align-items: center;
-        gap: 24px;
-        margin: 2px 0 0;
-        flex-wrap: wrap;
-      }
-      .qty-avail-row > div {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .qty-avail-row strong {
+        gap: 7px;
+        margin: 0;
         font-size: 13px;
-        font-weight: 600;
+        font-weight: 500;
+        color: var(--color-success);
       }
-      .qty-stepper {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        padding: 5px 10px;
-        margin-top: 0;
-        width: fit-content;
-      }
-      .qty-stepper button {
-        background: none;
-        border: none;
-        display: flex;
-        color: var(--color-text-secondary);
-      }
-      .qty-stepper button:disabled {
-        color: var(--color-muted-2);
-        cursor: not-allowed;
-      }
-      .avail {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 0;
-        font-size: 13px;
-        color: var(--color-text-secondary);
-      }
-      .avail.out {
-        color: var(--color-danger);
-        font-weight: 600;
-      }
-      .dot {
+      .stock .dot {
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: var(--color-success);
+        background: currentColor;
+        flex-shrink: 0;
       }
+      .stock.low { color: var(--rentify-color-warning-text); }
+      .stock.out { color: var(--color-danger); font-weight: 600; }
+
+      /* --------------------------------------------------- purchase row */
       .buy-row {
-        display: flex;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: 'qty add wish';
         gap: 10px;
-        margin-top: 4px;
+        align-items: stretch;
+      }
+      .qty-stepper {
+        grid-area: qty;
+        display: flex;
+        align-items: center;
+        height: 50px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+      }
+      .qty-stepper button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 100%;
+        background: none;
+        border: 0;
+        border-radius: var(--radius-md);
+        color: var(--color-text);
+        cursor: pointer;
+        transition: background var(--dur-fast) ease;
+      }
+      .qty-stepper button:hover:not(:disabled) { background: var(--color-bg-alt); }
+      .qty-stepper button:disabled { color: var(--color-muted-2); cursor: not-allowed; }
+      .qty-value {
+        min-width: 28px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .add-btn {
+        grid-area: add;
+        min-height: 50px;
+        padding: 0 20px;
+        border-radius: var(--radius-md);
+        background: var(--color-accent);
+        color: var(--pd-on-brand);
+        font-size: 15px;
+        transition: background var(--dur-fast) ease, box-shadow var(--dur-fast) ease, transform var(--dur-fast) ease;
+      }
+      .add-btn:hover:not(:disabled) { background: var(--color-accent-hover); box-shadow: var(--shadow-sm); }
+      .add-btn:active:not(:disabled) { background: var(--pd-brand-active); transform: scale(0.99); }
+      .add-btn:disabled {
+        opacity: 1;
+        background: var(--rentify-color-disabled-bg);
+        color: var(--rentify-color-disabled-text);
       }
       .wish {
-        width: 54px;
-        flex-shrink: 0;
+        grid-area: wish;
+        width: 50px;
+        min-height: 50px;
         padding: 0;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border-strong);
+        background: var(--color-surface);
+        color: var(--color-text-secondary);
+        transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease, background var(--dur-fast) ease;
       }
+      .wish:hover { border-color: var(--color-muted); color: var(--color-text); }
       .wish.saved {
         color: var(--color-danger);
         border-color: var(--color-danger);
+        background: var(--color-danger-soft);
       }
+
       .feedback {
         display: flex;
         align-items: center;
-        gap: 7px;
+        flex-wrap: wrap;
+        gap: 6px 8px;
+        margin: -6px 0 0;
         color: var(--color-success);
         font-size: 13px;
         font-weight: 600;
+        animation: fadeInUp var(--dur-base) var(--ease-out) both;
       }
       .feedback a {
         color: var(--color-accent);
         text-decoration: underline;
+        text-underline-offset: 2px;
       }
+
+      .purchase-info {
+        list-style: none;
+        margin: 0;
+        padding: 4px 16px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+      }
+      .purchase-info li {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        color: var(--color-accent);
+      }
+      .purchase-info li + li { border-top: 1px solid var(--color-border); }
+      .purchase-info ui-icon { flex-shrink: 0; margin-top: 1px; }
+      .purchase-info span { display: grid; gap: 2px; }
+      .purchase-info strong { color: var(--color-text); font-size: 13px; font-weight: 600; }
+      .purchase-info small { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+
+      .desc {
+        margin: 0;
+        color: var(--color-text-secondary);
+        font-size: 14.5px;
+        line-height: 1.7;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+      }
+
       .related-section {
-        padding: 44px 32px 60px;
-      }
-      .related-section h2 {
-        font-size: 19px;
-        margin-bottom: 16px;
-      }
-      .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-        gap: 18px;
+        padding: 44px var(--page-gutter) 60px;
       }
       .missing {
         padding: 70px 32px 90px;
@@ -726,21 +797,10 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       }
       .missing-actions {
         display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         gap: 12px;
         margin-top: 12px;
-      }
-      .main-image {
-        cursor: zoom-in;
-      }
-      .error-img {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        color: var(--color-muted);
-        text-align: center;
-        padding: 20px;
       }
       .lightbox {
         position: fixed;
@@ -767,13 +827,14 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       }
       .lightbox-close {
         position: absolute;
-        top: -42px;
+        top: -48px;
         right: 0;
+        width: 44px;
+        height: 44px;
         background: none;
         border: 0;
-        color: #fff;
+        color: var(--rentify-color-text-inverse);
         cursor: pointer;
-        padding: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -781,36 +842,44 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       .missing > ui-icon { color: var(--color-accent); }
       .spin { animation: spin 900ms linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
-      /*
-       * 680px, not 900px. A tablet is 768-834px wide in portrait, so at 900 it
-       * fell into the phone layout: the image went full width and every detail
-       * — price, stock, add to cart — dropped below the fold, with the space
-       * beside the image left empty. Two columns still work comfortably here;
-       * a 748px row splits into roughly 354px each side.
-       */
-      @media (max-width: 680px) {
-        .gallery { grid-template-columns: minmax(0, 1fr); }
-        .shot-rail { flex-direction: row; max-height: none; overflow-x: auto; }
-        .shot { flex: 0 0 64px; width: 64px; }
+
+      /* Tablet: keep two columns, but give the photo the full column width
+         by moving the thumbnails underneath it. */
+      @media (max-width: 960px) {
+        .gallery { grid-template-columns: minmax(0, 1fr); gap: 10px; }
         .gallery:has(.shot-rail) .main-image { grid-column: 1; grid-row: 1; }
         .gallery:has(.shot-rail) .shot-rail { grid-row: 2; }
-        .product-layout {
-          grid-template-columns: 1fr;
-          gap: 24px;
-        }
-        .main-image {
-          height: 320px;
-        }
+        .shot-rail { flex-direction: row; max-height: none; overflow-x: auto; overflow-y: hidden; }
+        .shot { width: 60px; flex: 0 0 60px; }
+        .info { gap: 16px; }
       }
-      @media (max-width: 900px) {
-        .product-grid {
-          grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-        }
+      /*
+       * 680px, not 900px. A tablet is 768-834px wide in portrait, so at 900 it
+       * fell into the phone layout with every detail below the fold. Two
+       * columns still work comfortably here.
+       */
+      @media (max-width: 680px) {
+        .detail { padding-top: 12px; }
+        .crumbs { margin-bottom: 12px; font-size: 12px; }
+        .product-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+        .main-image { border-radius: var(--radius-md); }
+        .shot { width: 56px; flex-basis: 56px; }
+        .info { max-width: none; gap: 14px; }
+        .price-stock { padding-bottom: 14px; }
+        .desc { font-size: 14px; line-height: 1.65; }
+        .related-section { padding: 32px var(--page-gutter) 44px; }
       }
-      @media (max-width: 520px) {
-        .product-grid {
-          grid-template-columns: 1fr;
+      /* Narrow phones: the call to action gets the whole row so its label
+         never truncates (Khmer runs longer than English). */
+      @media (max-width: 400px) {
+        .buy-row {
+          grid-template-columns: auto minmax(0, 1fr);
+          grid-template-areas: 'qty wish' 'add add';
         }
+        .wish { justify-self: end; }
+        .qty-stepper, .add-btn, .wish { height: 48px; min-height: 48px; }
+        .wish { width: 48px; }
+        .purchase-info { padding: 2px 14px; }
       }
 
       .rating-link {
@@ -1155,7 +1224,7 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
       }
 
       .report-action-row {
-        margin-top: 14px;
+        margin-top: -6px;
         display: flex;
         justify-content: flex-start;
       }
@@ -1168,12 +1237,13 @@ import { Product, ProductVariantView, StockStatus } from '../core/catalog/catalo
         color: var(--color-muted);
         font-size: 12px;
         cursor: pointer;
-        padding: 4px 6px;
+        min-height: 32px;
+        padding: 4px 0;
         border-radius: var(--radius-sm);
         transition: color 0.15s ease;
       }
       .btn-report-listing:hover {
-        color: #ef4444;
+        color: var(--color-danger);
       }
     `,
   ],
@@ -1247,6 +1317,7 @@ export class ProductDetailComponent {
   private readonly rentify = inject(RentifyMarketplaceService);
   private readonly seo = inject(SeoService);
   protected readonly translate = inject(TranslateService);
+  private readonly errors = inject(ErrorSanitizerService);
   protected readonly Math = Math;
 
   // Variant & SKU resolution
@@ -1434,7 +1505,7 @@ export class ProductDetailComponent {
       this.feedback.set('');
       return;
     }
-    this.feedback.set(`${units} × ${current.name} added to your cart.`);
+    this.feedback.set(this.t('product.addedToCart', { count: units, name: current.name }));
   }
 
   protected t(key: string, params?: Record<string, string | number>): string {
@@ -1455,7 +1526,7 @@ export class ProductDetailComponent {
       this.reviewSummary.set(res.summary || null);
       this.reviewsLoaded.set(true);
     } catch {
-      this.reviewsError.set('Could not load reviews.');
+      this.reviewsError.set('product.reviewsLoadError');
     } finally {
       this.reviewsLoading.set(false);
     }
@@ -1474,7 +1545,7 @@ export class ProductDetailComponent {
     event.preventDefault();
     const comment = this.newComment().trim();
     if (comment.length < 2) {
-      this.reviewError.set('Please provide a comment with at least 2 characters.');
+      this.reviewError.set('product.reviewMinChars');
       return;
     }
     const currentProduct = this.product();
@@ -1488,7 +1559,7 @@ export class ProductDetailComponent {
       const res = await firstValueFrom(
         this.rentify.submitReview(currentProduct.id, this.newRating(), comment),
       );
-      this.reviewFeedback.set('Thank you! Your review has been submitted.');
+      this.reviewFeedback.set('product.reviewSubmitted');
       this.newComment.set('');
       this.newRating.set(5);
       if (res?.summary) {
@@ -1503,8 +1574,7 @@ export class ProductDetailComponent {
         await this.loadProductReviews(currentProduct.id);
       }
     } catch (err: any) {
-      const msg = err?.error?.error || 'Failed to submit review. Please ensure you are signed in.';
-      this.reviewError.set(msg);
+      this.reviewError.set(this.errors.sanitize(err, this.translate.t('product.reviewSubmitFailed')));
     } finally {
       this.submittingReview.set(false);
     }

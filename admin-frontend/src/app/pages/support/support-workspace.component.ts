@@ -40,7 +40,7 @@ import { IconComponent } from '../../ui/icon.component';
       <!-- Header -->
       <header class="workspace-header">
         <div>
-          <p class="eyebrow">SUPPORT OPERATIONS / CORE PLATFORM</p>
+          <p class="eyebrow">{{ 'support.eyebrow' | translate }}</p>
           <h1 id="page-title" class="page-title">{{ 'support.title' | translate }}</h1>
           <p class="page-sub">{{ 'support.subtitle' | translate }}</p>
         </div>
@@ -50,7 +50,7 @@ import { IconComponent } from '../../ui/icon.component';
             class="btn btn-outline btn-sm"
             (click)="reloadCases()"
             [disabled]="loading()"
-            aria-label="Refresh support cases"
+            [attr.aria-label]="'support.refreshCases' | translate"
           >
             <kc-icon name="swap" [size]="14" />
             <span>{{ 'nav.refresh' | translate }}</span>
@@ -59,7 +59,7 @@ import { IconComponent } from '../../ui/icon.component';
       </header>
 
       <!-- Queue Selection Tabs -->
-      <nav class="queue-tabs" aria-label="Support Queues">
+      <nav class="queue-tabs" [attr.aria-label]="'support.queues' | translate">
         <button
           type="button"
           class="queue-tab"
@@ -112,7 +112,7 @@ import { IconComponent } from '../../ui/icon.component';
       </nav>
 
       <!-- Filter Controls Strip -->
-      <section class="filters-bar card" aria-label="Filter Controls">
+      <section class="filters-bar card" [attr.aria-label]="'common.filterControls' | translate">
         <div class="filter-group search-group">
           <input
             type="search"
@@ -120,7 +120,7 @@ import { IconComponent } from '../../ui/icon.component';
             [placeholder]="'common.search' | translate"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchChange()"
-            aria-label="Search cases"
+            [attr.aria-label]="'support.searchCases' | translate"
           />
         </div>
 
@@ -130,7 +130,7 @@ import { IconComponent } from '../../ui/icon.component';
             class="filter-select"
             [(ngModel)]="selectedPriority"
             (ngModelChange)="applyFilters()"
-            aria-label="Filter by priority"
+            [attr.aria-label]="'support.filterPriority' | translate"
           >
             <option value="">{{ 'common.all' | translate }}</option>
             <option value="urgent">{{ 'priority.urgent' | translate }}</option>
@@ -146,7 +146,7 @@ import { IconComponent } from '../../ui/icon.component';
             class="filter-select"
             [(ngModel)]="selectedStatus"
             (ngModelChange)="applyFilters()"
-            aria-label="Filter by status"
+            [attr.aria-label]="'support.filterStatus' | translate"
           >
             <option value="">{{ 'common.all' | translate }}</option>
             <option value="open">{{ 'status.open' | translate }}</option>
@@ -164,7 +164,7 @@ import { IconComponent } from '../../ui/icon.component';
             class="filter-select"
             [(ngModel)]="selectedDeadline"
             (ngModelChange)="applyFilters()"
-            aria-label="Filter by deadline"
+            [attr.aria-label]="'support.filterDeadline' | translate"
           >
             <option value="all">{{ 'support.deadlineAll' | translate }}</option>
             <option value="overdue">{{ 'support.deadlineOverdue' | translate }}</option>
@@ -177,7 +177,7 @@ import { IconComponent } from '../../ui/icon.component';
           type="button"
           class="btn btn-ghost btn-sm clear-btn"
           (click)="clearFilters()"
-          title="Reset all filter options"
+          [title]="'support.resetFilters' | translate"
         >
           {{ 'common.clearFilters' | translate }}
         </button>
@@ -186,7 +186,7 @@ import { IconComponent } from '../../ui/icon.component';
       <!-- Main Master-Detail Workspace Layout -->
       <div class="workspace-body">
         <!-- Left: Case List Master Pane -->
-        <aside class="case-list-pane card" aria-label="Support Case List">
+        <aside class="case-list-pane card" [attr.aria-label]="'support.caseList' | translate">
           @if (loading()) {
             <div class="state-box" aria-live="polite">
               <span class="spinner"></span>
@@ -208,7 +208,7 @@ import { IconComponent } from '../../ui/icon.component';
               <p>{{ 'common.emptyDesc' | translate }}</p>
             </div>
           } @else {
-            <ul class="case-items" role="listbox" aria-label="Support cases list">
+            <ul class="case-items" role="listbox" [attr.aria-label]="'support.caseListLabel' | translate">
               @for (c of cases(); track c.id) {
                 <li
                   class="case-item"
@@ -254,12 +254,12 @@ import { IconComponent } from '../../ui/icon.component';
         </aside>
 
         <!-- Right: Case Detail Console (Three-Column Layout) -->
-        <main class="case-detail-pane card" aria-label="Support Case Detail Console">
+        <main class="case-detail-pane card" [attr.aria-label]="'support.detailConsole' | translate">
           @if (!selectedCase()) {
             <div class="state-box empty-detail">
               <kc-icon name="grid" [size]="36" />
-              <h3>Select a support case from the list</h3>
-              <p>Choose any case on the left to review facts, evidence, communications, and dispute resolution.</p>
+              <h3>{{ 'support.selectCase' | translate }}</h3>
+              <p>{{ 'support.selectCaseHint' | translate }}</p>
             </div>
           } @else if (selectedCase(); as item) {
             <!-- Detail Header Banner -->
@@ -314,12 +314,12 @@ import { IconComponent } from '../../ui/icon.component';
                 <div class="fact-card">
                   <h4>{{ 'support.storeFacts' | translate }}</h4>
                   <div class="fact-item">
-                    <span>Store:</span>
+                    <span>{{ 'moderation.storeLabel' | translate }}</span>
                     <strong>{{ item.storeName || item.storeId || '—' }}</strong>
                   </div>
                   @if (item.commerceFacts?.storeFacts?.contactEmail; as email) {
                     <div class="fact-item">
-                      <span>Email:</span>
+                      <span>{{ 'support.emailLabel' | translate }}</span>
                       <code>{{ email }}</code>
                     </div>
                   }
@@ -330,7 +330,7 @@ import { IconComponent } from '../../ui/icon.component';
                   <div class="fact-card order-fact-card">
                     <h4>{{ 'support.orderFacts' | translate }}</h4>
                     <div class="fact-item">
-                      <span>Order #:</span>
+                      <span>{{ 'support.orderLabel' | translate }}</span>
                       <strong class="font-mono">{{ ord.orderNumber }}</strong>
                     </div>
                     <div class="fact-item">
@@ -371,11 +371,11 @@ import { IconComponent } from '../../ui/icon.component';
                 <div class="fact-card">
                   <h4>{{ 'support.assignTitle' | translate }}</h4>
                   <div class="fact-item">
-                    <span>Assigned Agent:</span>
+                    <span>{{ 'support.assignedAgent' | translate }}</span>
                     <strong>{{ item.assigneeName || ('support.unassigned' | translate) }}</strong>
                   </div>
                   <div class="fact-item">
-                    <span>Current Tier:</span>
+                    <span>{{ 'support.currentTier' | translate }}</span>
                     <span class="badge">Tier {{ item.tier }}</span>
                   </div>
                 </div>
@@ -383,9 +383,9 @@ import { IconComponent } from '../../ui/icon.component';
                 <!-- Resolution Snapshot if Closed -->
                 @if (item.resolution; as res) {
                   <div class="fact-card resolution-card">
-                    <h4>Resolution Determination</h4>
+                    <h4>{{ 'support.resolutionTitle' | translate }}</h4>
                     <div class="fact-item">
-                      <span>Outcome:</span>
+                      <span>{{ 'support.outcomeLabel' | translate }}</span>
                       <strong class="text-accent">{{ res.outcome }}</strong>
                     </div>
                     <p class="resolution-summary">"{{ res.summary }}"</p>
@@ -413,7 +413,7 @@ import { IconComponent } from '../../ui/icon.component';
                     <div class="evidence-grid">
                       @for (ev of item.evidence; track ev.url; let i = $index) {
                         <div class="evidence-card" (click)="openLightbox(ev.url)">
-                          <img [src]="ev.url" alt="Evidence photo" class="evidence-thumb" />
+                          <img [src]="ev.url" [alt]="'support.evidencePhoto' | translate" class="evidence-thumb" />
                           <span class="evidence-badge">{{ ev.label }}</span>
                         </div>
                       }
@@ -459,7 +459,7 @@ import { IconComponent } from '../../ui/icon.component';
                   </div>
 
                   <!-- Messages & Notes List -->
-                  <div class="message-feed" role="feed" aria-label="Messages">
+                  <div class="message-feed" role="feed" [attr.aria-label]="'support.messages' | translate">
                     @for (msg of filteredMessages(); track msg.id) {
                       <div class="feed-entry" [class.entry-internal]="msg.isInternal">
                         <div class="entry-header">
@@ -483,7 +483,7 @@ import { IconComponent } from '../../ui/icon.component';
                             <span class="entry-time">{{ ev.createdAt | date: 'short' }}</span>
                           </div>
                           @if (ev.reason) {
-                            <p class="event-reason"><em>Reason:</em> {{ ev.reason }}</p>
+                            <p class="event-reason"><em>{{ 'support.reasonLabel' | translate }}</em> {{ ev.reason }}</p>
                           }
                           <small class="event-actor">Actor: {{ ev.actorName }} ({{ ev.actorRole }})</small>
                         </div>
@@ -509,7 +509,7 @@ import { IconComponent } from '../../ui/icon.component';
                           [(ngModel)]="newMessageIsInternal"
                           name="isInternal"
                         />
-                        <span>Internal Note (Private)</span>
+                        <span>{{ 'support.internalNote' | translate }}</span>
                       </label>
 
                       <button
@@ -551,7 +551,7 @@ import { IconComponent } from '../../ui/icon.component';
                       (click)="executeAssignment()"
                       [disabled]="!auth.canWriteSupport() || mutatingAction()"
                     >
-                      Save
+                      {{ 'common.save' | translate }}
                     </button>
                   </div>
                   <button
@@ -573,10 +573,10 @@ import { IconComponent } from '../../ui/icon.component';
                       [(ngModel)]="prioritySelection"
                       [disabled]="!auth.canWriteSupport()"
                     >
-                      <option value="low">Low</option>
-                      <option value="normal">Normal</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent</option>
+                      <option value="low">{{ 'priority.low' | translate }}</option>
+                      <option value="normal">{{ 'priority.normal' | translate }}</option>
+                      <option value="high">{{ 'priority.high' | translate }}</option>
+                      <option value="urgent">{{ 'priority.urgent' | translate }}</option>
                     </select>
                     <button
                       type="button"
@@ -584,7 +584,7 @@ import { IconComponent } from '../../ui/icon.component';
                       (click)="executePriorityChange()"
                       [disabled]="!auth.canWriteSupport() || mutatingAction()"
                     >
-                      Save
+                      {{ 'common.save' | translate }}
                     </button>
                   </div>
                 </div>
@@ -594,7 +594,7 @@ import { IconComponent } from '../../ui/icon.component';
                   <div class="action-card card alert-card">
                     <h4>{{ 'support.escalateTitle' | translate }}</h4>
                     <p class="action-desc">
-                      Escalate dispute to Tier 2 Platform Mediation if the merchant failed to resolve or negotiations stalled.
+                      {{ 'support.escalateHint' | translate }}
                     </p>
                     <textarea
                       rows="2"
@@ -619,7 +619,7 @@ import { IconComponent } from '../../ui/icon.component';
                   <div class="action-card card resolve-card">
                     <h4>{{ 'support.resolveTitle' | translate }}</h4>
                     <p class="action-desc">
-                      Binding dispute determination. Requires claim <code>support:dispute:resolve</code>.
+                      {{ 'support.bindingNote' | translate }} <code>support:dispute:resolve</code>.
                     </p>
 
                     <label class="form-label">
@@ -655,7 +655,7 @@ import { IconComponent } from '../../ui/icon.component';
 
                     @if (!auth.canResolveDisputes()) {
                       <small class="permission-notice">
-                        Requires permission <code>support:dispute:resolve</code>.
+                        {{ 'support.requiresPermission' | translate }} <code>support:dispute:resolve</code>.
                       </small>
                     }
                   </div>
@@ -666,7 +666,7 @@ import { IconComponent } from '../../ui/icon.component';
                   <div class="action-card card reopen-card">
                     <h4>{{ 'support.reopenTitle' | translate }}</h4>
                     <p class="action-desc">
-                      Reopen case if new material evidence or formal legal appeal is presented.
+                      {{ 'support.reopenHint' | translate }}
                     </p>
                     <textarea
                       rows="2"
@@ -698,11 +698,11 @@ import { IconComponent } from '../../ui/icon.component';
               type="button"
               class="lightbox-close-btn"
               (click)="lightboxUrl.set(null)"
-              aria-label="Close photo preview"
+              [attr.aria-label]="'support.closePhoto' | translate"
             >
               ×
             </button>
-            <img [src]="lightboxUrl()" alt="Enlarged evidence photo" class="lightbox-img" />
+            <img [src]="lightboxUrl()" [alt]="'support.enlargedPhoto' | translate" class="lightbox-img" />
           </div>
         </div>
       }

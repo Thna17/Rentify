@@ -30,7 +30,7 @@ export default function DeploymentLog({ t, language, details }) {
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-gray-500" />
             <span className={`text-sm text-gray-600 ${language === 'KH' ? 'font-khmer' : ''}`}>
-              {language === 'KH' ? 'កំណត់ហេតុផ្ទាល់ពេល' : 'Live Logs'}
+              {t('deployment.liveLogs')}
             </span>
           </div>
         </div>
@@ -70,12 +70,12 @@ export default function DeploymentLog({ t, language, details }) {
                     </span>
                     {detail.type === 'error' && (
                       <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                        {language === 'KH' ? 'កំហុស' : 'Error'}
+                        {t('common.error')}
                       </span>
                     )}
                     {detail.type === 'warning' && (
                       <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
-                        {language === 'KH' ? 'ការព្រមាន' : 'Warning'}
+                        {t('common.warning')}
                       </span>
                     )}
                   </div>

@@ -19,7 +19,7 @@ export const useForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const { websiteId } = useWebsiteData();
-  const { t, isKhmer } = useAuthLanguage();
+  const { t } = useAuthLanguage();
 
   const [forgotPasswordMutation] = useForgotPasswordMutation();
   const [forgotPasswordCustomerMutation] = useForgotPasswordCustomerMutation();
@@ -39,11 +39,7 @@ export const useForgotPassword = () => {
     const isPhone = validateCambodianPhone(cleanContact);
 
     if (!isEmail && !isPhone) {
-      setError(
-        isKhmer
-          ? 'សូមបញ្ចូលលេខទូរស័ព្ទ ឬអ៊ីមែលត្រឹមត្រូវ'
-          : 'Please enter a valid email or phone number'
-      );
+      setError('error.invalidContact');
       setLoading(false);
       return false;
     }
@@ -60,29 +56,20 @@ export const useForgotPassword = () => {
         await forgotPasswordMutation(payload).unwrap();
       }
 
-      setSuccess(
-        isKhmer
-          ? `ការណែនាំកំណត់ពាក្យសម្ងាត់ថ្មីត្រូវបានផ្ញើទៅកាន់ ${isEmail ? 'អ៊ីមែល' : 'ទូរស័ព្ទ'} របស់អ្នក`
-          : `Reset instructions sent to your ${isEmail ? 'email' : 'phone'}`
-      );
+      setSuccess(isEmail ? 'forgot.sentEmail' : 'forgot.sentPhone');
       return true;
     } catch (err: any) {
-      setError(
-        err?.data?.error ||
-        err?.data?.message ||
-        (isKhmer
-          ? 'មិនអាចផ្ញើការណែនាំបានទេ។ សូមពិនិត្យព័ត៌មានម្តងទៀត។'
-          : 'Failed to send reset instructions. Please try again.')
-      );
+      setError('error.resetSendFailed');
       return false;
     } finally {
       setLoading(false);
     }
   };
 
+  // error/success hold catalog keys so they follow a language switch.
   return {
-    error,
-    success,
+    error: error && t(error),
+    success: success && t(success),
     loading,
     resetStatus,
     handleRequestReset,

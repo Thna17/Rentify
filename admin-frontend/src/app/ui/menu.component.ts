@@ -1,5 +1,6 @@
 import { Component, input, output, signal } from '@angular/core';
 import { IconComponent } from './icon.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 
 export interface MenuItem {
   label: string;
@@ -11,10 +12,10 @@ export interface MenuItem {
 @Component({
   selector: 'kc-menu',
   standalone: true,
-  imports: [IconComponent],
+  imports: [TranslatePipe, IconComponent],
   template: `
     <div class="menu-wrap">
-      <button class="icon-btn" aria-label="More actions" data-tip="More actions"
+      <button class="icon-btn" [attr.aria-label]="'ui.moreActions' | translate" data-tip="More actions"
         (click)="$event.stopPropagation(); open.set(!open())">
         <kc-icon name="dots" [size]="15"></kc-icon>
       </button>

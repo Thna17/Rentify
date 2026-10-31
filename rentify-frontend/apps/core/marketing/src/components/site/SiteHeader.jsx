@@ -43,12 +43,12 @@ export const Wordmark = ({ className }) => (
 
 const LANGUAGES = [
   { code: 'EN', label: 'English' },
-  { code: 'KH', label: 'ខ្មែរ' },
+  { code: 'KH', label: 'ភាសាខ្មែរ' },
 ];
 
 // Globe button that opens a small menu of languages
 export const LanguageToggle = ({ className, inline = false }) => {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -93,7 +93,7 @@ export const LanguageToggle = ({ className, inline = false }) => {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        aria-label="Language"
+        aria-label={t('common.language')}
         aria-haspopup="menu"
         aria-expanded={open}
         className="flex h-8 w-8 items-center justify-center rounded-full text-[#1d1d1f]/80 transition-colors hover:bg-black/[0.05] hover:text-[#1d1d1f]"
@@ -181,7 +181,7 @@ const SiteHeader = () => {
         <Container className="flex h-12 items-center justify-between md:h-[52px]">
           <Wordmark />
 
-          <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
+          <nav className="hidden items-center gap-7 lg:flex" aria-label={t('site.nav.mainLabel')}>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.to}

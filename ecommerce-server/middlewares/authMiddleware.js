@@ -66,12 +66,33 @@ const createVerifyCoreBuyer = ({ validate = (accessToken, refreshToken) => axios
 const verifyCoreBuyer = createVerifyCoreBuyer();
 const verifyOptionalCoreBuyer = createVerifyCoreBuyer({ optional: true });
 const verifyCoreMerchant = createVerifyCoreBuyer({ errorMessage: 'Merchant authentication required' });
+const findStoreOwnerId = async (storeId) => {
+  const { StoreAccess } = require("../models");
+  const store = await StoreAccess.findByPk(storeId, { attributes: ["ownerUserId"] });
+  return store?.ownerUserId || null;
+};
+// Every local app shares one cookie jar on localhost, so a browser can carry a
+// staff cookie from one merchant next to the owner session of another. A staff
+// identity only wins when it belongs to the store/website being addressed.
+const staffMatchesTarget = async (req, staff, findOwnerId = findStoreOwnerId) => {
+  const hasCoreSession = req.cookies?.userAccessToken || req.cookies?.userRefreshToken;
+  if (!hasCoreSession) return true;
+  const websiteId = req.params?.websiteId;
+  if (websiteId && staff?.websiteId && staff.websiteId !== websiteId) return false;
+  const storeId = req.params?.storeId;
+  if (storeId) {
+    const ownerId = await findOwnerId(storeId);
+    if (ownerId && ownerId !== staff?.merchantId) return false;
+  }
+  return true;
+};
 const createVerifyStoreActor = ({ validateStaff = verifyStaffToken,
-  verifyMerchant = verifyCoreMerchant } = {}) => async (req, res, next) => {
+  verifyMerchant = verifyCoreMerchant, findOwnerId = findStoreOwnerId } = {}) => async (req, res, next) => {
   if (req.cookies?.staffAccessToken || req.cookies?.staffRefreshToken) {
     const result = await validateStaff(req.cookies.staffAccessToken,
       req.cookies.staffRefreshToken);
     if (result.valid) {
+      if (!(await staffMatchesTarget(req, result.entity, findOwnerId))) return verifyMerchant(req, res, next);
       req.user = { ...result.entity, type: 'staff', permissions: result.permissions };
       return next();
     }
@@ -121,7 +142,7 @@ const verifyToken = async (req, res, next) => {
         staffRefreshToken
       );
       
-      if (staffValidation.valid) {
+      if (staffValidation.valid && await staffMatchesTarget(req, staffValidation.entity)) {
         req.user = {
           ...staffValidation.entity,
           type: "staff",

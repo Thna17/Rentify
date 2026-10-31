@@ -2,9 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useWebsiteData } from '@rentify/shared/context/WebsiteContext';
 import { useAuth } from '@rentify/utils';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
-
-/** Which slice of the business the dashboard is focused on. */
-export type ChannelView = 'all' | 'marketplace' | 'storefront' | 'pos';
+import { resolveChannelView, type ChannelView } from './channelViewPolicy';
+export type { ChannelView } from './channelViewPolicy';
 
 export interface ChannelCapabilities {
   hasStorefront: boolean;
@@ -117,12 +116,12 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
     }
   };
 
-  // Focused view (All / one channel), remembered per browser; falls back to All if that channel turns off
-  const [savedView, setSavedView] = useState<ChannelView>(() => {
+  // Remember explicit choices; otherwise open the appropriate seller workspace.
+  const [savedView, setSavedView] = useState<string | null>(() => {
     try {
-      return (localStorage.getItem('rentify_channel_view') as ChannelView) || 'all';
+      return localStorage.getItem('rentify_channel_view');
     } catch {
-      return 'all';
+      return null;
     }
   });
   const availableViews: ChannelView[] = [
@@ -131,7 +130,7 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
     ...(hasStorefront ? (['storefront'] as const) : []),
     ...(posEnabled ? (['pos'] as const) : []),
   ];
-  const view: ChannelView = availableViews.includes(savedView) ? savedView : 'all';
+  const view = resolveChannelView(savedView, availableViews);
   const setView = (next: ChannelView) => {
     setSavedView(next);
     try {

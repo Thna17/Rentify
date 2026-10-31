@@ -19,8 +19,8 @@ export const DEPLOYMENT_STATES = {
   FAILED: 'failed',
 };
 
-const STATUS_POLL_INTERVAL = 3000;
-const PROGRESS_UPDATE_INTERVAL = 800;
+const STATUS_POLL_INTERVAL = 1000;
+const PROGRESS_UPDATE_INTERVAL = 250;
 const MAX_RETRY_ATTEMPTS = 3;
 // Publishing assigns the store's Rentify subdomain and answers READY at once;
 // the status endpoint (keyed by website) is only consulted if it does not.
@@ -100,7 +100,7 @@ export default function useDeployment(data) {
       progressIntervalRef.current = setInterval(() => {
         if (isMountedRef.current)
           setProgress((current) =>
-            Math.min(current + (current < 90 ? 1 : 0.2), 95)
+            Math.min(current + (current < 90 ? 3 : 0.5), 95)
           );
       }, PROGRESS_UPDATE_INTERVAL);
     },
@@ -162,33 +162,20 @@ export default function useDeployment(data) {
       throw new Error('The website could not be created. Please try again.');
     websiteIdRef.current = website.id;
 
-    if (data.businessDetails?.file) {
+    // Logo and cover upload side by side; neither blocks publishing if it fails
+    const upload = async (file, options, label) => {
       try {
-        addDetail('Uploading store logo…');
-        await uploadImage({
-          websiteId: website.id,
-          file: data.businessDetails.file,
-          isLogo: true,
-        }).unwrap();
-        addDetail('Store logo uploaded.', 'success');
+        addDetail(`Uploading store ${label}…`);
+        await uploadImage({ websiteId: website.id, file, ...options }).unwrap();
+        addDetail(`Store ${label} uploaded.`, 'success');
       } catch (uploadErr) {
-        console.warn('Logo upload during deployment could not complete:', uploadErr);
+        console.warn(`${label} upload during deployment could not complete:`, uploadErr);
       }
-    }
-
-    if (data.businessDetails?.coverFile) {
-      try {
-        addDetail('Uploading store cover…');
-        await uploadImage({
-          websiteId: website.id,
-          file: data.businessDetails.coverFile,
-          type: 'cover',
-        }).unwrap();
-        addDetail('Store cover uploaded.', 'success');
-      } catch (uploadErr) {
-        console.warn('Cover upload during deployment could not complete:', uploadErr);
-      }
-    }
+    };
+    await Promise.all([
+      data.businessDetails?.file && upload(data.businessDetails.file, { isLogo: true }, 'logo'),
+      data.businessDetails?.coverFile && upload(data.businessDetails.coverFile, { type: 'cover' }, 'cover'),
+    ]);
 
     addDetail('Storefront created. Publishing it on its own web address.', 'success');
     updateProgress(30, true);

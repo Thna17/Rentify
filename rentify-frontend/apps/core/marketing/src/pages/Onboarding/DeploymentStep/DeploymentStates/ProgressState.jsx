@@ -41,7 +41,7 @@ export default function ProgressState({ t, language, progress, details, currentS
         <div className="text-right">
           <div className="text-2xl font-bold text-gray-900">{Math.round(progress)}%</div>
           <div className={`text-xs text-gray-500 ${language === 'KH' ? 'font-khmer' : ''}`}>
-            {language === 'KH' ? 'បានបញ្ចប់' : 'Complete'}
+            {t('deployment.complete')}
           </div>
         </div>
       </div>
@@ -50,10 +50,10 @@ export default function ProgressState({ t, language, progress, details, currentS
       <div className="mb-8">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
           <span className={language === 'KH' ? 'font-khmer' : ''}>
-            {language === 'KH' ? 'កំពុងដំណើរការ' : 'In Progress'}
+            {t('deployment.inProgress')}
           </span>
           <span className={language === 'KH' ? 'font-khmer' : ''}>
-            {language === 'KH' ? 'ស្ទើរតែរួចរាល់' : 'Almost There'}
+            {t('deployment.almostThere')}
           </span>
         </div>
         <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">

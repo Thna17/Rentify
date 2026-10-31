@@ -1,11 +1,21 @@
-import { useMediaQuery } from '@rentify/utils';
-import { Menu, MonitorSmartphone, Search, X } from 'lucide-react';
-import { POS_URL } from '@rentify/shared/config/urls';
+import { useMediaQuery, useTranslation } from '@rentify/utils';
+import { ChevronDown, ExternalLink, Globe, Menu, MonitorSmartphone, Search, ShoppingBag, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@rentify/shared/ui/dropdown-menu';
+import { HOSTED_STOREFRONT_DOMAIN, MARKETPLACE_URL, POS_URL } from '@rentify/shared/config/urls';
+import { useChannels } from '../../context/ChannelContext';
 import { ChannelViewSwitcher } from '../../components/ChannelViewSwitcher';
 import { useAccess } from '../../utils/access';
 import { Button } from '@rentify/shared/ui/button';
+import { SheetTrigger } from '@rentify/shared/ui/sheet';
 import { Input } from '@rentify/shared/ui/input';
 import { NotificationDropdown } from './NotificationDropdown';
+import { LanguageSwitcher } from '@rentify/shared/layouts/main/LanguageSwitcher';
 import React, { useState, useRef, useEffect } from 'react';
 
 export function SiteHeader({
@@ -17,10 +27,28 @@ export function SiteHeader({
   setSearchFilter,
   hasPos = false,
 }) {
+  const { t, lang, setLanguage } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const access = useAccess();
+  const { store, hasStorefront } = useChannels();
+  const rawSlug = String(store?.slug || '').trim();
+  const slugOk = rawSlug && !/^store-[0-9a-f-]{20,}$/i.test(rawSlug);
+  const shopRef = store?.id || rawSlug;
+  const shopHref = shopRef ? `${(MARKETPLACE_URL || '').replace(/\/+$/, '')}/stores/${shopRef}` : null;
+  const siteHost = store?.websiteDomain || (slugOk ? `${rawSlug}.${HOSTED_STOREFRONT_DOMAIN || 'mekhla.digital'}` : null);
+  // Local dev hosts (x.localhost:4900) serve plain http
+  const siteHref = hasStorefront && siteHost
+    ? (/^https?:\/\//.test(siteHost) ? siteHost : `${/localhost|127\.0\.0\.1/.test(siteHost) ? 'http' : 'https'}://${siteHost}`)
+    : null;
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  // Phones: search is an icon that opens a full-width bar over the header,
+  // so the action buttons keep their room instead of squashing the input.
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef(null);
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    if (mobileSearchOpen) searchInputRef.current?.focus();
+  }, [mobileSearchOpen]);
 
   const filteredTabs = searchFilter.trim()
     ? tabs.filter((t) => {
@@ -36,6 +64,7 @@ export function SiteHeader({
         !searchContainerRef.current.contains(event.target)
       ) {
         setIsSearchFocused(false);
+        setMobileSearchOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -48,11 +77,13 @@ export function SiteHeader({
     onTabChange?.(tabPath);
     setSearchFilter?.('');
     setIsSearchFocused(false);
+    setMobileSearchOpen(false);
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       setIsSearchFocused(false);
+      setMobileSearchOpen(false);
       e.target.blur();
     } else if (e.key === 'Enter' && filteredTabs.length > 0) {
       handleSelectTab(filteredTabs[0].path);
@@ -60,27 +91,51 @@ export function SiteHeader({
     }
   };
 
+  const sidebarButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={isMobile ? undefined : onSidebarToggle}
+      className="h-10 w-10 rounded-xl shrink-0"
+      aria-label={t('merchant.shell.expandSidebar')}
+      title={t('merchant.shell.expandSidebar')}
+    >
+      <Menu className="h-5 w-5" />
+    </Button>
+  );
+
   return (
     <>
-    <header className="flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8">
+    <header className="relative flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8">
       <div className="flex min-w-0 flex-1 items-center gap-3 xl:max-w-sm">
         {(!isSidebarOpen || isMobile) && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSidebarToggle}
-            className="h-9 w-9 rounded-md shrink-0"
-            aria-label="Expand sidebar"
-            title="Expand sidebar"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          isMobile ? <SheetTrigger asChild>{sidebarButton}</SheetTrigger> : sidebarButton
         )}
 
         {/* Search Bar on the Left (over the former overview text area) */}
-        <div className="relative w-full max-w-md sm:max-w-lg" ref={searchContainerRef}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 shrink-0 rounded-xl sm:hidden"
+          aria-label={t('merchant.shell.searchPages')}
+          aria-expanded={mobileSearchOpen}
+          onClick={() => setMobileSearchOpen(true)}
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+
+        <div
+          ref={searchContainerRef}
+          className={
+            mobileSearchOpen
+              ? 'absolute inset-x-4 top-3 z-40 sm:relative sm:inset-auto sm:top-auto sm:w-full sm:max-w-lg'
+              : 'relative hidden w-full max-w-md sm:block sm:max-w-lg'
+          }
+        >
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 pointer-events-none" />
           <Input
+            ref={searchInputRef}
             type="search"
             value={searchFilter}
             onChange={(e) => {
@@ -89,18 +144,19 @@ export function SiteHeader({
             }}
             onFocus={() => setIsSearchFocused(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search pages…"
+            placeholder={t('merchant.shell.searchPagesPlaceholder')}
             className="w-full bg-card pl-10 pr-9 h-10 rounded-xl border-transparent [box-shadow:var(--shadow-soft)] text-sm placeholder:text-muted-foreground/70 focus-visible:bg-background shadow-none [&::-webkit-search-cancel-button]:hidden"
           />
-          {searchFilter && (
+          {(searchFilter || mobileSearchOpen) && (
             <button
               type="button"
               onClick={() => {
                 setSearchFilter?.('');
                 setIsSearchFocused(false);
+                setMobileSearchOpen(false);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
-              aria-label="Clear search"
+              className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground hover:text-foreground"
+              aria-label={t('merchant.shell.clearSearch')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -140,7 +196,7 @@ export function SiteHeader({
                 })
               ) : (
                 <div className="px-3 py-3 text-center text-xs text-muted-foreground">
-                  No menu found
+                  {t('merchant.shell.noMenuFound')}
                 </div>
               )}
             </div>
@@ -151,18 +207,66 @@ export function SiteHeader({
       {/* Channel focus: centred on wide screens, its own row below on smaller ones */}
       <ChannelViewSwitcher className="hidden xl:flex" />
 
-      <div className="flex flex-1 items-center justify-end gap-2 xl:max-w-sm">
+      <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
+        {(shopHref || siteHref) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={t('merchant.shell.viewStore')}
+                className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-card px-3.5 text-[13px] font-semibold text-foreground [box-shadow:var(--shadow-soft)] transition-colors hover:bg-muted/60"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('merchant.shell.viewStore')}</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" collisionPadding={16} className="w-72">
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                {t('merchant.shell.seeAsBuyers')}
+              </DropdownMenuLabel>
+              {siteHref && (
+                <DropdownMenuItem asChild>
+                  <a href={siteHref} target="_blank" rel="noreferrer" className="flex min-h-11 cursor-pointer items-start gap-3">
+                    <Globe className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block font-medium">{t('merchant.shell.onlineStore')}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{siteHost}</span>
+                    </span>
+                  </a>
+                </DropdownMenuItem>
+              )}
+              {shopHref && (
+                <DropdownMenuItem asChild>
+                  <a href={shopHref} target="_blank" rel="noreferrer" className="flex min-h-11 cursor-pointer items-start gap-3">
+                    <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block font-medium">{t('merchant.shell.marketplacePage')}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {store?.marketplaceApprovalStatus && store.marketplaceApprovalStatus !== 'approved'
+                          ? t('merchant.shell.publicOnceApproved')
+                          : t('merchant.shell.yourStoreOnMarketplace')}
+                      </span>
+                    </span>
+                  </a>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {hasPos && access.can('manage_pos') && (
           <a
             href={POS_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-3.5 text-[13px] font-semibold text-background transition-opacity hover:opacity-90"
+            aria-label={t('merchant.shell.openPos')}
+            className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-foreground px-3.5 text-[13px] font-semibold text-background transition-opacity hover:opacity-90"
           >
             <MonitorSmartphone className="h-4 w-4" />
-            <span className="hidden sm:inline">Open POS</span>
+            <span className="hidden sm:inline">{t('merchant.shell.openPos')}</span>
           </a>
         )}
+        <LanguageSwitcher value={lang} onChange={setLanguage} compact={isMobile} label={t('merchant.shell.language')} />
         <NotificationDropdown onTabChange={onTabChange} />
       </div>
     </header>

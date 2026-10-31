@@ -1,16 +1,17 @@
 import { Component, input, output } from '@angular/core';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 
 @Component({
   selector: 'kc-confirm',
   standalone: true,
-  imports: [],
+  imports: [TranslatePipe, ],
   template: `
     <div class="modal-back" (click)="cancel.emit()">
       <div class="modal" (click)="$event.stopPropagation()">
         <h3>{{title()}}</h3>
         <p>{{message()}}</p>
         <div class="modal-actions">
-          <button class="btn" (click)="cancel.emit()">Cancel</button>
+          <button class="btn" (click)="cancel.emit()">{{ 'common.cancel' | translate }}</button>
           <button class="btn btn-primary" (click)="confirm.emit()">{{confirmLabel()}}</button>
         </div>
       </div>

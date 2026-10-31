@@ -54,10 +54,8 @@ export default function VerifyEmailPage() {
   return (
     <AuthLayout
       badge={getContextBadge()}
-      title={isKhmer ? t('verify.title') : 'Verify your account'}
-      subtitle={isKhmer
-        ? 'សូមបញ្ចូលលេខកូដសម្ងាត់ ៦ ខ្ទង់ដើម្បីបញ្ចប់ការផ្ទៀងផ្ទាត់'
-        : 'Enter the 6-digit code to verify your account.'}
+      title={t('verify.accountTitle')}
+      subtitle={t('verify.enterCodeHint')}
     >
       <VerifyOtpForm />
     </AuthLayout>

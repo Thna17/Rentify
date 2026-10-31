@@ -50,7 +50,7 @@ export default function DeploymentStages({ t, language, currentState }) {
           language === 'KH' ? 'font-khmer' : ''
         }`}
       >
-        {language === 'KH' ? 'ដំណាក់កាលការដំឡើង' : 'Deployment Stages'}
+        {t('deployment.deploymentStages')}
       </h4>
 
       <div className="grid grid-cols-5 gap-4">

@@ -37,7 +37,7 @@ import { IconComponent } from '../../ui/icon.component';
       <!-- Header -->
       <header class="moderation-header">
         <div>
-          <p class="eyebrow">TRUST & SAFETY / CATALOG COMPLIANCE</p>
+          <p class="eyebrow">{{ 'moderation.eyebrow' | translate }}</p>
           <h1 id="mod-title" class="page-title">{{ 'moderation.title' | translate }}</h1>
           <p class="page-sub">{{ 'moderation.subtitle' | translate }}</p>
         </div>
@@ -47,7 +47,7 @@ import { IconComponent } from '../../ui/icon.component';
             class="btn btn-outline btn-sm"
             (click)="reloadItems()"
             [disabled]="loading()"
-            aria-label="Refresh moderation queue"
+            [attr.aria-label]="'moderation.refreshQueue' | translate"
           >
             <kc-icon name="swap" [size]="14" />
             <span>{{ 'nav.refresh' | translate }}</span>
@@ -56,7 +56,7 @@ import { IconComponent } from '../../ui/icon.component';
       </header>
 
       <!-- Queue Tabs -->
-      <nav class="queue-tabs" aria-label="Moderation Queues">
+      <nav class="queue-tabs" [attr.aria-label]="'moderation.queues' | translate">
         <button
           type="button"
           class="queue-tab"
@@ -87,7 +87,7 @@ import { IconComponent } from '../../ui/icon.component';
       </nav>
 
       <!-- Filter Controls Strip -->
-      <section class="filters-bar card" aria-label="Filter Controls">
+      <section class="filters-bar card" [attr.aria-label]="'common.filterControls' | translate">
         <div class="search-group">
           <input
             type="search"
@@ -95,14 +95,14 @@ import { IconComponent } from '../../ui/icon.component';
             [placeholder]="'common.search' | translate"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchChange()"
-            aria-label="Search moderation listings"
+            [attr.aria-label]="'moderation.searchListings' | translate"
           />
         </div>
         <button
           type="button"
           class="btn btn-ghost btn-sm clear-btn"
           (click)="clearFilters()"
-          title="Reset filter"
+          [title]="'moderation.resetFilter' | translate"
         >
           {{ 'common.clearFilters' | translate }}
         </button>
@@ -111,7 +111,7 @@ import { IconComponent } from '../../ui/icon.component';
       <!-- Main Layout -->
       <div class="moderation-body">
         <!-- Master List Pane -->
-        <aside class="items-list-pane card" aria-label="Product Moderation List">
+        <aside class="items-list-pane card" [attr.aria-label]="'moderation.list' | translate">
           @if (loading()) {
             <div class="state-box" aria-live="polite">
               <span class="spinner"></span>
@@ -133,7 +133,7 @@ import { IconComponent } from '../../ui/icon.component';
               <p>{{ 'common.emptyDesc' | translate }}</p>
             </div>
           } @else {
-            <ul class="mod-items" role="listbox" aria-label="Moderation queue items">
+            <ul class="mod-items" role="listbox" [attr.aria-label]="'moderation.queueItems' | translate">
               @for (item of items(); track item.id) {
                 <li
                   class="mod-item"
@@ -159,7 +159,7 @@ import { IconComponent } from '../../ui/icon.component';
                   @if (item.appeal && item.appeal.status === 'pending') {
                     <div class="appeal-pending-badge">
                       <kc-icon name="swap" [size]="12" />
-                      <span>Appeal Pending Review</span>
+                      <span>{{ 'moderation.appealPending' | translate }}</span>
                     </div>
                   }
                 </li>
@@ -169,12 +169,12 @@ import { IconComponent } from '../../ui/icon.component';
         </aside>
 
         <!-- Detail Console Pane -->
-        <main class="item-detail-pane card" aria-label="Product Moderation Detail Console">
+        <main class="item-detail-pane card" [attr.aria-label]="'moderation.detailConsole' | translate">
           @if (!selectedItem()) {
             <div class="state-box empty-detail">
               <kc-icon name="box" [size]="36" />
-              <h3>Select a listing from the queue</h3>
-              <p>Review taxonomy match, merchant appeal evidence, and take authoritative moderation actions.</p>
+              <h3>{{ 'moderation.selectListing' | translate }}</h3>
+              <p>{{ 'moderation.selectListingHint' | translate }}</p>
             </div>
           } @else if (selectedItem(); as p) {
             <!-- Detail Header -->
@@ -184,10 +184,10 @@ import { IconComponent } from '../../ui/icon.component';
                 <kc-badge [value]="p.status" />
               </div>
               <div class="header-meta">
-                <span><strong>ID:</strong> <code class="font-mono">{{ p.productId }}</code></span>
-                <span><strong>Store:</strong> {{ p.storeName }}</span>
-                <span><strong>Category:</strong> {{ p.category }}</span>
-                <span><strong>Price:</strong> \${{ p.price }}</span>
+                <span><strong>{{ 'moderation.idLabel' | translate }}</strong> <code class="font-mono">{{ p.productId }}</code></span>
+                <span><strong>{{ 'moderation.storeLabel' | translate }}</strong> {{ p.storeName }}</span>
+                <span><strong>{{ 'moderation.categoryLabel' | translate }}</strong> {{ p.category }}</span>
+                <span><strong>{{ 'moderation.priceLabel' | translate }}</strong> \${{ p.price }}</span>
               </div>
             </div>
 
@@ -197,15 +197,15 @@ import { IconComponent } from '../../ui/icon.component';
               <div class="inspection-col">
                 <!-- Image Gallery -->
                 <div class="inspect-card card">
-                  <h4>Product Photos</h4>
+                  <h4>{{ 'moderation.productPhotos' | translate }}</h4>
                   @if (p.images && p.images.length) {
                     <div class="photo-strip">
                       @for (img of p.images; track img) {
-                        <img [src]="img" alt="Product photo" class="inspect-img" />
+                        <img [src]="img" [alt]="'moderation.productPhoto' | translate" class="inspect-img" />
                       }
                     </div>
                   } @else {
-                    <p class="text-muted">No images attached.</p>
+                    <p class="text-muted">{{ 'moderation.noImages' | translate }}</p>
                   }
                 </div>
 
@@ -218,12 +218,12 @@ import { IconComponent } from '../../ui/icon.component';
                       <p class="violation-desc">{{ p.flagReason }}</p>
                     </div>
                   } @else {
-                    <p class="text-muted">No active restricted-goods violation detected.</p>
+                    <p class="text-muted">{{ 'moderation.noViolation' | translate }}</p>
                   }
 
                   @if (p.remediationGuidance) {
                     <div class="guidance-box">
-                      <small class="guidance-label">Merchant Remediation Guidance:</small>
+                      <small class="guidance-label">{{ 'moderation.remediationGuidance' | translate }}</small>
                       <p class="guidance-text">{{ p.remediationGuidance }}</p>
                     </div>
                   }
@@ -234,7 +234,7 @@ import { IconComponent } from '../../ui/icon.component';
                   <div class="inspect-card card appeal-card">
                     <h4>{{ 'moderation.appealDetails' | translate }}</h4>
                     <div class="appeal-status-row">
-                      <span>Status:</span>
+                      <span>{{ 'moderation.statusLabel' | translate }}</span>
                       <kc-badge [value]="apl.status" />
                       <span class="appeal-date">{{ apl.submittedAt | date: 'medium' }}</span>
                     </div>
@@ -268,7 +268,7 @@ import { IconComponent } from '../../ui/icon.component';
                             rows="2"
                             class="form-textarea"
                             [(ngModel)]="appealDecisionReason"
-                            placeholder="Provide reason for appeal decision..."
+                            [placeholder]="'moderation.appealReasonPlaceholder' | translate"
                             [disabled]="!auth.canModerateCatalog()"
                           ></textarea>
                         </label>
@@ -309,20 +309,20 @@ import { IconComponent } from '../../ui/icon.component';
                   <h4>{{ 'moderation.colDecision' | translate }}</h4>
 
                   <label class="form-label">
-                    <span>Taxonomy Category (if violating)</span>
+                    <span>{{ 'moderation.violationCategory' | translate }}</span>
                     <select
                       class="form-select"
                       [(ngModel)]="selectedViolationCode"
                       [disabled]="!auth.canModerateCatalog()"
                     >
-                      <option value="">None (Compliant Listing)</option>
-                      <option value="PROHIBITED_WEAPONS_EXPLOSIVES">Weapons & Explosives</option>
-                      <option value="PROHIBITED_NARCOTICS">Illegal Narcotics & Paraphernalia</option>
-                      <option value="PROHIBITED_COUNTERFEIT">Counterfeit / Replica IP</option>
-                      <option value="PROHIBITED_WILDLIFE_FLORA">Protected Wildlife & Flora</option>
-                      <option value="PROHIBITED_ADULT_CONTENT">Sexually Explicit Goods</option>
-                      <option value="PROHIBITED_HAZARDOUS_MATERIALS">Toxic & Hazardous Materials</option>
-                      <option value="PROHIBITED_UNLICENSED_MEDICINE">Unlicensed Pharmaceuticals</option>
+                      <option value="">{{ 'moderation.compliant' | translate }}</option>
+                      <option value="PROHIBITED_WEAPONS_EXPLOSIVES">{{ 'moderation.weapons' | translate }}</option>
+                      <option value="PROHIBITED_NARCOTICS">{{ 'moderation.narcotics' | translate }}</option>
+                      <option value="PROHIBITED_COUNTERFEIT">{{ 'moderation.counterfeit' | translate }}</option>
+                      <option value="PROHIBITED_WILDLIFE_FLORA">{{ 'moderation.wildlife' | translate }}</option>
+                      <option value="PROHIBITED_ADULT_CONTENT">{{ 'moderation.explicit' | translate }}</option>
+                      <option value="PROHIBITED_HAZARDOUS_MATERIALS">{{ 'moderation.hazardous' | translate }}</option>
+                      <option value="PROHIBITED_UNLICENSED_MEDICINE">{{ 'moderation.pharma' | translate }}</option>
                     </select>
                   </label>
 
@@ -385,7 +385,7 @@ import { IconComponent } from '../../ui/icon.component';
 
                   @if (!auth.canModerateCatalog()) {
                     <small class="permission-notice">
-                      Requires permission <code>catalog:moderate</code>.
+                      {{ 'support.requiresPermission' | translate }} <code>catalog:moderate</code>.
                     </small>
                   }
                 </div>

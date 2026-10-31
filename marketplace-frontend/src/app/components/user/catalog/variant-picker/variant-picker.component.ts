@@ -10,12 +10,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { Product, ProductVariantView, ProductOptionView } from '../../../../core/catalog/catalog.models';
 import { TranslateService } from '../../../../core/i18n/translate.service';
-import { IconComponent } from '../../../shared/ui/icon/icon.component';
 
 @Component({
   selector: 'app-variant-picker',
   standalone: true,
-  imports: [CommonModule, IconComponent],
+  imports: [CommonModule],
   template: `
     @if (hasMultipleVariants()) {
       <div class="variant-groups" role="region" [attr.aria-label]="t('product.variant')">
@@ -23,7 +22,9 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
           <div class="option-group" role="radiogroup" [attr.aria-label]="t('product.selectOption', { name: option.name })">
             <div class="option-header">
               <span class="option-title">{{ option.name }}</span>
-              <span class="option-current">{{ selectedOptions()[option.name] || '' }}</span>
+              @if (selectedOptions()[option.name]; as chosen) {
+                <span class="option-current">{{ chosen }}</span>
+              }
             </div>
             <div class="pill-list">
               @for (val of option.values; track val) {
@@ -40,7 +41,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
                 >
                   <span class="pill-text">{{ val }}</span>
                   @if (isOptionCombinationOos(option.name, val)) {
-                    <span class="oos-tag" aria-hidden="true">{{ t('catalog.outOfStock') }}</span>
+                    <span class="sr-only">{{ t('catalog.outOfStock') }}</span>
                   }
                 </button>
               }
@@ -50,53 +51,51 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
       </div>
     }
 
-    <div class="sku-meta-row" aria-live="polite">
-      <div class="sku-item">
-        <span class="meta-label">{{ t('product.sku') }}:</span>
-        <code class="sku-code">{{ currentSku() }}</code>
-      </div>
-
-      @if (activeVariant(); as v) {
-        @if (v.stockQuantity > 0 && v.stockQuantity <= 5) {
-          <div class="low-stock-alert">
-            <ui-icon name="alert-circle" [size]="14" />
-            <span>{{ t('catalog.lowStock', { count: v.stockQuantity }) }}</span>
-          </div>
-        } @else if (v.stockQuantity === 0) {
-          <div class="oos-alert">
-            <span>{{ t('catalog.outOfStock') }}</span>
-          </div>
-        }
-      }
-    </div>
+    <!-- Stock for the chosen variant is shown once by the page; this row only
+         carries the SKU, kept quiet as reference information. -->
+    <p class="sku-meta" aria-live="polite">
+      <span class="meta-label">{{ t('product.sku') }}</span>
+      <code class="sku-code">{{ currentSku() }}</code>
+    </p>
   `,
   styles: [
     `
+      :host {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
       .variant-groups {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin: 4px 0 2px;
+        gap: 16px;
       }
       .option-group {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
+        min-width: 0;
       }
       .option-header {
         display: flex;
         align-items: baseline;
         gap: 8px;
-        font-size: 13.5px;
+        font-size: 13px;
+        line-height: 1.3;
       }
       .option-title {
         font-weight: 600;
-        color: var(--color-text);
+        color: var(--color-text-secondary);
       }
       .option-current {
-        font-size: 13px;
-        color: var(--color-accent);
-        font-weight: 600;
+        color: var(--color-text);
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+      .option-current::before {
+        content: '·';
+        margin-right: 8px;
+        color: var(--color-muted-2);
       }
       .pill-list {
         display: flex;
@@ -104,85 +103,80 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
         gap: 8px;
       }
       .pill-btn {
+        position: relative;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        min-height: 36px;
-        border: 1.5px solid var(--color-border);
-        border-radius: var(--radius-sm, 6px);
-        background: var(--color-surface, #fff);
+        justify-content: center;
+        min-width: 52px;
+        min-height: 44px;
+        max-width: 100%;
+        padding: 0 16px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
         color: var(--color-text);
-        font-size: 13px;
+        font-size: 13.5px;
         font-weight: 500;
+        line-height: 1.2;
         cursor: pointer;
-        transition: all 140ms ease;
-        outline: none;
+        transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease,
+          background var(--dur-fast) ease, color var(--dur-fast) ease;
       }
-      .pill-btn:hover:not(:disabled) {
-        border-color: var(--color-text);
+      .pill-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pill-btn:hover:not(:disabled):not(.selected) {
+        border-color: var(--color-text-secondary);
       }
       .pill-btn:focus-visible {
-        border-color: var(--color-accent);
-        box-shadow: 0 0 0 3px rgba(200, 90, 40, 0.2);
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
       }
+      /* The inset ring thickens the border to 2px without nudging the layout. */
       .pill-btn.selected {
         border-color: var(--color-accent);
-        background: var(--color-accent-soft, rgba(200, 90, 40, 0.08));
-        color: var(--color-accent);
-        font-weight: 700;
+        box-shadow: inset 0 0 0 1px var(--color-accent);
+        background: var(--color-accent-soft);
+        color: var(--color-text);
+        font-weight: 600;
       }
       .pill-btn.out-of-stock {
-        opacity: 0.65;
         border-style: dashed;
-        color: var(--color-muted);
+        border-color: var(--color-border-strong);
+        background: var(--color-bg-alt);
+        color: var(--color-muted-2);
+        cursor: not-allowed;
       }
-      .oos-tag {
-        font-size: 10px;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: var(--color-danger, #d6362c);
-        margin-left: 4px;
+      .pill-btn.out-of-stock .pill-text {
+        text-decoration: line-through;
       }
-      .sku-meta-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 4px;
-        padding-top: 8px;
-        border-top: 1px solid var(--color-border);
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
       }
-      .sku-item {
+      .sku-meta {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        font-size: 12px;
+        margin: 0;
+        font-size: 11.5px;
         color: var(--color-muted);
       }
-      .sku-code {
-        font-family: var(--font-mono, monospace);
-        background: var(--color-bg-alt, #f5f5f7);
-        padding: 2px 6px;
-        border-radius: 4px;
-        color: var(--color-text);
-        font-weight: 600;
-        letter-spacing: 0.02em;
-      }
-      .low-stock-alert {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--color-danger, #d6362c);
-      }
-      .oos-alert {
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--color-danger, #d6362c);
+      .meta-label {
+        letter-spacing: 0.04em;
         text-transform: uppercase;
+      }
+      .sku-code {
+        font-family: var(--rentify-font-family-mono, monospace);
+        color: var(--color-text-secondary);
+        letter-spacing: 0.02em;
+        overflow-wrap: anywhere;
       }
     `,
   ],

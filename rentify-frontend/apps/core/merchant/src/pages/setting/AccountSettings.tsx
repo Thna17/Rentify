@@ -1,7 +1,7 @@
 // account-settings.tsx
 import React, { useState, useEffect } from 'react';
 import { useUpdateProfileMutation } from '@rentify/apis';
-import { useAuth } from '@rentify/utils';
+import { useAuth, useTranslation } from '@rentify/utils';
 import { 
   Card, 
   CardContent, 
@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
+import { MarketplaceColorCard } from './components/MarketplaceColorCard';
 import { StoreLogoCard } from './components/StoreLogoCard';
 
 export const AccountSettings = () => {
+  const { t } = useTranslation();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
   const { profile } = useAuth();
   
@@ -59,7 +61,7 @@ export const AccountSettings = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size too large. Max 5MB allowed.');
+        toast.error(t('merchant.p.fileSizeTooLarge'));
         return;
       }
       const reader = new FileReader();
@@ -81,9 +83,9 @@ export const AccountSettings = () => {
         ...(avatarPreview && { avatar: avatarPreview })
       }).unwrap();
       setIsEditing(false);
-      toast.success('Profile updated successfully');
+      toast.success(t('merchant.p.profileUpdatedSuccessfully'));
     } catch (error) {
-      toast.error('Failed to update profile. Please try again.');
+      toast.error(t('merchant.p.failedToUpdateProfile'));
     }
   };
 
@@ -108,7 +110,7 @@ export const AccountSettings = () => {
 
   return (
     <SettingsLayout
-      title="Account Settings"
+      title={t('merchant.p.accountSettings')}
       description="Manage your personal and business information"
       icon={<User />}
     >
@@ -116,9 +118,9 @@ export const AccountSettings = () => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg font-semibold">Profile Information</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('merchant.p.profileInformation')}</CardTitle>
               <CardDescription>
-                Update your personal details and business information
+                {t('merchant.p.updateYourPersonalDetails')}
               </CardDescription>
             </div>
             {!isEditing ? (
@@ -128,12 +130,12 @@ export const AccountSettings = () => {
                 className="flex items-center space-x-2"
               >
                 <Edit className="h-4 w-4" />
-                <span>Edit Profile</span>
+                <span>{t('merchant.p.editProfile')}</span>
               </Button>
             ) : (
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={cancelEdit}>
-                  Cancel
+                  {t('merchant.p.cancel')}
                 </Button>
                 <Button
                   onClick={handleSaveProfile}
@@ -181,9 +183,9 @@ export const AccountSettings = () => {
             </div>
             
             <div className="flex-1">
-              <h3 className="font-medium text-gray-900">Profile Photo</h3>
+              <h3 className="font-medium text-gray-900">{t('merchant.p.profilePhoto')}</h3>
               <p className="text-sm text-gray-500 mt-1">
-                JPG, GIF or PNG. Max size of 5MB
+                {t('merchant.p.jpgGifOrPng')}
               </p>
               {isEditing && avatarPreview && (
                 <Button
@@ -193,7 +195,7 @@ export const AccountSettings = () => {
                   className="mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <X className="h-4 w-4 mr-1" />
-                  Remove photo
+                  {t('merchant.p.removePhoto')}
                 </Button>
               )}
             </div>
@@ -207,7 +209,7 @@ export const AccountSettings = () => {
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium">
                   <User className="h-4 w-4 inline mr-2" />
-                  Full Name
+                  {t('merchant.p.fullName')}
                 </Label>
                 <Input
                   id="name"
@@ -215,7 +217,7 @@ export const AccountSettings = () => {
                   value={profileData.name}
                   onChange={handleProfileChange}
                   disabled={!isEditing}
-                  placeholder="Your full name"
+                  placeholder={t('merchant.p.yourFullName')}
                   className="disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
               </div>
@@ -223,7 +225,7 @@ export const AccountSettings = () => {
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   <Mail className="h-4 w-4 inline mr-2" />
-                  Email Address
+                  {t('merchant.p.emailAddress')}
                 </Label>
                 <Input
                   id="email"
@@ -240,7 +242,7 @@ export const AccountSettings = () => {
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-sm font-medium">
                   <Phone className="h-4 w-4 inline mr-2" />
-                  Phone Number
+                  {t('merchant.p.phoneNumber')}
                 </Label>
                 <Input
                   id="phone"
@@ -258,7 +260,7 @@ export const AccountSettings = () => {
               <div className="space-y-2">
                 <Label htmlFor="businessName" className="text-sm font-medium">
                   <Building className="h-4 w-4 inline mr-2" />
-                  Business Name
+                  {t('merchant.p.businessName')}
                 </Label>
                 <Input
                   id="businessName"
@@ -266,7 +268,7 @@ export const AccountSettings = () => {
                   value={profileData.businessName}
                   onChange={handleProfileChange}
                   disabled={!isEditing}
-                  placeholder="Your business name"
+                  placeholder={t('merchant.p.yourBusinessName')}
                   className="disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
               </div>
@@ -274,7 +276,7 @@ export const AccountSettings = () => {
               <div className="space-y-2">
                 <Label htmlFor="website" className="text-sm font-medium">
                   <Globe className="h-4 w-4 inline mr-2" />
-                  Website
+                  {t('merchant.p.website')}
                 </Label>
                 <Input
                   id="website"
@@ -289,7 +291,7 @@ export const AccountSettings = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="bio" className="text-sm font-medium">
-                  Bio
+                  {t('merchant.p.bio')}
                 </Label>
                 <Input
                   id="bio"
@@ -297,7 +299,7 @@ export const AccountSettings = () => {
                   value={profileData.bio}
                   onChange={handleProfileChange}
                   disabled={!isEditing}
-                  placeholder="Tell us about yourself or your business"
+                  placeholder={t('merchant.p.tellUsAboutYourself')}
                   className="disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
               </div>
@@ -310,6 +312,7 @@ export const AccountSettings = () => {
       {profile?.role !== 'staff' && (
         <div className="mt-6">
           <StoreLogoCard />
+          <div className="mt-6"><MarketplaceColorCard /></div>
         </div>
       )}
     </SettingsLayout>

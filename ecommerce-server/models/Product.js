@@ -69,6 +69,8 @@ const Product = sequelize.define(
     storeId: { type: DataTypes.UUID, allowNull: true },
     marketplaceCategory: { type: DataTypes.STRING(120), allowNull: true },
     marketplaceVisibility: { type: DataTypes.BOOLEAN, allowNull: true },
+    // false hides the product from the merchant's own storefront; the marketplace is separate
+    storefrontVisibility: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     // Dynamic product type based on niche
     productType: {
       type: DataTypes.STRING,

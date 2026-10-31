@@ -1,36 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Save,
-  Image as ImageIcon,
-  X,
-  Plus,
-  Loader2,
-  DollarSign,
-  Package,
-  Info,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowLeft, ChevronDown, Loader2, Plus, X } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
   useCreateProductMutation,
   useUpdateProductMutation,
   useGetProductFormConfigQuery,
+  useGetManagedProductQuery,
+  useGetCategoriesQuery,
+  useCreateCategoryMutation,
 } from '@rentify/apis';
-import { useShopCategories } from '../../hooks/useShopCategories';
-// Shadcn Components
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from '@rentify/shared/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
@@ -43,26 +24,14 @@ import {
   SelectValue,
 } from '@rentify/shared/ui/select';
 import { Switch } from '@rentify/shared/ui/switch';
-import { Badge } from '@rentify/shared/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@rentify/shared/ui/alert';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@rentify/shared/ui/tooltip';
-import { Separator } from '@rentify/shared/ui/separator';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
-import {
-  Collapsible,
-  CollapsibleContent,
-} from '@rentify/shared/ui/collapsible';
-import { useGetManagedProductQuery } from '@rentify/apis';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { useChannels } from '../../context/ChannelContext';
 import { ImageUploader as ProductImageUploader } from './components/ImageUploader';
 import { uploadProductImages } from '../../services/productImages';
+import { useTranslation } from '@rentify/utils';
 
 const SKIN_TYPES = [
   { value: 'all', label: 'All skin types' },
@@ -73,27 +42,135 @@ const SKIN_TYPES = [
   { value: 'sensitive', label: 'Sensitive' },
 ];
 
+// Option names a merchant picks most; any other name can be typed.
+const OPTION_PRESETS = ['Color', 'Size', 'Material', 'Style'];
+const MAX_OPTIONS = 3;
+const NO_CATEGORY = 'none';
+
 const toStringList = (value) => {
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
-  }
-
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
   if (typeof value !== 'string') return [];
+  return value.split(/[,\n]/).map((item) => item.trim()).filter(Boolean);
+};
 
-  return value
-    .split(/[,\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+// Swatch data for common colour names; an unknown name keeps the option a plain list.
+const COLOR_HEX = {
+  black: '#000000', white: '#FFFFFF', red: '#E53935', blue: '#1E88E5', green: '#43A047',
+  yellow: '#FDD835', orange: '#FB8C00', pink: '#EC407A', purple: '#8E24AA', brown: '#6D4C41',
+  grey: '#9E9E9E', gray: '#9E9E9E', navy: '#1A237E', beige: '#E8D9B5', gold: '#D4AF37', silver: '#C0C0C0',
+};
+const isColorName = (name) => ['color', 'colour'].includes(name.trim().toLowerCase());
+const optionType = (name) => {
+  if (isColorName(name)) return 'color';
+  if (name.trim().toLowerCase() === 'size') return 'size';
+  return 'select';
+};
+const optionPayload = (option, position) => {
+  const name = option.name.trim();
+  const swatches = isColorName(name) && option.values.every((value) => COLOR_HEX[value.toLowerCase()]);
+  return {
+    name,
+    type: swatches ? 'color' : optionType(name) === 'size' ? 'size' : 'select',
+    values: option.values.map((value) => ({
+      value,
+      label: value,
+      ...(swatches ? { hexCode: COLOR_HEX[value.toLowerCase()] } : {}),
+    })),
+    position,
+  };
+};
+
+/** Every combination of the option values, e.g. Red/S, Red/M, Blue/S, Blue/M. */
+const combinations = (options) => {
+  const usable = options.filter((option) => option.name.trim() && option.values.length);
+  if (!usable.length) return [];
+  return usable.reduce(
+    (combos, option) => combos.flatMap((combo) =>
+      option.values.map((value) => ({ ...combo, [option.name.trim()]: value }))),
+    [{}]
+  );
+};
+// Order-independent: the API may return {Size, Color} for a variant built as {Color, Size}.
+const comboKey = (optionValues) =>
+  Object.entries(optionValues)
+    .map(([name, value]) => `${name.trim().toLowerCase()}:${String(value).trim().toLowerCase()}`)
+    .sort()
+    .join('|');
+
+const Field = ({ label, htmlFor, required, hint, error, children }) => (
+  <div className="space-y-1.5">
+    <Label htmlFor={htmlFor} className="text-sm font-medium">
+      {label}
+      {required && <span className="ml-0.5 text-destructive">*</span>}
+    </Label>
+    {children}
+    {error ? (
+      <p className="text-xs text-destructive">{error}</p>
+    ) : hint ? (
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    ) : null}
+  </div>
+);
+
+/** Type a value and press Enter (or comma) to add it as a chip. */
+const ValueChips = ({ id, values, onChange, placeholder }) => {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState('');
+  const add = (raw) => {
+    const next = toStringList(raw).filter((value) => !values.includes(value));
+    if (next.length) onChange([...values, ...next]);
+    setDraft('');
+  };
+  return (
+    <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5">
+      {values.map((value) => (
+        <span key={value} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-sm">
+          {value}
+          <button
+            type="button"
+            aria-label={`Remove ${value}`}
+            className="grid h-5 w-5 place-items-center rounded-full hover:bg-background"
+            onClick={() => onChange(values.filter((item) => item !== value))}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        id={id}
+        value={draft}
+        placeholder={values.length ? 'Add another…' : placeholder}
+        className="min-w-[120px] flex-1 bg-transparent px-1 py-1 text-sm outline-none"
+        onChange={(event) => {
+          const text = event.target.value;
+          if (text.includes(',')) add(text);
+          else setDraft(text);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            if (draft.trim()) add(draft);
+          } else if (event.key === 'Backspace' && !draft && values.length) {
+            onChange(values.slice(0, -1));
+          }
+        }}
+        onBlur={() => draft.trim() && add(draft)}
+      />
+    </div>
+  );
 };
 
 export const ProductForm = ({ onClose, category }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { websiteData } = useThemeService();
-  const { store: channelStore } = useChannels();
+  const { store: channelStore, hasMarketplace } = useChannels();
   const websiteId = websiteData?.websiteId;
   const [fallbackStore, setFallbackStore] = useState(null);
   const activeStore = channelStore || fallbackStore;
   const activeStoreId = activeStore?.id || null;
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
 
   const closeForm = () => {
     if (onClose) onClose();
@@ -107,6 +184,8 @@ export const ProductForm = ({ onClose, category }) => {
   const [submitError, setSubmitError] = useState('');
   const [marketplaceCategories, setMarketplaceCategories] = useState([]);
   const [marketplaceCategoriesError, setMarketplaceCategoriesError] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+
   useEffect(() => {
     let active = true;
     fetch(`${ECOMMERCE_API_ROOT}/api/marketplace/categories`)
@@ -120,30 +199,41 @@ export const ProductForm = ({ onClose, category }) => {
     if (!websiteId && !channelStore?.id) {
       fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
         .then((res) => (res.ok ? res.json() : null))
-        .then((res) => {
-          if (active && res?.data) setFallbackStore(res.data);
-        })
+        .then((res) => { if (active && res?.data) setFallbackStore(res.data); })
         .catch(() => null);
     }
     return () => { active = false; };
   }, [websiteId, channelStore?.id]);
-  const [expandedSections, setExpandedSections] = useState({
-    basic: true,
-    niche: true,
-    media: true,
-    pricing: true,
-    organization: true,
-  });
 
-  const { categories, isLoading: categoriesLoading } = useShopCategories();
-  const { id } = useParams();
-  const isEditMode = Boolean(id);
+  // Store categories, with inline creation so nobody has to leave the form
+  const categoriesQuery = useGetCategoriesQuery(websiteId, { skip: !websiteId });
+  const storeCategories = (categoriesQuery.data || []).filter((item) => item.status !== 'deleted');
+  const [createCategory, { isLoading: creatingCategory }] = useCreateCategoryMutation();
+  const [newCategoryOpen, setNewCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryError, setNewCategoryError] = useState('');
 
   const {
-    data: product,
-    isLoading: productLoading,
-    isError: createError,
+    data: websiteProduct,
+    isLoading: websiteProductLoading,
   } = useGetManagedProductQuery({ websiteId, productId: id }, { skip: !id || !websiteId });
+
+  // Stores without a website edit through the Store catalog API instead
+  const [storeProduct, setStoreProduct] = useState(null);
+  const [storeProductLoading, setStoreProductLoading] = useState(false);
+  useEffect(() => {
+    if (!id || websiteId || !activeStoreId) return undefined;
+    let active = true;
+    setStoreProductLoading(true);
+    fetch(`${ECOMMERCE_API_ROOT}/api/stores/${activeStoreId}/products/${id}`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => { if (active) setStoreProduct(result?.product || result?.data || result); })
+      .catch(() => { if (active) setSubmitError('Could not load this product. Refresh to try again.'); })
+      .finally(() => { if (active) setStoreProductLoading(false); });
+    return () => { active = false; };
+  }, [id, websiteId, activeStoreId]);
+  const product = websiteId ? websiteProduct : storeProduct;
+  const productLoading = websiteId ? websiteProductLoading : storeProductLoading;
 
   const {
     data: productFormConfig,
@@ -152,79 +242,85 @@ export const ProductForm = ({ onClose, category }) => {
   } = useGetProductFormConfigQuery({ websiteId }, { skip: !websiteId });
 
   const websiteNiche = String(
-    productFormConfig?.niche ||
-      product?.websiteNiche ||
-      websiteData?.niche ||
-      'ecommerce'
+    productFormConfig?.niche || product?.websiteNiche || websiteData?.niche || 'ecommerce'
   ).toLowerCase();
   const isSkincare = websiteNiche === 'skincare';
 
-  const [createProduct, { isLoading: createLoading }] =
-    useCreateProductMutation();
-  const [
-    updateProduct,
-    { isLoading: updateLoading, isError: updateError, error, isSuccess },
-  ] = useUpdateProductMutation();
+  const [createProduct, { isLoading: createLoading }] = useCreateProductMutation();
+  const [updateProduct, { isLoading: updateLoading }] = useUpdateProductMutation();
+
+  // ---- Variants: options (Color: Red, Blue) generate one row per combination
+  const existingVariants = useMemo(
+    () => (product?.ProductVariants || product?.variants || [])
+      .filter((variant) => variant.optionValues && Object.keys(variant.optionValues).length),
+    [product]
+  );
+  const existingOptions = product?.ProductOptions || product?.options || [];
+  const [hasVariants, setHasVariants] = useState(false);
+  const [options, setOptions] = useState([{ name: 'Color', values: [] }]);
+  const [variantRows, setVariantRows] = useState({});
+
+  useEffect(() => {
+    if (!isEditMode || !existingVariants.length) return;
+    setHasVariants(true);
+    setOptions(
+      existingOptions.length
+        ? existingOptions.map((option) => ({
+            name: option.name,
+            values: (option.values || [])
+              .map((value) => (value && typeof value === 'object' ? value.value : value))
+              .filter(Boolean)
+              .map(String),
+          }))
+        : Object.keys(existingVariants[0].optionValues).map((name) => ({
+            name,
+            values: [...new Set(existingVariants.map((variant) => variant.optionValues[name]).filter(Boolean))],
+          }))
+    );
+    setVariantRows(Object.fromEntries(existingVariants.map((variant) => [
+      comboKey(variant.optionValues),
+      { id: variant.id, sku: variant.sku, price: String(variant.price ?? ''), stock: String(variant.stockQuantity ?? 0) },
+    ])));
+  }, [isEditMode, existingVariants, existingOptions]);
+
+  const combos = useMemo(() => combinations(options), [options]);
 
   const validationSchema = Yup.object({
-    name: Yup.string().required('Product name is required').max(255),
-    description: Yup.string().required('Description is required').max(1000),
-    price: Yup.number()
-      .transform((value, originalValue) =>
-        originalValue === '' ? undefined : Number(originalValue)
-      )
-      .required('Price is required')
-      .min(0.01, 'Price must be at least $0.01')
-      .test('decimal', 'Invalid price format (max 2 decimal places)', (value) =>
-        /^\d+(\.\d{1,2})?$/.test(String(value))
-      ),
-    stockQuantity: Yup.number()
-      .transform((value, originalValue) =>
-        originalValue === '' ? undefined : Number(originalValue)
-      )
-      .required('Stock quantity is required')
-      .integer('Must be a whole number')
-      .min(0, 'Stock cannot be negative'),
-    images: Yup.array().test(
-      'at-least-one-image',
-      'At least one image is required',
-      (value) => !isEditMode || (value && value.length > 0)
-    ),
-    categoryId: Yup.string().nullable(),
-    marketplaceCategory: Yup.string().required('Marketplace category is required'),
+    name: Yup.string().trim().required('Add a product name').max(255),
+    description: Yup.string().max(1000),
+    price: hasVariants
+      ? Yup.mixed()
+      : Yup.number()
+          .transform((value, original) => (original === '' ? undefined : Number(original)))
+          .required('Add a price')
+          .min(0.01, 'Price must be at least $0.01')
+          .test('decimal', 'Use at most 2 decimals', (value) => /^\d+(\.\d{1,2})?$/.test(String(value))),
+    stockQuantity: hasVariants
+      ? Yup.mixed()
+      : Yup.number()
+          .transform((value, original) => (original === '' ? undefined : Number(original)))
+          .required('Add how many you have')
+          .integer('Use a whole number')
+          .min(0, 'Stock cannot be negative'),
+    marketplaceCategory: Yup.string().when('marketplaceVisibility', {
+      is: (visibility) => hasMarketplace && visibility !== false,
+      then: (schema) => schema.required('Pick where buyers find it on the marketplace'),
+      otherwise: (schema) => schema.nullable(),
+    }),
     nicheAttributes: Yup.object({
       skinType: isSkincare
-        ? Yup.array()
-            .of(Yup.string())
-            .min(1, 'Select at least one suitable skin type')
+        ? Yup.array().of(Yup.string()).min(1, 'Select at least one skin type')
         : Yup.array().of(Yup.string()),
     }),
     ingredientsText: isSkincare
-      ? Yup.string()
-          .trim()
-          .required('Add at least one ingredient')
-          .test(
-            'has-ingredients',
-            'Add at least one ingredient',
-            (value) => toStringList(value).length > 0
-          )
+      ? Yup.string().trim().test('has-ingredients', 'Add at least one ingredient',
+          (value) => toStringList(value).length > 0)
       : Yup.string(),
   });
 
-  const getInitialCategoryId = () => {
-    if (isEditMode && product?.categoryId) {
-      return product.categoryId;
-    }
-    if (category) {
-      return category.id;
-    }
-    return null;
-  };
-
   const defaultMarketplaceCategory =
     product?.marketplaceCategory ||
-    (activeStore?.primaryCategory &&
-    marketplaceCategories.includes(activeStore.primaryCategory)
+    (activeStore?.primaryCategory && marketplaceCategories.includes(activeStore.primaryCategory)
       ? activeStore.primaryCategory
       : '');
 
@@ -237,38 +333,54 @@ export const ProductForm = ({ onClose, category }) => {
       stockQuantity: product?.stockQuantity ?? 10,
       status: product?.status || 'active',
       images: product?.images || [],
-      categoryId: getInitialCategoryId(),
+      categoryId: product?.categoryId || category?.id || NO_CATEGORY,
       marketplaceCategory: defaultMarketplaceCategory,
+      // null = follow the Store's marketplace default, false = hidden from the marketplace
+      marketplaceVisibility: product?.marketplaceVisibility ?? null,
+      storefrontVisibility: product?.storefrontVisibility !== false,
       version: product?.version || 0,
       comparePrice: product?.comparePrice || '',
       sku: product?.sku || '',
-      tags: product?.tags || '',
       nicheAttributes: {
         ...(product?.nicheAttributes || {}),
         skinType: toStringList(product?.nicheAttributes?.skinType),
         usageInstructions: product?.nicheAttributes?.usageInstructions || '',
         volume: product?.nicheAttributes?.volume || '',
         spf: product?.nicheAttributes?.spf || '',
-        crueltyFree: Boolean(product?.nicheAttributes?.crueltyFree),
-        vegan: Boolean(product?.nicheAttributes?.vegan),
       },
-      ingredientsText: toStringList(
-        product?.nicheAttributes?.ingredients
-      ).join(', '),
+      ingredientsText: toStringList(product?.nicheAttributes?.ingredients).join(', '),
     },
     validationSchema,
-    validateOnMount: true,
     onSubmit: async (values) => {
       if (!websiteId && !activeStoreId) {
         setSubmitError('Your store is not ready yet. Refresh the page or finish store setup first.');
         return;
       }
       if (websiteId && !productFormConfig?.niche) {
-        setSubmitError(
-          'Could not verify your store product requirements. Refresh the page and try again.'
-        );
+        setSubmitError('Could not load your store settings. Refresh the page and try again.');
         return;
       }
+
+      let variantPayload = null;
+      if (hasVariants) {
+        const problem = variantProblem();
+        if (problem) {
+          setSubmitError(problem);
+          return;
+        }
+        variantPayload = combos.map((optionValues, index) => {
+          const row = variantRows[comboKey(optionValues)] || {};
+          return {
+            ...(row.id ? { id: row.id } : {}),
+            ...(row.sku ? { sku: row.sku } : {}),
+            optionValues,
+            price: parseFloat(row.price),
+            stockQuantity: parseInt(row.stock, 10),
+            isDefault: index === 0,
+          };
+        });
+      }
+
       setIsUploading(true);
       setSubmitError('');
       setUploadErrors([]);
@@ -278,31 +390,38 @@ export const ProductForm = ({ onClose, category }) => {
           ...(websiteId ? { websiteId } : { storeId: activeStoreId }),
           onProgress: setUploadProgress,
         });
-        const { ingredientsText, ...productValues } = values;
+        const { ingredientsText, categoryId, ...productValues } = values;
         const productData = {
           ...productValues,
-          price: parseFloat(values.price),
-          stockQuantity: parseInt(values.stockQuantity, 10),
+          categoryId: categoryId === NO_CATEGORY ? null : categoryId,
+          comparePrice: values.comparePrice === '' ? null : values.comparePrice,
+          price: variantPayload
+            ? Math.min(...variantPayload.map((variant) => variant.price))
+            : parseFloat(values.price),
+          stockQuantity: variantPayload
+            ? variantPayload.reduce((sum, variant) => sum + variant.stockQuantity, 0)
+            : parseInt(values.stockQuantity, 10),
           images: [...(values.images || []), ...uploadedImagesData],
           expectedVersion: values.version,
           nicheAttributes: {
             ...values.nicheAttributes,
             ingredients: toStringList(ingredientsText),
           },
+          ...(variantPayload
+            ? {
+                options: options
+                  .filter((option) => option.name.trim() && option.values.length)
+                  .map(optionPayload),
+                variants: variantPayload,
+              }
+            : {}),
         };
 
         if (websiteId) {
           if (isEditMode) {
-            await updateProduct({
-              websiteId,
-              productId: product.id,
-              product: productData,
-            }).unwrap();
+            await updateProduct({ websiteId, productId: product.id, product: productData }).unwrap();
           } else {
-            await createProduct({
-              websiteId,
-              product: productData,
-            }).unwrap();
+            await createProduct({ websiteId, product: productData }).unwrap();
           }
         } else {
           const endpoint = isEditMode
@@ -315,11 +434,7 @@ export const ProductForm = ({ onClose, category }) => {
             body: JSON.stringify(productData),
           });
           const result = await response.json().catch(() => ({}));
-          if (!response.ok) {
-            throw new Error(
-              result?.error || result?.message || 'Could not save the product'
-            );
-          }
+          if (!response.ok) throw new Error(result?.error || result?.message || 'Could not save the product');
         }
 
         setUploadedImages([]);
@@ -336,1093 +451,659 @@ export const ProductForm = ({ onClose, category }) => {
     },
   });
 
-  const handleImageUpload = (files) => {
-    setUploadedImages((prev) => [...prev, ...files]);
+  const variantProblem = () => {
+    if (options.some((option) => option.values.length && !option.name.trim())) {
+      return 'Give every option a name, like Color or Size.';
+    }
+    const names = options.map((option) => option.name.trim().toLowerCase()).filter(Boolean);
+    if (new Set(names).size !== names.length) return 'Each option needs a different name.';
+    if (!combos.length) return 'Add at least one value, like Red or Small.';
+    for (const optionValues of combos) {
+      const row = variantRows[comboKey(optionValues)] || {};
+      const label = Object.values(optionValues).join(' / ');
+      if (!(parseFloat(row.price) > 0)) return `Add a price for ${label}.`;
+      if (row.stock === '' || row.stock === undefined || !(parseInt(row.stock, 10) >= 0)) {
+        return `Add the stock for ${label}.`;
+      }
+    }
+    return null;
   };
 
-  const removeImage = (index) => {
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
-  };
+  // New combinations start from the main price and stock so the table is never blank
+  useEffect(() => {
+    if (!hasVariants) return;
+    setVariantRows((rows) => {
+      let changed = false;
+      const next = { ...rows };
+      combos.forEach((optionValues) => {
+        const key = comboKey(optionValues);
+        if (!next[key]) {
+          next[key] = { price: String(formik.values.price || ''), stock: '0' };
+          changed = true;
+        }
+      });
+      return changed ? next : rows;
+    });
+  }, [combos, hasVariants]);
 
-  const handleRemoveExistingImage = (index) => {
-    formik.setFieldValue(
-      'images',
-      formik.values.images.filter((_, i) => i !== index)
-    );
+  const updateRow = (key, field, value) =>
+    setVariantRows((rows) => ({ ...rows, [key]: { ...rows[key], [field]: value } }));
+  const applyToAll = (field, value) =>
+    setVariantRows((rows) => Object.fromEntries(
+      combos.map((optionValues) => {
+        const key = comboKey(optionValues);
+        return [key, { ...rows[key], [field]: value }];
+      })
+    ));
+  const [bulkPrice, setBulkPrice] = useState('');
+  const [bulkStock, setBulkStock] = useState('');
+
+  const addCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) return setNewCategoryError('Type a category name');
+    try {
+      const created = await createCategory({ websiteId, name }).unwrap();
+      const createdId = created?.id || created?.data?.id || created?.category?.id;
+      if (createdId) formik.setFieldValue('categoryId', createdId);
+      setNewCategoryName('');
+      setNewCategoryError('');
+      setNewCategoryOpen(false);
+    } catch (error) {
+      setNewCategoryError(error?.data?.error || 'Could not add the category. Try again.');
+    }
   };
 
   const allImages = [...(formik.values.images || []), ...uploadedImages];
+  const saving = createLoading || updateLoading || isUploading;
+  const fieldError = (name) => (formik.touched[name] || formik.submitCount > 0) && formik.errors[name];
 
-  const completionItems = [
-    { condition: Boolean(formik.values.marketplaceCategory), label: 'Marketplace category' },
-    { condition: Boolean(formik.values.name.trim()), label: 'Product name' },
-    { condition: Boolean(formik.values.description.trim()), label: 'Description' },
-    { condition: Number(formik.values.price) > 0, label: 'Price' },
-    {
-      condition:
-        formik.values.stockQuantity !== '' &&
-        Number(formik.values.stockQuantity) >= 0,
-      label: 'Inventory quantity',
-    },
-    { condition: allImages.length > 0, label: 'Product images' },
-    ...(isSkincare
-      ? [
-          {
-            condition: formik.values.nicheAttributes.skinType.length > 0,
-            label: 'Suitable skin type',
-          },
-          {
-            condition: toStringList(formik.values.ingredientsText).length > 0,
-            label: 'Ingredients',
-          },
-        ]
-      : []),
-  ];
-
-  const completionPercentage = Math.round(
-    (completionItems.filter((item) => item.condition).length /
-      completionItems.length) *
-      100
-  );
-
-  if (productLoading && isEditMode) {
-    return <ProductFormSkeleton />;
-  }
+  if (productLoading && isEditMode) return <ProductFormSkeleton />;
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
-      {/* Enhanced Header */}
-      <div className="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeForm}
-                aria-label="Back to products"
-                className="rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  {isEditMode ? 'Edit Product' : 'Create New Product'}
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {isEditMode
-                    ? 'Update your product details and inventory'
-                    : 'Add a new product to your store catalog'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Progress Indicator */}
-              <div className="hidden md:flex items-center space-x-3">
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-700">
-                    {productFormConfigLoading
-                      ? 'Checking requirements…'
-                      : `${completionPercentage}% Complete`}
-                  </div>
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${completionPercentage}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  formik.values.status === 'draft'
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-green-100 text-green-800'
-                }`}
-              >
-                {formik.values.status === 'draft' ? 'Draft' : 'Active'}
-              </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={closeForm}
-                  disabled={createLoading || updateLoading || isUploading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={formik.handleSubmit}
-                  disabled={
-                    createLoading ||
-                    updateLoading ||
-                    isUploading ||
-                    productFormConfigLoading ||
-                    productFormConfigError ||
-                    !formik.isValid
-                  }
-                  className="min-w-[120px] shadow-sm"
-                >
-                  {createLoading || updateLoading || isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {isEditMode ? 'Updating...' : 'Creating...'}
-                    </>
-                  ) : isEditMode ? (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Update Product
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Product
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-muted/30 pb-28">
+      {/* Header */}
+      <div className="border-b bg-background">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
+          <Button type="button" variant="ghost" size="icon" aria-label={t('merchant.p2.backToProducts')} onClick={closeForm}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold">{isEditMode ? 'Edit product' : 'Add product'}</h1>
+            <p className="text-sm text-muted-foreground">{t('merchant.p2.fillInTheBasics')}</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Single Scroll Layout */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Status Alerts */}
-        <div className="mb-6 space-y-3">
-          {(createError || updateError) && (
-            <Alert
-              variant="destructive"
-              className="border-l-4 border-l-red-500"
+      <form
+        noValidate
+        onSubmit={formik.handleSubmit}
+        className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6"
+      >
+        {(submitError || productFormConfigError) && (
+          <Alert variant="destructive">
+            <AlertTitle>{t('merchant.p2.couldNotSave')}</AlertTitle>
+            <AlertDescription>
+              {submitError || 'Could not load your store settings. Refresh the page and try again.'}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Photos */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t('merchant.p2.photos')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProductImageUploader
+              images={allImages}
+              onImagesChange={(files) => setUploadedImages((prev) => [...prev, ...files])}
+              maxImages={10}
+              isUploading={isUploading}
+              uploadProgress={uploadProgress}
+              onValidationError={setUploadErrors}
+              onRemoveImage={(index) => {
+                if (index < formik.values.images.length) {
+                  formik.setFieldValue('images', formik.values.images.filter((_, i) => i !== index));
+                } else {
+                  const local = index - formik.values.images.length;
+                  setUploadedImages((prev) => prev.filter((_, i) => i !== local));
+                }
+              }}
+            />
+            {uploadErrors.length > 0 && (
+              <Alert variant="destructive" className="mt-3">
+                <AlertTitle>{t('merchant.p2.somePhotosWereNot')}</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-5">
+                    {uploadErrors.map((message) => <li key={message}>{message}</li>)}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Basics */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t('merchant.p.product')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Field label={t('merchant.p2.name')} htmlFor="name" required error={fieldError('name')}>
+              <Input
+                id="name"
+                name="name"
+                placeholder={t('merchant.p2.eGCottonT')}
+                className="h-11"
+                value={formik.values.name}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              />
+            </Field>
+            <Field
+              label={t('merchant.p2.description')}
+              htmlFor="description"
+              hint={`${formik.values.description.length}/1000`}
+              error={fieldError('description')}
             >
-              <AlertTitle className="flex items-center">
-                <X className="h-4 w-4 mr-2" />
-                Error
-              </AlertTitle>
-              <AlertDescription>
-                {error?.data?.error ||
-                  `Failed to ${
-                    isEditMode ? 'update' : 'create'
-                  } product. Please try again.`}
-              </AlertDescription>
-            </Alert>
-          )}
+              <Textarea
+                id="description"
+                name="description"
+                rows={3}
+                placeholder={t('merchant.p2.whatIsItAnd')}
+                value={formik.values.description}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              />
+            </Field>
 
-          {submitError && (
-            <Alert variant="destructive" className="border-l-4 border-l-red-500">
-              <AlertTitle>Product was not saved</AlertTitle>
-              <AlertDescription>{submitError}</AlertDescription>
-            </Alert>
-          )}
-
-          {productFormConfigError && (
-            <Alert variant="destructive" className="border-l-4 border-l-red-500">
-              <AlertTitle>Store requirements could not be loaded</AlertTitle>
-              <AlertDescription>
-                Refresh the page before creating a product. This prevents the
-                product from being submitted without required store-specific details.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {isSuccess && (
-            <Alert
-              variant="default"
-              className="border-l-4 border-l-green-500 bg-green-50"
-            >
-              <AlertTitle className="flex items-center text-green-900">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Success
-              </AlertTitle>
-              <AlertDescription className="text-green-800">
-                Product {isEditMode ? 'updated' : 'created'} successfully!
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Form Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Basic Information Section */}
-            <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-4 border-b bg-gradient-to-r from-gray-50 to-white rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Package className="h-5 w-5 text-blue-600" />
-                      </div>
-                      Product Information
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      Enter the basic details that customers will see
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setExpandedSections((prev) => ({
-                        ...prev,
-                        basic: !prev.basic,
-                      }))
-                    }
-                  >
-                    {expandedSections.basic ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-
-              <Collapsible open={expandedSections.basic}>
-                <CollapsibleContent>
-                  <CardContent className="pt-6 space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="marketplaceCategory" className="text-base font-medium mb-2 block">
-                          Marketplace category
-                        </Label>
-                        <Select value={formik.values.marketplaceCategory}
-                          onValueChange={(value) => formik.setFieldValue('marketplaceCategory', value)}>
-                          <SelectTrigger id="marketplaceCategory" className="h-11">
-                            <SelectValue placeholder="Choose a marketplace category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {marketplaceCategories.map((item) =>
-                              <SelectItem key={item} value={item}>{item}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        {formik.touched.marketplaceCategory && formik.errors.marketplaceCategory &&
-                          <p className="mt-1 text-sm text-red-600">{formik.errors.marketplaceCategory}</p>}
-                        {marketplaceCategoriesError &&
-                          <p className="mt-1 text-sm text-red-600">Could not load marketplace categories. Reload this page to try again.</p>}
-                      </div>
-
-                      <div>
-                        <Label
-                          htmlFor="name"
-                          className="flex items-center space-x-2 mb-2"
-                        >
-                          <span className="text-base font-medium">
-                            Product Name
-                          </span>
-                          <span className="text-red-500">*</span>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>
-                                  Use a descriptive name that customers will
-                                  search for
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          value={formik.values.name}
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          placeholder="e.g., Professional Camera Lens"
-                          className={`text-lg py-6 transition-colors ${
-                            formik.touched.name && formik.errors.name
-                              ? 'border-red-500 focus:border-red-500'
-                              : ''
-                          }`}
-                        />
-                        {formik.touched.name && formik.errors.name && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center">
-                            <X className="h-3 w-3 mr-1" />
-                            {formik.errors.name}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label
-                          htmlFor="description"
-                          className="flex items-center space-x-2 mb-2"
-                        >
-                          <span className="text-base font-medium">
-                            Description
-                          </span>
-                          <span className="text-red-500">*</span>
-                        </Label>
-                        <Textarea
-                          id="description"
-                          name="description"
-                          value={formik.values.description}
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          rows={5}
-                          placeholder="Describe your product features, benefits, and specifications..."
-                          className={`resize-none text-base transition-colors ${
-                            formik.touched.description &&
-                            formik.errors.description
-                              ? 'border-red-500 focus:border-red-500'
-                              : ''
-                          }`}
-                        />
-                        <div className="flex justify-between mt-2">
-                          {formik.touched.description &&
-                          formik.errors.description ? (
-                            <p className="text-red-600 text-sm flex items-center">
-                              <X className="h-3 w-3 mr-1" />
-                              {formik.errors.description}
-                            </p>
-                          ) : (
-                            <p className="text-muted-foreground text-sm">
-                              Write a detailed description to help customers
-                              understand your product
-                            </p>
-                          )}
-                          <span
-                            className={`text-sm font-medium ${
-                              formik.values.description.length > 800
-                                ? 'text-amber-600'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            {formik.values.description.length}/1000
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label
-                          htmlFor="categoryId"
-                          className="text-base font-medium mb-2 block"
-                        >
-                          Category
-                        </Label>
-                        <Select
-                          value={formik.values.categoryId}
-                          onValueChange={(value) =>
-                            formik.setFieldValue('categoryId', value)
+            <div className="grid gap-4 sm:grid-cols-2">
+              {websiteId && (
+                <Field label={t('merchant.p.category')} htmlFor="categoryId" error={newCategoryError}>
+                  {newCategoryOpen ? (
+                    <div className="flex gap-2">
+                      <Input
+                        id="categoryId"
+                        autoFocus
+                        className="h-11"
+                        placeholder={t('merchant.p2.newCategoryName')}
+                        value={newCategoryName}
+                        onChange={(event) => setNewCategoryName(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            addCategory();
                           }
-                        >
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="no-category">
-                              No Category
-                            </SelectItem>
-                            {categoriesLoading ? (
-                              <div className="space-y-2 p-2">
-                                {[1, 2, 3].map((i) => (
-                                  <Skeleton key={i} className="h-6 w-full" />
-                                ))}
-                              </div>
-                            ) : (
-                              categories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  {cat.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label
-                          htmlFor="sku"
-                          className="text-base font-medium mb-2 block"
-                        >
-                          SKU (Stock Keeping Unit)
-                        </Label>
-                        <Input
-                          id="sku"
-                          name="sku"
-                          value={formik.values.sku}
-                          onChange={formik.handleChange}
-                          placeholder="e.g., CAM-LENS-001"
-                          className="h-11"
-                        />
-                        <p className="text-muted-foreground text-sm mt-2">
-                          Unique identifier for inventory tracking
-                        </p>
-                      </div>
+                        }}
+                      />
+                      <Button type="button" className="h-11" onClick={addCategory} disabled={creatingCategory}>
+                        {creatingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-11 w-11"
+                        aria-label={t('merchant.p2.cancelNewCategory')}
+                        onClick={() => { setNewCategoryOpen(false); setNewCategoryError(''); }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-
-            {isSkincare && (
-              <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-4 border-b bg-gradient-to-r from-rose-50 to-white rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-xl font-semibold flex items-center gap-3">
-                        <div className="p-2 bg-rose-100 rounded-lg">
-                          <Sparkles className="h-5 w-5 text-rose-600" />
-                        </div>
-                        Skincare Details
-                      </CardTitle>
-                      <CardDescription className="mt-2">
-                        Help customers choose a product that suits their skin
-                      </CardDescription>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Select
+                        value={formik.values.categoryId}
+                        onValueChange={(value) => formik.setFieldValue('categoryId', value)}
+                      >
+                        <SelectTrigger id="categoryId" className="h-11 flex-1">
+                          <SelectValue placeholder={t('merchant.p2.noCategory')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NO_CATEGORY}>{t('merchant.p2.noCategory')}</SelectItem>
+                          {storeCategories.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 shrink-0"
+                        onClick={() => setNewCategoryOpen(true)}
+                      >
+                        <Plus className="mr-1 h-4 w-4" /> {t('merchant.p2.new')}
+                      </Button>
                     </div>
+                  )}
+                </Field>
+              )}
+
+              {hasMarketplace && (
+                <Field
+                  label={t('merchant.p2.marketplaceCategory')}
+                  htmlFor="marketplaceCategory"
+                  required={formik.values.marketplaceVisibility !== false}
+                  error={
+                    marketplaceCategoriesError
+                      ? 'Could not load marketplace categories. Refresh to try again.'
+                      : fieldError('marketplaceCategory')
+                  }
+                >
+                  <Select
+                    value={formik.values.marketplaceCategory || undefined}
+                    onValueChange={(value) => formik.setFieldValue('marketplaceCategory', value)}
+                  >
+                    <SelectTrigger id="marketplaceCategory" className="h-11 w-full">
+                      <SelectValue placeholder={t('merchant.p2.chooseOne')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {marketplaceCategories.map((item) => (
+                        <SelectItem key={item} value={item}>{item}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Price & stock */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t('merchant.p2.priceAndStock')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label={hasVariants ? 'Default price (USD)' : 'Price (USD)'}
+                htmlFor="price"
+                required={!hasVariants}
+                hint={hasVariants ? 'New variants start at this price.' : undefined}
+                error={fieldError('price')}
+              >
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="h-11"
+                  value={formik.values.price}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                />
+              </Field>
+              {!hasVariants && (
+                <Field label={t('merchant.p.stock')} htmlFor="stockQuantity" required error={fieldError('stockQuantity')}>
+                  <Input
+                    id="stockQuantity"
+                    name="stockQuantity"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    className="h-11"
+                    value={formik.values.stockQuantity}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                </Field>
+              )}
+            </div>
+
+            {/* Variants */}
+            <div className="rounded-xl border p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium">{t('merchant.p.variants')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('merchant.p2.sellItInDifferent')}
+                  </p>
+                </div>
+                <Switch
+                  aria-label={t('merchant.p2.thisProductHasVariants')}
+                  checked={hasVariants}
+                  onCheckedChange={setHasVariants}
+                />
+              </div>
+
+              {hasVariants && (
+                <div className="mt-4 space-y-4">
+                  {options.map((option, index) => (
+                    <div key={index} className="grid gap-2 sm:grid-cols-[160px_1fr_auto] sm:items-start">
+                      <Input
+                        aria-label={`Option ${index + 1} name`}
+                        list="variant-option-presets"
+                        placeholder={t('merchant.p2.optionEGColor')}
+                        className="h-11"
+                        value={option.name}
+                        onChange={(event) => setOptions((list) =>
+                          list.map((item, i) => (i === index ? { ...item, name: event.target.value } : item)))}
+                      />
+                      <ValueChips
+                        id={`option-values-${index}`}
+                        values={option.values}
+                        placeholder={optionType(option.name) === 'size' ? 'S, M, L' : 'Red, Blue — press Enter'}
+                        onChange={(values) => setOptions((list) =>
+                          list.map((item, i) => (i === index ? { ...item, values } : item)))}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-11 w-11"
+                        aria-label={`Remove option ${option.name || index + 1}`}
+                        onClick={() => setOptions((list) => list.filter((_, i) => i !== index))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <datalist id="variant-option-presets">
+                    {OPTION_PRESETS.map((preset) => <option key={preset} value={preset} />)}
+                  </datalist>
+                  {options.length < MAX_OPTIONS && (
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setExpandedSections((prev) => ({
-                          ...prev,
-                          niche: !prev.niche,
-                        }))
-                      }
-                      aria-label={`${expandedSections.niche ? 'Collapse' : 'Expand'} skincare details`}
-                    >
-                      {expandedSections.niche ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-
-                <Collapsible open={expandedSections.niche}>
-                  <CollapsibleContent>
-                    <CardContent className="pt-6 space-y-6">
-                      <div>
-                        <Label className="text-base font-medium">
-                          Suitable Skin Types <span className="text-red-500">*</span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1 mb-3">
-                          Select every skin type this product is designed for.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {SKIN_TYPES.map((skinType) => {
-                            const selected = formik.values.nicheAttributes.skinType.includes(
-                              skinType.value
-                            );
-
-                            return (
-                              <Button
-                                key={skinType.value}
-                                type="button"
-                                variant={selected ? 'default' : 'outline'}
-                                size="sm"
-                                aria-pressed={selected}
-                                onClick={() => {
-                                  const current = formik.values.nicheAttributes.skinType;
-                                  const next = selected
-                                    ? current.filter((item) => item !== skinType.value)
-                                    : [...current, skinType.value];
-                                  formik.setFieldValue('nicheAttributes.skinType', next);
-                                  formik.setFieldTouched('nicheAttributes.skinType', true, false);
-                                  setSubmitError('');
-                                }}
-                                className="rounded-full"
-                              >
-                                {skinType.label}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                        {formik.touched.nicheAttributes?.skinType &&
-                          formik.errors.nicheAttributes?.skinType && (
-                            <p className="text-red-600 text-sm mt-2 flex items-center">
-                              <X className="h-3 w-3 mr-1" />
-                              {formik.errors.nicheAttributes.skinType}
-                            </p>
-                          )}
-                      </div>
-
-                      <div>
-                        <Label
-                          htmlFor="ingredientsText"
-                          className="text-base font-medium"
-                        >
-                          Ingredients <span className="text-red-500">*</span>
-                        </Label>
-                        <Textarea
-                          id="ingredientsText"
-                          name="ingredientsText"
-                          value={formik.values.ingredientsText}
-                          onChange={(event) => {
-                            formik.handleChange(event);
-                            setSubmitError('');
-                          }}
-                          onBlur={formik.handleBlur}
-                          rows={3}
-                          placeholder="e.g., Water, glycerin, hyaluronic acid"
-                          className={`mt-2 resize-none ${
-                            formik.touched.ingredientsText &&
-                            formik.errors.ingredientsText
-                              ? 'border-red-500 focus:border-red-500'
-                              : ''
-                          }`}
-                        />
-                        {formik.touched.ingredientsText &&
-                        formik.errors.ingredientsText ? (
-                          <p className="text-red-600 text-sm mt-1 flex items-center">
-                            <X className="h-3 w-3 mr-1" />
-                            {formik.errors.ingredientsText}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Separate ingredients with commas or new lines.
-                          </p>
-                        )}
-                      </div>
-
-                      <Separator />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
-                          <Label htmlFor="usageInstructions" className="text-base font-medium">
-                            Usage Instructions
-                          </Label>
-                          <Textarea
-                            id="usageInstructions"
-                            value={formik.values.nicheAttributes.usageInstructions}
-                            onChange={(event) =>
-                              formik.setFieldValue(
-                                'nicheAttributes.usageInstructions',
-                                event.target.value
-                              )
-                            }
-                            rows={3}
-                            placeholder="Explain how and when customers should use this product"
-                            className="mt-2 resize-none"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="volume" className="text-base font-medium">
-                            Volume (ml)
-                          </Label>
-                          <Input
-                            id="volume"
-                            type="number"
-                            min="0"
-                            value={formik.values.nicheAttributes.volume}
-                            onChange={(event) =>
-                              formik.setFieldValue(
-                                'nicheAttributes.volume',
-                                event.target.value
-                              )
-                            }
-                            placeholder="e.g., 100"
-                            className="mt-2 h-11"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="spf" className="text-base font-medium">
-                            SPF
-                          </Label>
-                          <Input
-                            id="spf"
-                            type="number"
-                            min="0"
-                            value={formik.values.nicheAttributes.spf}
-                            onChange={(event) =>
-                              formik.setFieldValue(
-                                'nicheAttributes.spf',
-                                event.target.value
-                              )
-                            }
-                            placeholder="e.g., 50"
-                            className="mt-2 h-11"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div>
-                            <p className="font-medium">Cruelty-free</p>
-                            <p className="text-xs text-muted-foreground">
-                              Not tested on animals
-                            </p>
-                          </div>
-                          <Switch
-                            checked={formik.values.nicheAttributes.crueltyFree}
-                            onCheckedChange={(checked) =>
-                              formik.setFieldValue(
-                                'nicheAttributes.crueltyFree',
-                                checked
-                              )
-                            }
-                            aria-label="Cruelty-free product"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div>
-                            <p className="font-medium">Vegan</p>
-                            <p className="text-xs text-muted-foreground">
-                              Contains no animal-derived ingredients
-                            </p>
-                          </div>
-                          <Switch
-                            checked={formik.values.nicheAttributes.vegan}
-                            onCheckedChange={(checked) =>
-                              formik.setFieldValue('nicheAttributes.vegan', checked)
-                            }
-                            aria-label="Vegan product"
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Collapsible>
-              </Card>
-            )}
-
-            {/* Images Section */}
-            <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-4 border-b bg-gradient-to-r from-gray-50 to-white rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <ImageIcon className="h-5 w-5 text-purple-600" />
-                      </div>
-                      Product Images
-                      {allImages.length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                          {allImages.length} uploaded
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      Add high-quality images to showcase your product
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setExpandedSections((prev) => ({
-                        ...prev,
-                        media: !prev.media,
-                      }))
-                    }
-                  >
-                    {expandedSections.media ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-
-              <Collapsible open={expandedSections.media}>
-                <CollapsibleContent>
-                  <CardContent className="pt-6">
-                    <ProductImageUploader
-                      images={allImages}
-                      onImagesChange={handleImageUpload}
-                      maxImages={10}
-                      isUploading={isUploading}
-                      uploadProgress={uploadProgress}
-                      onValidationError={setUploadErrors}
-                      onRemoveImage={(index) => {
-                        if (index < formik.values.images.length) {
-                          handleRemoveExistingImage(index);
-                        } else {
-                          removeImage(index - formik.values.images.length);
-                        }
+                      onClick={() => {
+                        const used = options.map((option) => option.name.trim().toLowerCase());
+                        const next = OPTION_PRESETS.find((preset) => !used.includes(preset.toLowerCase())) || '';
+                        setOptions((list) => [...list, { name: next, values: [] }]);
                       }}
-                    />
-                    {uploadErrors.length > 0 && (
-                      <Alert variant="destructive" className="mt-4">
-                        <AlertTitle>Some images were not added</AlertTitle>
-                        <AlertDescription>
-                          <ul className="list-disc pl-5">
-                            {uploadErrors.map((message) => <li key={message}>{message}</li>)}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    {formik.touched.images && formik.errors.images && (
-                      <Alert variant="destructive" className="mt-4">
-                        <AlertTitle>Image Required</AlertTitle>
-                        <AlertDescription>
-                          {formik.errors.images}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
+                    >
+                      <Plus className="mr-1 h-4 w-4" /> {t('merchant.p2.addOption')}
+                    </Button>
+                  )}
 
-            {/* Pricing & Inventory Section */}
-            <Card className="shadow-sm border-0 hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-4 border-b bg-gradient-to-r from-gray-50 to-white rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <DollarSign className="h-5 w-5 text-green-600" />
-                      </div>
-                      Pricing & Inventory
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      Set your pricing and manage stock levels
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setExpandedSections((prev) => ({
-                        ...prev,
-                        pricing: !prev.pricing,
-                      }))
-                    }
-                  >
-                    {expandedSections.pricing ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-
-              <Collapsible open={expandedSections.pricing}>
-                <CollapsibleContent>
-                  <CardContent className="pt-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label
-                          htmlFor="price"
-                          className="flex items-center space-x-2 mb-2 text-base font-medium"
-                        >
-                          <span>Price</span>
-                          <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <DollarSign className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <Input
-                            id="price"
-                            name="price"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={formik.values.price}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            placeholder="0.00"
-                            className={`pl-10 h-11 text-base transition-colors ${
-                              formik.touched.price && formik.errors.price
-                                ? 'border-red-500 focus:border-red-500'
-                                : ''
-                            }`}
-                          />
-                        </div>
-                        {formik.touched.price && formik.errors.price && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center">
-                            <X className="h-3 w-3 mr-1" />
-                            {formik.errors.price}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label
-                          htmlFor="comparePrice"
-                          className="text-base font-medium mb-2 block"
-                        >
-                          Compare at Price
-                        </Label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <DollarSign className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <Input
-                            id="comparePrice"
-                            name="comparePrice"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={formik.values.comparePrice}
-                            onChange={formik.handleChange}
-                            placeholder="0.00"
-                            className="pl-10 h-11"
-                          />
-                        </div>
-                        <p className="text-muted-foreground text-sm mt-2">
-                          Original price for showing discounts
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="max-w-md">
-                      <Label
-                        htmlFor="stockQuantity"
-                        className="flex items-center space-x-2 mb-2 text-base font-medium"
-                      >
-                        <span>Stock Quantity</span>
-                        <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                          <Package className="h-5 w-5 text-muted-foreground" />
-                        </div>
+                  {combos.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-end gap-2 rounded-lg bg-muted/50 p-2">
+                        <span className="w-full text-xs text-muted-foreground sm:w-auto sm:self-center">{t('merchant.p2.setAll')}</span>
                         <Input
-                          id="stockQuantity"
-                          name="stockQuantity"
+                          aria-label={t('merchant.p2.priceForAllVariants')}
                           type="number"
+                          inputMode="decimal"
+                          step="0.01"
                           min="0"
-                          value={formik.values.stockQuantity}
-                          onChange={formik.handleChange}
-                          onBlur={formik.handleBlur}
-                          placeholder="0"
-                          className={`pl-10 h-11 text-base transition-colors ${
-                            formik.touched.stockQuantity &&
-                            formik.errors.stockQuantity
-                              ? 'border-red-500 focus:border-red-500'
-                              : ''
-                          }`}
+                          placeholder={t('merchant.p.price')}
+                          className="h-11 w-28"
+                          value={bulkPrice}
+                          onChange={(event) => setBulkPrice(event.target.value)}
                         />
-                      </div>
-                      {formik.touched.stockQuantity &&
-                        formik.errors.stockQuantity && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center">
-                            <X className="h-3 w-3 mr-1" />
-                            {formik.errors.stockQuantity}
-                          </p>
-                        )}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Status Card */}
-            <Card className="shadow-sm border-0 sticky top-24">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold">
-                  Product Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <div>
-                    <p className="font-medium">Visibility</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formik.values.status === 'draft'
-                        ? 'Hidden from store'
-                        : 'Visible to customers'}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formik.values.status === 'active'}
-                    onCheckedChange={(checked) =>
-                      formik.setFieldValue(
-                        'status',
-                        checked ? 'active' : 'draft'
-                      )
-                    }
-                  />
-                </div>
-
-                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-                  <div className="flex items-start space-x-2">
-                    <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-900">
-                        Quick Save
-                      </p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Images upload when you create or update the product.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Completion Card */}
-            <Card className="shadow-sm border-0">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold">
-                  Completion Checklist
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      Overall Progress
-                    </span>
-                    <span className="text-lg font-bold text-green-600">
-                      {productFormConfigLoading ? '—' : `${completionPercentage}%`}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3">
-                    {completionItems.map((item) => (
-                      <div key={item.label} className="flex items-center space-x-3">
-                        <div
-                          className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
-                            item.condition
-                              ? 'bg-green-100 text-green-600'
-                              : 'bg-gray-100 text-gray-400'
-                          }`}
+                        <Input
+                          aria-label={t('merchant.p2.stockForAllVariants')}
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          placeholder={t('merchant.p.stock')}
+                          className="h-11 w-24"
+                          value={bulkStock}
+                          onChange={(event) => setBulkStock(event.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-11"
+                          onClick={() => {
+                            if (bulkPrice !== '') applyToAll('price', bulkPrice);
+                            if (bulkStock !== '') applyToAll('stock', bulkStock);
+                          }}
                         >
-                          {item.condition ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <div className="w-2 h-2 rounded-full bg-current" />
-                          )}
+                          {t('merchant.p2.apply')}
+                        </Button>
+                      </div>
+
+                      <div className="divide-y rounded-lg border">
+                        <div className="hidden grid-cols-[1fr_110px_90px] gap-3 px-3 py-2 text-xs font-medium text-muted-foreground sm:grid">
+                          <span>{t('merchant.p2.variant')}</span><span>{t('merchant.p2.priceUsd')}</span><span>{t('merchant.p.stock')}</span>
                         </div>
-                        <span
-                          className={`text-sm ${
-                            item.condition ? 'text-gray-900' : 'text-gray-500'
-                          }`}
-                        >
-                          {item.label}
-                          <span className="text-red-500 ml-1">*</span>
-                        </span>
+                        {combos.map((optionValues) => {
+                          const key = comboKey(optionValues);
+                          const row = variantRows[key] || { price: '', stock: '' };
+                          const label = Object.values(optionValues).join(' / ');
+                          return (
+                            <div key={key} className="grid grid-cols-2 gap-2 px-3 py-2 sm:grid-cols-[1fr_110px_90px] sm:items-center sm:gap-3">
+                              <span className="col-span-2 text-sm font-medium sm:col-span-1">{label}</span>
+                              <Input
+                                aria-label={`Price for ${label}`}
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                min="0"
+                                placeholder={t('merchant.p.price')}
+                                className="h-11"
+                                value={row.price}
+                                onChange={(event) => updateRow(key, 'price', event.target.value)}
+                              />
+                              <Input
+                                aria-label={`Stock for ${label}`}
+                                type="number"
+                                inputMode="numeric"
+                                min="0"
+                                placeholder={t('merchant.p.stock')}
+                                className="h-11"
+                                value={row.stock}
+                                onChange={(event) => updateRow(key, 'stock', event.target.value)}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-xs text-muted-foreground">
+                        {combos.length} variant{combos.length === 1 ? '' : 's'} · total stock{' '}
+                        {combos.reduce((sum, optionValues) =>
+                          sum + (parseInt(variantRows[comboKey(optionValues)]?.stock, 10) || 0), 0)}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Quick Actions */}
-            <Card className="shadow-sm border-0">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold">
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() =>
-                    setExpandedSections({
-                      basic: true,
-                      niche: true,
-                      media: true,
-                      pricing: true,
-                      organization: true,
-                    })
-                  }
-                >
-                  Expand All Sections
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() =>
-                    setExpandedSections({
-                      basic: false,
-                      niche: false,
-                      media: false,
-                      pricing: false,
-                      organization: false,
-                    })
-                  }
-                >
-                  Collapse All Sections
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={async () => {
-                    await formik.setFieldValue('status', 'draft');
-                    await formik.submitForm();
-                  }}
-                  disabled={
-                    createLoading ||
-                    updateLoading ||
-                    isUploading ||
-                    productFormConfigLoading ||
-                    productFormConfigError
-                  }
-                >
-                  Save as Draft
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+        {/* Skincare stores must describe skin type and ingredients */}
+        {isSkincare && (
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t('merchant.p2.skincareDetails')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Field label={t('merchant.p2.suitableSkinType')} required error={formik.submitCount > 0 && formik.errors.nicheAttributes?.skinType}>
+                <div className="flex flex-wrap gap-2">
+                  {SKIN_TYPES.map((type) => {
+                    const selected = formik.values.nicheAttributes.skinType.includes(type.value);
+                    return (
+                      <Button
+                        key={type.value}
+                        type="button"
+                        size="sm"
+                        variant={selected ? 'default' : 'outline'}
+                        className="h-11"
+                        aria-pressed={selected}
+                        onClick={() => formik.setFieldValue(
+                          'nicheAttributes.skinType',
+                          selected
+                            ? formik.values.nicheAttributes.skinType.filter((value) => value !== type.value)
+                            : [...formik.values.nicheAttributes.skinType, type.value]
+                        )}
+                      >
+                        {type.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <Field
+                label={t('merchant.p2.ingredients')}
+                htmlFor="ingredientsText"
+                required
+                hint="Separate with commas"
+                error={(formik.touched.ingredientsText || formik.submitCount > 0) && formik.errors.ingredientsText}
+              >
+                <Textarea
+                  id="ingredientsText"
+                  name="ingredientsText"
+                  rows={2}
+                  value={formik.values.ingredientsText}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                />
+              </Field>
+            </CardContent>
+          </Card>
+        )}
 
-// Skeleton Loading Component (same as before)
-const ProductFormSkeleton = () => {
-  return (
-    <div className="min-h-screen bg-gray-50/30">
-      <div className="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <div>
-                <Skeleton className="h-7 w-48 mb-2" />
-                <Skeleton className="h-4 w-64" />
+        {/* Everything optional lives here, closed by default */}
+        <Card className="border-0 shadow-sm">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between px-6 py-4 text-left"
+            aria-expanded={showMore}
+            onClick={() => setShowMore((open) => !open)}
+          >
+            <span>
+              <span className="block font-semibold">{t('merchant.p2.moreOptions')}</span>
+              <span className="block text-sm text-muted-foreground">{t('merchant.p2.salePriceSkuWhere')}</span>
+            </span>
+            <ChevronDown className={`h-5 w-5 transition-transform ${showMore ? 'rotate-180' : ''}`} />
+          </button>
+          {showMore && (
+            <CardContent className="space-y-4 border-t pt-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={t('merchant.p2.compareAtPriceUsd')} htmlFor="comparePrice" hint="The old price, shown crossed out">
+                  <Input
+                    id="comparePrice"
+                    name="comparePrice"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    className="h-11"
+                    value={formik.values.comparePrice}
+                    onChange={formik.handleChange}
+                  />
+                </Field>
+                <Field label="SKU" htmlFor="sku" hint="Leave empty and we make one">
+                  <Input
+                    id="sku"
+                    name="sku"
+                    className="h-11"
+                    value={formik.values.sku}
+                    onChange={formik.handleChange}
+                  />
+                </Field>
               </div>
-            </div>
-            <div className="flex space-x-2">
-              <Skeleton className="h-10 w-24" />
-              <Skeleton className="h-10 w-32" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3 space-y-6">
-            <Skeleton className="h-12 w-full" />
-            <Card className="shadow-sm border-0">
-              <CardHeader>
-                <Skeleton className="h-6 w-48 mb-2" />
-                <Skeleton className="h-4 w-64" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <div className="grid grid-cols-2 gap-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+              {isSkincare && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={t('merchant.p2.sizeVolume')} htmlFor="volume">
+                    <Input
+                      id="volume"
+                      name="nicheAttributes.volume"
+                      placeholder={t('merchant.p2.eG50ml')}
+                      className="h-11"
+                      value={formik.values.nicheAttributes.volume}
+                      onChange={formik.handleChange}
+                    />
+                  </Field>
+                  <Field label={t('merchant.p2.spf')} htmlFor="spf">
+                    <Input
+                      id="spf"
+                      name="nicheAttributes.spf"
+                      className="h-11"
+                      value={formik.values.nicheAttributes.spf}
+                      onChange={formik.handleChange}
+                    />
+                  </Field>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:col-span-1 space-y-6">
-            <Skeleton className="h-48 w-full rounded-lg" />
-            <Skeleton className="h-32 w-full rounded-lg" />
+              )}
+
+              <div className="space-y-2">
+                <ToggleRow
+                  title={t('merchant.p2.visible')}
+                  description={formik.values.status === 'active' ? 'Customers can see and buy it' : 'Saved as a draft, hidden'}
+                  checked={formik.values.status === 'active'}
+                  onChange={(checked) => formik.setFieldValue('status', checked ? 'active' : 'draft')}
+                />
+                {hasMarketplace && (
+                  <ToggleRow
+                    title={t('merchant.p.rentifyMarketplace2')}
+                    description={formik.values.marketplaceVisibility === false ? 'Not listed on the marketplace' : 'Listed once your store is approved'}
+                    checked={formik.values.marketplaceVisibility !== false}
+                    onChange={(checked) => formik.setFieldValue('marketplaceVisibility', checked ? null : false)}
+                  />
+                )}
+                {websiteId && (
+                  <ToggleRow
+                    title={t('merchant.p2.yourOnlineStore')}
+                    description={formik.values.storefrontVisibility ? 'Shown on your website' : 'Hidden from your website'}
+                    checked={formik.values.storefrontVisibility}
+                    onChange={(checked) => formik.setFieldValue('storefrontVisibility', checked)}
+                  />
+                )}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Save bar stays in reach on long forms and on phones */}
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur">
+          <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
+            <Button type="button" variant="ghost" className="h-11" onClick={closeForm} disabled={saving}>
+              {t('merchant.p.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              className="h-11 min-w-[140px]"
+              disabled={saving || productFormConfigLoading || productFormConfigError}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isUploading && uploadProgress > 0 ? `Uploading ${uploadProgress}%` : 'Saving…'}
+                </>
+              ) : isEditMode ? 'Save changes' : 'Add product'}
+            </Button>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
+
+const ToggleRow = ({ title, description, checked, onChange }) => (
+  <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/50 p-3">
+    <div>
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+    <Switch aria-label={title} checked={checked} onCheckedChange={onChange} />
+  </div>
+);
+
+const ProductFormSkeleton = () => (
+  <div className="min-h-screen bg-muted/30">
+    <div className="border-b bg-background">
+      <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+      </div>
+    </div>
+    <div className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6">
+      <Skeleton className="h-40 w-full rounded-xl" />
+      <Skeleton className="h-56 w-full rounded-xl" />
+      <Skeleton className="h-32 w-full rounded-xl" />
+    </div>
+  </div>
+);
 
 export default ProductForm;

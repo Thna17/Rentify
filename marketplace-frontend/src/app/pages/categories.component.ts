@@ -3,30 +3,31 @@ import { RouterLink } from '@angular/router';
 import { CatalogService } from '../core/catalog/catalog.service';
 import { SeoService } from '../core/seo/seo.service';
 import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../core/i18n/category-text.pipe';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 
 @Component({
   selector: 'app-categories',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent, TranslatePipe],
+  imports: [CategoryTextPipe, RouterLink, NavbarComponent, FooterComponent, IconComponent, TranslatePipe],
   template: `
     <app-navbar />
     <main class="container directory">
-      <nav class="crumbs" aria-label="Breadcrumb">
+      <nav class="crumbs" [attr.aria-label]="'common.breadcrumb' | translate">
         <a routerLink="/">{{ 'nav.home' | translate }}</a>
         <ui-icon name="chevron-right" [size]="12" />
         <span aria-current="page">{{ 'nav.categories' | translate }}</span>
       </nav>
       <header class="directory-head">
         <div>
-          <span class="eyebrow">THE MARKETPLACE, AT A GLANCE</span>
-          <h1>Find your next <span>everyday favourite.</span></h1>
-          <p>Fresh essentials, thoughtful gifts and local finds. Explore a little of everything.</p>
+          <span class="eyebrow">{{ 'categories.eyebrow' | translate }}</span>
+          <h1>{{ 'categories.titleLead' | translate }} <span>{{ 'categories.titleEmphasis' | translate }}</span></h1>
+          <p>{{ 'categories.heroBody' | translate }}</p>
         </div>
         <label class="category-search">
           <ui-icon name="search" [size]="20" />
-          <input type="search" aria-label="Search categories" placeholder="What are you looking for?"
+          <input type="search" [attr.aria-label]="'categories.searchCategories' | translate" [placeholder]="'categories.searchPlaceholder' | translate"
             [value]="query()" (input)="query.set($any($event.target).value)" />
         </label>
       </header>
@@ -39,7 +40,7 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
         <div class="category-grid">
           @for (category of filteredCategories(); track category.slug) {
             <article class="category-card" [attr.data-category]="category.slug">
-              <a class="category-cover" [routerLink]="['/categories', category.slug]" [attr.aria-label]="category.name">
+              <a class="category-cover" [routerLink]="['/categories', category.slug]" [attr.aria-label]="category | categoryText">
                 <span class="category-number">0{{ categories.indexOf(category) + 1 }}</span>
                 @if (!failedImages().has(category.slug)) {
                   <img [src]="'/categories/' + category.slug + '.png'" alt="" loading="lazy" (error)="imageFailed(category.slug)" />
@@ -49,11 +50,11 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
                 <span class="cover-arrow"><ui-icon name="arrow-right" [size]="20" /></span>
               </a>
               <div class="category-copy">
-                <a class="category-title" [routerLink]="['/categories', category.slug]"><h3>{{ category.name }}</h3></a>
-                <p>{{ category.description }}</p>
+                <a class="category-title" [routerLink]="['/categories', category.slug]"><h3>{{ category | categoryText }}</h3></a>
+                <p>{{ category | categoryText: 'description' }}</p>
                 <div class="subcategory-links">
                   @for (sub of category.subcategories.slice(0, 3); track sub.slug) {
-                    <a [routerLink]="['/categories', category.slug]" [queryParams]="{ sub: sub.slug }">{{ sub.name }}</a>
+                    <a [routerLink]="['/categories', category.slug]" [queryParams]="{ sub: sub.slug }">{{ sub | categoryText }}</a>
                   }
                 </div>
                 <a class="category-bottom" [routerLink]="['/categories', category.slug]">
@@ -73,21 +74,21 @@ import { IconComponent } from '../components/shared/ui/icon/icon.component';
           } @empty {
             <div class="empty-state">
               <ui-icon name="search" [size]="32" />
-              <h3>No categories found</h3>
-              <p>Try a different word, like food, clothing or gifts.</p>
-              <button type="button" (click)="query.set('')">Show all categories</button>
+              <h3>{{ 'categories.noCategoriesFound' | translate }}</h3>
+              <p>{{ 'categories.noCategoriesBody' | translate }}</p>
+              <button type="button" (click)="query.set('')">{{ 'categories.showAll' | translate }}</button>
             </div>
           }
         </div>
       </section>
 
       <section class="more-section" aria-labelledby="more-title">
-        <div class="section-heading"><h2 id="more-title">More ways to explore</h2><span>Make a good find</span></div>
+        <div class="section-heading"><h2 id="more-title">{{ 'categories.moreWays' | translate }}</h2><span>{{ 'categories.makeAGoodFind' | translate }}</span></div>
         <div class="explore-grid">
           @for (item of shortcuts; track item.key) {
             <a class="explore-link" [routerLink]="item.link" [queryParams]="item.params">
               <img [src]="'/categories/' + item.key + '.png'" alt="" loading="lazy" />
-              <div><h3>{{ item.title }}</h3><p>{{ item.description }}</p></div>
+              <div><h3>{{ item.title | translate }}</h3><p>{{ item.description | translate }}</p></div>
               <ui-icon name="arrow-right" [size]="20" />
             </a>
           }
@@ -169,9 +170,9 @@ export class CategoriesComponent {
         .some(value => value.toLowerCase().includes(query)));
   });
   protected readonly shortcuts = [
-    { key: 'stores', title: 'Meet the stores', description: 'Discover the sellers behind your finds.', link: '/stores', params: {} },
-    { key: 'gifts', title: 'A little something special', description: 'Thoughtful gifts for every occasion.', link: '/categories/arts-culture', params: { sub: 'souvenirs-gifts' } },
-    { key: 'discount', title: 'Find a good deal', description: 'Explore products currently on sale.', link: '/products', params: { sale: '1' } },
+    { key: 'stores', title: 'categories.shortcut.storesTitle', description: 'categories.shortcut.storesBody', link: '/stores', params: {} },
+    { key: 'gifts', title: 'categories.shortcut.giftsTitle', description: 'categories.shortcut.giftsBody', link: '/categories/arts-culture', params: { sub: 'souvenirs-gifts' } },
+    { key: 'discount', title: 'categories.shortcut.dealsTitle', description: 'categories.shortcut.dealsBody', link: '/products', params: { sale: '1' } },
   ];
 
   constructor() {

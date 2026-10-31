@@ -100,3 +100,35 @@ test('Store actor auth ignores Customer cookie and uses Core after stale staff t
   assert.equal(req.user.type, 'user');
   assert.equal(called, true);
 });
+
+test('Store actor auth uses the owner session when the staff cookie belongs to another store', async () => {
+  const middleware = createVerifyStoreActor({
+    validateStaff: async () => ({ valid: true, entity: { id: 'staff-id', merchantId: 'other-owner' },
+      permissions: ['manage_pos'] }),
+    findOwnerId: async (storeId) => { assert.equal(storeId, 'store-1'); return 'owner-id'; },
+    verifyMerchant: createVerifyCoreBuyer({
+      errorMessage: 'Merchant authentication required',
+      validate: async () => ({ data: { valid: true, entity: { id: 'owner-id' } } }),
+    }),
+  });
+  const req = { params: { storeId: 'store-1' },
+    cookies: { staffAccessToken: 'staff-token', userAccessToken: 'owner-token' } };
+  let called = false;
+  await middleware(req, response(), () => { called = true; });
+  assert.equal(req.user.type, 'user');
+  assert.equal(req.user.id, 'owner-id');
+  assert.equal(called, true);
+});
+
+test('Store actor auth keeps staff identity for its own merchant store', async () => {
+  const middleware = createVerifyStoreActor({
+    validateStaff: async () => ({ valid: true, entity: { id: 'staff-id', merchantId: 'owner-id' },
+      permissions: ['manage_pos'] }),
+    findOwnerId: async () => 'owner-id',
+    verifyMerchant: () => assert.fail('Staff of this store must stay staff'),
+  });
+  const req = { params: { storeId: 'store-1' },
+    cookies: { staffAccessToken: 'staff-token', userAccessToken: 'owner-token' } };
+  await middleware(req, response(), () => {});
+  assert.equal(req.user.type, 'staff');
+});

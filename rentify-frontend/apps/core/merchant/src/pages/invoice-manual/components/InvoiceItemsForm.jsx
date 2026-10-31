@@ -66,7 +66,7 @@ export const InvoiceItemsForm = ({ invoiceData, addItem, updateItem, removeItem 
                     variant="ghost"
                     size="icon"
                     onClick={() => removeItem(item.id)}
-                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    className="h-11 w-11 sm:h-9 sm:w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -152,7 +152,7 @@ export const InvoiceItemsForm = ({ invoiceData, addItem, updateItem, removeItem 
                     variant="ghost"
                     size="icon"
                     onClick={() => removeItem(item.id)}
-                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="h-11 w-11 sm:h-9 sm:w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

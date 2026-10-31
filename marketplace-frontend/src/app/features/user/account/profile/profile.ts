@@ -4,47 +4,48 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { NavbarComponent } from '../../../../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../../../../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../../../../components/shared/ui/icon/icon.component';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-profile',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent],
+  imports: [TranslatePipe, RouterLink, NavbarComponent, FooterComponent, IconComponent],
   template: `
     <app-navbar />
 
     <section class="container profile">
-      <h1>My profile</h1>
+      <h1>{{ 'nav.myProfile' | translate }}</h1>
 
       @if (user(); as currentUser) {
         <div class="grid">
           <article class="card details">
-            <h2>Account details</h2>
+            <h2>{{ 'profile.accountDetails' | translate }}</h2>
             <dl>
-              <dt>Name</dt>
+              <dt>{{ 'profile.name' | translate }}</dt>
               <dd>{{ currentUser.name }}</dd>
-              <dt>Email</dt>
+              <dt>{{ 'profile.email' | translate }}</dt>
               <dd>{{ currentUser.email }}</dd>
               @if (currentUser.phone) {
-                <dt>Phone</dt>
+                <dt>{{ 'orderDetail.phone' | translate }}</dt>
                 <dd>{{ currentUser.phone }}</dd>
               }
             </dl>
 
             <div class="actions">
               <button class="btn btn-primary btn-sm" routerLink="/orders">
-                View my orders
+                {{ 'profile.viewMyOrders' | translate }}
               </button>
               <a
                 class="btn btn-outline btn-sm"
                 [href]="changePasswordUrl"
               >
-                Change password
+                {{ 'profile.changePassword' | translate }}
               </a>
               <button
                 class="btn btn-ghost btn-sm"
                 (click)="signOut()"
                 [disabled]="signingOut()"
               >
-                {{ signingOut() ? 'Signing out…' : 'Sign out' }}
+                {{ (signingOut() ? 'profile.signingOut' : 'nav.signOut') | translate }}
               </button>
             </div>
           </article>
@@ -53,25 +54,25 @@ import { IconComponent } from '../../../../components/shared/ui/icon/icon.compon
             <article class="card info-card">
               <span class="info-icon"><ui-icon name="map-pin" [size]="17" /></span>
               <div>
-                <strong>Delivery location</strong>
-                <span>No saved address yet</span>
-                <small>Address management will appear after account sync is connected.</small>
+                <strong>{{ 'profile.deliveryLocation' | translate }}</strong>
+                <span>{{ 'profile.noSavedAddress' | translate }}</span>
+                <small>{{ 'profile.addressPending' | translate }}</small>
               </div>
             </article>
             <article class="card info-card">
               <span class="info-icon"><ui-icon name="phone" [size]="17" /></span>
               <div>
-                <strong>Contact for order updates</strong>
-                <span>{{ currentUser.phone || 'No phone number added' }}</span>
+                <strong>{{ 'profile.contactForUpdates' | translate }}</strong>
+                <span>{{ currentUser.phone || ('profile.noPhone' | translate) }}</span>
                 <small>{{ currentUser.email }}</small>
               </div>
             </article>
             <article class="card info-card security-card">
               <span class="info-icon"><ui-icon name="shield" [size]="17" /></span>
               <div>
-                <strong>Account security</strong>
-                <span>Password-protected buyer account</span>
-                <a routerLink="/account/change-password">Manage password</a>
+                <strong>{{ 'profile.accountSecurity' | translate }}</strong>
+                <span>{{ 'profile.passwordProtected' | translate }}</span>
+                <a routerLink="/account/change-password">{{ 'profile.managePassword' | translate }}</a>
               </div>
             </article>
           </div>

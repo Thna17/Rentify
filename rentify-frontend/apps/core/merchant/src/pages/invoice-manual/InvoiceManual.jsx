@@ -205,7 +205,7 @@ export const InvoiceManual = () => {
         <Button 
           onClick={handleSaveInvoice}
           disabled={isSaving}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs rounded-lg px-4 h-9.5 transition-colors"
+          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs rounded-lg px-4 h-11 sm:h-10 transition-colors"
         >
           {isSaving ? (
             <>
@@ -215,7 +215,7 @@ export const InvoiceManual = () => {
           ) : (
             <>
               <Save className="w-4 h-4" />
-              <span>Save Invoice</span>
+              <span>{t('merchant.p2.saveInvoice')}</span>
             </>
           )}
         </Button>
@@ -238,7 +238,7 @@ export const InvoiceManual = () => {
             {({ loading }) => (
               <Button
                 disabled={loading}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs rounded-lg px-4 h-9.5 transition-colors"
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs rounded-lg px-4 h-11 sm:h-10 transition-colors"
               >
                 {loading ? (
                   <>
@@ -248,7 +248,7 @@ export const InvoiceManual = () => {
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    <span>Download PDF</span>
+                    <span>{t('merchant.p2.downloadPdf')}</span>
                   </>
                 )}
               </Button>
@@ -266,10 +266,10 @@ export const InvoiceManual = () => {
       <Button 
         variant="outline" 
         onClick={() => setMobilePreviewOpen(true)}
-        className="flex items-center gap-2 shadow-xs lg:hidden rounded-lg h-9.5"
+        className="flex items-center gap-2 shadow-xs lg:hidden rounded-lg h-11 sm:h-10"
       >
         <Eye className="w-4 h-4" />
-        <span>Preview</span>
+        <span>{t('merchant.p2.preview')}</span>
       </Button>
     </div>
   );
@@ -277,7 +277,7 @@ export const InvoiceManual = () => {
    <div className="min-h-full">
       {/* Notification */}
       <PageHeader
-        title="Invoice Generator"
+        title={t('merchant.p2.invoiceGenerator')}
         description="Create professional invoices with ease"
         icon={FileText}
         actions={<HeaderActions />}
@@ -299,22 +299,23 @@ export const InvoiceManual = () => {
       <div className="p-6 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Form Section */}
-          <div className="lg:col-span-6 xl:col-span-7 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+          {/* Phones: every field gets a 44px touch target; bigger screens keep the compact size */}
+          <div className="lg:col-span-6 xl:col-span-7 space-y-6 [&_input]:min-h-11 sm:[&_input]:min-h-0 [&_[role=combobox]]:min-h-11 sm:[&_[role=combobox]]:min-h-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
                 <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
                   <FileText className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-foreground">
-                    Invoice Details
+                    {t('merchant.p2.invoiceDetails')}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Configure invoice data, recipient, and line items
+                    {t('merchant.p2.configureInvoiceDataRecipient')}
                   </p>
                 </div>
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium border border-border/50">
+              <span className="shrink-0 whitespace-nowrap text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium border border-border/50">
                 {invoiceData.items.length} {invoiceData.items.length === 1 ? 'item' : 'items'}
               </span>
             </div>
@@ -339,14 +340,14 @@ export const InvoiceManual = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-semibold text-foreground">
-                      Document Preview
+                      {t('merchant.p2.documentPreview')}
                     </h3>
                     <span className="text-2xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
-                      Live A4
+                      {t('merchant.p2.liveA4')}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Real-time document preview and layout options
+                    {t('merchant.p2.realTimeDocumentPreview')}
                   </p>
                 </div>
               </div>
@@ -356,21 +357,21 @@ export const InvoiceManual = () => {
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-2 text-xs h-9 rounded-lg shadow-xs hover:bg-muted/80">
                     <Settings className="w-4 h-4 text-muted-foreground" />
-                    <span>Options</span>
+                    <span>{t('merchant.p2.options')}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-64 p-4 space-y-3">
                   <div className="border-b border-border pb-2">
-                    <h4 className="font-semibold text-sm">Preview Options</h4>
-                    <p className="text-xs text-muted-foreground">Customize invoice appearance</p>
+                    <h4 className="font-semibold text-sm">{t('merchant.p2.previewOptions')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('merchant.p2.customizeInvoiceAppearance')}</p>
                   </div>
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="toggle-watermark" className="text-xs font-medium cursor-pointer">Watermark</Label>
+                      <Label htmlFor="toggle-watermark" className="text-xs font-medium cursor-pointer">{t('merchant.p2.watermark')}</Label>
                       <Switch id="toggle-watermark" checked={showWatermark} onCheckedChange={setShowWatermark} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="toggle-signatures" className="text-xs font-medium cursor-pointer">Signatures</Label>
+                      <Label htmlFor="toggle-signatures" className="text-xs font-medium cursor-pointer">{t('merchant.p2.signatures')}</Label>
                       <Switch id="toggle-signatures" checked={showSignatures} onCheckedChange={setShowSignatures} />
                     </div>
                   </div>
@@ -397,7 +398,7 @@ export const InvoiceManual = () => {
       <Sheet open={mobilePreviewOpen} onOpenChange={setMobilePreviewOpen}>
         <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-muted/30">
           <SheetHeader className="mb-6">
-            <SheetTitle>Invoice Preview</SheetTitle>
+            <SheetTitle>{t('merchant.p2.invoicePreview')}</SheetTitle>
           </SheetHeader>
           <div className="flex justify-center p-2">
             <InvoicePreview

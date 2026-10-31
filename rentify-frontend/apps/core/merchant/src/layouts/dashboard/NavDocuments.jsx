@@ -5,12 +5,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from './Sidebar';
+import { useTranslation } from '@rentify/utils';
 
 export function NavDocuments({ items, currentTab, onTabChange }) {
+  const { t } = useTranslation();
   return (
     <SidebarGroup>
       <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Documents
+        {t('merchant.shell.documents')}
       </div>
       <SidebarGroupContent>
         <SidebarMenu>

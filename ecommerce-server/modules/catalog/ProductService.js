@@ -142,6 +142,8 @@ class ProductService {
     } = options;
 
     const where = await this.resolveStoreWhere();
+    // Products the merchant hid from the storefront stay out of public listings
+    if (status !== "all") where.storefrontVisibility = { [Op.ne]: false };
     const include = [
       {
         model: Category,
@@ -410,7 +412,8 @@ async create(productData, transaction = null) {
       .setSeoInfo(productData)
       .setCategory(productData.categoryId)
       .setMarketplaceCategory(resolvedMarketplaceCategory,
-        validMarketplaceVisibility(productData.marketplaceVisibility))
+        validMarketplaceVisibility(productData.marketplaceVisibility),
+        productData.storefrontVisibility)
       .setImages(productData.images)
       .setTags(productData.tags)
       .setCanonicalIdentity(productData)
@@ -453,6 +456,9 @@ async create(productData, transaction = null) {
       }
       if (updates.marketplaceCategory !== undefined) {
         updateData.marketplaceCategory = validMarketplaceCategory(updates.marketplaceCategory);
+      }
+      if (updates.storefrontVisibility !== undefined && typeof updates.storefrontVisibility !== 'boolean') {
+        throw new ApiError(400, 'Storefront visibility must be true or false');
       }
       if (updates.marketplaceVisibility !== undefined) {
         updateData.marketplaceVisibility = validMarketplaceVisibility(updates.marketplaceVisibility);
@@ -731,6 +737,7 @@ async create(productData, transaction = null) {
       ...storeCondition,
       categoryId,
     };
+    if (status !== "all") where.storefrontVisibility = { [Op.ne]: false };
 
     if (status && status !== "all") {
       where.status = status;

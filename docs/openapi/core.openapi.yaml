@@ -877,7 +877,7 @@ paths:
       tags:
         - Stores
       summary: Update own store settings
-      description: Updates primary category, marketplace preference, or logo URL.
+      description: Updates primary category, marketplace preference, logo URL, or marketplace accent color.
       operationId: updateOwnStore
       security:
         - bearerAuth: []
@@ -895,6 +895,8 @@ paths:
                 marketplaceEnabled:
                   type: boolean
                   example: true
+                marketplaceColor:
+                  $ref: '#/components/schemas/MarketplaceColor'
                 logoUrl:
                   type: string
                   format: uri
@@ -6035,6 +6037,8 @@ components:
           type: string
           nullable: true
           example: Handmade Crafts
+        marketplaceColor:
+          $ref: '#/components/schemas/MarketplaceColor'
         logoUrl:
           type: string
           format: uri
@@ -6068,6 +6072,12 @@ components:
           type: string
           format: date-time
 
+    MarketplaceColor:
+      type: string
+      description: Accent color for the shared marketplace store layout; independent of storefront theme settings.
+      enum: ['#4f46e5', '#275643', '#963827', '#9a691b', '#263750']
+      default: '#4f46e5'
+
     PublicStore:
       type: object
       properties:
@@ -6080,6 +6090,8 @@ components:
           type: string
         primaryCategory:
           type: string
+        marketplaceColor:
+          $ref: '#/components/schemas/MarketplaceColor'
         logoUrl:
           type: string
           format: uri

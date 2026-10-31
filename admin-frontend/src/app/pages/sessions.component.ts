@@ -2,20 +2,22 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { AuthService, apiErrorMessage } from '../core/auth/auth.service';
 import { SessionItem } from '../core/auth/auth.models';
 import { IconComponent } from '../ui/icon.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { TranslateService } from '../core/i18n/translate.service';
 
 @Component({
   standalone: true,
-  imports: [IconComponent],
+  imports: [TranslatePipe, IconComponent],
   template: `
     <div class="page-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
       <div>
-        <p class="ops-eyebrow">SECURITY & SESSIONS</p>
-        <h1 class="page-title">Active Administrator Sessions</h1>
-        <p class="page-sub">Session inventory across browsers and devices. Never exposes raw tokens or cryptographic hashes.</p>
+        <p class="ops-eyebrow">{{ 'sessions.eyebrow' | translate }}</p>
+        <h1 class="page-title">{{ 'sessions.title' | translate }}</h1>
+        <p class="page-sub">{{ 'sessions.lead' | translate }}</p>
       </div>
       <button class="btn btn-danger btn-sm" [disabled]="loading() || sessions().length <= 1" (click)="revokeOtherSessions()">
         <kc-icon name="ban" [size]="14"></kc-icon>
-        <span style="margin-left: 6px;">Revoke All Other Sessions</span>
+        <span style="margin-left: 6px;">{{ 'sessions.revokeOthers' | translate }}</span>
       </button>
     </div>
 
@@ -37,23 +39,23 @@ import { IconComponent } from '../ui/icon.component';
         <table>
           <thead>
             <tr>
-              <th scope="col">Device / Client</th>
-              <th scope="col">IP Address</th>
-              <th scope="col">Created</th>
-              <th scope="col">Last Active</th>
-              <th scope="col">MFA Verified</th>
-              <th scope="col">Status</th>
-              <th scope="col" style="text-align: right;">Action</th>
+              <th scope="col">{{ 'sessions.device' | translate }}</th>
+              <th scope="col">{{ 'sessions.ip' | translate }}</th>
+              <th scope="col">{{ 'common.created' | translate }}</th>
+              <th scope="col">{{ 'sessions.lastActive' | translate }}</th>
+              <th scope="col">{{ 'sessions.mfaVerified' | translate }}</th>
+              <th scope="col">{{ 'common.status' | translate }}</th>
+              <th scope="col" style="text-align: right;">{{ 'common.action' | translate }}</th>
             </tr>
           </thead>
           <tbody>
             @if (loading() && sessions().length === 0) {
               <tr>
-                <td colspan="7" class="ops-empty">Loading active sessions...</td>
+                <td colspan="7" class="ops-empty">{{ 'sessions.loading' | translate }}</td>
               </tr>
             } @else if (sessions().length === 0) {
               <tr>
-                <td colspan="7" class="ops-empty">No active sessions found.</td>
+                <td colspan="7" class="ops-empty">{{ 'sessions.empty' | translate }}</td>
               </tr>
             } @else {
               @for (s of sessions(); track s.id) {
@@ -81,19 +83,19 @@ import { IconComponent } from '../ui/icon.component';
                   </td>
                   <td>
                     @if (s.isCurrent) {
-                      <span class="ops-pill active">Current Session</span>
+                      <span class="ops-pill active">{{ 'sessions.current' | translate }}</span>
                     } @else {
-                      <span class="ops-pill" style="background: #f1f5f9; color: #475569;">Active</span>
+                      <span class="ops-pill" style="background: #f1f5f9; color: #475569;">{{ 'common.active' | translate }}</span>
                     }
                   </td>
                   <td style="text-align: right;">
                     @if (s.isCurrent) {
                       <button class="btn btn-default btn-sm" (click)="revoke(s.id, true)" [disabled]="loading()">
-                        Sign out
+                        {{ 'nav.signOut' | translate }}
                       </button>
                     } @else {
                       <button class="btn btn-danger btn-sm" (click)="revoke(s.id, false)" [disabled]="loading()">
-                        Revoke
+                        {{ 'sessions.revoke' | translate }}
                       </button>
                     }
                   </td>
@@ -108,6 +110,7 @@ import { IconComponent } from '../ui/icon.component';
 })
 export class SessionsComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly translate = inject(TranslateService);
 
   readonly sessions = signal<SessionItem[]>([]);
   readonly loading = signal(false);
@@ -141,8 +144,8 @@ export class SessionsComponent implements OnInit {
 
   revoke(sessionId: string, isCurrent: boolean) {
     const promptText = isCurrent
-      ? 'Sign out of your current session?'
-      : 'Revoke this administrator session? The device will be disconnected immediately.';
+      ? this.translate.t('sessions.confirmSignOut')
+      : this.translate.t('sessions.confirmRevoke');
     if (!confirm(promptText)) return;
 
     this.loading.set(true);
@@ -153,7 +156,7 @@ export class SessionsComponent implements OnInit {
         if (isCurrent) {
           this.auth.logout().subscribe();
         } else {
-          this.successMessage.set('Session revoked successfully.');
+          this.successMessage.set(this.translate.t('sessions.ok.revoked'));
           this.loadSessions();
         }
       },
@@ -165,14 +168,14 @@ export class SessionsComponent implements OnInit {
   }
 
   revokeOtherSessions() {
-    if (!confirm('Revoke all other active sessions across other devices and browsers?')) return;
+    if (!confirm(this.translate.t('sessions.confirmRevokeOthers'))) return;
 
     this.loading.set(true);
     this.error.set('');
     this.auth.revokeOtherSessions().subscribe({
       next: (res) => {
         this.loading.set(false);
-        this.successMessage.set(`Successfully revoked ${res.revokedCount || 0} other session(s).`);
+        this.successMessage.set(this.translate.t('sessions.ok.revokedOthers', { count: res.revokedCount || 0 }));
         this.loadSessions();
       },
       error: (err) => {

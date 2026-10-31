@@ -5,6 +5,7 @@ import {
   HostListener,
   ViewChild,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -23,32 +24,34 @@ import { CategoryMenuComponent } from '../category-menu/category-menu.component'
 import { SearchOverlayComponent } from '../../../user/search/search-overlay/search-overlay.component';
 import { CartDrawerComponent } from '../../cart/cart-drawer.component';
 import { CatalogService } from '../../../../core/catalog/catalog.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../../../../core/i18n/category-text.pipe';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, IconComponent, SearchOverlayComponent, CategoryMenuComponent, CartDrawerComponent, NgTemplateOutlet],
+  imports: [CategoryTextPipe, TranslatePipe, RouterLink, IconComponent, SearchOverlayComponent, CategoryMenuComponent, CartDrawerComponent, NgTemplateOutlet],
   template: `
     <!-- Announcement bar: scrolls away with the page (not sticky) — only the
          actual navigation below it stays pinned while browsing. -->
     <div class="announce">
       <div class="container announce-inner">
         @if (sellerArea()) {
-          <span><ui-icon name="store" [size]="13" /> Rentify for sellers</span>
+          <span><ui-icon name="store" [size]="13" /> {{ 'nav.sellerArea' | translate }}</span>
           <span class="dot">·</span>
-          <span><ui-icon name="banknote" [size]="13" /> Seller plans from $0</span>
+          <span><ui-icon name="banknote" [size]="13" /> {{ 'nav.sellerPlans' | translate }}</span>
         } @else {
-          <span><ui-icon name="truck" [size]="13" /> Seller-grouped delivery</span>
+          <span><ui-icon name="truck" [size]="13" /> {{ 'nav.sellerGrouped' | translate }}</span>
           <span class="dot">·</span>
-          <span><ui-icon name="shield" [size]="13" /> Secure checkout</span>
+          <span><ui-icon name="shield" [size]="13" /> {{ 'nav.secureCheckout' | translate }}</span>
         }
         <div class="announce-links">
           @if (sellerArea()) {
-            <a [href]="merchantDashboardUrl">Seller dashboard</a>
-            <a routerLink="/help">Seller support</a>
+            <a [href]="merchantDashboardUrl">{{ 'nav.sellerDashboard' | translate }}</a>
+            <a routerLink="/help">{{ 'nav.sellerSupport' | translate }}</a>
           } @else {
-            <a routerLink="/orders">Track order</a>
-            <a routerLink="/help">Support</a>
-            <a [href]="merchantDashboardUrl" target="_blank" rel="noopener">Seller portal</a>
+            <a routerLink="/orders">{{ 'nav.trackOrder' | translate }}</a>
+            <a routerLink="/help">{{ 'nav.support' | translate }}</a>
+            <a [href]="merchantDashboardUrl" target="_blank" rel="noopener">{{ 'nav.sellerPortal' | translate }}</a>
           }
         </div>
       </div>
@@ -56,14 +59,14 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
 
     <header class="navbar" [class.scrolled]="scrolled()" [class.nav-hidden]="hidden()" [class.home]="is('home')" [class.home-top]="is('home') && homeTop()">
       <div class="navbar-inner container">
-        <a routerLink="/" class="logo" aria-label="Rentify Marketplace home">
+        <a routerLink="/" class="logo" [attr.aria-label]="'nav.rentifyMarketplaceHome' | translate">
           <img
             src="/assets/rentify-logo.webp"
             alt="Rentify Marketplace"
             class="logo-mark"
           />
           <span class="logo-name">
-            <strong>Rentify</strong><span class="logo-sub">Marketplace</span>
+            <strong>Rentify</strong><span class="logo-sub">{{ 'nav.marketplace' | translate }}</span>
           </span>
         </a>
 
@@ -73,11 +76,11 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
               type="button"
               class="search-bar"
               (click)="searchOpen.set(true)"
-              aria-label="Search"
+              [attr.aria-label]="'nav.search' | translate"
               [attr.aria-expanded]="searchOpen()"
             >
               <ui-icon name="search" [size]="16" />
-              <span class="search-placeholder">Search products, brands...</span>
+              <span class="search-placeholder">{{ 'nav.searchProductsBrands' | translate }}</span>
             </button>
           }
 
@@ -86,7 +89,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
               type="button"
               class="icon-btn lang-btn"
               (click)="langMenuOpen.set(!langMenuOpen()); $event.stopPropagation()"
-              aria-label="Language"
+              [attr.aria-label]="'nav.language' | translate"
               [attr.aria-expanded]="langMenuOpen()"
             >
               <ui-icon name="globe" [size]="18" />
@@ -119,11 +122,11 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
 
         <div class="nav-actions">
           @if (!sellerArea()) {
-          <span class="deliver-to" title="Delivery area">
+          <span class="deliver-to" [title]="'nav.deliveryArea' | translate">
             <ui-icon name="map-pin" [size]="18" />
-            <span><small>Deliver to</small><strong>Phnom Penh</strong></span>
+            <span><small>{{ 'nav.deliverTo' | translate }}</small><strong>{{ 'nav.city' | translate }}</strong></span>
           </span>
-          <a class="icon-btn wishlist-btn" routerLink="/wishlist" aria-label="Wishlist">
+          <a class="icon-btn wishlist-btn" routerLink="/wishlist" [attr.aria-label]="'nav.wishlist' | translate">
             <ui-icon
               name="heart"
               [size]="19"
@@ -135,7 +138,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
             }
           </a>
 
-          <button class="icon-btn cart-btn" #cartBtn type="button" aria-label="Open shopping bag" [attr.aria-expanded]="cartOpen()" aria-haspopup="dialog" (click)="openCart()">
+          <button class="icon-btn cart-btn" #cartBtn type="button" [attr.aria-label]="'nav.openShoppingBag' | translate" [attr.aria-expanded]="cartOpen()" aria-haspopup="dialog" (click)="openCart()">
             <ui-icon name="cart" [size]="19" />
             @if (cartCount()) {
               <span class="cart-badge">{{ cartCount() }}</span>
@@ -151,15 +154,15 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                 [class.is-seller]="isSeller()"
                 [attr.aria-expanded]="accountOpen()"
                 aria-haspopup="menu"
-                [attr.aria-label]="'Account menu for ' + currentUser.name"
+                [attr.aria-label]="'nav.accountMenuFor' | translate: { name: currentUser.name }"
                 (click)="toggleAccount(); $event.stopPropagation()"
               >
                 <span class="avatar" aria-hidden="true">{{ initial(currentUser.name) }}</span>
                 <span class="signin-label">{{ firstName(currentUser.name) }}</span>
                 @if (isAdmin()) {
-                  <span class="role-chip">Admin</span>
+                  <span class="role-chip">{{ 'nav.admin' | translate }}</span>
                 } @else if (isSeller()) {
-                  <span class="role-chip">Seller</span>
+                  <span class="role-chip">{{ 'nav.seller' | translate }}</span>
                 }
                 <ui-icon name="chevron-down" [size]="13" />
               </button>
@@ -177,8 +180,8 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                     <div class="account-id">
                       <strong>{{ currentUser.name }}</strong>
                       <span class="account-email">{{ currentUser.email }}</span>
-                      <span class="account-role" [class.seller]="isSeller() || isAdmin()">
-                        {{ isAdmin() ? 'Administrator' : isSeller() ? 'Seller & buyer account' : 'Buyer account' }}
+                      <span class="account-role" [class.seller]="canSell() || isAdmin()">
+                        {{ (isAdmin() ? 'nav.roleAdmin' : canSell() ? 'nav.roleSellerBuyer' : 'nav.roleBuyer') | translate }}
                       </span>
                     </div>
                   </div>
@@ -186,42 +189,42 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                   <!-- A seller account is a buyer account too: the same person
                        shops here. So this is an extra section rather than a
                        replacement, and the shopping links below stay. -->
-                  @if (isSeller()) {
-                    <p class="account-section">Your store</p>
+                  @if (canSell()) {
+                    <p class="account-section">{{ 'nav.yourStore' | translate }}</p>
                     <a [href]="merchantDashboardUrl" role="menuitem" (click)="accountOpen.set(false)">
-                      <ui-icon name="grid" [size]="16" /> Seller dashboard
+                      <ui-icon name="grid" [size]="16" /> {{ 'nav.sellerDashboard' | translate }}
                     </a>
                     <a [href]="merchantOrdersUrl" role="menuitem" (click)="accountOpen.set(false)">
-                      <ui-icon name="package" [size]="16" /> Incoming orders
+                      <ui-icon name="package" [size]="16" /> {{ 'nav.incomingOrders' | translate }}
                     </a>
                     @if (myStore(); as store) {
                       <a [routerLink]="['/stores', store.id]" role="menuitem" (click)="accountOpen.set(false)">
-                        <ui-icon name="store" [size]="16" /> View my store
-                        <span class="hint">as shoppers see it</span>
+                        <ui-icon name="store" [size]="16" /> {{ 'nav.viewMyStore' | translate }}
+                        <span class="hint">{{ 'nav.asShoppersSeeIt' | translate }}</span>
                       </a>
                     }
                   }
 
                   @if (isAdmin()) {
-                    <p class="account-section">Administration</p>
+                    <p class="account-section">{{ 'nav.administration' | translate }}</p>
                     <a [href]="adminDashboardUrl" role="menuitem" (click)="accountOpen.set(false)">
-                      <ui-icon name="shield" [size]="16" /> Marketplace overview
+                      <ui-icon name="shield" [size]="16" /> {{ 'nav.marketplaceOverview' | translate }}
                     </a>
                   }
 
-                  <p class="account-section">Your shopping</p>
+                  <p class="account-section">{{ 'nav.yourShopping' | translate }}</p>
                   <a routerLink="/profile" role="menuitem" (click)="accountOpen.set(false)">
-                    <ui-icon name="user" [size]="16" /> My profile
+                    <ui-icon name="user" [size]="16" /> {{ 'nav.myProfile' | translate }}
                   </a>
                   <a routerLink="/orders" role="menuitem" (click)="accountOpen.set(false)">
-                    <ui-icon name="box" [size]="16" /> My orders
+                    <ui-icon name="box" [size]="16" /> {{ 'nav.myOrders' | translate }}
                   </a>
                   <a routerLink="/wishlist" role="menuitem" (click)="accountOpen.set(false)">
-                    <ui-icon name="heart" [size]="16" /> Wishlist
+                    <ui-icon name="heart" [size]="16" /> {{ 'nav.wishlist' | translate }}
                   </a>
 
                   <button type="button" class="sign-out" role="menuitem" (click)="signOut()">
-                    <ui-icon name="arrow-right" [size]="16" /> Sign out
+                    <ui-icon name="arrow-right" [size]="16" /> {{ 'nav.signOut' | translate }}
                   </button>
                 </div>
               }
@@ -232,7 +235,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
               [href]="authLoginUrl(sellerArea() ? 'seller' : undefined)"
             >
               <ui-icon name="user" [size]="15" />
-              <span class="signin-label">Sign In</span>
+              <span class="signin-label">{{ 'nav.signIn' | translate }}</span>
             </a>
           }
 
@@ -259,25 +262,25 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
         <nav class="seller-row">
           <div class="seller-row-inner container">
             <span class="seller-badge">
-              <ui-icon name="store" [size]="13" /> Seller portal
+              <ui-icon name="store" [size]="13" /> {{ 'nav.sellerPortal' | translate }}
             </span>
-            @if (isSeller()) {
+            @if (canSell()) {
               <a routerLink="/seller/dashboard" [class.on]="isPath('/seller/dashboard')">
-                Dashboard
+                {{ 'nav.dashboard' | translate }}
               </a>
               <a routerLink="/seller/orders" [class.on]="isPath('/seller/orders')">
-                Incoming orders
+                {{ 'nav.incomingOrders' | translate }}
               </a>
               <a routerLink="/become-a-seller" [class.on]="isPath('/become-a-seller')">
-                Selling guide
+                {{ 'nav.sellingGuide' | translate }}
               </a>
             } @else {
               <a routerLink="/become-a-seller" [class.on]="isPath('/become-a-seller')">
-                Why sell with us
+                {{ 'nav.whySellWithUs' | translate }}
               </a>
             }
             <a class="back-to-shop" routerLink="/">
-              <ui-icon name="arrow-left" [size]="13" /> Back to shopping
+              <ui-icon name="arrow-left" [size]="13" /> {{ 'nav.backToShopping' | translate }}
             </a>
           </div>
         </nav>
@@ -306,7 +309,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
             <button
               type="button"
               class="menu-btn"
-              aria-label="Menu"
+              [attr.aria-label]="'nav.menu' | translate"
               [attr.aria-expanded]="menuOpen()"
               (click)="menuOpen.set(!menuOpen()); $event.stopPropagation()"
             >
@@ -319,26 +322,26 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
                 animate.leave="kc-pop-leave"
                 (click)="$event.stopPropagation()"
               >
-                <p class="menu-section top-section">Shop by category</p>
+                <p class="menu-section top-section">{{ 'nav.shopByCategory' | translate }}</p>
                 @for (c of categories; track c.slug) {
                   <a class="menu-cat" [routerLink]="['/categories', c.slug]" (click)="menuOpen.set(false)">
-                    <ui-icon [name]="c.icon" [size]="16" /> {{ c.name }}
+                    <ui-icon [name]="c.icon" [size]="16" /> {{ c | categoryText }}
                   </a>
                 }
-                <p class="menu-section">Navigation</p>
-                <a routerLink="/" (click)="menuOpen.set(false)">Home</a>
-                <a routerLink="/products" (click)="menuOpen.set(false)">All products</a>
-                <a routerLink="/categories" (click)="menuOpen.set(false)">Categories</a>
-                <a routerLink="/stores" (click)="menuOpen.set(false)">All stores</a>
-                <p class="menu-section">Collections</p>
+                <p class="menu-section">{{ 'nav.navigation' | translate }}</p>
+                <a routerLink="/" (click)="menuOpen.set(false)">{{ 'nav.home' | translate }}</a>
+                <a routerLink="/products" (click)="menuOpen.set(false)">{{ 'nav.allProducts' | translate }}</a>
+                <a routerLink="/categories" (click)="menuOpen.set(false)">{{ 'nav.categories' | translate }}</a>
+                <a routerLink="/stores" (click)="menuOpen.set(false)">{{ 'nav.allStores' | translate }}</a>
+                <p class="menu-section">{{ 'nav.collections' | translate }}</p>
                 <!-- Same shortcuts the category bar shows on wide screens —
                      the bar hides them below 1400px since there isn't room
                      to fit them without clipping off-screen. -->
-                <a routerLink="/products" [queryParams]="{ collection: 'new-arrivals' }" (click)="menuOpen.set(false)">New Arrivals</a>
-                <a routerLink="/products" [queryParams]="{ collection: 'best-sellers' }" (click)="menuOpen.set(false)">Best Sellers</a>
-                <a routerLink="/categories/arts-culture" [queryParams]="{ sub: 'souvenirs-gifts' }" (click)="menuOpen.set(false)">Gifts</a>
-                <a class="sale" routerLink="/products" [queryParams]="{ sale: '1' }" (click)="menuOpen.set(false)">Sale</a>
-                <p class="menu-section">Language / ភាសា</p>
+                <a routerLink="/products" [queryParams]="{ collection: 'new-arrivals' }" (click)="menuOpen.set(false)">{{ 'nav.newArrivals' | translate }}</a>
+                <a routerLink="/products" [queryParams]="{ collection: 'best-sellers' }" (click)="menuOpen.set(false)">{{ 'nav.bestSellers' | translate }}</a>
+                <a routerLink="/categories/arts-culture" [queryParams]="{ sub: 'souvenirs-gifts' }" (click)="menuOpen.set(false)">{{ 'nav.gifts' | translate }}</a>
+                <a class="sale" routerLink="/products" [queryParams]="{ sale: '1' }" (click)="menuOpen.set(false)">{{ 'nav.sale' | translate }}</a>
+                <p class="menu-section">{{ 'nav.language' | translate }}</p>
                 <div class="mobile-lang-row">
                   <button type="button" class="mobile-lang-btn" [class.active]="language() === 'en'" (click)="selectLanguage('en')">English</button>
                   <button type="button" class="mobile-lang-btn" [class.active]="language() === 'km'" (click)="selectLanguage('km')">ភាសាខ្មែរ</button>
@@ -1150,6 +1153,10 @@ export class NavbarComponent implements AfterViewInit {
   });
 
   constructor() {
+    effect(() => {
+      this.user();
+      this.checkOwnsStore();
+    });
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => {
@@ -1205,6 +1212,26 @@ export class NavbarComponent implements AfterViewInit {
    */
   protected readonly isSeller = computed(() => this.user()?.role === 'SELLER');
 
+  /**
+   * Owning a Store is what makes someone a seller here, not the account role:
+   * onboarding creates the Store on a normal account, so the role can still be
+   * BUYER. One lookup per signed-in buyer; failure just means no seller links.
+   */
+  protected readonly ownsStore = signal(false);
+  protected readonly canSell = computed(() => this.isSeller() || this.ownsStore());
+  private ownsStoreCheckedFor: string | null = null;
+
+  private checkOwnsStore(): void {
+    const u = this.user();
+    if (!u || u.role === 'ADMIN' || u.role === 'SELLER') return;
+    if (this.ownsStoreCheckedFor === u.id) return;
+    this.ownsStoreCheckedFor = u.id;
+    this.rentify.myStore().subscribe({
+      next: (res) => this.ownsStore.set(Boolean((res as any)?.data ?? res?.store)),
+      error: () => this.ownsStore.set(false),
+    });
+  }
+
   protected readonly isAdmin = computed(() => this.user()?.role === 'ADMIN');
 
   protected authLoginUrl(target?: 'seller'): string {
@@ -1257,6 +1284,8 @@ export class NavbarComponent implements AfterViewInit {
     this.accountOpen.set(false);
     this.myStore.set(null);
     this.myStoreRequested = false;
+    this.ownsStore.set(false);
+    this.ownsStoreCheckedFor = null;
     this.auth.logout().subscribe(() => void this.router.navigateByUrl('/'));
   }
 

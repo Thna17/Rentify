@@ -14,6 +14,7 @@ import { useAuthLanguage } from '../context/AuthLanguageContext';
 export const useResetPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [tokenInvalid, setTokenInvalid] = useState(false);
   const [loading, setLoading] = useState(false);
   const [contactMethod, setContactMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
@@ -21,7 +22,7 @@ export const useResetPassword = () => {
   const location = useLocation();
   const params = useParams<{ token?: string; storeId?: string }>();
   const { websiteId } = useWebsiteData();
-  const { t, isKhmer } = useAuthLanguage();
+  const { t } = useAuthLanguage();
 
   const [resetPasswordMutation] = useResetPasswordMutation();
   const [resetPasswordCustomerMutation] = useResetPasswordCustomerMutation();
@@ -40,6 +41,7 @@ export const useResetPassword = () => {
   const handleResetPassword = async (token: string, password: string): Promise<boolean> => {
     setError('');
     setSuccess('');
+    setTokenInvalid(false);
     setLoading(true);
 
     try {
@@ -56,20 +58,14 @@ export const useResetPassword = () => {
         await resetPasswordMutation(payload).unwrap();
       }
 
-      setSuccess(
-        isKhmer
-          ? 'ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ។'
-          : 'Your password has been reset successfully.'
-      );
+      setSuccess('reset.success');
       return true;
     } catch (err: any) {
-      setError(
-        err?.data?.error ||
-        err?.data?.message ||
-        (isKhmer
-          ? 'មិនអាចកំណត់ពាក្យសម្ងាត់ឡើងវិញបានទេ។ សូមពិនិត្យលេខកូដ និងព្យាយាមម្តងទៀត។'
-          : 'Failed to reset password. Please check your verification code and try again.')
-      );
+      // Backend text is only used to pick a catalog message, never shown.
+      const raw = String(err?.data?.error || err?.data?.message || '');
+      const invalid = /expired|invalid|token|not found|malformed|used/i.test(raw);
+      setTokenInvalid(invalid);
+      setError(invalid ? 'reset.invalidTokenMessage' : 'error.resetFailed');
       return false;
     } finally {
       setLoading(false);
@@ -78,9 +74,11 @@ export const useResetPassword = () => {
 
   const clearError = () => setError('');
 
+  // error/success hold catalog keys so they follow a language switch.
   return {
-    error,
-    success,
+    error: error && t(error),
+    success: success && t(success),
+    tokenInvalid,
     loading,
     contactMethod,
     email,

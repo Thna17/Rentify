@@ -6,6 +6,16 @@ const { BakongKHQR, IndividualInfo, MerchantInfo } = require("bakong-khqr");
 const { Op } = require("sequelize");
 const cron = require("node-cron");
 const { Payment, Package } = require("../../models");
+const payway = require("./paywayGateway");
+
+// PAYMENT_PROVIDER=payway (default) pays plans through ABA PayWay; set it to khqr to roll
+// back to the direct Bakong KHQR payment below.
+const usePayway = () => (process.env.PAYMENT_PROVIDER || "payway").toLowerCase() !== "khqr";
+
+// Local testing only: DEV_SKIP_PLAN_PAYMENT=true treats a pending plan payment as paid on the
+// first status check. Ignored whenever NODE_ENV is production.
+const skipPlanPayment = () =>
+  process.env.NODE_ENV !== "production" && process.env.DEV_SKIP_PLAN_PAYMENT === "true";
 
 const KHQR_CURRENCY_CODES = {
   USD: "840",
@@ -41,6 +51,32 @@ exports.initiateKHQRPayment = async (req, res) => {
     const amount = Number(pkg?.price);
     if (!pkg || !(amount > 0)) {
       return res.status(400).json({ error: "Choose a paid plan to pay for" });
+    }
+
+    if (usePayway()) {
+      const tranId = payway.generateTranId();
+      const qr = await payway.createTransaction({
+        tranId,
+        amount,
+        items: [{ name: `${pkg.name || "Rentify"} plan`, quantity: 1, price: amount }],
+      });
+      const payment = await Payment.create({
+        userId,
+        amount,
+        currency: "USD",
+        paymentMethod: "payway",
+        status: "pending",
+        expiresAt: new Date(qr.expiresAt),
+        packageId: pkg.id,
+        transactionData: { qrCodeUrl: qr.deeplink, rawQR: qr.qrString, tranId },
+      });
+      return res.json({
+        paymentId: payment.id,
+        qrCodeUrl: qr.deeplink,
+        rawQR: qr.qrString,
+        amount,
+        expiresAt: qr.expiresAt,
+      });
     }
 
 
@@ -117,7 +153,8 @@ exports.initiateKHQRPayment = async (req, res) => {
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error("KHQR initiation error:", error);
+    console.error("Payment initiation error:", error);
+    if (error.statusCode) return res.status(error.statusCode).json({ error: error.message, code: error.code });
     res.status(500).json({ error: "Payment initiation failed" });
   }
 };
@@ -133,9 +170,25 @@ exports.checkPaymentStatus = async (req, res) => {
       return res.status(404).json({ error: "Payment not found" });
     }
 
+    if (payment.status === "pending" && payment.paymentMethod !== "payway" && skipPlanPayment()) {
+      await payment.update({ status: "completed", transactionId: `DEV-SKIP-${payment.id}` });
+      return res.json(payment);
+    }
+
     // Handle expired payments
     if (payment.status === "pending" && new Date() > payment.expiresAt) {
       await payment.update({ status: "expired" });
+      return res.json(payment);
+    }
+
+    // ABA PayWay payments are confirmed by asking ABA directly
+    if (payment.status === "pending" && payment.paymentMethod === "payway") {
+      const outcome = await payway.checkTransaction(payment.transactionData?.tranId, { amount: payment.amount, currency: payment.currency || 'USD' });
+      if (outcome === "PAID") {
+        await payment.update({ status: "completed", transactionId: payment.transactionData.tranId });
+      } else if (outcome === "FAILED" || outcome === "REFUNDED") {
+        await payment.update({ status: "failed" });
+      }
       return res.json(payment);
     }
 
@@ -216,3 +269,19 @@ function generateKHQRString(merchantConfig, amount, referenceId, webhookUrl) {
     md5Hash: result.data.md5,
   };
 }
+
+// Provider callbacks are hints; only a server-to-server lookup may confirm payment.
+exports.paywayCallback = async (req, res, next) => {
+  try {
+    const tranId = req.body?.tran_id;
+    if (typeof tranId !== 'string' || !/^[A-Za-z0-9]{1,20}$/.test(tranId)) {
+      return res.status(400).json({ error: 'Invalid transaction reference' });
+    }
+    const payment = await Payment.findOne({ where: { paymentMethod: 'payway', 'transactionData.tranId': tranId } });
+    if (!payment || payment.status === 'completed') return res.json({ received: true });
+    const outcome = await payway.checkTransaction(tranId, { amount: payment.amount, currency: payment.currency || 'USD' });
+    if (outcome === 'PAID') await payment.update({ status: 'completed', transactionId: tranId });
+    else if (outcome === 'FAILED' || outcome === 'REFUNDED') await payment.update({ status: 'failed' });
+    return res.json({ received: true });
+  } catch (error) { return next(error); }
+};

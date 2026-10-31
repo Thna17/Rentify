@@ -75,7 +75,7 @@ export function NotificationDropdown() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-[min(24rem,calc(100vw-1rem))] p-0 shadow-lg bg-popover">
+      <DropdownMenuContent align="end" collisionPadding={16} className="w-[min(24rem,calc(100vw-2rem))] p-0 shadow-lg bg-popover">
         <div className="flex items-center gap-2 p-3.5">
           <h2 className="font-semibold text-sm text-foreground">{text.title}</h2>
           {unread > 0 && (

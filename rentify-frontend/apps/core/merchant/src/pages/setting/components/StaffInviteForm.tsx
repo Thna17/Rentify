@@ -160,20 +160,20 @@ const StaffInviteForm: React.FC<StaffInviteFormProps> = ({
       {/* Name Input */}
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-medium">
-          Staff Name
+          {t('merchant.p.staffName')}
         </Label>
         <Input
           id="name"
           value={name}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-          placeholder="Enter full name"
+          placeholder={t('merchant.p.enterFullName')}
           required
         />
       </div>
       
       {/* Contact Method Selection */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Contact Method</Label>
+        <Label className="text-sm font-medium">{t('merchant.p.contactMethod')}</Label>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
@@ -182,7 +182,7 @@ const StaffInviteForm: React.FC<StaffInviteFormProps> = ({
             className="flex items-center justify-center gap-2"
           >
             <Mail className="h-4 w-4" />
-            Email
+            {t('merchant.p.email')}
           </Button>
           <Button
             type="button"
@@ -191,7 +191,7 @@ const StaffInviteForm: React.FC<StaffInviteFormProps> = ({
             className="flex items-center justify-center gap-2"
           >
             <MessageSquare className="h-4 w-4" />
-            Phone
+            {t('merchant.p.phone')}
           </Button>
         </div>
       </div>
@@ -213,7 +213,7 @@ const StaffInviteForm: React.FC<StaffInviteFormProps> = ({
       
       {/* Permissions */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Permissions</Label>
+        <Label className="text-sm font-medium">{t('merchant.p.permissions')}</Label>
         <Card className="border">
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
             {PERMISSIONS.map((permission: PermissionKey) => (

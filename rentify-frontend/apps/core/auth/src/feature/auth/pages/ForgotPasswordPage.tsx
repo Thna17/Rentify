@@ -129,7 +129,7 @@ export function ForgotPasswordPage() {
       return (
         <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
           <ShoppingBag className="h-3.5 w-3.5" />
-          <span>{storeName ? `${storeName} Store` : 'Store Customer'}</span>
+          <span>{storeName ? t('badge.storeNamed', { storeName }) : t('badge.storeCustomer')}</span>
         </div>
       );
     }

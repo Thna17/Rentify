@@ -3,10 +3,11 @@ import { ArrowUpRight, Plus } from 'lucide-react';
 import React from 'react';
 
 // Grouped by what a merchant is doing, not by system module
-const SECTION_ORDER = ['overview', 'sell', 'channels', 'grow', 'money', 'settings'];
+const SECTION_ORDER = ['overview', 'sell', 'store', 'channels', 'grow', 'money', 'settings'];
 
 const DEFAULT_SECTION_TITLES = {
   sell: 'Sell',
+  store: 'Online store',
   channels: 'Sales channels',
   grow: 'Customers & insights',
   money: 'Money',
@@ -54,7 +55,7 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
   }));
 
   return (
-    <nav className="flex flex-col gap-5 text-sm" aria-label="Sidebar Navigation">
+    <nav className="flex flex-col gap-5 text-sm" aria-label={t('merchant.shell.sidebarNavigation')}>
       {orderedSections.map(({ key, items: sectionItems }) => (
         <div key={key} className="flex flex-col">
           {key !== 'overview' && (

@@ -52,6 +52,15 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   },
 ];
 
+// Test-only: offered when Commerce reports PAYWAY_ENABLED (DEC-026 keeps Release 1 COD-only)
+const ABA_OPTION: PaymentOption = {
+  value: 'ABA_PAYWAY',
+  labelKey: 'checkout.abaLabel',
+  hintKey: 'checkout.abaHint',
+  icon: 'qr-code',
+  badgeKey: 'checkout.testMode',
+};
+
 @Component({
   selector: 'app-checkout',
   standalone: true,
@@ -93,7 +102,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                   type="button"
                   class="btn-add-address"
                   (click)="toggleCustomAddress()"
-                  [title]="showAddressForm() ? 'Choose from saved addresses' : 'Add new address'"
+                  [title]="(showAddressForm() ? 'checkout.chooseSaved' : 'checkout.addNewAddress') | translate"
                 >
                   <ui-icon [name]="showAddressForm() ? 'x' : 'plus'" [size]="14" />
                   <span>{{ showAddressForm() ? 'Saved Addresses' : 'Add New' }}</span>
@@ -102,7 +111,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 
               <!-- Saved Addresses List -->
               @if (savedAddresses().length > 0 && !showAddressForm()) {
-                <div class="saved-addresses-list" role="radiogroup" aria-label="Select saved delivery address">
+                <div class="saved-addresses-list" role="radiogroup" [attr.aria-label]="'checkout.selectSavedAddress' | translate">
                   @for (addr of savedAddresses(); track addr.id) {
                     <div
                       class="saved-addr-card"
@@ -120,7 +129,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                           <strong class="addr-name">{{ addr.fullName }}</strong>
                           <span class="addr-phone">{{ addr.phone }}</span>
                           @if (addr.isDefault) {
-                            <span class="addr-default-pill">Default</span>
+                            <span class="addr-default-pill">{{ 'checkout.default' | translate }}</span>
                           }
                         </div>
                         <div class="addr-detail">
@@ -131,7 +140,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                         type="button"
                         class="addr-edit-btn"
                         (click)="editSelectedAddress(addr, $event)"
-                        title="Edit address"
+                        [title]="'checkout.editAddress' | translate"
                       >
                         <ui-icon name="edit" [size]="13" />
                       </button>
@@ -185,7 +194,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                         <option [value]="province.en">{{ translate.currentLang() === 'km' ? province.km : province.en }}</option>
                       }
                     </select>
-                    <small id="province-error" class="error-msg" [class.error-hidden]="!invalid('province')">Required.</small>
+                    <small id="province-error" class="error-msg" [class.error-hidden]="!invalid('province')">{{ 'checkout.required' | translate }}</small>
                   </label>
 
                   <label>
@@ -201,7 +210,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                         <option [value]="district.en">{{ translate.currentLang() === 'km' ? district.km : district.en }}</option>
                       }
                     </select>
-                    <small id="city-error" class="error-msg" [class.error-hidden]="!invalid('city')">Required.</small>
+                    <small id="city-error" class="error-msg" [class.error-hidden]="!invalid('city')">{{ 'checkout.required' | translate }}</small>
                   </label>
 
                   <label class="wide">
@@ -209,7 +218,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                     <input
                       formControlName="address"
                       autocomplete="street-address"
-                      placeholder="House 12, Street 240"
+                      [placeholder]="'checkout.addressPlaceholder' | translate"
                       [attr.aria-invalid]="invalid('address')"
                       aria-describedby="address-error"
                     />
@@ -386,12 +395,12 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             }
 
             <p class="error validation-summary" role="status" [class.error-hidden]="!showValidationSummary()">
-              Please complete the delivery details and acknowledge store policy.
+              {{ 'checkout.formError' | translate }}
             </p>
 
             @if (error(); as message) {
               <p class="error" role="alert">
-                <ui-icon name="alert-circle" [size]="14" /> {{ message }}
+                <ui-icon name="alert-circle" [size]="14" /> {{ message | translate }}
               </p>
             }
 
@@ -969,7 +978,12 @@ export class CheckoutComponent implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly provinces = CAMBODIA_LOCATIONS;
-  protected readonly paymentOptions = PAYMENT_OPTIONS;
+  private readonly abaEnabled = signal(false);
+  // ABA pays one order at a time, so it is only offered when checking out a single store
+  protected get paymentOptions(): PaymentOption[] {
+    const singleStore = (this.activeStoreId() ? 1 : this.cart.getStoreCarts().filter((c) => c.items.length > 0).length) <= 1;
+    return this.abaEnabled() && singleStore ? [...PAYMENT_OPTIONS, ABA_OPTION] : PAYMENT_OPTIONS;
+  }
   protected readonly method = signal<PaymentMethod>('COD');
   protected readonly attemptedSubmit = signal(false);
   protected readonly submitting = signal(false);
@@ -989,6 +1003,11 @@ export class CheckoutComponent implements OnInit {
   ngOnInit(): void {
     this.seo.setPageTitle(`${this.translate.t('checkout.title')} | Rentify Marketplace`);
     this.initSavedAddresses();
+    if (typeof this.rentify.abaConfig === 'function') {
+      firstValueFrom(this.rentify.abaConfig())
+        .then((config) => this.abaEnabled.set(Boolean(config?.enabled)))
+        .catch(() => this.abaEnabled.set(false));
+    }
   }
 
   private initSavedAddresses(): void {
@@ -1211,6 +1230,7 @@ export class CheckoutComponent implements OnInit {
     const fullAddress = [address, city, province, note.trim()].filter(Boolean).join(', ');
 
     try {
+      let firstOrderId = '';
       const placedOrders: Array<{
         orderNumber: string;
         storeId: string;
@@ -1244,11 +1264,13 @@ export class CheckoutComponent implements OnInit {
               phone,
               fullAddress,
               idempotencyKey,
+              ...(this.method() === 'ABA_PAYWAY' ? (['ABA_PAYWAY'] as const) : []),
             ),
           );
 
           // Success on this store! Clear its idempotency key
           this.clearCheckoutKey(cart.storeId);
+          firstOrderId ||= res.order?.id || '';
 
           const storeName =
             this.shipmentGroups().find((g) => g.storeId === cart.storeId)?.sellerName ||
@@ -1271,7 +1293,7 @@ export class CheckoutComponent implements OnInit {
             recipientName: fullName,
             recipientPhone: phone,
             deliveryAddress: fullAddress,
-            paymentMethod: 'COD',
+            paymentMethod: this.method(),
             itemCount:
               items.reduce((sum: number, it: any) => sum + it.quantity, 0) || cart.items.length,
             items,
@@ -1290,10 +1312,12 @@ export class CheckoutComponent implements OnInit {
               phone,
               fullAddress,
               idempotencyKey,
+              ...(this.method() === 'ABA_PAYWAY' ? (['ABA_PAYWAY'] as const) : []),
             ),
           );
 
           this.clearCheckoutKey(g.storeId);
+          firstOrderId ||= res.order?.id || '';
 
           const items = g.lines.map((l) => ({
             name: l.product.name,
@@ -1309,7 +1333,7 @@ export class CheckoutComponent implements OnInit {
             recipientName: fullName,
             recipientPhone: phone,
             deliveryAddress: fullAddress,
-            paymentMethod: 'COD',
+            paymentMethod: this.method(),
             itemCount: items.reduce((sum, it) => sum + it.quantity, 0),
             items,
           });
@@ -1329,6 +1353,11 @@ export class CheckoutComponent implements OnInit {
       }
 
       this.uncertainSubmission.set(false);
+      // ABA orders go straight to the KHQR page; payment is confirmed there with ABA
+      if (this.method() === 'ABA_PAYWAY' && firstOrderId) {
+        await this.router.navigate(['/checkout/aba', firstOrderId]);
+        return;
+      }
       const orderNums = placedOrders.map((o) => o.orderNumber).join(',');
       await this.router.navigate(['/order-success'], {
         queryParams: {

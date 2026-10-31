@@ -89,7 +89,7 @@ import { ConfirmComponent } from '../../ui/confirm.component';
       } @else {
         <div class="card table-card">
           <div class="ops-table-scroll">
-            <table class="table" aria-label="Maker Checker Tasks">
+            <table class="table" [attr.aria-label]="'makerChecker.tasks' | translate">
               <thead>
                 <tr>
                   <th scope="col">{{ 'makerChecker.actionType' | translate }}</th>
@@ -120,7 +120,7 @@ import { ConfirmComponent } from '../../ui/confirm.component';
                       <div class="reason-preview" [title]="item.reason">{{ item.reason }}</div>
                       @if (item.decisionReason) {
                         <div class="decision-reason">
-                          <small><strong>Checker Note:</strong> {{ item.decisionReason }}</small>
+                          <small><strong>{{ 'makerChecker.checkerNote' | translate }}</strong> {{ item.decisionReason }}</small>
                         </div>
                       }
                     </td>
@@ -189,7 +189,7 @@ import { ConfirmComponent } from '../../ui/confirm.component';
                 class="form-control"
                 rows="3"
                 [(ngModel)]="rejectionReasonText"
-                placeholder="State specific policy or factual reason for declining this operation..."
+                [placeholder]="'makerChecker.declinePlaceholder' | translate"
               ></textarea>
             </div>
 
@@ -210,7 +210,7 @@ import { ConfirmComponent } from '../../ui/confirm.component';
       <!-- Approval Confirmation Modal -->
       @if (approvingItem(); as item) {
         <kc-confirm
-          title="Confirm Secondary Verification"
+          [title]="'makerChecker.confirmVerification' | translate"
           [message]="'You are about to authorize execution of ' + formatActionType(item.actionType) + ' for ' + item.targetResource + '. This operation will be executed immediately with your identity recorded as the secondary checker.'"
           confirmLabel="Authorize & Execute"
           (confirm)="submitApprove()"

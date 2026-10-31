@@ -39,6 +39,7 @@ router.get(
 );
 router.post(
   "/stores/:storeId/orders/pos/:orderId/return",
+  verifyStoreActor,
   createRequireStoreAccess({ permissions: ["pos", "manage_pos"] }),
   OrderController.processPOSReturn
 );

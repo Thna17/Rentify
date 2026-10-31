@@ -30,9 +30,11 @@ import {
 import SiteHeader from "../../components/site/SiteHeader";
 import SiteFooter from "../../components/site/SiteFooter";
 import demoStorefront from '../../assets/site/storefront-beauty-desktop.jpg';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 const LiveDemoPage = () => {
+  const { t } = useLanguage();
   return (
     <main className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -43,16 +45,15 @@ const LiveDemoPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Badge variant="secondary" className="mb-4 px-4 py-2 bg-blue-100 text-blue-700 border-blue-200">
               <Play className="h-3 w-3 mr-1" />
-              Interactive Experience
+              {t('site.demo.badge')}
             </Badge>
             
             <h1 className="text-[30px] leading-tight font-bold md:text-5xl lg:text-6xl mb-4 md:mb-6">
-              Experience Rentify <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">in Action</span>
+              {t('site.demo.titleLead')} <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">{t('site.demo.titleEmphasis')}</span>
             </h1>
             
             <p className="text-base sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              No sign-up. No pressure. Click the button below to explore a fully functional demo store. 
-              See how it feels to be a customer, place a test order, and discover the magic for yourself.
+              {t('site.demo.lead')}
             </p>
 
             {/* Demo Store Mockup */}
@@ -60,7 +61,7 @@ const LiveDemoPage = () => {
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-900 sm:border-8">
                 <img
                   src={demoStorefront}
-                  alt="Modern Cambodian Fashion Boutique - Rentify Demo Store"
+                  alt={t('site.demo.imageAlt')}
                   className="w-full h-auto"
                 />
                 {/* Interactive cursor effect */}
@@ -75,22 +76,22 @@ const LiveDemoPage = () => {
             {/* Main CTA Button */}
             <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 px-6 sm:px-12 py-5 text-base sm:py-6 sm:text-lg">
               <ExternalLink className="mr-2 h-5 w-5" />
-              Launch the Live Demo Store
+              {t('site.demo.launch')}
             </Button>
 
             {/* Trust Indicators */}
             <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-green-500" />
-                <span>100% safe demo environment</span>
+                <span>{t('site.demo.safe')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-blue-500" />
-                <span>No time limit</span>
+                <span>{t('site.demo.noLimit')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-yellow-500" />
-                <span>Instant access</span>
+                <span>{t('site.demo.instant')}</span>
               </div>
             </div>
           </div>
@@ -101,9 +102,9 @@ const LiveDemoPage = () => {
       <section className="py-16 md:py-24 bg-white">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center mb-12">
-            <h2 className="text-2xl font-bold md:text-4xl mb-3 md:mb-4">What You'll Discover</h2>
+            <h2 className="text-2xl font-bold md:text-4xl mb-3 md:mb-4">{t('site.demo.discoverTitle')}</h2>
             <p className="text-lg text-muted-foreground">
-              Explore every feature as if you were running your own business
+              {t('site.demo.discoverLead')}
             </p>
           </div>
 
@@ -111,18 +112,18 @@ const LiveDemoPage = () => {
             {[
               {
                 icon: Store,
-                title: "Customer Experience",
-                description: "See how your customers will browse and shop from your store"
+                title: t('site.demo.customerTitle'),
+                description: t('site.demo.customerBody')
               },
               {
                 icon: CreditCard,
-                title: "Checkout Process",
-                description: "Test the complete payment flow with KHQR and local methods"
+                title: t('site.demo.checkoutTitle'),
+                description: t('site.demo.checkoutBody')
               },
               {
                 icon: Package,
-                title: "Order Management",
-                description: "Experience how orders are processed and tracked"
+                title: t('site.demo.ordersTitle'),
+                description: t('site.demo.ordersBody')
               }
             ].map((item, index) => (
               <div key={index} className="text-center p-6">
@@ -140,16 +141,16 @@ const LiveDemoPage = () => {
       {/* Alternative CTA */}
       <section className="py-16 md:py-24 bg-gray-50">
         <div className="container text-center">
-          <h2 className="text-2xl font-bold md:text-4xl mb-3 md:mb-4">Prefer a Guided Tour?</h2>
+          <h2 className="text-2xl font-bold md:text-4xl mb-3 md:mb-4">{t('site.demo.tourTitle')}</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Let us walk you through the platform with a personalized demo
+            {t('site.demo.tourLead')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-700 px-8">
-              <Play className="mr-2 h-4 w-4" /> Schedule a Live Demo
+              <Play className="mr-2 h-4 w-4" /> {t('site.demo.schedule')}
             </Button>
             <Button variant="outline" size="lg">
-              <MessageSquare className="mr-2 h-4 w-4" /> Chat with Sales
+              <MessageSquare className="mr-2 h-4 w-4" /> {t('site.demo.chatSales')}
             </Button>
           </div>
         </div>

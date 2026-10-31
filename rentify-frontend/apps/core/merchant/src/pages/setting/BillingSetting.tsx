@@ -11,7 +11,6 @@ import { Badge } from '@rentify/shared/ui/badge';
 import {
   CreditCard,
   Plus,
-  Download,
   Receipt,
   Calendar,
   CheckCircle2,
@@ -20,13 +19,23 @@ import {
   Check,
   Minus,
   Sparkles,
-  AlertTriangle,
-  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { useChannels } from '../../context/ChannelContext';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { useGetPackagesQuery } from '@rentify/apis';
+import { useTranslation } from '@rentify/utils';
+
+type PlanPayment = { id: string; currency: string; amountMinor: number | null; status: string; createdAt: string };
+const PAYMENT_STATUS: Record<string, string> = {
+  pending: 'Pending', completed: 'Completed', failed: 'Failed', expired: 'Expired', cancelled: 'Cancelled',
+};
+const formatPaymentAmount = (payment: PlanPayment) =>
+  payment.amountMinor === null
+    ? 'Amount unavailable'
+    : new Intl.NumberFormat('en-US', { style: 'currency', currency: payment.currency })
+        .format(payment.amountMinor / (payment.currency === 'USD' ? 100 : 1));
 
 const PLAN_TIERS = [
   {
@@ -87,6 +96,7 @@ const PLAN_TIERS = [
 ];
 
 export const BillingSetting = () => {
+  const { t } = useTranslation();
   const { hasStorefront } = useChannels();
   const [entitlements, setEntitlements] = useState<any>(null);
 
@@ -101,8 +111,35 @@ export const BillingSetting = () => {
       });
   }, []);
 
+  // Name, price and trial come from Core's packages; the tier list only adds copy.
+  const { data: packageList } = useGetPackagesQuery(undefined);
+  const packages: any[] = Array.isArray(packageList) ? packageList : (packageList as any)?.data || [];
+  const PACKAGE_FOR_TIER: Record<string, (pkg: any) => boolean> = {
+    free_pilot: (pkg) => Number(pkg.price) === 0,
+    starter: (pkg) => String(pkg.name).toLowerCase() === 'starter',
+    business: (pkg) => String(pkg.name).toLowerCase() === 'pro',
+  };
+  const limitsOf = (pkg: any) => {
+    if (!pkg?.limits) return {};
+    if (typeof pkg.limits !== 'string') return pkg.limits;
+    try { return JSON.parse(pkg.limits); } catch { return {}; }
+  };
+  const tiers = PLAN_TIERS.map((tier) => {
+    const pkg = packages.find(PACKAGE_FOR_TIER[tier.key] || (() => false));
+    if (!pkg) return tier;
+    const trialDays = Number(limitsOf(pkg).trialDays) || 0;
+    return {
+      ...tier,
+      name: pkg.name,
+      onboardingKey: String(pkg.name).toLowerCase(),
+      priceLabel: `$${Number(pkg.price).toFixed(Number(pkg.price) % 1 ? 2 : 0)}/mo`,
+      trial: trialDays ? `${trialDays}-day free trial` : Number(pkg.price) > 0 ? 'Paid by KHQR' : 'Free',
+      hasTrial: trialDays > 0,
+    };
+  });
+
   const activeTierKey = entitlements?.tier || (hasStorefront ? 'starter' : 'free_pilot');
-  const currentTier = PLAN_TIERS.find((p) => p.key === activeTierKey) || PLAN_TIERS[0];
+  const currentTier = tiers.find((p) => p.key === activeTierKey) || tiers[0];
   const isGracePeriod = entitlements?.isGracePeriod;
   const isSuspended = entitlements?.isSuspended;
   const isTrial = entitlements?.isTrial;
@@ -117,59 +154,43 @@ export const BillingSetting = () => {
     },
   ]);
 
-  const [invoices] = useState([
-    {
-      id: 'INV-2026-001',
-      date: 'Current Cycle',
-      amount: hasStorefront ? '$0.00 (14-Day Free Trial)' : '$0.00 (Free Plan)',
-      status: 'Active',
-    },
-  ]);
+  // Real plan payments from Core (/api/payment/history)
+  const [payments, setPayments] = useState<PlanPayment[] | null>(null);
+  const [paymentError, setPaymentError] = useState(false);
+  const loadPayments = async () => {
+    setPaymentError(false);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(`${RENTIFY_API_BASE}/api/payment/history`, { credentials: 'include', signal: controller.signal });
+      if (!response.ok) throw new Error('Payment history unavailable');
+      setPayments((await response.json()).data);
+    } catch {
+      setPaymentError(true);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  useEffect(() => { loadPayments(); }, []);
 
   const addPaymentMethod = () => {
-    toast.success('Redirecting to payment method setup...');
+    toast.success(t('merchant.p.redirectingToPaymentMethod'));
   };
 
-  const downloadInvoice = (invoiceId: string) => {
-    toast.success(`Downloading invoice ${invoiceId}...`);
-  };
 
   return (
     <SettingsLayout
-      title="Billing & Plans"
+      title={t('merchant.p.billingPlans')}
       description="Manage your Rentify plan, storefront trial, and billing details"
       icon={<CreditCard />}
     >
-      {isGracePeriod && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-sm">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
-          <div className="flex-1">
-            <h4 className="font-semibold text-sm">Subscription in Grace Period (7 Days)</h4>
-            <p className="mt-1 text-xs text-amber-800">
-              Your storefront and marketplace listings remain live and fully purchasable. However, adding new products, staff invitations, and template modifications are locked until renewal is settled.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {isSuspended && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-red-900 shadow-sm">
-          <ShieldAlert className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
-          <div className="flex-1">
-            <h4 className="font-semibold text-sm">Subscription Suspended</h4>
-            <p className="mt-1 text-xs text-red-800">
-              {entitlements?.restrictionReason || 'Your storefront is temporarily offline and marketplace listings are hidden. You retain read-only dashboard access to historical orders and invoices for 90 days.'}
-            </p>
-          </div>
-        </div>
-      )}
-
+      {/* Grace / suspended status is shown once, by the dashboard layout banner. */}
       {/* Current Plan */}
       <Card className="shadow-sm border-0">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Current Plan</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('merchant.p.currentPlan')}</CardTitle>
           <CardDescription>
-            One unified catalog across Marketplace, Storefront, and POS
+            {t('merchant.p.oneUnifiedCatalogAcross')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -205,7 +226,7 @@ export const BillingSetting = () => {
             {!hasStorefront && (
               <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
                 <a href={`${MARKETING_URL}/onboarding/starter?step=template`}>
-                  Unlock Starter (14-Day Free Trial)
+                  {t('merchant.p.addOnlineStore14')}
                 </a>
               </Button>
             )}
@@ -213,7 +234,7 @@ export const BillingSetting = () => {
 
           {/* 3-Tier Plan Comparison */}
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {PLAN_TIERS.map((plan) => {
+            {tiers.map((plan: any) => {
               const isCurrent = plan.key === activeTierKey;
               return (
                 <div
@@ -241,7 +262,7 @@ export const BillingSetting = () => {
                   </p>
 
                   <ul className="mt-4 flex-1 space-y-2.5 border-t pt-4 text-xs">
-                    {plan.features.map((feat) => (
+                    {plan.features.map((feat: any) => (
                       <li
                         key={feat.label}
                         className={`flex items-start gap-2 ${
@@ -259,13 +280,13 @@ export const BillingSetting = () => {
                   </ul>
 
                   <div className="mt-4 rounded-lg bg-slate-100 px-3 py-2 text-[11px] text-slate-600">
-                    <strong>Commission:</strong> {plan.commission}
+                    <strong>{t('merchant.p.commission')}</strong> {plan.commission}
                   </div>
 
                   <div className="mt-4">
                     {isCurrent ? (
                       <Button variant="outline" disabled className="w-full text-xs">
-                        Current Plan
+                        {t('merchant.p.currentPlan')}
                       </Button>
                     ) : (
                       <Button
@@ -277,8 +298,14 @@ export const BillingSetting = () => {
                             : 'w-full text-xs'
                         }
                       >
-                        <a href={`${MARKETING_URL}/onboarding/${plan.key}?step=template`}>
-                          {plan.key === 'free' ? 'Included' : `Start 14-Day Free Trial`}
+                        {/* Setup only adds a website to a Store without one; switching an
+                            existing website's plan has no self-serve endpoint yet. */}
+                        <a href={plan.key === 'free_pilot' ? '#' : hasStorefront ? '/support' : `${MARKETING_URL}/onboarding/${plan.onboardingKey || plan.key}?step=template`}>
+                          {plan.key === 'free_pilot'
+                            ? 'Included'
+                            : hasStorefront
+                              ? 'Ask to change plan'
+                              : plan.hasTrial ? 'Add online store (free trial)' : 'Add online store'}
                         </a>
                       </Button>
                     )}
@@ -295,14 +322,14 @@ export const BillingSetting = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg font-semibold">Payment Methods</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('merchant.p.paymentMethods')}</CardTitle>
               <CardDescription>
-                Manage your saved payout and billing methods
+                {t('merchant.p.manageYourSavedPayout')}
               </CardDescription>
             </div>
             <Button onClick={addPaymentMethod} className="flex items-center space-x-2">
               <Plus className="h-4 w-4" />
-              <span>Add Payment Method</span>
+              <span>{t('merchant.p.addPaymentMethod')}</span>
             </Button>
           </div>
         </CardHeader>
@@ -330,7 +357,7 @@ export const BillingSetting = () => {
                   {method.isDefault && (
                     <Badge variant="secondary" className="bg-green-50 text-green-700">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Default
+                      {t('merchant.p.default')}
                     </Badge>
                   )}
                   <Button variant="ghost" size="sm">
@@ -349,14 +376,24 @@ export const BillingSetting = () => {
       {/* Billing History */}
       <Card className="shadow-sm border-0">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Billing History</CardTitle>
-          <CardDescription>View and download your past statements</CardDescription>
+          <CardTitle className="text-lg font-semibold">{t('merchant.p.billingHistory')}</CardTitle>
+          <CardDescription>{t('merchant.p.yourPastPlanPayments')}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent aria-live="polite">
+          {paymentError ? (
+            <p role="alert" className="text-sm text-gray-500">
+              Payment history could not be loaded.{' '}
+              <button type="button" className="font-medium text-foreground underline" onClick={loadPayments}>{t('merchant.p.tryAgain')}</button>
+            </p>
+          ) : payments === null ? (
+            <p role="status" className="text-sm text-gray-500">{t('merchant.p.loadingPaymentHistory')}</p>
+          ) : payments.length === 0 ? (
+            <p className="text-sm text-gray-500">{t('merchant.p.noPlanPaymentsYet')}</p>
+          ) : (
           <div className="space-y-3">
-            {invoices.map((invoice) => (
+            {payments.map((payment) => (
               <div
-                key={invoice.id}
+                key={payment.id}
                 className="flex items-center justify-between p-3 border rounded-lg"
               >
                 <div className="flex items-center space-x-3">
@@ -364,31 +401,20 @@ export const BillingSetting = () => {
                     <Receipt className="h-4 w-4 text-gray-600" />
                   </div>
                   <div>
-                    <div className="font-medium">{invoice.id}</div>
+                    <div className="font-medium">{formatPaymentAmount(payment)}</div>
                     <div className="text-sm text-gray-500 flex items-center space-x-2">
                       <Calendar className="h-3 w-3" />
-                      <span>{invoice.date}</span>
+                      <span>{new Date(payment.createdAt).toLocaleDateString('en-US')}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="font-medium">{invoice.amount}</div>
-                    <Badge variant="outline" className="bg-green-50 text-green-700">
-                      {invoice.status}
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => downloadInvoice(invoice.id)}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Badge variant="outline" className={payment.status === 'completed' ? 'bg-green-50 text-green-700' : ''}>
+                  {PAYMENT_STATUS[payment.status] || payment.status}
+                </Badge>
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
     </SettingsLayout>

@@ -24,7 +24,7 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
           <CardDescription>Loading revenue data</CardDescription>
         </CardHeader>
         <CardContent>
-          <Skeleton className="w-full h-[320px] rounded-xl" />
+          <Skeleton className="w-full h-[220px] rounded-xl sm:h-[320px]" />
         </CardContent>
       </Card>
     );
@@ -48,6 +48,9 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
     },
   };
 
+  // An empty period is a flat line at $0; say so instead of drawing a tall empty chart
+  const hasSales = chartData.some((item) => item.revenue > 0 || item.orders > 0);
+
   return (
     <Card className="h-full gap-4 rounded-3xl bg-card py-6 shadow-[var(--shadow-soft)]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -63,7 +66,13 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
         </div>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[320px] w-full">
+        {!hasSales ? (
+          <div className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-muted/50 px-4 py-8 text-center">
+            <p className="text-sm font-medium text-foreground">No sales in this period</p>
+            <p className="text-xs text-muted-foreground">Your sales trend appears here after your first order.</p>
+          </div>
+        ) : (
+        <ChartContainer config={chartConfig} className="h-[220px] w-full sm:h-[320px]">
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -135,6 +144,7 @@ export const RevenueChart = ({ data, dateRange, isLoading }) => {
             />
           </AreaChart>
         </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );

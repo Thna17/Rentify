@@ -176,11 +176,7 @@ export default function VerifyOtpForm() {
         await verifyOtp(payload).unwrap();
       }
 
-      setSuccess(
-        isKhmer
-          ? 'ការផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
-          : 'Account verified successfully! Redirecting…'
-      );
+      setSuccess('verify.success');
 
       setTimeout(() => {
         window.location.href = redirect;
@@ -217,11 +213,7 @@ export default function VerifyOtpForm() {
       }
 
       setResendTime(60);
-      setSuccess(
-        isKhmer
-          ? 'លេខកូដថ្មីត្រូវបានផ្ញើជូនហើយ'
-          : 'A new verification code has been sent'
-      );
+      setSuccess('verify.newCodeSent');
     } catch (err: any) {
       setError('verify.resendFailed');
     }
@@ -246,7 +238,7 @@ export default function VerifyOtpForm() {
           </div>
           <div className="min-w-0 flex-1">
             <p className={cn('text-xs text-slate-500', isKhmer && 'font-khmer')}>
-              {isKhmer ? 'លេខកូដត្រូវបានផ្ញើទៅ' : 'Code sent to'}
+              {t('auth.codeSentTo')}
             </p>
             <p className="mt-0.5 break-all text-sm font-medium text-slate-800">{maskedDestination}</p>
           </div>
@@ -257,7 +249,7 @@ export default function VerifyOtpForm() {
             className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600', isKhmer && 'font-khmer')}
           >
             <Edit2 className="h-3.5 w-3.5" />
-            <span>{isKhmer ? 'ប្តូរ' : 'Change'}</span>
+            <span>{t('auth.change')}</span>
           </button>
         </div>
       )}
@@ -267,7 +259,7 @@ export default function VerifyOtpForm() {
         <Alert className="flex items-start gap-3 rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm animate-in fade-in-50 zoom-in-95">
           <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-600 mt-0.5 animate-bounce" />
           <AlertDescription className={cn('text-sm font-bold leading-relaxed text-emerald-900', isKhmer && 'font-khmer')}>
-            {success}
+            {t(success)}
           </AlertDescription>
         </Alert>
       )}
@@ -301,9 +293,7 @@ export default function VerifyOtpForm() {
         </div>
 
         <p className={cn('text-center text-xs text-slate-400', isKhmer && 'font-khmer')}>
-          {isKhmer
-            ? 'អ្នកអាចចម្លង ឬវាយបញ្ចូលលេខកូដ ៦ ខ្ទង់ដោយផ្ទាល់'
-            : 'Type or paste the 6-digit code directly'}
+          {t('verify.pasteHint')}
         </p>
       </div>
 
@@ -370,9 +360,7 @@ export default function VerifyOtpForm() {
       {isPhone && (
         <div className="pt-2 border-t border-slate-100 animate-in fade-in-50">
           <p className={cn('text-xs text-slate-500 mb-2 text-center', isKhmer && 'font-khmer')}>
-            {isKhmer
-              ? 'មិនទាន់ទទួលបានសារ SMS ឬយឺតយ៉ាវ?'
-              : 'SMS delayed or not received?'}
+            {t('verify.smsDelayed')}
           </p>
           <Button
             type="button"

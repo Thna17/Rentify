@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 export interface CheckoutStepDef {
   label: string;
@@ -11,7 +12,7 @@ export interface CheckoutStepDef {
 @Component({
   selector: 'app-checkout-steps',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, IconComponent],
   template: `
   <div class="steps-bar">
     <div class="container top-row">
@@ -19,7 +20,7 @@ export interface CheckoutStepDef {
         <img src="/assets/rentify-logo.webp" alt="Rentify Marketplace" class="logo-mark" />
         Rentify Marketplace
       </a>
-      <span class="secure-note"><ui-icon name="lock" [size]="13"></ui-icon> Secure Checkout</span>
+      <span class="secure-note"><ui-icon name="lock" [size]="13"></ui-icon> {{ 'checkoutSteps.secureCheckout' | translate }}</span>
     </div>
     <div class="container steps-inner">
       <ng-container *ngFor="let s of steps; let i = index; let last = last">

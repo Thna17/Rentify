@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 
 interface InfoSection {
   heading: string;
@@ -121,14 +122,14 @@ const PAGES: Record<string, InfoPage> = {
 
 @Component({
   selector: 'app-info',
-  imports: [RouterLink, NavbarComponent, FooterComponent],
+  imports: [TranslatePipe, RouterLink, NavbarComponent, FooterComponent],
   template: `
     <app-navbar />
 
     @if (page(); as info) {
       <section class="container info">
         <nav class="crumbs">
-          <a routerLink="/">Home</a> <span>›</span> <span>{{ info.title }}</span>
+          <a routerLink="/">{{ 'nav.home' | translate }}</a> <span>›</span> <span>{{ info.title }}</span>
         </nav>
 
         <h1>{{ info.title }}</h1>
@@ -144,7 +145,7 @@ const PAGES: Record<string, InfoPage> = {
         </div>
 
         <p class="more">
-          Still stuck? <a routerLink="/contact">Contact our team</a>.
+          {{ 'info.stillStuck' | translate }} <a routerLink="/contact">{{ 'info.contactTeam' | translate }}</a>.
         </p>
       </section>
     }

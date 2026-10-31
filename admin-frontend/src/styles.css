@@ -1466,3 +1466,33 @@ body {
     }
   }
 }
+
+/* Khmer (P-I18N): Kantumruy Pro, taller lines so stacked vowels and subscript
+   consonants are not clipped, and labels that wrap instead of overflowing.
+   Applies only while <html lang="km">; English layout is unchanged. */
+html[lang="km"] body,
+html[lang="km"] :is(button, input, select, textarea) {
+  font-family: var(--rentify-font-family-body, 'Kantumruy Pro', 'Noto Sans Khmer', sans-serif);
+}
+html[lang="km"] body {
+  line-height: 1.7;
+}
+html[lang="km"] :is(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+html[lang="km"] :is(button, [role="button"], [role="tab"], [role="menuitem"], a, label, th, td, dt, dd, li) {
+  overflow-wrap: break-word;
+}
+html[lang="km"] :is(.leading-none, .leading-tight, .leading-snug, .leading-4, .leading-5) {
+  line-height: 1.5;
+}
+/* overflow:hidden on a single line cuts off marks above and below the base line */
+html[lang="km"] :is(.truncate, .line-clamp-1, .line-clamp-2, .line-clamp-3) {
+  padding-block: 0.12em;
+}
+/* Letter-spacing and all-caps styling are Latin conventions; on Khmer they pull
+   stacked marks apart. */
+html[lang="km"] :is([class*="tracking-"], .uppercase, .eyebrow) {
+  letter-spacing: normal;
+}

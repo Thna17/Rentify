@@ -94,6 +94,9 @@ export interface Category {
 }
 
 export interface Store {
+  marketplaceColor?: string;
+  /** The store's own live website (http/https), when it has one. */
+  websiteUrl?: string | null;
   id: string;
   slug?: string;
   name: string;

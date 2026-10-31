@@ -6,6 +6,22 @@ const categories = Object.freeze([
 ]);
 
 const SYNONYMS = {
+  // Existing marketplace catalog labels map to canonical publication categories.
+  'phones & tablets': 'Phones & Devices',
+  'bags & luggage': 'Accessories',
+  "men's clothing": 'Clothing',
+  'unisex clothing': 'Clothing',
+  'face care': 'Skincare',
+  'sun care': 'Skincare',
+  'bath & body': 'Beauty',
+  'body care': 'Beauty',
+  'hair care': 'Beauty',
+  haircare: 'Beauty',
+  'snacks & dried fruit': 'Food & Beverage',
+  'art supplies': 'Other',
+  'paper & notebooks': 'Other',
+  'school supplies': 'Other',
+  stationery: 'Other',
   ceramics: 'Pottery',
   'handicrafts & pottery': 'Pottery',
   'fashion & textiles': 'Clothing',

@@ -4,12 +4,14 @@ import {
   ExternalLink,
   LayoutDashboard,
   Rocket,
+  ShoppingBag,
   Sparkles,
   WalletCards,
 } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Card, CardContent } from '@rentify/shared/ui/card';
-import { POS_URL } from '@rentify/shared/config/urls';
+import { useEffect, useState } from 'react';
+import { MARKETPLACE_URL, POS_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 const normalizeUrl = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -28,6 +30,21 @@ export default function CompletedState({
   const storefrontUrl = normalizeUrl(siteUrl);
   const dashboardLink = normalizeUrl(dashboardUrl);
   const posLink = normalizeUrl(POS_URL);
+
+  // Every new store is also listed on the marketplace; show its page and the
+  // real approval state from Core rather than assuming it is public yet.
+  const [marketStore, setMarketStore] = useState(undefined);
+  useEffect(() => {
+    let active = true;
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => { if (active) setMarketStore(result?.data || null); })
+      .catch(() => { if (active) setMarketStore(null); });
+    return () => { active = false; };
+  }, []);
+  const marketplaceLink = marketStore?.id ? `${MARKETPLACE_URL}/stores/${marketStore.id}` : null;
+  const marketplaceLive = marketStore?.marketplaceEnabled !== false &&
+    marketStore?.marketplaceApprovalStatus === 'approved';
 
   return (
     <div className="space-y-6">
@@ -51,7 +68,7 @@ export default function CompletedState({
         </p>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-start gap-3">
@@ -99,11 +116,37 @@ export default function CompletedState({
               </>
             ) : (
               <p className="mt-5 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-                {language === 'KH'
-                  ? 'សូមបើក Dashboard ដើម្បីមើល URL របស់អ្នក។'
-                  : 'Open the dashboard to view your storefront URL.'}
+                {t('deployment.openTheDashboardToView')}
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="flex h-full flex-col p-5">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-amber-100 p-2.5 text-amber-700">
+                <ShoppingBag className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">{t('deployment.completed.marketTitle')}</p>
+                <p className="mt-1 text-sm text-slate-600">{t('deployment.completed.marketDesc')}</p>
+              </div>
+            </div>
+            <div className="mt-auto pt-5">
+              {marketStore === undefined ? (
+                <p className="text-sm text-slate-500">{t('deployment.completed.marketLoading')}</p>
+              ) : marketplaceLink && marketplaceLive ? (
+                <Button asChild className="w-full bg-slate-900 text-white hover:bg-slate-800">
+                  <a href={marketplaceLink} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {t('deployment.completed.visitMarket')}
+                  </a>
+                </Button>
+              ) : (
+                <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{t('deployment.completed.marketPending')}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -127,7 +170,7 @@ export default function CompletedState({
                 <Button asChild variant="outline" className="w-full">
                   <a href={dashboardLink}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    {language === 'KH' ? 'បើក Dashboard' : 'Open dashboard'}
+                    {t('deployment.openDashboard')}
                   </a>
                 </Button>
               )}
@@ -143,10 +186,10 @@ export default function CompletedState({
               </div>
               <div>
                 <p className="font-semibold text-slate-900">
-                  {language === 'KH' ? 'ប្រព័ន្ធលក់នៅកន្លែង (POS)' : 'Point of Sale (POS)'}
+                  {t('deployment.pointOfSalePos')}
                 </p>
                 <p className="mt-1 text-sm text-slate-600">
-                  {language === 'KH' ? 'គិតលុយលឿន និងស្កេនបាកូដ' : 'Fast in-store register & barcode scanning'}
+                  {t('deployment.fastInStoreRegisterBarcode')}
                 </p>
               </div>
             </div>
@@ -171,7 +214,7 @@ export default function CompletedState({
                 <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
                   <a href={posLink} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    {language === 'KH' ? 'បើកបញ្ជរ POS' : 'Launch POS Register'}
+                    {t('deployment.launchPosRegister')}
                   </a>
                 </Button>
               )}
@@ -194,15 +237,9 @@ export default function CompletedState({
           </div>
           <ol className="mt-4 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
             {[
-              language === 'KH'
-                ? 'បើក Dashboard និងបន្ថែមផលិតផលរបស់អ្នក'
-                : 'Open the dashboard and add your products.',
-              language === 'KH'
-                ? 'ពិនិត្យទំព័រហាងនៅលើទូរស័ព្ទ'
-                : 'Review the storefront on a mobile phone.',
-              language === 'KH'
-                ? 'ចែករំលែក URL របស់ហាងជាមួយអតិថិជន'
-                : 'Share your storefront URL with customers.',
+              t('deployment.openTheDashboardAndAdd'),
+              t('deployment.reviewTheStorefrontOnA'),
+              t('deployment.shareYourStorefrontUrlWith'),
             ].map((step, index) => (
               <li
                 key={step}

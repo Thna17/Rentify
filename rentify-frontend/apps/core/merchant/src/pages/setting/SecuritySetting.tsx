@@ -13,8 +13,10 @@ import {
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { useChangePasswordMutation } from '@rentify/apis';
+import { useTranslation } from '@rentify/utils';
 
 export const SecuritySetting = () => {
+  const { t } = useTranslation();
   // Use the mutation hook
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
 
@@ -53,17 +55,17 @@ export const SecuritySetting = () => {
     
     // Validation
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      toast.error('Please fill in all password fields');
+      toast.error(t('merchant.p.pleaseFillInAll'));
       return;
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error(t('merchant.p.newPasswordsDoNot'));
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
+      toast.error(t('merchant.p.newPasswordMustBe'));
       return;
     }
 
@@ -88,7 +90,7 @@ export const SecuritySetting = () => {
         confirm: false,
       });
 
-      toast.success('Password updated successfully');
+      toast.success(t('merchant.p.passwordUpdatedSuccessfully'));
     } catch (error: any) {
       // Handle API errors
       const errorMessage = error.data?.message || 'Failed to update password';
@@ -102,16 +104,16 @@ export const SecuritySetting = () => {
 
   return (
     <SettingsLayout
-      title="Security Settings"
+      title={t('merchant.p.securitySettings')}
       description="Manage your account security and privacy settings"
       icon={<Shield />}
     >
       {/* Two-Factor Authentication */}
       <Card className="shadow-sm border-0">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Two-Factor Authentication</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('merchant.p.twoFactorAuthentication')}</CardTitle>
           <CardDescription>
-            Add an extra layer of security to your account
+            {t('merchant.p.addAnExtraLayer')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -122,14 +124,14 @@ export const SecuritySetting = () => {
               </div>
               <div>
                 <Label htmlFor="2fa" className="text-sm font-medium cursor-pointer">
-                  Two-Factor Authentication
+                  {t('merchant.p.twoFactorAuthentication')}
                 </Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Active
+                    {t('merchant.p.active')}
                   </Badge>
-                  <span className="text-sm text-gray-500">Authenticator app</span>
+                  <span className="text-sm text-gray-500">{t('merchant.p.authenticatorApp')}</span>
                 </div>
               </div>
             </div>
@@ -148,16 +150,16 @@ export const SecuritySetting = () => {
             <Button variant="outline" className="justify-start h-auto p-4">
               <QrCode className="h-5 w-5 mr-3" />
               <div className="text-left">
-                <div className="font-medium">Setup Authenticator</div>
-                <div className="text-sm text-gray-500">Use an authenticator app</div>
+                <div className="font-medium">{t('merchant.p.setupAuthenticator')}</div>
+                <div className="text-sm text-gray-500">{t('merchant.p.useAnAuthenticatorApp')}</div>
               </div>
             </Button>
 
             <Button variant="outline" className="justify-start h-auto p-4">
               <Smartphone className="h-5 w-5 mr-3" />
               <div className="text-left">
-                <div className="font-medium">SMS Verification</div>
-                <div className="text-sm text-gray-500">Receive codes via SMS</div>
+                <div className="font-medium">{t('merchant.p.smsVerification')}</div>
+                <div className="text-sm text-gray-500">{t('merchant.p.receiveCodesViaSms')}</div>
               </div>
             </Button>
           </div>
@@ -167,22 +169,22 @@ export const SecuritySetting = () => {
       {/* Change Password */}
       <Card className="shadow-sm border-0">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Change Password</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('merchant.p.changePassword')}</CardTitle>
           <CardDescription>
-            Update your password to keep your account secure
+            {t('merchant.p.updateYourPasswordTo')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="current-password">Current Password</Label>
+              <Label htmlFor="current-password">{t('merchant.p.currentPassword')}</Label>
               <div className="relative">
                 <Input
                   id="current-password"
                   type={showPassword.current ? "text" : "password"}
                   value={passwordData.currentPassword}
                   onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                  placeholder="Enter your current password"
+                  placeholder={t('merchant.p.enterYourCurrentPassword')}
                   className="pr-10"
                 />
                 <Button
@@ -202,14 +204,14 @@ export const SecuritySetting = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password">{t('merchant.p.newPassword')}</Label>
               <div className="relative">
                 <Input
                   id="new-password"
                   type={showPassword.new ? "text" : "password"}
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                  placeholder="Enter your new password"
+                  placeholder={t('merchant.p.enterYourNewPassword')}
                   className="pr-10"
                 />
                 <Button
@@ -229,14 +231,14 @@ export const SecuritySetting = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Label htmlFor="confirm-password">{t('merchant.p.confirmNewPassword')}</Label>
               <div className="relative">
                 <Input
                   id="confirm-password"
                   type={showPassword.confirm ? "text" : "password"}
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                  placeholder="Confirm your new password"
+                  placeholder={t('merchant.p.confirmYourNewPassword')}
                   className="pr-10"
                 />
                 <Button
@@ -263,12 +265,12 @@ export const SecuritySetting = () => {
               {isChangingPassword ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Updating Password...
+                  {t('merchant.p.updatingPassword')}
                 </>
               ) : (
                 <>
                   <Lock className="h-4 w-4 mr-2" />
-                  Update Password
+                  {t('merchant.p.updatePassword')}
                 </>
               )}
             </Button>
@@ -279,9 +281,9 @@ export const SecuritySetting = () => {
       {/* Active Sessions */}
       <Card className="shadow-sm border-0">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Active Sessions</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('merchant.p.activeSessions')}</CardTitle>
           <CardDescription>
-            Manage your active login sessions across devices
+            {t('merchant.p.manageYourActiveLogin')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -297,7 +299,7 @@ export const SecuritySetting = () => {
                     <div className="text-sm text-gray-500">
                       {session.location} • {session.lastActive}
                       {session.current && (
-                        <Badge variant="secondary" className="ml-2">Current</Badge>
+                        <Badge variant="secondary" className="ml-2">{t('merchant.p.current')}</Badge>
                       )}
                     </div>
                   </div>
@@ -308,7 +310,7 @@ export const SecuritySetting = () => {
                     size="sm"
                     onClick={() => revokeSession(session.id)}
                   >
-                    Revoke
+                    {t('merchant.p.revoke')}
                   </Button>
                 )}
               </div>

@@ -1,10 +1,23 @@
 // components/CollectionsSection.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { GripVertical, Edit2, Plus, Folder, MoreVertical } from 'lucide-react';
+import { Edit2, Plus, Folder, MoreVertical, Trash2 } from 'lucide-react';
+import {
+  useCreateCategoryMutation,
+  useDeleteCategoryMutation,
+  useGetCategoriesQuery,
+  useUpdateCategoryMutation,
+} from '@rentify/apis';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { Button } from '@rentify/shared/ui/button';
-import { Badge } from '@rentify/shared/ui/badge';
+import { Input } from '@rentify/shared/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@rentify/shared/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,24 +31,57 @@ interface CollectionsSectionProps {
   className?: string;
 }
 
-export const CollectionsSection: React.FC<CollectionsSectionProps> = ({ 
-  storeData, 
+// Collections are the merchant's own storefront groupings (shop categories). The shared
+// marketplace taxonomy is separate and is chosen per product.
+export const CollectionsSection: React.FC<CollectionsSectionProps> = ({
+  storeData,
   t,
-  className 
+  className,
 }) => {
-  const handleEditCollection = (collectionId: string) => {
-    // Implement edit collection logic
-    console.log('Edit collection:', collectionId);
+  const websiteId = storeData?.websiteId;
+  const { data: collections = [] } = useGetCategoriesQuery(websiteId, { skip: !websiteId });
+  const [createCategory, { isLoading: creating }] = useCreateCategoryMutation();
+  const [updateCategory, { isLoading: updating }] = useUpdateCategoryMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
+
+  // editing: null = closed, {} = new collection, {id, name} = rename
+  const [editing, setEditing] = useState<{ id?: string; name?: string } | null>(null);
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+
+  const openDialog = (collection?: { id: string; name: string }) => {
+    setEditing(collection ? { id: collection.id, name: collection.name } : {});
+    setName(collection?.name || '');
+    setError('');
   };
 
-  const handleDeleteCollection = (collectionId: string) => {
-    // Implement delete collection logic
-    console.log('Delete collection:', collectionId);
+  const handleSave = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError('Enter a collection name');
+      return;
+    }
+    try {
+      if (editing?.id) await updateCategory({ id: editing.id, name: trimmed }).unwrap();
+      else await createCategory({ websiteId, name: trimmed }).unwrap();
+      setEditing(null);
+    } catch (e: any) {
+      setError(e?.data?.error || 'Could not save the collection');
+    }
+  };
+
+  const handleDelete = async (collection: { id: string; name: string }) => {
+    if (!window.confirm(`Delete "${collection.name}"? Products stay, only the collection is removed.`)) return;
+    try {
+      await deleteCategory(collection.id).unwrap();
+    } catch (e: any) {
+      window.alert(e?.data?.error || 'Could not delete the collection');
+    }
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={className}
     >
@@ -51,61 +97,43 @@ export const CollectionsSection: React.FC<CollectionsSectionProps> = ({
                 {t('dashboard.store_management.collections_description')}
               </CardDescription>
             </div>
-            <Button>
+            <Button onClick={() => openDialog()} disabled={!websiteId}>
               <Plus className="h-4 w-4 mr-2" />
               {t('header.add_category')}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {Array.isArray(storeData?.collections) && storeData.collections.length > 0 ? (
+          {collections.length > 0 ? (
             <div className="space-y-3">
-              {storeData.collections.map((collection: any) => (
-                <motion.div
+              {collections.map((collection: any) => (
+                <div
                   key={collection.id}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
+                  className="flex items-center gap-3 p-4 bg-muted rounded-lg group"
                 >
-                  <div className="flex items-center gap-3 p-4 bg-muted rounded-lg hover:bg-muted/80 transition-colors group">
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                    <Folder className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium truncate">
-                          {collection.title || collection.name}
-                        </h4>
-                        {collection.productCount && (
-                          <Badge variant="secondary" className="text-xs">
-                            {collection.productCount} {t('dashboard.store_management.products')}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {collection.description || t('dashboard.store_management.no_description')}
-                      </p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditCollection(collection.id)}>
-                          <Edit2 className="h-4 w-4 mr-2" />
-                          {t('common.edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteCollection(collection.id)}
-                          className="text-destructive"
-                        >
-                          <Edit2 className="h-4 w-4 mr-2" />
-                          {t('common.delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </motion.div>
+                  <Folder className="h-5 w-5 text-muted-foreground" />
+                  <h4 className="flex-1 min-w-0 font-medium truncate">{collection.name}</h4>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openDialog(collection)}>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(collection)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ))}
             </div>
           ) : (
@@ -117,7 +145,7 @@ export const CollectionsSection: React.FC<CollectionsSectionProps> = ({
               <p className="text-muted-foreground mb-4">
                 {t('dashboard.store_management.no_collections_description')}
               </p>
-              <Button>
+              <Button onClick={() => openDialog()} disabled={!websiteId}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('header.add_category')}
               </Button>
@@ -125,6 +153,30 @@ export const CollectionsSection: React.FC<CollectionsSectionProps> = ({
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing?.id ? 'Rename collection' : 'New collection'}</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={name}
+            placeholder="e.g. New arrivals"
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={creating || updating}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

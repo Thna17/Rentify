@@ -16,7 +16,7 @@ export function UnauthorizedAccess({ requiredPermission, currentFeature }) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-[60vh] p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">

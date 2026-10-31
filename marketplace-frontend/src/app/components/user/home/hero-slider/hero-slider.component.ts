@@ -10,6 +10,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { PROMOTIONS, Promotion } from '../../../../core/data/promotions.data';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 const AUTOPLAY_MS = 5000;
 
@@ -27,12 +28,12 @@ const AUTOPLAY_MS = 5000;
  */
 @Component({
   selector: 'app-hero-slider',
-  imports: [RouterLink, IconComponent],
+  imports: [TranslatePipe, RouterLink, IconComponent],
   template: `
     <section
       class="slider"
       aria-roledescription="carousel"
-      aria-label="Promotions"
+      [attr.aria-label]="'hero.promotions' | translate"
       (focusin)="paused.set(true)"
       (focusout)="paused.set(false)"
     >
@@ -66,7 +67,7 @@ const AUTOPLAY_MS = 5000;
                 [style.background-image]="'url(' + (promo.poster || promo.image) + ')'"
               >
                 @if (promo.video) {
-                  <video class="campaign-video" autoplay muted loop playsinline preload="metadata" [poster]="promo.poster" aria-label="Rentify Marketplace category advertisement">
+                  <video class="campaign-video" autoplay muted loop playsinline preload="metadata" [poster]="promo.poster" [attr.aria-label]="'hero.categoryAd' | translate">
                     @if (promo.videoWebm) { <source [src]="promo.videoWebm" type="video/webm" /> }
                     <source [src]="promo.video" type="video/mp4" />
                   </video>
@@ -112,12 +113,12 @@ const AUTOPLAY_MS = 5000;
               >
                   <div class="woven-disc" aria-hidden="true"></div>
                   <div class="visual-frame">
-                    <span class="frame-kicker">Rentify Marketplace collection</span>
+                    <span class="frame-kicker">{{ 'hero.collection' | translate }}</span>
                     <strong>{{ promo.visual }}</strong>
-                    <span class="frame-detail">Made in Cambodia · Crafted by hand</span>
+                    <span class="frame-detail">{{ 'hero.madeInCambodia' | translate }}</span>
                   </div>
-                  <span class="craft-chip chip-one">Local makers</span>
-                  <span class="craft-chip chip-two">Authentic craft</span>
+                  <span class="craft-chip chip-one">{{ 'hero.localMakers' | translate }}</span>
+                  <span class="craft-chip chip-two">{{ 'hero.authenticCraft' | translate }}</span>
                   @if (promo.flash) {
                     <span class="flash">{{ promo.flash }}</span>
                   }
@@ -128,7 +129,7 @@ const AUTOPLAY_MS = 5000;
         }
       </div>
 
-      <div class="dots" role="tablist" aria-label="Choose slide">
+      <div class="dots" role="tablist" [attr.aria-label]="'hero.chooseSlide' | translate">
         @for (promo of promotions; track promo.id; let i = $index) {
           <button
             type="button"

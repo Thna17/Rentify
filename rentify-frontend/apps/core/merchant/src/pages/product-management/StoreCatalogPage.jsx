@@ -1,51 +1,88 @@
-import { useEffect, useState } from 'react';
-import { Package, Truck, ImagePlus } from 'lucide-react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, FileSpreadsheet, Package, Pencil, Plus, Search, Truck } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { Card, CardContent } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { Textarea } from '@rentify/shared/ui/textarea';
 import { Button } from '@rentify/shared/ui/button';
-import { Badge } from '@rentify/shared/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@rentify/shared/ui/select';
-import { ImageUploader } from '../product-form/components/ImageUploader';
-import { uploadProductImages } from '../../services/productImages';
+import { Skeleton } from '@rentify/shared/ui/skeleton';
+import { useChannels } from '../../context/ChannelContext';
+import { useTranslation } from '@rentify/utils';
 
 const commerce = `${ECOMMERCE_API_ROOT}/api`;
+const ALL = 'all';
 
 async function getJson(url, options = {}) {
   const response = await fetch(url, { credentials: 'include', ...options });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || data.message || 'Request failed');
   return data;
 }
 
+const money = (value) => `$${Number(value || 0).toFixed(2)}`;
+
+/**
+ * Where a product shows, read only from fields the API returns: product status,
+ * moderation, per-channel visibility and the Store's marketplace approval.
+ */
+const marketplaceState = (product, storeApproval) => {
+  if (product.status !== 'active') return { label: 'Draft', tone: 'muted' };
+  if (product.marketplaceVisibility === false) return { label: 'Hidden', tone: 'muted' };
+  if (product.moderationStatus === 'rejected') return { label: 'Rejected', tone: 'danger' };
+  if (product.moderationStatus && product.moderationStatus !== 'approved') return { label: 'In review', tone: 'warning' };
+  if (storeApproval && storeApproval !== 'approved') return { label: 'Waiting for store approval', tone: 'warning' };
+  return { label: 'Live', tone: 'success' };
+};
+const storefrontState = (product, hasWebsite) => {
+  if (!hasWebsite) return { label: 'No website', tone: 'muted' };
+  if (product.status !== 'active') return { label: 'Draft', tone: 'muted' };
+  if (product.storefrontVisibility === false) return { label: 'Hidden', tone: 'muted' };
+  return { label: 'Live', tone: 'success' };
+};
+
+const TONES = {
+  success: 'bg-success/10 text-success',
+  warning: 'bg-warning/15 text-warning-foreground',
+  danger: 'bg-destructive/10 text-destructive',
+  muted: 'bg-muted text-muted-foreground',
+};
+const ChannelPill = ({ channel, state }) => (
+  <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${TONES[state.tone]}`}>
+    {channel && <><span className="font-semibold">{channel}</span> ·</>} {state.label}
+  </span>
+);
+
 export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { store: channelStore, hasStorefront } = useChannels();
   const [storeId, setStoreId] = useState(suppliedStoreId || null);
-  const [categories, setCategories] = useState([]);
+  const [storeApproval, setStoreApproval] = useState(channelStore?.marketplaceApprovalStatus || null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [busyId, setBusyId] = useState(null);
   const [message, setMessage] = useState('');
+  const [query, setQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(ALL);
+  const [openId, setOpenId] = useState(null);
   const [deliveryPolicy, setDeliveryPolicy] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState('');
   const [deliveryBusy, setDeliveryBusy] = useState(false);
-  const [productImages, setProductImages] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [imageErrors, setImageErrors] = useState([]);
-  const [form, setForm] = useState({
-    name: '', description: '', price: '', stockQuantity: 10,
-    marketplaceCategory: '', status: 'active',
-  });
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
+  // Grace period and suspension lock new products; the reason is shown by the button
+  const [entitlements, setEntitlements] = useState(null);
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine/entitlements`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => setEntitlements(result?.data || null))
+      .catch(() => null);
+  }, []);
+  const addLocked = entitlements ? entitlements.mutationsAllowed === false : false;
 
   async function refresh(id) {
-    const result = await getJson(`${commerce}/stores/${id}/products`);
+    const result = await getJson(`${commerce}/stores/${id}/products?limit=500`);
     setProducts(result.products || []);
   }
 
@@ -55,58 +92,30 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
     setDeliveryFee(result.policy?.flatFee ?? '');
   }
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      getJson(`${commerce}/marketplace/categories`),
-      suppliedStoreId ? Promise.resolve({ data: { id: suppliedStoreId } })
-        : getJson(`${RENTIFY_API_BASE}/api/stores/mine`),
-    ]).then(async ([taxonomy, storeResult]) => {
-      if (!active) return;
-      const cats = taxonomy.categories || [];
-      setCategories(cats);
-      setStoreId(storeResult.data.id);
-      const primaryCat = storeResult.data?.primaryCategory;
-      if (primaryCat && cats.includes(primaryCat)) {
-        setForm((prev) => ({
-          ...prev,
-          marketplaceCategory: prev.marketplaceCategory || primaryCat,
-        }));
-      }
-      await Promise.all([refresh(storeResult.data.id), loadDelivery(storeResult.data.id)]);
-    }).catch((error) => { if (active) setMessage(error.message); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [suppliedStoreId]);
-
-  async function create(event) {
-    event.preventDefault();
-    setBusy(true);
-    setMessage('');
+  async function load() {
+    setLoading(true);
+    setLoadError('');
     try {
-      const images = await uploadProductImages({
-        files: productImages,
-        storeId,
-        onProgress: setUploadProgress,
-      });
-      await getJson(`${commerce}/stores/${storeId}/products`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form, price: Number(form.price), stockQuantity: Number(form.stockQuantity), images,
-        }),
-      });
-      setForm((prev) => ({ name: '', description: '', price: '', stockQuantity: 10,
-        marketplaceCategory: prev.marketplaceCategory || '', status: 'active' }));
-      setProductImages([]);
-      setImageErrors([]);
-      await refresh(storeId);
-      setMessage('Product saved to your Store catalog.');
-    } catch (error) { setMessage(error.message); }
-    finally { setBusy(false); setUploadProgress(0); }
+      const storeResult = suppliedStoreId
+        ? { data: { id: suppliedStoreId, marketplaceApprovalStatus: channelStore?.marketplaceApprovalStatus } }
+        : await getJson(`${RENTIFY_API_BASE}/api/stores/mine`);
+      const id = storeResult.data.id;
+      setStoreId(id);
+      setStoreApproval(storeResult.data?.marketplaceApprovalStatus || null);
+      // The product list must not disappear just because the delivery-fee call failed.
+      const [productsResult] = await Promise.allSettled([refresh(id), loadDelivery(id)]);
+      if (productsResult.status === 'rejected') throw productsResult.reason;
+    } catch (error) {
+      setLoadError(error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
+  useEffect(() => { load(); }, [suppliedStoreId]); // reload only when the Store changes
+
   async function changeProduct(product, changes) {
-    setBusy(true);
+    setBusyId(product.id);
     setMessage('');
     try {
       await getJson(`${commerce}/stores/${storeId}/products/${product.id}`, {
@@ -115,14 +124,13 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
       });
       await refresh(storeId);
     } catch (error) { setMessage(error.message); }
-    finally { setBusy(false); }
+    finally { setBusyId(null); }
   }
 
   async function saveDeliveryFee(event) {
     event.preventDefault();
     const amount = Number(deliveryFee);
-    if (!/^\d+(\.\d{1,2})?$/.test(deliveryFee.trim()) ||
-        !Number.isFinite(amount) || amount > 1000) {
+    if (!/^\d+(\.\d{1,2})?$/.test(String(deliveryFee).trim()) || !Number.isFinite(amount) || amount > 1000) {
       setMessage('Enter a USD delivery fee from 0.00 to 1000.00 with at most two decimals.');
       return;
     }
@@ -136,254 +144,326 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
       });
       setDeliveryPolicy(result.policy);
       setDeliveryFee(result.policy.flatFee);
-      setMessage('Marketplace delivery fee posted. Buyers will see it before checkout.');
+      setMessage('Delivery fee saved. Buyers see it before checkout.');
     } catch (error) { setMessage(error.message); }
     finally { setDeliveryBusy(false); }
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <span className="text-xs font-medium text-muted-foreground">Loading catalog…</span>
-        </div>
-      </div>
-    );
-  }
+  const categoryCounts = useMemo(() => products.reduce((counts, product) => {
+    const key = product.marketplaceCategory || 'Uncategorised';
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {}), [products]);
+
+  const visible = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return products.filter((product) =>
+      (categoryFilter === ALL || (product.marketplaceCategory || 'Uncategorised') === categoryFilter) &&
+      (!term || product.name?.toLowerCase().includes(term) || product.sku?.toLowerCase().includes(term)));
+  }, [products, query, categoryFilter]);
+
+  const hasWebsite = (product) => Boolean(product.websiteId) || hasStorefront;
+  const addProduct = () => navigate('/products/create');
+  const editProduct = (product) => navigate(`/products/edit/${product.id}`);
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 space-y-6 md:space-y-8">
-        <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Store catalog</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            One product ID, price, and stock balance for your storefront and the marketplace.
-          </p>
+      <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('merchant.p.products')}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t('merchant.p.onePriceAndOne')}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {hasStorefront && (
+              <Button variant="outline" className="h-11" onClick={() => navigate('/products/manage')}>
+                <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Bulk import &amp; export
+              </Button>
+            )}
+            {/* The dashboard banner explains a lock once; the button only says it is paused */}
+            <Button
+              onClick={addProduct}
+              className="h-11"
+              disabled={addLocked}
+              title={addLocked ? 'Paused until your subscription is renewed' : undefined}
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> {t('merchant.p.addProduct')}
+            </Button>
+          </div>
         </div>
 
+
         {message && (
-          <p role="status" className="rounded-xl bg-primary/[0.06] px-4 py-3 text-sm text-primary">
-            {message}
-          </p>
+          <p role="status" className="rounded-xl bg-muted px-4 py-3 text-sm text-foreground">{message}</p>
         )}
 
-        <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Truck className="h-4 w-4" />
-              </div>
-              <h3 className="text-base font-semibold text-foreground">Marketplace delivery fee</h3>
-            </div>
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Post one flat fee per order. Buyers pay the shown fee with the product total on delivery. Enter 0 for free delivery.
-            </p>
-            <form onSubmit={saveDeliveryFee} className="mt-4 flex flex-wrap items-end gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="delivery-fee">Delivery fee (USD)</Label>
-                <Input
-                  id="delivery-fee"
-                  required
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="0.01"
-                  value={deliveryFee}
-                  onChange={(event) => setDeliveryFee(event.target.value)}
-                  className="w-40 h-10 border-transparent [box-shadow:var(--shadow-soft)] bg-background"
-                />
-              </div>
-              <Button type="submit" disabled={deliveryBusy || !storeId} className="h-10">
-                {deliveryBusy ? 'Saving…' : deliveryPolicy ? 'Update fee' : 'Post fee'}
-              </Button>
-            </form>
-            {!deliveryPolicy && (
-              <p className="mt-3 text-sm text-amber-600">
-                Post a fee before your approved products appear in the marketplace.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Package className="h-4 w-4" />
-              </div>
-              <h3 className="text-base font-semibold text-foreground">Add a product</h3>
-            </div>
-
-            <form onSubmit={create} className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="product-name">Name</Label>
-                <Input
-                  id="product-name"
-                  required
-                  maxLength={200}
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Marketplace category</Label>
-                <Select
-                  value={form.marketplaceCategory}
-                  onValueChange={(value) => setForm({ ...form, marketplaceCategory: value })}
+        {/* Search + category filter */}
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input
+              aria-label={t('merchant.p.searchProducts')}
+              placeholder={t('merchant.p.searchByNameOr')}
+              className="h-11 pl-9"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+          {products.length > 0 && (
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label={t('merchant.p.filterByCategory')}>
+              {[[ALL, products.length], ...Object.entries(categoryCounts)].map(([key, count]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={categoryFilter === key}
+                  onClick={() => setCategoryFilter(key)}
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors ${
+                    categoryFilter === key ? 'bg-foreground text-background' : 'bg-muted text-foreground hover:bg-muted/70'
+                  }`}
                 >
-                  <SelectTrigger className="w-full h-9 border-transparent [box-shadow:var(--shadow-soft)] bg-background">
-                    <SelectValue placeholder="Choose category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="product-price">Price (USD)</Label>
-                <Input
-                  id="product-price"
-                  required
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(event) => setForm({ ...form, price: event.target.value })}
-                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="product-stock">Stock</Label>
-                <Input
-                  id="product-stock"
-                  required
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={form.stockQuantity}
-                  onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })}
-                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background"
-                />
-              </div>
-
-              <div className="space-y-1.5 md:col-span-2">
-                <Label htmlFor="product-description">Description</Label>
-                <Textarea
-                  id="product-description"
-                  value={form.description}
-                  onChange={(event) => setForm({ ...form, description: event.target.value })}
-                  className="border-transparent [box-shadow:var(--shadow-soft)] bg-background min-h-24"
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">Product images</p>
-                </div>
-                <p className="text-sm text-muted-foreground">Add up to 10 images. The first image becomes the cover.</p>
-                <ImageUploader
-                  images={productImages}
-                  onImagesChange={(files) => setProductImages((current) => [...current, ...files])}
-                  onRemoveImage={(index) => setProductImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                  onValidationError={setImageErrors}
-                  isUploading={busy}
-                  uploadProgress={uploadProgress}
-                />
-                {imageErrors.length > 0 && (
-                  <div role="alert" className="rounded-xl border border-destructive/20 bg-destructive/[0.06] p-3 text-sm text-destructive">
-                    {imageErrors.map((error) => <p key={error}>{error}</p>)}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Publication</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(value) => setForm({ ...form, status: value })}
-                >
-                  <SelectTrigger className="w-full h-9 border-transparent [box-shadow:var(--shadow-soft)] bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="md:col-span-2">
-                <Button type="submit" disabled={busy || !storeId} className="h-10">
-                  {busy ? (uploadProgress > 0 ? `Uploading ${uploadProgress}%…` : 'Saving…') : 'Save product'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card className="[box-shadow:var(--shadow-soft)] border-transparent">
-          <CardContent className="p-6">
-            <h3 className="text-base font-semibold text-foreground mb-1">Your products</h3>
-            {products.length === 0 && (
-              <p className="text-sm text-muted-foreground mt-2">No products yet.</p>
-            )}
-            <div className="mt-3 divide-y divide-border">
-              {products.map((product) => (
-                <div key={product.id} className="flex flex-wrap items-center gap-3 py-4 first:pt-0 last:pb-0">
-                  <div className="min-w-44 flex-1">
-                    <p className="font-medium text-foreground">{product.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-muted-foreground">${product.price} · Stock {product.stockQuantity}</p>
-                      <Badge variant={product.status === 'active' ? 'default' : 'subtle'} className="capitalize">
-                        {product.status}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <Select
-                    value={product.marketplaceCategory || ''}
-                    onValueChange={(value) => changeProduct(product, { marketplaceCategory: value })}
-                  >
-                    <SelectTrigger aria-label={`Category for ${product.name}`} className="h-9 border-transparent [box-shadow:var(--shadow-soft)] bg-background w-[180px]">
-                      <SelectValue placeholder="Choose category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
-                    className="border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
-                  >
-                    {product.status === 'active' ? 'Make draft' : 'Publish'}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => changeProduct(product, { marketplaceVisibility: product.marketplaceVisibility === false ? null : false })}
-                    className="border-transparent [box-shadow:var(--shadow-soft)] bg-background text-foreground hover:bg-muted/60"
-                  >
-                    {product.marketplaceVisibility === false ? 'Use Store visibility' : 'Hide from marketplace'}
-                  </Button>
-                </div>
+                  {key === ALL ? 'All' : key}
+                  <span className="opacity-60">{count}</span>
+                </button>
               ))}
             </div>
-          </CardContent>
+          )}
+        </div>
+
+        {/* Product list */}
+        <Card className="overflow-hidden border-transparent [box-shadow:var(--shadow-soft)]">
+          {loading ? (
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+            </div>
+          ) : loadError ? (
+            <div role="alert" className="flex flex-col items-center gap-3 px-4 py-12 text-center">
+              <p className="text-sm text-destructive">Could not load your products. {loadError}</p>
+              <Button variant="outline" onClick={load}>{t('merchant.p.tryAgain')}</Button>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
+              <Package className="h-10 w-10 text-muted-foreground/50" aria-hidden="true" />
+              <p className="font-medium text-foreground">{t('merchant.p.noProductsYet')}</p>
+              <p className="text-sm text-muted-foreground">{t('merchant.p.addYourFirstProduct')}</p>
+              <Button onClick={addProduct} className="h-11"><Plus className="mr-1.5 h-4 w-4" /> {t('merchant.p.addProduct')}</Button>
+            </div>
+          ) : visible.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-muted-foreground">{t('merchant.p.noProductsMatchThis')}</p>
+          ) : (
+            <>
+              <div className="hidden grid-cols-[minmax(0,2.2fr)_1fr_90px_80px_minmax(0,1.6fr)_150px] gap-3 border-b px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
+                <span>{t('merchant.p.product')}</span><span>{t('merchant.p.category')}</span><span>{t('merchant.p.price')}</span><span>{t('merchant.p.stock')}</span><span>{t('merchant.p.whereItShows')}</span><span className="text-right">{t('merchant.p.actions')}</span>
+              </div>
+              <ul className="divide-y">
+                {visible.map((product) => {
+                  const market = marketplaceState(product, storeApproval);
+                  const store = storefrontState(product, hasWebsite(product));
+                  const variants = (product.ProductVariants || []).filter((variant) =>
+                    variant.optionValues && Object.keys(variant.optionValues).length);
+                  const open = openId === product.id;
+                  // A product with variants sells from its variants, so count those
+                  const stock = variants.length
+                    ? variants.reduce((sum, variant) => sum + (Number(variant.stockQuantity) || 0), 0)
+                    : product.stockQuantity;
+                  const lowStock = stock <= (product.lowStockThreshold ?? 5);
+                  return (
+                    <Fragment key={product.id}>
+                      <li className="grid grid-cols-[56px_1fr] gap-3 px-4 py-3 md:grid-cols-[minmax(0,2.2fr)_1fr_90px_80px_minmax(0,1.6fr)_150px] md:items-center">
+                        <button
+                          type="button"
+                          className="flex min-w-0 items-center gap-3 text-left md:col-span-1"
+                          aria-expanded={open}
+                          onClick={() => setOpenId(open ? null : product.id)}
+                        >
+                          <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+                            {product.images?.[0]?.url || typeof product.images?.[0] === 'string' ? (
+                              <img src={product.images[0].url || product.images[0]} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <Package className="m-3 h-6 w-6 text-muted-foreground/50" aria-hidden="true" />
+                            )}
+                          </span>
+                          <span className="hidden min-w-0 md:block">
+                            <span className="block truncate font-medium text-foreground">{product.name}</span>
+                            <span className="block text-xs text-muted-foreground">
+                              {variants.length ? `${variants.length} variants` : product.sku}
+                            </span>
+                          </span>
+                        </button>
+
+                        {/* Phone: stacked summary */}
+                        <div className="min-w-0 space-y-1.5 md:hidden">
+                          <button type="button" className="block w-full text-left" onClick={() => setOpenId(open ? null : product.id)}>
+                            <span className="block truncate font-medium text-foreground">{product.name}</span>
+                            <span className="block text-sm text-muted-foreground">
+                              {money(product.price)} · <span className={lowStock ? 'text-destructive' : ''}>{stock} in stock</span>
+                              {variants.length ? ` · ${variants.length} variants` : ''}
+                            </span>
+                          </button>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap gap-1.5">
+                              <ChannelPill channel="Marketplace" state={market} />
+                              {hasWebsite(product) && <ChannelPill channel="Online store" state={store} />}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-11 w-11 shrink-0"
+                              aria-label={`Edit ${product.name}`}
+                              onClick={() => editProduct(product)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <span className="hidden truncate text-sm text-muted-foreground md:block">{product.marketplaceCategory || '—'}</span>
+                        <span className="hidden text-sm font-medium md:block">{money(product.price)}</span>
+                        <span className={`hidden text-sm md:block ${lowStock ? 'font-medium text-destructive' : ''}`}>{stock}</span>
+                        <div className="hidden flex-wrap gap-1.5 md:flex">
+                          <ChannelPill channel="Marketplace" state={market} />
+                          {hasWebsite(product) && <ChannelPill channel="Online store" state={store} />}
+                        </div>
+                        <div className="hidden justify-end gap-1 md:flex">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-11"
+                            disabled={busyId === product.id}
+                            onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
+                          >
+                            {product.status === 'active' ? 'Unpublish' : 'Publish'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-11 w-11"
+                            aria-label={`Edit ${product.name}`}
+                            onClick={() => editProduct(product)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+
+                      {open && (
+                        <li className="bg-muted/40 px-4 py-4">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {[
+                              { name: 'Rentify Marketplace', short: 'marketplace', state: market, field: 'marketplaceVisibility', shown: product.marketplaceVisibility !== false },
+                              ...(hasWebsite(product)
+                                ? [{ name: 'Your online store', short: 'online store', state: store, field: 'storefrontVisibility', shown: product.storefrontVisibility !== false }]
+                                : []),
+                            ].map((channel) => (
+                              <div key={channel.name} className="rounded-xl bg-background p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-medium text-foreground">{channel.name}</p>
+                                    <p className="text-sm text-muted-foreground">Price {money(product.price)} · Stock {stock}</p>
+                                  </div>
+                                  <ChannelPill channel="" state={channel.state} />
+                                </div>
+                                {!channel.disabled && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-3 h-10"
+                                    disabled={busyId === product.id}
+                                    onClick={() => changeProduct(product, {
+                                      [channel.field]: channel.field === 'marketplaceVisibility'
+                                        ? (channel.shown ? false : null)
+                                        : !channel.shown,
+                                    })}
+                                  >
+                                    {channel.shown ? `Hide from ${channel.short}` : `Show on ${channel.short}`}
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          {variants.length > 0 && (
+                            <div className="mt-3 rounded-xl bg-background p-4">
+                              <p className="mb-2 text-sm font-medium text-foreground">{t('merchant.p.variants')}</p>
+                              <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
+                                {variants.map((variant) => (
+                                  <li key={variant.id} className="flex justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2">
+                                    <span>{Object.values(variant.optionValues).join(' / ')}</span>
+                                    <span className="text-muted-foreground">{money(variant.price)} · {variant.stockQuantity} left</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-xs text-muted-foreground">
+                              {t('merchant.p.priceAndStockAre')}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-11 md:hidden"
+                              disabled={busyId === product.id}
+                              onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
+                            >
+                              {product.status === 'active' ? 'Unpublish (save as draft)' : 'Publish'}
+                            </Button>
+                          </div>
+                        </li>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </Card>
+
+        {/* Delivery fee: set once, rarely changed, so it sits below the list */}
+        <Card className="border-transparent [box-shadow:var(--shadow-soft)]">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-6"
+            aria-expanded={deliveryOpen}
+            onClick={() => setDeliveryOpen((value) => !value)}
+          >
+            <span className="flex items-center gap-3">
+              <Truck className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+              <span>
+                <span className="block font-medium text-foreground">{t('merchant.p.marketplaceDeliveryFee')}</span>
+                <span className="block text-sm text-muted-foreground">
+                  {deliveryPolicy ? `${money(deliveryPolicy.flatFee)} per order, paid on delivery` : 'Not set yet'}
+                </span>
+              </span>
+            </span>
+            <ChevronDown className={`h-5 w-5 transition-transform ${deliveryOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {deliveryOpen && (
+            <CardContent className="border-t pt-4">
+              <form onSubmit={saveDeliveryFee} className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="delivery-fee">{t('merchant.p.feePerOrderUsd')}</Label>
+                  <Input
+                    id="delivery-fee"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    className="h-11 w-36"
+                    value={deliveryFee}
+                    onChange={(event) => setDeliveryFee(event.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="h-11" disabled={deliveryBusy || !storeId}>
+                  {deliveryBusy ? 'Saving…' : 'Save fee'}
+                </Button>
+              </form>
+            </CardContent>
+          )}
         </Card>
       </div>
     </div>

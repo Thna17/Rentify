@@ -206,16 +206,16 @@ const SOCIAL_LINKS: SocialLink[] = [
     }
     svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    h4 { margin: 0 0 10px; font-family: var(--font-heading); font-size: 12.5px; font-weight: 700; letter-spacing: -.01em; color: var(--color-forest); }
+    h4 { margin: 0 0 14px; font-family: var(--font-heading); font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--color-text); }
 
-    /* Desktop: brand & sell on top row, links & news underneath to reduce total footer height */
+    /* Desktop: brand & links on the left, sell section on the far right */
     .footer-top {
       display: grid;
-      grid-template-columns: minmax(240px, 1.2fr) minmax(280px, 1.3fr) minmax(0, 2.2fr);
+      grid-template-columns: minmax(240px, 1.2fr) minmax(0, 2.2fr) minmax(260px, 1.2fr);
       grid-template-areas:
-        "brand sell links"
-        "news  news links";
-      column-gap: clamp(20px, 3vw, 44px);
+        "brand links sell"
+        "news  news  sell";
+      column-gap: clamp(20px, 3vw, 40px);
       row-gap: 18px;
       padding-top: clamp(24px, 2.5vw, 36px);
       padding-bottom: 20px;
@@ -225,13 +225,13 @@ const SOCIAL_LINKS: SocialLink[] = [
     .footer-sell { grid-area: sell; }
     .footer-news { grid-area: news; }
 
-    .logo { display: inline-flex; align-items: center; gap: 8px; color: var(--color-forest); font-size: 16px; letter-spacing: -.02em; text-decoration: none; }
+    .logo { display: inline-flex; align-items: center; gap: 10px; color: var(--color-forest); font-size: 18px; letter-spacing: -.02em; text-decoration: none; }
     .logo strong { font-weight: 700; }
     .logo > span:last-child { font-weight: 400; }
     .logo-mark {
-      display: block; width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;
+      display: block; width: 30px; height: 30px; object-fit: contain; flex-shrink: 0;
     }
-    .footer-brand p { margin: 10px 0 0; max-width: 34ch; font-size: 12.5px; line-height: 1.55; color: var(--color-text-secondary); }
+    .footer-brand p { margin: 12px 0 0; max-width: 34ch; font-size: 13px; line-height: 1.65; color: var(--color-muted); }
     .socials { display: flex; gap: 6px; margin-top: 14px; }
     .social {
       display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px;
@@ -240,10 +240,10 @@ const SOCIAL_LINKS: SocialLink[] = [
     }
     .social:hover { border-color: var(--color-forest); background: var(--color-success-soft); color: var(--color-forest); }
 
-    .footer-col a { display: block; width: fit-content; padding: 3px 0; font-size: 12.5px; line-height: 1.35; color: var(--color-text-secondary); text-decoration: none; transition: color 150ms ease; }
+    .footer-col a { display: block; width: fit-content; padding: 5px 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; color: var(--color-text-secondary); text-decoration: none; transition: color 150ms ease; }
     .footer-col a:hover { color: var(--color-forest); }
 
-    .footer-sell p { margin: 0; max-width: 30ch; font-size: 12.5px; line-height: 1.55; color: var(--color-text-secondary); }
+    .footer-sell p { margin: 0; max-width: 30ch; font-size: 13px; line-height: 1.65; color: var(--color-muted); }
     .sell-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .mobile-only-badges { display: none; }
     .badge {
@@ -265,7 +265,7 @@ const SOCIAL_LINKS: SocialLink[] = [
     }
     .news-copy { min-width: 0; }
     .news-copy h5 { margin: 0; font-family: var(--font-heading); font-size: 14px; font-weight: 700; letter-spacing: -.01em; color: var(--color-forest); }
-    .news-copy p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--color-text-secondary); }
+    .news-copy p { margin: 3px 0 0; font-size: 13px; line-height: 1.5; color: var(--color-muted); }
     .news-form { display: flex; gap: 8px; flex: 1 1 320px; max-width: 440px; min-width: 0; }
     .news-input {
       flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px;

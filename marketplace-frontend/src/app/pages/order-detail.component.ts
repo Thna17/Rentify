@@ -16,6 +16,7 @@ import {
 } from '../core/rentify/rentify-marketplace.service';
 import { TranslatePipe } from '../core/i18n/translate.pipe';
 import { TranslateService } from '../core/i18n/translate.service';
+import { ErrorSanitizerService } from '../core/i18n/error-sanitizer.service';
 import { SeoService } from '../core/seo/seo.service';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
@@ -57,7 +58,7 @@ export interface TimelineEntry {
     <app-navbar />
 
     <main class="page-container">
-      <nav class="crumbs" aria-label="Breadcrumb">
+      <nav class="crumbs" [attr.aria-label]="'common.breadcrumb' | translate">
         <a routerLink="/orders">{{ 'orders.title' | translate }}</a>
         <span>›</span>
         <span>{{ order() ? '#' + order()?.orderNumber : ('orderDetail.title' | translate) }}</span>
@@ -66,7 +67,7 @@ export interface TimelineEntry {
       @if (loading()) {
         <div class="card state-card">
           <ui-icon name="loader" [size]="24" class="spin" />
-          <p>Loading order details…</p>
+          <p>{{ 'orderDetail.loading' | translate }}</p>
         </div>
       } @else if (forbidden()) {
         <div class="card state-card forbidden" role="alert">
@@ -80,10 +81,10 @@ export interface TimelineEntry {
       } @else if (error(); as err) {
         <div class="card state-card error" role="alert">
           <ui-icon name="alert-circle" [size]="32" />
-          <h2>Could not load order</h2>
+          <h2>{{ 'orderDetail.loadError' | translate }}</h2>
           <p>{{ err }}</p>
           <button class="btn btn-outline btn-sm" (click)="loadOrder()">
-            Retry
+            {{ 'cart.retry' | translate }}
           </button>
         </div>
       } @else if (order(); as ord) {
@@ -98,7 +99,7 @@ export interface TimelineEntry {
             </div>
 
             <div class="badges-row">
-              <span class="channel-tag">Marketplace</span>
+              <span class="channel-tag">{{ 'cart.channelMarketplace' | translate }}</span>
               <app-order-status [status]="deliveryStatusBadge(ord.deliveryStatus)" />
               <app-order-status [status]="paymentStatusBadge(ord.payment?.status)" />
             </div>
@@ -106,7 +107,7 @@ export interface TimelineEntry {
 
           <!-- Active Claim / Return / Complaint Status Alert -->
           @if (activeClaimEvent(); as claim) {
-            <div class="claim-alert-strip" role="region" aria-label="Order claim status">
+            <div class="claim-alert-strip" role="region" [attr.aria-label]="'orderDetail.claimStatus' | translate">
               <div class="claim-alert-header">
                 <ui-icon name="shield" [size]="18" />
                 <strong>
@@ -121,11 +122,11 @@ export interface TimelineEntry {
                 </span>
               </div>
               <p class="claim-reason">
-                <em>Reason:</em> {{ claim.details.reason }}
+                <em>{{ 'orderDetail.reason' | translate }}</em> {{ claim.details.reason }}
               </p>
               @if (claim.details.evidence && claim.details.evidence.length) {
                 <div class="evidence-preview-list">
-                  <small>Attached evidence:</small>
+                  <small>{{ 'orderDetail.attachedEvidence' | translate }}</small>
                   @for (ev of claim.details.evidence; track ev) {
                     <a [href]="ev" target="_blank" rel="noopener noreferrer" class="evidence-link">
                       <ui-icon name="external-link" [size]="12" /> {{ ev }}
@@ -173,7 +174,7 @@ export interface TimelineEntry {
           <div class="main-column">
             <!-- Items Purchased -->
             <section class="card block" aria-labelledby="items-heading">
-              <h2 id="items-heading">Items</h2>
+              <h2 id="items-heading">{{ 'orderDetail.items' | translate }}</h2>
               <div class="items-list">
                 @for (item of ord.items; track item.productId) {
                   <div class="item-row">
@@ -191,11 +192,11 @@ export interface TimelineEntry {
               <!-- Authoritative Totals & Exact Financial Status -->
               <div class="totals-breakdown">
                 <div class="total-row">
-                  <span>Subtotal</span>
+                  <span>{{ 'cart.subtotal' | translate }}</span>
                   <span>\${{ parseFloat(ord.subtotal).toFixed(2) }}</span>
                 </div>
                 <div class="total-row">
-                  <span>Delivery fee</span>
+                  <span>{{ 'cart.deliveryFee' | translate }}</span>
                   <span>
                     {{ parseFloat(ord.deliveryFee) === 0 ? 'Free' : ('$' + parseFloat(ord.deliveryFee).toFixed(2)) }}
                   </span>
@@ -211,11 +212,11 @@ export interface TimelineEntry {
                     <span class="fact-label">{{ 'orderDetail.paymentStatus' | translate }}:</span>
                     <strong class="fact-value">
                       {{
-                        ord.payment?.status === 'paid'
-                          ? 'Collected (Paid)'
+                        (ord.payment?.status === 'paid'
+                          ? 'orderDetail.codCollected'
                           : ord.payment?.status === 'refunded'
-                            ? 'Refunded by Merchant'
-                            : 'Pending Cash on Delivery'
+                            ? 'orderDetail.codRefunded'
+                            : 'orderDetail.codPending') | translate
                       }}
                     </strong>
                   </div>
@@ -246,7 +247,7 @@ export interface TimelineEntry {
                   <strong>{{ ord.customerInfo?.phone || '—' }}</strong>
                 </div>
                 <div class="addr-row">
-                  <span class="addr-label">Address:</span>
+                  <span class="addr-label">{{ 'orderDetail.address' | translate }}</span>
                   <span>{{ ord.shippingInfo?.address || '—' }}</span>
                 </div>
               </div>
@@ -254,7 +255,7 @@ export interface TimelineEntry {
 
             <!-- Policy Actions: Return & Complaint -->
             <section class="card block actions-block" aria-labelledby="actions-heading">
-              <h2 id="actions-heading">Need help with this order?</h2>
+              <h2 id="actions-heading">{{ 'orderDetail.needHelp' | translate }}</h2>
 
               <!-- Return Eligibility Banner (DEC-008: 7 calendar days from delivery) -->
               <div class="policy-window-box">
@@ -266,7 +267,7 @@ export interface TimelineEntry {
                     </span>
                   </div>
                   <p class="window-note">
-                    Merchants accept returns for damaged items, defective products, or incorrect sizes.
+                    {{ 'orderDetail.returnsPolicy' | translate }}
                   </p>
                   @if (!activeClaimEvent()) {
                     <button
@@ -285,7 +286,7 @@ export interface TimelineEntry {
                   </div>
                 } @else {
                   <p class="window-note muted">
-                    Returns become available once the parcel is delivered and inspected.
+                    {{ 'orderDetail.returnsAfterDelivery' | translate }}
                   </p>
                 }
 
@@ -337,10 +338,10 @@ export interface TimelineEntry {
                       <textarea
                         formControlName="notes"
                         rows="3"
-                        placeholder="Please describe the issue in detail (min 10 characters)..."
+                        [placeholder]="'orderDetail.describeIssue' | translate"
                       ></textarea>
                       @if (reportForm.get('notes')?.invalid && reportForm.get('notes')?.touched) {
-                        <small class="text-danger">Minimum 10 characters required.</small>
+                        <small class="text-danger">{{ 'reportModal.min10' | translate }}</small>
                       }
                     </label>
 
@@ -351,7 +352,7 @@ export interface TimelineEntry {
                         formControlName="evidenceUrl"
                         [placeholder]="'orderDetail.evidencePlaceholder' | translate"
                       />
-                      <small class="muted">Safe HTTPS image URL (optional)</small>
+                      <small class="muted">{{ 'orderDetail.evidenceUrl' | translate }}</small>
                     </label>
 
                     @if (reportError(); as repErr) {
@@ -367,7 +368,7 @@ export interface TimelineEntry {
                         (click)="showReportForm.set(false)"
                         [disabled]="submittingReport()"
                       >
-                        Cancel
+                        {{ 'search.cancel' | translate }}
                       </button>
                       <button
                         type="submit"
@@ -392,7 +393,7 @@ export interface TimelineEntry {
               </h2>
               <p class="timeline-sub">{{ 'orderDetail.timelineSub' | translate }}</p>
 
-              <div class="timeline" role="feed" aria-label="Order status events">
+              <div class="timeline" role="feed" [attr.aria-label]="'orderDetail.statusEvents' | translate">
                 @for (entry of timelineEntries(); track entry.title + entry.timestamp) {
                   <article class="timeline-step">
                     <div class="step-icon" [ngClass]="entry.badgeClass || ''">
@@ -406,13 +407,13 @@ export interface TimelineEntry {
 
                       @if (entry.details?.reason) {
                         <p class="step-desc">
-                          <em>Note:</em> {{ entry.details?.reason }}
+                          <em>{{ 'orderDetail.note' | translate }}</em> {{ entry.details?.reason }}
                         </p>
                       }
 
                       @if (entry.details?.method) {
                         <p class="step-desc">
-                          <em>Method:</em> {{ entry.details?.method }}
+                          <em>{{ 'orderDetail.method' | translate }}</em> {{ entry.details?.method }}
                         </p>
                       }
 
@@ -860,6 +861,7 @@ export class OrderDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly rentify = inject(RentifyMarketplaceService);
   protected readonly translate = inject(TranslateService);
+  private readonly errors = inject(ErrorSanitizerService);
   private readonly seo = inject(SeoService);
 
   readonly orderId = this.route.snapshot.paramMap.get('id') || '';
@@ -919,7 +921,7 @@ export class OrderDetailComponent implements OnInit {
       if (err?.status === 404 || err?.status === 403) {
         this.forbidden.set(true);
       } else {
-        this.error.set(err?.error?.message || err?.message || 'Failed to load order.');
+        this.error.set(this.errors.sanitize(err, this.translate.t('orderDetail.loadFailed')));
       }
     } finally {
       this.loading.set(false);
@@ -1075,7 +1077,7 @@ export class OrderDetailComponent implements OnInit {
       this.showReportForm.set(false);
       await this.loadOrder();
     } catch (err: any) {
-      this.reportError.set(err?.error?.message || err?.message || 'Failed to submit request.');
+      this.reportError.set(this.errors.sanitize(err, this.translate.t('orderDetail.submitFailed')));
     } finally {
       this.submittingReport.set(false);
     }

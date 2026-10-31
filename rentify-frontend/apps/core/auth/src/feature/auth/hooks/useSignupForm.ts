@@ -21,7 +21,7 @@ import { useAuthConfig } from '../utils/authUtils';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 export const useSignupForm = () => {
-  const { t, isKhmer } = useAuthLanguage();
+  const { t } = useAuthLanguage();
   const [step, setStep] = useState<'signup' | 'link' | 'verify'>('signup');
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [otp, setOtp] = useState('');
@@ -120,7 +120,7 @@ export const useSignupForm = () => {
 
       if (response.isLinked) {
         if (pollingInterval) clearInterval(pollingInterval);
-        setSuccess('Telegram linked successfully!');
+        setSuccess('signup.telegramLinked');
         setStep('verify');
       }
     } catch (err) {
@@ -144,10 +144,10 @@ export const useSignupForm = () => {
     const isEmail = inputMode === 'email' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formattedContact);
     const isPhone = inputMode === 'phone' && validateCambodianPhone(formattedContact);
 
-    if (!cleanName) return setError(isKhmer ? 'សូមបញ្ចូលឈ្មោះពេញរបស់អ្នក' : 'Please enter your full name');
+    if (!cleanName) return setError('error.nameRequired');
     if (!isEmail && !isPhone) {
       return setError(
-        inputMode === 'phone' ? t('error.invalidPhone') : t('error.invalidEmail')
+        inputMode === 'phone' ? 'error.invalidPhone' : 'error.invalidEmail'
       );
     }
 
@@ -180,32 +180,18 @@ export const useSignupForm = () => {
 
       setVerificationMethod(method);
       setStep(method === 'telegram' ? 'link' : 'verify');
-      setSuccess(
-        method === 'telegram'
-          ? (isKhmer
-              ? 'សូមភ្ជាប់គណនី Telegram របស់អ្នកដើម្បីទទួលលេខកូដ OTP'
-              : 'Please link your Telegram account to receive OTP')
-          : (isKhmer
-              ? 'លេខកូដ OTP ត្រូវបានផ្ញើ។ សូមពិនិត្យអ៊ីមែលរបស់អ្នក។'
-              : 'OTP sent. Please check your email.')
-      );
+      setSuccess(method === 'telegram' ? 'signup.linkTelegramPrompt' : 'signup.otpSentEmail');
     } catch (err: any) {
+      // Backend text is only used to pick a catalog message, never shown.
       const rawMsg = err?.data?.error || err?.data?.message || err?.message || '';
-      let mappedError = rawMsg || (isKhmer ? 'ការចុះឈ្មោះមិនជោគជ័យ' : 'Signup failed');
+      let mappedError = 'error.signupFailed';
       const lower = String(rawMsg).toLowerCase();
       if (
         lower.includes('already exists') ||
         lower.includes('in use') ||
         lower.includes('duplicate')
       ) {
-        mappedError =
-          inputMode === 'phone'
-            ? (isKhmer
-                ? 'លេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលគណនី ឬប្រើលេខផ្សេង។'
-                : 'This phone number is already registered. Please sign in or use another number.')
-            : (isKhmer
-                ? 'អ៊ីមែលនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលគណនី ឬប្រើអ៊ីមែលផ្សេង។'
-                : 'This email address is already registered. Please sign in or use another email.');
+        mappedError = inputMode === 'phone' ? 'error.phoneTaken' : 'error.emailTaken';
       }
       setError(mappedError);
     }
@@ -216,7 +202,7 @@ export const useSignupForm = () => {
     setSuccess('');
 
     if (!signupData) {
-      setError('No signup data found');
+      setError('error.signupDataMissing');
       return;
     }
 
@@ -236,23 +222,18 @@ export const useSignupForm = () => {
       } else {
         await resendOtpMutation(payload).unwrap();
       }
-      setSuccess('OTP resent successfully.');
+      setSuccess('verify.resent');
     } catch (err: any) {
-      setError(
-        err?.data?.error ||
-          (verificationMethod === 'telegram'
-            ? 'Telegram OTP send failed. Is your Telegram linked?'
-            : 'Email OTP send failed.')
-      );
+      setError(verificationMethod === 'telegram' ? 'error.otpSendTelegram' : 'error.otpSendEmail');
     }
   };
 
   const handleVerifyOtp = async () => {
     if (!otp || otp.length !== 6)
-      return setError(t('error.otpRequired'));
+      return setError('error.otpRequired');
 
     if (!signupData) {
-      setError(isKhmer ? 'រកមិនឃើញទិន្នន័យចុះឈ្មោះទេ' : 'No signup data found');
+      setError('error.signupDataMissing');
       return;
     }
 
@@ -274,20 +255,13 @@ export const useSignupForm = () => {
         await verifyOtpMutation(payload).unwrap();
       }
 
-      setSuccess(
-        isKhmer
-          ? 'ការផ្ទៀងផ្ទាត់ជោគជ័យ! កំពុងបញ្ជូនបន្ត…'
-          : 'Verification successful! Redirecting...'
-      );
+      setSuccess('verify.successRedirect');
       const destination = resolvePostSignupRedirect();
       setTimeout(() => {
         window.location.href = destination;
       }, 1500);
     } catch (err: any) {
-      setError(
-        err?.data?.error ||
-          (isKhmer ? 'លេខកូដសម្ងាត់ OTP មិនត្រឹមត្រូវ ឬផុតកំណត់' : 'Invalid or expired OTP')
-      );
+      setError('verify.invalidCode');
     }
   };
 
@@ -300,8 +274,9 @@ export const useSignupForm = () => {
     password: signupData?.password || '',
     confirmPassword: signupData?.confirmPassword || '',
     otp,
-    error,
-    success,
+    // error/success hold catalog keys so they follow a language switch.
+    error: error && t(error),
+    success: success && t(success),
     loading: isSignupCustomerLoading || isSignupLoading,
     domainValid,
     verificationMethod,

@@ -50,59 +50,61 @@ import { LanguageSection, PaymentsSection, PosSection } from '../feature/compone
 
 const RentifyLaptopShowcase = React.lazy(() => import('./components/RentifyLaptopShowcase'));
 // --- Enhanced Hero Section ---
-const HeroSection = () => (
-  <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_55%,#eef6ff_100%)] pb-20 pt-14 sm:pt-18 lg:flex lg:min-h-[820px] xl:min-h-[880px] lg:items-center lg:py-24 xl:py-28">
-    <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white/85 to-transparent" />
+// Stack the product image above the copy on mobile; use two columns on laptops.
+const HeroSection = () => {
+  const { t } = useLanguage();
+  return (
+  <section className="relative overflow-hidden bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,#e8f0ff_0%,#ffffff_100%)] pb-16 pt-6 sm:pb-20 sm:pt-10 lg:py-20">
+    <div className="relative mx-auto grid w-full max-w-[1440px] items-center px-3 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:gap-10 lg:px-10">
+      <figure className="relative mx-auto w-full max-w-[1040px] lg:order-2 lg:min-w-0">
+        <img
+          src={heroProductMockup}
+          alt={t('site.home.hero.imageAlt')}
+          className="mx-auto h-auto w-full object-contain mix-blend-multiply"
+        />
+        {/* Fade the bottom of the devices into the page so the text can sit over it */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-white via-white/85 to-transparent lg:hidden" />
+      </figure>
 
-    <div className="mx-auto w-full max-w-[1880px] px-3 sm:px-5 lg:pl-8 lg:pr-2 xl:pl-12 xl:pr-0 relative">
-      <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.12fr] xl:grid-cols-[1.05fr_1.22fr] lg:gap-8 xl:gap-10">
-        <div className="mx-auto w-full text-center lg:mx-0 lg:text-left">
-          <Badge variant="secondary" className="mb-6 inline-flex items-center gap-2 border-blue-100 bg-blue-50/90 px-4.5 py-2 text-sm font-bold text-blue-700 shadow-none rounded-full">
-            <Globe className="h-4.5 w-4.5" />
-            For Cambodian SMEs
-          </Badge>
+      <div className="relative z-10 mx-auto -mt-14 max-w-3xl text-center sm:-mt-24 lg:order-1 lg:mx-0 lg:mt-0 lg:min-w-0 lg:text-left">
+        <Badge variant="secondary" className="mb-5 inline-flex items-center gap-2 rounded-full border-blue-100 bg-blue-50/90 px-4 py-1.5 text-sm font-bold text-blue-700 shadow-none">
+          <Globe className="h-4 w-4" />
+          {t('site.home.hero.badge')}
+        </Badge>
 
-          <h1 className="text-4xl font-extrabold tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-[4.4rem] xl:text-[5.2rem] leading-[1.05]">
-            Run Your Entire Business From{' '}
-            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 bg-clip-text text-transparent block sm:inline">
-              One Place
-            </span>
-          </h1>
+        <h1 className="text-[2.1rem] font-extrabold leading-[1.08] tracking-[-0.04em] text-slate-950 sm:text-5xl lg:text-[3.25rem] xl:text-[4rem]">
+          {t('site.home.hero.titleLead')}{' '}
+          <span className="whitespace-nowrap bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 bg-clip-text text-transparent">
+            {t('site.home.hero.titleEmphasis')}
+          </span>
+        </h1>
 
-          <p className="mx-auto mt-7 max-w-2xl text-xl leading-relaxed text-slate-600 sm:text-2xl lg:mx-0 xl:text-[1.5rem] xl:leading-10">
-            Sell online, manage orders, track sales, and grow your business with one simple platform built for Cambodian SMEs.
-          </p>
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-xl lg:mx-0">
+          {t('site.home.hero.lead')}
+        </p>
 
-          <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
-            <Button size="lg" className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-bold rounded-2xl bg-blue-600 shadow-[0_14px_32px_rgba(37,99,235,0.26)] hover:bg-blue-700 transition-all hover:scale-[1.03]">
-              Start Free Trial <ArrowRight className="ml-2.5 size-5 sm:size-6" />
-            </Button>
-            <Button variant="outline" size="lg" className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-bold rounded-2xl border-slate-300 bg-white/80 text-slate-800 hover:bg-white transition-all hover:scale-[1.03]">
-              <PlayCircle className="mr-2.5 size-5 sm:size-6 text-blue-600" /> Watch Demo
-            </Button>
-          </div>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-500 lg:justify-start sm:text-base">
-            {['No credit card required', 'Free setup assistance', 'Cancel anytime'].map((item) => (
-              <span key={item} className="flex items-center gap-2 font-medium">
-                <CheckCircle className="h-4.5 w-4.5 fill-blue-600 text-white" />
-                {item}
-              </span>
-            ))}
-          </div>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4 lg:justify-start">
+          <Button size="lg" className="h-12 rounded-2xl bg-blue-600 px-8 text-base font-bold shadow-[0_14px_32px_rgba(37,99,235,0.26)] transition-all hover:scale-[1.03] hover:bg-blue-700 sm:h-14 sm:text-lg">
+            {t('site.home.hero.startTrial')} <ArrowRight className="ml-2 size-5" />
+          </Button>
+          <Button variant="outline" size="lg" className="h-12 rounded-2xl border-slate-300 bg-white/80 px-8 text-base font-bold text-slate-800 transition-all hover:scale-[1.03] hover:bg-white sm:h-14 sm:text-lg">
+            <PlayCircle className="mr-2 size-5 text-blue-600" /> {t('site.home.hero.watchDemo')}
+          </Button>
         </div>
 
-        <figure className="relative mx-auto flex w-full items-center justify-center lg:justify-end lg:-mr-6 xl:-mr-10 2xl:-mr-12">
-          <img
-            src={heroProductMockup}
-            alt="Rentify dashboard on a laptop with a KhmerCraft marketplace phone and jasmine rice product card"
-            className="h-auto w-full max-w-[700px] lg:max-w-[800px] xl:max-w-[900px] 2xl:max-w-[980px] object-contain drop-shadow-[0_30px_48px_rgba(30,64,175,0.18)] ml-auto transition-transform duration-300 hover:scale-[1.02]"
-          />
-        </figure>
+        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-500 lg:justify-start">
+          {['site.home.hero.noCard', 'site.home.hero.freeSetup', 'site.home.hero.cancelAnytime'].map((item) => (
+            <span key={item} className="flex items-center gap-2 font-medium">
+              <CheckCircle className="h-4 w-4 fill-blue-600 text-white" />
+              {t(item)}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   </section>
-);
+  );
+};
 
 const trustedBusinesses = [
   "BKK Cafe",
@@ -113,17 +115,19 @@ const trustedBusinesses = [
 ];
 
 // --- Enhanced Social Proof Section ---
-const SocialProof = () => (
+const SocialProof = () => {
+  const { t } = useLanguage();
+  return (
   <section className="py-12 md:py-16 bg-white">
     <div className="container">
       <h2 className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8">
-        Trusted by Growing Businesses Across Cambodia
+        {t('site.home.social.title')}
       </h2>
       
       {/* Continuously moving business names */}
       <div
         className="trusted-business-marquee mb-16 overflow-hidden"
-        aria-label="Businesses using Rentify"
+        aria-label={t('site.home.social.marqueeLabel')}
       >
         <div className="trusted-business-track flex w-max items-center">
           {[false, true].map((duplicate) => (
@@ -162,11 +166,11 @@ const SocialProof = () => (
             </div>
             <div className="text-4xl text-blue-400 mb-4">"</div>
             <blockquote className="text-xl font-medium text-gray-800 leading-relaxed">
-              Before Rentify, I spent 2 hours every night matching Facebook orders with my sales book. Now everything is automated. It's essential for my business growth.
+              {t('site.home.social.quote')}
             </blockquote>
             <div className="mt-6">
               <p className="font-semibold text-gray-900">Srey Roth</p>
-              <p className="text-sm text-muted-foreground">Owner, BKK Cafe • Phnom Penh</p>
+              <p className="text-sm text-muted-foreground">{t('site.home.social.role')}</p>
               <div className="mt-2 flex justify-center items-center gap-1 text-yellow-400">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-current" />
@@ -178,22 +182,25 @@ const SocialProof = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 // --- How It Works Section ---
 const HOW_IT_WORKS_STEPS = [
-  ['Create Your Store', 'Sign up and tell us about your business. In minutes, your professional online storefront will be ready.'],
-  ['Add Products & Manage Sales', "Easily add your products once. They'll appear on your website, POS, and invoices automatically."],
-  ['Grow Your Business', 'Start accepting payments with KHQR, track your best-selling items, and manage all your customers in one place.'],
+  ['site.home.steps.createTitle', 'site.home.steps.createBody'],
+  ['site.home.steps.productsTitle', 'site.home.steps.productsBody'],
+  ['site.home.steps.growTitle', 'site.home.steps.growBody'],
 ];
 
-const HowItWorks = () => (
+const HowItWorks = () => {
+  const { t } = useLanguage();
+  return (
   <section className="py-10 md:py-24 bg-gray-50">
     <div className="container">
       <div className="mb-6 max-w-2xl md:mx-auto md:mb-12 md:text-center">
-        <h2 className="text-[24px] font-bold leading-tight tracking-[-0.03em] md:text-4xl">Go Live in 3 Simple Steps</h2>
+        <h2 className="text-[24px] font-bold leading-tight tracking-[-0.03em] md:text-4xl">{t('site.home.steps.title')}</h2>
         <p className="mt-2 text-[14px] leading-snug text-muted-foreground md:mt-4 md:text-lg">
-          You don't need to be a tech expert. If you can use Facebook, you can use Rentify.
+          {t('site.home.steps.lead')}
         </p>
       </div>
       {/* Phones: a compact vertical timeline. Tablet/desktop: three centred columns. */}
@@ -207,15 +214,16 @@ const HowItWorks = () => (
               {index + 1}
             </div>
             <div className="min-w-0 pt-1 md:pt-0">
-              <h3 className="text-[16px] font-semibold leading-snug md:text-xl">{title}</h3>
-              <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground md:mt-2 md:text-base md:leading-normal">{body}</p>
+              <h3 className="text-[16px] font-semibold leading-snug md:text-xl">{t(title)}</h3>
+              <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground md:mt-2 md:text-base md:leading-normal">{t(body)}</p>
             </div>
           </li>
         ))}
       </ol>
     </div>
   </section>
-);
+  );
+};
 
 // --- Handwritten Doodle Arrow SVGs ---
 const ArrowDownLeft = ({ className = "w-10 h-10 text-blue-500" }) => (
@@ -234,6 +242,7 @@ const ArrowDownRight = ({ className = "w-10 h-10 text-amber-500" }) => (
 
 // --- Feature Showcase Section ---
 const FeatureShowcase = () => {
+  const { t } = useLanguage();
   const reduceMotion = useReducedMotion();
   const marketplaceHref = MARKETPLACE_URL || 'https://rentify-market.mekhla.digital/';
 
@@ -241,35 +250,35 @@ const FeatureShowcase = () => {
     {
       id: 'store',
       icon: Store,
-      title: "Your Own Online Store",
-      description: "Create your own professional online store in minutes. Add products, manage orders, and sell 24/7 without coding.",
+      title: t('site.home.features.storeTitle'),
+      description: t('site.home.features.storeBody'),
       image: storefrontPreview,
-      imageAlt: "Aura Botanicals storefront created with Rentify",
+      imageAlt: t('site.home.features.storeAlt'),
       href: '/feature#store',
       panel: 'bg-[#efedfb]',
-      highlights: ['Custom design', 'Easy product setup', 'Sell 24/7'],
+      highlights: [t('site.home.features.storeH1'), t('site.home.features.storeH2'), t('site.home.features.storeH3')],
     },
     {
       id: 'marketplace',
       icon: ShoppingBag,
       title: "Rentify Marketplace",
-      description: "List your products on the Rentify Marketplace, where customers can discover, compare, and buy from businesses across Cambodia.",
+      description: t('site.home.features.marketBody'),
       image: marketplacePreview,
-      imageAlt: "Rentify Marketplace store page with real product listings",
+      imageAlt: t('site.home.features.marketAlt'),
       href: marketplaceHref,
       panel: 'bg-[#fbeee4]',
-      highlights: ['More customers', 'Trusted marketplace', 'More opportunities'],
+      highlights: [t('site.home.features.marketH1'), t('site.home.features.marketH2'), t('site.home.features.marketH3')],
     },
     {
       id: 'pos',
       icon: Smartphone,
-      title: "Smart POS System",
-      description: "Use Rentify at your physical store to manage sales, products, inventory, and accept KHQR payments — all in one simple POS system.",
+      title: t('site.home.features.posTitle'),
+      description: t('site.home.features.posBody'),
       image: posPreview,
-      imageAlt: "Rentify Smart POS product catalog and order screen",
+      imageAlt: t('site.home.features.posAlt'),
       href: '/feature#pos',
       panel: 'bg-[#e6f2ec]',
-      highlights: ['Fast checkout', 'Inventory management', 'KHQR payments'],
+      highlights: [t('site.home.features.posH1'), t('site.home.features.posH2'), t('site.home.features.posH3')],
     },
   ];
 
@@ -283,12 +292,12 @@ const FeatureShowcase = () => {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-3xl"
         >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-600 sm:text-xs">One connected workspace</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-600 sm:text-xs">{t('site.home.features.eyebrow')}</p>
           <h2 className="mt-2.5 text-[26px] font-bold leading-tight tracking-[-0.035em] text-slate-950 sm:mt-3 md:text-4xl lg:text-5xl">
-            One Platform, Endless Possibilities
+            {t('site.home.features.title')}
           </h2>
           <p className="mt-2 text-[15px] text-slate-500 sm:mt-3 sm:text-lg">
-            Rentify is more than a website builder. It's a complete toolkit designed for the way you work.
+            {t('site.home.features.lead')}
           </p>
         </motion.div>
 
@@ -320,13 +329,15 @@ const FeatureShowcase = () => {
                   {feature.description}
                 </p>
                 <p className="mt-3 hidden text-sm text-slate-400 md:block">{feature.highlights.join(' · ')}</p>
-                <SmartLink
-                  to={feature.href}
-                  className="mt-2 inline-flex min-h-[32px] items-center gap-1.5 text-[13px] font-semibold text-indigo-600 hover:text-indigo-700 md:mt-5 md:text-base"
-                >
-                  Learn more
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 md:h-5 md:w-5" />
-                </SmartLink>
+                <div className="flex justify-end md:justify-start">
+                  <SmartLink
+                    to={feature.href}
+                    className="mt-2 inline-flex min-h-[32px] items-center gap-1.5 text-[13px] font-semibold text-indigo-600 hover:text-indigo-700 md:mt-5 md:text-base"
+                  >
+                    {t('common.learn-more')}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 md:h-5 md:w-5" />
+                  </SmartLink>
+                </div>
               </div>
             </motion.article>
           ))}
@@ -337,21 +348,23 @@ const FeatureShowcase = () => {
 };
 
 // --- Local Features Section ---
-const LocalFeatures = () => (
+const LocalFeatures = () => {
+  const { t } = useLanguage();
+  return (
   <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
     <div className="container">
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold">Built for Cambodia's Unique Business Needs</h2>
+        <h2 className="text-3xl font-bold">{t('site.home.local.title')}</h2>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          We understand the challenges Cambodian businesses face. That's why we built features specifically for you.
+          {t('site.home.local.lead')}
         </p>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { icon: Smartphone, title: "Works with KHQR", desc: "Accept instant payments from any Cambodian bank" },
-          { icon: FileText, title: "Khmer & English", desc: "Fully bilingual interface for all your staff" },
-          { icon: Wifi, title: "Offline Mode", desc: "Keep working even when internet is unstable" },
-          { icon: Headphones, title: "Local Support", desc: "Phone, Telegram, and in-person assistance" }
+          { icon: Smartphone, title: t('site.home.local.khqrTitle'), desc: t('site.home.local.khqrBody') },
+          { icon: FileText, title: t('site.home.local.bilingualTitle'), desc: t('site.home.local.bilingualBody') },
+          { icon: Wifi, title: t('site.home.local.offlineTitle'), desc: t('site.home.local.offlineBody') },
+          { icon: Headphones, title: t('site.home.local.supportTitle'), desc: t('site.home.local.supportBody') }
         ].map((item, i) => (
           <div key={i} className="text-center p-6 bg-white rounded-lg shadow-sm border">
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -364,7 +377,8 @@ const LocalFeatures = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 // --- Pricing Section ---
 const PricingSection = () => {
@@ -392,6 +406,7 @@ const PricingSection = () => {
 
 // --- Final CTA Section ---
 const Homepage = () => {
+  const { t } = useLanguage();
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* SEO Component (uncomment when ready) */}
@@ -408,7 +423,7 @@ const Homepage = () => {
       
       {/* Scroll-driven product story */}
       <React.Suspense
-        fallback={<section className="h-screen bg-gradient-to-b from-white to-blue-50" aria-label="Loading product showcase" />}
+        fallback={<section className="h-screen bg-gradient-to-b from-white to-blue-50" aria-label={t('site.home.showcaseLoading')} />}
       >
         <RentifyLaptopShowcase />
       </React.Suspense>

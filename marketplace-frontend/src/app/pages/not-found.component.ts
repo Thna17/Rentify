@@ -3,24 +3,24 @@ import { RouterLink } from '@angular/router';
 import { NavbarComponent } from '../components/shared/layout/navbar/navbar.component';
 import { FooterComponent } from '../components/shared/layout/footer/footer.component';
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-not-found',
-  imports: [RouterLink, NavbarComponent, FooterComponent, IconComponent],
+  imports: [TranslatePipe, RouterLink, NavbarComponent, FooterComponent, IconComponent],
   template: `
     <app-navbar />
 
     <section class="container empty">
       <div class="empty-image img-placeholder"><ui-icon name="search" [size]="40" /></div>
-      <h1>We couldn't find that page</h1>
+      <h1>{{ 'notFound.title' | translate }}</h1>
       <p>
-        The link may be out of date, or the product may no longer be listed.
-        Everything else is still here.
+        {{ 'notFound.body' | translate }}
       </p>
       <div class="actions">
-        <button class="btn btn-primary btn-lg" routerLink="/">Back to home</button>
+        <button class="btn btn-primary btn-lg" routerLink="/">{{ 'notFound.backHome' | translate }}</button>
         <button class="btn btn-outline btn-lg" routerLink="/products">
-          Browse products
+          {{ 'state.browseProducts' | translate }}
         </button>
       </div>
     </section>

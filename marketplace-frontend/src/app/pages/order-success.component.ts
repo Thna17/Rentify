@@ -33,7 +33,7 @@ interface PlacedOrderView {
     <app-navbar />
 
     <main class="page">
-      <div class="success-card animate-scale" role="region" aria-label="Order confirmation">
+      <div class="success-card animate-scale" role="region" [attr.aria-label]="'orderSuccess.confirmation' | translate">
         <div class="check-circle" aria-hidden="true">
           <ui-icon name="check" [size]="28" [strokeWidth]="2.6" />
         </div>
@@ -53,7 +53,7 @@ interface PlacedOrderView {
           </div>
           <div>
             <small>{{ 'orderSuccess.paymentMethod' | translate }}</small>
-            <span class="badge badge-cod">COD</span>
+            <span class="badge badge-cod">{{ 'orderSuccess.cod' | translate }}</span>
           </div>
           <div>
             <small>{{ 'orderSuccess.paymentStatus' | translate }}</small>
@@ -135,18 +135,18 @@ interface PlacedOrderView {
       <aside class="info-strip">
         <div class="info-card">
           <span class="info-icon"><ui-icon name="shield" [size]="18" /></span>
-          <strong>Direct COD Settlement</strong>
-          <p>Pay safely with cash when your items arrive at your doorstep. Inspect your package before paying.</p>
+          <strong>{{ 'orderSuccess.codTitle' | translate }}</strong>
+          <p>{{ 'orderSuccess.codBody' | translate }}</p>
         </div>
         <div class="info-card">
           <span class="info-icon"><ui-icon name="truck" [size]="18" /></span>
-          <strong>Store Fulfillment</strong>
-          <p>Each artisan or merchant packages and dispatches their own items directly to your address.</p>
+          <strong>{{ 'orderSuccess.fulfillmentTitle' | translate }}</strong>
+          <p>{{ 'orderSuccess.fulfillmentBody' | translate }}</p>
         </div>
         <div class="info-card">
           <span class="info-icon"><ui-icon name="check-circle" [size]="18" /></span>
-          <strong>Customer Support</strong>
-          <p>If you have any questions or need to report an issue, Rentify Marketplace support is here to help.</p>
+          <strong>{{ 'orderSuccess.supportTitle' | translate }}</strong>
+          <p>{{ 'orderSuccess.supportBody' | translate }}</p>
         </div>
       </aside>
     </main>

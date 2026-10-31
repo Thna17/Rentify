@@ -6,8 +6,14 @@ import {
   SupportedLanguage,
   TRANSLATION_MAP,
 } from './translations';
+import {
+  normalizeLanguage,
+  pluralCandidates,
+  readLanguagePreference,
+  subscribeLanguagePreference,
+  writeLanguagePreference,
+} from './language-preference';
 
-const STORAGE_KEY = 'adminLanguage';
 
 @Injectable({ providedIn: 'root' })
 export class TranslateService {
@@ -18,21 +24,32 @@ export class TranslateService {
 
   constructor() {
     this.applyDocumentLang(this._currentLang());
+    // Follow a switch made in another tab or another Rentify app.
+    subscribeLanguagePreference(this.document, (lang) => {
+      if (lang !== this._currentLang()) {
+        this._currentLang.set(lang);
+        this.applyDocumentLang(lang);
+      }
+    });
   }
 
-  setLanguage(lang: SupportedLanguage): void {
-    if (lang !== 'en' && lang !== 'km') return;
+  setLanguage(value: SupportedLanguage | string): void {
+    const lang = normalizeLanguage(value);
+    if (!lang) return;
     this._currentLang.set(lang);
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch {}
+    writeLanguagePreference(this.document, lang);
     this.applyDocumentLang(lang);
   }
 
   t(key: string, params?: Record<string, string | number>): string {
     const lang = this._currentLang();
     const dictionary = TRANSLATION_MAP[lang] ?? EN_TRANSLATIONS;
-    let template = dictionary[key] ?? EN_TRANSLATIONS[key] ?? key;
+    // Plural variant, then the key, in the active language and then English.
+    const candidates = pluralCandidates(lang, key, params);
+    let template =
+      candidates.map((k) => dictionary[k]).find((v) => v !== undefined) ??
+      candidates.map((k) => EN_TRANSLATIONS[k]).find((v) => v !== undefined) ??
+      key;
 
     if (params) {
       for (const [k, v] of Object.entries(params)) {
@@ -48,13 +65,7 @@ export class TranslateService {
   }
 
   private detectInitialLanguage(): SupportedLanguage {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'en' || stored === 'km') return stored;
-    } catch {}
-
-    const browser = (this.document.defaultView?.navigator?.language || '').toLowerCase();
-    return browser.startsWith('km') ? 'km' : 'en';
+    return readLanguagePreference(this.document);
   }
 
   private applyDocumentLang(lang: SupportedLanguage): void {

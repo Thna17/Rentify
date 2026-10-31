@@ -8,6 +8,8 @@ import { FooterComponent } from '../components/shared/layout/footer/footer.compo
 import { IconComponent } from '../components/shared/ui/icon/icon.component';
 import { ProductCardComponent } from '../components/user/catalog/product-card/product-card.component';
 import { ProductRailComponent } from '../components/user/catalog/product-rail/product-rail.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { CategoryTextPipe } from '../core/i18n/category-text.pipe';
 
 interface PriceBand {
   label: string;
@@ -45,7 +47,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
  */
 @Component({
   selector: 'app-category-detail',
-  imports: [
+  imports: [CategoryTextPipe, TranslatePipe,
     RouterLink,
     NavbarComponent,
     FooterComponent,
@@ -60,10 +62,10 @@ const SORTS: { value: ProductSort; label: string }[] = [
       <header class="category-intro">
         <div class="container category-intro-inner">
           <div>
-            <span class="category-label">Shop category</span>
-            <h1>{{ cat.name }}</h1>
+            <span class="category-label">{{ 'categoryDetail.shopCategory' | translate }}</span>
+            <h1>{{ cat | categoryText }}</h1>
           </div>
-          <p>{{ cat.tagline }}</p>
+          <p>{{ cat | categoryText: 'tagline' }}</p>
           <span class="category-total">
             {{ totalInCategory() }}
             {{ totalInCategory() === 1 ? 'product' : 'products' }}
@@ -99,7 +101,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
 
         <div class="right">
           <label class="sort">
-            <span>Sort by</span>
+            <span>{{ 'catalog.sortBy' | translate }}</span>
             <select [value]="sort()" (change)="setSort($event)">
               @for (option of sorts; track option.value) {
                 <option [value]="option.value">{{ option.label }}</option>
@@ -107,18 +109,18 @@ const SORTS: { value: ProductSort; label: string }[] = [
             </select>
           </label>
 
-          <div class="view" role="group" aria-label="View">
+          <div class="view" role="group" [attr.aria-label]="'categoryDetail.view' | translate">
             <button
               [class.active]="view() === 'grid'"
               (click)="view.set('grid')"
-              aria-label="Grid view"
+              [attr.aria-label]="'categoryDetail.gridView' | translate"
             >
               <ui-icon name="grid" [size]="15" />
             </button>
             <button
               [class.active]="view() === 'list'"
               (click)="view.set('list')"
-              aria-label="List view"
+              [attr.aria-label]="'categoryDetail.listView' | translate"
             >
               <ui-icon name="list" [size]="15" />
             </button>
@@ -132,26 +134,26 @@ const SORTS: { value: ProductSort; label: string }[] = [
           <button
             class="filter-backdrop"
             type="button"
-            aria-label="Close filters"
+            [attr.aria-label]="'common.closeFilters' | translate"
             (click)="filtersOpen.set(false)"
           ></button>
         }
         <aside class="filters" [class.open]="filtersOpen()">
           <div class="filters-head">
-            <strong><ui-icon name="filter" [size]="17" /> Filters</strong>
+            <strong><ui-icon name="filter" [size]="17" /> {{ 'catalog.filters' | translate }}</strong>
             <button class="hide-filters" type="button" (click)="filtersOpen.set(false)">
-              <ui-icon name="chevron-left" [size]="16" /> Hide
+              <ui-icon name="chevron-left" [size]="16" /> {{ 'categoryDetail.hide' | translate }}
             </button>
           </div>
 
           <div class="filter-group">
-            <h4>Sub-category</h4>
+            <h4>{{ 'catalog.subCategory' | translate }}</h4>
             <button
               class="filter-row"
               [class.active]="!activeSub()"
               (click)="setSub(null)"
             >
-              <span>All</span>
+              <span>{{ 'catalog.all' | translate }}</span>
               <span class="n">{{ countIf({ subcategory: undefined }) }}</span>
             </button>
             @for (sub of cat.subcategories; track sub.slug) {
@@ -161,7 +163,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
                   [class.active]="activeSub() === sub.slug"
                   (click)="setSub(sub.slug)"
                 >
-                  <span>{{ sub.name }}</span>
+                  <span>{{ sub | categoryText }}</span>
                   <span class="n">{{ countIf({ subcategory: sub.slug }) }}</span>
                 </button>
               }
@@ -169,7 +171,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
           </div>
 
           <div class="filter-group">
-            <h4>Price</h4>
+            <h4>{{ 'catalog.price' | translate }}</h4>
             @for (band of priceBands; track band.label) {
               <button
                 class="filter-row"
@@ -190,7 +192,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
           </div>
 
           <div class="filter-group">
-            <h4>Rating</h4>
+            <h4>{{ 'catalog.rating' | translate }}</h4>
             @for (threshold of ratingBands; track threshold) {
               <button
                 class="filter-row"
@@ -212,7 +214,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
           </div>
 
           <div class="filter-group">
-            <h4>Availability</h4>
+            <h4>{{ 'catalog.availability' | translate }}</h4>
             <button
               class="filter-row"
               [class.active]="inStockOnly()"
@@ -223,7 +225,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
                   <ui-icon name="check" [size]="11" color="#fff" />
                 }
               </span>
-              <span class="grow">In stock only</span>
+              <span class="grow">{{ 'catalog.inStockOnly' | translate }}</span>
               <span class="n">{{ countIf({ inStockOnly: true }) }}</span>
             </button>
             <button
@@ -236,13 +238,13 @@ const SORTS: { value: ProductSort; label: string }[] = [
                   <ui-icon name="check" [size]="11" color="#fff" />
                 }
               </span>
-              <span class="grow">On sale</span>
+              <span class="grow">{{ 'catalog.onSaleOnly' | translate }}</span>
               <span class="n">{{ countIf({ onSaleOnly: true }) }}</span>
             </button>
           </div>
 
           <div class="filter-group">
-            <h4>Seller</h4>
+            <h4>{{ 'orderDetail.seller' | translate }}</h4>
             @for (store of storesInCategory(); track store.id) {
               @if (countIf({ storeId: store.id }) > 0 || storeId() === store.id) {
                 <button
@@ -263,7 +265,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
           </div>
 
           <div class="filter-group">
-            <h4>Other categories</h4>
+            <h4>{{ 'categoryDetail.otherCategories' | translate }}</h4>
             @for (other of otherCategories(); track other.slug) {
               <a class="filter-row" [routerLink]="['/categories', other.slug]">
                 <span class="grow">{{ other.name }}</span>
@@ -276,7 +278,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
             <button type="button" class="clear-filters" (click)="clearAll()" [disabled]="!activeCount()">
               <span class="reset-icon"><ui-icon name="rotate-ccw" [size]="17" /></span>
               <span>
-                <strong>Clear all filters</strong>
+                <strong>{{ 'common.clearAllFilters' | translate }}</strong>
                 <small>{{ activeCount() }} {{ activeCount() === 1 ? 'filter' : 'filters' }} applied</small>
               </span>
             </button>
@@ -290,16 +292,16 @@ const SORTS: { value: ProductSort; label: string }[] = [
           @if (!catalog.loaded()) {
             <div class="catalog-state" aria-live="polite">
               <ui-icon class="spin" name="loader" [size]="28" />
-              <h2>Loading {{ cat.name }}</h2>
-              <p>We’re checking current products and availability.</p>
+              <h2>{{ 'categoryDetail.loadingName' | translate: { name: (cat | categoryText) } }}</h2>
+              <p>{{ 'categoryDetail.checking' | translate }}</p>
             </div>
           } @else if (catalog.productError()) {
             <div class="catalog-state" role="alert">
               <ui-icon name="alert-circle" [size]="30" />
-              <h2>Products are temporarily unavailable</h2>
-              <p>{{ catalog.productError() }}</p>
+              <h2>{{ 'home.productsUnavailable' | translate }}</h2>
+              <p>{{ catalog.productError() | translate }}</p>
               <button class="btn btn-primary" type="button" (click)="catalog.load()">
-                Try again
+                {{ 'state.tryAgain' | translate }}
               </button>
             </div>
           } @else if (results().length) {
@@ -313,23 +315,23 @@ const SORTS: { value: ProductSort; label: string }[] = [
               <div class="empty-image img-placeholder">
                 <ui-icon name="package" [size]="32" />
               </div>
-              <h2>Nothing here yet</h2>
+              <h2>{{ 'categoryDetail.nothingHereYet' | translate }}</h2>
               <p>
                 @if (activeSub()) {
                   No products in {{ activeSubName() }} at the moment — sellers
                   are still listing in this part of the catalogue.
                 } @else {
-                  No products in {{ cat.name }} yet.
+                  {{ 'categoryDetail.noProductsIn' | translate: { name: (cat | categoryText) } }}
                 }
               </p>
               <div class="empty-actions">
                 @if (activeSub()) {
                   <button class="btn btn-primary" (click)="setSub(null)">
-                    See all {{ cat.name }}
+                    {{ 'categoryDetail.seeAll' | translate: { name: (cat | categoryText) } }}
                   </button>
                 }
                 <button class="btn btn-outline" routerLink="/products">
-                  Browse everything
+                  {{ 'categoryDetail.browseEverything' | translate }}
                 </button>
               </div>
             </div>
@@ -344,7 +346,7 @@ const SORTS: { value: ProductSort; label: string }[] = [
       @if (results().length > 0 && results().length < 4 && suggestions().length) {
         <section class="container suggestions">
           <app-product-rail
-            title="More from Rentify Marketplace"
+            [title]="'categoryDetail.moreFromMarketplace' | translate"
             [products]="suggestions()"
             linkRoute="/products"
           />
@@ -352,10 +354,10 @@ const SORTS: { value: ProductSort; label: string }[] = [
       }
     } @else {
       <section class="container missing">
-        <h1>Category not found</h1>
-        <p>That category may have been renamed.</p>
+        <h1>{{ 'categoryDetail.notFound' | translate }}</h1>
+        <p>{{ 'categoryDetail.notFoundBody' | translate }}</p>
         <button class="btn btn-primary" routerLink="/categories">
-          All categories
+          {{ 'search.allCategories' | translate }}
         </button>
       </section>
     }

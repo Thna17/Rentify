@@ -2,16 +2,18 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { AuthService, apiErrorMessage } from '../core/auth/auth.service';
 import { MfaStatusResponse } from '../core/auth/auth.models';
 import { IconComponent } from '../ui/icon.component';
+import { TranslatePipe } from '../core/i18n/translate.pipe';
+import { TranslateService } from '../core/i18n/translate.service';
 
 @Component({
   standalone: true,
-  imports: [IconComponent],
+  imports: [TranslatePipe, IconComponent],
   template: `
     <div class="page-head">
       <div>
-        <p class="ops-eyebrow">SECURITY & ACCESS</p>
-        <h1 class="page-title">Administrator Security & MFA</h1>
-        <p class="page-sub">Production-grade two-factor authentication, single-use recovery codes, and contact verification.</p>
+        <p class="ops-eyebrow">{{ 'security.eyebrow' | translate }}</p>
+        <h1 class="page-title">{{ 'security.title' | translate }}</h1>
+        <p class="page-sub">{{ 'security.lead' | translate }}</p>
       </div>
     </div>
 
@@ -33,9 +35,9 @@ import { IconComponent } from '../ui/icon.component';
       <section class="card" style="padding: 20px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
           <div>
-            <h2 style="font-size: 16px; margin: 0;">Two-Factor Authentication (TOTP)</h2>
+            <h2 style="font-size: 16px; margin: 0;">{{ 'security.totpTitle' | translate }}</h2>
             <p style="color: var(--muted); font-size: 12px; margin: 4px 0 0;">
-              Protect your administrative account with standards-based RFC 6238 time-based one-time passwords.
+              {{ 'security.totpLead' | translate }}
             </p>
           </div>
           <span class="ops-pill" [class.active]="mfaStatus()?.mfaEnabled" [class.needs_changes]="!mfaStatus()?.mfaEnabled">
@@ -46,12 +48,12 @@ import { IconComponent } from '../ui/icon.component';
         @if (!mfaStatus()?.mfaEnabled && !enrolling()) {
           <div style="padding: 16px; background: #fffcf5; border: 1px solid #fed7aa; border-radius: 8px; margin-bottom: 16px;">
             <p style="margin: 0; font-size: 13px; color: #9a3412;">
-              <strong>Action Recommended:</strong> Administrator accounts require MFA for production operations. Enable TOTP with an authenticator app (e.g. Google Authenticator, 1Password, Authy).
+              <strong>{{ 'security.actionRecommended' | translate }}</strong> {{ 'security.mfaRequired' | translate }}
             </p>
           </div>
           <button class="btn btn-primary" (click)="startEnrollment()" [disabled]="loading()">
             <kc-icon name="shield" [size]="15"></kc-icon>
-            <span style="margin-left: 6px;">Enable Two-Factor Authentication</span>
+            <span style="margin-left: 6px;">{{ 'security.enable2fa' | translate }}</span>
           </button>
         }
 
@@ -59,14 +61,14 @@ import { IconComponent } from '../ui/icon.component';
           <div style="padding: 18px; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px;">
             <h3 style="margin: 0 0 10px; font-size: 14px;">1. Set Up Authenticator App</h3>
             <p style="color: var(--muted); font-size: 12px; margin-bottom: 12px;">
-              Enter this secret key in your authenticator app, or click the link to open an authenticator client:
+              {{ 'security.secretKeyHint' | translate }}
             </p>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
               <code style="background: #e2e8f0; padding: 6px 12px; border-radius: 6px; font-weight: 700; letter-spacing: 0.1em;">
                 {{ enrollSecret() }}
               </code>
               <a [href]="enrollOtpauth()" class="btn btn-default btn-sm" style="text-decoration: none;">
-                Open in App
+                {{ 'security.openInApp' | translate }}
               </a>
             </div>
 
@@ -83,11 +85,11 @@ import { IconComponent } from '../ui/icon.component';
                 aria-label="6-digit TOTP verification code"
               />
               <button class="btn btn-primary" [disabled]="confirmCode().length !== 6 || loading()" (click)="confirmMfa()">
-                Verify & Activate
+                {{ 'security.verifyActivate' | translate }}
               </button>
             </div>
             <button class="btn btn-default btn-sm" style="margin-top: 12px;" (click)="cancelEnrollment()">
-              Cancel
+              {{ 'common.cancel' | translate }}
             </button>
           </div>
         }
@@ -95,15 +97,15 @@ import { IconComponent } from '../ui/icon.component';
         @if (mfaStatus()?.mfaEnabled) {
           <div style="margin-top: 14px;">
             <p style="font-size: 13px; color: #15803d; margin: 0 0 14px;">
-              Your administrator account is protected with TOTP two-factor authentication.
+              {{ 'security.protected' | translate }}
             </p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <button class="btn btn-default btn-sm" (click)="regenerateRecoveryCodes()" [disabled]="loading()">
                 <kc-icon name="refresh" [size]="14"></kc-icon>
-                <span style="margin-left: 6px;">Regenerate Recovery Codes</span>
+                <span style="margin-left: 6px;">{{ 'security.regenerateCodes' | translate }}</span>
               </button>
               <button class="btn btn-danger btn-sm" (click)="showDisableModal.set(true)" [disabled]="loading()">
-                Disable MFA
+                {{ 'security.disableMfa' | translate }}
               </button>
             </div>
           </div>
@@ -112,9 +114,9 @@ import { IconComponent } from '../ui/icon.component';
         <!-- Recovery Codes Display -->
         @if (newRecoveryCodes().length > 0) {
           <div style="margin-top: 20px; padding: 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
-            <h3 style="margin: 0 0 8px; font-size: 14px; color: #1e40af;">Single-Use Recovery Codes</h3>
+            <h3 style="margin: 0 0 8px; font-size: 14px; color: #1e40af;">{{ 'security.recoveryCodesTitle' | translate }}</h3>
             <p style="font-size: 12px; color: #1e3a8a; margin: 0 0 12px;">
-              Save these recovery codes in a secure password manager now. Each code can be used once if you lose access to your authenticator device.
+              {{ 'security.recoveryCodesHint' | translate }}
             </p>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-family: monospace; font-size: 13px; font-weight: 700;">
               @for (code of newRecoveryCodes(); track code) {
@@ -124,7 +126,7 @@ import { IconComponent } from '../ui/icon.component';
               }
             </div>
             <button class="btn btn-default btn-sm" style="margin-top: 12px;" (click)="copyRecoveryCodes()">
-              Copy All Codes
+              {{ 'security.copyAllCodes' | translate }}
             </button>
           </div>
         }
@@ -132,18 +134,18 @@ import { IconComponent } from '../ui/icon.component';
 
       <!-- Step-Up Re-Authentication Section -->
       <section class="card" style="padding: 20px;">
-        <h2 style="font-size: 16px; margin: 0 0 6px;">Step-Up Authentication</h2>
+        <h2 style="font-size: 16px; margin: 0 0 6px;">{{ 'security.stepUpTitle' | translate }}</h2>
         <p style="color: var(--muted); font-size: 12px; margin: 0 0 16px;">
-          High-risk operations (seller approvals, store suspensions, security modifications) require authentication within the last 15 minutes.
+          {{ 'security.stepUpLead' | translate }}
         </p>
 
         <form (submit)="stepUp($event)">
           <label class="ops-field">
-            Admin Password
+            {{ 'security.adminPassword' | translate }}
             <input
               type="password"
               class="input"
-              placeholder="Enter your current password"
+              [placeholder]="'security.currentPasswordPlaceholder' | translate"
               [value]="stepUpPassword()"
               (input)="stepUpPassword.set($any($event.target).value)"
               required
@@ -152,7 +154,7 @@ import { IconComponent } from '../ui/icon.component';
 
           @if (mfaStatus()?.mfaEnabled) {
             <label class="ops-field" style="margin-top: 10px;">
-              Authenticator Code or Recovery Code
+              {{ 'security.codeOrRecovery' | translate }}
               <input
                 type="text"
                 class="input"
@@ -165,22 +167,22 @@ import { IconComponent } from '../ui/icon.component';
 
           <div style="margin-top: 16px;">
             <button type="submit" class="btn btn-primary btn-sm" [disabled]="!stepUpPassword() || loading()">
-              Re-authenticate (Step-Up)
+              {{ 'security.reauth' | translate }}
             </button>
           </div>
         </form>
 
         <!-- Secure Contact Change Form -->
         <hr style="border: 0; border-top: 1px solid var(--line); margin: 24px 0 20px;" />
-        <h2 style="font-size: 16px; margin: 0 0 6px;">Secure Contact Change</h2>
+        <h2 style="font-size: 16px; margin: 0 0 6px;">{{ 'security.contactChangeTitle' | translate }}</h2>
         <p style="color: var(--muted); font-size: 12px; margin: 0 0 14px;">
-          Changing your administrator email requires verification of the new address.
+          {{ 'security.contactChangeLead' | translate }}
         </p>
 
         @if (!contactChangePending()) {
           <form (submit)="requestContactChange($event)">
             <label class="ops-field">
-              New Administrator Email
+              {{ 'security.newEmail' | translate }}
               <input
                 type="email"
                 class="input"
@@ -192,14 +194,14 @@ import { IconComponent } from '../ui/icon.component';
             </label>
             <div style="margin-top: 14px;">
               <button type="submit" class="btn btn-default btn-sm" [disabled]="!newEmail() || loading()">
-                Send Verification Code
+                {{ 'security.sendCode' | translate }}
               </button>
             </div>
           </form>
         } @else {
           <form (submit)="verifyContactChange($event)" style="padding: 14px; background: #f8fafc; border-radius: 8px;">
             <p style="font-size: 12px; margin: 0 0 10px; color: var(--ink);">
-              Enter the 6-digit code sent to <strong>{{ newEmail() }}</strong>:
+              {{ 'security.enterCodeSentTo' | translate }} <strong>{{ newEmail() }}</strong>:
             </p>
             <div style="display: flex; gap: 8px;">
               <input
@@ -213,11 +215,11 @@ import { IconComponent } from '../ui/icon.component';
                 required
               />
               <button type="submit" class="btn btn-primary btn-sm" [disabled]="!contactOtp() || loading()">
-                Verify & Update
+                {{ 'security.verifyUpdate' | translate }}
               </button>
             </div>
             <button type="button" class="btn btn-default btn-sm" style="margin-top: 10px;" (click)="contactChangePending.set(false)">
-              Cancel
+              {{ 'common.cancel' | translate }}
             </button>
           </form>
         }
@@ -228,17 +230,17 @@ import { IconComponent } from '../ui/icon.component';
     @if (showDisableModal()) {
       <div class="modal-backdrop" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999;">
         <div class="card" style="width: 420px; padding: 24px; background: white; border-radius: 12px;">
-          <h3 style="margin: 0 0 10px;">Disable Two-Factor Authentication</h3>
+          <h3 style="margin: 0 0 10px;">{{ 'security.disable2faTitle' | translate }}</h3>
           <p style="color: var(--muted); font-size: 12px; margin-bottom: 16px;">
-            Confirm your administrator password to disable two-factor authentication.
+            {{ 'security.disable2faLead' | translate }}
           </p>
           <label class="ops-field">
-            Password
-            <input type="password" class="input" [value]="disablePassword()" (input)="disablePassword.set($any($event.target).value)" placeholder="Enter password" />
+            {{ 'security.password' | translate }}
+            <input type="password" class="input" [value]="disablePassword()" (input)="disablePassword.set($any($event.target).value)" [placeholder]="'security.passwordPlaceholder' | translate" />
           </label>
           <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px;">
-            <button class="btn btn-default btn-sm" (click)="showDisableModal.set(false)">Cancel</button>
-            <button class="btn btn-danger btn-sm" [disabled]="!disablePassword() || loading()" (click)="disableMfa()">Confirm Disable</button>
+            <button class="btn btn-default btn-sm" (click)="showDisableModal.set(false)">{{ 'common.cancel' | translate }}</button>
+            <button class="btn btn-danger btn-sm" [disabled]="!disablePassword() || loading()" (click)="disableMfa()">{{ 'security.confirmDisable' | translate }}</button>
           </div>
         </div>
       </div>
@@ -247,6 +249,7 @@ import { IconComponent } from '../ui/icon.component';
 })
 export class SecurityComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly translate = inject(TranslateService);
 
   readonly mfaStatus = signal<MfaStatusResponse | null>(null);
   readonly enrolling = signal(false);
@@ -305,7 +308,7 @@ export class SecurityComponent implements OnInit {
         this.enrolling.set(false);
         this.confirmCode.set('');
         this.newRecoveryCodes.set(res.recoveryCodes || []);
-        this.successMessage.set('Two-factor authentication successfully enabled!');
+        this.successMessage.set(this.translate.t('security.ok.enabled'));
         this.loadMfaStatus();
       },
       error: (err) => {
@@ -322,7 +325,7 @@ export class SecurityComponent implements OnInit {
   }
 
   regenerateRecoveryCodes() {
-    if (!confirm('Are you sure you want to regenerate recovery codes? All previous codes will be invalidated.')) {
+    if (!confirm(this.translate.t('security.confirmRegenerate'))) {
       return;
     }
     this.loading.set(true);
@@ -331,7 +334,7 @@ export class SecurityComponent implements OnInit {
       next: (res) => {
         this.loading.set(false);
         this.newRecoveryCodes.set(res.recoveryCodes || []);
-        this.successMessage.set('New recovery codes generated. Store them safely.');
+        this.successMessage.set(this.translate.t('security.ok.regenerated'));
       },
       error: (err) => {
         this.loading.set(false);
@@ -348,7 +351,7 @@ export class SecurityComponent implements OnInit {
         this.loading.set(false);
         this.showDisableModal.set(false);
         this.disablePassword.set('');
-        this.successMessage.set('Two-factor authentication disabled.');
+        this.successMessage.set(this.translate.t('security.ok.disabled'));
         this.newRecoveryCodes.set([]);
         this.loadMfaStatus();
       },
@@ -362,7 +365,7 @@ export class SecurityComponent implements OnInit {
   copyRecoveryCodes() {
     const text = this.newRecoveryCodes().join('\n');
     navigator.clipboard?.writeText(text);
-    this.successMessage.set('Recovery codes copied to clipboard.');
+    this.successMessage.set(this.translate.t('security.ok.copied'));
   }
 
   stepUp(event: Event) {
@@ -374,7 +377,7 @@ export class SecurityComponent implements OnInit {
         this.loading.set(false);
         this.stepUpPassword.set('');
         this.stepUpMfaCode.set('');
-        this.successMessage.set('Step-up authentication successful! Recent-auth window refreshed.');
+        this.successMessage.set(this.translate.t('security.ok.stepUp'));
       },
       error: (err) => {
         this.loading.set(false);
@@ -391,7 +394,7 @@ export class SecurityComponent implements OnInit {
       next: (res) => {
         this.loading.set(false);
         this.contactChangePending.set(true);
-        this.successMessage.set(res.message || 'Verification code sent to new email.');
+        this.successMessage.set(this.translate.t('security.ok.codeSent'));
       },
       error: (err) => {
         this.loading.set(false);
@@ -410,7 +413,7 @@ export class SecurityComponent implements OnInit {
         this.contactChangePending.set(false);
         this.contactOtp.set('');
         this.newEmail.set('');
-        this.successMessage.set(res.message || 'Contact details updated successfully.');
+        this.successMessage.set(this.translate.t('security.ok.contactUpdated'));
         this.auth.refreshCurrentUser().subscribe();
       },
       error: (err) => {

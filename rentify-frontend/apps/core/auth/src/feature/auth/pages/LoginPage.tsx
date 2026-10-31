@@ -32,6 +32,8 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { cn } from '@rentify/utils';
+import { useAuthLanguage } from '../context/AuthLanguageContext';
+import { LanguageToggle } from '../components/LanguageToggle';
 
 interface LoginFormData {
   contact: string;
@@ -42,6 +44,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
+  const { t, isKhmer } = useAuthLanguage();
 
   const {
     error,
@@ -56,6 +59,7 @@ function LoginPage() {
     formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,
+    needsVerification,
   } = useLoginForm();
 
   const form = useForm<LoginFormData>({
@@ -81,7 +85,6 @@ function LoginPage() {
     form.clearErrors();
   };
 
-  const needsVerification = /not verified/i.test(error || '');
 
   const handleVerify = () => {
     const contact = form.getValues('contact');
@@ -96,7 +99,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6">
+    <div lang={isKhmer ? 'km' : 'en'} className={cn('relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fb] px-4 py-8 sm:px-6', isKhmer && 'font-khmer')}>
       <div className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-xl shadow-slate-200/60 lg:min-h-[680px] lg:grid-cols-[0.9fr_1.1fr]">
         <aside
           className={cn(
@@ -128,31 +131,30 @@ function LoginPage() {
               Rentify
             </p>
             <h1 className="mt-4 max-w-sm text-4xl font-bold leading-tight tracking-tight text-slate-900">
-              Everything your business needs, in one place.
+              {t('workspace.title')}
             </h1>
             <p className="mt-5 max-w-sm text-base leading-7 text-slate-500">
-              Return to your workspace to manage products, orders, and customers
-              with clarity.
+              {t('workspace.subtitle')}
             </p>
           </div>
           <div className="relative space-y-4 text-sm text-slate-600">
             <div className="flex items-center gap-3">
-              <PackageCheck className="h-5 w-5 text-slate-400" /> Keep products and orders in
-              sync
+              <PackageCheck className="h-5 w-5 text-slate-400" /> {t('workspace.sync')}
             </div>
             <div className="flex items-center gap-3">
-              <UsersRound className="h-5 w-5 text-slate-400" /> Stay connected with your
-              customers
+              <UsersRound className="h-5 w-5 text-slate-400" /> {t('workspace.customers')}
             </div>
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 text-slate-400" /> Secure access to your
-              workspace
+              <ShieldCheck className="h-5 w-5 text-slate-400" /> {t('workspace.security')}
             </div>
           </div>
         </aside>
 
         <main className="flex items-center px-6 py-10 sm:px-12 sm:py-12 lg:px-16 lg:py-16">
           <div className="mx-auto w-full max-w-[460px]">
+            <div className="mb-6 flex justify-end">
+              <LanguageToggle />
+            </div>
             <div className="mb-8">
               <div
                 className={cn(
@@ -170,10 +172,10 @@ function LoginPage() {
                 RENTIFY
               </p>
               <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-                Welcome back
+                {t('login.title.default')}
               </h2>
               <p className="mt-2 text-base text-slate-600">
-                Sign in to continue to your Rentify workspace.
+                {t('login.subtitle.workspace')}
               </p>
             </div>
             {/* Google Login Button */}
@@ -201,7 +203,7 @@ function LoginPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              {t('login.continueGoogle')}
             </Button>
 
             {telegramEnabled && (
@@ -218,7 +220,7 @@ function LoginPage() {
                     d="M5.4 11.8l11.6-4.5c.54-.2 1 .13.83.94l-2 9.3c-.14.66-.54.82-1.1.51l-3-2.2-1.45 1.4c-.16.16-.3.3-.6.3l.21-3.05 5.56-5.02c.24-.21-.05-.33-.38-.12l-6.87 4.33-2.96-.92c-.64-.2-.66-.64.14-.95z"
                   />
                 </svg>
-                Continue with Telegram
+                {t('login.continueTelegram')}
               </Button>
             )}
 
@@ -229,7 +231,7 @@ function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-3 bg-white text-slate-600 font-medium">
-                  Or continue with email/phone
+                  {t('login.orContinueWith')}
                 </span>
               </div>
             </div>
@@ -260,7 +262,7 @@ function LoginPage() {
                       )}
                       <span className="relative flex items-center gap-2">
                         {mode === 'email' ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-                        {mode === 'email' ? 'Email' : 'Phone'}
+                        {mode === 'email' ? t('auth.email') : t('auth.phoneShort')}
                       </span>
                     </button>
                   ))}
@@ -281,14 +283,14 @@ function LoginPage() {
                   control={form.control}
                   name="contact"
                   rules={{
-                    required: 'Email or phone number is required',
+                    required: t('error.contactRequired'),
                     validate: {
                       valid: (value) =>
                         (inputMode === 'email' &&
                           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) ||
                         (inputMode === 'phone' &&
                           validateCambodianPhone(value)) ||
-                        'Please enter a valid email or phone number',
+                        (inputMode === 'phone' ? t('error.invalidPhone') : t('error.invalidEmail')),
                     },
                   }}
                   render={({ field }) => (
@@ -296,8 +298,8 @@ function LoginPage() {
                       <FormLabel className="text-slate-700 font-medium flex items-center gap-2">
                         <User className="w-4 h-4" />
                         {inputMode === 'email'
-                          ? 'Email Address'
-                          : 'Phone Number'}
+                          ? t('login.tab.email')
+                          : t('login.tab.phone')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
@@ -306,8 +308,8 @@ function LoginPage() {
                             type={inputMode === 'email' ? 'email' : 'tel'}
                             placeholder={
                               inputMode === 'email'
-                                ? 'Email'
-                                : 'Phone number'
+                                ? t('login.placeholder.email')
+                                : t('login.placeholder.phone')
                             }
                             onChange={(e) => {
                               if (inputMode === 'phone') {
@@ -339,13 +341,13 @@ function LoginPage() {
                 <FormField
                   control={form.control}
                   name="password"
-                  rules={{ required: 'Password is required' }}
+                  rules={{ required: t('error.passwordRequired') }}
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
                         <FormLabel className="text-slate-700 font-medium flex items-center gap-2">
                           <KeyRound className="w-4 h-4" />
-                          Password
+                          {t('login.label.password')}
                         </FormLabel>
                         <Button
                           type="button"
@@ -353,7 +355,7 @@ function LoginPage() {
                           className="h-auto p-0 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200"
                           onClick={handleForgotPassword}
                         >
-                          Forgot password?
+                          {t('login.forgotPassword')}
                         </Button>
                       </div>
                       <FormControl>
@@ -361,7 +363,7 @@ function LoginPage() {
                           <Input
                             {...field}
                             type={showPassword ? 'text' : 'password'}
-                            placeholder="Password"
+                            placeholder={t('login.placeholder.password')}
                             className="h-12 w-full pl-10 pr-10 rounded-xl border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 transition-all duration-200 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 hover:border-slate-400"
                           />
                           <KeyRound className="pointer-events-none absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -370,7 +372,7 @@ function LoginPage() {
                             variant="ghost"
                             size="sm"
                             aria-label={
-                              showPassword ? 'Hide password' : 'Show password'
+                              showPassword ? t('auth.hidePassword') : t('auth.showPassword')
                             }
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-xl"
                             onClick={() => setShowPassword(!showPassword)}
@@ -402,7 +404,7 @@ function LoginPage() {
                           onClick={handleVerify}
                           className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-900"
                         >
-                          Verify now
+                          {t('login.verifyNow')}
                         </button>
                       )}
                     </AlertDescription>
@@ -418,11 +420,11 @@ function LoginPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Signing in...
+                      {t('action.signingIn')}
                     </>
                   ) : (
                     <>
-                      Sign In
+                      {t('action.signIn')}
                       <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
                     </>
                   )}
@@ -441,14 +443,14 @@ function LoginPage() {
                 {/* Sign up link */}
                 <div className="text-center pt-4 border-t border-slate-200">
                   <p className="text-sm text-slate-600">
-                    Don't have an account?{' '}
+                    {t('login.noAccount')}{' '}
                     <Button
                       type="button"
                       variant="link"
                       className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200"
                       onClick={handleSignUp}
                     >
-                      Create account
+                      {t('action.signUp')}
                     </Button>
                   </p>
                 </div>

@@ -1,5 +1,5 @@
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem } from "./Sidebar";
-import { useMediaQuery } from '@rentify/utils';
+import { useMediaQuery, useTranslation } from '@rentify/utils';
 import {
   CreditCard,
   Bell,
@@ -21,6 +21,7 @@ import {
 import { Badge } from '@rentify/shared/ui/badge';
 
 export function NavUser({ user, onLogout }) {
+  const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 900px)');
 
   return (
@@ -75,15 +76,15 @@ export function NavUser({ user, onLogout }) {
                 <DropdownMenuGroup>
                   <DropdownMenuItem className="cursor-pointer h-10">
                     <User className="mr-2 h-4 w-4" />
-                    <span>Account</span>
+                    <span>{t('merchant.shell.account')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer h-10">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Billing</span>
+                    <span>{t('merchant.shell.billing')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer h-10">
                     <Bell className="mr-2 h-4 w-4" />
-                    <span>Notifications</span>
+                    <span>{t('merchant.shell.notifications')}</span>
                     <Badge className="ml-auto">5</Badge>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
@@ -93,7 +94,7 @@ export function NavUser({ user, onLogout }) {
                   onClick={onLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('merchant.shell.logOut')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

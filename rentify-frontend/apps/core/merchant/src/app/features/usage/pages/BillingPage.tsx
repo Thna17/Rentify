@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@rentify/shared/ui/card";
 import { Badge } from "@rentify/shared/ui/badge";
 import { Button } from "@rentify/shared/ui/button";
-import { MARKETING_URL } from "@rentify/shared/config/urls";
 import { useChannels } from "../../../../context/ChannelContext";
 import { LoadingState } from "../components/LoadingState";
 import { ErrorState } from "../components/ErrorState";
@@ -16,7 +15,7 @@ const getMonth = (date = new Date()) => date.toISOString().slice(0, 7);
 
 export const BillingPage = () => {
   const { websiteId, isLoading: websiteLoading } = useWebsiteId();
-  const { store } = useChannels();
+  const { store, hasStorefront } = useChannels();
   const currentMonth = useMemo(() => getMonth(), []);
   const lastMonth = useMemo(() => {
     const date = new Date();
@@ -29,13 +28,13 @@ export const BillingPage = () => {
     isLoading: loadingCurrent,
     error: errorCurrent,
     refetch: refetchCurrent,
-  } = useGetBillingSummaryQuery({ websiteId, month: currentMonth });
+  } = useGetBillingSummaryQuery({ websiteId, month: currentMonth }, { skip: !websiteId });
   const {
     data: previous,
     isLoading: loadingPrevious,
     error: errorPrevious,
     refetch: refetchPrevious,
-  } = useGetBillingSummaryQuery({ websiteId, month: lastMonth });
+  } = useGetBillingSummaryQuery({ websiteId, month: lastMonth }, { skip: !websiteId });
 
   if (websiteLoading) return <LoadingState />;
   if (!websiteId) {
@@ -49,16 +48,9 @@ export const BillingPage = () => {
               {store?.name || "Your Store"} is currently on the Free Plan ($0/mo).
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/settings/billing">Manage Plans</Link>
-            </Button>
-            <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-              <a href={`${MARKETING_URL}/onboarding/starter?step=template`}>
-                Start 14-Day Free Trial (Starter ≈$5/mo)
-              </a>
-            </Button>
-          </div>
+          <Button asChild className="h-11 w-full sm:h-9 sm:w-auto">
+            <Link to="/settings/billing">See plans</Link>
+          </Button>
         </div>
 
         <Card className="border-border">

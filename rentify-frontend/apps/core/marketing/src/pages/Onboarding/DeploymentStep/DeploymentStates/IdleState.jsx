@@ -43,18 +43,14 @@ export default function IdleState({
               language === 'KH' ? 'font-khmer' : ''
             }`}
           >
-            {language === 'KH'
-              ? 'ពិនិត្យមើលមុនពេលដាក់ឱ្យដំណើរការ'
-              : 'Ready to publish your storefront'}
+            {t('deployment.readyToPublishYourStorefront')}
           </h3>
           <p
             className={`mt-2 text-sm leading-6 text-slate-600 ${
               language === 'KH' ? 'font-khmer' : ''
             }`}
           >
-            {language === 'KH'
-              ? 'Rentify នឹងបង្កើតគេហទំព័ររបស់អ្នក ហើយផ្សាយវាភ្លាមៗនៅលើអាសយដ្ឋានផ្ទាល់ខ្លួនរបស់ហាង។'
-              : 'Rentify will create your website and publish it right away on your store’s own web address.'}
+            {t('deployment.rentifyWillCreateYourWebsite')}
           </p>
         </div>
 
@@ -97,15 +93,11 @@ export default function IdleState({
           <div className="space-y-2 text-sm text-slate-600">
             <p className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              {language === 'KH'
-                ? 'URL របស់អ្នកនឹងមាននៅពេល build រួចរាល់'
-                : 'Your live URL will be ready when the build succeeds.'}
+              {t('deployment.yourLiveUrlWillBe')}
             </p>
             <p className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              {language === 'KH'
-                ? 'សោ និងព័ត៌មានសម្ងាត់មិនត្រូវបានបង្ហាញក្នុង browser ទេ'
-                : 'Deployment credentials stay on the server.'}
+              {t('deployment.deploymentCredentialsStayOnThe')}
             </p>
           </div>
           <Button
@@ -116,9 +108,7 @@ export default function IdleState({
           >
             <Rocket className="mr-2 h-4 w-4" />
             {isBusy
-              ? language === 'KH'
-                ? 'កំពុងរៀបចំ…'
-                : 'Preparing…'
+              ? t('deployment.preparing')
               : t('deployment.confirm.button')}
           </Button>
         </div>

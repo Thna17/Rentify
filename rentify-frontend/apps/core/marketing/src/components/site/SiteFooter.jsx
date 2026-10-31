@@ -103,7 +103,7 @@ const SiteFooter = () => {
         language === 'KH' ? 'font-site-kh' : 'font-site'
       )}
     >
-      <Container className="grid gap-5 pb-5 pt-6 md:pt-8 lg:grid-cols-[minmax(240px,1.1fr)_minmax(260px,1fr)_minmax(0,2.4fr)] lg:gap-x-10">
+      <Container className="grid gap-5 pb-5 pt-6 md:pt-8 lg:grid-cols-[minmax(240px,1.2fr)_minmax(0,2.4fr)_minmax(260px,1.1fr)] lg:gap-x-10">
         {/* Brand */}
         <div>
           <Link to="/" className="inline-flex items-center gap-2 text-[16px] tracking-[-0.02em] text-[#263c31]">
@@ -134,13 +134,6 @@ const SiteFooter = () => {
           <div className="lg:hidden">{badges}</div>
         </div>
 
-        {/* Sell on Rentify (desktop) */}
-        <div className="hidden lg:block">
-          <h4 className={HEADING}>{t('site.cta.title')}</h4>
-          <p className="mt-2.5 max-w-[30ch] text-[12.5px] leading-[1.55] text-[#475069]">{t('site.cta.lead')}</p>
-          {badges}
-        </div>
-
         {/* Link columns: grid on tablet/desktop, accordions on phones */}
         <div className="hidden gap-4 border-t border-[#e6e9f0] pt-5 sm:grid sm:grid-cols-4 lg:border-0 lg:pt-0">
           {columns.map((column) => (
@@ -153,6 +146,13 @@ const SiteFooter = () => {
               ))}
             </nav>
           ))}
+        </div>
+
+        {/* Sell on Rentify (desktop placed at the right after account column) */}
+        <div className="hidden lg:block">
+          <h4 className={HEADING}>{t('site.cta.title')}</h4>
+          <p className="mt-2.5 max-w-[30ch] text-[12.5px] leading-[1.55] text-[#475069]">{t('site.cta.lead')}</p>
+          {badges}
         </div>
 
         <nav className="border-t border-[#e6e9f0] sm:hidden" aria-label={t('site.footer.platform')}>
@@ -183,7 +183,7 @@ const SiteFooter = () => {
           <div className="-mx-2 flex flex-wrap items-center gap-1.5">
             <button type="button" onClick={toggleLanguage} className={ACTION}>
               <Globe className="h-[15px] w-[15px]" strokeWidth={1.75} />
-              {language === 'KH' ? 'English' : 'ខ្មែរ'}
+              {language === 'KH' ? 'English' : 'ភាសាខ្មែរ'}
             </button>
             <SmartLink to={CONTACT.phoneHref} className={ACTION}>
               <Phone className="h-[15px] w-[15px]" strokeWidth={1.75} />

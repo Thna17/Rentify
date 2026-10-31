@@ -5,6 +5,8 @@ const paymentController = require('./paymentController');
 const { verifyToken } = require('../../middlewares/auth');
 const history = require('./merchantPaymentHistory');
 
+router.post('/payway/callback', express.urlencoded({ extended: false }), paymentController.paywayCallback);
+
 router.post('/khqr', verifyToken, paymentController.initiateKHQRPayment);
 router.get('/history', verifyToken, (req, res, next) => Promise.resolve(history.list(req, res)).catch(next));
 router.get('/status/:paymentId', verifyToken, paymentController.checkPaymentStatus);

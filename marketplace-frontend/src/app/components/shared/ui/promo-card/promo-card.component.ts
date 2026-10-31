@@ -1,7 +1,8 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Promo, PromoFormat } from '../../../../core/promos/promo.models';
 import { IconComponent } from '../icon/icon.component';
+import { TranslateService } from '../../../../core/i18n/translate.service';
 
 /**
  * The single promo/ad card used across the marketplace.
@@ -26,7 +27,7 @@ import { IconComponent } from '../icon/icon.component';
       [routerLink]="p.link"
       [queryParams]="p.params ?? {}"
     >
-      <img [src]="p.image" [alt]="p.alt ?? ''" loading="lazy" />
+      <img [src]="p.image" [alt]="copy(p, 'alt')" loading="lazy" />
       <div class="scrim" [class.featured-scrim]="format() === 'featured'"></div>
 
       @if (format() === 'featured') {
@@ -36,7 +37,7 @@ import { IconComponent } from '../icon/icon.component';
               @if (p.eyebrow) {
                 <div class="featured-live-badge">
                   <span class="live-dot"></span>
-                  <span class="badge-text">{{ p.eyebrow }}</span>
+                  <span class="badge-text">{{ copy(p, 'eyebrow') }}</span>
                 </div>
               }
               @if (p.badge) {
@@ -44,9 +45,9 @@ import { IconComponent } from '../icon/icon.component';
               }
             </div>
 
-            <h3 class="featured-title">{{ p.title }}</h3>
+            <h3 class="featured-title">{{ copy(p, 'title') }}</h3>
             @if (p.text) {
-              <p class="featured-text">{{ p.text }}</p>
+              <p class="featured-text">{{ copy(p, 'text') }}</p>
             }
           </div>
 
@@ -66,7 +67,7 @@ import { IconComponent } from '../icon/icon.component';
           <div class="featured-bottom">
             <div class="cta-action-wrap">
               <span class="featured-cta-btn">
-                <span>{{ p.cta }}</span>
+                <span>{{ copy(p, 'cta') }}</span>
                 <span class="btn-arrow">
                   <ui-icon name="arrow-right" [size]="14" />
                 </span>
@@ -83,16 +84,16 @@ import { IconComponent } from '../icon/icon.component';
       } @else if (format() === 'card') {
         <span class="copy">
           @if (p.eyebrow) {
-            <small class="eyebrow" [attr.lang]="p.eyebrowLang ?? null">{{ p.eyebrow }}</small>
+            <small class="eyebrow" [attr.lang]="p.eyebrowLang ?? null">{{ copy(p, 'eyebrow') }}</small>
           }
-          <strong>{{ p.title }}</strong>
-          @if (p.text) { <span class="text">{{ p.text }}</span> }
-          <em class="cta">{{ p.cta }} <ui-icon name="arrow-right" [size]="14" /></em>
+          <strong>{{ copy(p, 'title') }}</strong>
+          @if (p.text) { <span class="text">{{ copy(p, 'text') }}</span> }
+          <em class="cta">{{ copy(p, 'cta') }} <ui-icon name="arrow-right" [size]="14" /></em>
         </span>
       } @else {
         <!-- Compact: photo does the talking -->
         <span class="copy">
-          <strong>{{ p.title }}</strong>
+          <strong>{{ copy(p, 'title') }}</strong>
           <em class="cta"><ui-icon name="arrow-right" [size]="13" /></em>
         </span>
       }
@@ -105,8 +106,8 @@ import { IconComponent } from '../icon/icon.component';
     :host(.featured) {
       display: flex;
       flex-direction: column;
-      height: 100%;
-      min-height: 100%;
+      height: 560px;
+      min-height: 0;
       width: 100%;
     }
 
@@ -361,18 +362,20 @@ import { IconComponent } from '../icon/icon.component';
     }
 
     @media (max-width: 900px) {
-      :host(.featured) { height: auto; min-height: 0; max-height: 160px; }
-      .featured-copy { min-height: 0; max-height: 160px; padding: 12px 16px; gap: 6px; }
-      .featured-center { display: none; }
-      .featured-text { display: none; }
-      .featured-title { font-size: 17px; }
-      .featured-cta-btn { padding: 5px 12px; font-size: 11.5px; }
-      .btn-arrow { width: 16px; height: 16px; }
+      :host(.featured) { height: 280px; min-height: 0; }
+      .featured-copy { min-height: 280px; padding: 16px; gap: 8px; }
+      .featured-center { display: flex; }
+      .featured-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+      .featured-title { font-size: 19px; }
+      .featured-cta-btn { padding: 7px 14px; font-size: 12px; }
+      .btn-arrow { width: 18px; height: 18px; }
     }
     @media (max-width: 520px) {
-      :host(.featured) { max-height: 140px; }
-      .featured-copy { max-height: 140px; padding: 10px 12px; gap: 4px; }
-      .featured-title { font-size: 15px; }
+      :host(.featured) { height: 280px; min-height: 0; }
+      .featured-copy { min-height: 250px; padding: 14px; gap: 6px; }
+      .featured-title { font-size: 17px; }
+      .perks-list { gap: 4px; }
+      .perk-chip { padding: 3px 9px; font-size: 10px; }
       .featured-kicker-row { display: none; }
     }
     @media (prefers-reduced-motion: reduce) { img, .featured-cta-btn, .btn-arrow { transition: none; } }
@@ -381,4 +384,12 @@ import { IconComponent } from '../icon/icon.component';
 export class PromoCardComponent {
   readonly promo = input.required<Promo>();
   readonly format = input<PromoFormat>('card');
+  private readonly translate = inject(TranslateService);
+
+  /** Catalog copy for promo.<id>.<field>; falls back to the slot's own text. */
+  protected copy(p: Promo, field: 'eyebrow' | 'title' | 'text' | 'cta' | 'alt'): string {
+    const key = `promo.${p.id}.${field}`;
+    const text = p.id ? this.translate.t(key) : key;
+    return text === key ? (p[field] ?? '') : text;
+  }
 }

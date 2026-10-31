@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-promo-image-marquee',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
-    <section class="marquee" aria-label="Featured Rentify Marketplace collections">
+    <section class="marquee" [attr.aria-label]="'promo.featuredCollections' | translate">
       <div class="track">
         @for (group of [0, 1, 2, 3]; track group) {
           <div class="image-group" [attr.aria-hidden]="group > 0 ? 'true' : null">

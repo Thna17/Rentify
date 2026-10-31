@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Index from "./pages/Home";
@@ -8,11 +8,21 @@ import Solutions from "./pages/solutions/Solutions";
 // import Contact from "./pages/Contact";
 import Pricing from "./pages/pricing/Pricing";
 import Onboarding from "./pages/Onboarding/AdvancedOnboarding";
-import StartSelling from "./pages/Onboarding/StartSelling";
+
 import LiveDemoPage from "./pages/live-demo/LiveDemo";
 // import NotFound from "./pages/NotFound";
 import BrowseTemplates from "./pages/template-browse";
 import TemplateDetailPage from "./pages/template-detail";
+
+// One onboarding only: every "create store" link lands on the sidebar flow.
+function StartRedirect() {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  const plan = (params.get("plan") || "starter").toLowerCase();
+  params.delete("plan");
+  const rest = params.toString();
+  return <Navigate replace to={`/onboarding/${encodeURIComponent(plan)}${rest ? `?${rest}` : ""}`} />;
+}
 const App = () => (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <LanguageProvider>
@@ -32,7 +42,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               {/* <Route path="/contact" element={<Contact />} /> */}
               <Route path="/onboarding/:packageId" element={<Onboarding />} />
-              <Route path="/start" element={<StartSelling />} />
+              <Route path="/start" element={<StartRedirect />} />
               <Route path="/templates" element={<BrowseTemplates />} />
               <Route path="/templates/:id" element={<TemplateDetailPage />} />
 

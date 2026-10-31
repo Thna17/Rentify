@@ -14,16 +14,17 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../../core/cart/cart.service';
 import { IconComponent } from '../ui/icon/icon.component';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-cart-drawer',
-  imports: [KeyValuePipe, RouterLink, IconComponent],
+  imports: [TranslatePipe, KeyValuePipe, RouterLink, IconComponent],
   template: `
     <div class="cart-layer" aria-live="polite">
       <button
         class="cart-backdrop"
         type="button"
-        aria-label="Close shopping bag"
+        [attr.aria-label]="'cartDrawer.close' | translate"
         animate.leave="backdrop-leave"
         (click)="requestClose()"
       ></button>
@@ -40,19 +41,19 @@ import { IconComponent } from '../ui/icon/icon.component';
       >
         <header class="drawer-header">
           <div>
-            <p class="eyebrow">Hak Shop checkout</p>
+            <p class="eyebrow">{{ 'cartDrawer.eyebrow' | translate }}</p>
             <div class="title-row">
-              <h2 id="cart-drawer-title">Your bag</h2>
+              <h2 id="cart-drawer-title">{{ 'cartDrawer.yourBag' | translate }}</h2>
               <span class="item-count">{{ cart.count() }} {{ cart.count() === 1 ? 'item' : 'items' }}</span>
               <a class="full-cart-link" routerLink="/cart" (click)="requestClose()">
-                View full cart <ui-icon name="arrow-right" [size]="12" />
+                {{ 'cartDrawer.viewFullCart' | translate }} <ui-icon name="arrow-right" [size]="12" />
               </a>
             </div>
             <p id="cart-drawer-description" class="sr-only">
-              Review products, update quantities, or proceed to checkout.
+              {{ 'cartDrawer.reviewHint' | translate }}
             </p>
           </div>
-          <button #closeButton class="close-button" type="button" aria-label="Close shopping bag" (click)="requestClose()">
+          <button #closeButton class="close-button" type="button" [attr.aria-label]="'cartDrawer.close' | translate" (click)="requestClose()">
             <ui-icon name="x" [size]="20" />
           </button>
         </header>
@@ -61,21 +62,21 @@ import { IconComponent } from '../ui/icon/icon.component';
           @if (cart.isEmpty()) {
             <div class="empty-state">
               <div class="empty-icon"><ui-icon name="cart" [size]="28" /></div>
-              <h3>Your bag is ready for something special</h3>
-              <p>Discover locally made products from Cambodian artisans.</p>
-              <button type="button" class="secondary-action" (click)="continueShopping()">Explore products</button>
+              <h3>{{ 'cartDrawer.emptyTitle' | translate }}</h3>
+              <p>{{ 'cartDrawer.emptyBody' | translate }}</p>
+              <button type="button" class="secondary-action" (click)="continueShopping()">{{ 'cartDrawer.exploreProducts' | translate }}</button>
             </div>
           } @else {
             @if (cart.freeShippingRemaining() > 0) {
               <div class="shipping-progress">
                 <div class="shipping-copy">
                   <ui-icon name="truck" [size]="15" />
-                  <span>Add <strong>\${{ cart.freeShippingRemaining().toFixed(2) }}</strong> for free delivery</span>
+                  <span>{{ 'cartDrawer.add' | translate }} <strong>\${{ cart.freeShippingRemaining().toFixed(2) }}</strong> {{ 'cartDrawer.forFreeDelivery' | translate }}</span>
                 </div>
                 <div class="progress-track"><span [style.width.%]="shippingProgress"></span></div>
               </div>
             } @else {
-              <div class="shipping-earned"><ui-icon name="check" [size]="14" /> You unlocked free delivery</div>
+              <div class="shipping-earned"><ui-icon name="check" [size]="14" /> {{ 'cartDrawer.freeDeliveryUnlocked' | translate }}</div>
             }
 
             <div class="cart-lines">
@@ -101,7 +102,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                     </div>
 
                     <div class="selected-variant-preview">
-                          @if (line.variantImage) { <img [src]="line.variantImage" alt="Selected variant" /> }
+                          @if (line.variantImage) { <img [src]="line.variantImage" [alt]="'cartDrawer.selectedVariant' | translate" /> }
                           @for (option of line.optionValues | keyvalue; track option.key) {
                             <span>{{ option.key }}: {{ option.value }}</span>
                           }
@@ -109,7 +110,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                         <span class="unit-price">\${{ line.product.price.toFixed(2) }} each</span>
 
                     <div class="line-bottom">
-                      <div class="quantity-control" [attr.aria-label]="'Quantity for ' + line.product.name">
+                      <div class="quantity-control" [attr.aria-label]="'cartDrawer.quantityFor' | translate: { name: line.product.name }">
                         <button type="button" (click)="cart.changeQuantity(line.product.id, -1, line.variantId)" [attr.aria-label]="'Decrease ' + line.product.name + ' quantity'">
                           <ui-icon name="minus" [size]="12" />
                         </button>
@@ -132,8 +133,8 @@ import { IconComponent } from '../ui/icon/icon.component';
         <footer class="order-summary" [class.open]="summaryOpen()">
           <div class="breakdown" id="drawer-breakdown">
             <div class="breakdown-inner">
-              <div class="summary-line"><span>Subtotal</span><span>\${{ cart.subtotal().toFixed(2) }}</span></div>
-              <div class="summary-line"><span>Delivery</span><span [class.free]="cart.shipping() === 0">{{ cart.shipping() === 0 ? 'Free' : '$' + cart.shipping().toFixed(2) }}</span></div>
+              <div class="summary-line"><span>{{ 'cart.subtotal' | translate }}</span><span>\${{ cart.subtotal().toFixed(2) }}</span></div>
+              <div class="summary-line"><span>{{ 'checkout.delivery' | translate }}</span><span [class.free]="cart.shipping() === 0">{{ cart.shipping() === 0 ? 'Free' : '$' + cart.shipping().toFixed(2) }}</span></div>
             </div>
           </div>
           <button
@@ -143,16 +144,16 @@ import { IconComponent } from '../ui/icon/icon.component';
             aria-controls="drawer-breakdown"
             [attr.aria-expanded]="summaryOpen()"
           >
-            <span>Total</span>
+            <span>{{ 'cartDrawer.total' | translate }}</span>
             <span class="total-value">
               <strong>\${{ cart.total().toFixed(2) }}</strong>
               <span class="total-chevron" aria-hidden="true"><ui-icon name="chevron-up" [size]="13" /></span>
             </span>
           </button>
           <button class="checkout-button" type="button" [disabled]="cart.isEmpty()" (click)="checkout()">
-            Secure checkout <span>\${{ cart.total().toFixed(2) }}</span>
+            {{ 'nav.secureCheckout' | translate }} <span>\${{ cart.total().toFixed(2) }}</span>
           </button>
-          <p class="secure-note"><ui-icon name="lock" [size]="12" /> Secure payment · Easy order tracking</p>
+          <p class="secure-note"><ui-icon name="lock" [size]="12" /> {{ 'cartDrawer.secureNote' | translate }}</p>
         </footer>
       </aside>
     </div>

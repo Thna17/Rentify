@@ -198,7 +198,7 @@ const StaffSetting: React.FC = () => {
 
   return (
     <SettingsLayout
-      title="Staff Management"
+      title={t('merchant.p.staffManagement')}
       description="Manage your team members and their permissions"
       icon={<Users className="h-5 w-5" />}
     >
@@ -206,9 +206,9 @@ const StaffSetting: React.FC = () => {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle className="text-lg font-semibold">Team Members</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('merchant.p.teamMembers')}</CardTitle>
               <CardDescription>
-                Invite and manage staff members with specific permissions
+                {t('merchant.p.inviteAndManageStaff')}
               </CardDescription>
             </div>
             <Button 
@@ -224,20 +224,20 @@ const StaffSetting: React.FC = () => {
               className={`gap-2 shadow-sm ${!canAddStaff ? 'opacity-60 cursor-not-allowed bg-slate-400' : ''}`}
             >
               <Plus className="h-4 w-4" />
-              Add Staff Member
+              {t('merchant.p.addStaffMember')}
             </Button>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {disabledReason && (
+          {disabledReason && !isGracePeriod && !isSuspended && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
                 <span>{disabledReason}</span>
               </div>
               <Button asChild size="sm" variant="outline" className="border-amber-400 bg-white hover:bg-amber-100 text-amber-900">
-                <a href="/settings/billing">Upgrade Plan</a>
+                <a href="/settings/billing">{t('merchant.p.upgradePlan')}</a>
               </Button>
             </div>
           )}
@@ -246,7 +246,7 @@ const StaffSetting: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <Input
-                placeholder="Search staff members..."
+                placeholder={t('merchant.p.searchStaffMembers')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -258,9 +258,9 @@ const StaffSetting: React.FC = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="all">{t('merchant.p.allStatus')}</SelectItem>
+                <SelectItem value="active">{t('merchant.p.active')}</SelectItem>
+                <SelectItem value="inactive">{t('merchant.p.inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -275,7 +275,7 @@ const StaffSetting: React.FC = () => {
           ) : filteredStaff.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
               <Users className="mb-4 h-12 w-12 text-gray-400" />
-              <h3 className="mb-2 text-lg font-semibold">No staff members found</h3>
+              <h3 className="mb-2 text-lg font-semibold">{t('merchant.p.noStaffMembersFound')}</h3>
               <p className="mb-6 text-gray-500 max-w-md">
                 {searchTerm
                   ? 'Try adjusting your search criteria'
@@ -283,7 +283,7 @@ const StaffSetting: React.FC = () => {
               </p>
               <Button onClick={() => handleOpenDialog()} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Staff Member
+                {t('merchant.p.addStaffMember')}
               </Button>
             </div>
           ) : (
@@ -291,11 +291,11 @@ const StaffSetting: React.FC = () => {
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
-                    <TableHead className="font-semibold">Staff Member</TableHead>
-                    <TableHead className="font-semibold">Contact</TableHead>
-                    <TableHead className="font-semibold">Permissions</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="text-right font-semibold">Actions</TableHead>
+                    <TableHead className="font-semibold">{t('merchant.p.staffMember')}</TableHead>
+                    <TableHead className="font-semibold">{t('merchant.p.contact')}</TableHead>
+                    <TableHead className="font-semibold">{t('merchant.p.permissions')}</TableHead>
+                    <TableHead className="font-semibold">{t('merchant.p.status')}</TableHead>
+                    <TableHead className="text-right font-semibold">{t('merchant.p.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -363,7 +363,7 @@ const StaffSetting: React.FC = () => {
                                 variant="outline" 
                                 className="border-green-200 bg-green-50 text-green-700 text-xs"
                               >
-                                Active
+                                {t('merchant.p.active')}
                               </Badge>
                             </>
                           ) : (
@@ -373,7 +373,7 @@ const StaffSetting: React.FC = () => {
                                 variant="outline" 
                                 className="border-red-200 bg-red-50 text-red-700 text-xs"
                               >
-                                Inactive
+                                {t('merchant.p.inactive')}
                               </Badge>
                             </>
                           )}
@@ -392,7 +392,7 @@ const StaffSetting: React.FC = () => {
                               className="flex items-center gap-2 cursor-pointer"
                             >
                               <Edit className="h-4 w-4" />
-                              Edit Staff
+                              {t('merchant.p.editStaff')}
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleResendInvite(staff.email)}

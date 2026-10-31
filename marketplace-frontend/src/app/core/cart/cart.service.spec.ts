@@ -157,6 +157,14 @@ describe('CartService', () => {
     mutation.mockRestore();
   });
 
+  it('does not report success or retain a guest item when the backend rejects it', async () => {
+    const mutation = vi.spyOn(mockRentify, 'setQuantity').mockReturnValueOnce(throwError(() => ({ status: 403, error: { error: 'Cart unavailable' } })));
+    expect(await service.add(mockProduct, 1)).toBe(false);
+    expect(service.quantityOf(mockProduct.id)).toBe(0);
+    expect(service.error()).toBeTruthy();
+    mutation.mockRestore();
+  });
+
   it('adds an item to guest cart and reflects in lines and counts', async () => {
     expect(service.isEmpty()).toBe(true);
     expect(service.count()).toBe(0);

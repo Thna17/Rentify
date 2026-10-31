@@ -26,6 +26,7 @@ import { firstValueFrom } from 'rxjs';
 import { RentifyMarketplaceService } from '../../../core/rentify/rentify-marketplace.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslateService } from '../../../core/i18n/translate.service';
+import { ErrorSanitizerService } from '../../../core/i18n/error-sanitizer.service';
 import {
   BuyerReportResult,
   EvidenceItem,
@@ -129,7 +130,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                 <ui-icon name="alert-circle" [size]="32" />
               </div>
               <h3 class="state-title">{{ 'reportModal.ineligibleTitle' | translate }}</h3>
-              <p class="state-desc">{{ eligibility()?.guidance }}</p>
+              <p class="state-desc">{{ (eligibility()?.guidance ?? '') | translate }}</p>
               @if (eligibility()?.deadline; as dl) {
                 <p class="state-sub">
                   {{ 'reportModal.deadlineNotice' | translate: { deadline: (dl | date: 'medium') || '' } }}
@@ -229,7 +230,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                   [attr.aria-invalid]="form.get('reason')?.invalid && form.get('reason')?.touched"
                 />
                 @if (form.get('reason')?.invalid && form.get('reason')?.touched) {
-                  <small class="form-error" role="alert">Minimum 5 characters required.</small>
+                  <small class="form-error" role="alert">{{ 'reportModal.min5' | translate }}</small>
                 }
               </div>
 
@@ -247,7 +248,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                   [attr.aria-invalid]="form.get('description')?.invalid && form.get('description')?.touched"
                 ></textarea>
                 @if (form.get('description')?.invalid && form.get('description')?.touched) {
-                  <small class="form-error" role="alert">Minimum 10 characters required.</small>
+                  <small class="form-error" role="alert">{{ 'reportModal.min10' | translate }}</small>
                 }
               </div>
 
@@ -264,7 +265,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                     [value]="newEvidenceLabel()"
                     (change)="onEvidenceLabelChange($event)"
                     class="evidence-label-select"
-                    aria-label="Evidence Type"
+                    [attr.aria-label]="'reportModal.evidenceType' | translate"
                   >
                     <option value="product_damage">{{ 'reportModal.evidenceLabelDamage' | translate }}</option>
                     <option value="packaging">{{ 'reportModal.evidenceLabelPackaging' | translate }}</option>
@@ -279,7 +280,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                     (keydown.enter)="$event.preventDefault(); addEvidence()"
                     class="evidence-url-input"
                     [placeholder]="'reportModal.evidenceUrlPlaceholder' | translate"
-                    aria-label="Secure Photo URL"
+                    [attr.aria-label]="'reportModal.securePhotoUrl' | translate"
                   />
 
                   <button
@@ -293,12 +294,12 @@ import { IconComponent } from '../ui/icon/icon.component';
                 </div>
 
                 @if (evidenceUrlError()) {
-                  <p class="form-error" role="alert">{{ evidenceUrlError() }}</p>
+                  <p class="form-error" role="alert">{{ evidenceUrlError() | translate }}</p>
                 }
 
                 <!-- Evidence Chips List -->
                 @if (evidenceList().length > 0) {
-                  <ul class="evidence-chip-list" aria-label="Attached Evidence List">
+                  <ul class="evidence-chip-list" [attr.aria-label]="'reportModal.evidenceList' | translate">
                     @for (item of evidenceList(); track item.url; let i = $index) {
                       <li class="evidence-chip">
                         <span class="chip-label">{{ getEvidenceLabelText(item.label) }}</span>
@@ -307,7 +308,7 @@ import { IconComponent } from '../ui/icon/icon.component';
                           type="button"
                           class="chip-remove"
                           (click)="removeEvidence(i)"
-                          [attr.aria-label]="'Remove evidence ' + (i + 1)"
+                          [attr.aria-label]="'reportModal.removeEvidenceN' | translate: { n: i + 1 }"
                         >
                           ✕
                         </button>
@@ -752,6 +753,7 @@ import { IconComponent } from '../ui/icon/icon.component';
 export class BuyerReportModalComponent implements OnInit {
   private readonly rentify = inject(RentifyMarketplaceService);
   private readonly translate = inject(TranslateService);
+  private readonly errors = inject(ErrorSanitizerService);
 
   @ViewChild('modalContainer') modalContainer?: ElementRef<HTMLDivElement>;
 
@@ -822,7 +824,7 @@ export class BuyerReportModalComponent implements OnInit {
         subjectType: this.subjectType,
         subjectId: this.subjectId,
         reasonCodes: ['ELIGIBILITY_CHECK_FAILED'],
-        guidance: err?.error?.message || err?.message || 'Unable to verify report eligibility at this time.',
+        guidance: 'reportModal.eligibilityFailed',
       });
     } finally {
       this.loadingEligibility.set(false);
@@ -845,22 +847,22 @@ export class BuyerReportModalComponent implements OnInit {
     if (!raw) return;
 
     if (!raw.startsWith('https://')) {
-      this.evidenceUrlError.set('Evidence URL must start with secure https://');
+      this.evidenceUrlError.set(this.translate.t('reportModal.evidenceHttpsOnly'));
       return;
     }
 
     if (raw.startsWith('javascript:') || raw.startsWith('data:')) {
-      this.evidenceUrlError.set('Invalid evidence link scheme.');
+      this.evidenceUrlError.set(this.translate.t('reportModal.evidenceBadScheme'));
       return;
     }
 
     if (this.evidenceList().some((e) => e.url === raw)) {
-      this.evidenceUrlError.set('This photo link is already attached.');
+      this.evidenceUrlError.set(this.translate.t('reportModal.evidenceDuplicate'));
       return;
     }
 
     if (this.evidenceList().length >= 5) {
-      this.evidenceUrlError.set('Maximum of 5 evidence items reached.');
+      this.evidenceUrlError.set(this.translate.t('reportModal.evidenceMax'));
       return;
     }
 
@@ -913,7 +915,7 @@ export class BuyerReportModalComponent implements OnInit {
       } else if (status === 408 || err?.name === 'TimeoutError') {
         this.submitError.set(this.translate.t('reportModal.timeoutError'));
       } else {
-        this.submitError.set(err?.error?.message || err?.message || 'Failed to submit report.');
+        this.submitError.set(this.errors.sanitize(err, this.translate.t('reportModal.submitFailed')));
       }
     } finally {
       this.submitting.set(false);
@@ -922,7 +924,7 @@ export class BuyerReportModalComponent implements OnInit {
 
   isTimeoutOrRetryable(): boolean {
     const err = this.submitError();
-    return err.includes('timed out') || err.includes('timeout') || err.includes('Network');
+    return err === this.translate.t('reportModal.timeoutError') || err.includes('timed out') || err.includes('timeout') || err.includes('Network');
   }
 
   getSubjectTypeLabel(): string {

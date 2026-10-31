@@ -1,7 +1,8 @@
-import { useMediaQuery } from '@rentify/utils';
-import { PanelLeftClose } from 'lucide-react';
+import { useChannels } from '../../context/ChannelContext';
+import { useTranslation } from '@rentify/utils';
+import { PanelLeftClose, X } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
-import { Sheet, SheetContent } from '@rentify/shared/ui/sheet';
+import { SheetContent, SheetTitle } from '@rentify/shared/ui/sheet';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
@@ -35,9 +36,11 @@ export function AppSidebar({
   channels = { hasStorefront: true, hasMarketplace: true, hasPos: true },
   store = null,
   searchFilter = '',
+  isMobile = false,
 }) {
-  const isMobile = useMediaQuery('(max-width: 900px)');
+  const { t } = useTranslation();
   const access = useAccess();
+  const { view } = useChannels();
 
   const filteredTabs = searchFilter.trim()
     ? tabs.filter((t) => {
@@ -47,7 +50,7 @@ export function AppSidebar({
     : tabs;
 
   // Channels the Store doesn't use yet appear as a quiet "add" entry instead of a page
-  const extraChannelItems = !hasStorefront && access.isOwner
+  const extraChannelItems = view === 'all' && !hasStorefront && access.isOwner
     ? [{ key: 'add-online-store', action: true, label: 'Add online store', href: `${MARKETING_URL}/onboarding/starter?step=template` }]
     : [];
 
@@ -63,18 +66,16 @@ export function AppSidebar({
           </div>
           <span className="text-[15px] font-semibold tracking-tight">Rentify</span>
         </div>
-        {!isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setOpen(false)}
-            className="h-8 w-8 rounded-lg text-foreground/50 hover:text-foreground"
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar"
-          >
-            <PanelLeftClose className="h-[18px] w-[18px]" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setOpen(false)}
+          className={isMobile ? 'h-10 w-10 rounded-xl text-foreground/60 hover:text-foreground' : 'h-8 w-8 rounded-lg text-foreground/50 hover:text-foreground'}
+          aria-label={isMobile ? 'Close menu' : 'Collapse sidebar'}
+          title={isMobile ? 'Close menu' : 'Collapse sidebar'}
+        >
+          {isMobile ? <X className="h-5 w-5" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
+        </Button>
       </div>
 
       {/* Store + channel status */}
@@ -97,8 +98,8 @@ export function AppSidebar({
           </span>
         </div>
         <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium">
-          <ChannelDot on={channels.hasMarketplace} label="Marketplace" />
-          <ChannelDot on={channels.hasStorefront} label="Online store" />
+          <ChannelDot on={channels.hasMarketplace} label={t('merchant.shell.marketplace')} />
+          <ChannelDot on={channels.hasStorefront} label={t('merchant.shell.onlineStore')} />
           <ChannelDot on={channels.hasPos} label="POS" />
         </div>
       </div>
@@ -125,11 +126,10 @@ export function AppSidebar({
 
   if (isMobile) {
     return (
-      <Sheet open={isOpen} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-[260px] p-0">
+        <SheetContent id="merchant-mobile-navigation" side="left" aria-describedby={undefined} className="w-[260px] p-0">
+          <SheetTitle className="sr-only">{t('merchant.shell.sidebarNavigation')}</SheetTitle>
           {sidebarContent}
         </SheetContent>
-      </Sheet>
     );
   }
 
