@@ -95,7 +95,7 @@ export default function StoreDesign() {
       icon={Palette}
       breadcrumb={[
         { label: t('merchant.storeDesign.breadcrumbHome'), href: '/overview' },
-        { label: t('dashboard.store_management.title'), href: '/store-management' },
+        { label: t('dashboard.store_management.title'), href: '/online-store' },
         { label: t('merchant.storeDesign.title') },
       ]}
     />
@@ -149,7 +149,7 @@ export default function StoreDesign() {
           body={t('merchant.storeDesign.notPublishedBody')}
           action={
             <Button asChild variant="outline" className="h-11">
-              <Link to="/store-management">{t('merchant.storeDesign.notPublishedAction')}</Link>
+              <Link to="/online-store">{t('merchant.storeDesign.notPublishedAction')}</Link>
             </Button>
           }
         />

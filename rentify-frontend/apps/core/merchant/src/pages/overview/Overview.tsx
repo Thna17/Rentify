@@ -245,7 +245,7 @@ export const Overview = () => {
       tint: 'bg-sky-500/10 text-sky-700',
       actions: hasStorefront
         ? [
-            { label: 'Customize', onClick: () => navigate('/store-management'), primary: true, need: 'owner' },
+            { label: 'Customize', onClick: () => navigate('/online-store'), primary: true, need: 'owner' },
             { label: 'Visit', href: storefrontHref, external: true },
           ]
         : [{ label: 'Add online store', href: templateOnboardingUrl, primary: true, need: 'owner' }],

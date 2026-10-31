@@ -136,7 +136,7 @@ export const ALL_TABS = [
     label: 'Online store',
     hint: 'Your own branded website',
     icon: Store,
-    path: 'store-management',
+    path: 'online-store',
     views: ['all', 'storefront'],
     inView: { storefront: { label: 'Customize store', hint: 'Theme, branding and store content', section: 'store' } },
     roles: ['admin', 'user', 'staff'],

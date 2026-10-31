@@ -60,7 +60,7 @@ function useGuideAction() {
       case 'review_products': return navigate('/products');
       case 'set_delivery_fee': return setDeliverySheetOpen(true);
       case 'edit_store': return navigate('/settings/account');
-      case 'customize_storefront': return navigate('/store-management');
+      case 'customize_storefront': return navigate('/online-store');
       case 'enable_marketplace': return void toggleMarketplace(true).then(refresh);
       case 'contact_support': return navigate('/help');
       case 'retry': return void refresh();

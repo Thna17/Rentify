@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import DashboardLayout from '../layouts/dashboard/Layout';
 const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
+const OnlineStorePage = lazy(() => import('../pages/online-store/OnlineStorePage'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const StoreDesign = lazy(() => import('../pages/store-design/StoreDesign'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
@@ -41,7 +42,9 @@ export const dashboardRoutes = {
     { index: true, element: <Navigate to="overview" replace /> },
     { path: 'overview', element: <Overview /> },
     { path: 'analytics', element: <PlatformAnalytics /> },
-    { path: 'store-management', element: <StoreManagement /> },
+    { path: 'online-store', element: <OnlineStorePage /> },
+    { path: 'store-management', element: <Navigate to="/online-store" replace /> },
+    { path: 'store/design', element: <Navigate to="/customization" replace /> },
     { path: 'customization', element: <StoreDesign /> },
     { path: 'customization/:id', element: <Navigate to="/customization" replace /> },
     { path: 'products', element: <ProductManagement /> },
