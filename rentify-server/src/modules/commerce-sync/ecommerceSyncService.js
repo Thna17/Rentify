@@ -58,7 +58,7 @@ class EcommerceSyncService {
   /**
    * Sync website data to ecommerce service
    */
-  async syncWebsiteData(website) {
+  async syncWebsiteData(website, { transaction } = {}) {
     if (!website._ecommerceData) {
       logger.warn('No ecommerce data found for website', { websiteId: website.id });
       return;
@@ -86,14 +86,14 @@ class EcommerceSyncService {
           status: 'synced',
           lastError: null,
           syncedAt: new Date(),
-        }, { where: { websiteId: website.id } });
+        }, { where: { websiteId: website.id }, transaction });
         logger.info('Website data synced to ecommerce service', { websiteId: website.id, correlationId });
         return true;
       } catch (error) {
-        await WebsiteSyncOutbox.increment('attempts', { where: { websiteId: website.id } });
+        await WebsiteSyncOutbox.increment('attempts', { where: { websiteId: website.id }, transaction });
         await WebsiteSyncOutbox.update({
           lastError: String(error.message).slice(0, 500),
-        }, { where: { websiteId: website.id } });
+        }, { where: { websiteId: website.id }, transaction });
         logger.error('Ecommerce sync failed', {
           websiteId: website.id,
           correlationId,
@@ -121,7 +121,7 @@ class EcommerceSyncService {
       limit: 50,
     });
     for (const item of pending) {
-      await this.syncWebsiteData({ id: item.websiteId, _ecommerceData: item.payload });
+      await this.retryWebsiteSync(item.websiteId);
     }
   }
 
@@ -138,35 +138,29 @@ class EcommerceSyncService {
   }
 
   async retryWebsiteSync(websiteId) {
-    const outbox = await WebsiteSyncOutbox.findByPk(websiteId);
-    if (outbox?.status === 'pending') await this.syncWebsiteData({ id: websiteId, _ecommerceData: outbox.payload });
+    // Hold the row lock through delivery: a concurrent writer or worker must
+    // wait, then read the current payload. An old response cannot mark a newer
+    // version synced or overwrite a newer projection at Commerce.
+    return WebsiteSyncOutbox.sequelize.transaction(async (transaction) => {
+      const outbox = await WebsiteSyncOutbox.findByPk(websiteId, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!outbox || outbox.status !== 'pending') return true;
+      return this.syncWebsiteData({ id: websiteId, _ecommerceData: outbox.payload }, { transaction });
+    });
   }
 
   /**
    * Update website status in ecommerce service
    */
   async updateWebsiteStatus(websiteId, status, domain = null) {
-    let outbox = await WebsiteSyncOutbox.findByPk(websiteId);
-    if (outbox) {
-      await outbox.update({
-        payload: {
-          ...outbox.payload,
-          status,
-          ...(domain && { domain }),
-        },
-        status: 'pending',
-        syncedAt: null,
-      });
-    } else {
-      // Older Websites predate the initial-sync outbox. Their Commerce row
-      // already exists, so persist a status-only PUT for retry.
-      outbox = await WebsiteSyncOutbox.create({
-        websiteId,
-        payload: { _syncType: 'status', status, ...(domain && { domain }) },
-        status: 'pending',
-      });
-    }
-    const synced = await this.syncWebsiteData({ id: websiteId, _ecommerceData: outbox.payload });
+    await WebsiteSyncOutbox.sequelize.transaction(async (transaction) => {
+      const outbox = await WebsiteSyncOutbox.findByPk(websiteId, { transaction, lock: transaction.LOCK.UPDATE });
+      const current = outbox?.status === 'pending' ? outbox.payload : { _syncType: 'status' };
+      const payload = { ...current, ...(current._syncType === 'template' && { _syncType: 'status' }),
+        status, ...(domain && { domain }) };
+      if (outbox) await outbox.update({ payload, status: 'pending', syncedAt: null }, { transaction });
+      else await WebsiteSyncOutbox.create({ websiteId, payload, status: 'pending' }, { transaction });
+    });
+    const synced = await this.retryWebsiteSync(websiteId);
     if (!synced) throw new Error('Commerce status sync pending retry');
     logger.info('Website status updated in ecommerce service', { websiteId, status });
   }

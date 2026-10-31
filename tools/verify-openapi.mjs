@@ -22,7 +22,7 @@ function findModule(subPath) {
 }
 
 const yaml = require(findModule('yaml'));
-const redoclyBin = findModule('.bin/redocly');
+const redoclyBin = findModule('@redocly/cli/bin/cli.js');
 
 const TARGETS = {
   core: {

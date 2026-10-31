@@ -63,7 +63,7 @@ class WebsiteController {
     });
 
     // Sync to ecommerce service (non-blocking)
-    ecommerceSyncService.syncWebsiteData(website).catch((error) => {
+    ecommerceSyncService.retryWebsiteSync(website.id).catch((error) => {
       logger.error("Ecommerce sync failed", {
         websiteId: website.id,
         error: error.message,
