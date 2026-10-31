@@ -1582,6 +1582,44 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/websites/{websiteId}/template:
+    put:
+      tags: [Websites]
+      summary: Switch a website to a supported storefront template
+      operationId: switchStorefrontTemplate
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateId]
+              properties:
+                templateId: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Template saved; Commerce projection may retry if temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  websiteTemplateId: { type: integer, minimum: 1, maximum: 4 }
+        '400':
+          description: INVALID_STOREFRONT_TEMPLATE
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
   /api/websites/{websiteId}/owner-access:
     get:
       tags:
@@ -1652,18 +1690,9 @@ paths:
                 - fields
               properties:
                 fields:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - label
-                      - value
-                    properties:
-                      label:
-                        type: string
-                        example: Hero Title
-                      value:
-                        description: Primitive string or JSON structure allowed for the label
+                  type: object
+                  description: Map from allowed field labels to values. Page Layout is an object keyed by template number containing section order strings.
+                  additionalProperties: {}
       responses:
         '200':
           description: Fields updated successfully

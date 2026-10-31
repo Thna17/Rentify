@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useStorefrontWebsite } from './website';
+import { getContentValue } from './content';
 
 /**
  * Template preview and home-page section layout.
@@ -13,9 +15,8 @@ import { useEffect, useMemo, useState } from 'react';
  * Layout changes after load arrive as a `PREVIEW_MESSAGE` postMessage from
  * the parent page, so the preview updates without reloading.
  *
- * Shoppers outside a frame always get the template's default order. Core
- * has no saved-layout field yet (docs/notes.md, "Storefront template switch
- * and page layout"), so nothing here changes the live store.
+ * Shoppers outside a frame see the layout saved for the current template,
+ * falling back to its default order when no layout has been saved.
  */
 export const PREVIEW_MESSAGE = 'rentify:storefront-preview';
 
@@ -81,6 +82,9 @@ export const serializeLayout = (layout) =>
  * The home page's container must be a flex column.
  */
 export function useSectionLayout(templateId) {
+  const { content } = useStorefrontWebsite();
+  const saved = getContentValue(content, 'Page Layout');
+  const savedLayout = saved && typeof saved === 'object' ? saved[templateId] : null;
   const [layout, setLayout] = useState(() => previewParam('previewLayout'));
 
   useEffect(() => {
@@ -94,13 +98,13 @@ export function useSectionLayout(templateId) {
   }, []);
 
   return useMemo(() => {
-    const items = new Map(normalizeLayout(templateId, layout).map((item, index) => [item.id, { ...item, order: index + 1 }]));
+    const items = new Map(normalizeLayout(templateId, layout ?? savedLayout).map((item, index) => [item.id, { ...item, order: index + 1 }]));
     return (id) => {
       const item = items.get(id);
       if (!item) return { order: 0 };
       return item.hidden ? null : { order: item.order };
     };
-  }, [templateId, layout]);
+  }, [templateId, layout, savedLayout]);
 }
 
 /** Wraps one home section so the layout can place or hide it. */

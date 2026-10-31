@@ -15,6 +15,7 @@ router.put('/theme/:websiteId', verifyToken, requireWebsiteOwner, websiteControl
 router.put('/content/:contentId', verifyToken, requireContentOwner, websiteController.updateWebsiteContent);
 // Store owner tools on the live storefront.
 router.get('/:websiteId/owner-access', verifyToken, requireWebsiteOwner, websiteController.getStorefrontOwnerAccess);
+router.put('/:websiteId/template', verifyToken, requireWebsiteOwner, websiteController.switchTemplate);
 router.put('/:websiteId/storefront-content', verifyToken, requireWebsiteOwner, websiteController.updateStorefrontContent);
 router.get('/theme/:websiteId', verifyToken, requireWebsiteOwner, websiteController.getThemeConfiguration);
 router.get('/cache/stats', verifyToken, websiteController.getCacheStats);

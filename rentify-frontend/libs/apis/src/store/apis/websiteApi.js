@@ -51,6 +51,14 @@ export const websiteApi = createApi({
         { type: 'Website', id: userId },
       ],
     }),
+    switchTemplate: builder.mutation({
+      query: ({ websiteId, templateId }) => ({ url: `/${websiteId}/template`, method: 'PUT', body: { templateId } }),
+      invalidatesTags: ['Website'],
+    }),
+    saveStorefrontContent: builder.mutation({
+      query: ({ websiteId, fields }) => ({ url: `/${websiteId}/storefront-content`, method: 'PUT', body: { fields } }),
+      invalidatesTags: ['Website'],
+    }),
     uploadImage: builder.mutation({
       query: ({ websiteId, file, isLogo, type }) => {
         const formData = new FormData();
@@ -72,6 +80,8 @@ export const {
   useUpdateWebsiteContentMutation,
   useCreateWebsiteMutation,
   useUpdateWebsiteMutation,
+  useSwitchTemplateMutation,
+  useSaveStorefrontContentMutation,
   useUploadImageMutation,
 } = websiteApi;
 

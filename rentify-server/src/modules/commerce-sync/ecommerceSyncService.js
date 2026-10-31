@@ -68,10 +68,13 @@ class EcommerceSyncService {
     const execute = async () => {
       try {
         const { _correlationId, _syncType, ...cleanData } = website._ecommerceData;
-        if (website._ecommerceData._syncType === 'status') {
+        if (website._ecommerceData._syncType === 'template') {
+          await this.apiClient.put(`/api/website-data/${website.id}`, { websiteTemplateId: cleanData.websiteTemplateId });
+        } else if (website._ecommerceData._syncType === 'status') {
           await this.apiClient.put(`/api/website-data/${website.id}`, {
             status: toCommerceStatus(cleanData.status),
             ...(cleanData.domain && { domain: cleanData.domain }),
+            ...(cleanData.websiteTemplateId !== undefined && { websiteTemplateId: cleanData.websiteTemplateId }),
           });
         } else {
           await this.apiClient.post('/api/website-data', {
@@ -120,6 +123,23 @@ class EcommerceSyncService {
     for (const item of pending) {
       await this.syncWebsiteData({ id: item.websiteId, _ecommerceData: item.payload });
     }
+  }
+
+  async queueWebsiteTemplate(websiteId, websiteTemplateId, { transaction } = {}) {
+    const outbox = await WebsiteSyncOutbox.findByPk(websiteId, { transaction, lock: transaction?.LOCK.UPDATE });
+    let payload;
+    if (outbox?.payload && outbox.status === 'pending') {
+      payload = { ...outbox.payload, websiteTemplateId };
+    } else {
+      payload = { _syncType: 'template', websiteTemplateId };
+    }
+    if (outbox) await outbox.update({ payload, status: 'pending', syncedAt: null }, { transaction });
+    else await WebsiteSyncOutbox.create({ websiteId, payload, status: 'pending' }, { transaction });
+  }
+
+  async retryWebsiteSync(websiteId) {
+    const outbox = await WebsiteSyncOutbox.findByPk(websiteId);
+    if (outbox?.status === 'pending') await this.syncWebsiteData({ id: websiteId, _ecommerceData: outbox.payload });
   }
 
   /**

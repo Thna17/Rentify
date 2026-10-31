@@ -38,7 +38,6 @@ export const templateName = (template) => template.name || '';
 /**
  * Templates the storefront can render. Picking one previews it with the
  * merchant's own store; applying it asks for confirmation first.
- * `onApply` is null while Core has no template-switch endpoint.
  */
 export function TemplateGallery({ templates, isLoading, isError, onRetry, currentId, previewId, onPreview, onApply, isApplying, t }) {
   const [confirming, setConfirming] = useState(false);
@@ -124,7 +123,7 @@ export function TemplateGallery({ templates, isLoading, isError, onRetry, curren
         {!isCurrent && (
           <div className="space-y-2 pt-2">
             <Button className="h-11 w-full" disabled={!onApply || isApplying} onClick={() => setConfirming(true)}>
-              {t('merchant.storeDesign.useTemplate')}
+              {t(isApplying ? 'merchant.storeDesign.saving' : 'merchant.storeDesign.useTemplate')}
             </Button>
             {!onApply && (
               <p className="flex items-start gap-2 text-sm text-muted-foreground">

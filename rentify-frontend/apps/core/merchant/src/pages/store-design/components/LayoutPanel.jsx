@@ -3,7 +3,7 @@ import { Button } from '@rentify/shared/ui/button';
 import { Switch } from '@rentify/shared/ui/switch';
 
 /** Show, hide and reorder the previewed template's home-page sections. */
-export function LayoutPanel({ templateLabel, layout, onMove, onToggle, onReset, isDefault, t }) {
+export function LayoutPanel({ templateLabel, layout, onMove, onToggle, onReset, onSave, saving, isDefault, t }) {
   const sectionName = (id) => t(`merchant.storeDesign.sections.${id}`);
 
   return (
@@ -65,14 +65,10 @@ export function LayoutPanel({ templateLabel, layout, onMove, onToggle, onReset, 
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             {t('merchant.storeDesign.reset')}
           </Button>
-          <Button className="h-11 flex-1" disabled>
-            {t('merchant.storeDesign.saveLayout')}
+          <Button className="h-11 flex-1" disabled={saving} onClick={onSave}>
+            {t(saving ? 'merchant.storeDesign.saving' : 'merchant.storeDesign.saveLayout')}
           </Button>
         </div>
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {t('merchant.storeDesign.layoutBlocked')}
-        </p>
       </div>
     </div>
   );
