@@ -8,6 +8,8 @@ import {
   useLoginStaffMutation,
   useLoginWithTelegramMutation,
   useGetTelegramLoginConfigQuery,
+  useCreateTelegramSessionMutation,
+  useLazyGetTelegramSessionQuery,
   // useLoginWithGoogleMutation,
 } from '@rentify/apis';
 import {
@@ -74,6 +76,9 @@ export const useLoginForm = () => {
   const [loginStaffMutation] = useLoginStaffMutation();
   // const [loginWithGoogleMutation] = useLoginWithGoogleMutation();
   const [loginWithTelegramMutation] = useLoginWithTelegramMutation();
+  const [createTelegramSession] = useCreateTelegramSessionMutation();
+  const [triggerGetTelegramSession] = useLazyGetTelegramSessionQuery();
+  const [telegramWaitingSession, setTelegramWaitingSession] = useState<{ token: string; botUrl: string } | null>(null);
   const { data: telegramConfig } = useGetTelegramLoginConfigQuery();
   const telegramEnabled = Boolean(telegramConfig?.enabled);
 
@@ -217,40 +222,68 @@ export const useLoginForm = () => {
     }
   };
 
+  const cancelTelegramLogin = () => {
+    setTelegramWaitingSession(null);
+    setLoading(false);
+  };
+
   const handleTelegramLogin = async () => {
-    if (!telegramConfig?.botId) return;
     setError('');
     setSuccess('');
     setLoading(true);
 
     try {
-      const authData = await requestTelegramAuth(telegramConfig.botId);
-      if (!authData) {
-        setLoading(false);
-        return;
-      }
-      const response: any = await loginWithTelegramMutation(authData).unwrap();
-      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
-      const userRole = response?.data?.user?.role || parseJwtPayload(response?.data?.accessToken)?.role || 'user';
-      const isStaffSuccess = userRole === 'staff';
-      const destination = resolveAuthDestination({
-        hasStore,
-        isStaff: isStaffSuccess,
-        role: userRole,
-        config: authConfig,
-      });
-      setSuccess('login.success');
-      window.location.assign(destination);
-    } catch (err: any) {
-      console.error('Telegram login failed:', err);
-      const apiMessage = err?.data?.error || err?.data?.message || err?.message;
-      if (apiMessage && typeof apiMessage === 'string' && !apiMessage.toLowerCase().includes('failed to fetch')) {
-        setError(apiMessage);
+      const sessionResult: any = await createTelegramSession({
+        returnUrl: authConfig.redirectUrl,
+      }).unwrap();
+
+      const token = sessionResult?.token;
+      const botUrl = sessionResult?.botUrl || `https://t.me/rentify168_bot?start=${token}`;
+      setTelegramWaitingSession({ token, botUrl });
+
+      // Open Telegram Bot link
+      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = botUrl;
       } else {
-        setError('error.telegramLogin');
+        window.open(botUrl, '_blank', 'noopener,noreferrer');
       }
-    } finally {
+
+      // Start polling for bot authorization
+      let attempts = 0;
+      const maxAttempts = 60; // 2 minutes (every 2s)
+      const pollTimer = setInterval(async () => {
+        attempts += 1;
+        try {
+          const pollRes: any = await triggerGetTelegramSession(token, false).unwrap();
+          if (pollRes?.status === 'authenticated') {
+            clearInterval(pollTimer);
+            setTelegramWaitingSession(null);
+            setSuccess('login.success');
+            setTimeout(() => {
+              window.location.assign(pollRes.destination || '/');
+            }, 600);
+          } else if (pollRes?.status === 'expired' || attempts >= maxAttempts) {
+            clearInterval(pollTimer);
+            setTelegramWaitingSession(null);
+            setLoading(false);
+            if (pollRes?.status === 'expired') {
+              setError('error.telegramLogin');
+            }
+          }
+        } catch (pollErr: any) {
+          if (pollErr?.status === 404 || attempts >= maxAttempts) {
+            clearInterval(pollTimer);
+            setTelegramWaitingSession(null);
+            setLoading(false);
+          }
+        }
+      }, 2000);
+    } catch (err: any) {
+      console.error('Telegram bot login initiation failed:', err);
       setLoading(false);
+      setTelegramWaitingSession(null);
+      setError('error.telegramLogin');
     }
   };
 
@@ -301,6 +334,8 @@ export const useLoginForm = () => {
     handleLogin,
     handleGoogleLogin,
     handleTelegramLogin,
+    telegramWaitingSession,
+    cancelTelegramLogin,
     telegramEnabled,
     formatCambodianPhone,
     validateCambodianPhone,

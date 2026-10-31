@@ -274,6 +274,42 @@ export const Overview = () => {
   const recent = orders.slice(0, 6);
   const maxChannelSales = Math.max(1, ...summary.byChannel.map((row) => row.sales));
 
+  const isCashier = !access.isOwner && !canOrders && !canMoney && !access.can('manage_products') && access.can('manage_pos');
+  if (isCashier) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto max-w-xl space-y-6 px-4 py-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{storeObj?.name || 'Rentify'} · Cashier</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">{greeting}</h1>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenPos}
+            className="w-full h-14 rounded-2xl text-base font-semibold bg-primary text-primary-foreground shadow-md hover:bg-primary/90 flex items-center justify-center gap-2.5 transition-colors cursor-pointer"
+          >
+            <MonitorSmartphone className="h-5 w-5" />
+            <span>Open the point of sale</span>
+          </button>
+          <div data-slot="card" className="rounded-2xl border border-card-border bg-card p-5 shadow-soft">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Today at the counter</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-muted/50 p-4">
+                <span className="text-xs text-muted-foreground block">Sales</span>
+                <span className="text-xl font-bold font-mono text-foreground mt-1 block">$0.00</span>
+              </div>
+              <div className="rounded-xl bg-muted/50 p-4">
+                <span className="text-xs text-muted-foreground block">Items sold</span>
+                <span className="text-xl font-bold font-mono text-foreground mt-1 block">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="min-h-full">
       <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 sm:px-6 md:px-8 md:py-8">

@@ -10,7 +10,7 @@ Rentify = Shopify‑style storefronts + Amazon‑style marketplace + POS for Cam
 3. For UI work read `docs/experience/00_README.md` and the file for your surface (04 marketplace · 05 onboarding/builder · 06 merchant · 07 storefront/POS · 08 admin · 09 states/copy · 10 edge cases · 11 packets).
 
 ## Hard rules
-- R1 online checkout is COD only (DEC‑026). Never enable CutLuy or show online‑payment UI (DEC‑027).
+- Buyers pay by KHQR through the merchant's CutLuy account or COD (DEC‑029, supersedes DEC‑026/027). CutLuy is the only online payment path; no direct ABA PayWay. "Paid" only after Commerce confirms with CutLuy. No refunds for now.
 - One Store per order; cart grouped by Store (DEC‑012/013). Delivery fee = merchant flat fee per Store order (DEC‑004).
 - Never invent backend states, money rules or error codes. Missing contract → note in `docs/notes.md` (Open) + contract packet first.
 - Delivered ≠ paid. Requested ≠ refunded. Show only states backed by real events.

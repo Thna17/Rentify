@@ -7,27 +7,21 @@ import {
   Receipt,
   Settings,
   ShoppingBag,
-  CreditCard,
   Headphones,
   Search,
   Users,
-  Boxes,
   MonitorSmartphone,
-  UserCog,
-  QrCode,
-  ShieldCheck,
-  Gauge,
-  Tags,
+  ShieldAlert,
   Share2,
 } from 'lucide-react';
 import { POS_URL } from '@rentify/shared/config/urls';
 
-// One Store, three ways to sell. The sidebar is grouped by what a merchant does:
-// Home · Catalog · Orders · Sales channels (Marketplace / Online store / POS,
-// each shown only when the Store uses it) · Customers · Analytics · Finance ·
-// Settings. `channel` hides an item when that channel is off for the Store.
+// The navigation follows the wireframe sitemap (docs/experience/wireframes/rentify-ux-redesign.html):
+// Group 1 (main): Home · Orders · Products · Customers · Reports · Invoices (no group title)
+// Group 2 (channels): Marketplace · Online store · Point of sale (title: "Sales channels")
+// Group 3 (more): Returns & problems · Share your store · Settings · Help (title: "More")
 export const ALL_TABS = [
-  // --- Home ---
+  // --- Group 1: Main places (no section heading) ---
   {
     name: 'dashboard.overview',
     label: 'Home',
@@ -35,10 +29,17 @@ export const ALL_TABS = [
     path: 'overview',
     roles: ['admin', 'user', 'staff'],
     permission: null,
-    section: 'overview',
+    section: 'main',
   },
-
-  // --- Products ---
+  {
+    name: 'dashboard.order.title',
+    label: 'Orders',
+    icon: ClipboardList,
+    path: 'orders',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    section: 'main',
+  },
   {
     name: 'dashboard.product.title',
     label: 'Products',
@@ -46,100 +47,56 @@ export const ALL_TABS = [
     path: 'products',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_products',
-    section: 'sell',
+    section: 'main',
   },
   {
-    name: 'dashboard.categories',
-    label: 'Categories',
-    hint: 'Online store categories and marketplace categories',
-    icon: Tags,
-    path: 'categories',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_products',
-    section: 'sell',
-  },
-  {
-    name: 'dashboard.product.detail',
-    label: 'Product Detail',
-    icon: Package,
-    path: 'products/:id',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_products',
-    hideInSidebar: true,
-  },
-  {
-    name: 'create product',
-    label: 'Create Product',
-    icon: Package,
-    path: 'products/create',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_products',
-    hideInSidebar: true,
-  },
-  {
-    name: 'edit product',
-    label: 'Edit Product',
-    icon: Package,
-    path: 'products/edit/:id',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_products',
-    hideInSidebar: true,
-  },
-  {
-    name: 'Store catalog',
-    label: 'Store Catalog',
-    icon: Boxes,
-    path: 'catalog',
-    roles: ['admin', 'user', 'staff'],
-    permission: null,
-    hideInSidebar: true,
-  },
-
-  // --- Orders ---
-  {
-    name: 'dashboard.order.title',
-    label: 'Orders',
-    icon: ClipboardList,
-    path: 'orders',
-    views: ['all', 'storefront', 'pos'],
+    name: 'dashboard.customers.title',
+    label: 'Customers',
+    icon: Users,
+    path: 'customers',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
-    section: 'sell',
+    section: 'main',
   },
   {
-    name: 'dashboard.order.detail',
-    label: 'Order Detail',
-    icon: ClipboardList,
-    path: 'orders/:id',
+    name: 'dashboard.navigation.reports',
+    label: 'Reports',
+    icon: BarChart2,
+    path: 'reports',
     roles: ['admin', 'user', 'staff'],
-    permission: 'manage_orders',
-    hideInSidebar: true,
+    permission: 'manage_analytics',
+    section: 'main',
+  },
+  {
+    name: 'dashboard.invoices.title',
+    label: 'Invoices',
+    icon: Receipt,
+    path: 'invoices',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_invoices',
+    section: 'main',
   },
 
-  // --- Sales Channels: Marketplace, POS, Storefront ---
+  // --- Group 2: Sales channels ---
   {
-    name: 'COD orders',
+    name: 'dashboard.navigation.marketplace',
     label: 'Marketplace',
-    hint: 'Orders from Rentify Marketplace',
+    hint: 'Rentify Marketplace listing and products',
     icon: ShoppingBag,
-    path: 'marketplace-orders',
-    views: ['all', 'marketplace'],
-    // On its own the Marketplace view is simply "Orders" (cash-on-delivery orders).
-    inView: { marketplace: { label: 'Orders', hint: 'Cash-on-delivery orders from the marketplace', section: 'sell' } },
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_orders',
+    path: 'marketplace',
+    roles: ['admin', 'user'],
+    permission: null,
+    ownerOnly: true,
     channel: 'marketplace',
     section: 'channels',
   },
   {
     name: 'dashboard.channels.online_store',
     label: 'Online store',
-    hint: 'Your own branded website',
+    hint: 'Your branded storefront website',
     icon: Store,
     path: 'online-store',
-    views: ['all', 'storefront'],
-    inView: { storefront: { label: 'Customize store', hint: 'Theme, branding and store content', section: 'store' } },
-    roles: ['admin', 'user', 'staff'],
+    roles: ['admin', 'user'],
     permission: null,
     ownerOnly: true,
     channel: 'storefront',
@@ -151,8 +108,6 @@ export const ALL_TABS = [
     hint: 'Sell at your counter',
     icon: MonitorSmartphone,
     path: 'pos',
-    views: ['all', 'pos'],
-    inView: { pos: { label: 'Point of sale', section: 'sell' } },
     externalHref: POS_URL,
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_pos',
@@ -160,7 +115,17 @@ export const ALL_TABS = [
     section: 'channels',
   },
 
-  // --- Share: the Store's links and QR code (docs/specs/merchant-setup-guide.md) ---
+  // --- Group 3: More ---
+  {
+    name: 'dashboard.returns.title',
+    label: 'Returns & problems',
+    hint: 'Buyer return requests and complaints',
+    icon: ShieldAlert,
+    path: 'returns',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    section: 'more',
+  },
   {
     name: 'merchant.setup.shareTitle',
     label: 'Share your store',
@@ -168,77 +133,77 @@ export const ALL_TABS = [
     path: 'share',
     roles: ['admin', 'user', 'staff'],
     permission: null,
-    section: 'grow',
-  },
-
-  // --- Customers ---
-  {
-    name: 'dashboard.customers.title',
-    label: 'Customers',
-    icon: Users,
-    path: 'customers',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_orders',
-    section: 'grow',
-  },
-
-  // --- Analytics ---
-  {
-    name: 'dashboard.analytics',
-    label: 'Analytics',
-    icon: BarChart2,
-    path: 'analytics',
-    views: ['all', 'storefront', 'pos'],
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_analytics',
-    section: 'grow',
-  },
-
-  // --- Finance: Invoices, Billing ---
-  {
-    name: 'dashboard.invoices.title',
-    label: 'Invoices',
-    icon: Receipt,
-    path: 'invoices',
-    views: ['all', 'storefront', 'pos'],
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_invoices',
-    section: 'money',
-  },
-  {
-    name: 'dashboard.usage.title',
-    label: 'Billing',
-    icon: CreditCard,
-    path: 'usage',
-    views: ['all', 'storefront', 'pos'],
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_analytics',
     ownerOnly: true,
-    section: 'money',
+    section: 'more',
   },
-
-  // --- Settings ---
   {
     name: 'dashboard.settings.title',
     label: 'Settings',
     icon: Settings,
-    path: 'settings',
-    roles: ['admin', 'user', 'staff'],
+    path: 'settings/account',
+    roles: ['admin', 'user'],
     permission: 'settings',
-    section: 'settings',
-    inView: { storefront: { path: 'settings/account', label: 'Account' } },
+    ownerOnly: true,
+    section: 'more',
   },
-
-  // --- Support: kept reachable, but folded under Settings rather than its
-  // own top-level section, to stay to the eight requested sections. ---
   {
     name: 'dashboard.support',
-    label: 'Support',
+    label: 'Help',
     icon: Headphones,
     path: 'help',
     roles: ['admin', 'user', 'staff'],
     permission: null,
-    section: 'settings',
+    section: 'more',
+  },
+
+  // --- Hidden in sidebar: forms, detail, tabs ---
+  {
+    name: 'dashboard.categories',
+    label: 'Categories',
+    path: 'categories',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
+  },
+  {
+    name: 'dashboard.product.detail',
+    label: 'Product Detail',
+    path: 'products/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
+  },
+  {
+    name: 'create product',
+    label: 'Create Product',
+    path: 'products/create',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
+  },
+  {
+    name: 'edit product',
+    label: 'Edit Product',
+    path: 'products/edit/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
+    hideInSidebar: true,
+  },
+  {
+    name: 'dashboard.order.detail',
+    label: 'Order Detail',
+    path: 'orders/:id',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_orders',
+    hideInSidebar: true,
+  },
+  {
+    name: 'dashboard.usage.title',
+    label: 'Billing',
+    path: 'usage',
+    roles: ['admin', 'user'],
+    ownerOnly: true,
+    hideInSidebar: true,
   },
 ];
 

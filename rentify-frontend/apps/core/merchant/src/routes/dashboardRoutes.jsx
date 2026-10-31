@@ -9,16 +9,11 @@ const OnlineStorePage = lazy(() => import('../pages/online-store/OnlineStorePage
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const StoreDesign = lazy(() => import('../pages/store-design/StoreDesign'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
-const BulkProductManagement = lazy(() =>
-  import('../pages/product-management/ProductManagement').then((module) => ({ default: module.BulkProductManagement })));
-const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
 const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
-const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
 const InvoiceManual = lazy(() => import('../pages/invoice-manual/InvoiceManual'));
-// const Setting = lazy(() => import('@rentify/setting/ui/Setting'));
 const ProductForm = lazy(() => import('../pages/product-form/ProductForm'));
 const AccountSettings = lazy(() => import('../pages/setting/AccountSettings'));
 const BillingSetting = lazy(() => import('../pages/setting/BillingSetting'));
@@ -28,11 +23,10 @@ const PaymentSetting = lazy(() => import('../pages/setting/PaymentSetting'));
 const PreferencesSetting = lazy(() => import('../pages/setting/PreferencesSetting'));
 const DeliverySetting = lazy(() => import('../pages/setting/DeliverySetting'));
 const SharePage = lazy(() => import('../pages/share/SharePage'));
-const UsageDashboard = lazy(() => import('../app/features/usage/pages/DashboardPage'));
-const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownPage'));
-const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
 const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 const Customers = lazy(() => import('../pages/customers/Customers'));
+const MarketplacePage = lazy(() => import('../pages/marketplace/MarketplacePage'));
+const ReturnsPage = lazy(() => import('../pages/returns/ReturnsPage'));
 const ComponentGallery = lazy(() => import('../pages/dev/ComponentGallery'));
 
 export const dashboardRoutes = {
@@ -41,46 +35,64 @@ export const dashboardRoutes = {
   children: [
     { index: true, element: <Navigate to="overview" replace /> },
     { path: 'overview', element: <Overview /> },
-    { path: 'analytics', element: <PlatformAnalytics /> },
+    // Reports (replaces Analytics; /analytics redirects)
+    { path: 'reports', element: <PlatformAnalytics /> },
+    { path: 'analytics', element: <Navigate to="/reports" replace /> },
+
+    // Online store (replaces /store-management; /store-management redirects)
     { path: 'online-store', element: <OnlineStorePage /> },
     { path: 'store-management', element: <Navigate to="/online-store" replace /> },
     { path: 'store/design', element: <Navigate to="/customization" replace /> },
+
+    // Store design / customization
     { path: 'customization', element: <StoreDesign /> },
     { path: 'customization/:id', element: <Navigate to="/customization" replace /> },
+
+    // Products (one list; /catalog and /products/manage redirect)
     { path: 'products', element: <ProductManagement /> },
-    { path: 'products/manage', element: <BulkProductManagement /> },
-    { path: 'catalog', element: <StoreCatalogPage /> },
-    { path: 'categories', element: <CategoriesPage /> },
+    { path: 'products/manage', element: <Navigate to="/products" replace /> },
+    { path: 'catalog', element: <Navigate to="/products" replace /> },
+    { path: 'categories', element: <Navigate to="/products?tab=categories" replace /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },
+
+    // Orders (one inbox; /marketplace-orders redirects with channel=marketplace)
     { path: 'orders', element: <OrderManagement /> },
-    { path: 'marketplace-orders', element: <MarketplaceOrders /> },
+    { path: 'marketplace-orders', element: <Navigate to="/orders?channel=marketplace" replace /> },
     { path: 'orders/:id', element: <OrderDetailView /> },
+
+    // Channels & Operations
+    { path: 'marketplace', element: <MarketplacePage /> },
+    { path: 'returns', element: <ReturnsPage /> },
     { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
-    { path: 'help', element: <SupportPage /> },
     { path: 'share', element: <SharePage /> },
+    { path: 'help', element: <SupportPage /> },
     { path: 'support', element: <Navigate to="/help" replace /> },
+
+    // Settings (one shell; /settings and /usage/* redirect)
     { path: 'settings', element: <Navigate to="/settings/account" replace /> },
-    { path: 'usage', element: <Navigate to="/usage/dashboard" replace /> },
+
     { path: 'settings/account', element: <AccountSettings /> },
     { path: 'settings/security', element: <SecuritySetting /> },
     { path: 'settings/staff', element: <StaffSetting /> },
-    { path: 'settings/payments', element: < PaymentSetting /> },
+    { path: 'settings/payments', element: <PaymentSetting /> },
     { path: 'settings/delivery', element: <DeliverySetting /> },
-    { path: 'settings/billing', element: < BillingSetting />},
-    { path: 'settings/preferences', element: < PreferencesSetting />},
-    { path: 'usage/dashboard', element: <UsageDashboard /> },
-    { path: 'usage/breakdown', element: <UsageBreakdown /> },
-    { path: 'usage/billing', element: <UsageBilling /> },
-    { path: 'ops/dashboard', element: <Navigate to="/usage/dashboard" replace /> },
-    { path: 'ops/at-risk', element: <Navigate to="/usage/breakdown" replace /> },
-    { path: 'ops/reminders', element: <Navigate to="/usage/breakdown" replace /> },
-    { path: 'ops/contract', element: <Navigate to="/usage/billing" replace /> },
-    { path: 'search', element: <Navigate to="/overview" replace /> },
-    ...(import.meta.env.DEV ? [{ path: '__ui', element: <ComponentGallery /> }] : []),
+    { path: 'settings/billing', element: <BillingSetting /> },
+    { path: 'settings/preferences', element: <PreferencesSetting /> },
 
+    // Usage & billing consolidation (/usage/* and /ops/* redirect to /settings/billing)
+    { path: 'usage', element: <Navigate to="/settings/billing" replace /> },
+    { path: 'usage/dashboard', element: <Navigate to="/settings/billing" replace /> },
+    { path: 'usage/breakdown', element: <Navigate to="/settings/billing" replace /> },
+    { path: 'usage/billing', element: <Navigate to="/settings/billing" replace /> },
+    { path: 'ops/*', element: <Navigate to="/settings/billing" replace /> },
+
+    // Search
+    { path: 'search', element: <Navigate to="/overview" replace /> },
+
+    ...(import.meta.env.DEV ? [{ path: '__ui', element: <ComponentGallery /> }] : []),
 
     { path: '*', element: <Navigate to="overview" replace /> },
   ],
