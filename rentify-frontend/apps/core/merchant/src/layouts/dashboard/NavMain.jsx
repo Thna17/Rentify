@@ -113,6 +113,16 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
                       />
                     )}
                     <span className="flex-1 truncate">{label}</span>
+                    {item.badge > 0 && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                          isActive ? 'bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground' : 'bg-muted text-foreground'
+                        }`}
+                      >
+                        {item.badge}
+                        <span className="sr-only"> {item.badgeLabel}</span>
+                      </span>
+                    )}
                     {item.externalHref && (
                       <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-foreground/40 group-hover:text-foreground" />
                     )}

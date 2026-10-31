@@ -1393,7 +1393,10 @@
       "noStoreYet": "អ្នកមិនទាន់មានហាងសកម្មនៅឡើយទេ។ សូមបង្កើតហាងរបស់អ្នក ដើម្បីចាប់ផ្តើមលក់លើទីផ្សារ ឬហាងអនឡាញ។",
       "publicOnceApproved": "នឹងបង្ហាញជាសាធារណៈ នៅពេល Rentify អនុម័តហាងរបស់អ្នក",
       "yourStoreOnMarketplace": "ហាងរបស់អ្នកនៅលើ Rentify Marketplace",
-      "language": "ភាសា"
+      "language": "ភាសា",
+      "closeMenu": "បិទម៉ឺនុយ",
+      "ordersToAct": "ការកុម្ម៉ង់ត្រូវធ្វើ",
+      "problemsToAnswer": "បញ្ហាត្រូវឆ្លើយ"
     },
     "p": {
       "addProduct": "បន្ថែមផលិតផល",

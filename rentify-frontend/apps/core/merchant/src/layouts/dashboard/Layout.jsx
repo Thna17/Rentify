@@ -22,6 +22,7 @@ import { SetupGuideProvider } from '../../app/features/setup-guide/SetupGuideCon
 import { DeliveryFeeSheet } from '../../app/features/delivery-fee/DeliveryFeeSheet';
 import { Toaster } from '@rentify/shared/ui/sonner';
 import { MobileBottomBar, bottomBarVisible } from './MobileBottomBar';
+import { useAttentionCounts } from '../../hooks/useAttentionCounts';
 
 const NOTICE_TONES = {
   warning: { box: 'bg-amber-500/[0.08]', icon: 'bg-amber-500/15 text-amber-700', title: 'text-amber-900', action: 'bg-amber-900 text-amber-50 hover:bg-amber-950' },
@@ -173,12 +174,34 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
     navigate(`/${tabPath}`);
   };
 
-  // Sidebar tabs are grouped by main places, channels and more (docs/experience wireframes M_MENU)
-  const sidebarTabs = platformTabs.filter((tab) => !tab.hideInSidebar);
+  // Sidebar tabs are grouped by main places, channels and more (docs/experience wireframes M_MENU),
+  // with the inbox counts Home shows: orders to act on, and problems to answer
+  const counts = useAttentionCounts(accessFor(profile, role).can('manage_orders'));
+  const sidebarTabs = platformTabs
+    .filter((tab) => !tab.hideInSidebar)
+    .map((tab) =>
+      tab.path === 'orders'
+        ? { ...tab, badge: counts.toAct, badgeLabel: t('merchant.shell.ordersToAct') }
+        : tab.path === 'returns'
+          ? { ...tab, badge: counts.problems, badgeLabel: t('merchant.shell.problemsToAnswer') }
+          : tab,
+    );
 
   return (
     <Sheet open={isMobile && sidebarOpen} onOpenChange={setSidebarOpen}>
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen flex-col bg-background">
+      <SiteHeader
+        currentTab={currentTabData}
+        onSidebarToggle={() => setSidebarOpen((open) => !open)}
+        isSidebarOpen={sidebarOpen}
+        userData={profile}
+        tabs={sidebarTabs}
+        onTabChange={handleTabChange}
+        searchFilter={searchFilter}
+        setSearchFilter={setSearchFilter}
+        hasPos={channels.hasPos}
+      />
+    <div className="flex min-h-0 flex-1">
       {/* Desktop Sidebar */}
       {!isMobile && (
         <AppSidebar
@@ -216,17 +239,6 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
 
       {/* Main Content Area */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <SiteHeader
-          currentTab={currentTabData}
-          onSidebarToggle={() => setSidebarOpen((open) => !open)}
-          isSidebarOpen={sidebarOpen}
-          userData={profile}
-          tabs={sidebarTabs}
-          onTabChange={handleTabChange}
-          searchFilter={searchFilter}
-          setSearchFilter={setSearchFilter}
-          hasPos={channels.hasPos}
-        />
         
         <main className="flex-1 overflow-auto bg-muted/30 scrollbar-subtle">
           {store?.entitlements?.isGracePeriod && (
@@ -284,6 +296,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
         </main>
         {isMobile && <MobileBottomBar hasPos={channels.hasPos} />}
       </div>
+    </div>
       {/* Toasts: bottom on phones, above the tab bar; top-right on desktop (docs/experience 12 D). */}
       <Toaster
         position={isMobile ? 'bottom-center' : 'top-right'}
