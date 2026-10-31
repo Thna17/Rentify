@@ -266,10 +266,11 @@ export const useLoginForm = () => {
         return;
       }
       const response: any = await loginWithTelegramMutation(authData).unwrap();
+      const hasStore = Boolean(response?.data?.hasStore ?? response?.hasStore);
       const destination =
         hasExplicitReturnUrl || isHostedStorefrontBuyer || isWebsiteTemplate || returnDomain === marketplaceHost
           ? redirectUrl
-          : response?.data?.hasStore
+          : hasStore
           ? `${DASHBOARD_URL}/overview`
           : `${MARKETING_URL}/start`;
       setSuccess('login.success');

@@ -64,27 +64,10 @@ export const useSignupForm = () => {
   } = useAuthConfig();
 
   const resolvePostSignupRedirect = () => {
-    if (isWebsiteTemplate || isHostedStorefrontBuyer || isMarketplace) {
+    if (isWebsiteTemplate || isHostedStorefrontBuyer || isMarketplace || hasExplicitReturnUrl) {
       return redirectUrl;
     }
-    const marketingStartUrl = `${MARKETING_URL.replace(/\/+$/, '')}/start`;
-    if (!hasExplicitReturnUrl) {
-      return marketingStartUrl;
-    }
-    try {
-      const marketingHost = new URL(MARKETING_URL).host;
-      const parsed = new URL(redirectUrl);
-      if (
-        returnDomain === marketingHost &&
-        parsed.pathname &&
-        parsed.pathname !== '/'
-      ) {
-        return redirectUrl;
-      }
-    } catch {
-      // Fall through to unified onboarding start
-    }
-    return marketingStartUrl;
+    return `${MARKETING_URL.replace(/\/+$/, '')}/start`;
   };
 
   useEffect(() => {
