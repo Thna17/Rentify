@@ -1,11 +1,12 @@
 import {
+  ArrowRight,
+  Check,
   CheckCircle2,
   Copy,
   ExternalLink,
   LayoutDashboard,
   Rocket,
   ShoppingBag,
-  Sparkles,
   WalletCards,
 } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
@@ -42,6 +43,30 @@ export default function CompletedState({
       .catch(() => { if (active) setMarketStore(null); });
     return () => { active = false; };
   }, []);
+  // What is left before a buyer can order, from Core's launch checklist (version 2). Listing is
+  // automatic (DEC-028), so the steps are the first product and the delivery fee.
+  const [checklist, setChecklist] = useState(null);
+  useEffect(() => {
+    let active = true;
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine/launch-checklist`, { credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => { if (active) setChecklist(result?.data || null); })
+      .catch(() => { if (active) setChecklist(null); });
+    return () => { active = false; };
+  }, []);
+  const itemDone = (id) => checklist?.items?.find((item) => item.id === id)?.status === 'complete';
+  const productDone = itemDone('first_product_sku');
+  const feeDone = itemDone('delivery_policy');
+  const dashboardBase = (dashboardLink || '').replace(/\/+$/, '');
+  const primaryHref = !productDone ? `${dashboardBase}/products/create`
+    : !feeDone ? `${dashboardBase}/settings/delivery` : dashboardBase;
+  const primaryLabel = !productDone ? t('deployment.completed.ctaAddProduct')
+    : !feeDone ? t('deployment.completed.ctaSetFee') : t('deployment.completed.ctaHome');
+  const nextSteps = [
+    { key: 'product', title: t('deployment.completed.stepProduct'), why: t('deployment.completed.stepProductWhy'), done: productDone },
+    { key: 'fee', title: t('deployment.completed.stepFee'), why: t('deployment.completed.stepFeeWhy'), done: feeDone },
+    { key: 'listed', title: t('deployment.completed.stepListed'), why: t('deployment.completed.stepListedWhy'), done: true },
+  ];
   const marketplaceLink = marketStore?.id ? `${MARKETPLACE_URL}/stores/${marketStore.id}` : null;
   const marketplaceLive = marketStore?.marketplaceEnabled !== false &&
     marketStore?.marketplaceApprovalStatus === 'approved';
@@ -67,6 +92,47 @@ export default function CompletedState({
           {t('deployment.completed.description')}
         </p>
       </section>
+
+      {dashboardBase && (
+        <Card className="border-slate-900 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className={`text-lg font-semibold text-slate-900 ${language === 'KH' ? 'font-khmer' : ''}`}>
+                {t('deployment.completed.nextTitle')}
+              </h3>
+              <span className="text-sm text-slate-500">{t('deployment.completed.nextTime')}</span>
+            </div>
+            <ol className="mt-3 divide-y divide-slate-200">
+              {nextSteps.map((step) => (
+                <li key={step.key} className="flex items-start gap-3 py-3">
+                  <span
+                    aria-hidden="true"
+                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                      step.done ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300'
+                    }`}
+                  >
+                    {step.done && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className={`block font-semibold ${step.done && step.key !== 'listed' ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+                      {step.title}
+                      {step.done && <span className="sr-only"> ({t('deployment.completed.done')})</span>}
+                    </span>
+                    <span className="block text-sm text-slate-600">{step.why}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <Button asChild className="mt-2 h-12 w-full bg-slate-900 text-white hover:bg-slate-800">
+              <a href={primaryHref}>
+                {primaryLabel}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+            <p className="mt-3 text-center text-sm text-slate-500">{t('deployment.completed.guideNote')}</p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-slate-200 shadow-sm">
@@ -223,37 +289,6 @@ export default function CompletedState({
         </Card>
       </div>
 
-      <Card className="border-slate-200 bg-slate-50/70 shadow-sm">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h3
-              className={`font-semibold text-slate-900 ${
-                language === 'KH' ? 'font-khmer' : ''
-              }`}
-            >
-              {t('deployment.completed.nextSteps')}
-            </h3>
-          </div>
-          <ol className="mt-4 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
-            {[
-              t('deployment.openTheDashboardAndAdd'),
-              t('deployment.reviewTheStorefrontOnA'),
-              t('deployment.shareYourStorefrontUrlWith'),
-            ].map((step, index) => (
-              <li
-                key={step}
-                className="flex gap-3 rounded-lg border border-slate-200 bg-white p-3"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                  {index + 1}
-                </span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
     </div>
   );
 }

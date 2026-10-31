@@ -1,10 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search, Truck } from 'lucide-react';
+import { FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search, Truck } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
-import { Card, CardContent } from '@rentify/shared/ui/card';
+import { Card } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
-import { Label } from '@rentify/shared/ui/label';
 import { Button } from '@rentify/shared/ui/button';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
 import {
@@ -37,7 +36,9 @@ const marketplaceState = (product, storeApproval) => {
   if (product.marketplaceVisibility === false) return { label: 'Hidden', tone: 'muted' };
   if (product.moderationStatus === 'rejected') return { label: 'Rejected', tone: 'danger' };
   if (product.moderationStatus && product.moderationStatus !== 'approved') return { label: 'In review', tone: 'warning' };
-  if (storeApproval && storeApproval !== 'approved') return { label: 'Waiting for store approval', tone: 'warning' };
+  // Listing is automatic (DEC-028); a Store that is not approved is still setting up or was paused by Rentify.
+  if (storeApproval === 'pending') return { label: 'Store not listed yet', tone: 'warning' };
+  if (storeApproval && storeApproval !== 'approved') return { label: 'Store paused', tone: 'danger' };
   return { label: 'Live', tone: 'success' };
 };
 const storefrontState = (product, hasWebsite) => {
@@ -142,9 +143,6 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const [categoryFilter, setCategoryFilter] = useState(ALL);
   const [openId, setOpenId] = useState(null);
   const [deliveryPolicy, setDeliveryPolicy] = useState(null);
-  const [deliveryFee, setDeliveryFee] = useState('');
-  const [deliveryBusy, setDeliveryBusy] = useState(false);
-  const [deliveryOpen, setDeliveryOpen] = useState(false);
   // Grace period and suspension lock new products; the reason is shown by the button
   const [entitlements, setEntitlements] = useState(null);
   useEffect(() => {
@@ -163,7 +161,6 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   async function loadDelivery(id) {
     const result = await getJson(`${commerce}/stores/${id}/marketplace-delivery`);
     setDeliveryPolicy(result.policy);
-    setDeliveryFee(result.policy?.flatFee ?? '');
   }
 
   async function load() {
@@ -201,27 +198,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
     finally { setBusyId(null); }
   }
 
-  async function saveDeliveryFee(event) {
-    event.preventDefault();
-    const amount = Number(deliveryFee);
-    if (!/^\d+(\.\d{1,2})?$/.test(String(deliveryFee).trim()) || !Number.isFinite(amount) || amount > 1000) {
-      setMessage('Enter a USD delivery fee from 0.00 to 1000.00 with at most two decimals.');
-      return;
-    }
-    setDeliveryBusy(true);
-    setMessage('');
-    try {
-      const result = await getJson(`${commerce}/stores/${storeId}/marketplace-delivery`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flatFee: amount.toFixed(2),
-          ...(deliveryPolicy ? { expectedVersion: deliveryPolicy.version } : {}) }),
-      });
-      setDeliveryPolicy(result.policy);
-      setDeliveryFee(result.policy.flatFee);
-      setMessage('Delivery fee saved. Buyers see it before checkout.');
-    } catch (error) { setMessage(error.message); }
-    finally { setDeliveryBusy(false); }
-  }
+
 
   const categoryCounts = useMemo(() => products.reduce((counts, product) => {
     const key = product.marketplaceCategory || 'Uncategorised';
@@ -319,8 +296,8 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
               <Package className="h-10 w-10 text-muted-foreground/50" aria-hidden="true" />
-              <p className="font-medium text-foreground">{t('merchant.p.noProductsYet')}</p>
-              <p className="text-sm text-muted-foreground">{t('merchant.p.addYourFirstProduct')}</p>
+              <p className="font-medium text-foreground">{t('merchant.setup.productsEmptyTitle')}</p>
+              <p className="text-sm text-muted-foreground">{t('merchant.setup.productsEmptyBody')}</p>
               <Button onClick={addProduct} className="h-11"><Plus className="mr-1.5 h-4 w-4" /> {t('merchant.p.addProduct')}</Button>
             </div>
           ) : visible.length === 0 ? (
@@ -533,47 +510,22 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
           )}
         </Card>
 
-        {/* Delivery fee: set once, rarely changed, so it sits below the list */}
+        {/* Delivery fee: set once, rarely changed; its home is Settings › Delivery */}
         <Card className="border-transparent [box-shadow:var(--shadow-soft)]">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-6"
-            aria-expanded={deliveryOpen}
-            onClick={() => setDeliveryOpen((value) => !value)}
-          >
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
             <span className="flex items-center gap-3">
               <Truck className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
               <span>
                 <span className="block font-medium text-foreground">{t('merchant.p.marketplaceDeliveryFee')}</span>
                 <span className="block text-sm text-muted-foreground">
-                  {deliveryPolicy ? `${money(deliveryPolicy.flatFee)} per order, paid on delivery` : 'Not set yet'}
+                  {deliveryPolicy ? t('merchant.setup.deliveryPerOrder', { fee: money(deliveryPolicy.flatFee) }) : t('merchant.setup.deliveryNotSet')}
                 </span>
               </span>
             </span>
-            <ChevronDown className={`h-5 w-5 transition-transform ${deliveryOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {deliveryOpen && (
-            <CardContent className="border-t pt-4">
-              <form onSubmit={saveDeliveryFee} className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="delivery-fee">{t('merchant.p.feePerOrderUsd')}</Label>
-                  <Input
-                    id="delivery-fee"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min="0"
-                    className="h-11 w-36"
-                    value={deliveryFee}
-                    onChange={(event) => setDeliveryFee(event.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="h-11" disabled={deliveryBusy || !storeId}>
-                  {deliveryBusy ? 'Saving…' : 'Save fee'}
-                </Button>
-              </form>
-            </CardContent>
-          )}
+            <Button variant="outline" className="h-11" onClick={() => navigate('/settings/delivery')}>
+              {t('merchant.setup.deliveryManage')}
+            </Button>
+          </div>
         </Card>
       </div>
     </div>

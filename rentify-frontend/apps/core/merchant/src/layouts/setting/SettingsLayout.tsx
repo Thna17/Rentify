@@ -6,6 +6,7 @@ import {
   Receipt,
   Shield,
   SlidersHorizontal,
+  Truck,
   User,
   Users,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ interface SettingsLayoutProps {
 const SETTINGS_NAV_ITEMS = [
   { name: 'Account', description: 'Profile and business details', path: '/settings/account', icon: User },
   { name: 'Payments', description: 'Payout and payment methods', path: '/settings/payments', icon: CreditCard },
+  { name: 'Delivery', description: 'Delivery fee buyers pay', path: '/settings/delivery', icon: Truck },
   { name: 'Staff & Roles', description: 'Team access and permissions', path: '/settings/staff', icon: Users },
   { name: 'Security', description: 'Password and active sessions', path: '/settings/security', icon: Shield },
   { name: 'Billing', description: 'Plan, usage and invoices', path: '/settings/billing', icon: Receipt },

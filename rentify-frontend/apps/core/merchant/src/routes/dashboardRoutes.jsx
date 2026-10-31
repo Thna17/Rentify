@@ -25,6 +25,8 @@ const SecuritySetting = lazy(() => import('../pages/setting/SecuritySetting'));
 const StaffSetting = lazy(() => import('../pages/setting/StaffSetting'));
 const PaymentSetting = lazy(() => import('../pages/setting/PaymentSetting'));
 const PreferencesSetting = lazy(() => import('../pages/setting/PreferencesSetting'));
+const DeliverySetting = lazy(() => import('../pages/setting/DeliverySetting'));
+const SharePage = lazy(() => import('../pages/share/SharePage'));
 const UsageDashboard = lazy(() => import('../app/features/usage/pages/DashboardPage'));
 const UsageBreakdown = lazy(() => import('../app/features/usage/pages/BreakdownPage'));
 const UsageBilling = lazy(() => import('../app/features/usage/pages/BillingPage'));
@@ -55,6 +57,7 @@ export const dashboardRoutes = {
     { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
     { path: 'help', element: <SupportPage /> },
+    { path: 'share', element: <SharePage /> },
     { path: 'support', element: <Navigate to="/help" replace /> },
     { path: 'settings', element: <Navigate to="/settings/account" replace /> },
     { path: 'usage', element: <Navigate to="/usage/dashboard" replace /> },
@@ -62,6 +65,7 @@ export const dashboardRoutes = {
     { path: 'settings/security', element: <SecuritySetting /> },
     { path: 'settings/staff', element: <StaffSetting /> },
     { path: 'settings/payments', element: < PaymentSetting /> },
+    { path: 'settings/delivery', element: <DeliverySetting /> },
     { path: 'settings/billing', element: < BillingSetting />},
     { path: 'settings/preferences', element: < PreferencesSetting />},
     { path: 'usage/dashboard', element: <UsageDashboard /> },

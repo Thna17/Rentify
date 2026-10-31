@@ -1,12 +1,13 @@
 import { useChannels } from '../../context/ChannelContext';
 import { useTranslation } from '@rentify/utils';
-import { PanelLeftClose, X } from 'lucide-react';
+import { ListChecks, PanelLeftClose, X } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { SheetContent, SheetTitle } from '@rentify/shared/ui/sheet';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
 import { useAccess } from '../../utils/access';
+import { useSetupGuide } from '../../app/features/setup-guide/SetupGuideContext';
 import React from 'react';
 
 // How the Store sells, in plain words: Amazon-style marketplace, Shopify-style own site, or both
@@ -41,6 +42,9 @@ export function AppSidebar({
   const { t } = useTranslation();
   const access = useAccess();
   const { view } = useChannels();
+  const { guide, setHidden } = useSetupGuide();
+  // The setup guide keeps a permanent way back in, even after it was hidden on Home.
+  const showGuideEntry = access.isOwner && guide && !guide.complete;
 
   const filteredTabs = searchFilter.trim()
     ? tabs.filter((t) => {
@@ -103,6 +107,27 @@ export function AppSidebar({
           <ChannelDot on={channels.hasPos} label="POS" />
         </div>
       </div>
+
+      {showGuideEntry && (
+        <button
+          type="button"
+          onClick={() => {
+            setHidden(false);
+            onTabChange('overview');
+            if (isMobile) setOpen(false);
+          }}
+          className="mx-3 mt-3 flex min-h-[52px] items-center gap-3 rounded-xl border border-sidebar-border px-3 py-2 text-left transition-colors hover:bg-sidebar-accent"
+        >
+          <ListChecks className="h-[18px] w-[18px] shrink-0 text-foreground/70" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13.5px] font-semibold">{t('merchant.setup.menuEntry')}</span>
+            <span className="block text-[11.5px] text-muted-foreground">
+              {t('merchant.setup.progress', { done: guide.doneCount, total: guide.totalCount })}
+            </span>
+          </span>
+          <span className="rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-semibold text-background">{t('merchant.setup.continue')}</span>
+        </button>
+      )}
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4 scrollbar-subtle">

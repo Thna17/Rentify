@@ -18,6 +18,8 @@ import StoreCategoryPrompt from '../../pages/overview/StoreCategoryPrompt';
 import { ChannelProvider, useChannels } from '../../context/ChannelContext';
 import { AlertOctagon, ArrowRight, Clock3 } from 'lucide-react';
 import { accessFor } from '../../utils/access';
+import { SetupGuideProvider } from '../../app/features/setup-guide/SetupGuideContext';
+import { DeliveryFeeSheet } from '../../app/features/delivery-fee/DeliveryFeeSheet';
 
 const NOTICE_TONES = {
   warning: { box: 'bg-amber-500/[0.08]', icon: 'bg-amber-500/15 text-amber-700', title: 'text-amber-900', action: 'bg-amber-900 text-amber-50 hover:bg-amber-950' },
@@ -342,7 +344,10 @@ export const DashboardLayout = () => {
 
   return (
     <ChannelProvider initialStore={store} onStoreChange={setStore}>
-      <DashboardLayoutContent store={store} setStore={setStore} />
+      <SetupGuideProvider storeId={store?.id}>
+        <DashboardLayoutContent store={store} setStore={setStore} />
+        <DeliveryFeeSheet />
+      </SetupGuideProvider>
     </ChannelProvider>
   );
 };

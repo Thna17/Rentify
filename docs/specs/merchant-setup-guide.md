@@ -55,6 +55,13 @@ Verify: `npm run verify:core`, `npm run verify:openapi`, Core route table unchan
 
 Verify: `npm run verify:frontend` (lint, typecheck, unit tests, build); `e2e/dashboard-feature-integrity.test.mjs` updated for the new routes; screenshots at 375px and 1280px compared with the wireframe; run through the flow locally with a fresh store.
 
+**Built differently from the plan (recorded during the build):**
+- The counted Go-live step is **"You're live"** (`publication_marketplace`, or `publication_storefront` when the marketplace is off), with Preview as its button. The backend `preview` item only means a preview is available, so it cannot show whether the merchant looked.
+- Code lives in `apps/core/merchant/src/app/features/setup-guide/` and `.../delivery-fee/`, next to the existing `app/features/usage`. The checklist is fetched once by a `SetupGuideProvider` in the dashboard layout and shared by the Home card, the ☰ menu entry and the delivery-fee sheet.
+- Hand-off: `StartSelling.jsx` is no longer routed; every merchant finishes in the unified onboarding, so the next steps were added to its completion screen (`DeploymentStep/DeploymentStates/CompletedState.jsx`).
+- A Store whose products have no SKU sees "Add a product code (SKU)" instead of "Add your first product" (open question in `docs/notes.md`).
+- Merchant unit tests (`npm run test:merchant`) now run as part of `npm test`.
+
 ## Phase C — Mobile bottom bar · 1 PR
 
 | Step | Change |
