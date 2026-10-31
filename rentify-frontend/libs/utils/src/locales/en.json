@@ -2086,6 +2086,19 @@
       "stepProductSku": "Add a product code (SKU)",
       "stepProductSkuWhy": "Your products are ready, but at least one in-stock product needs a product code (SKU) before your store goes live.",
       "actionOpenProducts": "Open products"
+    },
+    "bottomNav": {
+      "label": "Main",
+      "home": "Home",
+      "orders": "Orders",
+      "products": "Products",
+      "pos": "POS",
+      "share": "Share",
+      "posIntroTitle": "Open the point of sale",
+      "posIntroBody": "The register opens in its own app, made for selling at your counter. Sales come off the same stock as your other channels.",
+      "posIntroFirstTime": "The first time, you enter your opening cash and create a PIN.",
+      "posIntroOpen": "Open register",
+      "posIntroLater": "Not now"
     }
   }
 }

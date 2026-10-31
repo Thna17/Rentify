@@ -20,6 +20,8 @@ import { AlertOctagon, ArrowRight, Clock3 } from 'lucide-react';
 import { accessFor } from '../../utils/access';
 import { SetupGuideProvider } from '../../app/features/setup-guide/SetupGuideContext';
 import { DeliveryFeeSheet } from '../../app/features/delivery-fee/DeliveryFeeSheet';
+import { Toaster } from '@rentify/shared/ui/sonner';
+import { MobileBottomBar, bottomBarVisible } from './MobileBottomBar';
 
 const NOTICE_TONES = {
   warning: { box: 'bg-amber-500/[0.08]', icon: 'bg-amber-500/15 text-amber-700', title: 'text-amber-900', action: 'bg-amber-900 text-amber-50 hover:bg-amber-950' },
@@ -284,7 +286,14 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
             </div>
           </Suspense>
         </main>
+        {isMobile && <MobileBottomBar hasPos={channels.hasPos} />}
       </div>
+      {/* Toasts: bottom on phones, above the tab bar; top-right on desktop (docs/experience 12 D). */}
+      <Toaster
+        position={isMobile ? 'bottom-center' : 'top-right'}
+        offset={isMobile ? { bottom: bottomBarVisible(location.pathname) ? 72 : 16 } : undefined}
+        mobileOffset={{ bottom: bottomBarVisible(location.pathname) ? 72 : 16 }}
+      />
     </div>
     </Sheet>
   );
