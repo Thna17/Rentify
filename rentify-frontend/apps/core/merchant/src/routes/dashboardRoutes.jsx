@@ -7,6 +7,7 @@ const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const OnlineStorePage = lazy(() => import('../pages/online-store/OnlineStorePage'));
 const StoreDesign = lazy(() => import('../pages/store-design/StoreDesign'));
+const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
 const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'));
@@ -21,6 +22,7 @@ const StaffSetting = lazy(() => import('../pages/setting/StaffSetting'));
 const PaymentSetting = lazy(() => import('../pages/setting/PaymentSetting'));
 const PreferencesSetting = lazy(() => import('../pages/setting/PreferencesSetting'));
 const DeliverySetting = lazy(() => import('../pages/setting/DeliverySetting'));
+const SettingsHome = lazy(() => import('../pages/setting/SettingsHome'));
 const SharePage = lazy(() => import('../pages/share/SharePage'));
 const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 const Customers = lazy(() => import('../pages/customers/Customers'));
@@ -40,6 +42,7 @@ export const dashboardRoutes = {
 
     // Online store (replaces /store-management; /store-management redirects)
     { path: 'online-store', element: <OnlineStorePage /> },
+    { path: 'online-store/edit', element: <StoreManagement /> },
     { path: 'store-management', element: <Navigate to="/online-store" replace /> },
     { path: 'store/design', element: <Navigate to="/customization" replace /> },
 
@@ -71,7 +74,7 @@ export const dashboardRoutes = {
     { path: 'support', element: <Navigate to="/help" replace /> },
 
     // Settings (one shell; /settings and /usage/* redirect)
-    { path: 'settings', element: <Navigate to="/settings/account" replace /> },
+    { path: 'settings', element: <SettingsHome /> },
 
     { path: 'settings/account', element: <AccountSettings /> },
     { path: 'settings/security', element: <SecuritySetting /> },

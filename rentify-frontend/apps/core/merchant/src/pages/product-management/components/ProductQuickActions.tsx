@@ -82,9 +82,9 @@ export function ProductQuickActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0 data-[state=open]:bg-muted">
-          <IconDotsVertical className="h-4 w-4" />
-          <span className="sr-only">Open menu</span>
+        <Button variant="ghost" className="h-11 w-11 p-0 data-[state=open]:bg-muted">
+          <IconDotsVertical className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">{t('merchant.products.moreActions')}</span>
         </Button>
       </DropdownMenuTrigger>
 

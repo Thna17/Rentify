@@ -1,59 +1,36 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from '@rentify/utils';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@rentify/shared/ui/dialog';
 import { Button } from '@rentify/shared/ui/button';
-import { Input } from '@rentify/shared/ui/input';
-import { Label } from '@rentify/shared/ui/label';
-import { DollarSign, AlertCircle } from 'lucide-react';
+import { money, orderLabel } from '../orderModel';
 
 interface RecordCashSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: any;
-  onConfirm: (amount: string) => Promise<void>;
+  onConfirm: () => Promise<void>;
 }
 
-export const RecordCashSheet: React.FC<RecordCashSheetProps> = ({
-  open,
-  onOpenChange,
-  order,
-  onConfirm,
-}) => {
+/**
+ * Records cash collected on delivery (redesign M5). Commerce only accepts the exact amount due,
+ * so the sheet states that amount instead of asking for one.
+ */
+export function RecordCashSheet({ open, onOpenChange, order, onConfirm }: RecordCashSheetProps) {
   const { t } = useTranslation();
-  const totalDue = String(order?.payment?.amountDue || order?.totals?.total || '0.00');
-  const [amount, setAmount] = useState(totalDue);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const due = money(order?.payment?.amountDue, order?.currency);
 
-  // Sync amount when order changes
-  React.useEffect(() => {
-    if (order) {
-      const due = String(order.payment?.amountDue || order.totals?.total || '0.00');
-      setAmount(due);
-      setError('');
-    }
-  }, [order]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (Number(amount) <= 0) {
-      setError('Please enter a valid amount');
-      return;
-    }
+  const submit = async () => {
     setSubmitting(true);
-    setError('');
     try {
-      await onConfirm(amount);
-      onOpenChange(false);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to record cash');
+      await onConfirm();
     } finally {
       setSubmitting(false);
     }
@@ -61,71 +38,28 @@ export const RecordCashSheet: React.FC<RecordCashSheetProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl p-6">
-        <DialogHeader className="space-y-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <DollarSign className="h-6 w-6" />
-          </div>
-          <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-            Record cash collected
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-            Only record cash you have in hand. The buyer is told the order is paid and COD is settled.
-          </DialogDescription>
+      <DialogContent className="rounded-2xl p-6 sm:max-w-md">
+        <DialogHeader className="space-y-2 text-left">
+          <DialogTitle className="text-xl font-semibold">{t('merchant.orders.cash.title')}</DialogTitle>
+          <DialogDescription>{t('merchant.orders.cash.body')}</DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-2">
-            <Label htmlFor="cash-amount" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Amount collected (USD)
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
-                $
-              </span>
-              <Input
-                id="cash-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="pl-8 h-12 rounded-xl text-lg font-bold font-mono bg-card border-card-border"
-                required
-                autoFocus
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Must equal the amount due: <span className="font-semibold text-foreground">${totalDue}</span>
-            </p>
+        {order && (
+          <div className="rounded-xl border border-border bg-muted/40 p-4">
+            <p className="text-sm text-muted-foreground">{orderLabel(order)} · {order.buyer?.name}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{due}</p>
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <DialogFooter className="pt-2 flex flex-col sm:flex-row gap-2">
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="w-full sm:w-auto h-11 rounded-xl px-5 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {submitting ? 'Recording…' : `Record $${amount || totalDue}`}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="w-full sm:w-auto h-11 rounded-xl px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
-            >
-              Not yet
-            </Button>
-          </DialogFooter>
-        </form>
+        )}
+        <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row">
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="min-h-[44px] rounded-xl">
+            {t('merchant.orders.cash.notYet')}
+          </Button>
+          <Button type="button" disabled={submitting} onClick={submit} className="min-h-[44px] rounded-xl">
+            {t('merchant.orders.cash.record', { amount: due })}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
+
+export default RecordCashSheet;

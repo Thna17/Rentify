@@ -176,7 +176,7 @@ export function SiteHeader({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
+              className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
               aria-label={t('merchant.shell.expandSidebar')}
             >
               <Menu className="h-5 w-5" />
@@ -189,7 +189,7 @@ export function SiteHeader({
               variant="ghost"
               size="icon"
               onClick={onSidebarToggle}
-              className="h-10 w-10 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
+              className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
               aria-label={t('merchant.shell.expandSidebar')}
               title={t('merchant.shell.expandSidebar')}
             >
@@ -364,7 +364,7 @@ export function SiteHeader({
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-xl sm:hidden text-muted-foreground hover:text-foreground"
+          className="h-11 w-11 shrink-0 rounded-xl sm:hidden text-muted-foreground hover:text-foreground"
           aria-label={t('merchant.shell.searchPages')}
           aria-expanded={mobileSearchOpen}
           onClick={() => setMobileSearchOpen(true)}
@@ -379,7 +379,7 @@ export function SiteHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="relative h-10 w-10 rounded-xl p-0 hover:bg-accent focus-visible:ring-1 cursor-pointer"
+              className="relative h-11 w-11 rounded-xl p-0 hover:bg-accent focus-visible:ring-1 cursor-pointer"
               aria-label={t('merchant.shell.account')}
             >
               <Avatar className="h-9 w-9 rounded-xl border border-border/60">

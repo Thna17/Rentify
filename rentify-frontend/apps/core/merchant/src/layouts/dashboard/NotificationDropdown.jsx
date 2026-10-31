@@ -62,7 +62,7 @@ export function NotificationDropdown() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative min-h-10 min-w-10 shrink-0 text-muted-foreground hover:text-foreground"
+          className="relative h-11 w-11 shrink-0 text-muted-foreground hover:text-foreground"
           aria-label={text.title}
           title={text.title}
         >

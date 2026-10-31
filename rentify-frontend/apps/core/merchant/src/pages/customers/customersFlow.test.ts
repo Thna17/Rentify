@@ -1,26 +1,24 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-describe('MR8 · Customers flow (Screens M11 & M12)', () => {
-  it('Customers.jsx adheres to wireframe Screen M11 with channel filter chips and search', () => {
-    const filePath = resolve(__dirname, 'Customers.jsx');
-    expect(existsSync(filePath)).toBe(true);
+describe('Customers (redesign M11, M12)', () => {
+  const content = readFileSync(resolve(__dirname, 'Customers.jsx'), 'utf-8');
+  const hook = readFileSync(resolve(__dirname, '../../hooks/useCustomers.js'), 'utf-8');
 
-    const content = readFileSync(filePath, 'utf-8');
-    // Channel chips
-    expect(content).toContain('CHANNEL_CHIPS');
-    expect(content).toContain('Marketplace');
-    expect(content).toContain('Online store');
-    expect(content).toContain('POS');
+  it('filters by channel with the shared chips and searches by name or phone', () => {
+    expect(content).toContain('FilterChips');
+    expect(content).toContain('c.channels.has(selectedChannel)');
+    expect(content).toContain("t('merchant.customers.search')");
+  });
 
-    // M11 search
-    expect(content).toContain('Search name or phone');
+  it('builds customers from orders on every channel, not only the online store', () => {
+    expect(hook).toContain("useChannelOrders('all', 'all')");
+    expect(hook).not.toContain('useGetOrderHistoryQuery');
+  });
 
-    // M12 customer detail drawer
+  it('shows no invented figures in the customer drawer', () => {
     expect(content).toContain('SheetContent');
-    expect(content).toContain('maskPhone');
-    expect(content).toContain('Telegram');
-    expect(content).toContain('Customer orders');
+    expect(content).not.toMatch(/Returns<\/p>/);
   });
 });

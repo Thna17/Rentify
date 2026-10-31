@@ -2,7 +2,6 @@
 // P3-ORD-001: Enforces order and fulfillment state machines, inventory invariants, and tenant ownership.
 
 const { Order, Payment, OrderItem, Product } = require("../../models");
-const { sendStatusUpdateEmail } = require("../notifications").emailService;
 const retryTransaction = require("../../utils/retryTransaction");
 const {
   PAYMENT_METHODS,
@@ -67,7 +66,7 @@ exports.confirmOrder = async (req, res) => {
 
     const result = await retryTransaction(async (t) => {
       const order = await Order.findByPk(orderId, {
-        include: [{ model: Payment }, { model: OrderItem, include: [Product] }],
+        include: [{ model: Payment, as: "Payment" }, { model: OrderItem, as: "OrderItems", include: [Product] }],
         lock: t.LOCK.UPDATE,
       });
 
@@ -108,12 +107,11 @@ exports.confirmOrder = async (req, res) => {
       }
 
       return await Order.findByPk(orderId, {
-        include: [{ model: Payment }, { model: OrderItem }],
+        include: [{ model: Payment, as: "Payment" }, { model: OrderItem, as: "OrderItems" }],
         transaction: t,
       });
     });
 
-    await sendStatusUpdateEmail(result, "confirmed").catch(() => {});
     res.json(result);
   } catch (error) {
     const status = error.statusCode || 400;
@@ -143,10 +141,9 @@ exports.cancelOrder = async (req, res) => {
     });
 
     const result = await Order.findByPk(orderId, {
-      include: [{ model: Payment }, { model: OrderItem }],
+      include: [{ model: Payment, as: "Payment" }, { model: OrderItem, as: "OrderItems" }],
     });
 
-    await sendStatusUpdateEmail(result, "cancelled").catch(() => {});
     res.json(result);
   } catch (error) {
     const status = error.statusCode || 400;
@@ -165,7 +162,7 @@ exports.markAsComplete = async (req, res) => {
     const result = await retryTransaction(async (t) => {
       const order = await Order.findOne({
         where: { id: orderId },
-        include: [{ model: Payment }],
+        include: [{ model: Payment, as: "Payment" }],
         transaction: t,
       });
       if (!order) {
@@ -197,7 +194,7 @@ exports.markAsComplete = async (req, res) => {
       }, { transaction: t, byStateMachine: true });
 
       return await Order.findByPk(orderId, {
-        include: [Payment],
+        include: [{ model: Payment, as: "Payment" }],
         transaction: t,
       });
     });

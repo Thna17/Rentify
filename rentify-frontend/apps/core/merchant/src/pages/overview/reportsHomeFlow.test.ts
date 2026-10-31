@@ -1,51 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
-describe('MR8 · Home, Reports, Customers, Returns, and Help flow integrity', () => {
-  it('Overview.tsx adheres to wireframe Screen M1 layout and action tiles', () => {
-    const overviewPath = resolve(__dirname, 'Overview.tsx');
-    expect(existsSync(overviewPath)).toBe(true);
-
-    const content = readFileSync(overviewPath, 'utf-8');
-    // M1 header and next actions
-    expect(content).toContain('Needs your attention');
-    expect(content).toContain('Where you sell');
-    expect(content).toContain('Recent orders');
-    expect(content).toContain('Low stock');
-    expect(content).toContain('All channels');
-    expect(content).toContain('Marketplace');
-    expect(content).toContain('Online store');
-    expect(content).toContain('POS');
-
-    // M1 links
-    expect(content).toContain('/orders?tab=to_confirm');
-    expect(content).toContain('/orders?tab=to_deliver');
-    expect(content).toContain('/orders?tab=cash_to_collect');
-    expect(content).toContain('/returns');
-    expect(content).toContain('/reports');
-    expect(content).toContain('/marketplace');
-    expect(content).toContain('/online-store');
+const SRC = resolve(__dirname, '../..');
+const sourceFiles = (dir: string): string[] =>
+  readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) return name === '__tests__' ? [] : sourceFiles(full);
+    return /\.(tsx|jsx)$/.test(name) && !/\.test\./.test(name) ? [full] : [];
   });
 
-  it('PlatformAnalytics adheres to Screen M13 with Reports title and backend dashed chip', () => {
-    const reportsPath = existsSync(resolve(__dirname, 'PlatformAnalytics.tsx'))
-      ? resolve(__dirname, 'PlatformAnalytics.tsx')
-      : resolve(__dirname, 'PlatformAnalytics.jsx');
-    expect(existsSync(reportsPath)).toBe(true);
+// Visible text only: JSX text nodes and string literals that are not comments or imports
+const visibleStrings = (source: string) =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    .replace(/^import .*$/gm, '');
 
-    const content = readFileSync(reportsPath, 'utf-8');
-    expect(content).toContain('Reports');
-    expect(content).toContain('Needs backend · store-wide sales statistics');
+describe('Merchant screens never show internal text (CLAUDE.md, audit P7)', () => {
+  const pages = sourceFiles(join(SRC, 'pages')).concat(sourceFiles(join(SRC, 'layouts')));
+
+  it.each([
+    ['decision codes', /DEC-\d{3}/],
+    ['"Needs backend" markers', /Needs backend/i],
+    ['task packet ids', /\bRX-[A-Z]\d+/],
+    ['API paths', /['"`>]\s*(GET|POST|PUT)\s+\/api\//],
+  ])('no %s in rendered strings', (_label, pattern) => {
+    const offenders = pages.filter((file) => pattern.test(visibleStrings(readFileSync(file, 'utf-8'))));
+    expect(offenders.map((f) => f.slice(SRC.length + 1))).toEqual([]);
   });
+});
 
-  it('ReturnsPage.tsx adheres to Screen M6 Note 2 with blocked state and backend contract details', () => {
-    const returnsPath = resolve(__dirname, '../returns/ReturnsPage.tsx');
-    expect(existsSync(returnsPath)).toBe(true);
-
-    const content = readFileSync(returnsPath, 'utf-8');
-    expect(content).toContain('Needs backend integration');
-    expect(content).toContain('GET /api/stores/:id/reports');
-    expect(content).toContain('View store orders');
+describe('Home, Reports and Returns use the shared order model', () => {
+  it.each(['overview/Overview.tsx', 'overview/PlatformAnalytics.tsx', 'returns/ReturnsPage.tsx'])('%s reads orders through orderModel', (file) => {
+    const source = readFileSync(join(SRC, 'pages', file), 'utf-8');
+    expect(source).toContain("from '../order-management/orderModel'");
   });
 });

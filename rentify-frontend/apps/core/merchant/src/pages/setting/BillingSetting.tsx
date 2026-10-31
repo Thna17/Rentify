@@ -180,8 +180,8 @@ export const BillingSetting = () => {
 
   return (
     <SettingsLayout
-      title="Plan & billing"
-      description="Your plan, what you've used, and invoices from Rentify"
+      title={t('merchant.settings.sections.billing.title')}
+      description={t('merchant.settings.sections.billing.body')}
       icon={<CreditCard />}
     >
       {/* Grace / suspended status is shown once, by the dashboard layout banner. */}

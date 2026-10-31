@@ -107,8 +107,8 @@ export const PreferencesSetting = () => {
 
   return (
     <SettingsLayout
-      title={t('merchant.p.preferences')}
-      description="Manage sales channels and account notification preferences"
+      title={t('merchant.settings.sections.preferences.title')}
+      description={t('merchant.settings.sections.preferences.body')}
       icon={<Bell />}
     >
       {/* Sales Channels Management */}
