@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Website, Subscription } = require('../../src/models');
+const { Website, Subscription, Store } = require('../../src/models');
 const { getMerchantCache } = require('../../src/utils/cache');
 const websiteController = require('../../src/modules/websites/websiteController');
 
@@ -9,6 +9,7 @@ test('the public storefront lookup never includes owner or staff contact details
   t.mock.method(cache, 'get', async () => null);
   t.mock.method(cache, 'setWithIndex', async () => true);
   t.mock.method(Subscription, 'findOne', async () => null);
+  t.mock.method(Store, 'findByPk', async () => ({ id: 'store-1', status: 'active', name: 'Store 1', logoUrl: null }));
   let query;
   t.mock.method(Website, 'findOne', async (options) => {
     query = options;

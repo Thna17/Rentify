@@ -85,8 +85,12 @@ export function AppSidebar({
       {/* Store + channel status */}
       <div className="mx-3 mt-2 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-[13px] font-semibold shadow-sm">
-            {storeName.charAt(0).toUpperCase()}
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-[13px] font-semibold shadow-sm overflow-hidden">
+            {store?.logoUrl ? (
+              <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain" />
+            ) : (
+              storeName.charAt(0).toUpperCase()
+            )}
           </div>
           <div className="min-w-0">
             <p className="truncate text-[13.5px] font-semibold leading-tight">{storeName}</p>

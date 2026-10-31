@@ -36,9 +36,9 @@ export function NavUser({ user, onLogout }) {
                   className="w-full justify-start data-[state=open]:bg-accent/50 rounded-lg transition-all p-2"
                 >
                   <Avatar className="h-9 w-9 rounded-lg">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={user?.avatar || user?.profileImage} alt={user?.name} />
                     <AvatarFallback className="rounded-lg bg-primary/10">
-                      {user.name?.charAt(0) || 'U'}
+                      {user?.name?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight ml-2">
@@ -59,9 +59,9 @@ export function NavUser({ user, onLogout }) {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarImage src={user?.avatar || user?.profileImage} alt={user?.name} />
                       <AvatarFallback className="rounded-lg">
-                        {user.name?.charAt(0) || 'U'}
+                        {user?.name?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">

@@ -208,15 +208,19 @@ class WebsiteController {
         return res.status(404).json({ error: "Website not found" });
       }
 
+      let storeInfo = null;
       if (website.storeId && Store?.findByPk) {
         try {
-          const store = await Store.findByPk(website.storeId, { attributes: ['id', 'status'] });
+          const store = await Store.findByPk(website.storeId, { attributes: ['id', 'status', 'name', 'logoUrl'] });
           if (store && store.status !== 'active') {
             return res.status(404).json({ error: "Website not found" });
           }
+          if (store) {
+            storeInfo = { id: store.id, name: store.name, logoUrl: store.logoUrl };
+          }
         } catch (dbErr) {
           // In isolated unit tests without active DB connection, do not crash lookup
-          if (dbErr.name !== 'SequelizeConnectionRefusedError') throw dbErr;
+          if (dbErr.name !== 'SequelizeConnectionRefusedError' && dbErr.name !== 'SequelizeAccessDeniedError') throw dbErr;
         }
       }
 
@@ -248,6 +252,8 @@ class WebsiteController {
         name: website.name || null,
         domain: website.domain || null,
         subdomain: website.subdomain || null,
+        logoUrl: storeInfo?.logoUrl || null,
+        store: storeInfo,
         storefrontUrl: canonicalHostedUrl,
         hostedStorefrontUrl: canonicalHostedUrl,
         isCustomDomain: isCustom,

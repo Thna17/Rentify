@@ -3174,6 +3174,67 @@ export class CommerceApiClient {
   }
 
   /**
+   * Handle CutLuy webhook payment status notifications
+   * POST /api/payment/payments/cutluy/webhook
+   */
+  async post_api_payment_payments_cutluy_webhook(options: {
+    body: Record<string, any>;
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/payment/payments/cutluy/webhook',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_payment_payments_cutluy_webhook */
+  async postApiPaymentPaymentsCutluyWebhook(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_payment_payments_cutluy_webhook(options);
+  }
+
+  /**
+   * Get active public payment methods for storefront
+   * GET /api/payment/payments/public-methods/{websiteId}
+   */
+  async get_api_payment_payments_public_methods_websiteId(options: {
+    path: {
+      websiteId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      cutluyEnabled?: boolean;
+      paymentMethods?: Array<string>;
+    }>> {
+    return this.transport.request<{
+      cutluyEnabled?: boolean;
+      paymentMethods?: Array<string>;
+    }>({
+      method: 'GET',
+      path: '/api/payment/payments/public-methods/{websiteId}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_payment_payments_public_methods_websiteId */
+  async getApiPaymentPaymentsPublicMethodsWebsiteId(options: any): Promise<ApiResponse<{
+      cutluyEnabled?: boolean;
+      paymentMethods?: Array<string>;
+    }>> {
+    return (this as any).get_api_payment_payments_public_methods_websiteId(options);
+  }
+
+  /**
    * Get payment details by payment ID
    * GET /api/payment/payments/{paymentId}
    */
@@ -3225,6 +3286,133 @@ export class CommerceApiClient {
   /** Alias for get_api_payment_payments_paymentId_check_status */
   async getApiPaymentPaymentsPaymentIdCheckStatus(options: any): Promise<ApiResponse<any>> {
     return (this as any).get_api_payment_payments_paymentId_check_status(options);
+  }
+
+  /**
+   * Handle ABA PayWay server-to-server callback
+   * POST /api/payments/aba-payway/callback
+   */
+  async post_api_payments_aba_payway_callback(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/payments/aba-payway/callback',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_payments_aba_payway_callback */
+  async postApiPaymentsAbaPaywayCallback(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_payments_aba_payway_callback(options);
+  }
+
+  /**
+   * Create ABA PayWay checkout transaction
+   * POST /api/payments/aba-payway/checkout
+   */
+  async post_api_payments_aba_payway_checkout(options: {
+    body: {
+      orderId?: Commerce.UUID;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/payments/aba-payway/checkout',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_payments_aba_payway_checkout */
+  async postApiPaymentsAbaPaywayCheckout(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_payments_aba_payway_checkout(options);
+  }
+
+  /**
+   * Check ABA PayWay configuration status
+   * GET /api/payments/aba-payway/config
+   */
+  async get_api_payments_aba_payway_config(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/payments/aba-payway/config',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_payments_aba_payway_config */
+  async getApiPaymentsAbaPaywayConfig(options: any = {}): Promise<ApiResponse<any>> {
+    return (this as any).get_api_payments_aba_payway_config(options);
+  }
+
+  /**
+   * Mock approve ABA PayWay payment in development
+   * POST /api/payments/aba-payway/mock/approve/{orderId}
+   */
+  async post_api_payments_aba_payway_mock_approve_orderId(options: {
+    path: {
+      orderId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/payments/aba-payway/mock/approve/{orderId}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_payments_aba_payway_mock_approve_orderId */
+  async postApiPaymentsAbaPaywayMockApproveOrderId(options: any): Promise<ApiResponse<any>> {
+    return (this as any).post_api_payments_aba_payway_mock_approve_orderId(options);
+  }
+
+  /**
+   * Check ABA PayWay payment status for order
+   * GET /api/payments/aba-payway/status/{orderId}
+   */
+  async get_api_payments_aba_payway_status_orderId(options: {
+    path: {
+      orderId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/payments/aba-payway/status/{orderId}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_payments_aba_payway_status_orderId */
+  async getApiPaymentsAbaPaywayStatusOrderId(options: any): Promise<ApiResponse<any>> {
+    return (this as any).get_api_payments_aba_payway_status_orderId(options);
   }
 
   /**

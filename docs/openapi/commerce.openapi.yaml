@@ -4962,9 +4962,13 @@ paths:
                   cutluyEnabled:
                     type: boolean
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error400"
         "500":
-          $ref: "#/components/responses/InternalServerError"
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       operationId: get_api_payment_payments_public_methods_websiteId
       security: []
   /api/payment/payments/{paymentId}:

@@ -37,6 +37,7 @@ import { useInvoice }  from '../../hooks/useInvoice';
 import { useNotification }  from '../../hooks/useNotification';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+import { useChannels } from '../../context/ChannelContext';
 
 const INITIAL_INVOICE_DATA = {
   invoiceNumber: `INV-${Date.now()}`,
@@ -91,14 +92,15 @@ export const InvoiceManual = () => {
 
   const websiteName = 'Brathna Store';
 
+  const { store } = useChannels();
   const companyInfo = {
-    name: 'Rentify',
+    name: store?.name || 'Rentify',
     address: '456 Tech Avenue, Suite 200, San Francisco, CA 94102',
     phone: '+1 (555) 987-6543',
     email: 'hello@rentify.com',
-    website: 'www.rentify.com',
-    watermark: 'Rentify',
-    logo: 'https://i.ibb.co/hFhZHpkh/Logo.png',
+    website: store?.slug ? `${store.slug}.mekhla.digital` : 'www.rentify.com',
+    watermark: store?.name || 'Rentify',
+    logo: store?.logoUrl || 'https://i.ibb.co/hFhZHpkh/Logo.png',
   };
 
   const handleSaveInvoice = async () => {
