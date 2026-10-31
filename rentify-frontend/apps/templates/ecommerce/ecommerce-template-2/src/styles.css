@@ -12,29 +12,29 @@
  */
 @layer base {
   :root {
-    --background: 0.982 0.006 95;
-    --foreground: 0.235 0.006 230;
-    --card: 1 0 0;
-    --card-foreground: 0.235 0.006 230;
-    --popover: 1 0 0;
-    --popover-foreground: 0.235 0.006 230;
-    --primary: 0.43 0.06 158;
+    --background: 0.18 0.026 263;
+    --foreground: 0.98 0.004 255;
+    --card: 0.235 0.03 259;
+    --card-foreground: 0.98 0.004 255;
+    --popover: 0.235 0.03 259;
+    --popover-foreground: 0.98 0.004 255;
+    --primary: 0.67 0.17 257;
     --primary-foreground: 0.99 0 0;
     --secondary: 0.27 0.015 230;
     --secondary-foreground: 0.99 0 0;
-    --muted: 0.955 0.004 106;
-    --muted-foreground: 0.5 0.01 230;
-    --accent: 0.95 0.012 120;
-    --accent-foreground: 0.235 0.006 230;
-    --border: 0.91 0.006 106;
-    --input: 0.91 0.006 106;
-    --ring: 0.43 0.06 158;
+    --muted: 0.26 0.03 255;
+    --muted-foreground: 0.76 0.025 255;
+    --accent: 0.25 0.035 255;
+    --accent-foreground: 0.98 0.004 255;
+    --border: 0.34 0.03 255;
+    --input: 0.34 0.03 255;
+    --ring: 0.67 0.17 257;
     --success: 0.5 0.12 150;
     --warning: 0.55 0.13 65;
     --error: 0.5 0.18 27;
     --font-primary: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans Khmer',
       'Kantumruy Pro', 'Khmer Sangam MN', system-ui, sans-serif;
-    --font-secondary: 'Playfair Display', 'Noto Serif Khmer', Georgia, 'Times New Roman', serif;
+    --font-secondary: Inter, 'Noto Sans Khmer', system-ui, sans-serif;
     --header-height: 3.5rem;
     --leading-xs: 1rem;
     --leading-sm: 1.25rem;

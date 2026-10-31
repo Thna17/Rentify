@@ -20,7 +20,7 @@ import { StoryBand } from '../components/StoryBand';
 import { EmptyState, ErrorState } from '../components/StatusMessage';
 import { OwnerAddButton, OwnerEditButton, OwnerSectionPlaceholder } from '@rentify/storefront/owner/StorefrontOwner';
 
-const ROW_LIMIT = 5;
+const ROW_LIMIT = 4;
 const MAX_CATEGORY_CARDS = 8;
 
 /** The merchant's chosen category as a compact row, fetched when it nears the viewport. */
@@ -37,7 +37,7 @@ function FeaturedSection({ featured, websiteId }) {
   if (inView && !isLoading && (isError || products.length === 0)) return null;
 
   return (
-    <section ref={ref} aria-labelledby="featured-products" className="store-container mt-14 sm:mt-16">
+    <section ref={ref} aria-labelledby="featured-products" className="store-container mt-16 sm:mt-24">
       <div className="relative">
         <OwnerEditButton section="Featured Products" className="absolute -top-11 right-0" />
         <SectionTitle id="featured-products" title={title || category.name} to={catalogPath({ category: category.id })} />
@@ -74,7 +74,7 @@ export default function Home() {
       {page.highlights.length ? <Highlights items={page.highlights} /> : <OwnerSectionPlaceholder section="Highlights" className="mt-8" />}
 
       {categories.length > 0 ? (
-        <section aria-labelledby="shop-by-category" className="store-container relative mt-12 sm:mt-16">
+        <section aria-labelledby="shop-by-category" className="store-container relative mt-16 sm:mt-24">
           <OwnerAddButton kind="category" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
           <SectionTitle
             id="shop-by-category"
@@ -90,7 +90,7 @@ export default function Home() {
         </div>
       )}
 
-      <section aria-labelledby="new-arrivals" className="store-container relative mt-14 sm:mt-16">
+      <section aria-labelledby="new-arrivals" className="store-container relative mt-16 sm:mt-24">
         <OwnerAddButton kind="product" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
         <SectionTitle id="new-arrivals" title={t('home.newArrivals')} to={storeIsEmpty ? null : catalogPath({ sort: 'newest' })} />
         {latest.isLoading || !websiteId ? (
@@ -119,7 +119,7 @@ export default function Home() {
       )}
 
       {page.needs.items.length > 0 ? (
-        <section aria-labelledby="shop-by-need" className="store-container relative mt-14 sm:mt-16">
+        <section aria-labelledby="shop-by-need" className="store-container relative mt-16 sm:mt-24">
           <OwnerEditButton section="Shop by Need" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
           <SectionTitle id="shop-by-need" title={page.needs.title || t('home.concerns')} />
           <NeedChips items={page.needs.items} />

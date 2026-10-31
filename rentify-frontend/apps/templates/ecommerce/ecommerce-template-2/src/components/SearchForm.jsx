@@ -38,7 +38,7 @@ export function SearchForm({ autoFocus = false, onSubmitted, className = '', siz
         maxLength={100}
         onChange={(event) => setQuery(event.target.value)}
         placeholder={t('search.placeholder')}
-        className={`w-full rounded-full border border-input bg-muted/50 pl-9 pr-4 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-ring/25 sm:text-sm ${size === 'lg' ? 'h-12 sm:h-14 sm:pl-11 sm:text-base' : 'h-10'}`}
+        className={`w-full rounded-xl border border-input bg-muted/50 pl-9 pr-4 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-ring/25 sm:text-sm ${size === 'lg' ? 'h-12 sm:h-14 sm:pl-11 sm:text-base' : 'h-10'}`}
       />
       <button type="submit" className="sr-only">
         {t('search.submit')}

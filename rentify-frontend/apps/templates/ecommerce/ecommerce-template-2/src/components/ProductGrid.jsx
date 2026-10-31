@@ -5,7 +5,7 @@ import { ProductCard } from './ProductCard';
 export const GRID_CLASSES = 'grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5';
 // A swipeable row on phones that becomes a single five-column row on desktop.
 export const RAIL_CLASSES =
-  'scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-5';
+  'scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4';
 
 /** Grid (or `layout="rail"`) of product cards wired to the storefront cart. */
 export function ProductGrid({ products, priorityCount = 0, showCategory = true, layout = 'grid', className = '' }) {
