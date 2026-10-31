@@ -244,7 +244,7 @@ router.post(
   "/login/telegram",
   transactionHandler(async (req, res, transaction) => {
     const result = await userAuthService.loginWithTelegram({
-      authData: req.body?.authData,
+      authData: req.body?.authData || req.body,
       transaction,
     });
     const hasStore = Boolean(

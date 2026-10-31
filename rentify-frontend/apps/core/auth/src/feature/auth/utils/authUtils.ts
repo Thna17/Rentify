@@ -21,7 +21,7 @@ export const useAuthConfig = () => {
   const adminDashboardHost = ADMIN_DASHBOARD_URL ? new URL(ADMIN_DASHBOARD_URL).host : '';
   const authHost = new URL(AUTH_URL).host;
   const posHost = POS_URL ? new URL(POS_URL).host : '';
-  const returnDomain = new URL(returnUrl).host;
+  const returnDomain = new URL(returnUrl, typeof window !== 'undefined' ? window.location.origin : undefined).host;
   const isHostedStorefrontBuyer = isHostedStorefrontReturn(returnUrl);
 
   return {
@@ -42,6 +42,37 @@ export const useAuthConfig = () => {
       returnDomain !== posHost &&
       !isHostedStorefrontBuyer,
   };
+};
+
+const TELEGRAM_WIDGET_SRC = 'https://telegram.org/js/telegram-widget.js?22';
+
+export const loadTelegramWidget = () =>
+  new Promise<void>((resolve, reject) => {
+    if (typeof window === 'undefined') return resolve();
+    if ((window as any).Telegram?.Login) return resolve();
+    const existing = document.querySelector('script[src*="telegram-widget.js"]');
+    if (existing) {
+      if ((window as any).Telegram?.Login) return resolve();
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Could not load Telegram login')));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = TELEGRAM_WIDGET_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Telegram login'));
+    document.head.appendChild(script);
+  });
+
+export const requestTelegramAuth = async (botId: string) => {
+  await loadTelegramWidget();
+  return new Promise<Record<string, unknown> | null>((resolve) => {
+    (window as any).Telegram.Login.auth(
+      { bot_id: botId, request_access: 'write' },
+      (data: Record<string, unknown> | false) => resolve(data || null)
+    );
+  });
 };
 
 export const getMutationHandler = (

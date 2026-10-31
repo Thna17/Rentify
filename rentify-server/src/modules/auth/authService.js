@@ -629,21 +629,52 @@ class AuthService {
       throw new ApiError(401, "Telegram login has expired. Please try again.");
     }
 
-    const entity = await this.entityModel.findOne({
-      where: { telegramUserId: String(fields.id) },
+    let entity = await this.entityModel.findOne({
+      where: {
+        [Op.or]: [
+          { telegramUserId: String(fields.id) },
+          { telegramChatId: String(fields.id) },
+        ],
+      },
       transaction,
     });
+
     if (!entity) {
-      throw new ApiError(
-        404,
-        "No account is linked to this Telegram. Sign up with your phone number first."
+      // Auto-create user account from verified Telegram identity without OTP
+      const name =
+        [fields.first_name, fields.last_name].filter(Boolean).join(" ") ||
+        fields.username ||
+        "Telegram User";
+
+      entity = await this.entityModel.create(
+        {
+          name,
+          telegramUserId: String(fields.id),
+          telegramChatId: String(fields.id),
+          isVerified: true,
+          role: "user",
+          profileImage: fields.photo_url || "default.jpg",
+        },
+        { transaction }
       );
     }
+
     if (entity.lockUntil && entity.lockUntil > Date.now()) {
       throw new ApiError(429, "Account locked. Try again later.");
     }
+
+    // Telegram authentication cryptographically proves identity - auto-verify without OTP
     if (!entity.isVerified) {
-      throw new ApiError(400, "Account not verified. Please verify with OTP first.");
+      entity.isVerified = true;
+    }
+    if (!entity.telegramUserId) {
+      entity.telegramUserId = String(fields.id);
+    }
+    if (!entity.telegramChatId) {
+      entity.telegramChatId = String(fields.id);
+    }
+    if (fields.photo_url && (!entity.profileImage || entity.profileImage === "default.jpg")) {
+      entity.profileImage = fields.photo_url;
     }
 
     const tokens = this.generateTokens(entity);

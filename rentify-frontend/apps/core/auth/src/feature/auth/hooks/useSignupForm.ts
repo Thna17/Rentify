@@ -11,13 +11,15 @@ import {
   useResendOtpMutation,
   useLazyCheckTelegramLinkQuery,
   useLazyCheckTelegramLinkCustomerQuery,
+  useLoginWithTelegramMutation,
+  useGetTelegramLoginConfigQuery,
 } from '@rentify/apis';
 import {
   sanitizePhoneNumber,
   formatCambodianPhone,
   validateCambodianPhone,
 } from '../utils/phoneUtils';
-import { useAuthConfig } from '../utils/authUtils';
+import { useAuthConfig, loadTelegramWidget, requestTelegramAuth } from '../utils/authUtils';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
 export const useSignupForm = () => {
@@ -265,6 +267,31 @@ export const useSignupForm = () => {
     }
   };
 
+  const [loginWithTelegramMutation] = useLoginWithTelegramMutation();
+  const { data: telegramConfig } = useGetTelegramLoginConfigQuery();
+  const telegramEnabled = Boolean(telegramConfig?.enabled);
+
+  useEffect(() => {
+    loadTelegramWidget().catch(() => {});
+  }, []);
+
+  const handleTelegramLogin = async () => {
+    if (!telegramConfig?.botId) return;
+    setError('');
+    setSuccess('');
+
+    try {
+      const authData = await requestTelegramAuth(telegramConfig.botId);
+      if (!authData) return;
+      await loginWithTelegramMutation(authData).unwrap();
+      const destination = resolvePostSignupRedirect();
+      setSuccess('login.success');
+      window.location.assign(destination);
+    } catch (err: any) {
+      setError('error.telegramLogin');
+    }
+  };
+
   return {
     step,
     setStep,
@@ -285,6 +312,8 @@ export const useSignupForm = () => {
     handleResendOtp,
     handleVerifyOtp,
     checkTelegramLink,
+    handleTelegramLogin,
+    telegramEnabled,
     formatCambodianPhone,
     validateCambodianPhone,
     isWebsiteTemplate,

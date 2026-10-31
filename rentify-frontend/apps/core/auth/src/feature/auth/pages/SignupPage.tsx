@@ -76,6 +76,8 @@ function SignupPage() {
     handleResendOtp,
     handleVerifyOtp,
     checkTelegramLink,
+    handleTelegramLogin,
+    telegramEnabled,
     validateCambodianPhone,
     isWebsiteTemplate,
     isMarketplace,
@@ -275,7 +277,40 @@ function SignupPage() {
             )}
 
             {step === 'signup' && (
-              <Form {...form}>
+              <>
+                {telegramEnabled && (
+                  <Button
+                    type="button"
+                    onClick={handleTelegramLogin}
+                    disabled={loading}
+                    variant="outline"
+                    className="mb-6 inline-flex h-12 w-full items-center justify-center rounded-xl !border-slate-300 !bg-white !text-slate-700 transition-all duration-200 hover:!border-slate-400 hover:!bg-slate-50 hover:!text-slate-900"
+                  >
+                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" aria-hidden>
+                      <circle cx="12" cy="12" r="12" fill="#229ED9" />
+                      <path
+                        fill="#fff"
+                        d="M5.4 11.8l11.6-4.5c.54-.2 1 .13.83.94l-2 9.3c-.14.66-.54.82-1.1.51l-3-2.2-1.45 1.4c-.16.16-.3.3-.6.3l.21-3.05 5.56-5.02c.24-.21-.05-.33-.38-.12l-6.87 4.33-2.96-.92c-.64-.2-.66-.64.14-.95z"
+                      />
+                    </svg>
+                    {t('login.continueTelegram')}
+                  </Button>
+                )}
+
+                {telegramEnabled && (
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-3 bg-white text-slate-600 font-medium">
+                        {t('login.orContinueWith')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-5"
@@ -567,6 +602,7 @@ function SignupPage() {
                   </div>
                 </form>
               </Form>
+              </>
             )}
 
             {step === 'link' && (

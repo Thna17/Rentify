@@ -23,11 +23,25 @@ export const getSafeReturnUrl = (
 ) => {
   if (!candidate) return fallback;
   try {
-    const parsed = new URL(candidate);
-    const hosted = HOSTED_STOREFRONT_BUYER_ENABLED && parsed.protocol === 'https:' &&
-      parsed.port === '' && !parsed.username && !parsed.password &&
+    const candidateWithProtocol =
+      candidate.startsWith('http://') || candidate.startsWith('https://') || candidate.startsWith('/')
+        ? candidate
+        : `https://${candidate}`;
+
+    if (candidateWithProtocol.startsWith('/') && !candidateWithProtocol.startsWith('//')) {
+      return candidateWithProtocol;
+    }
+
+    const parsed = new URL(candidateWithProtocol);
+    const authOrigin = new URL(AUTH_URL).origin;
+    if (parsed.origin === authOrigin) return fallback;
+
+    const hosted = HOSTED_STOREFRONT_BUYER_ENABLED &&
+      (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
+      !parsed.username && !parsed.password &&
       parsed.hostname.endsWith(`.${HOSTED_STOREFRONT_DOMAIN}`) &&
       /^[a-z0-9-]+$/.test(parsed.hostname.slice(0, -(HOSTED_STOREFRONT_DOMAIN.length + 1)));
+
     return allowedOrigins().has(parsed.origin) || hosted ? parsed.toString() : fallback;
   } catch {
     return fallback;
