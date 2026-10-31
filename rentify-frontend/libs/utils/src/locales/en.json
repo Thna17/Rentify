@@ -2102,6 +2102,176 @@
       "posIntroFirstTime": "The first time, you enter your opening cash and create a PIN.",
       "posIntroOpen": "Open register",
       "posIntroLater": "Not now"
+    },
+    "common": {
+      "retry": "Try again",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "back": "Back"
+    },
+    "orders": {
+      "title": "Orders",
+      "subtitle": "Every order from the marketplace, your online store, POS and invoices.",
+      "export": "Export",
+      "newOrder": "New order",
+      "search": "Search order number, buyer name or phone",
+      "channelFilter": "Sales channel",
+      "workTabs": "Order status",
+      "loading": "Loading orders",
+      "loadError": "We couldn't load your orders",
+      "loadErrorBody": "Check your connection and try again.",
+      "emptyBody": "Orders appear here as soon as buyers place them.",
+      "buyerUnknown": "Buyer",
+      "items": "{{count}} items",
+      "channels": {
+        "all": "All",
+        "marketplace": "Marketplace",
+        "storefront": "Online store",
+        "pos": "POS",
+        "invoice": "Invoice"
+      },
+      "tabs": {
+        "deliver": "To deliver",
+        "cash": "Cash to collect",
+        "waiting": "Waiting for payment",
+        "problems": "Problems",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      },
+      "empty": {
+        "deliver": "Nothing to deliver right now",
+        "cash": "No cash waiting to be collected",
+        "waiting": "No orders waiting for payment",
+        "problems": "No problems to answer",
+        "done": "No finished orders yet",
+        "cancelled": "No cancelled orders"
+      },
+      "columns": {
+        "order": "Order",
+        "buyer": "Buyer",
+        "channel": "Channel",
+        "payment": "Payment",
+        "total": "Total",
+        "action": "Next step"
+      },
+      "payment": {
+        "cod_due": "Cash on delivery",
+        "cod_collected": "Cash collected",
+        "cod_refunded": "Refunded",
+        "online_paid": "Paid · KHQR",
+        "online_waiting": "Waiting for KHQR payment",
+        "online_failed": "KHQR payment failed",
+        "cash_paid": "Paid in cash",
+        "paid": "Paid",
+        "unpaid": "Not paid yet",
+        "none": "No payment recorded"
+      },
+      "paymentDetail": {
+        "cod_due": "The buyer pays {{amount}} in cash when the order arrives.",
+        "cod_collected": "You collected {{amount}} in cash.",
+        "cod_refunded": "Money was returned to the buyer.",
+        "online_paid": "The buyer paid {{amount}} by KHQR, confirmed through CutLuy. Nothing to collect.",
+        "online_waiting": "The buyer hasn't paid by KHQR yet. Don't send the order until it says Paid.",
+        "online_failed": "The KHQR payment didn't go through. Nothing was collected.",
+        "cash_paid": "Paid {{amount}} in cash at the counter.",
+        "paid": "Paid {{amount}}.",
+        "unpaid": "{{amount}} is not paid yet.",
+        "none": "No payment is recorded for this order."
+      },
+      "next": {
+        "deliver": "Deliver the order, then mark it delivered.",
+        "cash": "Collect {{amount}} from the buyer, then record it.",
+        "waiting": "Wait for the payment before you send anything.",
+        "problems": "Something needs your answer. Read the report below.",
+        "failed": "Delivery failed: {{reason}}. Retry when the buyer agrees.",
+        "done": "Nothing left to do.",
+        "cancelled": "This order was cancelled."
+      },
+      "actions": {
+        "markDelivered": "Mark delivered",
+        "recordCash": "Record cash",
+        "recordCashAmount": "Record {{amount}} cash",
+        "deliveryProblem": "Delivery problem",
+        "retryDelivery": "Deliver again",
+        "recordRefund": "Record a refund",
+        "view": "View"
+      },
+      "done": {
+        "delivered": "Marked as delivered",
+        "cashRecorded": "Cash recorded. The order is paid.",
+        "failed": "Delivery problem recorded",
+        "retry": "Delivery restarted",
+        "refund": "Refund recorded"
+      },
+      "errors": {
+        "changed": "This order changed. We loaded the latest version — check it and try again.",
+        "notAllowed": "You don't have permission to change orders.",
+        "generic": "We couldn't update the order. Try again."
+      },
+      "cash": {
+        "title": "Record cash collected",
+        "body": "Only record cash you have in hand. The buyer is told the order is paid.",
+        "record": "Record {{amount}}",
+        "notYet": "Not yet"
+      },
+      "failed": {
+        "title": "Delivery problem",
+        "body": "Tell the buyer what happened. This can't be used after you collect cash.",
+        "reason": "What happened?",
+        "next": "What next?",
+        "retry": "Try again later",
+        "retryBody": "Keep the order and deliver again when the buyer agrees.",
+        "cancel": "Cancel the order",
+        "cancelBody": "The order is cancelled and its stock goes back on sale.",
+        "submit": "Record problem",
+        "submitCancel": "Cancel order"
+      },
+      "retry": {
+        "title": "Deliver again",
+        "body": "Only restart delivery after the buyer agrees to receive it.",
+        "agreed": "The buyer agreed to another delivery"
+      },
+      "refund": {
+        "title": "Record a refund",
+        "body": "Record money you already gave back to the buyer, up to {{max}}.",
+        "amount": "Amount (USD)",
+        "method": "How you paid it back",
+        "confirmation": "Receipt or reference",
+        "submit": "Record refund"
+      },
+      "detail": {
+        "title": "Order",
+        "missing": "We can't find this order",
+        "missingBody": "It may belong to another store, or the link is wrong.",
+        "placed": "Placed {{date}}",
+        "payment": "Payment",
+        "noRefunds": "Paid orders can't be refunded in Rentify yet, so they can't be cancelled here.",
+        "getHelp": "Get help",
+        "next": "What happens next",
+        "buyer": "Buyer",
+        "call": "Call",
+        "items": "Items",
+        "deliveryFee": "Delivery fee",
+        "total": "Total",
+        "reports": "Buyer reports",
+        "history": "History"
+      },
+      "events": {
+        "order_created": "Order placed",
+        "delivered": "Delivered",
+        "delivery_failed": "Delivery failed",
+        "retry_delivery": "Delivery restarted",
+        "collect_cod": "Cash collected",
+        "confirm_refund": "Refund recorded",
+        "return_requested": "Return requested",
+        "complaint": "Buyer complaint",
+        "merchant_report": "Report from you",
+        "cancelled": "Cancelled",
+        "confirmed": "Confirmed",
+        "completed": "Completed"
+      },
+      "itemOne": "1 item"
     }
   }
 }
