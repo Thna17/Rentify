@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Globe, Palette, RefreshCw, Store } from 'lucide-react';
-import { useGetWebsiteQuery } from '@rentify/apis';
+import { useGetWebsiteQuery, useSwitchTemplateMutation, useSaveStorefrontContentMutation } from '@rentify/apis';
 import { useGetTemplatesQuery } from '@rentify/apis/apis/websiteTemplateApi';
 import { useCheckDeploymentStatusQuery } from '@rentify/apis/apis/deploymentApi';
 import { serializeLayout, TEMPLATE_SECTIONS } from '@rentify/storefront/preview';
@@ -64,6 +64,9 @@ export default function StoreDesign() {
   const { t } = useTranslation();
   const website = useGetWebsiteQuery();
   const websiteId = website.data?.id;
+  const [switchTemplate, switchState] = useSwitchTemplateMutation();
+  const [saveContent, saveState] = useSaveStorefrontContentMutation();
+  const [message, setMessage] = useState('');
   const currentId = Number(website.data?.websiteTemplateId) || null;
   const deployment = useCheckDeploymentStatusQuery({ websiteId }, { skip: !websiteId });
   const templatesQuery = useGetTemplatesQuery(undefined, { skip: !websiteId });
@@ -84,7 +87,24 @@ export default function StoreDesign() {
   }, [currentId, previewId]);
 
   const activeId = previewId || currentId;
-  const draft = useLayoutDraft(websiteId, activeId);
+  const savedLayouts = website.data?.WebsiteContents?.find((item) => item.label === 'Page Layout')?.value || {};
+  const draft = useLayoutDraft(websiteId, activeId, savedLayouts[activeId]);
+  const saveLayout = async () => {
+    setMessage('');
+    try {
+      await saveContent({ websiteId, fields: { 'Page Layout': { [activeId]: serializeLayout(draft.layout) } } }).unwrap();
+      try { localStorage.removeItem(`rentify.storeDesign.layout.${websiteId}.${activeId}`); } catch { /* storage may be unavailable */ }
+      setMessage(t('merchant.storeDesign.saved'));
+    }
+    catch { setMessage(t('merchant.storeDesign.saveError')); }
+  };
+  const applyTemplate = async (id) => {
+    const template = templates.find((item) => item.websiteTemplateId === id);
+    if (!template) return;
+    setMessage('');
+    try { await switchTemplate({ websiteId, templateId: template.id }).unwrap(); setMessage(t('merchant.storeDesign.saved')); }
+    catch { setMessage(t('merchant.storeDesign.saveError')); }
+  };
   const previewed = templates.find((template) => template.websiteTemplateId === activeId);
   const previewedLabel = previewed ? templateName(previewed) : '';
 
@@ -180,8 +200,8 @@ export default function StoreDesign() {
               currentId={currentId}
               previewId={activeId}
               onPreview={setPreviewId}
-              // Core has no template-switch endpoint yet (docs/notes.md).
-              onApply={null}
+              onApply={applyTemplate}
+              isApplying={switchState.isLoading}
               t={t}
             />
           </TabsContent>
@@ -192,6 +212,8 @@ export default function StoreDesign() {
               onMove={draft.move}
               onToggle={draft.toggle}
               onReset={draft.reset}
+              onSave={saveLayout}
+              saving={saveState.isLoading}
               isDefault={draft.isDefault}
               t={t}
             />
@@ -205,7 +227,7 @@ export default function StoreDesign() {
   return (
     <div className="min-h-full">
       {header}
-      <div className="mx-auto max-w-[1400px] px-4 pb-10 sm:px-6 md:px-8">{body}</div>
+      <div className="mx-auto max-w-[1400px] px-4 pb-10 sm:px-6 md:px-8">{message && <p role="status">{message}</p>}{body}</div>
     </div>
   );
 }

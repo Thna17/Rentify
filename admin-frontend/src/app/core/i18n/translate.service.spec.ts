@@ -7,6 +7,7 @@ describe('I18n Translation Services', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    document.cookie = 'rentify_lang=; Max-Age=0; path=/';
     TestBed.configureTestingModule({
       providers: [TranslateService],
     });
@@ -15,6 +16,7 @@ describe('I18n Translation Services', () => {
 
   afterEach(() => {
     localStorage.clear();
+    document.cookie = 'rentify_lang=; Max-Age=0; path=/';
   });
 
   it('initializes with default language en and translates English keys', () => {
@@ -28,7 +30,7 @@ describe('I18n Translation Services', () => {
     expect(service.currentLang()).toBe('km');
     expect(service.instant('support.title')).toBe('កន្លែងគ្រប់គ្រងករណីគាំទ្រ');
     expect(service.instant('common.save')).toBe('រក្សាទុក');
-    expect(localStorage.getItem('adminLanguage')).toBe('km');
+    expect(localStorage.getItem('rentify.language')).toBe('km');
   });
 
   it('falls back to key or English when key is missing or invalid', () => {

@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { normalizeLayout, previewTemplateId, serializeLayout, TEMPLATE_SECTIONS } from '@rentify/storefront/preview';
+import { renderHook } from '@testing-library/react';
+import { normalizeLayout, previewTemplateId, serializeLayout, TEMPLATE_SECTIONS, useSectionLayout } from '@rentify/storefront/preview';
+
+vi.mock('@rentify/storefront/website', () => ({
+  useStorefrontWebsite: () => ({ content: [{ label: 'Page Layout', value: { 1: 'newArrivals,-categories,categoryRows' } }] }),
+}));
 
 describe('home section layout', () => {
   test('keeps known sections in the given order and appends the rest visible', () => {
@@ -32,6 +37,13 @@ describe('template preview override', () => {
   test('is ignored outside a frame', () => {
     window.history.replaceState(null, '', '/?previewTemplate=3');
     expect(previewTemplateId()).toBeNull();
+  });
+
+  test('an unframed shopper sees saved layout and ignores preview parameters', () => {
+    window.history.replaceState(null, '', '/?previewLayout=categories');
+    const { result } = renderHook(() => useSectionLayout(1));
+    expect(result.current('categories')).toBeNull();
+    expect(result.current('newArrivals')).toEqual({ order: 1 });
   });
 
   test('applies only known templates while framed', () => {

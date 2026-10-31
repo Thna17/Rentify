@@ -6,6 +6,7 @@ describe('TranslateService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    document.cookie = 'rentify_lang=; Max-Age=0; path=/';
     TestBed.configureTestingModule({
       providers: [TranslateService],
     });
@@ -14,6 +15,7 @@ describe('TranslateService', () => {
 
   afterEach(() => {
     localStorage.clear();
+    document.cookie = 'rentify_lang=; Max-Age=0; path=/';
   });
 
   it('defaults to English language', () => {
@@ -42,6 +44,6 @@ describe('TranslateService', () => {
 
   it('persists language selection in localStorage', () => {
     service.setLanguage('km');
-    expect(localStorage.getItem('appLanguage')).toBe('km');
+    expect(localStorage.getItem('rentify.language')).toBe('km');
   });
 });

@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, test } from 'vitest';
-import { findBoundaryViolations, TEMPLATE_3_ENTRY } from '../../../../../../tools/storefront-boundary.mjs';
+import { createRequire } from 'node:module';
+const { findBoundaryViolations, TEMPLATE_3_ENTRY } = createRequire(import.meta.url)('../../../../../../tools/storefront-boundary.mjs');
 
 describe('Template 3 storefront boundary', () => {
   const { graph, violations } = findBoundaryViolations(TEMPLATE_3_ENTRY);

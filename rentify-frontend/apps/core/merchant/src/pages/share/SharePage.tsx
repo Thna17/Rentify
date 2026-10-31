@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@rentify/shared/ui/car
 import { toast } from 'sonner';
 import { useChannels } from '../../context/ChannelContext';
 import { marketplaceStoreUrl, storefrontUrl } from '../../utils/storeLinks';
-import qrcode from 'qrcode-generator';
+import qrcode from 'qrcode-generator/dist/qrcode.js';
 
 export const SharePage: React.FC = () => {
   const { t } = useTranslation();

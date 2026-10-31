@@ -65,6 +65,7 @@ describe('Orders Component (P4-BUY-004 Order list and filters)', () => {
   ];
 
   const mockRentifyService = {
+    myStore: vi.fn().mockReturnValue(of({ store: null })),
     orders: vi.fn().mockReturnValue(of({ orders: mockOrdersList })),
     report: vi.fn().mockReturnValue(of({ event: { id: 'rep-c', type: 'complaint' } })),
   };

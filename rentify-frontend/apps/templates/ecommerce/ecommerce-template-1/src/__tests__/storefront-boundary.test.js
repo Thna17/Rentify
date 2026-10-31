@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
-import { findBoundaryViolations, TEMPLATE_1_ENTRY } from '../../../../../../tools/storefront-boundary.mjs';
+import { createRequire } from 'node:module';
+const { findBoundaryViolations, TEMPLATE_1_ENTRY } = createRequire(import.meta.url)('../../../../../../tools/storefront-boundary.mjs');
 
 describe('Template 1 storefront boundary', () => {
   const { graph, violations } = findBoundaryViolations(TEMPLATE_1_ENTRY);

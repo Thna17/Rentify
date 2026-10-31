@@ -151,11 +151,13 @@ test('concurrent website submission returns the committed Website after a unique
 test('new and updated website statuses use Commerce-supported values', async (t) => {
   const posted = [];
   const updated = [];
+  let outbox = null;
+  t.mock.method(WebsiteSyncOutbox.sequelize, 'transaction', async (fn) => fn({ LOCK: { UPDATE: 'UPDATE' } }));
   t.mock.method(ecommerceSyncService.apiClient, 'post', async (_path, payload) => posted.push(payload));
   t.mock.method(ecommerceSyncService.apiClient, 'put', async (_path, payload) => updated.push(payload));
   t.mock.method(WebsiteSyncOutbox, 'update', async () => [1]);
-  t.mock.method(WebsiteSyncOutbox, 'findByPk', async () => null);
-  t.mock.method(WebsiteSyncOutbox, 'create', async (data) => ({ payload: data.payload }));
+  t.mock.method(WebsiteSyncOutbox, 'findByPk', async () => outbox);
+  t.mock.method(WebsiteSyncOutbox, 'create', async (data) => { outbox = { ...data, status: 'pending' }; return outbox; });
   await ecommerceSyncService.syncWebsiteData({
     id: 'website-1',
     _ecommerceData: { websiteId: 'website-1', status: 'customization' },
@@ -185,7 +187,8 @@ test('failed deployment status sync keeps the updated status queued for retry', 
     async increment() { this.attempts = (this.attempts || 0) + 1; },
   };
   t.mock.method(WebsiteSyncOutbox, 'findByPk', async () => outbox);
-  t.mock.method(ecommerceSyncService.apiClient, 'post', async () => { throw new Error('Commerce unavailable'); });
+  t.mock.method(WebsiteSyncOutbox.sequelize, 'transaction', async (fn) => fn({ LOCK: { UPDATE: 'UPDATE' } }));
+  t.mock.method(ecommerceSyncService.apiClient, 'put', async () => { throw new Error('Commerce unavailable'); });
   t.mock.method(WebsiteSyncOutbox, 'increment', async () => {});
   t.mock.method(WebsiteSyncOutbox, 'update', async () => [1]);
   await assert.rejects(
@@ -195,6 +198,38 @@ test('failed deployment status sync keeps the updated status queued for retry', 
   assert.equal(outbox.status, 'pending');
   assert.equal(outbox.payload.status, 'active');
   assert.equal(outbox.payload.domain, 'shop.rentify.test');
+});
+
+test('status change preserves a pending template update and sends both fields', async (t) => {
+  const row = { status: 'pending', payload: { _syncType: 'template', websiteTemplateId: 2 },
+    async update(values) { Object.assign(this, values); } };
+  const locks = [];
+  t.mock.method(WebsiteSyncOutbox.sequelize, 'transaction', async (fn) => fn({ LOCK: { UPDATE: 'UPDATE' } }));
+  t.mock.method(WebsiteSyncOutbox, 'findByPk', async (_id, options) => { locks.push(options.lock); return row; });
+  t.mock.method(WebsiteSyncOutbox, 'update', async () => [1]);
+  let sent;
+  t.mock.method(ecommerceSyncService.apiClient, 'put', async (_path, payload) => { sent = payload; });
+  await ecommerceSyncService.updateWebsiteStatus('website-1', 'active');
+  assert.deepEqual(sent, { status: 'active', websiteTemplateId: 2 });
+  assert.deepEqual(locks, ['UPDATE', 'UPDATE']);
+});
+
+test('a sync worker reads the latest payload under the outbox row lock', async (t) => {
+  const row = { status: 'pending', payload: { _syncType: 'template', websiteTemplateId: 3 } };
+  const transaction = { LOCK: { UPDATE: 'UPDATE' } };
+  t.mock.method(WebsiteSyncOutbox.sequelize, 'transaction', async (fn) => fn(transaction));
+  t.mock.method(WebsiteSyncOutbox, 'findByPk', async (_id, options) => {
+    assert.equal(options.lock, 'UPDATE');
+    return row;
+  });
+  let sent;
+  t.mock.method(ecommerceSyncService.apiClient, 'put', async (_path, payload) => { sent = payload; });
+  t.mock.method(WebsiteSyncOutbox, 'update', async (_values, options) => {
+    assert.equal(options.transaction, transaction);
+    return [1];
+  });
+  assert.equal(await ecommerceSyncService.retryWebsiteSync('website-1'), true);
+  assert.deepEqual(sent, { websiteTemplateId: 3 });
 });
 
 test('a failed publish attempt is recorded in Core, then Commerce', async (t) => {

@@ -215,7 +215,7 @@ describe('CartService', () => {
 
     const added = await service.add(oosProduct, 1);
     expect(added).toBe(false);
-    expect(service.error()).toBe('This product is out of stock.');
+    expect(service.error()).toBe('cart.productOutOfStock');
     expect(service.lines().length).toBe(0);
   });
 

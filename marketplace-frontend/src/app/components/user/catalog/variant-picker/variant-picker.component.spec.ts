@@ -41,6 +41,11 @@ describe('VariantPickerComponent', () => {
         status: 'active',
       },
       {
+        id: 'var-green-s', productId: 'prod-scarf', sku: 'SILK-SCARF-GRN-S',
+        price: 46.0, stockQuantity: 4, isDefault: false,
+        optionValues: { Color: 'Green', Size: 'S' }, status: 'active',
+      },
+      {
         id: 'var-blue-m',
         productId: 'prod-scarf',
         sku: 'SILK-SCARF-BLU-M',
@@ -74,12 +79,11 @@ describe('VariantPickerComponent', () => {
     let emittedSku = '';
     component.skuChange.subscribe((sku) => (emittedSku = sku));
 
-    component.selectOption('Color', 'Blue');
-    component.selectOption('Size', 'M');
+    component.selectOption('Color', 'Green');
     fixture.detectChanges();
 
-    expect(component.currentSku()).toBe('SILK-SCARF-BLU-M');
-    expect(emittedSku).toBe('SILK-SCARF-BLU-M');
+    expect(component.currentSku()).toBe('SILK-SCARF-GRN-S');
+    expect(emittedSku).toBe('SILK-SCARF-GRN-S');
   });
 
   it('detects out-of-stock combinations accurately', () => {

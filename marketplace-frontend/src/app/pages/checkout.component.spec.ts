@@ -152,6 +152,7 @@ describe('CheckoutComponent (P4-BUY-003 COD Checkout)', () => {
   };
 
   const mockRentifyService = {
+    myStore: vi.fn().mockReturnValue(of({ store: null })),
     checkout: vi.fn().mockReturnValue(
       of({
         order: {

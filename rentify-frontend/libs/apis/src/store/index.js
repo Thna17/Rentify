@@ -115,6 +115,8 @@ export {
   useUpdateWebsiteContentMutation,
   useCreateWebsiteMutation,
   useUpdateWebsiteMutation,
+  useSwitchTemplateMutation,
+  useSaveStorefrontContentMutation,
   useUploadImageMutation,
 } from './apis/websiteApi';
 

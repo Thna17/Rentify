@@ -298,16 +298,15 @@ into `platform-architecture.md` and remove stale notes.
    merchant setup guide shows this case honestly as "Add a product code (SKU)"
    with a link to Products, not as "Add your first product".
 
-- (Open, 2026-10-31) Storefront template switch and page layout. The merchant
+- (Resolved in this branch, 2026-10-31) Storefront template switch and page layout. The merchant
    **Store design** page (`/customization`, merchant app
    `pages/store-design/`) previews the merchant's live store in every template
    at desktop and 360px width, and lets them show, hide and reorder home-page
-   sections. Two Core contracts are missing, so "Use this template" and
-   "Save layout" are shown disabled with a reason:
-   1. **Switch template.** `Website.templateId` is set only at creation. The
-      `updateWebsite` hook in `@rentify/apis` points at
-      `PATCH /api/websites/:templateId/:userId`, which Core does not route.
-      Proposal: `PUT /api/websites/:websiteId/template { templateId }`
+   sections. The following Core contracts support "Use this template" and
+   "Save layout":
+   1. **Switch template.** Previously `Website.templateId` was set only at
+      creation and the old `updateWebsite` hook pointed at an unrouted PATCH.
+      Implemented: `PUT /api/websites/:websiteId/template { templateId }`
       (owner only; `templateId` must be a `WebsiteTemplate` the storefront
       serves, `websiteTemplateId` 1–4) → `{ websiteTemplateId }`; updates
       `Website.templateId`, syncs Commerce, clears the website cache. It must
@@ -315,16 +314,19 @@ into `platform-architecture.md` and remove stale notes.
       links, categories, products and the theme stay as they are. Content
       labels that only one template reads (for example `Menu Title`) are kept
       and simply unused by the others.
-   2. **Save page layout.** No field stores section order or visibility.
-      Proposal: a `Page Layout` entry in `storefrontContentFields.js`, value
+   2. **Save page layout.** Previously no field stored section order or visibility.
+      Implemented: a `Page Layout` entry in `storefrontContentFields.js`, value
       `{ [websiteTemplateId]: "categories,-newArrivals,..." }` (comma list of
       section ids from `TEMPLATE_SECTIONS` in `libs/storefront/src/preview.jsx`;
       `-` hides a section; the hero is always first), saved through the
       existing `PUT /api/websites/:websiteId/storefront-content`. Templates
-      already read layout through `useSectionLayout`; once the field exists it
-      becomes the source outside the preview.
-   Until then the layout draft is kept in the merchant's browser only, and
-   shoppers always see each template's default order.
+      read the saved layout through `useSectionLayout` outside the preview.
+   Saved layouts are stored per template; the storefront uses the saved
+   layout outside framed previews. Focused validation and controller tests
+   cover the supported IDs, section rules and content preservation. A local
+   browser rehearsal switched a template and saved a reordered layout; it
+   used a stub for the unrelated merchant profile endpoint because the local
+   database schema was behind the branch.
    Preview mechanics: the storefront honours `?previewTemplate=` and
    `?previewLayout=` (plus a `rentify:storefront-preview` postMessage) only
    while framed; they change the look of that page view, never saved data.

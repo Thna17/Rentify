@@ -1,36 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { normalizeLayout } from '@rentify/storefront/preview';
 
-const storageKey = (websiteId, templateId) => `rentify.storeDesign.layout.${websiteId}.${templateId}`;
-
-const readDraft = (websiteId, templateId) => {
-  try {
-    const saved = window.localStorage.getItem(storageKey(websiteId, templateId));
-    return normalizeLayout(templateId, saved ? JSON.parse(saved) : null);
-  } catch {
-    return normalizeLayout(templateId, null);
-  }
-};
-
-/**
- * The merchant's home-page layout draft for one template. Core has no saved
- * layout field yet, so the draft lives on this device only (docs/notes.md).
- */
-export function useLayoutDraft(websiteId, templateId) {
-  const [layout, setLayout] = useState(() => readDraft(websiteId, templateId));
+export function useLayoutDraft(websiteId, templateId, savedLayout) {
+  const [layout, setLayout] = useState(() => normalizeLayout(templateId, savedLayout));
 
   useEffect(() => {
-    setLayout(readDraft(websiteId, templateId));
-  }, [websiteId, templateId]);
+    setLayout(normalizeLayout(templateId, savedLayout));
+  }, [websiteId, templateId, savedLayout]);
 
   const update = useCallback(
     (next) => {
       setLayout(next);
-      try {
-        window.localStorage.setItem(storageKey(websiteId, templateId), JSON.stringify(next));
-      } catch {
-        // The preview still updates; the draft just isn't kept for next time.
-      }
     },
     [websiteId, templateId]
   );

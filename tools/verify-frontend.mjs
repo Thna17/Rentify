@@ -27,11 +27,16 @@ for (const [name, value] of Object.entries(verificationDefaults)) {
   if (!env[name]) env[name] = value;
 }
 
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const result = spawnSync(npm, ['--prefix', 'rentify-frontend', 'run', 'verify'], {
+// Invoke npm's JavaScript entry point directly; Node 22+ cannot spawn .cmd
+// scripts without a shell on Windows.
+const npmCli = process.env.npm_execpath;
+const command = npmCli ? process.execPath : (process.platform === 'win32' ? 'npm.cmd' : 'npm');
+const args = [...(npmCli ? [npmCli] : []), '--prefix', 'rentify-frontend', 'run', 'verify'];
+const result = spawnSync(command, args, {
   cwd: new URL('..', import.meta.url),
   env,
   stdio: 'inherit',
+  shell: !npmCli && process.platform === 'win32',
 });
 
 if (result.error) throw result.error;

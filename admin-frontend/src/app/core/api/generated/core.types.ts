@@ -2477,11 +2477,8 @@ export namespace Core {
         };
       };
       body: {
-        fields: Array<{
-          label: string;
-          /** Primitive string or JSON structure allowed for the label */
-          value: any;
-        }>;
+        /** Map from allowed field labels to values. Page Layout is an object keyed by template number containing section order strings. */
+        fields: Record<string, any>;
       };
       response: {
         success?: boolean;
@@ -2489,6 +2486,21 @@ export namespace Core {
           label?: string;
           value?: any;
         }>;
+      };
+    };
+    switchStorefrontTemplate: {
+      method: 'PUT';
+      path: '/api/websites/{websiteId}/template';
+      parameters: {
+        path: {
+          websiteId: string;
+        };
+      };
+      body: {
+        templateId: string;
+      };
+      response: {
+        websiteTemplateId?: number;
       };
     };
     getDashboardCurrentSubscription: {

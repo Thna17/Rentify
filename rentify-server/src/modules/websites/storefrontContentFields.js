@@ -15,6 +15,7 @@ const text = (category, max) => ({ category, type: 'text', max });
 const image = (category, options = {}) => ({ category, type: options.multiple ? 'image[]' : 'image', ...options });
 
 const STOREFRONT_CONTENT_FIELDS = Object.freeze({
+  'Page Layout': { category: 'Layout', type: 'layout' },
   Announcement: text('Header', 160),
   'Hero Eyebrow': text('Hero', 60),
   'Hero Headline': text('Hero', 120),
@@ -51,6 +52,12 @@ const STOREFRONT_CONTENT_FIELDS = Object.freeze({
 const MAX_URL_LENGTH = 2048;
 // Control characters other than tab and newline never belong in store copy.
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
+const TEMPLATE_SECTIONS = Object.freeze({
+  1: ['categories', 'newArrivals', 'categoryRows'],
+  2: ['highlights', 'categories', 'newArrivals', 'feature', 'featured', 'needs', 'story'],
+  3: ['highlights', 'signature', 'menu', 'feature', 'story', 'visit'],
+  4: ['categories', 'newArrivals', 'closing'],
+});
 
 const safeImageUrl = (value, storeId) => {
   if (typeof value !== 'string') return null;
@@ -89,6 +96,18 @@ const validateStorefrontContent = (fields, storeId) => {
       continue;
     }
 
+    if (spec.type === 'layout') {
+      const validObject = raw && typeof raw === 'object' && !Array.isArray(raw);
+      const valid = validObject && Object.entries(raw).every(([id, layout]) => {
+        if (!Object.hasOwn(TEMPLATE_SECTIONS, id) || typeof layout !== 'string' || layout.length > 1000) return false;
+        const parts = layout === '' ? [] : layout.split(',');
+        const names = parts.map((part) => part.startsWith('-') ? part.slice(1) : part);
+        return names.every((name) => TEMPLATE_SECTIONS[id].includes(name)) && new Set(names).size === names.length;
+      });
+      if (!valid) { errors.push({ label, message: 'Invalid page layout' }); continue; }
+      values.push({ label, category: spec.category, type: spec.type, value: raw });
+      continue;
+    }
     if (spec.type === 'text') {
       if (typeof raw !== 'string') {
         errors.push({ label, message: 'Must be text' });
@@ -128,4 +147,4 @@ const validateStorefrontContent = (fields, storeId) => {
   return { values, errors };
 };
 
-module.exports = { STOREFRONT_CONTENT_FIELDS, validateStorefrontContent };
+module.exports = { STOREFRONT_CONTENT_FIELDS, validateStorefrontContent, TEMPLATE_SECTIONS };

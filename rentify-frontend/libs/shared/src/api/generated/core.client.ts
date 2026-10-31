@@ -3753,11 +3753,8 @@ export class CoreApiClient {
       websiteId: string;
     };
     body: {
-      fields: Array<{
-        label: string;
-        /** Primitive string or JSON structure allowed for the label */
-        value: any;
-      }>;
+      /** Map from allowed field labels to values. Page Layout is an object keyed by template number containing section order strings. */
+      fields: Record<string, any>;
     };
     headers?: Record<string, string>;
     correlationId?: string;
@@ -3778,6 +3775,36 @@ export class CoreApiClient {
     }>({
       method: 'PUT',
       path: '/api/websites/{websiteId}/storefront-content',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Switch a website to a supported storefront template
+   * PUT /api/websites/{websiteId}/template
+   */
+  async switchStorefrontTemplate(options: {
+    path: {
+      websiteId: string;
+    };
+    body: {
+      templateId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      websiteTemplateId?: number;
+    }>> {
+    return this.transport.request<{
+      websiteTemplateId?: number;
+    }>({
+      method: 'PUT',
+      path: '/api/websites/{websiteId}/template',
       pathParams: (options as any)?.path,
       body: (options as any)?.body,
       headers: options?.headers,

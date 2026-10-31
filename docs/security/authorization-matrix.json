@@ -1758,6 +1758,33 @@
       "remediationPackage": null
     },
     {
+      "operationId": "switchStorefrontTemplate",
+      "service": "core",
+      "method": "PUT",
+      "path": "/api/websites/{websiteId}/template",
+      "resource": "Websites",
+      "action": "update",
+      "summary": "Switch the storefront template",
+      "publicOrAuthenticated": "authenticated",
+      "subjectType": "user",
+      "requiredRole": "merchant",
+      "requiredStoreRelationship": "owner",
+      "optionalWebsiteOrChannelContext": null,
+      "requiredPermission": null,
+      "requiredEntitlement": null,
+      "suspendedOrRevokedBehavior": "owner guard only; no Store-status check",
+      "adminOverridePolicy": "allow",
+      "ownershipRule": "website.userId === user.id || store.merchantId === user.id",
+      "expectedDenialCode": 403,
+      "actorMatrix": {
+        "storeOwner": "allow", "permittedStaff": "deny_403", "unpermittedStaff": "deny_403",
+        "unrelatedMerchant": "deny_403", "resourceBuyer": "deny_403", "differentBuyer": "deny_403",
+        "publicUser": "deny_401", "suspendedActor": "allow", "platformAdmin": "allow",
+        "revokedSession": "deny_401", "ambiguousMultiRole": "deny_401"
+      },
+      "currentImplementationStatus": "enforced", "gapDetails": null, "remediationPackage": null
+    },
+    {
       "operationId": "updateColorPalette",
       "service": "core",
       "method": "PUT",

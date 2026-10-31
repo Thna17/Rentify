@@ -1916,6 +1916,9 @@
       }
     },
     "storeDesign": {
+      "saved": "Changes saved.",
+      "saving": "Saving…",
+      "saveError": "Could not save changes. Please try again.",
       "title": "Store design",
       "description": "Change how your online store looks. Your products, categories and store details stay the same.",
       "breadcrumbHome": "Dashboard",
@@ -1948,7 +1951,7 @@
         "theme": "Your colors and fonts"
       },
       "confirmTitle": "Switch to {name}?",
-      "confirmBody": "Only the look of your store changes. Everything listed here stays exactly as it is.",
+      "confirmBody": "Your products, logo and colours stay. Text used only by one template may not appear in another.",
       "confirmAction": "Switch template",
       "cancel": "Cancel",
       "layoutFor": "Home page layout · {name}",

@@ -50,14 +50,14 @@ test('dashboard-tabs defines the Storefront sales channel for all relevant roles
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
   // Sales channels live in the Channels section
-  const storeMgmtBlock = tabBlock(content, 'store-management');
+  const storeMgmtBlock = tabBlock(content, 'online-store');
   assert.ok(storeMgmtBlock, 'Store management block must be found');
   assert.match(storeMgmtBlock, /label:\s*['"]Online store['"]/);
   assert.match(storeMgmtBlock, /channel:\s*['"]storefront['"]/);
   assert.match(storeMgmtBlock, /section:\s*['"]channels['"]/);
 
-  // Verify roles include staff
-  assert.match(storeMgmtBlock, /'staff'/, 'Store management must allow staff role');
+  // Storefront settings are restricted to owners and admins
+  assert.match(storeMgmtBlock, /ownerOnly:\s*true/, 'Online store settings must be owner-only');
   assert.match(storeMgmtBlock, /'user'/, 'Store management must allow user role');
   assert.match(storeMgmtBlock, /'admin'/, 'Store management must allow admin role');
 });
@@ -65,13 +65,13 @@ test('dashboard-tabs defines the Storefront sales channel for all relevant roles
 test('dashboard-tabs defines Marketplace and keeps POS linked to the standalone app', () => {
   const content = fs.readFileSync(dashboardTabsPath, 'utf8');
 
-  // Verify Marketplace Orders
-  assert.match(content, /path:\s*['"]marketplace-orders['"]/);
+  // Verify the Marketplace channel
+  assert.match(content, /path:\s*['"]marketplace['"]/);
   assert.match(content, /channel:\s*['"]marketplace['"]/);
 
-  const block = tabBlock(content, 'marketplace-orders');
-  assert.ok(block, 'marketplace-orders block must be found');
-  assert.match(block, /section:\s*['"]channels['"]/, 'marketplace-orders must be in the Channels section');
+  const block = tabBlock(content, 'marketplace');
+  assert.ok(block, 'Marketplace channel block must be found');
+  assert.match(block, /section:\s*['"]channels['"]/, 'Marketplace must be in the Channels section');
 
   const posBlock = tabBlock(content, 'pos');
   assert.ok(posBlock, 'POS navigation block must be found');

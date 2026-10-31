@@ -63,7 +63,7 @@ class WebsiteController {
     });
 
     // Sync to ecommerce service (non-blocking)
-    ecommerceSyncService.syncWebsiteData(website).catch((error) => {
+    ecommerceSyncService.retryWebsiteSync(website.id).catch((error) => {
       logger.error("Ecommerce sync failed", {
         websiteId: website.id,
         error: error.message,
@@ -507,10 +507,11 @@ class WebsiteController {
       for (const field of values) {
         const existing = await WebsiteContent.findOne({
           where: { websiteId, label: field.label },
-          transaction,
+          transaction, lock: transaction?.LOCK?.UPDATE,
         });
         if (existing) {
-          await existing.update({ value: field.value }, { transaction });
+          const value = field.label === 'Page Layout' ? { ...(existing.value || {}), ...field.value } : field.value;
+          await existing.update({ value }, { transaction });
         } else {
           await WebsiteContent.create(
             { websiteId, category: field.category, label: field.label, type: field.type, value: field.value },
@@ -522,6 +523,25 @@ class WebsiteController {
     await cache.invalidateWebsiteCache(websiteId);
 
     res.json({ success: true, updated: values.map((field) => ({ label: field.label, value: field.value })) });
+  });
+
+  switchTemplate = asyncHandler(async (req, res) => {
+    const templateId = req.body?.templateId;
+    if (typeof templateId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId)) {
+      return res.status(400).json({ code: 'INVALID_STOREFRONT_TEMPLATE', error: 'Choose a supported template' });
+    }
+    const template = await WebsiteTemplate.findByPk(templateId);
+    if (!template || ![1, 2, 3, 4].includes(Number(template.websiteTemplateId))) {
+      return res.status(400).json({ code: 'INVALID_STOREFRONT_TEMPLATE', error: 'Choose a supported template' });
+    }
+    await Website.sequelize.transaction(async (transaction) => {
+      const website = await Website.findByPk(req.website.id, { transaction, lock: transaction.LOCK.UPDATE });
+      await website.update({ templateId }, { transaction });
+      await ecommerceSyncService.queueWebsiteTemplate(website.id, template.websiteTemplateId, { transaction });
+    });
+    await cache.invalidateWebsiteCache(req.website.id);
+    await ecommerceSyncService.retryWebsiteSync(req.website.id);
+    return res.json({ websiteTemplateId: Number(template.websiteTemplateId) });
   });
 
   updateWebsiteContent = asyncHandler(async (req, res) => {

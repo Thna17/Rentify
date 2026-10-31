@@ -181,7 +181,7 @@ export const InvoiceManual = () => {
 
       const invoicePayload = {
         ...invoiceData,
-        items: invoiceData.items.map((item: any) => ({
+        items: invoiceData.items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
           price: parseFloat(item.price),
@@ -214,7 +214,7 @@ export const InvoiceManual = () => {
       updateField('status', response.invoice.status);
       updateField('paymentData', response.paymentData);
       refetchInvoices();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to save invoice:', error);
       showError(
         error.data?.message ||
@@ -237,7 +237,7 @@ export const InvoiceManual = () => {
 
   // Filtered invoices by activeTab and search
   const filteredInvoices = useMemo(() => {
-    return rawInvoices.filter((inv: any) => {
+    return rawInvoices.filter((inv) => {
       const status = String(inv.status || '').toLowerCase();
       if (activeTab === 'unpaid' && status !== 'unpaid' && status !== 'pending') return false;
       if (activeTab === 'paid' && status !== 'paid') return false;
@@ -365,7 +365,7 @@ export const InvoiceManual = () => {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {filteredInvoices.map((inv: any) => {
+              {filteredInvoices.map((inv) => {
                 const invNumber = inv.invoiceNumber || `INV-${inv.id}`;
                 const customer = inv.customer?.name || inv.customerName || 'Customer';
                 const totalAmount = inv.total || inv.pricing?.total || 0;

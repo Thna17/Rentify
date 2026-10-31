@@ -301,7 +301,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
 
       if (paymentMethod === 'KHQR') {
         const { PaymentGatewayConfig } = require('../../models');
-        const { decryptSecrets } = require('../payments/paymentConfigEncryption');
+        const { decryptSecrets } = require('../payments').paymentConfigEncryption;
         const whereConditions = [];
         if (order.websiteId) whereConditions.push({ websiteId: order.websiteId, gateway: 'cutluy', enabled: true });
         if (order.storeId) whereConditions.push({ storeId: order.storeId, gateway: 'cutluy', enabled: true });

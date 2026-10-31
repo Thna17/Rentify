@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { STOREFRONT_SHELL_ENTRY, findBoundaryViolations } from '../../../../tools/storefront-boundary.mjs';
+import { createRequire } from 'node:module';
+const { STOREFRONT_SHELL_ENTRY, findBoundaryViolations } = createRequire(import.meta.url)('../../../../tools/storefront-boundary.mjs');
 
 describe('storefront app boundary', () => {
   const { graph, violations } = findBoundaryViolations(STOREFRONT_SHELL_ENTRY);
