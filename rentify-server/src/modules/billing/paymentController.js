@@ -53,6 +53,70 @@ exports.initiateKHQRPayment = async (req, res) => {
       return res.status(400).json({ error: "Choose a paid plan to pay for" });
     }
 
+    // CutLuy Subscription Flow (Preferred if enabled)
+    let cutluyConfig = null;
+    try {
+      const { getCutluyConfig } = require("../../config/cutluyConfig");
+      cutluyConfig = getCutluyConfig();
+    } catch {
+      cutluyConfig = null;
+    }
+
+    if (cutluyConfig?.enabled) {
+      const { cutluyPaymentService } = require("./index");
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      const payment = await Payment.create({
+        userId,
+        amount,
+        currency: "USD",
+        paymentMethod: "cutluy",
+        status: "pending",
+        expiresAt,
+        packageId: pkg.id,
+      });
+
+      const attemptResult = await cutluyPaymentService.createPaymentAttempt({
+        businessReference: payment.id,
+        businessType: "subscription",
+        accountType: "subscription",
+        accountRef: cutluyConfig.subscriptionAccountRef || "rentify_corp_sub_ref",
+        amount,
+        currency: "USD",
+        idempotencyKey: `sub-${payment.id}`,
+        metadata: {
+          userId,
+          packageId: pkg.id,
+        },
+      });
+
+      const attempt = attemptResult.attempt;
+      const checkoutUrl = attempt.checkoutUrl;
+      const rawQR = attempt.rawResponse?.qr_string || null;
+
+      await payment.update({
+        transactionId: attempt.providerPaymentId,
+        md5Hash: attempt.id,
+        transactionData: {
+          provider: "cutluy",
+          checkoutUrl,
+          rawQR,
+          qrCodeUrl: checkoutUrl,
+          attemptId: attempt.id,
+        },
+      });
+
+      return res.json({
+        paymentId: payment.id,
+        qrCodeUrl: checkoutUrl,
+        rawQR,
+        checkoutUrl,
+        amount,
+        expiresAt: expiresAt.toISOString(),
+        provider: "cutluy",
+      });
+    }
+
     if (usePayway()) {
       const tranId = payway.generateTranId();
       const qr = await payway.createTransaction({
@@ -178,6 +242,18 @@ exports.checkPaymentStatus = async (req, res) => {
     // Handle expired payments
     if (payment.status === "pending" && new Date() > payment.expiresAt) {
       await payment.update({ status: "expired" });
+      return res.json(payment);
+    }
+
+    // CutLuy payment verification
+    if (payment.paymentMethod === "cutluy" || payment.transactionData?.provider === "cutluy") {
+      const { PaymentAttempt } = require("../../models");
+      const attempt = await PaymentAttempt.findOne({
+        where: { businessReference: payment.id },
+      });
+      if (attempt && attempt.status === "paid" && payment.status !== "completed") {
+        await payment.update({ status: "completed" });
+      }
       return res.json(payment);
     }
 

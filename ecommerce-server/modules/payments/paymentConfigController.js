@@ -32,7 +32,7 @@ exports.updatePaymentConfig = async (req, res) => {
     }
 
     for (const [gateway, data] of Object.entries(paymentGateways)) {
-      if (!["khqr", "aba", "stripe"].includes(gateway) || !data || typeof data !== "object") {
+      if (!["khqr", "aba", "stripe", "cutluy"].includes(gateway) || !data || typeof data !== "object") {
         return res.status(400).json({ error: "Invalid payment gateway configuration" });
       }
 
@@ -84,6 +84,24 @@ exports.updatePaymentConfig = async (req, res) => {
       if (gateway === "stripe" && submittedSecrets.secretKey) {
         const stripe = require("stripe")(runtimeConfig.secretKey);
         await stripe.balance.retrieve(); // Test API key
+      }
+
+      // CutLuy Validation
+      if (gateway === "cutluy" && (submittedSecrets.apiKey || runtimeConfig.apiKey)) {
+        const keyToTest = submittedSecrets.apiKey || runtimeConfig.apiKey;
+        try {
+          const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
+          await axios.get(`${cutluyBaseUrl}/v1/payments?limit=1`, {
+            headers: {
+              Authorization: `Bearer ${keyToTest}`,
+            },
+            timeout: 8000,
+          });
+        } catch (err) {
+          if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+            return res.status(400).json({ error: "Invalid CutLuy API Key. Please verify your credentials at cutluy.com" });
+          }
+        }
       }
 
       await PaymentGatewayConfig.upsert(

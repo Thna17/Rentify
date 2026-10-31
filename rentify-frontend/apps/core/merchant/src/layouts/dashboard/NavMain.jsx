@@ -1,5 +1,6 @@
 import { useTranslation } from '@rentify/utils';
 import { ArrowUpRight, Plus } from 'lucide-react';
+import { Button } from '@rentify/shared/ui/button';
 import React from 'react';
 
 // Grouped by what a merchant is doing, not by system module
@@ -78,36 +79,36 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
               if (item.action) {
                 return (
                   <li key={item.key}>
-                    <a
-                      href={item.href}
-                      className="group flex h-10 items-center gap-2.5 rounded-xl px-3 text-[13.5px] font-medium text-primary transition-colors hover:bg-primary/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                    >
+                    <Button asChild variant="ghost" className="group h-10 w-full justify-start rounded-lg px-3 text-[13.5px] font-medium text-primary hover:bg-primary/[0.08] hover:text-primary">
+                      <a href={item.href}>
                       <span className="flex h-[22px] w-[22px] items-center justify-center rounded-lg bg-primary/10">
                         <Plus className="h-3.5 w-3.5" />
                       </span>
                       <span className="flex-1 truncate">{item.label}</span>
-                    </a>
+                      </a>
+                    </Button>
                   </li>
                 );
               }
 
               return (
                 <li key={item.path}>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => handleItemClick(item)}
                     aria-current={isActive ? 'page' : undefined}
                     title={item.hint}
-                    className={`group flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-[13.5px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                    className={`group h-10 w-full justify-start rounded-lg px-3 text-left text-[13.5px] ${
                       isActive
-                        ? 'bg-foreground text-background font-semibold shadow-sm'
-                        : 'font-medium text-foreground/70 hover:bg-muted hover:text-foreground'
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground'
+                        : 'font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                     }`}
                   >
                     {Icon && (
                       <Icon
                         className={`h-[18px] w-[18px] shrink-0 stroke-[1.8] ${
-                          isActive ? 'text-background' : 'text-foreground/50 group-hover:text-foreground'
+                          isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground'
                         }`}
                       />
                     )}
@@ -115,7 +116,7 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
                     {item.externalHref && (
                       <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-foreground/40 group-hover:text-foreground" />
                     )}
-                  </button>
+                  </Button>
                 </li>
               );
             })}

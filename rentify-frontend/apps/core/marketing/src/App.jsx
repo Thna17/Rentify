@@ -41,6 +41,7 @@ const App = () => (
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about" element={<About />} />
               {/* <Route path="/contact" element={<Contact />} /> */}
+              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/onboarding/:packageId" element={<Onboarding />} />
               <Route path="/start" element={<StartRedirect />} />
               <Route path="/templates" element={<BrowseTemplates />} />

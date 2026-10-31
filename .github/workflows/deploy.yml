@@ -1,0 +1,134 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      skip_verify:
+        description: 'Skip pre-deployment verification gate'
+        type: boolean
+        default: false
+
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify:
+    name: Pre-deployment verification
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || !inputs.skip_verify }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install server dependencies
+        run: npm ci --prefix rentify-server && npm ci --prefix ecommerce-server
+
+      - name: Verify repository policies & configuration
+        run: npm run verify:repository
+
+  deploy:
+    name: Deploy to VPS
+    needs: [verify]
+    if: always() && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ vars.VPS_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ vars.VPS_DEPLOY_PORT }}
+      DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER }}
+      DEPLOY_APP_DIR: ${{ vars.VPS_DEPLOY_APP_DIR }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          version: latest
+
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_DEPLOY_SSH_KEY }}
+
+      - name: Configure SSH known hosts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Sync source to VPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?Set repository variable VPS_DEPLOY_HOST}"
+          : "${DEPLOY_USER:?Set repository variable VPS_DEPLOY_USER}"
+          : "${DEPLOY_APP_DIR:?Set repository variable VPS_DEPLOY_APP_DIR}"
+
+          echo "Syncing branch '${GITHUB_REF_NAME}' to ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_APP_DIR}..."
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'dist' \
+            --exclude '.nx' \
+            --exclude '.angular' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude 'logs' \
+            --exclude 'uploads' \
+            --exclude 'deploy/vps/.env' \
+            --exclude 'deploy/vps/secrets.env' \
+            --exclude 'deploy/vps/cloudflared/credentials.json' \
+            -e "ssh -p ${DEPLOY_PORT:-22} -o StrictHostKeyChecking=accept-new" \
+            ./ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_APP_DIR}/"
+
+      - name: Execute deployment script on VPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Executing deploy script on VPS..."
+          ssh -p "${DEPLOY_PORT:-22}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "APP_DIR='${DEPLOY_APP_DIR}' bash -s" \
+            < scripts/ops/deploy-vps.sh
+
+      - name: Verify public API health
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Checking public Core API health..."
+          curl -fsS --retry 3 --retry-delay 5 https://rentify-api.mekhla.digital/health
+          echo ""
+          echo "Checking public Commerce API health..."
+          curl -fsS --retry 3 --retry-delay 5 https://rentify-commerce.mekhla.digital/health
+          echo ""
+          echo "Deployment of ${GITHUB_REF_NAME} verified successfully!"

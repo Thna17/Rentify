@@ -6,6 +6,7 @@
 // strict USD enforcement, account separation, and error classification.
 
 const { createHash, randomBytes } = require('node:crypto');
+const axios = require('axios');
 const { getCutluyConfig } = require('../../config/cutluyConfig');
 const { CUTLUY_ERROR_CODES, CutLuyError, mapProviderStatus } = require('./cutluyErrors');
 
@@ -190,7 +191,58 @@ class CutLuyAdapter {
     // 5. Sanitized metadata (NO secrets, NO QR payloads)
     const sanitizedMetadata = this.sanitizeMetadata(metadata);
 
-    // 6. Generate synthetic contract fixture
+    // 6. Live API execution if configured and not in synthetic/test mode
+    const config = getCutluyConfig();
+    if (!config.isSynthetic && config.apiKey) {
+      try {
+        const payload = {
+          amount: parseFloat(money.amount),
+          currency: 'USD',
+          reference_id: referenceId.trim(),
+        };
+        if (returnUrl) payload.return_url = returnUrl;
+        if (cancelUrl) payload.cancel_url = cancelUrl;
+        if (Object.keys(sanitizedMetadata).length > 0) {
+          payload.metadata = sanitizedMetadata;
+        }
+
+        const res = await axios.post(`${config.apiBaseUrl}/v1/payments`, payload, {
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        });
+
+        const liveData = res.data || {};
+        const providerPaymentId = String(liveData.id || `cutluy_pay_${Date.now()}`);
+        const checkoutUrl = liveData.checkout_url || `https://cutluy.com/pay/${providerPaymentId}`;
+        const qrString = liveData.qr_string || null;
+
+        return {
+          providerPaymentId,
+          checkoutUrl,
+          qrString,
+          status: mapProviderStatus(liveData.status || 'pending'),
+          providerStatus: liveData.status || 'pending',
+          amount: money.amount,
+          currency: 'USD',
+          referenceId: referenceId.trim(),
+          rawResponse: liveData,
+        };
+      } catch (err) {
+        const classified = this.classifyError(err);
+        const errMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+        throw new CutLuyError(
+          classified,
+          `CutLuy API payment creation failed: ${errMsg}`,
+          err.response?.status || 500,
+          { originalError: errMsg }
+        );
+      }
+    }
+
+    // 7. Generate synthetic contract fixture (fallback / test mode)
     // Note: internal accountRef is NOT sent to CutLuy
     const hash = createHash('sha256').update(`${referenceId}-${idempotencyKey}`).digest('hex').slice(0, 16);
     const providerPaymentId = `cutluy_pay_${hash}`;
@@ -255,6 +307,37 @@ class CutLuyAdapter {
         accountRef,
         rawResponse: fixtureState,
       };
+    }
+
+    // Live API query if configured and not synthetic
+    const config = getCutluyConfig();
+    if (!config.isSynthetic && config.apiKey) {
+      try {
+        const res = await axios.get(`${config.apiBaseUrl}/v1/payments/${encodeURIComponent(providerPaymentId)}`, {
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+          timeout: 10000,
+        });
+        const liveData = res.data || {};
+        return {
+          providerPaymentId,
+          status: mapProviderStatus(liveData.status || 'pending'),
+          providerStatus: liveData.status || 'pending',
+          amount: liveData.amount ? Number(liveData.amount).toFixed(2) : '0.00',
+          currency: liveData.currency || 'USD',
+          referenceId: liveData.reference_id || liveData.referenceId,
+          accountRef,
+          rawResponse: liveData,
+        };
+      } catch (err) {
+        const classified = this.classifyError(err);
+        throw new CutLuyError(
+          classified,
+          `CutLuy getPayment failed: ${err.message}`,
+          err.response?.status || 500
+        );
+      }
     }
 
     // Default synthetic response

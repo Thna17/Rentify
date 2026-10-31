@@ -1,4 +1,5 @@
 const KHQRPaymentStrategy = require("../strategies/KHQRPaymentStrategy");
+const CutLuyPaymentStrategy = require("../strategies/CutLuyPaymentStrategy");
 const CODPaymentStrategy = require("../strategies/CODPaymentStrategy");
 const ImmediatePaymentStrategy = require("../strategies/ImmediatePaymentStrategy");
 const { PAYMENT_METHODS } = require("../../../../utils/constants");
@@ -8,7 +9,9 @@ class PaymentFactory {
     const raw = String(paymentMethod || '').trim().toLowerCase();
 
     let StrategyClass;
-    if (raw === 'khqr' || raw === 'wallet' || raw === 'bakong') {
+    if (raw === 'cutluy') {
+      StrategyClass = CutLuyPaymentStrategy;
+    } else if (raw === 'khqr' || raw === 'wallet' || raw === 'bakong') {
       StrategyClass = KHQRPaymentStrategy;
     } else if (raw === 'cod') {
       StrategyClass = CODPaymentStrategy;

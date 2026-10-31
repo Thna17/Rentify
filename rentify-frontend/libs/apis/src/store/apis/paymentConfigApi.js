@@ -12,17 +12,19 @@ export const paymentConfiApi = createApi({
       query: (websiteId) => `/${websiteId}`,
     }),
     updateMerchantConfig: builder.mutation({
-      query: ({ websiteId, ...config }) => ({
+      query: ({ websiteId, paymentGateways, ...config }) => ({
         url: `/${websiteId}`,
         method: 'PUT',
-        body: {
-          paymentGateways: {
-            khqr: {
-              enabled: true,
-              ...config,
+        body: paymentGateways
+          ? { paymentGateways }
+          : {
+              paymentGateways: {
+                khqr: {
+                  enabled: true,
+                  ...config,
+                },
+              },
             },
-          },
-        },
       }),
     }),
   }),

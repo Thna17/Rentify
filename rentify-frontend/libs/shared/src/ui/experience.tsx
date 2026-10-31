@@ -3,6 +3,7 @@ import { AlertCircle, Check, ChevronDown, Clock3, Copy, ExternalLink, Minus, Plu
 import cambodiaAddresses from '../data/cambodia-addresses.json';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from './drawer';
+// @ts-expect-error qrcode-generator dist/qrcode.mjs exports named `qrcode`, but d.ts lacks named export declaration
 import { qrcode } from 'qrcode-generator';
 
 /** Consumer-facing primitives use only semantic design tokens. */

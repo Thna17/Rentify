@@ -14,8 +14,9 @@ const EMPTY_LINES = [];
 
 /** Maps a hosted checkout quote line onto the storefront cart-line shape. */
 const hostedLine = (line) => ({
-  id: line.productId,
+  id: line.variantId ? `${line.productId}:${line.variantId}` : line.productId,
   productId: line.productId,
+  variantId: line.variantId || null,
   quantity: line.quantity,
   unitPrice: line.currentPrice ?? line.unitPrice,
   selectedOptions: {},
@@ -53,33 +54,42 @@ export function useStorefrontCart() {
   const totals = useMemo(() => getCartTotals(lines), [lines]);
 
   const setHostedQuantity = useCallback(
-    (productId, quantity) => setHostedItem({ websiteId, productId, quantity }).unwrap(),
+    (productId, quantity, variantId = null) => setHostedItem({ websiteId, productId, quantity, variantId }).unwrap(),
     [setHostedItem, websiteId]
   );
 
   const addItem = useCallback(
-    async ({ productId, variantId, quantity = 1, selectedOptions = {} }) => {
+    async ({ productId, variantId = null, quantity = 1, selectedOptions = {} }) => {
       if (!hosted) {
         return addMutation({ websiteId, productId, variantId, quantity, selectedOptions }).unwrap();
       }
-      if (variantId || Object.keys(selectedOptions).length) {
-        throw { data: { error: 'Products with options are not available for this checkout yet.' } };
-      }
-      const current = lines.find((line) => line.productId === productId)?.quantity || 0;
-      return setHostedQuantity(productId, current + quantity);
+      const current =
+        lines.find((line) => line.productId === productId && (!variantId || line.variantId === variantId))?.quantity || 0;
+      return setHostedQuantity(productId, current + quantity, variantId);
     },
     [hosted, addMutation, websiteId, lines, setHostedQuantity]
   );
 
   const updateQuantity = useCallback(
-    (itemId, quantity) =>
-      hosted ? setHostedQuantity(itemId, quantity) : updateMutation({ websiteId, itemId, quantity }).unwrap(),
-    [hosted, setHostedQuantity, updateMutation, websiteId]
+    (itemId, quantity) => {
+      if (hosted) {
+        const line = lines.find((l) => l.id === itemId || l.productId === itemId);
+        return setHostedQuantity(line?.productId || itemId, quantity, line?.variantId || null);
+      }
+      return updateMutation({ websiteId, itemId, quantity }).unwrap();
+    },
+    [hosted, lines, setHostedQuantity, updateMutation, websiteId]
   );
 
   const removeItem = useCallback(
-    (itemId) => (hosted ? setHostedQuantity(itemId, 0) : removeMutation({ websiteId, itemId }).unwrap()),
-    [hosted, setHostedQuantity, removeMutation, websiteId]
+    (itemId) => {
+      if (hosted) {
+        const line = lines.find((l) => l.id === itemId || l.productId === itemId);
+        return setHostedQuantity(line?.productId || itemId, 0, line?.variantId || null);
+      }
+      return removeMutation({ websiteId, itemId }).unwrap();
+    },
+    [hosted, lines, setHostedQuantity, removeMutation, websiteId]
   );
 
   const active = hosted ? hostedQuery : standard;

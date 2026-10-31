@@ -87,6 +87,16 @@ test('the café template (Template 3) publishes like the others', async (t) => {
   assert.equal(website.status, 'active');
 });
 
+test('the Atelier template (Template 4) is supported for publication', async (t) => {
+  withHosting(t);
+  const website = fakeWebsite({ name: 'Atelier Shop', WebsiteTemplate: { websiteTemplateId: 4 } });
+  t.mock.method(Website, 'findByPk', async () => website);
+  t.mock.method(Website, 'findAll', async () => []);
+  stubSideEffects(t);
+  const result = await deploymentService.publishWebsite(website.id);
+  assert.equal(result.status, 'READY');
+});
+
 test('publishing refuses unknown templates and unconfigured hosting', async (t) => {
   withHosting(t, { domain: '' });
   t.mock.method(Website, 'findByPk', async () => fakeWebsite());

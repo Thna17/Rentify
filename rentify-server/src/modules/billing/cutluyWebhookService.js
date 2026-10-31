@@ -6,7 +6,7 @@
 
 const { randomUUID } = require('node:crypto');
 const sequelize = require('../../config/db');
-const { PaymentAttempt, ProviderEvent } = require('../../models');
+const { PaymentAttempt, ProviderEvent, Payment } = require('../../models');
 const { verifyWebhookSignature } = require('./cutluyWebhookVerifier');
 const { mapProviderStatus, CUTLUY_ERROR_CODES, CutLuyError, ATTEMPT_STATUS } = require('./cutluyErrors');
 const { cutluyAdapter } = require('./cutluyAdapter');
@@ -203,6 +203,15 @@ async function handleWebhook({
 
       if (mappedStatus === ATTEMPT_STATUS.PAID && !attempt.paidAt) {
         updates.paidAt = new Date();
+        if (Payment && attempt.businessReference) {
+          await Payment.update(
+            { status: 'completed' },
+            {
+              where: { id: attempt.businessReference },
+              transaction: tx,
+            }
+          ).catch(() => undefined);
+        }
       } else if (mappedStatus === ATTEMPT_STATUS.EXPIRED && !attempt.expiresAt) {
         updates.expiresAt = new Date();
       } else if (mappedStatus === ATTEMPT_STATUS.FAILED && !attempt.failedAt) {

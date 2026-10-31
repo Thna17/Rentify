@@ -59,7 +59,7 @@ export function StorefrontWebsiteProvider({
       resolveStorefrontTheme({
         customTheme,
         palette: selectedPalette,
-        presets: templateThemes[templateId] || templateThemes['1'] || {},
+        presets: templateThemes[templateId] || (templateId === '4' ? {} : templateThemes['1']) || {},
         fallback: fallbackTheme,
       }),
     [customTheme, selectedPalette, templateId, fallbackTheme]

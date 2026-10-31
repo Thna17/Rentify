@@ -5,7 +5,7 @@ import IdleState from './DeploymentStates/IdleState';
 import ProgressState from './DeploymentStates/ProgressState';
 import FailedState from './DeploymentStates/FailedState';
 import CompletedState from './DeploymentStates/CompletedState';
-import StepHeader from '../components/StepHeader';
+import { SectionHeading } from '../components/OnboardingFields';
 import { Rocket, RefreshCw } from 'lucide-react';
 
 const DeploymentStep = ({ data }) => {
@@ -132,19 +132,26 @@ const DeploymentStep = ({ data }) => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <StepHeader
-          icon={stateConfig.icon}
+    <div className="space-y-6">
+      {state === 'idle' && (
+        <SectionHeading
           title={stateConfig.title}
           description={stateConfig.description}
         />
-        {retryCount > 0 && (
-          <p className="text-sm text-orange-600 md:pl-16">
-            {t('onboarding.ui.retryAttempt')} {retryCount}/{maxRetries}
-          </p>
-        )}
-      </div>
+      )}
+
+      {state === 'failed' && (
+        <SectionHeading
+          title={stateConfig.title}
+          description={error || stateConfig.description}
+        />
+      )}
+
+      {retryCount > 0 && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800">
+          {t('onboarding.ui.retryAttempt')} {retryCount}/{maxRetries}
+        </p>
+      )}
 
       {renderState()}
     </div>

@@ -10,6 +10,9 @@ const router = express.Router();
 router.get("/payments/:paymentId", PaymentController.getPaymentStatus);
 router.get("/payments/:paymentId/check-status", PaymentController.checkPaymentStatus);
 
+// CutLuy Webhook for merchant store orders
+router.post("/payments/cutluy/webhook", PaymentController.handleCutluyWebhook);
+
 // Merchant/staff-only payment actions.
 router.post("/orders/:orderId/confirm-payment", verifyToken, requireOrderAccess, PaymentController.confirmPayment);
 router.post("/orders/:orderId/link", verifyToken, requireOrderAccess, PaymentController.generatePaymentLink);

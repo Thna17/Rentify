@@ -142,14 +142,47 @@ export const getApiErrorMessage = (error: unknown, fallback: string): string => 
   return message ? message.trim() : fallback;
 };
 
+/**
+ * Whether a product requires the shopper to pick options before adding to cart.
+ *
+ * Simple products carry a single default variant (`isDefault: true` or empty
+ * `optionValues`) with no selectable `ProductOptions`. They can be added
+ * straight to the cart from cards and do not require option selection.
+ */
+export const hasSelectableOptions = (product: UnknownRecord | null | undefined): boolean => {
+  if (!product) return false;
+
+  const options = Array.isArray(product.ProductOptions)
+    ? product.ProductOptions.filter((opt) => opt?.name && Array.isArray(opt.values) && opt.values.length > 0)
+    : [];
+  if (options.length > 0) return true;
+
+  const variants = Array.isArray(product.ProductVariants)
+    ? product.ProductVariants.filter((variant) => variant?.status !== 'disabled')
+    : [];
+  if (!variants.length) return false;
+
+  if (variants.length === 1) {
+    const only = variants[0];
+    const hasValues = only?.optionValues && Object.keys(only.optionValues).length > 0;
+    if (only?.isDefault && !hasValues) return false;
+    return Boolean(hasValues || !only?.isDefault);
+  }
+
+  return variants.some((v) => v?.optionValues && Object.keys(v.optionValues).length > 0) || variants.some((v) => !v?.isDefault);
+};
+
 /** Variant matching the selected option values, if any. */
 export const findVariant = (
   variants: UnknownRecord[] | null | undefined,
   selected: Record<string, string>
 ): UnknownRecord | null => {
   const list = Array.isArray(variants) ? variants.filter((variant) => variant?.status !== 'disabled') : [];
-  const keys = Object.keys(selected);
-  if (!list.length || !keys.length) return null;
+  if (!list.length) return null;
+  const keys = Object.keys(selected || {});
+  if (!keys.length) {
+    return list.find((variant) => variant?.isDefault) || list[0] || null;
+  }
   return (
     list.find((variant) => {
       const values = variant?.optionValues || {};

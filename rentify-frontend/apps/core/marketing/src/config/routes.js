@@ -9,7 +9,9 @@ export const ROUTES = {
   LOGIN: '/login',
   SIGNUP: '/signup',
   TEST: '/test',
+  START: '/start',
   ONBOARDING: '/onboarding/:planName',
+  ONBOARDING_INDEX: '/onboarding',
   PRIVACY: '/privacy-policy',
       OTP_VERIFICATION: "/verify-email",
 };
