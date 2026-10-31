@@ -56,6 +56,7 @@ describe('OrderDetailComponent (P4-BUY-004 Order History & Detail)', () => {
   ];
 
   const mockRentifyService = {
+    myStore: vi.fn().mockReturnValue(of({ store: null })),
     order: vi.fn().mockReturnValue(of({ order: mockOrder })),
     orderEvents: vi.fn().mockReturnValue(of({ events: mockEvents })),
     report: vi.fn().mockReturnValue(of({ event: { id: 'rep-1', type: 'return_requested' } })),
@@ -135,7 +136,7 @@ describe('OrderDetailComponent (P4-BUY-004 Order History & Detail)', () => {
     expect(el.textContent).toContain('ORD-2026-8888');
     expect(el.textContent).toContain('Handwoven Silk Ikat');
     expect(el.textContent).toContain('93.50');
-    expect(el.textContent).toContain('Collected (Paid)');
+    expect(el.textContent).toContain('Collected (paid)');
     expect(el.textContent).toContain('House 12, Street 240, Phnom Penh');
   });
 

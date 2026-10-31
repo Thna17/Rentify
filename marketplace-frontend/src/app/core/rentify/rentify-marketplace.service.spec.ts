@@ -118,6 +118,7 @@ describe('RentifyMarketplaceService', () => {
     expect(req.request.body).toEqual({
       storeId: 'store-1',
       expectedTotalAmount: '25.00',
+      paymentMethod: 'COD',
       customerInfo: { name: 'Buyer', phone: '+85512345678' },
       shippingInfo: { address: 'Phnom Penh' },
     });
