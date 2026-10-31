@@ -11,7 +11,7 @@ test('public Store lookup returns only approved profile fields', async (t) => {
     assert.equal(options.where.marketplaceApprovalStatus, 'approved');
     assert.equal(options.where.marketplaceEntitlement, 'pilot');
     assert.equal(options.where.needsCategoryReview, false);
-    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl']);
+    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl', 'marketplaceColor']);
     return [{ id, name: 'Public Store' }];
   });
   assert.deepEqual(await storeService.listPublicStores(`${id},${id}`), [{ id, name: 'Public Store' }]);
@@ -19,14 +19,14 @@ test('public Store lookup returns only approved profile fields', async (t) => {
   assert.deepEqual(await storeService.listPublicStores(''), []);
   t.mock.method(Store, 'findOne', async (options) => {
     assert.equal(options.where.id, id);
-    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl']);
+    assert.deepEqual(options.attributes, ['id', 'name', 'slug', 'primaryCategory', 'logoUrl', 'marketplaceColor']);
     return { id, name: 'Public Store' };
   });
   assert.deepEqual(await storeService.getPublicStore(id), { id, name: 'Public Store' });
   assert.equal(await storeService.getPublicStore('bad-id'), null);
 });
 
-test('marketplace-only Store defaults to marketplace enabled and needs approval', async (t) => {
+test('marketplace-only Store of an unverified owner stays pending', async (t) => {
   const transaction = {};
   const created = [];
   t.mock.method(Store, 'findOne', async () => null);
@@ -93,40 +93,38 @@ test('website creation reuses a marketplace-only Store', async (t) => {
   assert.equal(await storeService.ensureForWebsite({ ownerUserId: 'owner-1', businessData: { name: 'Shop', primaryCategory: 'Fashion' } }), store);
 });
 
-test('development approval requires a verified contact and reviewed category', async () => {
-  const beforeNodeEnv = process.env.NODE_ENV;
-  const beforeApproval = process.env.DEV_MARKETPLACE_AUTO_APPROVAL;
-  try {
-    process.env.NODE_ENV = 'development';
-    process.env.DEV_MARKETPLACE_AUTO_APPROVAL = 'true';
-    const store = { status: 'active', marketplaceApprovalStatus: 'pending',
-      primaryCategory: 'Fashion', needsCategoryReview: false };
-    const owner = { isVerified: true, email: 'merchant@example.com' };
-    assert.equal(storeService.eligibleForDevelopmentApproval(store, owner), true);
-    assert.equal(storeService.eligibleForDevelopmentApproval({ ...store, needsCategoryReview: true }, owner), false);
-    assert.equal(storeService.eligibleForDevelopmentApproval(store, { ...owner, isVerified: false }), false);
-    assert.equal(storeService.eligibleForDevelopmentApproval({ ...store, marketplaceApprovalStatus: 'suspended' }, owner), false);
-    process.env.NODE_ENV = 'production';
-    assert.equal(storeService.eligibleForDevelopmentApproval(store, owner), false);
-  } finally {
-    if (beforeNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = beforeNodeEnv;
-    if (beforeApproval === undefined) delete process.env.DEV_MARKETPLACE_AUTO_APPROVAL;
-    else process.env.DEV_MARKETPLACE_AUTO_APPROVAL = beforeApproval;
+test('automatic listing requires an active pending Store, a reviewed category and a verified owner', () => {
+  const store = { status: 'active', marketplaceApprovalStatus: 'pending',
+    primaryCategory: 'Fashion', needsCategoryReview: false };
+  const owner = { isVerified: true, email: 'merchant@example.com' };
+  assert.equal(storeService.eligibleForAutomaticListing(store, owner), true);
+  assert.equal(storeService.eligibleForAutomaticListing(store, { isVerified: true, phoneNumber: '+85512345678' }), true);
+  assert.equal(storeService.eligibleForAutomaticListing({ ...store, needsCategoryReview: true }, owner), false);
+  assert.equal(storeService.eligibleForAutomaticListing({ ...store, primaryCategory: null }, owner), false);
+  assert.equal(storeService.eligibleForAutomaticListing({ ...store, status: 'inactive' }, owner), false);
+  assert.equal(storeService.eligibleForAutomaticListing(store, { ...owner, isVerified: false }), false);
+  assert.equal(storeService.eligibleForAutomaticListing(store, null), false);
+  // Admin decisions are never overridden.
+  for (const status of ['suspended', 'needs_changes', 'rejected']) {
+    assert.equal(storeService.eligibleForAutomaticListing({ ...store, marketplaceApprovalStatus: status }, owner), false, status);
   }
 });
 
-test('choosing a category approves a verified pending Store and queues its projection in development', async (t) => {
+test('a new Store of a verified owner is listed automatically in any environment', async (t) => {
   const beforeNodeEnv = process.env.NODE_ENV;
-  const beforeApproval = process.env.DEV_MARKETPLACE_AUTO_APPROVAL;
-  process.env.NODE_ENV = 'development';
-  process.env.DEV_MARKETPLACE_AUTO_APPROVAL = 'true';
+  process.env.NODE_ENV = 'production';
   t.after(() => {
     if (beforeNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = beforeNodeEnv;
-    if (beforeApproval === undefined) delete process.env.DEV_MARKETPLACE_AUTO_APPROVAL;
-    else process.env.DEV_MARKETPLACE_AUTO_APPROVAL = beforeApproval;
   });
+  const created = [];
+  t.mock.method(User, 'findByPk', async () => ({ id: 'owner-1', isVerified: true, email: 'merchant@example.com' }));
+  t.mock.method(Store, 'create', async (data) => { created.push(data); return data; });
+  await storeService.createForOwner({ ownerUserId: 'owner-1', name: 'My Shop', primaryCategory: 'Fashion', transaction: {} });
+  assert.equal(created[0].marketplaceApprovalStatus, 'approved');
+});
+
+test('choosing a category lists a verified pending Store and queues its projection', async (t) => {
   const transaction = { LOCK: { UPDATE: 'UPDATE' } };
   const store = {
     id: 'store-1', status: 'active', marketplaceApprovalStatus: 'pending',
@@ -147,4 +145,22 @@ test('choosing a category approves a verified pending Store and queues its proje
   assert.equal(result.needsCategoryReview, false);
   assert.equal(result.marketplaceApprovalStatus, 'approved');
   assert.equal(result.projectionVersion, 2);
+});
+
+test('updating a suspended Store never lists it again', async (t) => {
+  const transaction = { LOCK: { UPDATE: 'UPDATE' } };
+  const store = {
+    id: 'store-1', status: 'active', marketplaceApprovalStatus: 'suspended',
+    primaryCategory: 'Fashion', needsCategoryReview: false, projectionVersion: 4,
+    async update(changes) { Object.assign(this, changes); },
+  };
+  t.mock.method(Store.sequelize, 'transaction', async (callback) => callback(transaction));
+  t.mock.method(Store, 'findOne', async () => store);
+  const ownerLookup = t.mock.method(User, 'findByPk', async () => ({ isVerified: true, email: 'merchant@example.com' }));
+  t.mock.method(Website, 'findOne', async () => null);
+  t.mock.method(storeSyncService, 'queueStore', async () => {});
+  await storeService.updateOwnStore({ ownerUserId: 'owner-1', primaryCategory: 'Fashion' });
+  assert.equal(store.marketplaceApprovalStatus, 'suspended');
+  assert.equal(store.projectionVersion, 5);
+  assert.equal(ownerLookup.mock.callCount(), 0);
 });

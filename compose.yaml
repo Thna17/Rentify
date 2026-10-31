@@ -29,7 +29,6 @@ x-core-environment: &core-environment
   CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4450,http://localhost:4700,http://localhost:4600,http://localhost:4800
   AUTH_RETURN_URL_ALLOWLIST: http://localhost:4200,http://localhost:4500,http://localhost:4300,http://localhost:4400,http://localhost:4450,http://localhost:4700,http://localhost:4600,http://localhost:4800
   SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN}
-  DEV_MARKETPLACE_AUTO_APPROVAL: 'true'
 
 x-commerce-environment: &commerce-environment
   NODE_ENV: development

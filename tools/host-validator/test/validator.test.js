@@ -196,14 +196,6 @@ test('P2-HOST-001 Acceptance: Incompatible feature flags fail', () => {
   assert.equal(cutluyStaging.valid, false);
   assert.ok(cutluyStaging.errors.some((e) => e.policy === 'CutLuy Release 1 Policy (DEC-027)'));
 
-  // 2. Developer auto-approval enabled in production (DEC-007)
-  const autoApproval = validateHostConfig({ ...productionFixture, DEV_MARKETPLACE_AUTO_APPROVAL: 'true' }, {
-    targetEnv: 'production',
-    throwOnError: false,
-  });
-  assert.equal(autoApproval.valid, false);
-  assert.ok(autoApproval.errors.some((e) => e.policy === 'Seller Moderation Policy (DEC-007)'));
-
   // 3. Custom domain checkout enabled in production/staging (DEC-003, ADR 0002)
   const customDomainCheckout = validateHostConfig({ ...productionFixture, CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'true' }, {
     targetEnv: 'production',
