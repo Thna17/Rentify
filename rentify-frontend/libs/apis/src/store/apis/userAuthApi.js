@@ -77,6 +77,19 @@ export const userAuthApi = createApi({
         params: { phoneNumber },
       }),
     }),
+    createTelegramSession: builder.mutation({
+      query: (body) => ({
+        url: '/telegram/session',
+        method: 'POST',
+        body: body || {},
+      }),
+    }),
+    getTelegramSession: builder.query({
+      query: (token) => ({
+        url: `/telegram/session/${token}`,
+        method: 'GET',
+      }),
+    }),
   }),
 });
 
@@ -84,6 +97,9 @@ export const {
   useLoginMutation,
   useLoginWithTelegramMutation,
   useGetTelegramLoginConfigQuery,
+  useCreateTelegramSessionMutation,
+  useGetTelegramSessionQuery,
+  useLazyGetTelegramSessionQuery,
   useSignupMutation,
   useRefreshMutation,
   useLogoutMutation,
@@ -91,5 +107,5 @@ export const {
   useResendOtpMutation,
   useResetPasswordMutation,
   useForgotPasswordMutation,
-    useLazyCheckTelegramLinkQuery,
+  useLazyCheckTelegramLinkQuery,
 } = userAuthApi;

@@ -1200,6 +1200,109 @@ export class CoreApiClient {
   }
 
   /**
+   * Handle Telegram bot return callback
+   * GET /api/auth/telegram/callback
+   */
+  async authTelegramCallback(options: {
+    query?: {
+      sessionToken?: string;
+      token?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'GET',
+      path: '/api/auth/telegram/callback',
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Create Telegram bot auth session
+   * POST /api/auth/telegram/session
+   */
+  async authCreateTelegramSession(options: {
+    body?: {
+      returnUrl?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      botUrl?: string;
+      botUsername?: string;
+      expiresIn?: number;
+      success?: boolean;
+      token?: string;
+    }>> {
+    return this.transport.request<{
+      botUrl?: string;
+      botUsername?: string;
+      expiresIn?: number;
+      success?: boolean;
+      token?: string;
+    }>({
+      method: 'POST',
+      path: '/api/auth/telegram/session',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Get Telegram bot auth session status
+   * GET /api/auth/telegram/session/{token}
+   */
+  async authGetTelegramSession(options: {
+    path: {
+      token: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      status?: string;
+    }>> {
+    return this.transport.request<{
+      status?: string;
+    }>({
+      method: 'GET',
+      path: '/api/auth/telegram/session/{token}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
+   * Handle Telegram bot webhook updates
+   * POST /api/auth/telegram/webhook
+   */
+  async authTelegramWebhook(options: {
+    body: Record<string, any>;
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<any>> {
+    return this.transport.request<any>({
+      method: 'POST',
+      path: '/api/auth/telegram/webhook',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Validate access or refresh token
    * POST /api/auth/validate-token
    */
