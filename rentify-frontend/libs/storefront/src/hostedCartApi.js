@@ -29,11 +29,11 @@ export const hostedCartApi = createApi({
     }),
     // Changing the cart sends signed-out visitors to Rentify sign-in (see hostedRequest).
     setHostedCartItem: builder.mutation({
-      queryFn: async ({ websiteId, productId, quantity }) => {
+      queryFn: async ({ websiteId, productId, quantity, variantId = null }) => {
         try {
           const data = await hostedRequest(hostedCheckoutUrl(websiteId, `/cart/items/${encodeURIComponent(productId)}`), {
             method: 'PUT',
-            body: JSON.stringify({ quantity }),
+            body: JSON.stringify({ quantity, variantId }),
           });
           return { data };
         } catch (error) {

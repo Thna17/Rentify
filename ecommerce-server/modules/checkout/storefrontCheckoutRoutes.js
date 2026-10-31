@@ -37,6 +37,7 @@ router.get('/storefront/:websiteId/cart', enforceCustomDomainBoundary('cart'), w
 router.put('/storefront/:websiteId/cart/items/:productId', enforceCustomDomainBoundary('cart'), requireStorefrontCheckoutEnabled,
   wrap(async (req, res) => res.json({ carts: await service.setCartItem({
     buyerId: req.user.id, storeId: req.storeId, productId: req.params.productId,
+    variantId: req.body.variantId || null,
     quantity: req.body.quantity, channel: 'storefront',
   }) })));
 router.post('/storefront/:websiteId/checkout', enforceCustomDomainBoundary('checkout'), requireStorefrontCheckoutEnabled,
