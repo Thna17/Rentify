@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rentify UX Redesign</title>
+<!--
+  Grayscale wireframe: Rentify UX redesign for the merchant dashboard, the buyer marketplace and the POS app.
+  Mobile first; the top bar switches to Desktop (merchant, marketplace) or Tablet (POS).
+  Audit: docs/audits/2026-10-31-merchant-dashboard-ux-audit.md. Target IA: docs/experience 03 §4, 06.
+  Real content comes from the local seed data (Mekong Brew, Emily Watson); gray bars are placeholders.
+  "Needs backend" chips mark parts that need API work before they can be built.
+  Check: node ~/.claude/skills/ui-ux-design/scripts/check_wireframes.js docs/experience/wireframes/rentify-ux-redesign.html
+-->
+<style>
+  :root { --bg:#fff; --ink:#111; --ink-2:#555; --ink-3:#6b6b6b; --line:#e3e3e3; --fill:#f3f3f3; --fill-2:#e9e9e9; --r:8px; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#d9d9d9; font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); }
+  a { color:inherit; text-decoration:none; }
+  .proto-bar { position:sticky; top:0; z-index:50; display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 16px; background:#222; color:#ddd; font-size:12px; }
+  .proto-bar strong { color:#fff; margin-right:8px; }
+  .proto-bar select, .proto-bar button { background:#333; color:#eee; border:1px solid #555; border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; }
+  .proto-bar button[aria-pressed="true"] { background:#eee; color:#111; }
+  .stage { padding:24px 16px 64px; display:flex; justify-content:center; }
+  .device { position:relative; background:var(--bg); width:100%; max-width:1280px; min-height:760px; border-radius:6px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.12); display:flex; flex-direction:column; }
+  .device.mobile { max-width:390px; }
+  .top { min-height:56px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 12px; }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; min-width:0; }
+  .brand small { font-weight:500; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mark { width:22px; height:22px; border-radius:50%; border:2.5px solid var(--ink); flex:none; }
+  .search { flex:1; max-width:440px; margin:0 auto; height:38px; border-radius:999px; background:var(--fill); display:flex; align-items:center; padding:0 14px; color:var(--ink-3); white-space:nowrap; overflow:hidden; }
+  .spacer { flex:1; }
+  .icon-btn { width:40px; height:40px; border-radius:999px; display:grid; place-items:center; color:var(--ink-2); flex:none; position:relative; }
+  .icon-btn .badge { position:absolute; top:4px; right:2px; min-width:16px; height:16px; border-radius:8px; background:var(--ink); color:#fff; font-size:10px; display:grid; place-items:center; padding:0 3px; }
+  .ico { width:18px; height:18px; border:1.8px solid currentColor; border-radius:5px; display:inline-block; flex:none; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:var(--fill-2); display:grid; place-items:center; font-size:12px; font-weight:600; color:var(--ink-2); flex:none; }
+  .btn { min-height:40px; padding:0 14px; border-radius:12px; border:1px solid var(--line); background:var(--bg); font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; font-size:13px; }
+  .btn.primary { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .btn.block { display:flex; width:100%; min-height:48px; }
+  .btn.ghost { border-color:transparent; color:var(--ink-2); }
+  .btn.sm { min-height:34px; padding:0 10px; font-size:12px; }
+  .body { flex:1; display:flex; min-height:0; }
+  .side { width:236px; flex:none; border-right:1px solid var(--line); padding:12px; display:flex; flex-direction:column; gap:2px; }
+  .side h6, .drawer h6 { margin:14px 12px 4px; font-size:12px; font-weight:600; color:var(--ink-3); }
+  .nav-item { display:flex; align-items:center; gap:12px; min-height:40px; padding:0 12px; border-radius:var(--r); color:var(--ink-2); font-weight:500; }
+  .nav-item.on { color:var(--ink); font-weight:700; background:var(--fill); }
+  .nav-item .tag { margin-left:auto; font-size:11px; border:1px solid var(--line); border-radius:999px; padding:0 6px; color:var(--ink-3); }
+  .main { flex:1; min-width:0; display:flex; justify-content:center; overflow:auto; }
+  .col { width:100%; max-width:760px; padding:0 0 32px; }
+  .col.wide { max-width:1100px; }
+  .rail { width:320px; flex:none; padding:20px; border-left:1px solid var(--line); display:flex; flex-direction:column; gap:14px; }
+  .page-head { padding:16px 16px 8px; display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .page-head h1 { margin:0; font-size:22px; line-height:1.25; }
+  .page-head p { margin:4px 0 0; color:var(--ink-2); font-size:13px; width:100%; }
+  .page-head .acts { margin-left:auto; display:flex; gap:8px; }
+  .back { font-size:13px; color:var(--ink-2); padding:12px 16px 0; display:block; }
+  .eyebrow { font-size:12px; color:var(--ink-3); font-weight:600; }
+  .sec { padding:8px 16px 16px; }
+  .sec h3 { margin:6px 0 10px; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
+  .sec h3 a { font-size:13px; font-weight:600; color:var(--ink-2); }
+  .card { border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--bg); } .card h4 { margin:0 0 6px; }
+  .meta { color:var(--ink-3); font-size:13px; }
+  .ph { display:inline-block; width:100%; height:10px; border-radius:4px; background:var(--fill-2); margin:4px 0; vertical-align:middle; } .ph.t { height:14px; width:70%; background:#d6d6d6; } .ph.s { width:45%; } .ph.xs { width:56px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .device.mobile .grid3, .device.mobile .grid4 { grid-template-columns:1fr 1fr; }
+  .tile { border:1px solid var(--line); border-radius:14px; padding:12px; min-height:84px; display:flex; flex-direction:column; gap:2px; }
+  .tile b { font-size:20px; }
+  .chips { display:flex; gap:8px; overflow-x:auto; padding:4px 16px 8px; scrollbar-width:none; }
+  .chip { flex:none; min-height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-2); background:var(--bg); white-space:nowrap; }
+  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); font-weight:600; }
+  .pill { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:999px; padding:1px 8px; font-size:12px; color:var(--ink-2); white-space:nowrap; }
+  .pill.strong { border-color:var(--ink); color:var(--ink); font-weight:700; }
+  .pill.dash { border-style:dashed; }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); padding:0 12px; overflow-x:auto; scrollbar-width:none; }
+  .tab { padding:12px 10px; color:var(--ink-2); border-bottom:2px solid transparent; white-space:nowrap; font-size:13px; } .tab.on { color:var(--ink); font-weight:700; border-bottom-color:var(--ink); }
+  .row { display:flex; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); min-height:60px; }
+  .row .grow { flex:1; min-width:0; }
+  .row .t { font-weight:600; }
+  .row .end { margin-left:auto; text-align:right; flex:none; }
+  .thumb { width:48px; height:48px; border-radius:10px; background:var(--fill-2); flex:none; }
+  .thumb.lg { width:100%; height:auto; aspect-ratio:1/1; border-radius:14px; }
+  .thumb.sq { width:100%; aspect-ratio:1/1; height:auto; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-weight:600; font-size:13px; }
+  .field .input { min-height:46px; border:1px solid var(--line); border-radius:10px; padding:0 12px; display:flex; align-items:center; color:var(--ink-3); background:var(--bg); }
+  .field .input.area { min-height:88px; align-items:flex-start; padding-top:10px; }
+  .field .hint { font-size:12px; color:var(--ink-3); }
+  .form { display:flex; flex-direction:column; gap:14px; padding:12px 16px; }
+  .steps { display:flex; flex-direction:column; }
+  .stepi { display:flex; gap:12px; padding:8px 0; }
+  .stepi .dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--ink-3); margin-top:3px; flex:none; }
+  .stepi.done .dot { background:var(--ink); border-color:var(--ink); }
+  .stepi.now .dot { border-color:var(--ink); box-shadow:0 0 0 3px var(--fill-2); }
+  .sticky-bar { position:sticky; bottom:0; background:var(--bg); border-top:1px solid var(--line); padding:10px 16px; display:flex; gap:8px; align-items:center; }
+  .need { display:inline-flex; gap:6px; align-items:center; border:1.5px dashed #9a9a9a; border-radius:8px; padding:4px 8px; font-size:12px; color:var(--ink-2); background:#fafafa; }
+  .note-box { border-left:3px solid var(--ink); background:var(--fill); padding:8px 12px; font-size:13px; border-radius:0 8px 8px 0; }
+  .banner { margin:10px 16px 0; border:1px dashed #9a9a9a; border-radius:12px; padding:10px 12px; display:flex; gap:10px; align-items:center; background:var(--fill); font-size:13px; }
+  .banner .btn { margin-left:auto; }
+  .empty { text-align:center; padding:40px 24px; color:var(--ink-2); } .empty h2 { color:var(--ink); margin:12px 0 6px; font-size:18px; }
+  .empty .art { width:72px; height:72px; border-radius:18px; background:var(--fill-2); margin:0 auto; }
+  .skel { background:linear-gradient(90deg,var(--fill-2),var(--fill),var(--fill-2)); border-radius:10px; }
+  .table { width:100%; border-collapse:collapse; font-size:13px; } .table th, .table td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .doc { padding:20px; max-width:1180px; width:100%; }
+  .doc h1 { margin:0 0 8px; font-size:22px; } .doc h2 { font-size:16px; margin:24px 0 8px; }
+  .doc p, .doc li { color:var(--ink-2); }
+  .doc .table { display:block; overflow-x:auto; }
+  .doc code { word-break:break-word; }
+  .bottom { display:none; }
+  .device.mobile .side, .device.mobile .rail, .device.mobile .desk { display:none !important; }
+  .device:not(.mobile) .mob { display:none !important; }
+  .device.mobile .bottom { display:flex; border-top:1px solid var(--line); min-height:60px; background:var(--bg); flex:none; }
+  .bottom a { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:11px; color:var(--ink-3); } .bottom a.on { color:var(--ink); font-weight:700; }
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,.38); display:flex; align-items:flex-end; z-index:5; }
+  .sheet { background:var(--bg); width:100%; border-radius:18px 18px 0 0; padding:8px 16px 20px; max-height:90%; overflow:auto; }
+  .sheet .grab { width:40px; height:4px; border-radius:4px; background:var(--fill-2); margin:4px auto 12px; }
+  .sheet h2 { margin:0 0 4px; font-size:18px; }
+  .device:not(.mobile) .scrim:not(.left):not(.right) { align-items:center; justify-content:center; }
+  .device:not(.mobile) .scrim:not(.left):not(.right) .sheet { width:520px; border-radius:18px; }
+  .scrim.left { align-items:stretch; justify-content:flex-start; } .scrim.right { align-items:stretch; justify-content:flex-end; }
+  .panel { background:var(--bg); width:86%; max-width:340px; height:100%; overflow:auto; padding:10px; display:flex; flex-direction:column; gap:2px; }
+  .toast { position:absolute; left:16px; right:16px; bottom:76px; background:var(--ink); color:#fff; border-radius:12px; padding:12px 14px; font-size:13px; display:flex; gap:10px; align-items:center; z-index:6; }
+  .device:not(.mobile) .toast { left:auto; right:20px; top:70px; bottom:auto; width:340px; }
+  .n { display:none; }
+  body.notes .n { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:#e0b400; color:#111; font:700 11px/1 system-ui; margin-left:6px; vertical-align:middle; }
+  .notes-panel { display:none; } body.notes .notes-panel { display:block; max-width:1280px; margin:0 auto; padding:0 16px 48px; }
+  .notes-panel ol { background:#fff7d6; border:1px solid #e6cf6a; border-radius:8px; padding:16px 16px 16px 40px; margin:0; font-size:13px; }
+  .pos-wrap { display:flex; flex:1; min-height:0; }
+  .pos-cat { display:flex; flex-direction:column; flex:1; min-width:0; }
+  .pos-cart { width:340px; flex:none; border-left:1px solid var(--line); display:flex; flex-direction:column; }
+  .device.mobile .pos-cart { display:none; }
+  .cart-bar { display:none; }
+  .device.mobile .cart-bar { display:flex; margin:0; border-radius:0; }
+  .prod-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:10px 12px; }
+  .device.mobile .prod-grid { grid-template-columns:repeat(2,1fr); }
+  .pcard { border:1px solid var(--line); border-radius:14px; padding:8px; display:flex; flex-direction:column; gap:4px; min-height:44px; }
+  .pcard b { font-size:13px; }
+  .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .keypad span { min-height:52px; border:1px solid var(--line); border-radius:12px; display:grid; place-items:center; font-size:18px; font-weight:600; }
+</style>
+</head>
+<body class="notes">
+<div class="proto-bar">
+  <strong>Rentify UX redesign · wireframe v1</strong>
+  <label>Screen <select id="screen"></select></label>
+  <button id="mob" aria-pressed="true">Mobile</button><button id="desk" aria-pressed="false">Desktop / Tablet</button><button id="notes" aria-pressed="true">Notes</button>
+  <span style="flex:1"></span><span>Grayscale structure only · gray bars are placeholders · dashed "Needs backend" = API work first</span>
+</div>
+<div class="stage"><div class="device mobile" id="device"></div></div>
+<div class="notes-panel" id="notesPanel"></div>
+<script>
+/* ---------- shared helpers ---------- */
+const STORE = "Mekong Brew";
+const n = (k) => `<span class="n" title="See note ${k}">${k}</span>`;
+const ph = (cls = "") => `<span class="ph ${cls}"></span>`;
+const need = (what) => `<span class="need">Needs backend: ${what}</span>`;
+const field = (label, value = "", hint = "", area = false) => `<div class="field"><label>${label}</label><div class="input${area ? " area" : ""}">${value}</div>${hint ? `<div class="hint">${hint}</div>` : ""}</div>`;
+const chips = (items, on = 0) => `<div class="chips">${items.map((c, i) => `<span class="chip ${i === on ? "on" : ""}">${c}</span>`).join("")}</div>`;
+const tabs = (items, on = 0) => `<div class="tabs">${items.map((c, i) => `<span class="tab ${i === on ? "on" : ""}">${c}</span>`).join("")}</div>`;
+// A row is a link. When it holds its own button, the title is the link instead (no nested links).
+const row = (title, sub = "", end = "", href = "", lead = `<span class="thumb"></span>`) => {
+  const ownAction = /<a\s/.test(end);
+  const tag = href && !ownAction ? "a" : "div";
+  const t = href && ownAction ? `<a class="t" href="#${href}">${title}</a>` : `<div class="t">${title}</div>`;
+  return `<${tag} class="row" ${tag === "a" ? `href="#${href}"` : ""}>${lead}<div class="grow">${t}${sub ? `<div class="meta">${sub}</div>` : ""}</div>${end ? `<div class="end">${end}</div>` : ""}</${tag}>`;
+};
+const head = (title, sub = "", acts = "") => `<div class="page-head"><h1>${title}</h1>${acts ? `<div class="acts">${acts}</div>` : ""}${sub ? `<p>${sub}</p>` : ""}</div>`;
+const skel = (h) => `<div class="skel" style="height:${h}px;margin:8px 16px"></div>`;
+
+/* ---------- merchant shell ---------- */
+// Places (menu): job-based, docs/experience 03 §4. Tools (header): same on phone and desktop.
+const M_MENU = [
+  [null, [["m_home", "Home"], ["m_orders", "Orders", "3"], ["m_products", "Products"], ["m_customers", "Customers"], ["m_reports", "Reports"], ["m_invoices", "Invoices"]]],
+  ["Sales channels", [["m_marketplace", "Marketplace"], ["m_online", "Online store"], ["m_pos_open", "Point of sale"]]],
+  ["More", [["m_returns", "Returns & problems", "1"], ["m_share", "Share your store"], ["m_settings", "Settings"], ["m_help", "Help"]]],
+];
+const M_BOTTOM = [["m_home", "Home"], ["m_orders", "Orders"], ["m_products", "Products"], ["m_pos_open", "POS"], ["m_share", "Share"]];
+const M_SECTION = {
+  m_home: "m_home", m_home_new: "m_home", m_states: "m_home", m_staff: "m_home", m_menu: "m_home", m_search: "m_home", m_notifications: "m_home",
+  m_orders: "m_orders", m_order: "m_orders", m_order_action: "m_orders",
+  m_returns: "m_returns", m_return: "m_returns",
+  m_products: "m_products", m_product_form: "m_products", m_categories: "m_products",
+  m_customers: "m_customers", m_customer: "m_customers", m_reports: "m_reports",
+  m_invoices: "m_invoices", m_invoice_new: "m_invoices",
+  m_marketplace: "m_marketplace", m_online: "m_online", m_design: "m_online", m_pos_open: "m_pos_open",
+  m_share: "m_share", m_settings: "m_settings", m_settings_page: "m_settings", m_staff_settings: "m_settings", m_billing: "m_settings", m_help: "m_help",
+};
+function mShell(active, inner, rail = "", overlay = "", opts = {}) {
+  const sec = M_SECTION[active];
+  const side = M_MENU.map(([h, items]) => `${h ? `<h6>${h}</h6>` : ""}${items.map(([k, l, badge]) =>
+    `<a class="nav-item ${sec === k ? "on" : ""}" href="#${k}"><span class="ico"></span>${l}${badge ? `<span class="tag">${badge}</span>` : ""}</a>`).join("")}`).join("");
+  const bottom = M_BOTTOM.map(([k, l]) => `<a href="#${k}" class="${sec === k ? "on" : ""}"><span class="ico"></span>${l}</a>`).join("");
+  return `
+  <header class="top">
+    <a class="icon-btn mob" href="#m_menu" aria-label="Menu">☰</a>
+    <a class="brand" href="#m_home"><span class="mark"></span><span class="desk">Rentify</span><small>${opts.title || STORE}</small></a>
+    <a class="search desk" href="#m_search">Search orders, products, customers</a>
+    <span class="spacer mob"></span>
+    <a class="icon-btn mob" href="#m_search" aria-label="Search"><span class="ico"></span></a>
+    <a class="icon-btn" href="#m_notifications" aria-label="Notifications"><span class="ico"></span><span class="badge">2</span></a>
+    <a class="avatar" href="#m_menu" title="Account">DC</a>
+  </header>
+  ${opts.banner || ""}
+  <div class="body">
+    <nav class="side">${side}</nav>
+    <main class="main">${inner}</main>
+    ${rail ? `<aside class="rail">${rail}</aside>` : ""}
+  </div>
+  ${opts.noBottom ? "" : `<nav class="bottom">${bottom}</nav>`}
+  ${overlay}`;
+}
+
+/* ---------- marketplace shell (buyer) ---------- */
+const K_BOTTOM = [["k_home", "Home"], ["k_categories", "Categories"], ["k_orders", "Orders"], ["k_wishlist", "Saved"], ["k_account", "Account"]];
+const K_SECTION = { k_home: "k_home", k_search: "k_categories", k_categories: "k_categories", k_product: "k_categories", k_store: "k_categories", k_stores: "k_categories",
+  k_cart: "k_home", k_checkout: "k_home", k_placed: "k_orders", k_orders: "k_orders", k_order: "k_orders", k_report: "k_orders",
+  k_wishlist: "k_wishlist", k_account: "k_account", k_signin: "k_account", k_help: "k_account", k_sell: "k_account" };
+function kShell(active, inner, overlay = "", opts = {}) {
+  const sec = K_SECTION[active];
+  const bottom = K_BOTTOM.map(([k, l]) => `<a href="#${k}" class="${sec === k ? "on" : ""}"><span class="ico"></span>${l}</a>`).join("");
+  return `
+  <header class="top">
+    <a class="brand" href="#k_home"><span class="mark"></span><span>Rentify Market</span></a>
+    <a class="search" href="#k_search">Search products and stores</a>
+    <a class="icon-btn" href="#k_cart" aria-label="Cart"><span class="ico"></span><span class="badge">2</span></a>
+    <a class="btn sm desk" href="#k_orders">Orders</a>
+    <a class="avatar desk" href="#k_account">EW</a>
+  </header>
+  ${opts.desktopNav === false ? "" : `<nav class="tabs desk"><a class="tab" href="#k_categories">Categories</a><a class="tab" href="#k_stores">Stores</a><a class="tab" href="#k_search">New arrivals</a><a class="tab" href="#k_help">Help</a><a class="tab" href="#k_sell">Sell on Rentify</a></nav>`}
+  <div class="body"><main class="main">${inner}</main></div>
+  ${opts.noBottom ? "" : `<nav class="bottom">${bottom}</nav>`}
+  ${overlay}`;
+}
+
+/* ---------- POS shell ---------- */
+function pShell(active, inner, opts = {}) {
+  const link = (k, l) => `<a class="chip ${active === k ? "on" : ""}" href="#${k}">${l}</a>`;
+  return `
+  <header class="top">
+    <span class="brand"><span class="mark"></span><small>${STORE} · Dara</small></span>
+    <span class="spacer"></span>
+    <span class="pill desk">Shift open · float $50.00</span>
+    <a class="icon-btn" href="#p_lock" aria-label="Lock register"><span class="ico"></span></a>
+  </header>
+  ${opts.noNav ? "" : `<div class="chips" style="padding-top:8px">${link("p_sell", "Sell")}${link("p_tickets", "Held")}${link("p_returns", "Returns")}${link("p_register", "Cash drawer")}</div>`}
+  ${inner}`;
+}
+
+/* ---------- sitemap ---------- */
+const SITEMAP = [
+  ["Merchant", "/overview", "Home", "m_home", "Keep · simplified; channel switcher removed", ""],
+  ["Merchant", "/overview (new store)", "Home with setup guide", "m_home_new", "Keep (phase B)", ""],
+  ["Merchant", "/orders + /marketplace-orders", "Orders — one inbox", "m_orders", "Merge; /marketplace-orders → /orders?channel=marketplace", ""],
+  ["Merchant", "/orders/:id (+ marketplace rows)", "Order detail", "m_order", "Merge marketplace order detail here", ""],
+  ["Merchant", "— (inside order rows)", "Returns & problems", "m_returns", "New page", "List of buyer reports per Store"],
+  ["Merchant", "—", "Problem detail", "m_return", "New page", "Same endpoint"],
+  ["Merchant", "/products, /catalog, /products/manage", "Products — one list", "m_products", "Merge; /catalog, /products/manage → /products", ""],
+  ["Merchant", "/products/create, /products/edit/:id, /products/:id", "Product form", "m_product_form", "Keep · quick add first", ""],
+  ["Merchant", "/categories", "Categories (tab in Products)", "m_categories", "Move under Products; keep URL", ""],
+  ["Merchant", "/customers", "Customers", "m_customers", "Keep", ""],
+  ["Merchant", "—", "Customer detail", "m_customer", "New", "Orders by customer (may exist; verify)"],
+  ["Merchant", "/analytics", "Reports", "m_reports", "Replace; /analytics → /reports", "Store-wide statistics (not website-keyed, no 50-order cap)"],
+  ["Merchant", "/invoices", "Invoices — list", "m_invoices", "List added", ""],
+  ["Merchant", "/invoices (create)", "New invoice", "m_invoice_new", "Keep · plain words", ""],
+  ["Merchant", "— (Home channel card)", "Marketplace", "m_marketplace", "New page", ""],
+  ["Merchant", "/store-management", "Online store", "m_online", "Rename; keep URL as redirect to /online-store", ""],
+  ["Merchant", "/customization", "Store design (full screen)", "m_design", "Working template switch + layout save", "Template switch + Page Layout field (separate prompt)"],
+  ["Merchant", "POS (external)", "Open POS sheet", "m_pos_open", "Keep (phase C)", ""],
+  ["Merchant", "/share", "Share your store", "m_share", "Keep", ""],
+  ["Merchant", "/settings/*", "Settings home", "m_settings", "One shell for all settings", ""],
+  ["Merchant", "/settings/account, /delivery, /preferences, /security", "A settings page", "m_settings_page", "Same shell", ""],
+  ["Merchant", "/settings/staff", "Staff & roles", "m_staff_settings", "Same shell", ""],
+  ["Merchant", "/settings/billing + /usage/*", "Plan & billing", "m_billing", "Merge; /usage/* → /settings/billing", ""],
+  ["Merchant", "/settings/payments", "— removed", "m_settings", "Hidden in R1 (DEC-026/027); decision needed", ""],
+  ["Merchant", "/help", "Help", "m_help", "Keep", ""],
+  ["Merchant", "header", "Menu, search, notifications", "m_menu", "Tools in header; places in menu", ""],
+  ["Merchant", "—", "Staff (cashier) home", "m_staff", "Permission-trimmed", ""],
+  ["Merchant", "—", "Loading, error, blocked, empty states", "m_states", "Pattern for every page", ""],
+  ["Marketplace", "/", "Home", "k_home", "Keep · search first", ""],
+  ["Marketplace", "/products, /categories/:slug", "Search & category results", "k_search", "One results pattern", ""],
+  ["Marketplace", "/categories", "Categories", "k_categories", "Keep", ""],
+  ["Marketplace", "/product/:id", "Product page", "k_product", "Delivery fee + COD near price; no SKU", ""],
+  ["Marketplace", "/stores, /stores/:id", "Store page", "k_store", "Trust card", "Store ratings exist? verify"],
+  ["Marketplace", "/cart", "Cart (grouped by Store)", "k_cart", "Keep", ""],
+  ["Marketplace", "/checkout (+ shipping/payment/review)", "Checkout — one page, COD", "k_checkout", "COD only (DEC-026)", ""],
+  ["Marketplace", "/order-success", "Order placed", "k_placed", "Keep", ""],
+  ["Marketplace", "/orders, /my-orders", "My orders", "k_orders", "Keep", ""],
+  ["Marketplace", "/orders/:id", "Order detail + tracking", "k_order", "Keep", ""],
+  ["Marketplace", "/orders/:id report", "Report a problem", "k_report", "3 steps", ""],
+  ["Marketplace", "/wishlist", "Saved", "k_wishlist", "Rename to Saved", ""],
+  ["Marketplace", "/profile, /login…", "Account / sign-in", "k_account", "Auth stays in shared sign-in", ""],
+  ["Marketplace", "/help, /contact, /terms…", "Help", "k_help", "Keep", ""],
+  ["Marketplace", "/become-a-seller/*", "Sell on Rentify", "k_sell", "Keep; one page + pricing", ""],
+  ["POS", "/entry", "Open shift", "p_open", "Keep · plain words", ""],
+  ["POS", "/sell", "Sell (phone layout)", "p_sell", "Fix phone layout", ""],
+  ["POS", "/sell (pay)", "Take payment", "p_pay", "Cash or KHQR at the counter", ""],
+  ["POS", "/sell (done)", "Sale complete / receipt", "p_done", "Keep", ""],
+  ["POS", "/tickets", "Held sales", "p_tickets", "Rename", ""],
+  ["POS", "/returns", "Returns", "p_returns", "Keep", ""],
+  ["POS", "/register", "Cash drawer & close shift", "p_register", "Rename", ""],
+  ["POS", "lock", "Locked (PIN)", "p_lock", "Keep", ""],
+  ["POS", "/recovery", "Offline queue (banner)", "p_sell", "Becomes a banner, not a page", ""],
+];
+
+/* ---------- screens ---------- */
+const SCREENS = {
+  overview: {
+    label: "Overview — map, decisions, problems",
+    html: () => `<div class="doc">
+      <h1>Rentify UX redesign ${n(1)}</h1>
+      <p>Wireframes for the three apps people use: the merchant dashboard, the buyer marketplace and the POS. Mobile first; use the top bar for Desktop (merchant, marketplace) or Tablet (POS). Every screen is clickable from the sitemap below.</p>
+      <h2>Decisions this design follows ${n(2)}</h2>
+      <ul>
+        <li><b>One place per job.</b> One Orders inbox, one Products list, one Online store, one Settings (billing included).</li>
+        <li><b>No global channel switcher.</b> Channels are filters inside Home, Orders and Reports.</li>
+        <li><b>Places in the menu, tools in the header.</b> Header: ☰ · store · search · notifications · account. Phone bottom bar: Home · Orders · Products · POS · Share.</li>
+        <li><b>Marketplace listing is automatic</b> (DEC-028). <b>Online checkout is cash on delivery only</b> (DEC-026); POS takes cash or KHQR at the counter.</li>
+        <li><b>Store design works</b> (template switch and layout save) — backend to be built from the separate prompt.</li>
+        <li><b>New pages are fully designed</b>; dashed "Needs backend" chips mark what needs API work.</li>
+      </ul>
+      <h2>Sitemap — every current route and its new home ${n(3)}</h2>
+      <table class="table"><thead><tr><th>App</th><th>Current route</th><th>Screen</th><th>Change</th><th>Needs backend</th></tr></thead>
+      <tbody>${SITEMAP.map(([app, r, s, k, c, b]) => `<tr><td>${app}</td><td><code>${r}</code></td><td><a href="#${k}"><u>${s}</u></a></td><td>${c}</td><td>${b}</td></tr>`).join("")}</tbody></table>
+      <h2>Problems fixed (from the audit) ${n(4)}</h2>
+      <table class="table"><thead><tr><th>#</th><th>Problem</th><th>Where it is fixed</th></tr></thead><tbody>
+        <tr><td>P1</td><td>Two order inboxes</td><td><a href="#m_orders"><u>Orders</u></a></td></tr>
+        <tr><td>P2</td><td>Three product routes</td><td><a href="#m_products"><u>Products</u></a></td></tr>
+        <tr><td>P3</td><td>Online store split across two pages; Delete store among theme settings</td><td><a href="#m_online"><u>Online store</u></a>, <a href="#m_design"><u>Store design</u></a>, <a href="#m_settings"><u>Settings</u></a></td></tr>
+        <tr><td>P4</td><td>Billing in two places</td><td><a href="#m_billing"><u>Plan & billing</u></a></td></tr>
+        <tr><td>P5</td><td>Global channel mode</td><td>Removed; filters in <a href="#m_home"><u>Home</u></a>, <a href="#m_orders"><u>Orders</u></a>, <a href="#m_reports"><u>Reports</u></a></td></tr>
+        <tr><td>P6</td><td>~230 px of chrome on phones</td><td>Header is one row; no breadcrumbs, page icons or subtitles on phones</td></tr>
+        <tr><td>P7</td><td>Internal words (DEC-003, "Invoice Generator", "usage events")</td><td>Plain-language labels everywhere</td></tr>
+        <tr><td>P8</td><td>Online-payment UI vs COD-only rule</td><td>Not designed; decision needed (merchant CutLuy, marketplace ABA PayWay)</td></tr>
+        <tr><td>P9</td><td>No invoice list</td><td><a href="#m_invoices"><u>Invoices</u></a></td></tr>
+        <tr><td>P10</td><td>Icon-only actions</td><td>Every action has a text label</td></tr>
+        <tr><td>P11</td><td>Settings in a different shell</td><td><a href="#m_settings"><u>Settings</u></a></td></tr>
+        <tr><td>P12</td><td>Analytics repeats Home</td><td><a href="#m_reports"><u>Reports</u></a></td></tr>
+        <tr><td>P14</td><td>Missing spec pages</td><td><a href="#m_returns"><u>Returns & problems</u></a>, <a href="#m_reports"><u>Reports</u></a>, <a href="#m_marketplace"><u>Marketplace</u></a></td></tr>
+        <tr><td>K1</td><td>Buyers see SKUs; delivery fee and COD not near the price</td><td><a href="#k_product"><u>Product page</u></a></td></tr>
+        <tr><td>K2</td><td>Checkout split over four routes</td><td><a href="#k_checkout"><u>One-page checkout</u></a></td></tr>
+        <tr><td>X1</td><td>POS unusable on phones (product grid squeezed to ~50 px)</td><td><a href="#p_sell"><u>POS Sell</u></a></td></tr>
+      </tbody></table></div>`,
+    notes: [
+      "Scope agreed: merchant dashboard, buyer marketplace and POS app, mobile first. Storefront templates are not part of this pass.",
+      "Decisions confirmed in review on 2026-10-31. The online-payment conflict (P8) is the one open product decision.",
+      "Every user-reachable route is mapped. Redirects keep old links working (rename labels, not URLs).",
+      "Problem numbers match docs/audits/2026-10-31-merchant-dashboard-ux-audit.md; K = marketplace, X = POS (found in this pass).",
+    ],
+  },
+
+  /* ===================== MERCHANT ===================== */
+  m_home: {
+    label: "M1 · Home",
+    html: () => mShell("m_home", `<div class="col">
+      <div class="page-head"><div><div class="eyebrow">${STORE}</div><h1>Good evening, Dara ${n(1)}</h1></div></div>
+      ${chips(["All channels", "Marketplace", "Online store", "POS"])}
+      <div class="sec"><h3>Needs your attention ${n(2)}</h3><div class="grid2">
+        <a class="tile" href="#m_orders"><b>${ph("xs")}</b>New orders to confirm</a>
+        <a class="tile" href="#m_orders"><b>${ph("xs")}</b>To deliver</a>
+        <a class="tile" href="#m_orders"><b>${ph("xs")}</b>Cash to collect</a>
+        <a class="tile" href="#m_returns"><b>${ph("xs")}</b>Problems to answer</a>
+      </div></div>
+      <div class="sec"><h3>Today <a href="#m_reports">Reports</a></h3><div class="grid3">
+        <div class="tile"><span class="meta">Orders</span><b>${ph("xs")}</b></div>
+        <div class="tile"><span class="meta">Sales</span><b>${ph("xs")}</b></div>
+        <div class="tile"><span class="meta">Cash to collect</span><b>${ph("xs")}</b></div>
+      </div></div>
+      <div class="sec"><h3>Where you sell ${n(3)}</h3>
+        ${row("Rentify Market", "Listed · 11 products shown", `<span class="pill">Listed</span>`, "m_marketplace")}
+        ${row("Online store", "localhost:4650", `<span class="pill">Live</span>`, "m_online")}
+        ${row("Point of sale", "Ready", `<span class="pill">Open</span>`, "m_pos_open")}
+      </div>
+      <div class="sec"><h3>Recent orders <a href="#m_orders">See all</a></h3>
+        ${row(`#${ph("xs")} · Marketplace`, `${ph("s")}`, `<a class="btn sm" href="#m_order_action">Confirm</a>`, "m_order")}
+        ${row(`#${ph("xs")} · POS`, `${ph("s")}`, `<span class="pill">Paid</span>`, "m_order")}
+      </div>
+    </div>`, `<div class="card"><h4>Low stock</h4>${row("Americano", "0 in stock", "", "m_products")}${row("Cappuccino", "0 in stock", "", "m_products")}</div>`),
+    notes: [
+      "One-line header (P6): store name, search, notifications, account. No breadcrumb, page icon or subtitle on phones; content starts ~70 px from the top instead of ~230 px.",
+      "Next actions first (docs/experience 06 §1): each tile opens Orders or Returns already filtered. Counts come from real orders, never invented.",
+      "Channel switcher removed (P5): the chips filter this page only, and each channel row opens its own page.",
+    ],
+  },
+  m_home_new: {
+    label: "M2 · Home — new store",
+    html: () => mShell("m_home_new", `<div class="col">
+      <div class="page-head"><div><div class="eyebrow">${STORE}</div><h1>Welcome, Dara</h1></div></div>
+      <div class="sec"><div class="card" style="border:2px solid var(--ink)">
+        <h4>Set up your store ${n(1)}</h4><div class="meta">2 of 4 done</div>
+        <div class="steps">
+          <div class="stepi done"><span class="dot"></span><div>Store name and category</div></div>
+          <div class="stepi now"><span class="dot"></span><div><b>Add your first product</b><div class="meta">Buyers can only order products with a photo, price and stock.</div><a class="btn primary block" href="#m_product_form" style="margin-top:8px">Add product</a></div></div>
+          <div class="stepi done"><span class="dot"></span><div>Set your delivery fee</div></div>
+          <div class="stepi"><span class="dot"></span><div>You're live <span class="meta">· automatic</span></div></div>
+        </div>
+      </div></div>
+      <div class="sec meta">Sales and reports appear after your first order.</div>
+    </div>`),
+    notes: ["The setup guide built in phase B, unchanged. Shown here so the redesigned Home and the guide are reviewed together."],
+  },
+  m_orders: {
+    label: "M3 · Orders — one inbox",
+    html: () => mShell("m_orders", `<div class="col wide">
+      ${head("Orders " + n(1), "", `<a class="btn desk" href="#m_orders">Export</a><a class="btn primary" href="#m_invoice_new">New order</a>`)}
+      <div class="sec" style="padding-bottom:4px"><div class="field"><div class="input">Search order number, buyer name or phone</div></div></div>
+      ${chips(["All", "Marketplace", "Online store", "POS", "Invoice"])}
+      ${tabs(["To confirm (3)", "To deliver", "Cash to collect", "Done", "Cancelled", "Problems"])}
+      ${row(`#${ph("xs")} <span class="pill">Marketplace</span>`, `${ph("s")} · 2 items · COD`, `<b>${ph("xs")}</b><br><a class="btn sm" href="#m_order_action">Confirm</a>`, "m_order")}
+      ${row(`#${ph("xs")} <span class="pill">Online store</span>`, `${ph("s")} · 1 item · COD`, `<b>${ph("xs")}</b><br><a class="btn sm" href="#m_order_action">Confirm</a>`, "m_order")}
+      ${row(`#${ph("xs")} <span class="pill">Invoice</span>`, `${ph("s")} · due ${ph("xs")}`, `<b>${ph("xs")}</b><br><span class="pill">Unpaid</span>`, "m_order")}
+      <div class="sec meta">Showing 3 · <a href="#m_orders"><u>Load more</u></a> ${n(2)}</div>
+    </div>`),
+    notes: [
+      "P1: one inbox for every channel; /marketplace-orders redirects here with the Marketplace chip on. Channel is a chip on each row, not a separate page.",
+      "Tabs follow the work, not the database status (docs/experience 06 §2). Rows are cards on phones and a table on desktop; each row's main action is right there. Export moves to a labelled button (P10).",
+    ],
+  },
+  m_order: {
+    label: "M4 · Order detail",
+    html: () => mShell("m_order", `<div class="col">
+      <a class="back" href="#m_orders">‹ Orders</a>
+      ${head(`Order #${ph("xs")}`, "", `<span class="pill">Marketplace</span>`)}
+      <div class="sec"><div class="card"><h4>What happens next ${n(1)}</h4><div class="steps">
+        <div class="stepi done"><span class="dot"></span><div>Placed <span class="meta">${ph("xs")}</span></div></div>
+        <div class="stepi now"><span class="dot"></span><div><b>Confirm the order</b><div class="meta">Check stock, then confirm so the buyer knows it's coming.</div></div></div>
+        <div class="stepi"><span class="dot"></span><div>Deliver</div></div>
+        <div class="stepi"><span class="dot"></span><div>Collect cash</div></div>
+      </div></div></div>
+      <div class="sec"><h3>Buyer</h3><div class="card"><b>${ph("s")}</b><div class="meta">012 *** 678 · ${ph("s")}</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><a class="btn sm" href="#m_order">Call</a><a class="btn sm" href="#m_order">Telegram</a></div></div></div>
+      <div class="sec"><h3>Items</h3>${row("Caffè Latte", "2 × $2.75", "$5.50")}${row("Butter Croissant", "1 × $1.75", "$1.75")}
+        <div class="row"><div class="grow meta">Delivery fee</div><div class="end">$1.00</div></div>
+        <div class="row"><div class="grow"><b>Total · cash on delivery</b></div><div class="end"><b>$8.25</b></div></div></div>
+      <div class="sec"><h3>History</h3><div class="meta">${ph()}${ph("s")}</div></div>
+      <div class="sticky-bar"><a class="btn ghost" href="#m_order">Cancel order</a><a class="btn primary" style="flex:1" href="#m_order_action">Confirm order ${n(2)}</a></div>
+    </div>`),
+    notes: [
+      "The order shows its next step in words (Nielsen 1). Only states backed by real events are shown; delivered and paid stay separate (CLAUDE.md: delivered ≠ paid). Items and prices use Mekong Brew's seed products; the order itself is a placeholder.",
+      "One main action in a sticky bar at thumb height (Fitts). Destructive actions are secondary and confirm with a reason (docs/experience 06).",
+    ],
+  },
+  m_order_action: {
+    label: "M5 · Order action sheet (record cash)",
+    html: () => mShell("m_order_action", `<div class="col"><a class="back" href="#m_orders">‹ Orders</a>${head(`Order #${ph("xs")}`)}<div class="sec">${ph()}${ph("s")}</div></div>`, "",
+      `<div class="scrim"><div class="sheet" role="dialog" aria-label="Record cash collected"><div class="grab"></div>
+        <h2>Record cash collected ${n(1)}</h2><p class="meta">Only record cash you have in hand. The buyer is told the order is paid.</p>
+        <div class="form" style="padding:0">${field("Amount collected (USD)", "$8.25", "Must equal the amount due: $8.25")}
+        <a class="btn primary block" href="#m_order">Record $8.25</a><a class="btn ghost block" href="#m_order">Not yet</a></div></div></div>`),
+    notes: ["Money actions use a sheet with the amount and its consequence spelled out, and cannot record more than is due (mirrors the COD collect rule in Commerce). Error prevention (Nielsen 5)."],
+  },
+  m_returns: {
+    label: "M6 · Returns & problems",
+    html: () => mShell("m_returns", `<div class="col">
+      ${head("Returns & problems " + n(1), "Buyers who need something from you. Answer before the deadline.")}
+      <div class="sec">${need("list of buyer reports for one Store (GET /api/stores/:storeId/reports)")} ${n(2)}</div>
+      ${tabs(["Waiting for you (1)", "Waiting for buyer", "Resolved"])}
+      ${row(`Return requested <span class="pill strong">Reply within ${ph("xs")}</span>`, `Order #${ph("xs")} · ${ph("s")}`, "›", "m_return")}
+      ${row("Item not delivered", `Order #${ph("xs")} · ${ph("s")}`, "›", "m_return")}
+    </div>`),
+    notes: [
+      "P14: one queue for every buyer report (docs/experience 06 §6), instead of digging through order rows. Deadline chips follow DEC-009 (48 business hours).",
+      "Buyers can already file reports and admins handle them, but no endpoint lists a Store's reports. Until it exists this page cannot be built.",
+    ],
+  },
+  m_return: {
+    label: "M7 · Problem detail",
+    html: () => mShell("m_return", `<div class="col">
+      <a class="back" href="#m_returns">‹ Returns & problems</a>
+      ${head("Return requested", "", `<span class="pill strong">Reply within ${ph("xs")}</span>`)}
+      <div class="sec"><div class="card"><h4>What the buyer said ${n(1)}</h4>${ph()}${ph("s")}<div class="grid3" style="margin-top:8px"><span class="thumb sq"></span><span class="thumb sq"></span></div></div></div>
+      <div class="sec"><h3>Order</h3>${row(`#${ph("xs")} · Caffè Latte ×2`, "Delivered · cash collected", "›", "m_order")}</div>
+      <div class="sec"><h3>Your answer</h3><div class="form" style="padding:0">${field("Message to the buyer", "", "", true)}</div></div>
+      <div class="sticky-bar"><a class="btn" href="#m_returns">Decline</a><a class="btn primary" style="flex:1" href="#m_returns">Accept return ${n(2)}</a></div>
+    </div>`),
+    notes: [
+      "Evidence first (DEC-009 requires buyer photos/video), then the order, then the reply: the merchant decides with everything on one screen.",
+      "Accepting leads to the refund step on the order (record refund with method and confirmation); a refund is never shown as done until it is recorded (requested ≠ refunded).",
+    ],
+  },
+  m_products: {
+    label: "M8 · Products — one list",
+    html: () => mShell("m_products", `<div class="col wide">
+      ${head("Products " + n(1), "", `<a class="btn desk" href="#m_products">Import</a><a class="btn primary" href="#m_product_form">Add product</a>`)}
+      ${tabs(["All products (11)", "Categories"], 0)}
+      <div class="sec" style="padding-bottom:4px"><div class="field"><div class="input">Search products</div></div></div>
+      ${chips(["All", "On sale", "Out of stock (7)", "Hidden from marketplace", "Drafts"])}
+      ${row("Butter Croissant", "$1.75 · 24 in stock", `<span class="pill">Market ✓</span> <span class="pill">Store ✓</span>`, "m_product_form")}
+      ${row("Mondulkiri House Blend · 250g", "$9.50 · 40 in stock", `<span class="pill">Market ✓</span> <span class="pill">Store ✓</span>`, "m_product_form")}
+      ${row("Americano", "$2.00 · 0 in stock", `<span class="pill strong">Out of stock</span>`, "m_product_form")}
+      ${row("Caffè Latte", "$2.75 · 2 sizes", `<span class="pill">Market ✓</span> <span class="pill">Store ✓</span>`, "m_product_form")}
+      <div class="sec meta">Select several to change price, stock or visibility together. ${n(2)}</div>
+    </div>`),
+    notes: [
+      "P2: one Products list for every store type; /catalog and /products/manage redirect here. Categories become a tab (it is the same job: organising products). Real products and stock from the Mekong Brew seed.",
+      "Bulk changes (price, status) become a selection mode on this list instead of a separate page. Where each product shows (marketplace, online store) is visible per row, with the reason when hidden.",
+    ],
+  },
+  m_product_form: {
+    label: "M9 · Add / edit product",
+    html: () => mShell("m_product_form", `<div class="col">
+      <a class="back" href="#m_products">‹ Products</a>${head("Add product")}
+      <div class="form">
+        <div class="field"><label>Photos ${n(1)}</label><div class="grid3"><span class="thumb sq" style="display:grid;place-items:center">+ Camera</span><span class="thumb sq"></span><span class="thumb sq"></span></div></div>
+        ${field("Name", "Butter Croissant")}
+        <div class="grid2">${field("Price (USD)", "$1.75")}${field("Stock", "24")}</div>
+        ${field("Category", "Bakery", "Shown on Rentify Market and your online store")}
+        <div class="card"><b>More options ${n(2)}</b><div class="meta">Sale price, product code (SKU), sizes and flavours, where it shows</div></div>
+      </div>
+      <div class="sticky-bar"><a class="btn" href="#m_products">Save draft</a><a class="btn primary" style="flex:1" href="#m_products">Publish</a></div>
+    </div>`, "", "", { noBottom: true }),
+    notes: [
+      "Camera first on phones (docs/experience 06 §3.1 quick add): photo, name, price, stock, category is all a first product needs. The bottom bar is hidden on this full-screen task (phase C).",
+      "Everything else is folded under More options; the SKU is generated when left empty, so merchants never have to understand it.",
+    ],
+  },
+  m_categories: {
+    label: "M10 · Products › Categories",
+    html: () => mShell("m_categories", `<div class="col">
+      ${head("Products", "", `<a class="btn primary" href="#m_categories">Add category</a>`)}
+      ${tabs(["All products (11)", "Categories"], 1)}
+      <div class="sec meta">Your own categories appear as menus on your online store. On Rentify Market every product also has one Rentify category. ${n(1)}</div>
+      ${row("Espresso Bar", "4 products", "›")}${row("Iced & Cold Brew", "3 products", "›")}${row("Tea & Matcha", "1 product", "›")}${row("Bakery", "2 products", "›")}${row("Beans to Take Home", "1 product", "›")}
+    </div>`),
+    notes: ["Categories live inside Products (same job). The two kinds of category — the merchant's own and Rentify's marketplace taxonomy — are explained in one sentence instead of two different pages per store type. Real categories from the seed."],
+  },
+  m_customers: {
+    label: "M11 · Customers",
+    html: () => mShell("m_customers", `<div class="col">
+      ${head("Customers " + n(1))}
+      <div class="sec" style="padding-bottom:4px"><div class="field"><div class="input">Search name or phone</div></div></div>
+      ${chips(["All", "Marketplace", "Online store", "POS"])}
+      ${row(ph("s"), `${ph("xs")} orders · last ${ph("xs")}`, "›", "m_customer", `<span class="avatar">${ph("xs")}</span>`)}
+      ${row(ph("s"), `${ph("xs")} orders · last ${ph("xs")}`, "›", "m_customer", `<span class="avatar">${ph("xs")}</span>`)}
+    </div>`),
+    notes: ["Everyone who has ordered, across channels, with a channel filter instead of a global mode. Placeholders: Mekong Brew has no orders locally."],
+  },
+  m_customer: {
+    label: "M12 · Customer detail",
+    html: () => mShell("m_customer", `<div class="col">
+      <a class="back" href="#m_customers">‹ Customers</a>${head(ph("s"))}
+      <div class="sec"><div class="card"><div class="meta">012 *** 678</div><div style="display:flex;gap:8px;margin-top:8px"><a class="btn sm" href="#m_customer">Call</a><a class="btn sm" href="#m_customer">Telegram</a></div></div></div>
+      <div class="sec"><div class="grid3"><div class="tile"><span class="meta">Orders</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Spent</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Returns</span><b>${ph("xs")}</b></div></div></div>
+      <div class="sec"><h3>Orders ${n(1)}</h3>${row(`#${ph("xs")}`, ph("s"), "›", "m_order")}</div>
+    </div>`),
+    notes: ["New screen: a customer's orders in one place. Phone numbers stay masked (docs/experience 06 §2). Verify whether Commerce can filter orders by customer before building."],
+  },
+  m_reports: {
+    label: "M13 · Reports",
+    html: () => mShell("m_reports", `<div class="col wide">
+      ${head("Reports " + n(1))}
+      <div class="sec">${need("store-wide sales statistics (not tied to the website, no 50-order cap)")} ${n(2)}</div>
+      ${chips(["Last 7 days", "30 days", "90 days", "This year"], 1)}
+      ${tabs(["Sales", "Products", "Channels", "Cash to collect"])}
+      <div class="sec"><div class="grid4"><div class="tile"><span class="meta">Sales</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Orders</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Average order</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Refunded</span><b>${ph("xs")}</b></div></div></div>
+      <div class="sec"><div class="card" style="height:180px"><div class="meta">Sales by day</div></div></div>
+      <div class="sec"><h3>Best sellers</h3>${row("Butter Croissant", `${ph("xs")} sold`, ph("xs"))}${row("Caffè Latte", `${ph("xs")} sold`, ph("xs"))}</div>
+    </div>`),
+    notes: [
+      "P12: Reports replaces Analytics and answers new questions instead of repeating Home: products, channel split and cash still to collect (docs/experience 06 §9). /analytics redirects here.",
+      "Today's stats endpoint is keyed by website (marketplace-only stores get nothing) and Home computes totals from at most 50 orders. Real Reports need a store-wide statistics endpoint.",
+    ],
+  },
+  m_invoices: {
+    label: "M14 · Invoices — list",
+    html: () => mShell("m_invoices", `<div class="col wide">
+      ${head("Invoices " + n(1), "", `<a class="btn primary" href="#m_invoice_new">New invoice</a>`)}
+      ${tabs(["All", "Unpaid", "Paid", "Drafts"])}
+      ${row(`INV-${ph("xs")}`, `${ph("s")} · due ${ph("xs")}`, `<b>${ph("xs")}</b><br><span class="pill">Unpaid</span>`)}
+      ${row(`INV-${ph("xs")}`, `${ph("s")} · paid ${ph("xs")}`, `<b>${ph("xs")}</b><br><span class="pill">Paid</span>`)}
+    </div>`),
+    notes: ["P9: Invoices opens on the list, so a merchant can find, resend or mark an invoice paid. Commerce already lists invoices (GET /api/invoice/websites/:websiteId/invoices); marketplace-only stores need the Store-keyed equivalent."],
+  },
+  m_invoice_new: {
+    label: "M15 · New invoice",
+    html: () => mShell("m_invoice_new", `<div class="col">
+      <a class="back" href="#m_invoices">‹ Invoices</a>${head("New invoice " + n(1))}
+      <div class="form">
+        ${field("Customer", "Choose or add a customer")}
+        <div class="field"><label>Items</label>${row("Mondulkiri House Blend · 250g", "2 × $9.50", "$19.00")}<a class="btn" href="#m_invoice_new">+ Add item</a></div>
+        <div class="grid2">${field("Invoice date", ph("s"))}${field("Due date", ph("s"))}</div>
+        ${field("How they pay", "Cash")}
+        <div class="card"><b>Discount and tax</b><div class="meta">Optional</div></div>
+      </div>
+      <div class="sticky-bar"><a class="btn" href="#m_invoice_new">Preview</a><a class="btn primary" style="flex:1" href="#m_invoices">Save and send</a></div>
+    </div>`, "", "", { noBottom: true }),
+    notes: ["P7: \"Invoice Generator\" becomes New invoice, in the order a person fills it (who, what, when, how they pay). The preview is a button on phones and a side panel on desktop."],
+  },
+  m_marketplace: {
+    label: "M16 · Marketplace",
+    html: () => mShell("m_marketplace", `<div class="col">
+      ${head("Rentify Market " + n(1))}
+      <div class="sec"><div class="card"><div style="display:flex;gap:8px;align-items:center"><span class="pill strong">Listed</span><span class="meta">Buyers can find and order from your store</span></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><a class="btn" href="#k_store">View my store page</a><a class="btn" href="#m_share">Share link</a></div></div></div>
+      <div class="sec"><h3>Your products on the marketplace ${n(2)}</h3>
+        ${chips(["Shown (4)", "Hidden (7)"], 1)}
+        ${row("Americano", "Hidden · out of stock", `<a class="btn sm" href="#m_product_form">Add stock</a>`)}
+        ${row("Iced Matcha Latte", "Hidden · out of stock", `<a class="btn sm" href="#m_product_form">Add stock</a>`)}
+        ${row(ph("s"), "Hidden · you turned it off", `<a class="btn sm" href="#m_product_form">Show</a>`)}
+      </div>
+      <div class="sec"><h3>Delivery</h3>${row("Delivery fee", "$1.00 per order, paid on delivery", "›", "m_settings_page")}</div>
+      <div class="sec"><h3>Settings</h3><div class="card"><b>New products appear on the marketplace</b><div class="meta">On · change per product in its options</div></div></div>
+    </div>`),
+    notes: [
+      "New page answering \"am I on Rentify Market, and what do buyers see?\" in one place. Listing is automatic (DEC-028); if Rentify pauses the store, the status and the reason appear here.",
+      "Hidden products are listed with the reason and the one action that fixes it. All of this data exists today (store status, product visibility, moderation, stock), so this page is frontend only. Product names and stock from the seed.",
+    ],
+  },
+  m_online: {
+    label: "M17 · Online store",
+    html: () => mShell("m_online", `<div class="col">
+      ${head("Online store " + n(1))}
+      <div class="sec"><div class="card"><div style="display:flex;gap:8px;align-items:center"><span class="pill strong">Live</span><b>localhost:4650</b></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><a class="btn primary" href="#m_design">Edit design</a><a class="btn" href="#m_online">Visit</a><a class="btn" href="#m_share">Share</a></div></div></div>
+      <div class="sec"><h3>Your store</h3>
+        ${row("Look", "Template, colours and page layout", "›", "m_design")}
+        ${row("Content", "Banner, highlights, about us", "›", "m_design")}
+        ${row("Store details", "Name, logo, contact", "›", "m_settings_page")}
+        ${row("Web address", "Your own domain (opens on rentifystore.shop for checkout)", "›", "m_online")} ${n(2)}
+      </div>
+    </div>`),
+    notes: [
+      "P3: one Online store page (renamed from \"Storefront Customization\"; /store-management redirects). Status and the one main action first; everything else is a short list of named areas.",
+      "P7: the custom-domain rule is explained in plain words; decision codes like \"DEC-003\" never appear in the product. Delete store moves to Settings › Store profile, behind a confirmation.",
+    ],
+  },
+  m_design: {
+    label: "M18 · Store design (full screen)",
+    html: () => mShell("m_design", `<div class="col wide">
+      <a class="back" href="#m_online">‹ Online store</a>
+      ${head("Design", "", `<a class="btn primary" href="#m_online">Publish changes</a>`)}
+      ${tabs(["Template", "Page layout", "Colours"], 0)}
+      <div class="sec">${need("template switch + saved page layout (separate prompt)")}</div>
+      <div class="sec"><div class="grid2">
+        <div class="card"><span class="thumb sq"></span><b>Template 1</b><div class="meta">In use</div></div>
+        <div class="card"><span class="thumb sq"></span><b>Template 2</b><a class="btn sm" href="#m_design">Preview</a></div>
+        <div class="card"><span class="thumb sq"></span><b>Template 3</b><a class="btn sm" href="#m_design">Preview</a></div>
+        <div class="card"><span class="thumb sq"></span><b>Template 4</b><a class="btn sm" href="#m_design">Preview</a></div>
+      </div></div>
+      <div class="sec"><div class="card"><b>Preview ${n(1)}</b><div class="meta">Your real store, with your products, in this template · Phone / Desktop</div><div style="height:160px"></div></div></div>
+    </div>`, "", "", { noBottom: true }),
+    notes: ["Template switch and layout save shown as working (decision in review); \"Publish changes\" saves both. Switching keeps store info, logo, products and theme (contract in docs/notes.md, open item). Full screen: no bottom bar."],
+  },
+  m_pos_open: {
+    label: "M19 · POS from the dashboard",
+    html: () => mShell("m_pos_open", `<div class="col"><div class="page-head"><h1>Point of sale</h1></div><div class="sec">${ph()}</div></div>`, "",
+      `<div class="scrim"><div class="sheet"><div class="grab"></div><h2>Open the point of sale ${n(1)}</h2>
+        <p class="meta">The register opens in its own app, made for selling at your counter. Sales come off the same stock.</p>
+        <a class="btn primary block" href="#p_open">Open register</a><a class="btn ghost block" href="#m_home">Not now</a></div></div>`),
+    notes: ["Phase C behaviour, kept: the first tap explains, later taps open the POS app directly (here it links to the POS screens)."],
+  },
+  m_share: {
+    label: "M20 · Share your store",
+    html: () => mShell("m_share", `<div class="col">
+      ${head("Share your store")}
+      <div class="sec"><div class="card"><b>Rentify Market page</b><div class="meta">${ph("s")}</div>
+        <div class="grid2" style="margin-top:8px"><a class="btn" href="#m_share">Copy link</a><a class="btn" href="#m_share">Telegram</a><a class="btn" href="#m_share">Facebook</a><a class="btn" href="#m_share">QR code</a></div></div></div>
+      <div class="sec"><div class="card"><b>Online store</b><div class="meta">localhost:4650</div>
+        <div class="grid2" style="margin-top:8px"><a class="btn" href="#m_share">Copy link</a><a class="btn" href="#m_share">Telegram</a><a class="btn" href="#m_share">Facebook</a><a class="btn" href="#m_share">QR code</a></div></div></div>
+      <div class="sec"><h3>Print a poster ${n(1)}</h3><div class="card"><span class="thumb" style="width:120px;height:120px"></span><div class="meta">"Scan to shop · cash on delivery" · A4 / A5</div></div></div>
+    </div>`),
+    notes: ["Phase B page with the open fix applied: Telegram and Facebook become full 44 px buttons, not small links (WCAG target size). The QR poster follows docs/experience 12 B8."],
+  },
+  m_settings: {
+    label: "M21 · Settings",
+    html: () => mShell("m_settings", `<div class="col">
+      ${head("Settings " + n(1))}
+      ${row("Store profile", "Name, logo, contact, category · close the store", "›", "m_settings_page")}
+      ${row("Delivery & returns", "Delivery fee, return policy", "›", "m_settings_page")}
+      ${row("Staff & roles", "People who help you and what they can do", "›", "m_staff_settings")}
+      ${row("Plan & billing", "Your plan, what you've used, invoices from Rentify", "›", "m_billing")}
+      ${row("Notifications", "New-order alerts by email and Telegram", "›", "m_settings_page")}
+      ${row("Account & security", "Your name, password, signed-in devices", "›", "m_settings_page")}
+      ${row("Language", "ខ្មែរ / English", "›", "m_settings_page")}
+      <div class="sec meta">Online payments are not offered in this release (cash on delivery only). ${n(2)}</div>
+    </div>`),
+    notes: [
+      "P11: all settings in the dashboard's own shell (no separate \"Back to dashboard\" layout). On phones this list is the page; on desktop it becomes a left list with the section on the right. Each row says what is inside.",
+      "P8: Payments (CutLuy KHQR) is left out — DEC-026/027 say online checkout is COD only and CutLuy is deferred. Recent develop commits add PayWay and CutLuy; that needs a product decision before any payment UI is designed.",
+    ],
+  },
+  m_settings_page: {
+    label: "M22 · A settings section (Delivery & returns)",
+    html: () => mShell("m_settings_page", `<div class="col">
+      <a class="back" href="#m_settings">‹ Settings</a>${head("Delivery & returns " + n(1))}
+      <div class="form">
+        ${field("Delivery fee (USD)", "$1.00", "One flat fee per order. Buyers see it before they order.")}
+        ${field("Return policy", "Returns accepted within 7 days if damaged, defective or wrong", "Shown on your store page (DEC-008)", true)}
+      </div>
+      <div class="sticky-bar"><a class="btn primary" style="flex:1" href="#m_settings">Save</a></div>
+    </div>`),
+    notes: ["Every settings section uses the same pattern: back link, plain title, fields with hints, one Save. The delivery fee is the one from phase B; the return policy text follows DEC-008."],
+  },
+  m_staff_settings: {
+    label: "M23 · Staff & roles",
+    html: () => mShell("m_staff_settings", `<div class="col">
+      <a class="back" href="#m_settings">‹ Settings</a>${head("Staff & roles", "", `<a class="btn primary" href="#m_staff_settings">Invite</a>`)}
+      ${row(ph("s"), "Cashier · POS only", `<span class="pill">Active</span>`, "", `<span class="avatar">${ph("xs")}</span>`)}
+      ${row(ph("s"), "Invitation sent", `<span class="pill">Pending</span>`, "", `<span class="avatar">${ph("xs")}</span>`)}
+      <div class="sec"><h3>What each role can do ${n(1)}</h3><div class="card"><div class="meta">Products · Orders · POS · Invoices · Reports · Settings — tick per person</div></div></div>
+    </div>`),
+    notes: ["Roles are the six staff permissions the APIs already enforce (utils/access.ts), in plain words. Staff only ever see what they are allowed to use (no disabled clutter)."],
+  },
+  m_billing: {
+    label: "M24 · Plan & billing",
+    html: () => mShell("m_billing", `<div class="col">
+      <a class="back" href="#m_settings">‹ Settings</a>${head("Plan & billing " + n(1))}
+      <div class="sec"><div class="card"><b>Free plan</b><div class="meta">Your store, one catalog, selling on Rentify Market</div><a class="btn" href="#m_billing" style="margin-top:8px">Compare plans</a></div></div>
+      <div class="sec"><h3>This month</h3><div class="grid3"><div class="tile"><span class="meta">Paid orders</span><b>0</b></div><div class="tile"><span class="meta">Paid invoices</span><b>0</b></div><div class="tile"><span class="meta">Cost so far</span><b>$0.00</b></div></div>
+        <div class="meta" style="margin-top:6px">You pay only when these happen. ${n(2)}</div></div>
+      <div class="sec"><h3>Bills from Rentify</h3>${row("October 2026", "Pending", "$0.00")}</div>
+    </div>`),
+    notes: [
+      "P4: one Plan & billing page merges Settings › Billing (plans) and /usage/* (usage, breakdown, bills); /usage/* redirects here.",
+      "\"Usage events\" becomes \"paid orders\" and \"paid invoices\" (P7). Figures are the local values shown today (all zero).",
+    ],
+  },
+  m_help: {
+    label: "M25 · Help",
+    html: () => mShell("m_help", `<div class="col">
+      ${head("Help " + n(1))}
+      <div class="sec"><div class="field"><div class="input">Search help</div></div></div>
+      <div class="sec"><h3>Contact Rentify</h3><div class="grid2"><a class="btn" href="#m_help">Telegram</a><a class="btn" href="#m_help">Email</a></div></div>
+      <div class="sec"><h3>Your support cases</h3><div class="meta">No support cases yet.</div></div>
+      <div class="sec"><h3>Common questions</h3>${row("How do I take cash on delivery?", "", "›", "", "")}${row("How do buyers return an item?", "", "›", "", "")}</div>
+    </div>`),
+    notes: ["Kept: real support cases, contact options and FAQ. Search moves to the top, and \"24/7 Desk\" style claims are removed unless they are true."],
+  },
+  m_menu: {
+    label: "M26 · Menu (☰)",
+    html: () => mShell("m_menu", `<div class="col"><div class="page-head"><h1>Good evening, Dara</h1></div>${skel(80)}${skel(120)}</div>`, "",
+      `<div class="scrim left"><nav class="panel" aria-label="Menu">
+        <div class="row" style="border:0"><span class="mark"></span><div class="grow"><b>${STORE}</b><div class="meta">Owner</div></div><a class="icon-btn" href="#m_home">✕</a></div>
+        ${M_MENU.map(([h, items]) => `${h ? `<h6>${h}</h6>` : ""}${items.map(([k, l, badge]) => `<a class="nav-item" href="#${k}"><span class="ico"></span>${l}${badge ? `<span class="tag">${badge}</span>` : ""}</a>`).join("")}`).join("")}
+        <h6>Account ${n(1)}</h6><a class="nav-item" href="#m_settings_page"><span class="ico"></span>Language · ខ្មែរ / English</a><a class="nav-item" href="#m_settings_page"><span class="ico"></span>Sign out</a>
+      </nav></div>`),
+    notes: ["The menu is the full list of places, identical to the desktop sidebar (one navigation model). Language and sign-out move here from the header, so the header keeps only search, notifications and account."],
+  },
+  m_search: {
+    label: "M27 · Search",
+    html: () => mShell("m_search", `<div class="col">
+      <div class="sec"><div class="field"><div class="input">latte ${n(1)}</div></div></div>
+      <div class="sec"><h3>Products</h3>${row("Caffè Latte", "$2.75 · 2 sizes", "›", "m_product_form")}${row("Iced Matcha Latte", "$3.25 · out of stock", "›", "m_product_form")}</div>
+      <div class="sec"><h3>Orders</h3><div class="meta">No orders match "latte".</div></div>
+      <div class="sec"><h3>Pages</h3>${row("Settings › Delivery & returns", "", "›", "m_settings_page", "")}</div>
+    </div>`),
+    notes: ["Search finds things, not just menu items: products, orders (number, buyer, phone), customers, and settings pages. Today the header search only filters the menu."],
+  },
+  m_notifications: {
+    label: "M28 · Notifications",
+    html: () => mShell("m_notifications", `<div class="col"><div class="page-head"><h1>Good evening, Dara</h1></div>${skel(100)}</div>`, "",
+      `<div class="scrim right"><div class="panel">
+        <div class="row" style="border:0"><b class="grow">Notifications ${n(1)}</b><a class="icon-btn" href="#m_home">✕</a></div>
+        ${row("New marketplace order", `#${ph("xs")} · ${ph("xs")} ago`, "", "m_order", "")}
+        ${row("A buyer asked to return an item", `Reply within ${ph("xs")}`, "", "m_return", "")}
+        <a class="btn ghost block" href="#m_settings_page">Notification settings</a>
+      </div></div>`),
+    notes: ["The real Core inbox (exists today). Each notification opens the exact screen to act on."],
+  },
+  m_staff: {
+    label: "M29 · Staff home (cashier)",
+    html: () => mShell("m_staff", `<div class="col">
+      <div class="page-head"><div><div class="eyebrow">${STORE} · Cashier</div><h1>Hello, ${ph("xs")}</h1></div></div>
+      <div class="sec"><a class="btn primary block" href="#p_open">Open the point of sale ${n(1)}</a></div>
+      <div class="sec"><h3>Today at the counter</h3><div class="grid2"><div class="tile"><span class="meta">Sales</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Items sold</span><b>${ph("xs")}</b></div></div></div>
+    </div>`),
+    notes: ["A cashier with only POS permission sees one main action and their own day. No owner tools, no disabled items; deep links to other pages show the blocked state (M30)."],
+  },
+  m_states: {
+    label: "M30 · Loading, error, blocked, empty",
+    html: () => mShell("m_states", `<div class="col">
+      <div class="sec"><h3>Loading ${n(1)}</h3>${skel(20)}${skel(60)}${skel(60)}</div>
+      <div class="sec"><h3>Error</h3><div class="card"><b>We couldn't load your orders.</b><div class="meta">Check your connection and try again. Ref ${ph("xs")}</div><a class="btn" href="#m_states" style="margin-top:8px">Try again</a></div></div>
+      <div class="sec"><h3>Blocked ${n(2)}</h3><div class="card"><b>Adding products is paused while your payment is due.</b><div class="meta">Your store keeps selling. Settle the bill to add products again.</div><a class="btn primary" href="#m_billing" style="margin-top:8px">Pay now</a></div></div>
+      <div class="sec"><h3>Empty</h3><div class="empty"><div class="art"></div><h2>No orders yet</h2><p>Orders from Rentify Market, your POS and your online store all arrive here.</p><a class="btn primary" href="#m_share">Share your store</a></div></div>
+    </div>`),
+    notes: [
+      "Every page uses these four patterns (CLAUDE.md: skeleton · empty · error+retry · success · blocked). Skeletons mirror the page layout; errors never show raw backend messages.",
+      "Blocked states always give the reason and the one action that lifts it (subscription grace and suspension, DEC-017/018; staff without permission).",
+    ],
+  },
+
+  /* ===================== MARKETPLACE (buyer) ===================== */
+  k_home: {
+    label: "K1 · Marketplace home",
+    html: () => kShell("k_home", `<div class="col wide">
+      <div class="sec"><div class="card" style="min-height:140px"><b>Good finds. Great local stores. ${n(1)}</b><div class="meta">Cash on delivery from every store</div><a class="btn primary" href="#k_search" style="margin-top:8px">Shop now</a></div></div>
+      <div class="sec"><h3>Categories <a href="#k_categories">All</a></h3><div class="chips" style="padding:0">${["Fashion & Accessories", "Food & Groceries", "Beauty & Wellness", "Electronics"].map((c) => `<a class="chip" href="#k_search">${c}</a>`).join("")}</div></div>
+      <div class="sec"><h3>New this week <a href="#k_search">See all</a></h3><div class="grid2">${["Nat Habit Navona Shampoo", "Yellow Smoothing Shampoo 1L"].map((p) => `<a class="card" href="#k_product"><span class="thumb sq"></span><b>${p}</b><div class="meta">Skincare Store</div><b>${ph("xs")}</b></a>`).join("")}</div></div>
+      <div class="sec"><h3>Local stores <a href="#k_stores">All</a></h3>${row("Skincare Store", "50 products", "›", "k_store")}${row("Cloth Store", "30 products", "›", "k_store")}</div>
+    </div>`),
+    notes: ["Search is the biggest element and sits in the header on every page (docs/experience 04). The promise buyers care about — cash on delivery — is said once, up front. Real store and product names from the local marketplace."],
+  },
+  k_search: {
+    label: "K2 · Search & category results",
+    html: () => kShell("k_search", `<div class="col wide">
+      ${head("Shampoo " + n(1), "142 products")}
+      <div class="chips"><a class="chip" href="#k_search">Filters (0)</a><a class="chip" href="#k_search">Sort: Featured</a><span class="chip">In stock</span><span class="chip">On sale</span></div>
+      <div class="sec"><div class="grid2">${["Nat Habit Navona Shampoo", "Nisha Smooth & Silky Shampoo", "Yellow Smoothing Shampoo 1L", "Odylique Natural Sun Screen SPF 30"].map((p) => `<a class="card" href="#k_product"><span class="thumb sq"></span><b>${p}</b><div class="meta">Skincare Store</div><b>${ph("xs")}</b></a>`).join("")}</div></div>
+      <div class="sec"><a class="btn block" href="#k_search">Load more</a></div>
+    </div>`),
+    notes: ["One results pattern for search and categories: sticky Filters/Sort chips on phones, a filter panel on desktop, Load more instead of pages (docs/experience 04)."],
+  },
+  k_categories: {
+    label: "K3 · Categories",
+    html: () => kShell("k_categories", `<div class="col wide">
+      ${head("Categories")}
+      <div class="sec"><div class="grid2">${["Fashion & Accessories", "Food & Groceries", "Beauty & Wellness", "Electronics", "Home & Living", "Other"].map((c) => `<a class="card" href="#k_search"><span class="thumb"></span><b>${c}</b></a>`).join("")}</div></div>
+    </div>`),
+    notes: ["Rentify's own marketplace taxonomy, as large tappable tiles. Only categories with products are shown."],
+  },
+  k_product: {
+    label: "K4 · Product page",
+    html: () => kShell("k_product", `<div class="col">
+      <div class="sec"><span class="thumb lg"></span></div>
+      <div class="sec"><a class="meta" href="#k_store">Skincare Store ›</a><h1 style="margin:4px 0;font-size:22px">Yellow Smoothing Shampoo 1L</h1>
+        <div style="display:flex;gap:8px;align-items:baseline"><b style="font-size:24px">$13.99</b><span class="meta">In stock</span></div></div>
+      <div class="sec"><div class="card"><b>Delivery $${ph("xs")} · pay cash on delivery ${n(1)}</b><div class="meta">From Skincare Store · returns within 7 days if damaged or wrong</div></div></div>
+      <div class="sec"><a class="card" href="#k_store" style="display:flex;gap:12px;align-items:center"><span class="avatar">S</span><div class="grow"><b>Skincare Store</b><div class="meta">Joined ${ph("xs")} · 50 products</div></div>›</a></div>
+      <div class="sec"><h3>About this product</h3>${ph()}${ph()}${ph("s")}</div>
+      <div class="sec"><h3>Reviews</h3><div class="meta">No reviews yet</div></div>
+      <div class="sticky-bar"><a class="btn" href="#k_wishlist">Save</a><a class="btn primary" style="flex:1" href="#k_cart">Add to cart ${n(2)}</a></div>
+    </div>`, "", { noBottom: true }),
+    notes: [
+      "K1: what a buyer needs to decide — price, delivery fee, cash on delivery and the return promise — sits right under the price. The SKU code buyers see today is removed (it is for the store, not the buyer).",
+      "Sticky add-to-cart at thumb height; the store trust card links to the store page. Real product name and price from the local marketplace.",
+    ],
+  },
+  k_store: {
+    label: "K5 · Store page",
+    html: () => kShell("k_store", `<div class="col wide">
+      <div class="sec"><div class="card" style="display:flex;gap:12px;align-items:center"><span class="avatar" style="width:56px;height:56px">S</span><div class="grow"><b>Skincare Store</b><div class="meta">Beauty & Wellness · 50 products</div></div><a class="btn sm" href="#k_store">Follow</a></div></div>
+      <div class="sec"><div class="card"><b>Delivery $${ph("xs")} per order · cash on delivery ${n(1)}</b><div class="meta">Returns within 7 days if damaged, defective or wrong</div></div></div>
+      ${chips(["All", "Hair Care", "Skin Care"])}
+      <div class="sec"><div class="grid2">${["Nat Habit Navona Shampoo", "Yellow Smoothing Shampoo 1L"].map((p) => `<a class="card" href="#k_product"><span class="thumb sq"></span><b>${p}</b><b>${ph("xs")}</b></a>`).join("")}</div></div>
+    </div>`),
+    notes: ["The store's terms (delivery fee, COD, returns) are on the store page so buyers know them before adding to cart (DEC-004, DEC-008). Ratings only if real reviews exist."],
+  },
+  k_stores: {
+    label: "K6 · All stores",
+    html: () => kShell("k_stores", `<div class="col wide">${head("Local stores")}${chips(["All", "Beauty & Wellness", "Fashion", "Food", "Electronics"])}
+      ${row("Skincare Store", "Beauty & Wellness · 50 products", "›", "k_store")}${row("Cloth Store", "Fashion · 30 products", "›", "k_store")}${row("Phone Store", "Electronics", "›", "k_store")}${row("School Supply Store", "Other", "›", "k_store")}
+      <div class="sec meta">${n(1)}</div></div>`),
+    notes: ["Stores filter by their main category. Real seeded store names."],
+  },
+  k_cart: {
+    label: "K7 · Cart (grouped by store)",
+    html: () => kShell("k_cart", `<div class="col">
+      ${head("Your cart")}
+      <div class="sec"><div class="card"><b>Skincare Store ${n(1)}</b>
+        ${row("Yellow Smoothing Shampoo 1L", "$13.99", `<span class="pill">− 1 +</span>`)}
+        <div class="row"><div class="grow meta">Delivery</div><div class="end">$${ph("xs")}</div></div>
+        <div class="row"><div class="grow"><b>Total · cash on delivery</b></div><div class="end"><b>${ph("xs")}</b></div></div>
+        <a class="btn primary block" href="#k_checkout">Check out this store</a></div></div>
+      <div class="sec"><div class="card"><b>Cloth Store</b>${row(ph("s"), ph("xs"), `<span class="pill">− 1 +</span>`)}<a class="btn block" href="#k_checkout">Check out this store</a></div></div>
+    </div>`),
+    notes: ["One store per order (DEC-012/013): the cart is grouped by store, each with its own delivery fee, total and checkout button, so a buyer never wonders why there are two orders."],
+  },
+  k_checkout: {
+    label: "K8 · Checkout (one page, COD)",
+    html: () => kShell("k_checkout", `<div class="col">
+      <a class="back" href="#k_cart">‹ Cart</a>${head("Checkout · Skincare Store " + n(1))}
+      <div class="form">
+        ${field("Your name", "Emily Watson")}
+        ${field("Phone", "+855 12 999 888", "The store calls you before delivery")}
+        ${field("Delivery address", "", "Street, house number, landmark", true)}
+        <div class="card"><b>Pay cash on delivery ${n(2)}</b><div class="meta">Pay the courier when your order arrives.</div></div>
+        <div class="card">${row("Yellow Smoothing Shampoo 1L", "1 × $13.99", "$13.99", "", "")}<div class="row"><div class="grow meta">Delivery</div><div class="end">$${ph("xs")}</div></div></div>
+      </div>
+      <div class="sticky-bar"><div class="grow"><b>${ph("xs")}</b><div class="meta">to pay on delivery</div></div><a class="btn primary" href="#k_placed">Place order</a></div>
+    </div>`, "", { noBottom: true }),
+    notes: [
+      "K2: checkout today is split over /checkout/shipping, /payment and /review; it becomes one short page (Baymard: ~12 form fields). Fields are prefilled from the buyer's account (seed: Emily Watson).",
+      "COD only, per DEC-026. The code currently offers ABA PayWay when a store enables it; not designed until the payment decision is made.",
+    ],
+  },
+  k_placed: {
+    label: "K9 · Order placed",
+    html: () => kShell("k_placed", `<div class="col"><div class="empty"><div class="art"></div><h2>Order placed ${n(1)}</h2><p>Skincare Store will call you to confirm, then deliver. Pay ${ph("xs")} in cash when it arrives.</p>
+      <a class="btn primary block" href="#k_order">Track this order</a><a class="btn ghost block" href="#k_home">Keep shopping</a></div></div>`),
+    notes: ["Says exactly what happens next and how much to have ready in cash."],
+  },
+  k_orders: {
+    label: "K10 · My orders",
+    html: () => kShell("k_orders", `<div class="col">
+      ${head("My orders " + n(1))}
+      ${tabs(["All (2)", "On the way", "Delivered", "Cancelled"])}
+      ${row(`Skincare Store <span class="pill">Waiting to be sent</span>`, `#${ph("xs")} · ${ph("s")}`, "›", "k_order")}
+      ${row(`Cloth Store <span class="pill">Delivered</span>`, `#${ph("xs")} · ${ph("s")}`, "›", "k_order")}
+    </div>`),
+    notes: ["Emily Watson has two orders locally (one waiting, one delivered). Status words are buyer words, not \"Pending Dispatch\"."],
+  },
+  k_order: {
+    label: "K11 · Order detail & tracking",
+    html: () => kShell("k_order", `<div class="col">
+      <a class="back" href="#k_orders">‹ My orders</a>${head(`Order #${ph("xs")}`)}
+      <div class="sec"><div class="card"><div class="steps">
+        <div class="stepi done"><span class="dot"></span><div>Placed</div></div>
+        <div class="stepi done"><span class="dot"></span><div>Confirmed by the store</div></div>
+        <div class="stepi now"><span class="dot"></span><div><b>On the way</b><div class="meta">Have ${ph("xs")} ready in cash</div></div></div>
+        <div class="stepi"><span class="dot"></span><div>Delivered</div></div>
+      </div></div></div>
+      <div class="sec">${row("Yellow Smoothing Shampoo 1L", "1 × $13.99", "$13.99", "", "<span class='thumb'></span>")}</div>
+      <div class="sec"><div class="grid2"><a class="btn" href="#k_order">Call the store</a><a class="btn" href="#k_report">Report a problem ${n(1)}</a></div></div>
+    </div>`),
+    notes: ["Tracking shows only real order events (no invented courier map). Report a problem is always one tap away (docs/experience 12 A8/A9)."],
+  },
+  k_report: {
+    label: "K12 · Report a problem",
+    html: () => kShell("k_report", `<div class="col">
+      <a class="back" href="#k_order">‹ Order</a>${head("Report a problem", "Step 1 of 3")}
+      <div class="form">
+        <div class="field"><label>What happened? ${n(1)}</label>${["It didn't arrive", "It arrived damaged", "Wrong item", "Something else"].map((x) => `<div class="input">${x}</div>`).join("")}</div>
+      </div>
+      <div class="sticky-bar"><a class="btn primary" style="flex:1" href="#k_report">Next: add photos</a></div>
+    </div>`, "", { noBottom: true }),
+    notes: ["Three short steps: what happened, photos (required for returns, DEC-009), what you want (refund or replacement). Ends in the merchant's Returns & problems queue (M6)."],
+  },
+  k_wishlist: {
+    label: "K13 · Saved",
+    html: () => kShell("k_wishlist", `<div class="col"><div class="empty"><div class="art"></div><h2>Nothing saved yet ${n(1)}</h2><p>Tap the heart on any product to keep it here.</p><a class="btn primary" href="#k_search">Browse products</a></div></div>`),
+    notes: ["\"Wishlist\" becomes \"Saved\" (shorter, clearer in Khmer too). Empty state with one action."],
+  },
+  k_account: {
+    label: "K14 · Account",
+    html: () => kShell("k_account", `<div class="col">
+      ${head("Emily Watson " + n(1), "emily.customer@example.com")}
+      ${row("My orders", "", "›", "k_orders", "")}${row("Saved", "", "›", "k_wishlist", "")}${row("Delivery addresses", "", "›", "k_account", "")}${row("Language", "ខ្មែរ / English", "›", "k_account", "")}${row("Help", "", "›", "k_help", "")}${row("Sell on Rentify", "", "›", "k_sell", "")}${row("Sign out", "", "", "k_signin", "")}
+    </div>`),
+    notes: ["One account list; sign-in, sign-up and passwords stay in the shared sign-in app (they already redirect there)."],
+  },
+  k_signin: {
+    label: "K15 · Sign-in hand-off",
+    html: () => kShell("k_signin", `<div class="col"><div class="empty"><div class="art"></div><h2>Sign in to check out ${n(1)}</h2><p>Your cart is kept. Use Google, Telegram, or your email or phone.</p><a class="btn primary block" href="#k_checkout">Continue to sign in</a></div></div>`, "", { noBottom: true }),
+    notes: ["Today a guest who taps Checkout lands on a page titled \"Welcome back … your Rentify workspace\" (merchant wording). The hand-off says why sign-in is needed and that the cart is kept."],
+  },
+  k_help: {
+    label: "K16 · Help",
+    html: () => kShell("k_help", `<div class="col">${head("Help")}<div class="sec"><div class="field"><div class="input">Search help</div></div></div>
+      ${row("How long does delivery take?", "", "›", "", "")}${row("How do I track my order?", "", "›", "", "")}${row("Can I return an item?", "", "›", "", "")}<div class="sec"><a class="btn block" href="#k_help">Contact Rentify</a> ${n(1)}</div></div>`),
+    notes: ["Existing FAQ (real questions), with search and one contact button."],
+  },
+  k_sell: {
+    label: "K17 · Sell on Rentify",
+    html: () => kShell("k_sell", `<div class="col">
+      <div class="sec"><div class="card" style="min-height:140px"><b>Sell what you make. Reach more customers. ${n(1)}</b><div class="meta">Free to start · listed on Rentify Market automatically</div><a class="btn primary" href="#m_home_new" style="margin-top:8px">Open my store</a></div></div>
+      <div class="sec"><h3>How it works</h3>${row("1. Create your store", "Name and category", "", "", "")}${row("2. Add products", "Photo, price, stock", "", "", "")}${row("3. Get orders", "Deliver and collect cash", "", "", "")}</div>
+      <div class="sec">${row("Plans and pricing", "", "›", "k_sell", "")}${row("Questions", "", "›", "k_help", "")}</div>
+    </div>`),
+    notes: ["Four pages (landing, explore, pricing, FAQ) become one page plus pricing. It reflects automatic listing (DEC-028): no application wording."],
+  },
+
+  /* ===================== POS ===================== */
+  p_open: {
+    label: "X1 · POS — open shift",
+    html: () => pShell("p_open", `<div class="col"><div class="form">
+      <h1 style="margin:8px 0 0;font-size:22px">Start selling ${n(1)}</h1><div class="meta">${STORE} · Dara</div>
+      ${field("Cash in the drawer now (USD)", "$50.00", "Count the notes you start with")}
+      ${field("Choose a 4–6 digit PIN", "• • • •", "To unlock the register if you step away")}
+      <a class="btn primary block" href="#p_sell">Open register</a>
+    </div></div>`, { noNav: true }),
+    notes: ["\"Register Session Setup\" and \"Opening Cash Float\" become plain words. Same two inputs the POS asks for today."],
+  },
+  p_sell: {
+    label: "X2 · POS — sell",
+    html: () => pShell("p_sell", `<div class="pos-wrap">
+      <div class="pos-cat">
+        <div class="sec" style="padding-bottom:4px"><div class="field"><div class="input">Scan or search ${n(1)}</div></div></div>
+        ${chips(["All", "Espresso Bar", "Iced & Cold Brew", "Bakery", "Beans"])}
+        <div class="prod-grid">${[["Americano", "$2.00", "Out of stock"], ["Butter Croissant", "$1.75", "24 left"], ["Caffè Latte", "$2.75", "2 sizes"], ["Cappuccino", "$2.50", "Out of stock"], ["Mondulkiri House Blend", "$9.50", "40 left"], ["Palm Sugar Cookie", "$1.25", "30 left"]].map(([p, price, s]) => `<a class="pcard" href="#p_sell"><span class="thumb sq"></span><b>${p}</b><span>${price}</span><span class="meta">${s}</span></a>`).join("")}</div>
+        <div class="banner" style="margin:0 12px 12px">Offline · 2 sales will sync when you're back online ${n(2)}</div>
+      </div>
+      <div class="pos-cart"><div class="sec"><h3>Current sale</h3>${row("Butter Croissant", "2 × $1.75", "$3.50", "", "")}${row("Caffè Latte (L)", "1 × $2.75", "$2.75", "", "")}</div><div class="sticky-bar"><a class="btn" href="#p_tickets">Hold</a><a class="btn primary" style="flex:1" href="#p_pay">Pay $6.25</a></div></div>
+    </div>
+    <a class="sticky-bar cart-bar" href="#p_pay"><b class="grow">3 items · $6.25</b><span class="btn primary">Pay ${n(3)}</span></a>`),
+    notes: [
+      "X1: on phones the product grid gets the full width (2 columns) and the cart becomes a bar at the bottom that opens the payment sheet. On tablets the cart is a side panel. Today on a phone the cart takes almost the whole width and the products are squeezed into ~50 px. Products, prices and stock from the Mekong Brew seed (after the SKU backfill).",
+      "The offline queue (/recovery today) becomes a banner that appears only when something is waiting to sync.",
+      "The pay bar shows the item count and total at thumb height.",
+    ],
+  },
+  p_pay: {
+    label: "X3 · POS — take payment",
+    html: () => pShell("p_pay", `<div class="col"><div class="sec">${ph()}</div></div>
+      <div class="scrim"><div class="sheet"><div class="grab"></div><h2>$6.25 ${n(1)}</h2>
+        ${tabs(["Cash", "KHQR"], 0)}
+        <div class="form" style="padding:12px 0">${field("Cash received", "$10.00")}<div class="card"><b>Change: $3.75</b></div>
+        <div class="keypad">${["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫"].map((k) => `<span>${k}</span>`).join("")}</div>
+        <a class="btn primary block" href="#p_done">Done · $3.75 change</a></div></div></div>`, { noNav: true }),
+    notes: ["Cash or KHQR at the counter (in person; DEC-026 restricts online checkout only). The change is computed and shown large; a keypad avoids the phone keyboard covering the total."],
+  },
+  p_done: {
+    label: "X4 · POS — sale complete",
+    html: () => pShell("p_done", `<div class="col"><div class="empty"><div class="art"></div><h2>Sale complete ${n(1)}</h2><p>$6.25 · cash · change $3.75</p>
+      <div class="grid2"><a class="btn" href="#p_done">Print receipt</a><a class="btn" href="#p_done">Send by Telegram</a></div><a class="btn primary block" href="#p_sell" style="margin-top:10px">New sale</a></div></div>`),
+    notes: ["One main action (New sale) so the cashier is ready for the next customer."],
+  },
+  p_tickets: {
+    label: "X5 · POS — held sales",
+    html: () => pShell("p_tickets", `<div class="col">${head("Held sales " + n(1))}<div class="empty"><div class="art"></div><h2>No held sales</h2><p>Tap Hold on a sale when a customer needs a moment. It waits here.</p><a class="btn primary" href="#p_sell">Back to selling</a></div></div>`),
+    notes: ["\"Held & Parked Tickets\" becomes \"Held sales\" (one word for one idea)."],
+  },
+  p_returns: {
+    label: "X6 · POS — returns",
+    html: () => pShell("p_returns", `<div class="col">${head("Returns " + n(1))}<div class="sec"><div class="field"><div class="input">Scan receipt or search sale number</div></div></div>
+      ${row(`Sale #${ph("xs")}`, `${ph("s")} · cash`, "›", "p_returns", "")}<div class="sec meta">Returned items go back into stock.</div></div>`),
+    notes: ["Find the sale first (scan the receipt), then choose items to return; stock is put back automatically (same catalog)."],
+  },
+  p_register: {
+    label: "X7 · POS — cash drawer",
+    html: () => pShell("p_register", `<div class="col">${head("Cash drawer " + n(1))}
+      <div class="sec"><div class="grid3"><div class="tile"><span class="meta">Started with</span><b>$50.00</b></div><div class="tile"><span class="meta">Cash sales</span><b>${ph("xs")}</b></div><div class="tile"><span class="meta">Should be in drawer</span><b>${ph("xs")}</b></div></div></div>
+      <div class="sec"><div class="grid2"><a class="btn" href="#p_register">Add cash</a><a class="btn" href="#p_register">Take cash out</a></div></div>
+      <div class="sticky-bar"><a class="btn primary" style="flex:1" href="#p_open">Close shift and count</a></div></div>`),
+    notes: ["\"Cash Register & Till Drawer\" becomes Cash drawer, with the one number a cashier needs: what should be in the drawer. Close shift asks for the counted amount and shows any difference."],
+  },
+  p_lock: {
+    label: "X8 · POS — locked",
+    html: () => pShell("p_lock", `<div class="col"><div class="form" style="align-items:center;text-align:center">
+      <h1 style="margin:16px 0 0;font-size:20px">Register locked ${n(1)}</h1><div class="meta">Dara · ${STORE}</div><div style="font-size:28px;letter-spacing:12px">• • • •</div>
+      <div class="keypad" style="width:100%;max-width:300px">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"].map((k) => `<span>${k}</span>`).join("")}</div>
+      <a class="btn ghost" href="#p_open">Not Dara? Switch cashier</a><a class="btn primary" href="#p_sell">Unlock</a></div></div>`, { noNav: true }),
+    notes: ["Locks with the shift PIN; large keys. Switching cashier is visible instead of hidden in Tools."],
+  },
+};
+
+const GROUPS = {
+  "Overview": ["overview"],
+  "Merchant dashboard": ["m_home", "m_home_new", "m_orders", "m_order", "m_order_action", "m_returns", "m_return", "m_products", "m_product_form", "m_categories", "m_customers", "m_customer", "m_reports", "m_invoices", "m_invoice_new", "m_marketplace", "m_online", "m_design", "m_pos_open", "m_share", "m_settings", "m_settings_page", "m_staff_settings", "m_billing", "m_help"],
+  "Merchant overlays & states": ["m_menu", "m_search", "m_notifications", "m_staff", "m_states"],
+  "Buyer marketplace": ["k_home", "k_search", "k_categories", "k_product", "k_store", "k_stores", "k_cart", "k_checkout", "k_placed", "k_orders", "k_order", "k_report", "k_wishlist", "k_account", "k_signin", "k_help", "k_sell"],
+  "POS app": ["p_open", "p_sell", "p_pay", "p_done", "p_tickets", "p_returns", "p_register", "p_lock"],
+};
+
+/* ---------- runtime ---------- */
+const sel = document.getElementById("screen"), device = document.getElementById("device"), panel = document.getElementById("notesPanel");
+sel.innerHTML = Object.entries(GROUPS).map(([g, keys]) => `<optgroup label="${g}">${keys.map((k) => `<option value="${k}">${SCREENS[k].label}</option>`).join("")}</optgroup>`).join("");
+function render() {
+  const key = SCREENS[location.hash.slice(1)] ? location.hash.slice(1) : "overview";
+  const s = SCREENS[key]; sel.value = key; device.innerHTML = s.html();
+  panel.innerHTML = s.notes.length ? `<ol>${s.notes.map((t) => `<li>${t}</li>`).join("")}</ol>` : "";
+  window.scrollTo(0, 0);
+}
+const setMode = (m) => { device.classList.toggle("mobile", m); document.getElementById("mob").setAttribute("aria-pressed", m); document.getElementById("desk").setAttribute("aria-pressed", !m); };
+sel.onchange = () => { location.hash = sel.value; };
+document.getElementById("desk").onclick = () => setMode(false);
+document.getElementById("mob").onclick = () => setMode(true);
+document.getElementById("notes").onclick = (e) => e.currentTarget.setAttribute("aria-pressed", document.body.classList.toggle("notes"));
+window.addEventListener("hashchange", render);
+setMode(true);
+render();
+</script>
+</body>
+</html>
