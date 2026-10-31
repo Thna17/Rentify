@@ -104,7 +104,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           {showSuccess ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
+              <CheckCircle2 className="w-16 h-16 text-[var(--rentify-color-success-text)] mb-4" />
               <h3 className="text-lg font-semibold">Item Added!</h3>
               <p className="text-muted-foreground">The item has been added to your invoice</p>
             </div>
@@ -123,7 +123,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
               {/* Quick Add Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" />
+                  <Zap className="w-4 h-4 text-[var(--rentify-color-warning-text)]" />
                   <h3 className="font-semibold text-sm">{t('dashboard.invoices.quick_add')}</h3>
                 </div>
 
@@ -132,8 +132,8 @@ export const ItemQuickAdd = ({ onAddItem }) => {
                     <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
                 ) : isError ? (
-                  <div className="flex items-center gap-2 p-3 text-sm border border-red-200 bg-red-50 rounded-lg">
-                    <AlertCircle className="w-4 h-4 text-red-500" />
+                  <div className="flex items-center gap-2 p-3 text-sm border border-[var(--rentify-color-danger-border)] bg-[var(--rentify-color-danger-subtle)] rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-[var(--rentify-color-danger-text)]" />
                     <span>{t('dashboard.invoices.failed_load_products')}</span>
                   </div>
                 ) : (
@@ -149,7 +149,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
                             <p className="text-sm font-medium leading-none truncate">
                               {product.name}
                             </p>
-                            <p className="text-sm font-semibold text-green-600">
+                            <p className="text-sm font-semibold text-[var(--rentify-color-success-text)]">
                               ${product.price}
                             </p>
                             {product.category && (
@@ -170,7 +170,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
               {/* Custom Item Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-blue-500" />
+                  <Plus className="w-4 h-4 text-primary-strong" />
                   <h3 className="font-semibold text-sm">{t('dashboard.invoices.custom_item')}</h3>
                 </div>
 
@@ -182,7 +182,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
                       value={customItem.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder={t('dashboard.invoices.description_placeholder')}
-                      className="focus-visible:ring-blue-500"
+                      className="focus-visible:ring-ring"
                     />
                   </div>
 
@@ -195,7 +195,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
                         min="1"
                         value={customItem.quantity}
                         onChange={(e) => handleInputChange('quantity', e.target.value)}
-                        className="focus-visible:ring-blue-500"
+                        className="focus-visible:ring-ring"
                       />
                     </div>
                     <div className="space-y-2">
@@ -211,7 +211,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
                           step="0.01"
                           value={customItem.price}
                           onChange={(e) => handleInputChange('price', e.target.value)}
-                          className="pl-8 focus-visible:ring-blue-500"
+                          className="pl-8 focus-visible:ring-ring"
                           placeholder="0.00"
                         />
                       </div>
@@ -221,7 +221,7 @@ export const ItemQuickAdd = ({ onAddItem }) => {
                   <Button 
                     onClick={handleCustomAdd}
                     disabled={!customItem.name.trim()}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-primary hover:bg-primary"
                   >
                     {t('dashboard.invoices.add_custom_item')}
                   </Button>

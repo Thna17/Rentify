@@ -311,27 +311,27 @@ export function ProductDetailView({
       active: {
         label: t('dashboard.product.status_active'),
         variant: 'success',
-        className: 'bg-green-100 text-green-800 hover:bg-green-100',
+        className: 'bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] hover:bg-[var(--rentify-color-success-subtle)]',
       },
       inactive: {
         label: t('dashboard.product.status_inactive'),
         variant: 'secondary',
-        className: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+        className: 'bg-muted text-foreground hover:bg-muted',
       },
       archived: {
         label: t('dashboard.product.status_archived'),
         variant: 'outline',
-        className: 'border-gray-300 text-gray-600',
+        className: 'border-border text-muted-foreground',
       },
       low_stock: {
         label: t('dashboard.product.status_low_stock'),
         variant: 'warning',
-        className: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
+        className: 'bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] hover:bg-[var(--rentify-color-warning-subtle)]',
       },
       out_of_stock: {
         label: t('dashboard.product.status_out_of_stock'),
         variant: 'destructive',
-        className: 'bg-red-100 text-red-800 hover:bg-red-100',
+        className: 'bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)] hover:bg-[var(--rentify-color-danger-subtle)]',
       },
     };
 
@@ -879,7 +879,7 @@ export function ProductDetailView({
                   </div>
 
                   {(product?.stockQuantity || 0) <= (product?.lowStockThreshold || 5) && (
-                    <div className="flex items-center p-3 rounded-lg bg-amber-100 text-amber-800">
+                    <div className="flex items-center p-3 rounded-lg bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]">
                       <IconAlertCircle className="h-4 w-4 mr-2" />
                       <span className="text-sm">
                         {t('dashboard.product_detail.low_stock_warning')}
@@ -1138,7 +1138,7 @@ export function ProductDetailView({
                       <Label className="text-sm">
                         {t('dashboard.product_detail.profit_margin')}
                       </Label>
-                      <div className="text-lg font-medium text-green-600">
+                      <div className="text-lg font-medium text-[var(--rentify-color-success-text)]">
                         {(
                           ((product.price - product.cost) / product.price) *
                           100
@@ -1181,7 +1181,7 @@ export function ProductDetailView({
                       <Label className="text-sm">
                         {t('dashboard.product_detail.discount')}
                       </Label>
-                      <div className="text-lg font-medium text-red-600">
+                      <div className="text-lg font-medium text-[var(--rentify-color-danger-text)]">
                         {(
                           ((product.compareAtPrice - product.price) /
                             product.compareAtPrice) *

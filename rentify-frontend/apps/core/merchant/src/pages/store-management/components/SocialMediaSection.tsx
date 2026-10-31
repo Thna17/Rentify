@@ -124,7 +124,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                   href={storeData.socialMedia.facebook} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="p-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
                 >
                   <Facebook className="h-4 w-4" />
                 </a>
@@ -134,7 +134,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                   href={storeData.socialMedia.instagram} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="p-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+                  className="p-2 bg-[var(--rentify-color-danger-base)] text-white rounded-lg hover:bg-[var(--rentify-color-danger-base)] transition-colors"
                 >
                   <Instagram className="h-4 w-4" />
                 </a>
@@ -144,7 +144,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                   href={storeData.socialMedia.twitter} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="p-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                  className="p-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
                 >
                   <Twitter className="h-4 w-4" />
                 </a>
@@ -154,7 +154,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                   href={storeData.socialMedia.linkedin} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="p-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition-colors"
+                  className="p-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
                 >
                   <Linkedin className="h-4 w-4" />
                 </a>

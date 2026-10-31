@@ -229,12 +229,12 @@ const StaffInviteForm: React.FC<StaffInviteFormProps> = ({
       
       {/* Messages */}
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+        <div className="p-3 rounded-lg bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)] text-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="p-3 rounded-lg bg-green-50 text-green-700 text-sm">
+        <div className="p-3 rounded-lg bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] text-sm">
           {success}
         </div>
       )}

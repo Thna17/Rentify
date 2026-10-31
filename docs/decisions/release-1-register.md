@@ -59,6 +59,7 @@ Formal human approval is conferred when the pull request introducing this regist
 | **DEC-027** | CutLuy QR Rollout Scope (Post-Launch) | **Superseded by DEC-029.** Was: strictly deferred to Phase P9; seller-owned accounts only | Executive Platform Sponsor | CutLuy completely disabled in code |
 | **DEC-028** | Automatic Marketplace Listing (supersedes DEC-007) | Stores are listed automatically once the owner is verified and a category is set; admins moderate after listing | Product owner | Listing stays automatic; admins suspend individual Stores |
 | **DEC-029** | Online Payment by KHQR through CutLuy (supersedes DEC-026, DEC-027) | Buyers pay by KHQR through the merchant's own CutLuy account (connects to ABA) or COD; CutLuy is the only online path; no refunds for now | Product owner | COD only |
+| **DEC-030** | Merchant dashboard colour theme | The dashboard keeps its blue primary and cool greys; every colour comes from its theme or the shared status tokens | Product owner | Jade & Saffron (docs/experience/02) |
 
 ---
 
@@ -558,6 +559,18 @@ Formal human approval is conferred when the pull request introducing this regist
 - **Risks Accepted:** No refund path: a merchant who cannot fulfil a paid order must be helped by support. Unpaid KHQR orders hold stock until the time limit is built.
 - **Affected Systems / Schemas / Contracts:** `ecommerce-server/modules/payments/*` (config, webhook, status), `ecommerce-server/modules/checkout/marketplaceCheckoutService.js` (`KHQR` method, `ABA_PAYWAY` to retire), `ecommerce-server/modules/payments/aba/*`, `tools/host-validator/policies.js` (DEC-026/027 rules), marketplace checkout and payment page, storefront KHQR checkout, POS KHQR, merchant `/settings/payments`.
 - **Evidence Links:** [`docs/experience/wireframes/rentify-ux-redesign.html`](../experience/wireframes/rentify-ux-redesign.html) (screens M4b, M21b, K8, K8b, X3b), [`docs/specs/cutluy-payments-work-packet.md`](../specs/cutluy-payments-work-packet.md).
+
+---
+
+### DEC-030: Merchant Dashboard Colour Theme
+- **Topic:** Which colours the merchant dashboard uses, and how they stay consistent.
+- **Previous Behavior:** docs/experience/02 and design tokens v1 name Jade & Saffron as the brand. The merchant app overrode them with its own blue (`--primary` oklch 0.56 0.2 258, #0E6EE6) and cool greys, while about 600 components used raw Tailwind palette colours (amber, emerald, sky, violet, slate...) and some read the warm, jade tokens, so pages differed from each other and from the theme. Low-stock text (2.6:1) and field borders (1.3:1) failed WCAG AA.
+- **Decision:** The merchant dashboard keeps its blue. Consistency comes from one source: theme classes (`primary`, `primary-strong` for blue text on light tints, `muted`, `border`, `input`, `destructive`, ...) and the shared status tokens (success, warning, danger, info) for states. Inside the merchant app the shared brand, text, surface and border tokens resolve to the blue theme and cool greys, in light and dark. Raw palette colours are not allowed (guard test `components/page/colourGuard.test.ts`); the printed invoice, storefront palette swatches and template previews keep their own colours because those colours are content. Field borders are 3.4:1, status text is at least 4.5:1.
+- **Rejected Alternatives:** Jade & Saffron in the dashboard (mockup `docs/experience/mockups/visual-direction.html`, compared on 2026-11-01): the product owner preferred to keep the current blue.
+- **Status:** Decided by the product owner on 2026-11-01.
+- **Named Human Approver:** Product owner (longMengchheang).
+- **Open:** The buyer marketplace uses indigo (#4F46E5) and storefronts their template colours; aligning the marketplace with the dashboard blue or the brand is not decided.
+- **Affected Systems:** `rentify-frontend/apps/core/merchant/src/styles.css`, `tailwind.config.js`, merchant components.
 
 ---
 

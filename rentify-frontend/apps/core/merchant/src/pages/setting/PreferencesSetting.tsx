@@ -87,14 +87,14 @@ export const PreferencesSetting = () => {
   }) => (
     <div className="flex items-center justify-between py-4">
       <div className="flex items-center space-x-4">
-        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <div className="p-2 bg-muted rounded-lg">
           {icon}
         </div>
         <div>
           <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
             {label}
           </Label>
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
         </div>
       </div>
       <Switch
@@ -133,7 +133,7 @@ export const PreferencesSetting = () => {
               }}
               label={t('merchant.p.pointOfSalePos')}
               description="Enable in-person counter checkout, cash collection, and barcode terminal in dashboard"
-              icon={<TerminalSquare className="h-4 w-4 text-purple-600" />}
+              icon={<TerminalSquare className="h-4 w-4 text-muted-foreground" />}
             />
             <PreferenceSwitch
               id="marketplace-channel"
@@ -144,7 +144,7 @@ export const PreferencesSetting = () => {
               }}
               label={t('merchant.p.rentifyMarketplace2')}
               description="List eligible store products in the central Rentify marketplace"
-              icon={<ShoppingBag className="h-4 w-4 text-emerald-600" />}
+              icon={<ShoppingBag className="h-4 w-4 text-[var(--rentify-color-success-text)]" />}
             />
           </div>
         </CardContent>
@@ -193,7 +193,7 @@ export const PreferencesSetting = () => {
               onCheckedChange={(checked) => setPreferences({ ...preferences, emailEnabled: checked })}
               label={t('merchant.p.emailNotifications')}
               description="Receive important updates via email"
-              icon={<Mail className="h-4 w-4 text-gray-600" />}
+              icon={<Mail className="h-4 w-4 text-muted-foreground" />}
             />
 
             <PreferenceSwitch
@@ -202,7 +202,7 @@ export const PreferencesSetting = () => {
               onCheckedChange={(checked) => setPreferences({ ...preferences, telegramEnabled: checked })}
               label={t('merchant.p.telegramNotifications')}
               description="Get alerts in Telegram when delivery is available"
-              icon={<Send className="h-4 w-4 text-gray-600" />}
+              icon={<Send className="h-4 w-4 text-muted-foreground" />}
             />
 
             <PreferenceSwitch
@@ -211,7 +211,7 @@ export const PreferencesSetting = () => {
               onCheckedChange={(checked) => setPreferences({ ...preferences, optionalEnabled: checked })}
               label={t('merchant.p.optionalUpdates')}
               description="Receive product updates, tips, and other non-essential notices"
-              icon={<Megaphone className="h-4 w-4 text-gray-600" />}
+              icon={<Megaphone className="h-4 w-4 text-muted-foreground" />}
             />
           </div>
           )}
@@ -240,15 +240,15 @@ export const PreferencesSetting = () => {
                   onClick={() => setPreferences({ ...preferences, locale: value })}
                   className={`border-2 rounded-lg p-4 text-left cursor-pointer transition-all ${
                     selected
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                      : 'border-gray-200 dark:border-gray-800 hover:border-gray-300'
+                      ? 'border-primary bg-accent '
+                      : 'border-border hover:border-border'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{label}</span>
-                    {selected && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                    {selected && <div className="w-2 h-2 bg-primary rounded-full"></div>}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{hint}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{hint}</p>
                 </button>
               );
             })}

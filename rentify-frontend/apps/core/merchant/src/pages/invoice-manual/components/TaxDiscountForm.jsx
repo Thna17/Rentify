@@ -73,7 +73,7 @@ export const TaxDiscountForm = ({ invoiceData, updateField }) => {
             <span className="font-medium text-foreground">{invoiceData.subtotal}</span>
           </div>
           {invoiceData.discountAmount !== '$0.00' && (
-            <div className="flex justify-between text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="flex justify-between text-xs text-[var(--rentify-color-success-text)] font-medium">
               <span>Discount ({invoiceData.discount}%)</span>
               <span>-{invoiceData.discountAmount}</span>
             </div>

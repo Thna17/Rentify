@@ -56,9 +56,9 @@ export const ShareButton = ({ invoiceData, websiteName, companyInfo }) => {
   };
 
   const socialIcons = [
-    { platform: 'facebook', icon: <Facebook className="w-5 h-5 text-blue-600" />, label: 'Facebook' },
-    { platform: 'twitter', icon: <Twitter className="w-5 h-5 text-blue-400" />, label: 'Twitter' },
-    { platform: 'linkedin', icon: <Linkedin className="w-5 h-5 text-blue-700" />, label: 'LinkedIn' },
+    { platform: 'facebook', icon: <Facebook className="w-5 h-5 text-primary-strong" />, label: 'Facebook' },
+    { platform: 'twitter', icon: <Twitter className="w-5 h-5 text-primary-strong" />, label: 'Twitter' },
+    { platform: 'linkedin', icon: <Linkedin className="w-5 h-5 text-primary-strong" />, label: 'LinkedIn' },
   ];
 
   return (
@@ -72,21 +72,21 @@ export const ShareButton = ({ invoiceData, websiteName, companyInfo }) => {
       <PopoverContent className="w-64 p-0">
         <div className="grid">
           <button 
-            className="flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center px-4 py-3 hover:bg-muted"
             onClick={handleWebShare}
           >
             <Share2 className="w-4 h-4 mr-3" />
             <span>Share via...</span>
           </button>
           <button 
-            className="flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center px-4 py-3 hover:bg-muted"
             onClick={handleEmailShare}
           >
             <Mail className="w-4 h-4 mr-3" />
             <span>Email Invoice</span>
           </button>
           <button 
-            className="flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center px-4 py-3 hover:bg-muted"
             onClick={handleCopyLink}
           >
             <Copy className="w-4 h-4 mr-3" />
@@ -100,7 +100,7 @@ export const ShareButton = ({ invoiceData, websiteName, companyInfo }) => {
             {socialIcons.map((social) => (
               <button
                 key={social.platform}
-                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                className="p-2 rounded-full bg-muted hover:bg-muted"
               >
                 {social.icon}
               </button>
@@ -125,7 +125,7 @@ export const ShareButton = ({ invoiceData, websiteName, companyInfo }) => {
         >
           {({ loading }) => (
             <button 
-              className={`flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 w-full ${loading ? 'opacity-70' : ''}`}
+              className={`flex items-center px-4 py-3 hover:bg-muted w-full ${loading ? 'opacity-70' : ''}`}
               disabled={loading}
             >
               <FileDown className="w-4 h-4 mr-3" />

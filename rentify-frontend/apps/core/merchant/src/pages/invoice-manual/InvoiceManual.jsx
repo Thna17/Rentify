@@ -396,7 +396,7 @@ export const InvoiceManual = () => {
                           ${Number(totalAmount).toFixed(2)}
                         </p>
                         {isPaid ? (
-                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-2xs px-2 py-0.5">
+                          <Badge className="bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] border-[var(--rentify-color-success-border)] text-2xs px-2 py-0.5">
                             Paid
                           </Badge>
                         ) : isDraft ? (
@@ -404,7 +404,7 @@ export const InvoiceManual = () => {
                             Draft
                           </Badge>
                         ) : (
-                          <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-2xs px-2 py-0.5">
+                          <Badge className="bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] border-[var(--rentify-color-warning-border)] text-2xs px-2 py-0.5">
                             Unpaid
                           </Badge>
                         )}
@@ -534,7 +534,7 @@ export const InvoiceManual = () => {
           <div className="hidden lg:block lg:col-span-6 xl:col-span-5 sticky top-6 space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                <div className="p-2 bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] rounded-lg">
                   <Eye className="w-4.5 h-4.5" />
                 </div>
                 <div>
@@ -542,7 +542,7 @@ export const InvoiceManual = () => {
                     <h3 className="text-base font-semibold text-foreground">
                       {t('merchant.p2.documentPreview')}
                     </h3>
-                    <span className="text-2xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+                    <span className="text-2xs px-2 py-0.5 rounded-full bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] font-medium border border-[var(--rentify-color-success-border)]">
                       Live A4
                     </span>
                   </div>

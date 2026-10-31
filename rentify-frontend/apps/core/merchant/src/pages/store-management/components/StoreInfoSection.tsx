@@ -79,9 +79,9 @@ export const StoreInfoSection: React.FC<StoreInfoSectionProps> = ({
                 <span className="text-muted-foreground">—</span>
               )}
               {storeData.shop.status === 'active' ? (
-                <span className="shrink-0 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">{t('dashboard.store_management.store_live')}</span>
+                <span className="shrink-0 px-2 py-1 text-xs bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] rounded-full">{t('dashboard.store_management.store_live')}</span>
               ) : (
-                <span className="shrink-0 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">{t('dashboard.store_management.store_not_published')}</span>
+                <span className="shrink-0 px-2 py-1 text-xs bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] rounded-full">{t('dashboard.store_management.store_not_published')}</span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">

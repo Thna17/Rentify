@@ -19,8 +19,8 @@ export function UnauthorizedAccess({ requiredPermission, currentFeature }) {
     <div className="flex items-center justify-center min-h-[60vh] p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <Lock className="h-6 w-6 text-red-600" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--rentify-color-danger-subtle)]">
+            <Lock className="h-6 w-6 text-[var(--rentify-color-danger-text)]" />
           </div>
           <CardTitle className="text-2xl">
             {t('dashboard.unauthorized.title') && t('dashboard.unauthorized.title') !== 'dashboard.unauthorized.title' ? t('dashboard.unauthorized.title') : 'Access Restricted'}

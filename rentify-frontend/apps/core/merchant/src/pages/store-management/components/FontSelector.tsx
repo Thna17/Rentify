@@ -112,13 +112,13 @@ const handleFontSelect = (font: Font) => {
 
   const getCategoryColor = (categoryId: string) => {
     switch (categoryId) {
-      case 'khmer': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+      case 'khmer': return 'text-[var(--rentify-color-success-text)] bg-[var(--rentify-color-success-subtle)] border-[var(--rentify-color-success-border)]';
       case 'english-serif':
       case 'english-sans':
-      case 'english-display': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'system': return 'text-purple-600 bg-purple-50 border-purple-200';
-      case 'custom': return 'text-amber-600 bg-amber-50 border-amber-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'english-display': return 'text-primary-strong bg-accent border-primary/30';
+      case 'system': return 'text-muted-foreground bg-muted border-border';
+      case 'custom': return 'text-[var(--rentify-color-warning-text)] bg-[var(--rentify-color-warning-subtle)] border-[var(--rentify-color-warning-border)]';
+      default: return 'text-muted-foreground bg-muted border-border';
     }
   };
 
@@ -140,7 +140,7 @@ const handleFontSelect = (font: Font) => {
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           {label}
         </label>
       )}
@@ -153,22 +153,22 @@ const handleFontSelect = (font: Font) => {
             setTimeout(() => inputRef.current?.focus(), 100);
           }
         }}
-        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 flex items-center justify-between group"
+        className="w-full px-4 py-3 bg-card border border-border rounded-lg shadow-sm hover:border-input focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 flex items-center justify-between group"
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-            <Type className="h-4 w-4 text-blue-600" />
+          <div className="w-8 h-8 rounded-md bg-gradient-to-br from-accent to-accent flex items-center justify-center">
+            <Type className="h-4 w-4 text-primary-strong" />
           </div>
           <div className="flex-1 min-w-0 text-left">
-            <div className="font-medium text-gray-900 truncate" style={getFontPreviewStyle()}>
+            <div className="font-medium text-foreground truncate" style={getFontPreviewStyle()}>
               {getDisplayValue()}
             </div>
-            <div className="text-xs text-gray-500 truncate">
+            <div className="text-xs text-muted-foreground truncate">
               {selectedFont?.value || value || 'Select font family'}
             </div>
           </div>
         </div>
-        <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -178,12 +178,12 @@ const handleFontSelect = (font: Font) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-hidden"
+            className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-96 overflow-hidden"
           >
             {/* Search Bar */}
-            <div className="p-3 border-b border-gray-100 bg-gray-50">
+            <div className="p-3 border-b border-border bg-muted">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -191,7 +191,7 @@ const handleFontSelect = (font: Font) => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Search fonts..."
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary"
                 />
               </div>
             </div>
@@ -199,7 +199,7 @@ const handleFontSelect = (font: Font) => {
             {/* Font List */}
             <div className="overflow-y-auto max-h-64">
               {filteredCategories.map((category) => (
-                <div key={category.id} className="border-b border-gray-100 last:border-b-0">
+                <div key={category.id} className="border-b border-border last:border-b-0">
                   <div className={`sticky top-0 px-4 py-2 text-xs font-semibold ${getCategoryColor(category.id)} flex items-center gap-2`}>
                     {getCategoryIcon(category.id)}
                     {category.label}
@@ -209,18 +209,18 @@ const handleFontSelect = (font: Font) => {
                       key={font.id}
                       type="button"
                       onClick={() => handleFontSelect(font)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between group ${
+                      className={`w-full px-4 py-3 text-left hover:bg-muted transition-colors flex items-center justify-between group ${
                         (selectedFont?.id === font.id || (font.id === 'custom-font' && isCustomFont(value))) 
-                          ? 'bg-blue-50' 
+                          ? 'bg-accent' 
                           : ''
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          font.category === 'khmer' ? 'bg-emerald-100' :
-                          font.category === 'english' ? 'bg-blue-100' :
-                          font.category === 'system' ? 'bg-purple-100' :
-                          'bg-amber-100'
+                          font.category === 'khmer' ? 'bg-[var(--rentify-color-success-subtle)]' :
+                          font.category === 'english' ? 'bg-accent' :
+                          font.category === 'system' ? 'bg-muted' :
+                          'bg-[var(--rentify-color-warning-subtle)]'
                         }`}>
                           <div 
                             className="text-lg font-medium"
@@ -231,18 +231,18 @@ const handleFontSelect = (font: Font) => {
                         </div>
                         <div className="flex-1">
                           <div 
-                            className="font-medium text-gray-900"
+                            className="font-medium text-foreground"
                             style={{ fontFamily: font.value }}
                           >
                             {font.label}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-muted-foreground mt-1">
                             {font.preview || font.value}
                           </div>
                         </div>
                       </div>
                       {(selectedFont?.id === font.id || (font.id === 'custom-font' && isCustomFont(value))) && (
-                        <Check className="h-5 w-5 text-blue-600" />
+                        <Check className="h-5 w-5 text-primary-strong" />
                       )}
                     </button>
                   ))}
@@ -256,11 +256,11 @@ const handleFontSelect = (font: Font) => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="border-t border-gray-100 p-4 bg-gradient-to-r from-amber-50 to-orange-50"
+                className="border-t border-border p-4 bg-gradient-to-r from-[var(--rentify-color-warning-subtle)] to-[var(--rentify-color-warning-subtle)]"
               >
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Custom Font Family
                     </label>
                     <input
@@ -270,10 +270,10 @@ const handleFontSelect = (font: Font) => {
                       onChange={(e) => handleCustomFontChange(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder="e.g., 'Your Custom Font, sans-serif'"
-                      className="w-full px-4 py-3 bg-white border border-amber-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                      className="w-full px-4 py-3 bg-card border border-[var(--rentify-color-warning-border)] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--rentify-color-warning-border)] focus:border-[var(--rentify-color-warning-border)] text-sm"
                     />
                   </div>
-                  <div className="text-xs text-amber-600 space-y-1">
+                  <div className="text-xs text-[var(--rentify-color-warning-text)] space-y-1">
                     <p>💡 Tips:</p>
                     <p>• Include fallback fonts: "Custom Font, Arial, sans-serif"</p>
                     <p>• Use quotes for fonts with spaces: "'Font Name', sans-serif"</p>
@@ -283,7 +283,7 @@ const handleFontSelect = (font: Font) => {
                     type="button"
                     onClick={handleCustomFontSave}
                     disabled={!customFont.trim()}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-[var(--rentify-color-warning-base)] to-[var(--rentify-color-warning-base)] text-white font-medium rounded-lg hover:from-[var(--rentify-color-warning-base)] hover:to-[var(--rentify-color-warning-base)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     <Sparkles className="h-4 w-4" />
                     Apply Custom Font
@@ -293,26 +293,26 @@ const handleFontSelect = (font: Font) => {
             )}
 
             {/* Preview Section */}
-            <div className="border-t border-gray-100 p-4 bg-gray-50">
-              <div className="text-xs text-gray-500 mb-2">Preview</div>
+            <div className="border-t border-border p-4 bg-muted">
+              <div className="text-xs text-muted-foreground mb-2">Preview</div>
               <div 
-                className="p-4 bg-white border border-gray-200 rounded-lg text-lg leading-relaxed"
+                className="p-4 bg-card border border-border rounded-lg text-lg leading-relaxed"
                 style={getFontPreviewStyle()}
               >
                 {selectedFont?.category === 'khmer' ? (
                   <>
                     <div className="text-2xl mb-2">ពុទ្ធសាសនា</div>
-                    <div className="text-base text-gray-600">
+                    <div className="text-base text-muted-foreground">
                       ប្រទេសកម្ពុជា មានព្រះពុទ្ធសាសនា ថេរវាទជាសាសនារបស់រដ្ឋ
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-2xl mb-2 font-bold">The quick brown fox</div>
-                    <div className="text-base text-gray-600">
+                    <div className="text-base text-muted-foreground">
                       The quick brown fox jumps over the lazy dog. 1234567890
                     </div>
-                    <div className="text-sm text-gray-500 mt-2">
+                    <div className="text-sm text-muted-foreground mt-2">
                       ABCDEFGHIJKLMNOPQRSTUVWXYZ
                     </div>
                   </>
@@ -328,9 +328,9 @@ const handleFontSelect = (font: Font) => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-3 p-4 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-lg"
+          className="mt-3 p-4 bg-gradient-to-r from-muted to-white border border-border rounded-lg"
         >
-          <div className="text-xs text-gray-500 mb-2">Active Font Preview</div>
+          <div className="text-xs text-muted-foreground mb-2">Active Font Preview</div>
           <div 
             className="text-xl font-semibold mb-2"
             style={{ fontFamily: value }}
@@ -338,7 +338,7 @@ const handleFontSelect = (font: Font) => {
             {selectedFont?.category === 'khmer' ? 'ពុទ្ធសាសនា' : 'Typography Preview'}
           </div>
           <div 
-            className="text-sm text-gray-600 leading-relaxed"
+            className="text-sm text-muted-foreground leading-relaxed"
             style={{ fontFamily: value }}
           >
             {selectedFont?.category === 'khmer' 
@@ -346,7 +346,7 @@ const handleFontSelect = (font: Font) => {
               : 'Good typography establishes a clear visual hierarchy, provides a graphic balance, and sets the product’s overall tone.'
             }
           </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className={`px-2 py-1 rounded ${getCategoryColor(selectedFont?.category || 'custom')}`}>
                 {selectedFont?.category === 'khmer' ? 'អក្សរខ្មែរ' : 
@@ -357,7 +357,7 @@ const handleFontSelect = (font: Font) => {
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-primary-strong hover:text-primary-strong font-medium"
             >
               Change font
             </button>

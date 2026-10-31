@@ -42,6 +42,7 @@ module.exports = {
         border: 'oklch(var(--border))',
         input: 'oklch(var(--input))',
         ring: 'oklch(var(--ring))',
+        'primary-strong': 'oklch(var(--primary-strong))',
         success: 'oklch(var(--success))',
         'success-foreground': 'oklch(var(--success-foreground))',
         warning: 'oklch(var(--warning))',
