@@ -14,10 +14,19 @@ import ShowcasePage from "./pages/showcase/Showcase";
 // import NotFound from "./pages/NotFound";
 import BrowseTemplates from "./pages/template-browse";
 import TemplateDetailPage from "./pages/template-detail";
+import useMarketingAuth from "./hooks/useMarketingAuth";
 
 // One onboarding only: every "create store" link lands on the sidebar flow.
+// If the merchant is already signed in, send them straight to their dashboard.
 function StartRedirect() {
+  const { isAuthenticated, dashboardHref } = useMarketingAuth();
   const { search } = useLocation();
+
+  if (isAuthenticated) {
+    window.location.replace(dashboardHref);
+    return null;
+  }
+
   const params = new URLSearchParams(search);
   const plan = (params.get("plan") || "starter").toLowerCase();
   params.delete("plan");

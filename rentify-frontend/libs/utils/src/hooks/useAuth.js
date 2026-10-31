@@ -150,20 +150,27 @@ export const useAuth = () => {
       // Clear client-side state
       dispatch(clearCredentials());
       
-      // Clear cookies
-      const domain = window.location.hostname;
-      document.cookie = `authType=; Max-Age=0; path=/; domain=${domain}`;
-      document.cookie = `accessToken=; Max-Age=0; path=/; domain=${domain}`;
-      document.cookie = `refreshToken=; Max-Age=0; path=/; domain=${domain}`;
+      // Clear cookies across host and parent domain
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      const parentDomain = parts.length > 2 ? `.${parts.slice(-2).join('.')}` : undefined;
+      const domains = [hostname, parentDomain].filter(Boolean);
+
+      ['authType', 'accessToken', 'refreshToken', 'userAccessToken', 'userRefreshToken', 'staffAccessToken', 'staffRefreshToken'].forEach((cookieName) => {
+        document.cookie = `${cookieName}=; Max-Age=0; path=/`;
+        domains.forEach((d) => {
+          document.cookie = `${cookieName}=; Max-Age=0; path=/; domain=${d}`;
+        });
+      });
     }
   }, [authRole, logout, staffLogout, customerLogout, dispatch]);
 
-  // Handle authentication errors
+  // Handle authentication errors - only log out on explicit 401 Unauthorized
   useEffect(() => {
-    if (isError) {
+    if (isError && activeProfile?.error?.status === 401) {
       handleLogout();
     }
-  }, [isError, handleLogout]);
+  }, [isError, activeProfile?.error?.status, handleLogout]);
 
   // Telegram link checking
   const checkTelegramLink = useCallback(() => {

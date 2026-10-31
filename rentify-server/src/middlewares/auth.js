@@ -153,6 +153,11 @@ const handleStaffAuth = async (req, res, next) => {
             ...cookieConfig,
             maxAge: 30 * 24 * 60 * 60 * 1000,
           });
+          res.cookie("authType", "staff", {
+            ...cookieConfig,
+            httpOnly: false,
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+          });
 
           req.user = {
             id: staff.id,
@@ -239,6 +244,11 @@ const refreshAccessToken = async (req, res, next) => {
       ...cookieConfig,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
+    res.cookie("authType", user.role === 'staff' ? 'staff' : (user.role === 'admin' ? 'admin' : 'user'), {
+      ...cookieConfig,
+      httpOnly: false,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
 
     req.user = { id: user.id, role: user.role };
     next();
@@ -256,6 +266,10 @@ const clearCookies = (res) => {
   });
   res.clearCookie("userRefreshToken", {
     ...cookieConfig,
+  });
+  res.clearCookie("authType", {
+    ...cookieConfig,
+    httpOnly: false,
   });
 };
 

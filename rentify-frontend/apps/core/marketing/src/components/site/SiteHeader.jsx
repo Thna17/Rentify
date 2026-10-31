@@ -6,6 +6,7 @@ import { cn } from '@rentify/utils';
 import { AUTH_URL, MARKETPLACE_URL } from '@rentify/shared/config/urls';
 import { useLanguage } from '../../contexts/LanguageContext';
 import useStartTrial from '../../hooks/useStartTrial';
+import useMarketingAuth from '../../hooks/useMarketingAuth';
 import rentifyLogo from '../../assets/Logo.webp';
 import { ButtonLink, Container } from './ui';
 import { EASE } from './motion';
@@ -156,6 +157,7 @@ const SiteHeader = () => {
   const { t, language } = useLanguage();
   const { pathname } = useLocation();
   const { trialPath } = useStartTrial();
+  const { isAuthenticated, dashboardHref, user } = useMarketingAuth();
   const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [pathname]);
@@ -212,15 +214,29 @@ const SiteHeader = () => {
 
           <div className="hidden items-center gap-5 xl:flex">
             <LanguageToggle />
-            <a
-              href={AUTH_URL}
-              className="whitespace-nowrap text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]"
-            >
-              {t('site.nav.signIn')}
-            </a>
-            <ButtonLink to={trialPath} size="sm">
-              {t('site.nav.getStarted')}
-            </ButtonLink>
+            {isAuthenticated ? (
+              <ButtonLink
+                to={dashboardHref}
+                target="_self"
+                size="sm"
+                className="shadow-sm"
+              >
+                <span>{t('site.nav.dashboard')}</span>
+                <ArrowUpRight className="h-3.5 w-3.5 opacity-80" />
+              </ButtonLink>
+            ) : (
+              <>
+                <a
+                  href={AUTH_URL}
+                  className="whitespace-nowrap text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]"
+                >
+                  {t('site.nav.signIn')}
+                </a>
+                <ButtonLink to={trialPath} size="sm">
+                  {t('site.nav.getStarted')}
+                </ButtonLink>
+              </>
+            )}
           </div>
 
           <button
@@ -303,9 +319,21 @@ const SiteHeader = () => {
               </motion.nav>
 
               <div className="mt-auto space-y-4 pt-10">
-                <ButtonLink to={trialPath} size="lg" className="w-full">
-                  {t('site.nav.getStarted')}
-                </ButtonLink>
+                {isAuthenticated ? (
+                  <ButtonLink
+                    to={dashboardHref}
+                    target="_self"
+                    size="lg"
+                    className="w-full"
+                  >
+                    <span>{t('site.nav.dashboard')}</span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </ButtonLink>
+                ) : (
+                  <ButtonLink to={trialPath} size="lg" className="w-full">
+                    {t('site.nav.getStarted')}
+                  </ButtonLink>
+                )}
                 <a
                   href={MARKETPLACE_HREF}
                   target="_blank"
@@ -317,9 +345,15 @@ const SiteHeader = () => {
                   <ArrowUpRight className="h-4 w-4 text-amber-600" />
                 </a>
                 <div className="flex items-center justify-between text-[15px]">
-                  <a href={AUTH_URL} className="text-[#0066cc]">
-                    {t('site.nav.signIn')}
-                  </a>
+                  {isAuthenticated ? (
+                    <a href={dashboardHref} className="font-medium text-[#0066cc]">
+                      {user?.name ? `${user.name} • ${t('site.nav.dashboard')}` : t('site.nav.dashboard')}
+                    </a>
+                  ) : (
+                    <a href={AUTH_URL} className="text-[#0066cc]">
+                      {t('site.nav.signIn')}
+                    </a>
+                  )}
                   <LanguageToggle inline />
                 </div>
               </div>
