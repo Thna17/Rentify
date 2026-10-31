@@ -133,6 +133,9 @@ export namespace Core {
     success?: boolean;
   }
 
+  /** Accent color for the shared marketplace store layout; independent of storefront theme settings. */
+  export type MarketplaceColor = "#4f46e5" | "#275643" | "#963827" | "#9a691b" | "#263750";
+
   export interface MerchantWebsitePayload {
     WebsiteContents?: Array<Core.WebsiteContent>;
     businessConfig?: Record<string, any>;
@@ -275,6 +278,7 @@ export namespace Core {
   export interface PublicStore {
     id?: string;
     logoUrl?: string | null;
+    marketplaceColor?: Core.MarketplaceColor;
     name?: string;
     primaryCategory?: string;
     slug?: string;
@@ -487,6 +491,7 @@ export namespace Core {
     id?: string;
     logoUrl?: string | null;
     marketplaceApprovalStatus?: "pending" | "approved" | "needs_changes" | "rejected" | "suspended";
+    marketplaceColor?: Core.MarketplaceColor;
     marketplaceEnabled?: boolean;
     marketplaceEntitlement?: "pilot" | "none";
     name?: string;
@@ -1597,6 +1602,15 @@ export namespace Core {
       };
       response: Core.KHQRInitiationResponse;
     };
+    paywayCallback: {
+      method: 'POST';
+      path: '/api/payment/payway/callback';
+      parameters: {
+      };
+      response: {
+        received?: boolean;
+      };
+    };
     checkPaymentStatus: {
       method: 'GET';
       path: '/api/payment/status/{paymentId}';
@@ -1871,6 +1885,7 @@ export namespace Core {
       };
       body: {
         logoUrl?: string | null;
+        marketplaceColor?: Core.MarketplaceColor;
         marketplaceEnabled?: boolean;
         primaryCategory?: string;
       };
@@ -2586,6 +2601,7 @@ export type CoreInternalOwnerContact = Core.InternalOwnerContact;
 export type CoreKHQRInitiationResponse = Core.KHQRInitiationResponse;
 export type CoreLoginRequest = Core.LoginRequest;
 export type CoreLoginResponse = Core.LoginResponse;
+export type CoreMarketplaceColor = Core.MarketplaceColor;
 export type CoreMerchantWebsitePayload = Core.MerchantWebsitePayload;
 export type CoreNotificationSourceEvent = Core.NotificationSourceEvent;
 export type CoreOutcomeContract = Core.OutcomeContract;

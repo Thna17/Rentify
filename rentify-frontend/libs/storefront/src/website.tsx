@@ -70,7 +70,12 @@ export function StorefrontWebsiteProvider({
   }, [theme, themeApplicationService]);
 
   const fallbackName = data?.name || data?.websiteName || data?.businessDetails?.name || null;
-  const fallbackLogo = data?.logo || data?.businessDetails?.logo || null;
+  const fallbackLogo =
+    data?.store?.logoUrl ||
+    data?.logoUrl ||
+    data?.logo ||
+    data?.businessDetails?.logo ||
+    null;
   const identity = useMemo(
     () => getStoreIdentity(content, fallbackName, fallbackLogo),
     [content, fallbackName, fallbackLogo]

@@ -25,8 +25,16 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
       validate: {
-        is: /^\+?[1-9]\d{1,14}$/,
+        is: /^\+?[0-9\s\-()]{8,20}$/,
       },
+    },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    website: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     },
     telegramChatId: {
       type: DataTypes.STRING,

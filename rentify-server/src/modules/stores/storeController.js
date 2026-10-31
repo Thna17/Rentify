@@ -127,6 +127,7 @@ exports.updateOwnStore = asyncHandler(async (req, res) => {
   const body = req.body || {};
   const store = await storeService.updateOwnStore({
     ownerUserId: req.user.id,
+    name: body.name || body.businessName,
     primaryCategory: body.primaryCategory,
     marketplaceEnabled: body.marketplaceEnabled,
     logoUrl: body.logoUrl,

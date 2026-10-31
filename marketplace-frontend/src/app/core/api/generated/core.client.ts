@@ -1904,6 +1904,28 @@ export class CoreApiClient {
   }
 
   /**
+   * Handle ABA PayWay transaction callback
+   * POST /api/payment/payway/callback
+   */
+  async paywayCallback(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      received?: boolean;
+    }>> {
+    return this.transport.request<{
+      received?: boolean;
+    }>({
+      method: 'POST',
+      path: '/api/payment/payway/callback',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /**
    * Check payment verification status
    * GET /api/payment/status/{paymentId}
    */
@@ -2471,6 +2493,7 @@ export class CoreApiClient {
   async updateOwnStore(options: {
     body: {
       logoUrl?: string | null;
+      marketplaceColor?: Core.MarketplaceColor;
       marketplaceEnabled?: boolean;
       primaryCategory?: string;
     };

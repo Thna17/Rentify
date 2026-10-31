@@ -182,8 +182,17 @@ class StoreService {
     });
   }
 
-  async updateOwnStore({ ownerUserId, primaryCategory, marketplaceEnabled, logoUrl, marketplaceColor }) {
+  async updateOwnStore({ ownerUserId, name, primaryCategory, marketplaceEnabled, logoUrl, marketplaceColor }) {
     const changes = {};
+    if (name !== undefined) {
+      const cleanName = String(name || '').trim();
+      if (!cleanName) {
+        const error = new Error('Store name cannot be empty');
+        error.statusCode = 400;
+        throw error;
+      }
+      changes.name = cleanName;
+    }
     if (marketplaceColor !== undefined) {
       const color = validateMarketplaceColor(marketplaceColor);
       if (!color) {

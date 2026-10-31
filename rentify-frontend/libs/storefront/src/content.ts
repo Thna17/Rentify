@@ -122,7 +122,7 @@ export const getStoreIdentity = (
   return {
     name: storeName,
     headerStyle: HEADER_STYLES.includes(requestedStyle) ? requestedStyle : HEADER_STYLES[0],
-    logoUrl: contentImages(getContentValue(items, 'Logo', 'Store Logo'))[0] || safeUrl(fallbackLogo) || null,
+    logoUrl: safeUrl(fallbackLogo) || contentImages(getContentValue(items, 'Logo', 'Store Logo'))[0] || null,
     heroHeadline: text('Hero Headline', 'Hero Title'),
     heroSubtitle: text('Hero Subtitle', 'Hero Description'),
     heroImages: contentImages(getContentValue(items, 'Hero Image', 'Hero Images')),

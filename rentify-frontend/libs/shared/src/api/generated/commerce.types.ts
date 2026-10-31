@@ -1641,6 +1641,27 @@ export namespace Commerce {
       };
       response: any;
     };
+    post_api_payment_payments_cutluy_webhook: {
+      method: 'POST';
+      path: '/api/payment/payments/cutluy/webhook';
+      parameters: {
+      };
+      body: Record<string, any>;
+      response: any;
+    };
+    get_api_payment_payments_public_methods_websiteId: {
+      method: 'GET';
+      path: '/api/payment/payments/public-methods/{websiteId}';
+      parameters: {
+        path: {
+          websiteId: string;
+        };
+      };
+      response: {
+        cutluyEnabled?: boolean;
+        paymentMethods?: Array<string>;
+      };
+    };
     get_api_payment_payments_paymentId: {
       method: 'GET';
       path: '/api/payment/payments/{paymentId}';
@@ -1657,6 +1678,50 @@ export namespace Commerce {
       parameters: {
         path: {
           paymentId: string;
+        };
+      };
+      response: any;
+    };
+    post_api_payments_aba_payway_callback: {
+      method: 'POST';
+      path: '/api/payments/aba-payway/callback';
+      parameters: {
+      };
+      response: any;
+    };
+    post_api_payments_aba_payway_checkout: {
+      method: 'POST';
+      path: '/api/payments/aba-payway/checkout';
+      parameters: {
+      };
+      body: {
+        orderId?: Commerce.UUID;
+      };
+      response: any;
+    };
+    get_api_payments_aba_payway_config: {
+      method: 'GET';
+      path: '/api/payments/aba-payway/config';
+      parameters: {
+      };
+      response: any;
+    };
+    post_api_payments_aba_payway_mock_approve_orderId: {
+      method: 'POST';
+      path: '/api/payments/aba-payway/mock/approve/{orderId}';
+      parameters: {
+        path: {
+          orderId: string;
+        };
+      };
+      response: any;
+    };
+    get_api_payments_aba_payway_status_orderId: {
+      method: 'GET';
+      path: '/api/payments/aba-payway/status/{orderId}';
+      parameters: {
+        path: {
+          orderId: string;
         };
       };
       response: any;

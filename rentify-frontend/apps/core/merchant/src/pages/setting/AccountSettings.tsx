@@ -22,11 +22,14 @@ import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { MarketplaceColorCard } from './components/MarketplaceColorCard';
 import { StoreLogoCard } from './components/StoreLogoCard';
+import { useChannels } from '../../context/ChannelContext';
+import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 
 export const AccountSettings = () => {
   const { t } = useTranslation();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
   const { profile } = useAuth();
+  const { store, setStore } = useChannels();
   
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -41,20 +44,20 @@ export const AccountSettings = () => {
   });
 
   useEffect(() => {
-    if (profile) {
+    if (profile || store) {
       setProfileData({
         name: profile?.name || '',
         email: profile?.email || '',
-        phone: profile?.phone || '',
-        businessName: profile?.businessName || '',
-        website: profile?.website || '',
+        phone: profile?.phoneNumber || profile?.phone || '',
+        businessName: store?.name || profile?.businessName || '',
+        website: profile?.website || store?.websiteDomain || (store?.slug ? `${store.slug}.mekhla.digital` : '') || '',
         bio: profile?.bio || '',
       });
     }
-  }, [profile]);
+  }, [profile, store]);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfileData({ ...profileData, [e.target.name]: e.target.value });
+    setProfileData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,34 +81,62 @@ export const AccountSettings = () => {
 
   const handleSaveProfile = async () => {
     try {
-      await updateProfile({
-        ...profileData,
-        ...(avatarPreview && { avatar: avatarPreview })
-      }).unwrap();
+      const payload: any = {
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        phoneNumber: profileData.phone,
+        businessName: profileData.businessName,
+        website: profileData.website,
+        bio: profileData.bio,
+      };
+      if (avatarPreview) {
+        payload.avatar = avatarPreview;
+        payload.profileImage = avatarPreview;
+      }
+
+      await updateProfile(payload).unwrap();
+
+      // If businessName was changed, also update Store in ChannelContext
+      if (profileData.businessName && store && profileData.businessName !== store.name) {
+        try {
+          const resp = await fetch(`${RENTIFY_API_BASE}/api/stores/mine`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: profileData.businessName }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            setStore((prev: any) => ({ ...prev, ...data.data }));
+          }
+        } catch {
+          // Handled by backend
+        }
+      }
+
       setIsEditing(false);
-      toast.success(t('merchant.p.profileUpdatedSuccessfully'));
-    } catch (error) {
-      toast.error(t('merchant.p.failedToUpdateProfile'));
+      toast.success(t('merchant.p.profileUpdatedSuccessfully') || 'Profile updated successfully');
+    } catch (error: any) {
+      toast.error(error?.data?.message || error?.message || t('merchant.p.failedToUpdateProfile') || 'Failed to update profile');
     }
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return (name || '').trim().split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
   };
 
   const cancelEdit = () => {
     setIsEditing(false);
     setAvatarPreview(null);
-    if (profile) {
-      setProfileData({
-        name: profile?.name || '',
-        email: profile?.email || '',
-        phone: profile?.phone || '',
-        businessName: profile?.businessName || '',
-        website: profile?.website || '',
-        bio: profile?.bio || '',
-      });
-    }
+    setProfileData({
+      name: profile?.name || '',
+      email: profile?.email || '',
+      phone: profile?.phoneNumber || profile?.phone || '',
+      businessName: store?.name || profile?.businessName || '',
+      website: profile?.website || store?.websiteDomain || (store?.slug ? `${store.slug}.mekhla.digital` : '') || '',
+      bio: profile?.bio || '',
+    });
   };
 
   return (
@@ -159,7 +190,7 @@ export const AccountSettings = () => {
           <div className="flex items-center space-x-6 p-4 bg-gray-50 rounded-lg">
             <div className="relative">
               <Avatar className="h-20 w-20 border-2 border-white shadow-sm">
-                <AvatarImage src={avatarPreview || profile?.avatar} />
+                <AvatarImage src={avatarPreview || profile?.profileImage || profile?.avatar} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-lg font-semibold">
                   {getInitials(profileData.name)}
                 </AvatarFallback>

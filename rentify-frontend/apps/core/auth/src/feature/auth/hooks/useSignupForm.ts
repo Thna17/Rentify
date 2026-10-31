@@ -255,7 +255,9 @@ export const useSignupForm = () => {
   const telegramEnabled = Boolean(telegramConfig?.enabled);
 
   useEffect(() => {
-    loadTelegramWidget().catch(() => {});
+    loadTelegramWidget().catch((err) => {
+      void err;
+    });
   }, []);
 
   const handleTelegramLogin = async () => {

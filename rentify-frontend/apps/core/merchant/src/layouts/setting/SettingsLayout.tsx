@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ArrowLeft,
-  ChevronRight,
   CreditCard,
   Receipt,
   Shield,
@@ -21,13 +20,13 @@ interface SettingsLayoutProps {
 }
 
 const SETTINGS_NAV_ITEMS = [
-  { name: 'Account', description: 'Profile and business details', path: '/settings/account', icon: User },
-  { name: 'Payments', description: 'Payout and payment methods', path: '/settings/payments', icon: CreditCard },
-  { name: 'Delivery', description: 'Delivery fee buyers pay', path: '/settings/delivery', icon: Truck },
-  { name: 'Staff & Roles', description: 'Team access and permissions', path: '/settings/staff', icon: Users },
-  { name: 'Security', description: 'Password and active sessions', path: '/settings/security', icon: Shield },
-  { name: 'Billing', description: 'Plan, usage and invoices', path: '/settings/billing', icon: Receipt },
-  { name: 'Preferences', description: 'Language and notifications', path: '/settings/preferences', icon: SlidersHorizontal },
+  { name: 'Account', path: '/settings/account', icon: User },
+  { name: 'Payments', path: '/settings/payments', icon: CreditCard },
+  { name: 'Delivery', path: '/settings/delivery', icon: Truck },
+  { name: 'Staff & Roles', path: '/settings/staff', icon: Users },
+  { name: 'Security', path: '/settings/security', icon: Shield },
+  { name: 'Billing', path: '/settings/billing', icon: Receipt },
+  { name: 'Preferences', path: '/settings/preferences', icon: SlidersHorizontal },
 ];
 
 export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, description, children, icon }) => {
@@ -53,7 +52,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, descripti
           </div>
         </header>
 
-        <div className="settings-page__mobile-nav" aria-label="Settings sections">
+        <nav className="settings-page__nav" aria-label="Settings sections">
           {SETTINGS_NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -69,41 +68,11 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({ title, descripti
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        <div className="settings-page__layout">
-          <aside className="settings-page__sidebar">
-            <div className="settings-page__sidebar-heading">
-              <span>Settings</span>
-              <small>Manage your workspace</small>
-            </div>
-            <nav aria-label="Settings sections">
-              {SETTINGS_NAV_ITEMS.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <button
-                    key={item.path}
-                    type="button"
-                    onClick={() => navigate(item.path)}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={isActive ? 'is-active' : undefined}
-                  >
-                    <span className="settings-page__nav-icon"><item.icon aria-hidden="true" /></span>
-                    <span className="settings-page__nav-copy">
-                      <strong>{item.name}</strong>
-                      <small>{item.description}</small>
-                    </span>
-                    <ChevronRight className="settings-page__nav-arrow" aria-hidden="true" />
-                  </button>
-                );
-              })}
-            </nav>
-          </aside>
-
-          <section className="settings-page__content" aria-label={`${title} content`}>
-            {children}
-          </section>
-        </div>
+        <section className="settings-page__content" aria-label={`${title} content`}>
+          {children}
+        </section>
       </div>
     </main>
   );
