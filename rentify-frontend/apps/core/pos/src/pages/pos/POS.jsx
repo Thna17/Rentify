@@ -149,27 +149,13 @@ export default function POS() {
     const title = config.title || "Notice";
     const message = config.message || "";
 
-    try {
-      if (tone === "destructive") {
-        toast.error(title, { description: message });
-      } else if (tone === "success") {
-        toast.success(title, { description: message });
-      } else if (tone === "warning") {
-        toast.warning(title, { description: message });
-      } else {
-        toast.info(title, { description: message });
-      }
-    } catch {
-      // Non-fatal if toast fails
-    }
-
     setPosAlert({
       title,
       message,
       tone,
       stockLimit: config.stockLimit,
       itemName: config.itemName,
-      confirmText: config.confirmText || (tone === "destructive" ? "Close" : "Got it"),
+      confirmText: config.confirmText || "Got it",
       onConfirm: config.onConfirm,
     });
   }, []);
@@ -1418,14 +1404,12 @@ export default function POS() {
                         role="button"
                         tabIndex={0}
                         onClick={() => addToCart(p, 1)}
-                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border text-left transition select-none p-3 ${
+                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border text-left transition select-none p-3 bg-white ${
                           isOutOfStock
-                            ? "opacity-60 cursor-pointer border-slate-200 bg-slate-50/50"
-                            : isStockLimitReached
-                            ? "border-amber-400 ring-2 ring-amber-300/80 bg-amber-50/20 cursor-pointer hover:shadow-md"
+                            ? "opacity-60 cursor-not-allowed border-slate-200 bg-slate-50/50"
                             : inCartQty > 0
-                            ? "border-primary ring-1 ring-primary cursor-pointer hover:shadow-md bg-white"
-                            : "border-slate-200 hover:border-slate-300 hover:shadow-md cursor-pointer bg-white"
+                            ? "border-slate-900 ring-1 ring-slate-900/10 cursor-pointer hover:shadow-md"
+                            : "border-slate-200 hover:border-slate-300 hover:shadow-md cursor-pointer"
                         }`}
                       >
                         {isOutOfStock ? (
@@ -1434,13 +1418,8 @@ export default function POS() {
                               Out of stock
                             </span>
                           </div>
-                        ) : isStockLimitReached ? (
-                          <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-amber-500 text-white px-2 py-0.5 text-[10px] font-bold shadow">
-                            <AlertTriangle className="h-3 w-3" />
-                            <span>Max ({inCartQty})</span>
-                          </div>
                         ) : inCartQty > 0 ? (
-                          <div className="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shadow">
+                          <div className="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white text-xs font-bold shadow">
                             {inCartQty}
                           </div>
                         ) : null}
@@ -1473,11 +1452,6 @@ export default function POS() {
                           </span>
                           {isOutOfStock ? (
                             <span className="text-[10px] text-rose-600 font-semibold">0 in stock</span>
-                          ) : isStockLimitReached ? (
-                            <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                              Max in cart ({p.stockQuantity})
-                            </span>
                           ) : p.trackInventory ? (
                             <span className="text-[10px] text-emerald-600 font-medium">{p.stockQuantity} in stock</span>
                           ) : (
@@ -1548,65 +1522,34 @@ export default function POS() {
                   return (
                     <div
                       key={item.cartItemId || item.productId}
-                      className={`flex items-center justify-between rounded-xl border p-2.5 shadow-sm transition ${
-                        isCartItemAtMax
-                          ? "border-amber-300 bg-amber-50/30"
-                          : "border-slate-200 bg-white"
-                      }`}
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm"
                     >
                       <div className="min-w-0 flex-1 pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-semibold text-slate-900 truncate leading-tight">
-                            {item.name}
-                          </p>
-                          {isCartItemAtMax ? (
-                            <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                              <AlertTriangle className="h-2.5 w-2.5" />
-                              Max Stock
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-[11px] text-muted-foreground font-mono">
-                            {formatCurrency(item.price)} each
-                          </p>
-                          {item.trackInventory && item.stockQuantity !== undefined && item.stockQuantity !== null ? (
-                            <span
-                              className={`text-[10px] font-medium ${
-                                isCartItemAtMax ? "text-amber-700 font-semibold" : "text-slate-500"
-                              }`}
-                            >
-                              ({item.stockQuantity} available)
-                            </span>
-                          ) : null}
-                        </div>
+                        <p className="text-xs font-semibold text-slate-900 truncate leading-tight">
+                          {item.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                          {formatCurrency(item.price)} each
+                        </p>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95 transition"
                           onClick={() => updateCartQuantity(item.cartItemId || item.productId, -1)}
                           title="Decrease quantity"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
-                        <span
-                          className={`w-6 text-center font-mono font-bold text-xs ${
-                            isCartItemAtMax ? "text-amber-800" : ""
-                          }`}
-                        >
+                        <span className="w-6 text-center font-mono font-bold text-xs text-slate-900">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
-                          className={`flex h-7 w-7 items-center justify-center rounded-lg border transition ${
-                            isCartItemAtMax
-                              ? "border-amber-300 bg-amber-100/70 text-amber-700 hover:bg-amber-200"
-                              : "border-slate-200 text-slate-600 hover:bg-slate-100"
-                          }`}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95 transition"
                           onClick={() => updateCartQuantity(item.cartItemId || item.productId, 1)}
-                          title={isCartItemAtMax ? `Max stock reached (${item.stockQuantity})` : "Increase quantity"}
+                          title="Increase quantity"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
@@ -2157,7 +2100,7 @@ export default function POS() {
         </DialogContent>
       </Dialog>
 
-      {/* In-App Alert / Notice Modal Card */}
+      {/* In-App Stock Limit & Notice Modal Card */}
       <Dialog
         open={Boolean(posAlert)}
         onOpenChange={(open) => {
@@ -2166,69 +2109,47 @@ export default function POS() {
           }
         }}
       >
-        <DialogContent className="max-w-md rounded-[28px] p-6 text-center sm:text-left shadow-2xl border-slate-200">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
-                posAlert?.tone === "destructive"
-                  ? "bg-rose-100 text-rose-600 ring-4 ring-rose-50"
-                  : posAlert?.tone === "success"
-                  ? "bg-emerald-100 text-emerald-600 ring-4 ring-emerald-50"
-                  : posAlert?.tone === "info"
-                  ? "bg-blue-100 text-blue-600 ring-4 ring-blue-50"
-                  : "bg-amber-100 text-amber-600 ring-4 ring-amber-50"
-              }`}
-            >
-              {posAlert?.tone === "destructive" ? (
-                <ShieldAlert className="h-6 w-6" />
-              ) : posAlert?.tone === "success" ? (
-                <CheckCircle2 className="h-6 w-6" />
-              ) : posAlert?.tone === "info" ? (
-                <AlertCircle className="h-6 w-6" />
-              ) : (
-                <AlertTriangle className="h-6 w-6" />
-              )}
-            </div>
-
-            <div className="space-y-1.5 flex-1 min-w-0">
-              <DialogHeader className="p-0 text-center sm:text-left">
-                <DialogTitle className="text-base font-bold text-slate-900 tracking-tight">
-                  {posAlert?.title || "Notice"}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-600 leading-relaxed mt-1">
-                  {posAlert?.message}
-                </DialogDescription>
-              </DialogHeader>
-
-              {posAlert?.stockLimit !== undefined && posAlert?.stockLimit !== null ? (
-                <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 border border-amber-200">
-                    <Package className="h-3.5 w-3.5 text-amber-600" />
-                    Available Stock: {posAlert.stockLimit}
-                  </span>
-                  {posAlert?.itemName ? (
-                    <span className="text-[11px] text-slate-500 font-medium truncate max-w-[200px]">
-                      {posAlert.itemName}
-                    </span>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
+        <DialogContent className="max-w-[380px] rounded-[24px] p-6 text-center border-slate-200 shadow-2xl bg-white sm:max-w-[380px]">
+          {/* Centered Soft Icon Container */}
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl mb-4 bg-amber-50 text-amber-600 border border-amber-200/60 shadow-sm">
+            {posAlert?.tone === "destructive" ? (
+              <ShieldAlert className="h-7 w-7 text-rose-600" />
+            ) : posAlert?.tone === "success" ? (
+              <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+            ) : posAlert?.tone === "info" ? (
+              <AlertCircle className="h-7 w-7 text-blue-600" />
+            ) : (
+              <AlertTriangle className="h-7 w-7 text-amber-600" />
+            )}
           </div>
 
-          <DialogFooter className="mt-5 sm:justify-end gap-2 pt-2 border-t border-slate-100">
+          {/* Centered Title & Description */}
+          <DialogHeader className="p-0 text-center space-y-1.5">
+            <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight text-center">
+              {posAlert?.title || "Stock Limit Reached"}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600 leading-relaxed text-center font-normal">
+              {posAlert?.message}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Available Stock Pill */}
+          {posAlert?.stockLimit !== undefined && posAlert?.stockLimit !== null ? (
+            <div className="mt-3.5 flex items-center justify-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200/80">
+                <Package className="h-3.5 w-3.5 text-slate-500" />
+                <span>Available Stock: <strong className="font-semibold text-slate-900">{posAlert.stockLimit}</strong></span>
+              </span>
+            </div>
+          ) : null}
+
+          {/* Full-width Balanced Slate Action Button */}
+          <DialogFooter className="mt-6 p-0 sm:justify-center">
             <Button
               type="button"
-              className={`w-full sm:w-auto font-semibold rounded-xl text-xs h-9 px-5 ${
-                posAlert?.tone === "destructive"
-                  ? "bg-rose-600 hover:bg-rose-700 text-white"
-                  : posAlert?.tone === "success"
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : posAlert?.tone === "warning"
-                  ? "bg-amber-600 hover:bg-amber-700 text-white"
-                  : "bg-slate-900 hover:bg-slate-800 text-white"
-              }`}
+              className="w-full h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-sm transition active:scale-[0.99]"
               onClick={closePosAlert}
+              autoFocus
             >
               {posAlert?.confirmText || "Got it"}
             </Button>
