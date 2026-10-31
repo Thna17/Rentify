@@ -22,8 +22,8 @@ import { StatusPill } from '../../components/data-table/StatusPill';
 import { PageShell, PageTitle, Panel, StatePanel } from '../../components/page/PagePrimitives';
 import { RecordCashSheet } from './components/RecordCashSheet';
 import { PaymentPill } from './components/PaymentPill';
-import { actionErrorKey, markOnlineOrderDelivered, runDeliveryAction, type DeliveryAction } from './orderActions';
-import { canMarkOnlineDelivered, money, orderLabel, paymentKind, workTab } from './orderModel';
+import { actionErrorKey, confirmOnlineOrder, markOnlineOrderDelivered, runDeliveryAction, type DeliveryAction } from './orderActions';
+import { money, onlineAction, orderLabel, paymentKind, workTab } from './orderModel';
 
 type Sheet = null | 'cash' | 'failed' | 'retry' | 'refund';
 
@@ -130,7 +130,9 @@ export function OrderDetailView() {
   const failure = (order.timeline || []).filter((e: any) => e.type === 'delivery_failed').pop();
   const nextStep = state === 'problems' && failure
     ? t('merchant.orders.next.failed', { reason: failure.details?.reason || '' })
-    : t(`merchant.orders.next.${state}`, { amount: money(order.payment?.amountDue, order.currency) });
+    : onlineAction(order) === 'confirm'
+      ? t('merchant.orders.next.confirmOnline')
+      : t(`merchant.orders.next.${state}`, { amount: money(order.payment?.amountDue, order.currency) });
 
   const primary: ReactNode[] = [];
   if (codes.has('collect_cod')) {
@@ -152,15 +154,20 @@ export function OrderDetailView() {
       </Button>,
     );
   }
-  if (canMarkOnlineDelivered(order)) {
+  const online = onlineAction(order);
+  if (online) {
     primary.push(
       <Button
-        key="online-delivered"
+        key="online"
         disabled={busy}
-        onClick={() => run(() => markOnlineOrderDelivered(order), 'merchant.orders.done.delivered')}
+        onClick={() =>
+          online === 'confirm'
+            ? run(() => confirmOnlineOrder(order), 'merchant.orders.done.confirmed')
+            : run(() => markOnlineOrderDelivered(order), 'merchant.orders.done.delivered')
+        }
         className="min-h-[48px] flex-1 rounded-xl sm:flex-none"
       >
-        {t('merchant.orders.actions.markDelivered')}
+        {t(online === 'confirm' ? 'merchant.orders.actions.confirm' : 'merchant.orders.actions.markDelivered')}
       </Button>,
     );
   }

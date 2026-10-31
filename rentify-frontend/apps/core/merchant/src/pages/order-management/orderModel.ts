@@ -57,12 +57,19 @@ const isDelivered = (order: any) =>
   order?.fulfillmentStatus === 'delivered' || ['completed', 'fulfilled', 'delivered'].includes(order?.status);
 
 /**
- * Delivery for an order paid online goes through Commerce's order completion
- * (POST /api/merchant/orders/:id/complete); COD delivery orders use `allowedActions`.
+ * Orders paid online follow Commerce's order state machine (pending → confirmed → processing →
+ * completed, /api/merchant/orders/:id/*); COD delivery orders use `allowedActions` instead.
+ * Returns the merchant's next step, or null when there is none.
  */
-export const canMarkOnlineDelivered = (order: any) =>
-  paymentKind(order) === 'online_paid' && order?.status !== 'cancelled' && !isDelivered(order) &&
-  ['marketplace', 'storefront'].includes(order?.channel);
+export function onlineAction(order: any): 'confirm' | 'deliver' | null {
+  if (paymentKind(order) !== 'online_paid' || isDelivered(order)) return null;
+  if (!['marketplace', 'storefront'].includes(order?.channel)) return null;
+  if (order?.status === 'pending') return 'confirm';
+  if (order?.status === 'confirmed' || order?.status === 'processing') return 'deliver';
+  return null;
+}
+
+export const canMarkOnlineDelivered = (order: any) => onlineAction(order) !== null;
 
 /** The inbox tab an order belongs to. */
 export function workTab(order: any): WorkTab {

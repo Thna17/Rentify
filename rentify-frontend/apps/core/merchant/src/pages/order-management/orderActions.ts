@@ -31,10 +31,19 @@ export function runDeliveryAction(storeId: string, order: any, action: DeliveryA
   return post(`${ECOMMERCE_API_ROOT}/api/stores/${storeId}/orders/${order.id}/actions/${action}`, key, body);
 }
 
-/** Marks an order paid online as delivered (Commerce order completion). */
-export function markOnlineOrderDelivered(order: any) {
-  const key = keys.keyFor(JSON.stringify([order.id, 'complete']));
-  return post(`${ECOMMERCE_API_ROOT}/api/merchant/orders/${order.id}/complete`, key, {});
+const merchantOrderUrl = (order: any, step: string) => `${ECOMMERCE_API_ROOT}/api/merchant/orders/${order.id}/${step}`;
+
+/** Confirms an order paid online (Commerce refuses it until the payment is completed). */
+export function confirmOnlineOrder(order: any) {
+  return post(merchantOrderUrl(order, 'confirm'), keys.keyFor(JSON.stringify([order.id, 'confirm'])), {});
+}
+
+/** Marks a confirmed order paid online as delivered: processing, then completed. */
+export async function markOnlineOrderDelivered(order: any) {
+  if (order.status === 'confirmed') {
+    await post(merchantOrderUrl(order, 'process'), keys.keyFor(JSON.stringify([order.id, 'process'])), { action: 'process' });
+  }
+  return post(merchantOrderUrl(order, 'complete'), keys.keyFor(JSON.stringify([order.id, 'complete'])), {});
 }
 
 /** Translation key for a failed action. */

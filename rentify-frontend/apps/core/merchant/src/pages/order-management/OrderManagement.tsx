@@ -12,13 +12,13 @@ import { StatusPill } from '../../components/data-table/StatusPill';
 import { FilterChips, PageShell, PageTitle, StatePanel, TabBar } from '../../components/page/PagePrimitives';
 import { RecordCashSheet } from './components/RecordCashSheet';
 import { PaymentPill } from './components/PaymentPill';
-import { actionErrorKey, markOnlineOrderDelivered, runDeliveryAction } from './orderActions';
+import { actionErrorKey, confirmOnlineOrder, markOnlineOrderDelivered, runDeliveryAction } from './orderActions';
 import {
   CHANNEL_FILTERS,
   WORK_TABS,
-  canMarkOnlineDelivered,
   countByTab,
   money,
+  onlineAction,
   orderLabel,
   workTab,
   type ChannelFilter,
@@ -139,15 +139,20 @@ export function OrderManagement() {
         </Button>
       );
     }
-    if (canMarkOnlineDelivered(order)) {
+    const online = onlineAction(order);
+    if (online) {
       return (
         <Button
           size="sm"
           disabled={busy}
-          onClick={() => act(order, () => markOnlineOrderDelivered(order), 'merchant.orders.done.delivered')}
+          onClick={() =>
+            online === 'confirm'
+              ? act(order, () => confirmOnlineOrder(order), 'merchant.orders.done.confirmed')
+              : act(order, () => markOnlineOrderDelivered(order), 'merchant.orders.done.delivered')
+          }
           className="min-h-[44px] rounded-xl px-4"
         >
-          {t('merchant.orders.actions.markDelivered')}
+          {t(online === 'confirm' ? 'merchant.orders.actions.confirm' : 'merchant.orders.actions.markDelivered')}
         </Button>
       );
     }

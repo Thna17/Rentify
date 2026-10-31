@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canMarkOnlineDelivered, countByTab, paymentKind, workTab } from './orderModel';
+import { canMarkOnlineDelivered, countByTab, onlineAction, paymentKind, workTab } from './orderModel';
 
 // Shapes follow Commerce's orderProjection (GET /api/stores/:storeId/orders).
 const order = (overrides: Record<string, any> = {}) => ({
@@ -44,6 +44,10 @@ describe('Orders inbox (redesign M3–M5)', () => {
       const paid = order({ channel: 'storefront', payment: { method: 'khqr', status: 'completed', codState: 'not_applicable' } });
       expect(workTab(paid)).toBe('deliver');
       expect(canMarkOnlineDelivered(paid)).toBe(true);
+      // Commerce's state machine: pending → confirmed → processing → completed
+      expect(onlineAction(paid)).toBe('confirm');
+      expect(onlineAction({ ...paid, status: 'confirmed' })).toBe('deliver');
+      expect(onlineAction({ ...paid, status: 'processing' })).toBe('deliver');
       expect(workTab({ ...paid, status: 'completed', fulfillmentStatus: 'delivered' })).toBe('done');
     });
 
