@@ -187,6 +187,27 @@ export const Overview = () => {
   const isMarketplaceListed = approval === 'approved' || !approval;
   const marketplaceStatusLabel = isMarketplaceListed ? 'Listed' : approval === 'pending' ? 'Pending' : 'Paused';
 
+  if (error) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto max-w-lg space-y-6 px-4 py-16 text-center">
+          <Surface className="flex flex-col items-center justify-center p-8 space-y-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold text-foreground">We couldn't load your store overview</h2>
+              <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
+            </div>
+            <Button onClick={reload} variant="outline" className="h-10 px-5 rounded-xl font-semibold">
+              Try again
+            </Button>
+          </Surface>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full">
       <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 sm:px-6 md:px-8 md:py-8">
