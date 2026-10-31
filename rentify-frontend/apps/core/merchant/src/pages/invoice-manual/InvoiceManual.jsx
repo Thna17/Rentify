@@ -83,7 +83,7 @@ const WORK_TABS = [
 
 export const InvoiceManual = () => {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<'list' | 'new'>('list');
+  const [viewMode, setViewMode] = useState('list');
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
@@ -93,7 +93,7 @@ export const InvoiceManual = () => {
   const [showWatermark, setShowWatermark] = useState(true);
 
   const { websiteData } = useThemeService();
-  const websiteId = websiteData.websiteId;
+  const websiteId = websiteData?.websiteId;
 
   // Invoice Query for M14 List
   const {
