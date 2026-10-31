@@ -12,6 +12,36 @@ const sanitizeRecord = (record) => {
   };
 };
 
+exports.getPublicPaymentMethods = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    if (!websiteId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(websiteId)) {
+      return res.status(400).json({ error: "Invalid websiteId" });
+    }
+
+    const configs = await PaymentGatewayConfig.findAll({
+      where: { websiteId, enabled: true },
+      attributes: ["gateway", "enabled", "config"],
+    });
+
+    const paymentMethods = ["COD"];
+    const hasKhqr = configs.some((c) => (c.gateway === "cutluy" || c.gateway === "khqr") && c.enabled);
+    if (hasKhqr) {
+      paymentMethods.push("KHQR");
+    }
+
+    const cutluyConfig = configs.find((c) => c.gateway === "cutluy");
+    return res.json({
+      paymentMethods,
+      cutluyEnabled: Boolean(cutluyConfig?.enabled),
+      businessName: cutluyConfig?.config?.businessName || "",
+    });
+  } catch (error) {
+    console.error("Failed to fetch public payment methods:", error);
+    return res.status(500).json({ error: "Failed to fetch public payment methods" });
+  }
+};
+
 exports.getPaymentConfig = async (req, res) => {
   try {
     const { websiteId } = req.params;

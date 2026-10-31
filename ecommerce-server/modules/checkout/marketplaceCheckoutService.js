@@ -59,6 +59,9 @@ async function findOrderByKey(checkoutKey, buyerId, transaction = null) {
 const paywayEnabled = () => String(process.env.PAYWAY_ENABLED || '').toLowerCase() === 'true';
 function resolvePaymentMethod(requested) {
   const value = String(requested || 'COD').toUpperCase();
+  if (value === 'KHQR' || value === 'CUTLUY') {
+    return 'KHQR';
+  }
   if (value === 'ABA_PAYWAY') {
     if (!paywayEnabled()) fail('ABA PayWay is not available', 400, 'PAYMENT_METHOD_UNAVAILABLE');
     return 'ABA_PAYWAY';
@@ -292,9 +295,81 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
           }, { transaction });
         }
       }
+      let transactionData = null;
+      let effectiveGateway = null;
+      let paymentRecordMethod = paymentMethod;
+
+      if (paymentMethod === 'KHQR') {
+        const { PaymentGatewayConfig } = require('../../models');
+        const { decryptSecrets } = require('../payments/paymentConfigEncryption');
+        const whereConditions = [];
+        if (order.websiteId) whereConditions.push({ websiteId: order.websiteId, gateway: 'cutluy', enabled: true });
+        if (order.storeId) whereConditions.push({ storeId: order.storeId, gateway: 'cutluy', enabled: true });
+
+        if (whereConditions.length > 0) {
+          const cutluyConfig = await PaymentGatewayConfig.findOne({
+            where: { [Op.or]: whereConditions },
+            transaction,
+          });
+
+          if (cutluyConfig) {
+            effectiveGateway = 'cutluy';
+            paymentRecordMethod = 'cutluy';
+            const cfg = cutluyConfig.config || {};
+            const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+            const apiKey = decrypted.apiKey || cfg.apiKey;
+            if (apiKey) {
+              try {
+                const axios = require('axios');
+                const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || 'https://cutluy.com').replace(/\/+$/, '');
+                const response = await axios.post(
+                  `${cutluyBaseUrl}/v1/payments`,
+                  {
+                    amount: parseFloat(dollars(total)),
+                    currency: 'USD',
+                    reference_id: `ORDER-${order.id}`,
+                    description: `Order ${order.orderNumber || order.id}`,
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${apiKey}`,
+                      'Content-Type': 'application/json',
+                      'User-Agent': 'Rentify/1.0 (axios)',
+                    },
+                    timeout: 10000,
+                  }
+                );
+                const cutluyData = response.data;
+                const providerPaymentId = cutluyData?.id || `cutluy_${order.id}`;
+                const checkoutUrl = cutluyData?.checkout_url || `https://cutluy.com/pay/${providerPaymentId}`;
+                const qrString = cutluyData?.qr_string || '';
+                transactionData = {
+                  provider: 'cutluy',
+                  providerPaymentId,
+                  checkoutUrl,
+                  rawQR: qrString,
+                  qrCodeUrl: checkoutUrl,
+                  referenceId: `ORDER-${order.id}`,
+                };
+              } catch (cutluyErr) {
+                console.error('CutLuy payment creation error:', cutluyErr.response?.data || cutluyErr.message);
+              }
+            }
+          }
+        }
+      }
+
       const payment = await Payment.create({
-        orderId: order.id, storeId, amount: dollars(total), currency: 'USD',
-        paymentMethod, status: 'pending', collectedAmount: '0.00', refundedAmount: '0.00',
+        orderId: order.id,
+        storeId,
+        amount: dollars(total),
+        currency: 'USD',
+        paymentMethod: paymentRecordMethod,
+        gateway: effectiveGateway,
+        status: 'pending',
+        collectedAmount: '0.00',
+        refundedAmount: '0.00',
+        transactionData,
       }, { transaction });
       await CartItem.destroy({ where: { cartId: cart.id }, transaction });
       await Cart.destroy({ where: { id: cart.id }, transaction });

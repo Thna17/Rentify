@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Storefront payment-status reads. A payment id is an unguessable UUID and the
 // response deliberately excludes provider credentials.
+router.get("/payments/public-methods/:websiteId", PaymentController.getPublicPaymentMethods);
 router.get("/payments/:paymentId", PaymentController.getPaymentStatus);
 router.get("/payments/:paymentId/check-status", PaymentController.checkPaymentStatus);
 

@@ -16,7 +16,7 @@ class OnlineOrderStrategy extends OrderTypeStrategy {
     }
 
     // Validate payment method
-    const validPaymentMethods = ['COD'];
+    const validPaymentMethods = ['COD', 'KHQR', 'cutluy', 'khqr'];
     if (!validPaymentMethods.includes(paymentMethod)) {
       throw new Error("Invalid payment method");
     }

@@ -31,6 +31,7 @@ class CutLuyPaymentStrategy extends PaymentStrategy {
             headers: {
               Authorization: `Bearer ${apiKey}`,
               "Content-Type": "application/json",
+              "User-Agent": "Rentify/1.0 (axios)",
             },
             timeout: 10000,
           }

@@ -8,6 +8,8 @@ const { ORDER_STATUS, PAYMENT_STATUS } = require("../../utils/constants");
 const FulfillmentService = require("./FulfillmentService");
 const PaymentVerificationService = require("./PaymentVerificationService");
 const axios = require("axios");
+const { getPublicPaymentMethods } = require("./paymentConfigController");
+exports.getPublicPaymentMethods = getPublicPaymentMethods;
 exports.getPaymentStatus = async (req, res) => {
   try {
     const { paymentId } = req.params;
@@ -73,7 +75,7 @@ exports.checkPaymentStatus = async (req, res) => {
     }
 
     // Verify with Bakong if still pending
-    if (payment.status === "pending") {
+    if (payment.status === "pending" && payment.transactionData?.md5Hash) {
       const verification = await PaymentVerificationService.verifyBakongTransaction(
         payment.transactionData.md5Hash,
         payment.amount
@@ -84,7 +86,55 @@ exports.checkPaymentStatus = async (req, res) => {
         await FulfillmentService.confirmOrderPayment(paymentId, verification);
 
         // Fetch updated status
-        payment = await Payment.findByPk(paymentId);
+        payment = await Payment.findByPk(paymentId, { include: [Order] });
+      }
+    }
+
+    // Verify with CutLuy if pending
+    if (payment.status === "pending" && (payment.gateway === "cutluy" || payment.transactionData?.provider === "cutluy")) {
+      const { PaymentGatewayConfig } = require("../../models");
+      const { decryptSecrets } = require("./paymentConfigEncryption");
+      const order = payment.Order || (payment.orderId ? await Order.findByPk(payment.orderId) : null);
+      const queryWhere = [];
+      if (order?.websiteId) queryWhere.push({ websiteId: order.websiteId, gateway: "cutluy", enabled: true });
+      if (payment.storeId) queryWhere.push({ storeId: payment.storeId, gateway: "cutluy", enabled: true });
+
+      if (queryWhere.length > 0) {
+        const cutluyConfig = await PaymentGatewayConfig.findOne({
+          where: { [Op.or]: queryWhere },
+        });
+
+        if (cutluyConfig) {
+          const cfg = cutluyConfig.config || {};
+          const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+          const apiKey = decrypted.apiKey || cfg.apiKey;
+          const providerPaymentId = payment.transactionData?.providerPaymentId || payment.transactionId;
+
+          if (apiKey && providerPaymentId) {
+            try {
+              const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
+              const response = await axios.get(`${cutluyBaseUrl}/v1/payments/${providerPaymentId}`, {
+                headers: {
+                  Authorization: `Bearer ${apiKey}`,
+                  "User-Agent": "Rentify/1.0 (axios)",
+                },
+                timeout: 6000,
+              });
+
+              const cutluyStatus = String(response.data?.status || "").toLowerCase();
+              if (cutluyStatus === "paid" || cutluyStatus === "completed") {
+                await FulfillmentService.confirmOrderPayment(paymentId, {
+                  provider: "cutluy",
+                  transactionId: providerPaymentId,
+                  providerEvent: response.data,
+                });
+                payment = await Payment.findByPk(paymentId, { include: [Order] });
+              }
+            } catch (cutluyCheckErr) {
+              console.error("CutLuy payment status poll error:", cutluyCheckErr.response?.data || cutluyCheckErr.message);
+            }
+          }
+        }
       }
     }
 

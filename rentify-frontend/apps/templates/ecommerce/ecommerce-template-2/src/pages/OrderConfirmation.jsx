@@ -77,7 +77,8 @@ export default function OrderConfirmation() {
   const paymentStatus = settledPaymentStatus || payment?.status || 'pending';
   const paid = PAID_STATUSES.includes(paymentStatus);
   const closed = CLOSED_ORDER_STATUSES.includes(order.status);
-  const awaitingKhqr = paymentMethodName === 'KHQR' && paymentStatus === 'pending' && !closed;
+  const isKhqr = ['KHQR', 'CUTLUY'].includes(String(paymentMethodName).toUpperCase());
+  const awaitingKhqr = isKhqr && paymentStatus === 'pending' && !closed;
   const shipping = order.shippingDetail || order.shippingInfo || {};
   const items = Array.isArray(order.OrderItems) ? order.OrderItems : (Array.isArray(order.items) ? order.items : []);
   // The receipt endpoint only returns the total; the breakdown is available
@@ -117,7 +118,7 @@ export default function OrderConfirmation() {
           <div>
             <dt className="text-xs text-muted-foreground">{t('order.payment')}</dt>
             <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm text-foreground">
-              {payment ? t(`payment.${payment.paymentMethod}`, { defaultValue: payment.paymentMethod }) : '—'}
+              {payment ? (['KHQR', 'CUTLUY'].includes(String(payment.paymentMethod).toUpperCase()) ? t('payment.KHQR', { defaultValue: 'KHQR' }) : t(`payment.${payment.paymentMethod}`, { defaultValue: payment.paymentMethod })) : '—'}
               {payment && (
                 <Badge tone={paid ? 'success' : ['failed', 'expired'].includes(paymentStatus) ? 'error' : 'warning'}>
                   {t(`payment.statuses.${paymentStatus}`, { defaultValue: paymentStatus })}

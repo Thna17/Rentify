@@ -138,8 +138,16 @@ function orderView(order, items, payment) {
       snapshot: item.lineSnapshot || null,
     })),
     payment: payment && {
-      method: payment.paymentMethod, status: payment.status, amountDue: payment.amount,
-      collectedAmount: payment.collectedAmount, refundedAmount: payment.refundedAmount,
+      id: payment.id,
+      paymentMethod: payment.paymentMethod,
+      method: payment.paymentMethod,
+      status: payment.status,
+      amount: payment.amount,
+      amountDue: payment.amount,
+      collectedAmount: payment.collectedAmount,
+      refundedAmount: payment.refundedAmount,
+      rawQR: payment.transactionData?.rawQR || null,
+      qrCodeUrl: payment.transactionData?.qrCodeUrl || payment.transactionData?.checkoutUrl || null,
     },
   };
 }

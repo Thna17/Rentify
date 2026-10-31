@@ -47,6 +47,7 @@ router.post('/storefront/:websiteId/checkout', enforceCustomDomainBoundary('chec
     expectedTotalAmount: req.body.expectedTotalAmount,
     customerInfo: req.body.customerInfo, shippingInfo: req.body.shippingInfo,
     channel: 'storefront',
+    paymentMethod: req.body.paymentMethod || 'COD',
   }) })));
 router.get('/storefront/:websiteId/my-orders', enforceCustomDomainBoundary('customer'), wrap(async (req, res) => res.json({
   orders: await service.buyerOrders(req.user.id, { storeId: req.storeId, channel: 'storefront' }),

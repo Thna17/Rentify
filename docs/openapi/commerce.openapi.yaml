@@ -4935,6 +4935,38 @@ paths:
                 type: string
                 format: binary
       operationId: get_api_invoice_invoices_invoiceId_pdf
+  /api/payment/payments/public-methods/{websiteId}:
+    get:
+      tags:
+        - Payments
+      summary: Get active public payment methods for storefront
+      description: Returns active public payment method options (e.g. COD, KHQR) for a website without revealing secret credentials.
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Public payment methods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentMethods:
+                    type: array
+                    items:
+                      type: string
+                  cutluyEnabled:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      operationId: get_api_payment_payments_public_methods_websiteId
+      security: []
   /api/payment/payments/{paymentId}:
     get:
       tags:

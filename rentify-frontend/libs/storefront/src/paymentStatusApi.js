@@ -18,7 +18,11 @@ export const storefrontPaymentApi = createApi({
       query: (paymentId) => `/payments/${encodeURIComponent(paymentId)}/check-status`,
       transformResponse: (response) => ({ status: response?.status || 'pending' }),
     }),
+    // Public payment methods configured and enabled for a storefront website.
+    getPublicPaymentMethods: builder.query({
+      query: (websiteId) => `/payments/public-methods/${encodeURIComponent(websiteId)}`,
+    }),
   }),
 });
 
-export const { useCheckStorefrontPaymentStatusQuery } = storefrontPaymentApi;
+export const { useCheckStorefrontPaymentStatusQuery, useGetPublicPaymentMethodsQuery } = storefrontPaymentApi;

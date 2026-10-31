@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
-import { cartApi, useCreateOrderMutation, useHostedCheckoutMutation } from '@rentify/storefront/api';
+import { cartApi, useCreateOrderMutation, useHostedCheckoutMutation, useGetPublicPaymentMethodsQuery } from '@rentify/storefront/api';
 import { useStorefrontCart } from '@rentify/storefront/cart';
 import { useCustomerSession } from '@rentify/storefront/customer';
 import { trackStorefrontEvent } from '@rentify/storefront/analytics';
@@ -73,7 +73,15 @@ export default function Checkout() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const placed = useRef(false);
   const started = useRef(false);
+  const { data: publicPaymentData } = useGetPublicPaymentMethodsQuery(cart.websiteId, { skip: !cart.websiteId });
+  const paymentMethods = publicPaymentData?.paymentMethods || ['COD'];
   useDocumentTitle(t('checkout.title'));
+
+  useEffect(() => {
+    if (!paymentMethods.includes(paymentMethod)) {
+      setPaymentMethod(paymentMethods[0] || 'COD');
+    }
+  }, [paymentMethods, paymentMethod]);
 
   if (cart.isCustomDomain) {
     return (
@@ -125,6 +133,7 @@ export default function Checkout() {
       expectedTotalAmount: quote.rawTotalAmount,
       customerInfo: { name: details.name.trim(), phone: normalizeCambodianPhone(details.phone) || details.phone.trim() },
       shippingInfo: { address },
+      paymentMethod,
     };
     const signature = JSON.stringify(body);
     if (hostedAttempt.current?.signature !== signature) {
@@ -236,7 +245,7 @@ export default function Checkout() {
         <CheckoutForm
           details={details}
           paymentMethod={paymentMethod}
-          paymentMethods={cart.hosted ? ['COD'] : undefined}
+          paymentMethods={paymentMethods}
           onDetailsChange={setDetails}
           onPaymentMethodChange={(method) => {
             setPaymentMethod(method);
