@@ -62,6 +62,7 @@ import {
 } from "@/lib/posScanBehavior.js";
 import { formatCurrency, parseDecimal } from "@/lib/cartUtils.js";
 import { ECOMMERCE_API_BASE, RENTIFY_API_BASE } from "@rentify/shared/config/urls";
+import { Toaster, toast } from "sonner";
 
 const DEFAULT_WALK_IN = {
   id: "walk-in",
@@ -117,6 +118,61 @@ export default function POS() {
 
   // Cart & Order State
   const [cart, setCart] = useState([]);
+  const cartRef = useRef(cart);
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
+
+  // In-App Alert / Notice Modal Card State
+  const [posAlert, setPosAlert] = useState(null);
+
+  const closePosAlert = useCallback(() => {
+    setPosAlert((current) => {
+      if (current?.onConfirm) {
+        try {
+          current.onConfirm();
+        } catch (err) {
+          console.error("Error in posAlert onConfirm:", err);
+        }
+      }
+      return null;
+    });
+  }, []);
+
+  const showPosAlert = useCallback((alertConfig) => {
+    const config =
+      typeof alertConfig === "string"
+        ? { title: "Notice", message: alertConfig, tone: "info" }
+        : alertConfig;
+
+    const tone = config.tone || "warning";
+    const title = config.title || "Notice";
+    const message = config.message || "";
+
+    try {
+      if (tone === "destructive") {
+        toast.error(title, { description: message });
+      } else if (tone === "success") {
+        toast.success(title, { description: message });
+      } else if (tone === "warning") {
+        toast.warning(title, { description: message });
+      } else {
+        toast.info(title, { description: message });
+      }
+    } catch {
+      // Non-fatal if toast fails
+    }
+
+    setPosAlert({
+      title,
+      message,
+      tone,
+      stockLimit: config.stockLimit,
+      itemName: config.itemName,
+      confirmText: config.confirmText || (tone === "destructive" ? "Close" : "Got it"),
+      onConfirm: config.onConfirm,
+    });
+  }, []);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [customer, setCustomer] = useState(DEFAULT_WALK_IN);
   const [orderOption, setOrderOption] = useState("in_store");
@@ -288,87 +344,142 @@ export default function POS() {
   }, [products, selectedCategory, searchQuery]);
 
   // ── 2. Cart Operations ────────────────────────────────────────────────────
-  const addToCart = useCallback((product, qty = 1, variantId = null) => {
-    const selectedVariant = variantId
-      ? (product.variants || []).find((v) => v.id === variantId)
-      : null;
-    const effectiveStock = selectedVariant
-      ? (selectedVariant.stockQuantity ?? product.stockQuantity)
-      : (product.stockQuantity ?? 0);
-    const trackInventory = selectedVariant
-      ? (selectedVariant.trackInventory ?? product.trackInventory)
-      : product.trackInventory;
+  const addToCart = useCallback(
+    (product, qty = 1, variantId = null) => {
+      const selectedVariant = variantId
+        ? (product.variants || []).find((v) => v.id === variantId)
+        : null;
+      const effectiveStock = selectedVariant
+        ? (selectedVariant.stockQuantity ?? product.stockQuantity)
+        : (product.stockQuantity ?? 0);
+      const trackInventory = selectedVariant
+        ? (selectedVariant.trackInventory ?? product.trackInventory)
+        : product.trackInventory;
 
-    if (trackInventory && effectiveStock <= 0) {
-      alert(`"${product.name}${selectedVariant?.title ? ' - ' + selectedVariant.title : ''}" is out of stock.`);
-      return;
-    }
+      const itemName = `${product.name}${selectedVariant?.title ? ' - ' + selectedVariant.title : ''}`;
 
-    const cartItemId = variantId ? `${product.id}__${variantId}` : product.id;
+      if (trackInventory && effectiveStock <= 0) {
+        showPosAlert({
+          title: "Out of Stock",
+          message: `"${itemName}" is currently out of stock.`,
+          tone: "warning",
+          stockLimit: 0,
+          itemName,
+          confirmText: "Got it",
+        });
+        return;
+      }
 
-    setCart((prev) => {
-      const existing = prev.find((item) => (item.cartItemId || item.productId) === cartItemId);
-      const currentQty = existing ? existing.quantity : 0;
+      const cartItemId = variantId ? `${product.id}__${variantId}` : product.id;
+      const existingInCart = cartRef.current.find((item) => (item.cartItemId || item.productId) === cartItemId);
+      const currentQty = existingInCart ? existingInCart.quantity : 0;
+
       if (
         trackInventory &&
         effectiveStock !== undefined &&
         effectiveStock !== null &&
         currentQty + qty > effectiveStock
       ) {
-        alert(`Cannot add more than available stock (${effectiveStock} in stock).`);
-        return prev;
+        showPosAlert({
+          title: "Stock Limit Reached",
+          message: `Cannot add more than available stock (${effectiveStock} in stock).`,
+          tone: "warning",
+          stockLimit: effectiveStock,
+          itemName,
+          confirmText: "Got it",
+        });
+        return;
       }
-      if (existing) {
-        return prev.map((item) =>
-          (item.cartItemId || item.productId) === cartItemId ? { ...item, quantity: item.quantity + qty } : item
-        );
-      }
-      return [
-        ...prev,
-        {
-          cartItemId,
-          productId: product.id,
-          variantId: variantId || null,
-          variantName: selectedVariant?.title || null,
-          name: selectedVariant?.title ? `${product.name} (${selectedVariant.title})` : product.name,
-          price: parseDecimal(selectedVariant?.price ?? product.basePrice ?? product.price ?? 0),
-          quantity: qty,
-          sku: selectedVariant?.sku || product.sku || "",
-          barcode: selectedVariant?.barcode || product.barcode || "",
-          image: selectedVariant?.image || product.image || product.images?.[0]?.url || product.imageUrl || "",
-          taxRate: product.taxRate || 0,
-          stockQuantity: effectiveStock,
-          trackInventory,
-          productType: product.productType || "physical",
-        },
-      ];
-    });
-  }, []);
 
-  const updateCartQuantity = useCallback((cartKey, delta) => {
-    setCart((prev) =>
-      prev
-        .map((item) => {
-          const key = item.cartItemId || item.productId;
-          if (key === cartKey) {
-            const nextQty = item.quantity + delta;
-            if (
-              delta > 0 &&
-              item.trackInventory &&
-              item.stockQuantity !== undefined &&
-              item.stockQuantity !== null &&
-              nextQty > item.stockQuantity
-            ) {
-              alert(`Cannot exceed available stock (${item.stockQuantity} in stock).`);
-              return item;
-            }
-            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
+      setCart((prev) => {
+        const itemExists = prev.find((item) => (item.cartItemId || item.productId) === cartItemId);
+        if (itemExists) {
+          if (
+            trackInventory &&
+            effectiveStock !== undefined &&
+            effectiveStock !== null &&
+            itemExists.quantity + qty > effectiveStock
+          ) {
+            return prev;
           }
-          return item;
-        })
-        .filter(Boolean)
-    );
-  }, []);
+          return prev.map((item) =>
+            (item.cartItemId || item.productId) === cartItemId
+              ? { ...item, quantity: item.quantity + qty }
+              : item
+          );
+        }
+        return [
+          ...prev,
+          {
+            cartItemId,
+            productId: product.id,
+            variantId: variantId || null,
+            variantName: selectedVariant?.title || null,
+            name: selectedVariant?.title ? `${product.name} (${selectedVariant.title})` : product.name,
+            price: parseDecimal(selectedVariant?.price ?? product.basePrice ?? product.price ?? 0),
+            quantity: qty,
+            sku: selectedVariant?.sku || product.sku || "",
+            barcode: selectedVariant?.barcode || product.barcode || "",
+            image: selectedVariant?.image || product.image || product.images?.[0]?.url || product.imageUrl || "",
+            taxRate: product.taxRate || 0,
+            stockQuantity: effectiveStock,
+            trackInventory,
+            productType: product.productType || "physical",
+          },
+        ];
+      });
+    },
+    [showPosAlert]
+  );
+
+  const updateCartQuantity = useCallback(
+    (cartKey, delta) => {
+      const item = cartRef.current.find((it) => (it.cartItemId || it.productId) === cartKey);
+      if (!item) return;
+
+      const currentQty = item.quantity;
+      if (
+        delta > 0 &&
+        item.trackInventory &&
+        item.stockQuantity !== undefined &&
+        item.stockQuantity !== null &&
+        currentQty + delta > item.stockQuantity
+      ) {
+        showPosAlert({
+          title: "Stock Limit Reached",
+          message: `Cannot exceed available stock (${item.stockQuantity} in stock).`,
+          tone: "warning",
+          stockLimit: item.stockQuantity,
+          itemName: item.name,
+          confirmText: "Got it",
+        });
+        return;
+      }
+
+      setCart((prev) =>
+        prev
+          .map((it) => {
+            const key = it.cartItemId || it.productId;
+            if (key === cartKey) {
+              const updatedQty = it.quantity + delta;
+              if (
+                delta > 0 &&
+                it.trackInventory &&
+                it.stockQuantity !== undefined &&
+                it.stockQuantity !== null &&
+                updatedQty > it.stockQuantity
+              ) {
+                return it;
+              }
+              return updatedQty > 0 ? { ...it, quantity: updatedQty } : null;
+            }
+            return it;
+          })
+          .filter(Boolean)
+      );
+    },
+    [showPosAlert]
+  );
 
   const removeFromCart = useCallback((cartKey) => {
     setCart((prev) => prev.filter((item) => (item.cartItemId || item.productId) !== cartKey));
@@ -484,7 +595,12 @@ export default function POS() {
   const finalizePOSOrder = async () => {
     if (cart.length === 0 || !activeStoreId) return;
     if (user?.type === "staff" && !hasPosPermission) {
-      alert("Unauthorized: You do not have permission to process POS transactions.");
+      showPosAlert({
+        title: "Access Restricted",
+        message: "Unauthorized: You do not have permission to process POS transactions.",
+        tone: "destructive",
+        confirmText: "Close",
+      });
       return;
     }
     setProcessingPayment(true);
@@ -596,7 +712,12 @@ export default function POS() {
           error: isAbort ? "Transaction timed out after 15 seconds." : err.message || "Network connection interrupted.",
         });
       } else {
-        alert(err.message || "Failed to process POS transaction on server.");
+        showPosAlert({
+          title: "Transaction Failed",
+          message: err.message || "Failed to process POS transaction on server.",
+          tone: "destructive",
+          confirmText: "Close",
+        });
         if (err.message?.includes("stock") || err.message?.includes("Stock")) {
           fetchProducts();
         }
@@ -610,7 +731,12 @@ export default function POS() {
   const handleConfirmReturn = async () => {
     if (!selectedOrderForReturn || !activeStoreId) return;
     if (user?.type === "staff" && !hasPosPermission) {
-      alert("Unauthorized: You do not have permission to process POS returns.");
+      showPosAlert({
+        title: "Access Restricted",
+        message: "Unauthorized: You do not have permission to process POS returns.",
+        tone: "destructive",
+        confirmText: "Close",
+      });
       return;
     }
     setProcessingReturn(true);
@@ -640,13 +766,23 @@ export default function POS() {
         localStorage.setItem(`rentify.pos.till.${activeStoreId}`, JSON.stringify(nextTill));
       }
 
-      alert("Return completed successfully. Inventory restored to store catalog.");
+      showPosAlert({
+        title: "Return Completed",
+        message: "Return completed successfully. Inventory restored to store catalog.",
+        tone: "success",
+        confirmText: "Close",
+      });
       setReturnModalOpen(false);
       setSelectedOrderForReturn(null);
       fetchPastOrders();
       fetchProducts();
     } catch (err) {
-      alert(err.message || "Failed to process return.");
+      showPosAlert({
+        title: "Return Failed",
+        message: err.message || "Failed to process return.",
+        tone: "destructive",
+        confirmText: "Close",
+      });
     } finally {
       setProcessingReturn(false);
     }
@@ -686,7 +822,12 @@ export default function POS() {
   const handleSaveTillEvent = () => {
     const amt = parseFloat(tillEventAmount);
     if (!amt || amt <= 0) {
-      alert("Please enter a valid amount");
+      showPosAlert({
+        title: "Invalid Amount",
+        message: "Please enter a valid amount greater than zero.",
+        tone: "warning",
+        confirmText: "Got it",
+      });
       return;
     }
     const evt = {
@@ -734,7 +875,12 @@ export default function POS() {
     setOfflineQueue(remaining);
     localStorage.setItem(`rentify.pos.offlineQueue.${activeStoreId}`, JSON.stringify(remaining));
     setSyncingOffline(false);
-    alert(`Synced ${syncedCount} offline transaction(s). ${remaining.length} remaining.`);
+    showPosAlert({
+      title: remaining.length === 0 ? "Sync Complete" : "Sync Status",
+      message: `Synced ${syncedCount} offline transaction(s). ${remaining.length} remaining.`,
+      tone: remaining.length === 0 ? "success" : "warning",
+      confirmText: "Got it",
+    });
     fetchProducts();
     if (currentView === "returns") {
       fetchPastOrders();
@@ -1258,21 +1404,28 @@ export default function POS() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                   {filteredProducts.map((p) => {
                     const price = parseDecimal(p.basePrice ?? p.price ?? 0);
-                    const inCartItem = cart.find((c) => c.productId === p.id);
-                    const isOutOfStock = p.trackInventory && ((p.stockQuantity ?? 0) <= 0 || p.status === 'out_of_stock');
+                    const inCartItems = cart.filter((c) => c.productId === p.id);
+                    const inCartQty = inCartItems.reduce((sum, c) => sum + c.quantity, 0);
+                    const isOutOfStock =
+                      p.trackInventory && ((p.stockQuantity ?? 0) <= 0 || p.status === "out_of_stock");
+                    const hasTrackedStock =
+                      p.trackInventory && p.stockQuantity !== undefined && p.stockQuantity !== null;
+                    const isStockLimitReached = !isOutOfStock && hasTrackedStock && inCartQty >= (p.stockQuantity ?? 0);
 
                     return (
                       <div
                         key={p.id}
                         role="button"
                         tabIndex={0}
-                        onClick={() => !isOutOfStock && addToCart(p, 1)}
-                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border text-left transition select-none bg-white p-3 ${
+                        onClick={() => addToCart(p, 1)}
+                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border text-left transition select-none p-3 ${
                           isOutOfStock
-                            ? "opacity-60 cursor-not-allowed border-slate-200 bg-slate-50/50"
-                            : inCartItem
-                            ? "border-primary ring-1 ring-primary cursor-pointer hover:shadow-md"
-                            : "border-slate-200 hover:border-slate-300 hover:shadow-md cursor-pointer"
+                            ? "opacity-60 cursor-pointer border-slate-200 bg-slate-50/50"
+                            : isStockLimitReached
+                            ? "border-amber-400 ring-2 ring-amber-300/80 bg-amber-50/20 cursor-pointer hover:shadow-md"
+                            : inCartQty > 0
+                            ? "border-primary ring-1 ring-primary cursor-pointer hover:shadow-md bg-white"
+                            : "border-slate-200 hover:border-slate-300 hover:shadow-md cursor-pointer bg-white"
                         }`}
                       >
                         {isOutOfStock ? (
@@ -1281,9 +1434,14 @@ export default function POS() {
                               Out of stock
                             </span>
                           </div>
-                        ) : inCartItem ? (
+                        ) : isStockLimitReached ? (
+                          <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-amber-500 text-white px-2 py-0.5 text-[10px] font-bold shadow">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>Max ({inCartQty})</span>
+                          </div>
+                        ) : inCartQty > 0 ? (
                           <div className="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shadow">
-                            {inCartItem.quantity}
+                            {inCartQty}
                           </div>
                         ) : null}
 
@@ -1315,6 +1473,11 @@ export default function POS() {
                           </span>
                           {isOutOfStock ? (
                             <span className="text-[10px] text-rose-600 font-semibold">0 in stock</span>
+                          ) : isStockLimitReached ? (
+                            <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                              Max in cart ({p.stockQuantity})
+                            </span>
                           ) : p.trackInventory ? (
                             <span className="text-[10px] text-emerald-600 font-medium">{p.stockQuantity} in stock</span>
                           ) : (
@@ -1375,43 +1538,88 @@ export default function POS() {
                   <p className="text-xs mt-1">Scan a barcode or tap products from the catalog to add to order.</p>
                 </div>
               ) : (
-                cart.map((item) => (
-                  <div
-                    key={item.cartItemId || item.productId}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm"
-                  >
-                    <div className="min-w-0 flex-1 pr-2">
-                      <p className="text-xs font-semibold text-slate-900 truncate leading-tight">{item.name}</p>
-                      <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                        {formatCurrency(item.price)} each
-                      </p>
-                    </div>
+                cart.map((item) => {
+                  const isCartItemAtMax =
+                    item.trackInventory &&
+                    item.stockQuantity !== undefined &&
+                    item.stockQuantity !== null &&
+                    item.quantity >= item.stockQuantity;
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-                        onClick={() => updateCartQuantity(item.cartItemId || item.productId, -1)}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </button>
-                      <span className="w-6 text-center font-mono font-bold text-xs">{item.quantity}</span>
-                      <button
-                        type="button"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-                        onClick={() => updateCartQuantity(item.cartItemId || item.productId, 1)}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
-                    </div>
+                  return (
+                    <div
+                      key={item.cartItemId || item.productId}
+                      className={`flex items-center justify-between rounded-xl border p-2.5 shadow-sm transition ${
+                        isCartItemAtMax
+                          ? "border-amber-300 bg-amber-50/30"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-semibold text-slate-900 truncate leading-tight">
+                            {item.name}
+                          </p>
+                          {isCartItemAtMax ? (
+                            <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              Max Stock
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-[11px] text-muted-foreground font-mono">
+                            {formatCurrency(item.price)} each
+                          </p>
+                          {item.trackInventory && item.stockQuantity !== undefined && item.stockQuantity !== null ? (
+                            <span
+                              className={`text-[10px] font-medium ${
+                                isCartItemAtMax ? "text-amber-700 font-semibold" : "text-slate-500"
+                              }`}
+                            >
+                              ({item.stockQuantity} available)
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
 
-                    <div className="w-16 text-right shrink-0 pl-2">
-                      <p className="text-xs font-bold font-mono text-slate-900">
-                        {formatCurrency(item.price * item.quantity)}
-                      </p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+                          onClick={() => updateCartQuantity(item.cartItemId || item.productId, -1)}
+                          title="Decrease quantity"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span
+                          className={`w-6 text-center font-mono font-bold text-xs ${
+                            isCartItemAtMax ? "text-amber-800" : ""
+                          }`}
+                        >
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg border transition ${
+                            isCartItemAtMax
+                              ? "border-amber-300 bg-amber-100/70 text-amber-700 hover:bg-amber-200"
+                              : "border-slate-200 text-slate-600 hover:bg-slate-100"
+                          }`}
+                          onClick={() => updateCartQuantity(item.cartItemId || item.productId, 1)}
+                          title={isCartItemAtMax ? `Max stock reached (${item.stockQuantity})` : "Increase quantity"}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+
+                      <div className="w-16 text-right shrink-0 pl-2">
+                        <p className="text-xs font-bold font-mono text-slate-900">
+                          {formatCurrency(item.price * item.quantity)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -1924,7 +2132,12 @@ export default function POS() {
                   setUncertainOutcome(null);
                   setPaymentModalOpen(false);
                   clearCart();
-                  alert("Transaction safely queued in Offline Recovery with original idempotency key.");
+                  showPosAlert({
+                    title: "Queued for Offline Recovery",
+                    message: "Transaction safely queued in Offline Recovery with original idempotency key.",
+                    tone: "success",
+                    confirmText: "Got it",
+                  });
                 }
               }}
             >
@@ -1943,6 +2156,87 @@ export default function POS() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* In-App Alert / Notice Modal Card */}
+      <Dialog
+        open={Boolean(posAlert)}
+        onOpenChange={(open) => {
+          if (!open) {
+            closePosAlert();
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-[28px] p-6 text-center sm:text-left shadow-2xl border-slate-200">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
+                posAlert?.tone === "destructive"
+                  ? "bg-rose-100 text-rose-600 ring-4 ring-rose-50"
+                  : posAlert?.tone === "success"
+                  ? "bg-emerald-100 text-emerald-600 ring-4 ring-emerald-50"
+                  : posAlert?.tone === "info"
+                  ? "bg-blue-100 text-blue-600 ring-4 ring-blue-50"
+                  : "bg-amber-100 text-amber-600 ring-4 ring-amber-50"
+              }`}
+            >
+              {posAlert?.tone === "destructive" ? (
+                <ShieldAlert className="h-6 w-6" />
+              ) : posAlert?.tone === "success" ? (
+                <CheckCircle2 className="h-6 w-6" />
+              ) : posAlert?.tone === "info" ? (
+                <AlertCircle className="h-6 w-6" />
+              ) : (
+                <AlertTriangle className="h-6 w-6" />
+              )}
+            </div>
+
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <DialogHeader className="p-0 text-center sm:text-left">
+                <DialogTitle className="text-base font-bold text-slate-900 tracking-tight">
+                  {posAlert?.title || "Notice"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-600 leading-relaxed mt-1">
+                  {posAlert?.message}
+                </DialogDescription>
+              </DialogHeader>
+
+              {posAlert?.stockLimit !== undefined && posAlert?.stockLimit !== null ? (
+                <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 border border-amber-200">
+                    <Package className="h-3.5 w-3.5 text-amber-600" />
+                    Available Stock: {posAlert.stockLimit}
+                  </span>
+                  {posAlert?.itemName ? (
+                    <span className="text-[11px] text-slate-500 font-medium truncate max-w-[200px]">
+                      {posAlert.itemName}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <DialogFooter className="mt-5 sm:justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              className={`w-full sm:w-auto font-semibold rounded-xl text-xs h-9 px-5 ${
+                posAlert?.tone === "destructive"
+                  ? "bg-rose-600 hover:bg-rose-700 text-white"
+                  : posAlert?.tone === "success"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : posAlert?.tone === "warning"
+                  ? "bg-amber-600 hover:bg-amber-700 text-white"
+                  : "bg-slate-900 hover:bg-slate-800 text-white"
+              }`}
+              onClick={closePosAlert}
+            >
+              {posAlert?.confirmText || "Got it"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Toaster position="top-right" richColors closeButton />
     </div>
   );
 }
