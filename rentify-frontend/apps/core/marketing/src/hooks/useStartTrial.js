@@ -14,7 +14,7 @@ export const DEFAULT_PACKAGES = [
   {
     id: '44444444-4444-4444-8444-444444444442',
     name: 'Starter',
-    price: 0.1,
+    price: 5,
     duration: '14-day free trial',
     description: 'For shops with a counter or brand ready for their own storefront and POS.',
     features: [
@@ -70,7 +70,6 @@ const useStartTrial = () => {
         (plan) =>
           plan.id === '44444444-4444-4444-8444-444444444442' ||
           plan.name?.toLowerCase() === 'starter' ||
-          Number(plan.price) === 0.1 ||
           Number(plan.price) === 5
       ) ||
       sorted[0] ||
