@@ -99,6 +99,7 @@ exports.updatePaymentConfig = async (req, res) => {
           await axios.get(`${cutluyBaseUrl}/v1/payments?limit=1`, {
             headers: {
               Authorization: `Bearer ${keyToTest}`,
+              "User-Agent": "Rentify/1.0 (axios)",
             },
             timeout: 8000,
           });
@@ -130,6 +131,7 @@ exports.updatePaymentConfig = async (req, res) => {
     if (error.code === "PAYMENT_CONFIG_ENCRYPTION_KEY_INVALID") {
       return res.status(503).json({ error: "Payment configuration encryption is not configured" });
     }
+    console.error("Failed to update payment configs:", error);
     res.status(500).json({ error: "Failed to update payment configs" });
   }
 };
