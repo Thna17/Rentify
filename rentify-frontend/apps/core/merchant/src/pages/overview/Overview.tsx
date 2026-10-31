@@ -3,41 +3,31 @@ import { useAuth, useTranslation } from '@rentify/utils';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  ArrowUpRight,
   CheckCircle2,
   ClipboardList,
+  Globe,
   MonitorSmartphone,
   Package,
-  Plus,
   ShoppingBag,
   Store,
+  AlertTriangle,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-// @ts-expect-error Legacy JSX component has no declaration file yet.
-import { TopProducts } from './components/TopProducts';
-// @ts-expect-error Legacy JSX component has no declaration file yet.
-import { RevenueChart } from './components/RevenueChart';
+import { Link, useNavigate } from 'react-router-dom';
 import { useChannels, type ChannelView } from '../../context/ChannelContext';
 import { CHANNEL_LABEL, formatMoney, useChannelOrders, type StoreOrder } from '../../hooks/useChannelOrders';
 import { useAccess, type StaffPermission } from '../../utils/access';
-import { Lock } from 'lucide-react';
-import { MARKETING_URL } from '@rentify/shared/config/urls';
-import { marketplaceStoreUrl, openPosApp, storefrontDomain as storefrontDomainFor, storefrontUrl } from '../../utils/storeLinks';
+import { openPosApp, storefrontDomain as storefrontDomainFor, storefrontUrl, marketplaceStoreUrl } from '../../utils/storeLinks';
 import { SetupGuideCard } from '../../app/features/setup-guide/SetupGuideCard';
 import { useSetupGuide } from '../../app/features/setup-guide/SetupGuideContext';
-
-const PERIODS: [string, string][] = [
-  ['7d', '7 days'],
-  ['30d', '30 days'],
-  ['90d', '90 days'],
-  ['all', 'All time'],
-];
+import { useGetManagedProductsQuery } from '@rentify/apis';
+import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+import { Button } from '@rentify/shared/ui/button';
 
 const CHANNEL_TONE: Record<StoreOrder['channel'], string> = {
-  marketplace: 'bg-amber-500/10 text-amber-700',
-  storefront: 'bg-sky-500/10 text-sky-700',
-  pos: 'bg-violet-500/10 text-violet-700',
-  invoice: 'bg-slate-500/10 text-slate-700',
+  marketplace: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  storefront: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+  pos: 'bg-violet-500/10 text-violet-700 dark:text-violet-400',
+  invoice: 'bg-slate-500/10 text-slate-700 dark:text-slate-400',
 };
 
 const CHANNEL_BAR: Record<StoreOrder['channel'], string> = {
@@ -61,7 +51,7 @@ const fadeUp = (delay: number) => ({
 });
 
 export const Surface = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
-  <div data-slot="card" className={`rounded-3xl bg-card p-5 shadow-[var(--shadow-soft)] md:p-6 ${className}`}>{children}</div>
+  <div data-slot="card" className={`rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)] md:p-6 ${className}`}>{children}</div>
 );
 
 export const SectionTitle = ({ title, meta }: { title: string; meta?: ReactNode }) => (
@@ -91,459 +81,413 @@ export const Kpi = ({ label, value, sub, loading }: { label: string; value: stri
 
 export const CHANNEL_BARS = CHANNEL_BAR;
 
-// `need` mirrors the backend rule for the action: owner-only setup, or a staff permission
-type ChannelAction = { label: string; onClick?: () => void; href?: string; external?: boolean; primary?: boolean; need?: 'owner' | StaffPermission };
-
-interface ChannelCardProps {
-  icon: ReactNode;
-  name: string;
-  kind: string;
-  on: boolean;
-  status: string;
-  detail: string;
-  actions: ChannelAction[];
-  tint: string;
-  footnote?: string;
-  wide?: boolean;
-}
-
-/** One sales channel: what it is, whether it's on, and what to do next. Off channels invite, never fake a state. */
-const ChannelCard = ({ icon, name, kind, on, status, detail, actions, tint, footnote, wide }: ChannelCardProps) => (
-  <div
-    className={`flex h-full flex-col rounded-3xl p-5 md:p-6 ${on ? 'bg-card shadow-[var(--shadow-soft)]' : 'bg-muted/60'} ${
-      wide ? 'md:flex-row md:items-center md:gap-8' : ''
-    }`}
-  >
-    <div className={wide ? 'min-w-0 flex-1' : ''}>
-      <div className="flex items-start justify-between gap-3">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${on ? tint : 'bg-card text-foreground/40'}`}>{icon}</span>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${
-            on ? 'bg-emerald-500/10 text-emerald-700' : 'bg-card text-foreground/50'
-          }`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${on ? 'bg-emerald-500' : 'bg-foreground/25'}`} />
-          {status}
-        </span>
-      </div>
-      <p className="mt-4 text-[11.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{kind}</p>
-      <h3 className="mt-0.5 truncate text-[17px] font-semibold tracking-tight text-foreground">{name}</h3>
-      <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{detail}</p>
-      {footnote && <p className="mt-2 text-[12px] font-medium text-foreground/60">{footnote}</p>}
-    </div>
-    <div className={`flex flex-wrap gap-2 pt-5 ${wide ? 'md:shrink-0 md:pt-0' : 'mt-auto'}`}>
-      {actions.map((action) => {
-        const cls = `inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold transition-colors ${
-          action.primary ? 'bg-foreground text-background hover:opacity-90' : 'bg-foreground/[0.05] text-foreground hover:bg-foreground/[0.09]'
-        }`;
-        const Icon = action.external ? ArrowUpRight : action.primary && !on ? Plus : ArrowRight;
-        return action.href ? (
-          <a key={action.label} href={action.href} className={cls} {...(action.external ? { target: '_blank', rel: 'noreferrer' } : {})}>
-            {action.label}
-            <Icon className="h-3.5 w-3.5" />
-          </a>
-        ) : (
-          <button key={action.label} type="button" onClick={action.onClick} className={cls}>
-            {action.label}
-            <Icon className="h-3.5 w-3.5" />
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
-
-// How returns and refunds are handled per channel — mirrors the recorded order actions, nothing more
-const RETURNS_GUIDE: Record<Exclude<ChannelView, 'all'>, { title: string; steps: string[] }> = {
-  marketplace: {
-    title: 'Returns & refunds on the marketplace',
-    steps: [
-      'The buyer reports a return or complaint from their Rentify order page.',
-      'It shows up in “Needs attention” with a Marketplace label.',
-      'Open the order and record the refund with amount, method and confirmation.',
-    ],
-  },
-  storefront: {
-    title: 'Returns & refunds on your online store',
-    steps: [
-      'Online store orders follow the same cash-on-delivery steps as the marketplace.',
-      'Mark delivery, then collect cash; only collected cash can be refunded.',
-      'Record the refund on the order with amount, method and confirmation.',
-    ],
-  },
-  pos: {
-    title: 'Returns at the counter',
-    steps: [
-      'Counter sales are paid on the spot by KHQR or cash.',
-      'Handle returns in the POS app under Returns.',
-      'The sale and its stock change stay on the same catalog.',
-    ],
-  },
-};
+const CHANNELS_FILTER = [
+  { id: 'all', label: 'All channels' },
+  { id: 'marketplace', label: 'Marketplace' },
+  { id: 'storefront', label: 'Online store' },
+  { id: 'pos', label: 'POS' },
+] as const;
 
 export const Overview = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile } = useAuth() as { profile?: { name?: string } };
-  const { store, hasStorefront, hasMarketplace, hasPos, togglePos, toggleMarketplace, view } = useChannels();
-  const [period, setPeriod] = useState('30d');
-  const { orders, loading, error, summary } = useChannelOrders(period);
+  const { store, hasStorefront, hasMarketplace } = useChannels();
+  const [activeChannel, setActiveChannel] = useState<'all' | 'marketplace' | 'storefront' | 'pos'>('all');
+
+  // We load recorded orders for the current store
+  const { orders, loading, error, reload } = useChannelOrders('all');
   const access = useAccess();
-  const canMoney = access.can('manage_analytics');
-  const canOrders = access.can('manage_orders');
-  const allowed = (action: ChannelAction) => !action.need || (action.need === 'owner' ? access.isOwner : access.can(action.need));
+  const { websiteData } = useThemeService();
+  const websiteId = websiteData?.websiteId;
+
+  // Products for low-stock inventory rail and marketplace visibility count
+  const { data: productsData } = useGetManagedProductsQuery({ websiteId, page: 1, limit: 50 }, { skip: !websiteId });
+  const products = useMemo(() => {
+    if (!productsData) return [];
+    if (Array.isArray(productsData)) return productsData;
+    if (Array.isArray(productsData.products)) return productsData.products;
+    if (Array.isArray(productsData.data)) return productsData.data;
+    return [];
+  }, [productsData]);
+
+  const lowStockProducts = useMemo(() => {
+    return products
+      .filter((p: any) => {
+        const qty = p.stockCount ?? p.inventory ?? p.stock ?? 0;
+        return Number(qty) <= 3;
+      })
+      .slice(0, 4);
+  }, [products]);
 
   const firstName = useMemo(() => profile?.name?.split(' ')?.[0] || 'there', [profile?.name]);
   const greeting = useMemo(() => `${greetingForHour(new Date().getHours())}, ${firstName}`, [firstName]);
 
   const storeObj = store as Record<string, any> | null;
   const storefrontDomain = storefrontDomainFor(storeObj);
-  const storefrontHref = storefrontUrl(storeObj);
-  const marketplaceShopHref = marketplaceStoreUrl(storeObj);
-  const templateOnboardingUrl = `${MARKETING_URL}/onboarding/starter?step=template`;
-  // Listing is automatic (DEC-028): approved means listed; anything other than pending is an admin decision.
-  const approval = String(storeObj?.marketplaceApprovalStatus || '').toLowerCase();
-  const approvalLabel = approval === 'approved' || !approval
-    ? t('merchant.setup.marketplaceListed')
-    : approval === 'pending' ? t('merchant.setup.marketplaceNotListed') : t('merchant.setup.marketplacePaused');
-  const periodLabel = PERIODS.find(([v]) => v === period)?.[1] || '30 days';
-  const handleOpenPos = openPosApp;
+
+  // Filter orders by selected channel chip
+  const filteredOrders = useMemo(() => {
+    if (activeChannel === 'all') return orders;
+    return orders.filter((o) => o.channel === activeChannel);
+  }, [orders, activeChannel]);
+
+  // Next actions:
+  // 1. To confirm: pending orders
+  const toConfirmOrders = useMemo(
+    () => filteredOrders.filter((o) => o.status === 'pending' || o.allowedActions?.some((a) => a.code === 'confirm' || a.code === 'approve')),
+    [filteredOrders]
+  );
+  // 2. To deliver: confirmed, processing, ready for pickup
+  const toDeliverOrders = useMemo(
+    () => filteredOrders.filter((o) => ['confirmed', 'processing', 'ready_for_pickup'].includes(o.status) || o.allowedActions?.some((a) => a.code === 'ship' || a.code === 'deliver')),
+    [filteredOrders]
+  );
+  // 3. Cash to collect: delivered unpaid COD orders
+  const cashToCollectOrders = useMemo(
+    () => filteredOrders.filter((o) => o.payment?.status !== 'paid' && (o.status === 'delivered' || o.payment?.codState === 'pending_collection' || o.allowedActions?.some((a) => a.code === 'collect_cod'))),
+    [filteredOrders]
+  );
+  // 4. Problems to answer: returns and buyer complaints
+  const problemOrders = useMemo(
+    () => filteredOrders.filter((o) => (o.reports && o.reports.length > 0) || ['disputed', 'return_requested'].includes(o.status)),
+    [filteredOrders]
+  );
+
+  const attentionTotal = toConfirmOrders.length + toDeliverOrders.length + cashToCollectOrders.length + problemOrders.length;
+
+  // Today stats
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayOrders = useMemo(
+    () => filteredOrders.filter((o) => o.createdAt && o.createdAt.slice(0, 10) === todayKey && o.status !== 'cancelled'),
+    [filteredOrders, todayKey]
+  );
+  const todaySales = useMemo(
+    () => todayOrders.reduce((sum, o) => sum + Number(o.totals?.total || 0), 0),
+    [todayOrders]
+  );
+  const todayCashToCollect = useMemo(
+    () =>
+      todayOrders
+        .filter((o) => o.payment?.status !== 'paid')
+        .reduce((sum, o) => sum + Number(o.payment?.amountDue || o.totals?.total || 0), 0),
+    [todayOrders]
+  );
+
+  // Recent 5 orders
+  const recentOrders = useMemo(() => {
+    return [...filteredOrders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  }, [filteredOrders]);
+
   const { guide } = useSetupGuide();
-  // A new store has nothing to report yet: keep Home to the guide and channels until the first order.
   const settingUp = Boolean(guide && !guide.complete && !loading && orders.length === 0);
 
-  const openOrder = (order: StoreOrder) => navigate(order.channel === 'marketplace' ? '/marketplace-orders' : `/orders/${order.id}`);
-
-  const cards: Record<Exclude<ChannelView, 'all'>, ChannelCardProps> = {
-    marketplace: {
-      icon: <ShoppingBag className="h-5 w-5" />,
-      kind: 'Marketplace',
-      name: 'Rentify Marketplace',
-      on: hasMarketplace,
-      status: hasMarketplace ? approvalLabel : 'Off',
-      detail: hasMarketplace
-        ? 'Shoppers across Cambodia find and order from your store. Paid by cash on delivery.'
-        : 'List your products where shoppers already browse and compare stores.',
-      tint: 'bg-amber-500/10 text-amber-700',
-      footnote: hasMarketplace ? 'Marketplace fee: none recorded on your orders.' : undefined,
-      actions: hasMarketplace
-        ? [
-            { label: 'Marketplace orders', onClick: () => navigate('/marketplace-orders'), primary: true, need: 'manage_orders' },
-            { label: 'View shop', href: marketplaceShopHref, external: true },
-          ]
-        : [{ label: 'Join marketplace', onClick: () => toggleMarketplace(true), primary: true, need: 'owner' }],
-    },
-    storefront: {
-      icon: <Store className="h-5 w-5" />,
-      kind: 'Online store',
-      name: hasStorefront ? storefrontDomain : 'Your own website',
-      on: hasStorefront,
-      status: hasStorefront ? 'Live' : 'Not set up',
-      detail: hasStorefront
-        ? 'Your branded website, using the same products and stock as everywhere else.'
-        : 'Pick a template and get a branded website with your products. 14-day free trial.',
-      tint: 'bg-sky-500/10 text-sky-700',
-      actions: hasStorefront
-        ? [
-            { label: 'Customize', onClick: () => navigate('/online-store'), primary: true, need: 'owner' },
-            { label: 'Visit', href: storefrontHref, external: true },
-          ]
-        : [{ label: 'Add online store', href: templateOnboardingUrl, primary: true, need: 'owner' }],
-    },
-    pos: {
-      icon: <MonitorSmartphone className="h-5 w-5" />,
-      kind: 'Point of sale',
-      name: 'In-store register',
-      on: hasPos,
-      status: hasPos ? 'Ready' : 'Off',
-      detail: hasPos
-        ? 'Ring up counter sales with KHQR or cash. Sales come off the same stock.'
-        : 'Sell at your counter with KHQR or cash, synced with your catalog.',
-      tint: 'bg-violet-500/10 text-violet-700',
-      actions: hasPos
-        ? [{ label: 'Open POS', onClick: handleOpenPos, primary: true, external: true, need: 'manage_pos' }]
-        : [{ label: 'Turn on POS', onClick: () => togglePos(true), primary: true, need: 'owner' }],
-    },
-  };
-
-  (Object.keys(cards) as (keyof typeof cards)[]).forEach((key) => {
-    cards[key].actions = cards[key].actions.filter(allowed);
-  });
-
-  const activeCount = [hasMarketplace, hasStorefront, hasPos].filter(Boolean).length;
-  const recent = orders.slice(0, 6);
-  const maxChannelSales = Math.max(1, ...summary.byChannel.map((row) => row.sales));
-
-  const isCashier = !access.isOwner && !canOrders && !canMoney && !access.can('manage_products') && access.can('manage_pos');
-  if (isCashier) {
-    return (
-      <div className="min-h-full">
-        <div className="mx-auto max-w-xl space-y-6 px-4 py-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{storeObj?.name || 'Rentify'} · Cashier</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">{greeting}</h1>
-          </div>
-          <button
-            type="button"
-            onClick={handleOpenPos}
-            className="w-full h-14 rounded-2xl text-base font-semibold bg-primary text-primary-foreground shadow-md hover:bg-primary/90 flex items-center justify-center gap-2.5 transition-colors cursor-pointer"
-          >
-            <MonitorSmartphone className="h-5 w-5" />
-            <span>Open the point of sale</span>
-          </button>
-          <div data-slot="card" className="rounded-2xl border border-card-border bg-card p-5 shadow-soft">
-            <h2 className="text-sm font-semibold text-foreground mb-3">Today at the counter</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-muted/50 p-4">
-                <span className="text-xs text-muted-foreground block">Sales</span>
-                <span className="text-xl font-bold font-mono text-foreground mt-1 block">$0.00</span>
-              </div>
-              <div className="rounded-xl bg-muted/50 p-4">
-                <span className="text-xs text-muted-foreground block">Items sold</span>
-                <span className="text-xl font-bold font-mono text-foreground mt-1 block">0</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Listing is automatic (DEC-028)
+  const approval = String(storeObj?.marketplaceApprovalStatus || '').toLowerCase();
+  const isMarketplaceListed = approval === 'approved' || !approval;
+  const marketplaceStatusLabel = isMarketplaceListed ? 'Listed' : approval === 'pending' ? 'Pending' : 'Paused';
 
   return (
     <div className="min-h-full">
-      <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 sm:px-6 md:px-8 md:py-8">
-        {/* Greeting + period */}
-        <motion.div {...fadeUp(0)} className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">{store?.name || 'Your store'}</p>
-            <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-foreground md:text-[32px]">{greeting}</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div role="radiogroup" aria-label={t('merchant.p.period')} className="flex rounded-xl bg-muted p-1">
-              {PERIODS.map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={period === value}
-                  onClick={() => setPeriod(value)}
-                  className={`h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors ${
-                    period === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {access.can('manage_products') && <button
-              type="button"
-              onClick={() => navigate('/products/create')}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-card px-4 text-[13px] font-semibold text-foreground shadow-[var(--shadow-soft)] hover:bg-muted"
-            >
-              <Package className="h-4 w-4" />
-              {t('merchant.p.addProduct')}
-            </button>}
-          </div>
+      <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 sm:px-6 md:px-8 md:py-8">
+        {/* Page Head: store name eyebrow + personalized greeting */}
+        <motion.div {...fadeUp(0)} className="flex flex-col gap-1">
+          <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">{store?.name || 'Rentify Store'}</p>
+          <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-[30px] md:text-[32px]">{greeting}</h1>
         </motion.div>
 
-        <motion.div {...fadeUp(0.02)}>
-          <SetupGuideCard />
+        {/* Channel Chips (filters this page only, per wireframe Note 3) */}
+        <motion.div {...fadeUp(0.02)} className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          {CHANNELS_FILTER.map((chip) => {
+            const active = activeChannel === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setActiveChannel(chip.id)}
+                className={`inline-flex min-h-[38px] shrink-0 items-center rounded-full px-4 text-xs font-semibold transition-all ${
+                  active
+                    ? 'bg-foreground text-background shadow-sm'
+                    : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
         </motion.div>
 
-        {/* Channels: all three side by side, or the focused one full width */}
-        <motion.section {...fadeUp(0.04)}>
-          {view === 'all' ? (
-            <>
-              <SectionTitle title={t('merchant.p.whereYouSell')} meta={`${activeCount} of 3 on · one catalog, one stock count`} />
-              <div className="grid gap-3 md:grid-cols-3 md:gap-4">
-                <ChannelCard {...cards.marketplace} />
-                <ChannelCard {...cards.storefront} />
-                <ChannelCard {...cards.pos} />
-              </div>
-            </>
-          ) : (
-            <ChannelCard {...cards[view]} wide />
-          )}
-        </motion.section>
-
-        {/* Money for the selected channel(s) */}
-        {!settingUp && (
-        <motion.section {...fadeUp(0.08)}>
-          <SectionTitle title={t('merchant.p.money')} meta={`${view === 'all' ? 'All channels' : CHANNEL_LABEL[view]} · ${periodLabel}`} />
-          {!canMoney ? (
-            <Surface className="flex items-center gap-3 text-[13.5px] text-muted-foreground">
-              <Lock className="h-4 w-4 shrink-0" />
-              {t('merchant.p.salesAndMoneyAre')}
-            </Surface>
-          ) : error ? (
-            <Surface className="text-center text-sm text-muted-foreground">{t('merchant.p.couldnTLoadOrders')}</Surface>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
-              <Kpi
-                label={t('merchant.p.sales')}
-                value={formatMoney(summary.sales)}
-                sub={`${summary.orderCount} order${summary.orderCount === 1 ? '' : 's'} · avg ${formatMoney(summary.averageOrder)}`}
-                loading={loading}
-              />
-              <Kpi label={t('merchant.p.paid')} value={formatMoney(summary.paid)} sub={`Net after refunds ${formatMoney(summary.net)}`} loading={loading} />
-              <Kpi label={t('merchant.p.awaitingPayment')} value={formatMoney(summary.awaiting)} sub="Not yet collected" loading={loading} />
-              <Kpi label={t('merchant.p.refunded')} value={formatMoney(summary.refunded)} sub="Recorded refunds" loading={loading} />
-            </div>
-          )}
-        </motion.section>
+        {/* Screen M2: New store setup guide */}
+        {settingUp && (
+          <motion.div {...fadeUp(0.04)}>
+            <SetupGuideCard />
+            <p className="mt-3 text-xs text-muted-foreground">Sales and reports appear here after your first order.</p>
+          </motion.div>
         )}
 
-        {/* Split + attention, two equal halves */}
-        {canOrders && !settingUp && (
-        <motion.div {...fadeUp(0.12)} className={`grid grid-cols-1 gap-3 md:gap-4 ${canMoney || view !== 'all' ? 'lg:grid-cols-2' : ''}`}>
-          {view === 'all' ? (canMoney && (
-            <Surface>
-              <SectionTitle title={t('merchant.p.salesByChannel')} meta={periodLabel} />
-              {summary.byChannel.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">{t('merchant.p.noSalesInThis')}</p>
-              ) : (
-                <ul className="space-y-4">
-                  {summary.byChannel.map((row) => (
-                    <li key={row.channel}>
-                      <div className="flex items-center justify-between gap-3 text-[13px]">
-                        <ChannelBadge channel={row.channel} />
-                        <span className="font-semibold tabular-nums text-foreground">
-                          {formatMoney(row.sales)} <span className="font-normal text-muted-foreground">· {row.orders} orders</span>
-                        </span>
-                      </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                        <div className={`h-full rounded-full ${CHANNEL_BAR[row.channel]}`} style={{ width: `${(row.sales / maxChannelSales) * 100}%` }} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Surface>
-          )) : (
-            <Surface>
-              <SectionTitle title={RETURNS_GUIDE[view].title} />
-              <ol className="space-y-3">
-                {RETURNS_GUIDE[view].steps.map((step, i) => (
-                  <li key={step} className="flex gap-3 text-[13.5px] leading-relaxed text-foreground/80">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[12px] font-semibold text-foreground">
-                      {i + 1}
+        {/* Main 2-column layout: Core workflow on the left, stock alerts on the right */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] items-start">
+          <div className="space-y-6">
+            {/* Section 1: Needs your attention (Next actions first, wireframe Note 2) */}
+            <motion.section {...fadeUp(0.06)}>
+              <div className="mb-3 flex items-baseline justify-between">
+                <h2 className="text-[15px] font-semibold text-foreground flex items-center gap-2">
+                  Needs your attention
+                  {attentionTotal > 0 && (
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-400">
+                      {attentionTotal}
                     </span>
-                    {step}
-                  </li>
-                ))}
-              </ol>
-            </Surface>
-          )}
-
-          <Surface>
-            <SectionTitle title={t('merchant.p.needsAttention')} meta={summary.attention.length ? `${summary.attention.length} open` : undefined} />
-            {loading ? (
-              <div className="space-y-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-12 animate-pulse rounded-2xl bg-muted" />
-                ))}
+                  )}
+                </h2>
               </div>
-            ) : summary.attention.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-2xl bg-muted/50 px-4 py-3">
-                <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-500" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{t('merchant.p.allCaughtUp')}</p>
-                  <p className="text-xs text-muted-foreground">{t('merchant.p.returnsComplaintsAndCash')}</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {/* Tile 1: To confirm */}
+                <Link
+                  to="/orders?tab=to_confirm"
+                  className="flex min-h-[96px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] transition hover:border-primary/50 hover:shadow-md"
+                >
+                  <span className="text-2xl font-bold tabular-nums text-foreground">{toConfirmOrders.length}</span>
+                  <span className="text-xs font-medium text-muted-foreground">New orders to confirm</span>
+                </Link>
+
+                {/* Tile 2: To deliver */}
+                <Link
+                  to="/orders?tab=to_deliver"
+                  className="flex min-h-[96px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] transition hover:border-primary/50 hover:shadow-md"
+                >
+                  <span className="text-2xl font-bold tabular-nums text-foreground">{toDeliverOrders.length}</span>
+                  <span className="text-xs font-medium text-muted-foreground">To deliver</span>
+                </Link>
+
+                {/* Tile 3: Cash to collect */}
+                <Link
+                  to="/orders?tab=cash_to_collect"
+                  className="flex min-h-[96px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] transition hover:border-primary/50 hover:shadow-md"
+                >
+                  <span className="text-2xl font-bold tabular-nums text-foreground">{cashToCollectOrders.length}</span>
+                  <span className="text-xs font-medium text-muted-foreground">Cash to collect</span>
+                </Link>
+
+                {/* Tile 4: Problems to answer */}
+                <Link
+                  to="/returns"
+                  className="flex min-h-[96px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] transition hover:border-primary/50 hover:shadow-md"
+                >
+                  <span className="text-2xl font-bold tabular-nums text-foreground">{problemOrders.length}</span>
+                  <span className="text-xs font-medium text-muted-foreground">Problems to answer</span>
+                </Link>
+              </div>
+            </motion.section>
+
+            {/* Section 2: Today (Summary with link to Reports) */}
+            <motion.section {...fadeUp(0.08)}>
+              <div className="mb-3 flex items-baseline justify-between">
+                <h2 className="text-[15px] font-semibold text-foreground">Today</h2>
+                <Link to="/reports" className="text-xs font-semibold text-primary hover:underline">
+                  Reports
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex min-h-[84px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+                  <span className="text-xs font-medium text-muted-foreground">Orders</span>
+                  <b className="text-xl font-bold tabular-nums text-foreground">{todayOrders.length}</b>
+                </div>
+                <div className="flex min-h-[84px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+                  <span className="text-xs font-medium text-muted-foreground">Sales</span>
+                  <b className="text-xl font-bold tabular-nums text-foreground">{formatMoney(todaySales)}</b>
+                </div>
+                <div className="flex min-h-[84px] flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+                  <span className="text-xs font-medium text-muted-foreground">Cash to collect</span>
+                  <b className="text-xl font-bold tabular-nums text-foreground">{formatMoney(todayCashToCollect)}</b>
                 </div>
               </div>
-            ) : (
-              <ul className="space-y-1.5">
-                {summary.attention.slice(0, 5).map(({ order, reason }) => (
-                  <li key={order.id}>
-                    <button
-                      type="button"
-                      onClick={() => openOrder(order)}
-                      className="flex w-full items-center gap-3 rounded-2xl bg-muted/60 px-3.5 py-3 text-left transition-colors hover:bg-muted"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13.5px] font-semibold text-foreground">{reason}</p>
-                        <p className="truncate text-[12px] text-muted-foreground">
-                          #{order.orderNumber || order.id.slice(0, 8)} · {order.buyer.name}
-                        </p>
+            </motion.section>
+
+            {/* Section 3: Where you sell (Rentify Market, Online store, POS) */}
+            <motion.section {...fadeUp(0.1)}>
+              <h2 className="mb-3 text-[15px] font-semibold text-foreground">Where you sell</h2>
+              <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)]">
+                {/* Rentify Market */}
+                <Link
+                  to="/marketplace"
+                  className="flex items-center justify-between p-4 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                      <ShoppingBag className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">Rentify Market</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {isMarketplaceListed ? `Listed · ${products.length} products shown` : 'Pending verification · automatic'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="ml-3 shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    {marketplaceStatusLabel}
+                  </span>
+                </Link>
+
+                {/* Online Store */}
+                <Link
+                  to="/online-store"
+                  className="flex items-center justify-between p-4 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400">
+                      <Globe className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">Online store</p>
+                      <p className="truncate text-xs text-muted-foreground">{storefrontDomain}</p>
+                    </div>
+                  </div>
+                  <span className="ml-3 shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    Live
+                  </span>
+                </Link>
+
+                {/* Point of Sale */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={openPosApp}
+                  onKeyDown={(e) => e.key === 'Enter' && openPosApp()}
+                  className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-400">
+                      <MonitorSmartphone className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">Point of sale</p>
+                      <p className="truncate text-xs text-muted-foreground">Ready</p>
+                    </div>
+                  </div>
+                  <span className="ml-3 shrink-0 rounded-full border border-slate-500/20 bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
+                    Open
+                  </span>
+                </div>
+              </div>
+            </motion.section>
+
+            {/* Section 4: Recent orders */}
+            <motion.section {...fadeUp(0.12)}>
+              <div className="mb-3 flex items-baseline justify-between">
+                <h2 className="text-[15px] font-semibold text-foreground">Recent orders</h2>
+                <Link to="/orders" className="text-xs font-semibold text-primary hover:underline">
+                  See all
+                </Link>
+              </div>
+
+              {loading ? (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-16 animate-pulse rounded-2xl border border-border bg-card" />
+                  ))}
+                </div>
+              ) : recentOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card py-10 text-center">
+                  <ClipboardList className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="mt-2 text-sm font-medium text-foreground">No recent orders</p>
+                  <p className="text-xs text-muted-foreground">Orders from marketplace, online store and POS will appear here.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)]">
+                  {recentOrders.map((order) => {
+                    const isToConfirm = order.status === 'pending' || order.allowedActions?.some((a) => a.code === 'confirm');
+                    const itemCount = order.items?.reduce((s, it) => s + (it.quantity || 1), 0) || 1;
+                    const paymentMethod = order.payment?.status === 'paid' ? 'KHQR' : 'COD';
+
+                    return (
+                      <div
+                        key={order.id}
+                        onClick={() => navigate(`/orders/${order.id}`)}
+                        className="flex cursor-pointer flex-col gap-2 p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-foreground">
+                              #{order.orderNumber || order.id.slice(0, 8)}
+                            </span>
+                            <ChannelBadge channel={order.channel} />
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground mt-0.5">
+                            {order.buyer?.name || 'Customer'} · {itemCount} {itemCount === 1 ? 'item' : 'items'} · {paymentMethod}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0">
+                          <span className="text-sm font-bold tabular-nums text-foreground">
+                            {formatMoney(Number(order.totals?.total || 0), order.currency)}
+                          </span>
+
+                          {isToConfirm ? (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/orders/${order.id}`);
+                              }}
+                              className="h-9 min-h-[36px] rounded-xl px-4 text-xs font-semibold"
+                            >
+                              Confirm
+                            </Button>
+                          ) : (
+                            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-muted-foreground">
+                              {order.status.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <ChannelBadge channel={order.channel} />
-                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Surface>
-        </motion.div>
-
-        )}
-
-        {/* Sales trend + best sellers */}
-        {canMoney && !settingUp && (
-        <motion.div {...fadeUp(0.16)} className="grid grid-cols-1 gap-3 md:gap-4 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <RevenueChart data={summary.trend} dateRange={summary.dateRange} isLoading={loading} />
+                    );
+                  })}
+                </div>
+              )}
+            </motion.section>
           </div>
-          <TopProducts products={summary.topProducts} isLoading={loading} />
-        </motion.div>
-        )}
 
-        {/* Recent orders, each labelled with its channel */}
-        {canOrders && !settingUp && (
-        <motion.div {...fadeUp(0.2)}>
-          <Surface>
-            <SectionTitle
-              title={t('merchant.p.recentOrders')}
-              meta={
-                <button type="button" onClick={() => navigate('/orders')} className="font-semibold text-primary hover:underline">
-                  {t('merchant.p.viewAll')}
-                </button>
-              }
-            />
-            {loading ? (
-              <div className="space-y-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-12 animate-pulse rounded-2xl bg-muted" />
-                ))}
+          {/* Right Rail: Low stock desktop alerts (Screen M1 rail) */}
+          <aside className="space-y-4">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
+              <div className="mb-3 flex items-baseline justify-between">
+                <h3 className="text-sm font-semibold text-foreground">Low stock</h3>
+                <Link to="/products" className="text-xs font-semibold text-primary hover:underline">
+                  Manage
+                </Link>
               </div>
-            ) : recent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-muted-foreground">
-                <ClipboardList className="h-8 w-8 opacity-40" />
-                <p className="text-sm">{t('merchant.p.noOrdersInThis')}</p>
-              </div>
-            ) : (
-              <ul className="space-y-1">
-                {recent.map((order) => (
-                  <li key={order.id}>
-                    <button
-                      type="button"
-                      onClick={() => openOrder(order)}
-                      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-muted/60 md:grid-cols-[minmax(0,1.4fr)_120px_120px_110px]"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-[13.5px] font-semibold text-foreground">#{order.orderNumber || order.id.slice(0, 8)}</p>
-                        <p className="truncate text-[12px] text-muted-foreground">
-                          {order.buyer.name} · {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
-                      <span className="justify-self-end md:justify-self-start">
-                        <ChannelBadge channel={order.channel} />
-                      </span>
-                      <span className="hidden text-[12.5px] capitalize text-muted-foreground md:block">
-                        {String(order.status).replace(/_/g, ' ')}
-                      </span>
-                      <span className="text-[13.5px] font-semibold tabular-nums text-foreground md:text-right">
-                        {formatMoney(Number(order.totals.total), order.currency)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Surface>
-        </motion.div>
-        )}
+
+              {lowStockProducts.length === 0 ? (
+                <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <span>All products are in stock.</span>
+                </div>
+              ) : (
+                <ul className="divide-y divide-border -mx-2">
+                  {lowStockProducts.map((p: any) => {
+                    const qty = Number(p.stockCount ?? p.inventory ?? p.stock ?? 0);
+                    return (
+                      <li key={p.id}>
+                        <Link
+                          to={`/products`}
+                          className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <p className="truncate text-xs font-medium text-foreground">{p.name || p.title}</p>
+                            <span className={`text-[11px] font-semibold ${qty === 0 ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {qty} in stock
+                            </span>
+                          </div>
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
