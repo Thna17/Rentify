@@ -283,7 +283,7 @@ into `platform-architecture.md` and remove stale notes.
    override lives (product vs. SKU), which price POS uses, how carts/orders
    snapshot it, and how compare-at prices behave. No UI ships until then.
 
-- (Open, 2026-10-31) Does a SKU block going live? Commerce launch facts
+- (Resolved 2026-10-31: keep the rule and backfill legacy products; see "2026-10-31 default SKUs for legacy simple products" below) Does a SKU block going live? Commerce launch facts
    (`store-access/launchFactsService.js`) count a Store's first product as
    done only when a valid product has a **variant** with a SKU
    (`hasValidSku`). Simple products have no variant rows, and since the
