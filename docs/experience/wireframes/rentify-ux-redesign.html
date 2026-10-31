@@ -254,7 +254,7 @@ const SITEMAP = [
   ["Merchant", "/overview (new store)", "Home with setup guide", "m_home_new", "Keep (phase B)", ""],
   ["Merchant", "/orders + /marketplace-orders", "Orders — one inbox", "m_orders", "Merge; /marketplace-orders → /orders?channel=marketplace", ""],
   ["Merchant", "/orders/:id (+ marketplace rows)", "Order detail", "m_order", "Merge marketplace order detail here", ""],
-  ["Merchant", "/orders/:id (paid online)", "Order detail — paid by KHQR", "m_order_paid", "No cash step when paid online", "Refund of a KHQR payment"],
+  ["Merchant", "/orders/:id (paid online)", "Order detail — paid by KHQR", "m_order_paid", "No cash step when paid online; no refunds for now", ""],
   ["Merchant", "— (inside order rows)", "Returns & problems", "m_returns", "New page", "List of buyer reports per Store"],
   ["Merchant", "—", "Problem detail", "m_return", "New page", "Same endpoint"],
   ["Merchant", "/products, /catalog, /products/manage", "Products — one list", "m_products", "Merge; /catalog, /products/manage → /products", ""],
@@ -274,7 +274,7 @@ const SITEMAP = [
   ["Merchant", "/settings/account, /delivery, /preferences, /security", "A settings page", "m_settings_page", "Same shell", ""],
   ["Merchant", "/settings/staff", "Staff & roles", "m_staff_settings", "Same shell", ""],
   ["Merchant", "/settings/billing + /usage/*", "Plan & billing", "m_billing", "Merge; /usage/* → /settings/billing", ""],
-  ["Merchant", "/settings/payments", "Payments (KHQR via CutLuy)", "m_payments", "Keep · status first, plain words", "Config per Store, not per website"],
+  ["Merchant", "/settings/payments", "Payments (KHQR via CutLuy)", "m_payments", "Keep · status first, plain words; one connection for online store and marketplace", ""],
   ["Merchant", "/help", "Help", "m_help", "Keep", ""],
   ["Merchant", "header", "Menu, search, notifications", "m_menu", "Tools in header; places in menu", ""],
   ["Merchant", "—", "Staff (cashier) home", "m_staff", "Permission-trimmed", ""],
@@ -286,7 +286,7 @@ const SITEMAP = [
   ["Marketplace", "/stores, /stores/:id", "Store page", "k_store", "Trust card", "Store ratings exist? verify"],
   ["Marketplace", "/cart", "Cart (grouped by Store)", "k_cart", "Keep", ""],
   ["Marketplace", "/checkout (+ shipping/payment/review)", "Checkout — one page", "k_checkout", "Choose KHQR or cash on delivery", ""],
-  ["Marketplace", "/checkout/aba/:orderId", "Pay with KHQR", "k_pay", "Keep · same pattern as the online store", "Unpaid-order timeout"],
+  ["Marketplace", "/checkout/aba/:orderId", "Pay with KHQR", "k_pay", "Move from direct ABA PayWay to CutLuy; same pattern as the online store", "Unpaid-order timeout (being fixed)"],
   ["Marketplace", "/order-success", "Order placed", "k_placed", "Keep", ""],
   ["Marketplace", "/orders, /my-orders", "My orders", "k_orders", "Keep", ""],
   ["Marketplace", "/orders/:id", "Order detail + tracking", "k_order", "Keep", ""],
@@ -348,7 +348,7 @@ const SCREENS = {
     notes: [
       "Scope agreed: merchant dashboard, buyer marketplace and POS app, mobile first. Storefront templates are not part of this pass.",
       "Decisions confirmed in review on 2026-10-31, including online payment: KHQR through CutLuy (connects to ABA) is implemented and in scope. DEC-026/027 (COD only, CutLuy deferred) are outdated and need a superseding decision entry.",
-      "Open payment questions: the marketplace checkout calls ABA PayWay directly (PAYWAY_ENABLED, marked test-only) while the online store and settings use the Store's CutLuy key — this design assumes one path, the Store's CutLuy connection, everywhere. No refund of a KHQR payment and no timeout for orders that are never paid were found in Commerce.",
+      "Payments, agreed 2026-10-31: CutLuy is the one payment path. The marketplace checkout's direct ABA PayWay call is replaced by the merchant's CutLuy connection. Every merchant signs up through onboarding, which creates the online store and lists it on the marketplace, so one payment setting (per website) serves both. No refunds for now. A time limit for unpaid orders is being fixed.",
       "Every user-reachable route is mapped. Redirects keep old links working (rename labels, not URLs).",
       "Problem numbers match docs/audits/2026-10-31-merchant-dashboard-ux-audit.md; K = marketplace, X = POS (found in this pass).",
     ],
@@ -459,12 +459,12 @@ const SCREENS = {
       <div class="sec"><h3>Items</h3>${row("Caffè Latte", "2 × $2.75", "$5.50")}${row("Butter Croissant", "1 × $1.75", "$1.75")}
         <div class="row"><div class="grow meta">Delivery fee</div><div class="end">$1.00</div></div>
         <div class="row"><div class="grow"><b>Total · paid by KHQR</b></div><div class="end"><b>$8.25</b></div></div></div>
-      <div class="sec"><h3>If you can't fulfil it ${n(2)}</h3><div class="card"><div class="meta">Cancelling a paid order means the buyer must get their money back.</div> ${need("refund of a KHQR payment through CutLuy")}</div></div>
-      <div class="sticky-bar"><a class="btn ghost" href="#m_order_paid">Cancel & refund</a><a class="btn primary" style="flex:1" href="#m_order_paid">Confirm order</a></div>
+      <div class="sec"><h3>If you can't fulfil it ${n(2)}</h3><div class="card"><div class="meta">Paid orders can't be refunded in Rentify yet, so there is no Cancel button here.</div><a class="btn sm" href="#m_help">Get help</a></div></div>
+      <div class="sticky-bar"><a class="btn primary" style="flex:1" href="#m_order_paid">Confirm order</a></div>
     </div>`),
     notes: [
       "The payment line comes first because it changes what the merchant does: paid online means no cash step. \"Paid\" appears only after Commerce confirms the payment with CutLuy (webhook or status check), never because the buyer says so. A KHQR order not yet paid shows \"Waiting for payment\" and no Confirm button.",
-      "Commerce has no refund for KHQR payments yet. Until it does, cancelling a paid order must tell the merchant how the buyer gets the money back; the button stays hidden or explains the manual step. Error prevention (Nielsen 5).",
+      "No refunds for now (agreed 2026-10-31). Cancelling a paid order would leave a buyer charged with nothing to show for it, so the dashboard does not offer it; the merchant is pointed to Help instead. Error prevention (Nielsen 5). Revisit when refunds are built.",
     ],
   },
   m_order_action: {
@@ -718,14 +718,14 @@ const SCREENS = {
         ${field("CutLuy API key", "•••• •••• 4f2a", "From your CutLuy account › Developers. We check it when you save.")}
         <details class="card"><summary><b>Advanced</b> · webhook secret</summary><div class="meta">${ph()}</div></details>
       </div></div>
-      <div class="sec">${need("payment settings per Store (today keyed by website, so marketplace-only stores cannot connect)")} ${n(3)}</div>
+      <div class="sec meta">Used for your online store and your Rentify Market page. ${n(3)}</div>
       <div class="sec"><a class="btn ghost block" href="#m_payments">Turn off KHQR</a></div>
       <div class="sticky-bar"><a class="btn" href="#m_payments">Test connection</a><a class="btn primary" style="flex:1" href="#m_settings">Save</a></div>
     </div>`),
     notes: [
       "P8/P7: today's page is titled \"Payment Gateway Settings\". It becomes \"Payments\" and answers the merchant's question first: how can buyers pay me, and is it working?",
       "Status is the first thing on the card (Not connected · Checking · Connected · Key rejected — check it in CutLuy). Commerce already validates the key with CutLuy on save; the status uses that result, never an assumed one.",
-      "The config route is GET/PUT /api/payment-config/:websiteId, so a Store without an online store (e.g. Cloth Store) has nowhere to save it. Marketplace KHQR needs the setting on the Store.",
+      "One connection covers both channels: every merchant gets an online store at onboarding and is listed on the marketplace automatically (DEC-028), so the setting saved on the website (PUT /api/payment-config/:websiteId) also serves marketplace checkout. Saying so on the page stops merchants looking for a second setting.",
     ],
   },
   m_settings_page: {
@@ -941,7 +941,7 @@ const SCREENS = {
         <div class="card"><b>Code expired</b><div class="meta">Nothing was charged.</div><a class="btn sm" href="#k_pay">Get a new code</a></div>
         <div class="card" style="margin-top:8px"><b>We couldn't reach the payment service</b><div class="meta">If you already paid, your order will update when it's confirmed.</div><a class="btn sm" href="#k_pay">Try again</a> <a class="btn sm ghost" href="#k_orders">My orders</a></div>
       </div>
-      <div class="sec">${need("what happens to an order that is never paid (cancel after a time limit and release stock)")}</div>
+      <div class="sec">${need("time limit for orders that are never paid: cancel and release stock (being fixed)")}</div>
     </div>`, "", { noBottom: true }),
     notes: [
       "One pattern for marketplace and online store (today: /checkout/aba/:orderId and the storefront KHQR page). Amount and store come first so the buyer can check them against their banking app.",
