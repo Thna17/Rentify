@@ -14,10 +14,10 @@ import { StoreMark } from './StoreMark';
 
 const iconButton =
   'relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06]';
-const navLink = 'rounded-full px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground';
+const navLink = 'rounded-lg px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground';
 
 /**
- * Editorial header: store mark, a "Shop" menu of real categories, links to the
+ * Storefront header: store mark, a "Shop" menu of real categories, links to the
  * newest products and to the merchant's featured row and story when they have
  * set those up, then search, language, account and cart.
  */

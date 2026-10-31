@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { safeUrl } from '@rentify/storefront/content';
 import { useI18n } from '../i18n';
 import { catalogPath } from '../paths';
-import { LotusLineArt } from './decor/Artwork';
+import { LayoutGrid } from 'lucide-react';
 
 /**
  * Category cards with the photo in an arch. Categories come from the store's
@@ -22,9 +22,9 @@ export function CategoryCards({ categories }) {
             <Link
               to={catalogPath({ category: category.id })}
               aria-label={t('home.exploreNamed', { name: category.name })}
-              className="group flex h-full flex-col rounded-[1.75rem] border border-border bg-card p-2 transition-shadow hover:shadow-[0_18px_40px_-26px_oklch(var(--foreground)/0.45)]"
+              className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-[0_18px_40px_-26px_oklch(var(--foreground)/0.45)]"
             >
-              <span className="block aspect-[4/3] overflow-hidden rounded-t-full rounded-b-2xl bg-accent">
+              <span className="block aspect-[4/3] overflow-hidden bg-accent">
                 {image ? (
                   <img
                     src={image}
@@ -34,10 +34,10 @@ export function CategoryCards({ categories }) {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <LotusLineArt className="mx-auto h-full text-primary/40" />
+                  <span className="flex h-full items-center justify-center"><LayoutGrid className="h-12 w-12 text-primary/50" strokeWidth={1} aria-hidden="true" /></span>
                 )}
               </span>
-              <span className="flex items-center justify-between gap-3 px-2 pb-2 pt-3">
+              <span className="flex items-center justify-between gap-3 px-4 py-4">
                 <span className="line-clamp-2 font-display text-[0.9375rem] font-medium leading-snug text-foreground sm:text-lg">{category.name}</span>
                 <span
                   className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border sm:flex border-foreground/25 text-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground"

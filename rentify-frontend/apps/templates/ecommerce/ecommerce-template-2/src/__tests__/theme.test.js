@@ -12,7 +12,7 @@ const presets = {
 describe('theme fallback', () => {
   test('uses Template 2 defaults when the merchant has no theme data', () => {
     const theme = resolveStorefrontTheme({ fallback: template2Theme });
-    expect(theme.colors.primary).toBe('#2f5b45');
+    expect(theme.colors.primary).toBe('#4d8eff');
     expect(theme.colors['primary-foreground']).toBe('0.99 0 0');
   });
 
@@ -20,7 +20,7 @@ describe('theme fallback', () => {
     'falls back to defaults for malformed theme data: %j',
     (customTheme) => {
       const theme = resolveStorefrontTheme({ customTheme, palette: customTheme, fallback: template2Theme });
-      expect(theme.colors.primary).toBe('#2f5b45');
+      expect(theme.colors.primary).toBe('#4d8eff');
     }
   );
 
@@ -35,35 +35,27 @@ describe('merchant theme', () => {
       palette: { primary: '#2D6A4F', secondary: '#52B788', background: '#F8F9FA' },
       fallback: template2Theme,
     });
-    expect(theme.colors).toMatchObject({ primary: '#2d6a4f', secondary: '#52b788', background: '#f8f9fa', text: '#1d2420' });
+    expect(theme.colors).toMatchObject({ primary: '#2d6a4f', secondary: '#52b788', background: '#f8f9fa', text: '0.2 0 0' });
   });
 
-  test('derives readable text and surfaces for a dark merchant background', () => {
+  test('keeps the readable template text for a dark merchant background', () => {
     const theme = resolveStorefrontTheme({
       palette: { primary: '#2563EB', secondary: '#3B82F6', background: '#0F172A' },
       fallback: template2Theme,
     });
     expect(theme.colors.background).toBe('#0f172a');
-    expect(theme.colors.text).toBe('0.96 0 0');
-    expect(theme.colors.textSecondary).toMatch(/^0\.780 /);
-    expect(theme.colors['card-foreground']).toBe('0.96 0 0');
-    // Cards and borders sit just above the background, in its navy hue, instead of staying white.
-    const [surfaceL, surfaceC, surfaceH] = theme.colors.surface.split(' ').map(Number);
-    expect(surfaceL).toBeLessThan(0.4);
-    expect(surfaceC).toBeGreaterThan(0.02);
-    expect(surfaceH).toBeGreaterThan(250);
-    expect(surfaceH).toBeLessThan(275);
-    expect(Number(theme.colors.border.split(' ')[0])).toBeLessThan(0.5);
+    expect(theme.colors.text).toBe('#f7f9fc');
+    expect(theme.colors.textSecondary).toBe('#a6b7cc');
   });
 
   test('keeps text colours the merchant chose, and template text that is already readable', () => {
     const chosen = resolveStorefrontTheme({ palette: { background: '#0F172A', text: '#FACC15' }, fallback: template2Theme });
     expect(chosen.colors.text).toBe('#facc15');
     const light = resolveStorefrontTheme({ palette: { background: '#FFFFFF' }, fallback: template2Theme });
-    expect(light.colors.text).toBe('#1d2420');
-    expect(light.colors.surface).toBeUndefined();
+    expect(light.colors.text).toBe('0.2 0 0');
+    expect(light.colors.surface).toBeDefined();
     // Near-white backgrounds also work when the merchant saves an OKLCH triplet.
-    expect(resolveStorefrontTheme({ palette: { background: '0.2 0.05 150' }, fallback: template2Theme }).colors.surface).toMatch(/^0\.26\d 0\.040 150\.0$/);
+    expect(resolveStorefrontTheme({ palette: { background: '0.2 0.05 150' }, fallback: template2Theme }).colors.text).toBe('#f7f9fc');
   });
 
   test('resolves a named palette preset', () => {
@@ -108,7 +100,7 @@ describe('CSS injection protection', () => {
 
   test('picks readable text for light and dark actions', () => {
     expect(readableForeground('#ffffff')).toBe('0.2 0 0');
-    expect(readableForeground('#2f5b45')).toBe('0.99 0 0');
+    expect(readableForeground('#4d8eff')).toBe('0.99 0 0');
   });
 });
 

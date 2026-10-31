@@ -7,7 +7,7 @@ export function SectionTitle({ id, title, to, linkLabel, as: Heading = 'h2', cla
   const { t } = useI18n();
   return (
     <div className={`mb-5 flex items-end justify-between gap-4 sm:mb-6 ${className}`}>
-      <Heading id={id} className="font-display text-2xl font-medium text-foreground sm:text-[2rem] sm:leading-tight">
+      <Heading id={id} className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-[2.5rem] sm:leading-tight">
         {title}
       </Heading>
       {to && (

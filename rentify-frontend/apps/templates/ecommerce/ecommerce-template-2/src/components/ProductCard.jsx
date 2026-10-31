@@ -72,7 +72,7 @@ export function ProductCard({ product, onAdd, priority = false, showCategory = t
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-[0_18px_40px_-26px_oklch(var(--foreground)/0.45)]">
       {/* The name link below stretches over the whole card, so the image needs no link of its own. */}
-      <div className="relative m-2 aspect-square overflow-hidden rounded-xl bg-accent">
+      <div className="relative aspect-square overflow-hidden bg-accent">
         {badge && (
           <span
             className={`absolute left-2 top-2 z-[1] rounded-full px-2.5 py-0.5 text-[0.6875rem] font-semibold ${
@@ -91,11 +91,11 @@ export function ProductCard({ product, onAdd, priority = false, showCategory = t
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-1 sm:px-4 sm:pb-4">
+      <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-4 sm:px-4 sm:pb-4">
         {showCategory && product?.Category?.name && (
           <p className="truncate text-xs text-muted-foreground">{product.Category.name}</p>
         )}
-        <h3 className="line-clamp-2 font-display text-[0.9375rem] font-medium leading-snug text-foreground sm:text-base">
+        <h3 className="line-clamp-2 font-display text-[0.9375rem] font-semibold leading-snug text-foreground sm:text-base">
           <Link to={href} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
             {name}
           </Link>

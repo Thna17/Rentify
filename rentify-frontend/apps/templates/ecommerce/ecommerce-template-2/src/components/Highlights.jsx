@@ -40,11 +40,11 @@ export function Highlights({ items }) {
   const columns = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-2 sm:grid-cols-3', 4: 'grid-cols-2 lg:grid-cols-4' }[items.length];
 
   return (
-    <section aria-label={t('home.highlights')} className="store-container relative z-10 -mt-6 sm:-mt-8">
+    <section aria-label={t('home.highlights')} className="store-container relative z-10 py-5">
       <OwnerEditButton section="Highlights" className="absolute -top-11 right-4 sm:right-6 lg:right-8" />
       {/* The 1px gaps over a border-coloured list draw the dividers at every column count. */}
       <ul
-        className={`grid gap-px overflow-hidden rounded-2xl border border-border/70 bg-border/70 shadow-[0_18px_40px_-28px_oklch(var(--foreground)/0.4)] ${columns}`}
+        className={`grid gap-px overflow-hidden rounded-xl border border-border/70 bg-border/70 ${columns}`}
       >
         {items.map(({ title, detail }, index) => {
           const Icon = highlightIcon(title, detail);

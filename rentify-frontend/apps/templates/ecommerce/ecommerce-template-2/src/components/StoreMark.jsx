@@ -13,13 +13,13 @@ export function StoreMark({ identity, size = 'md' }) {
         <img
           src={identity.logoUrl}
           alt=""
-          className={`${box} shrink-0 rounded-full bg-card object-contain`}
+          className={`${box} shrink-0 rounded-xl bg-card object-contain`}
           onError={() => setLogoFailed(true)}
         />
       ) : (
         <span
           aria-hidden="true"
-          className={`${box} flex shrink-0 items-center justify-center rounded-full bg-primary font-display font-semibold text-primary-foreground`}
+          className={`${box} flex shrink-0 items-center justify-center rounded-xl bg-primary font-display font-bold text-primary-foreground`}
         >
           {name.trim().charAt(0).toUpperCase() || '•'}
         </span>
