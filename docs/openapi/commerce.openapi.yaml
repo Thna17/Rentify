@@ -4972,6 +4972,22 @@ paths:
           description: Live payment status from provider
       operationId: get_api_payment_payments_paymentId_check_status
       security: []
+  /api/payment/payments/cutluy/webhook:
+    post:
+      tags:
+        - Payments
+      summary: Handle CutLuy webhook payment status notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Webhook acknowledged
+      operationId: post_api_payment_payments_cutluy_webhook
+      security: []
   /api/payment/orders/{orderId}/link:
     post:
       tags:
