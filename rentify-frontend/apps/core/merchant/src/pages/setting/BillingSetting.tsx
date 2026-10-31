@@ -26,6 +26,9 @@ import { useChannels } from '../../context/ChannelContext';
 import { MARKETING_URL, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { useGetPackagesQuery } from '@rentify/apis';
 import { useTranslation } from '@rentify/utils';
+import { useThemeService } from '@rentify/shared/hooks/useThemeService';
+import { useGetBillingSummaryQuery } from '../../services/usageApi';
+import { StatusPill } from '../../components/data-table/StatusPill';
 
 type PlanPayment = { id: string; currency: string; amountMinor: number | null; status: string; createdAt: string };
 const PAYMENT_STATUS: Record<string, string> = {
@@ -144,15 +147,12 @@ export const BillingSetting = () => {
   const isSuspended = entitlements?.isSuspended;
   const isTrial = entitlements?.isTrial;
 
-  const [paymentMethods] = useState([
-    {
-      id: 1,
-      type: 'KHQR / ABA PayWay',
-      last4: '8899',
-      expiry: 'Active',
-      isDefault: true,
-    },
-  ]);
+
+  // This month's usage from Commerce (UsageEvent: ORDER_PAID, INVOICE_PAID, STORE_VIEW)
+  const { websiteData } = useThemeService();
+  const month = new Date().toISOString().slice(0, 7);
+  const { data: usage, isLoading: usageLoading, error: usageError } = useGetBillingSummaryQuery({ websiteId: websiteData?.websiteId, month });
+  const usageCount = (type: string) => Number(usage?.data?.breakdown?.[type]?.count || 0);
 
   // Real plan payments from Core (/api/payment/history)
   const [payments, setPayments] = useState<PlanPayment[] | null>(null);
@@ -173,9 +173,6 @@ export const BillingSetting = () => {
   };
   useEffect(() => { loadPayments(); }, []);
 
-  const addPaymentMethod = () => {
-    toast.success(t('merchant.p.redirectingToPaymentMethod'));
-  };
 
 
   return (
@@ -189,42 +186,30 @@ export const BillingSetting = () => {
       <Card className="shadow-sm border-0">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{t('merchant.p.currentPlan')}</CardTitle>
-          <CardDescription>
-            {t('merchant.p.oneUnifiedCatalogAcross')}
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+          <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-muted/30 p-5 sm:flex-row sm:items-center">
             <div>
               <div className="flex items-center space-x-2.5">
-                <h3 className="text-xl font-bold text-slate-900">
-                  {currentTier.name} Plan ({currentTier.priceLabel})
+                <h3 className="text-xl font-semibold text-foreground">
+                  {currentTier.name} · {currentTier.priceLabel}
                 </h3>
-                <Badge
-                  variant="secondary"
-                  className={
-                    isSuspended
-                      ? 'bg-red-100 text-red-800'
-                      : isGracePeriod
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-emerald-100 text-emerald-800'
-                  }
-                >
+                <StatusPill tone={isSuspended ? 'danger' : isGracePeriod ? 'warning' : 'success'}>
                   {isSuspended
-                    ? 'Suspended (90-Day Read Access)'
+                    ? t('merchant.billing.suspended')
                     : isGracePeriod
-                    ? 'Grace Period Active'
+                    ? t('merchant.billing.grace')
                     : isTrial
-                    ? '14-Day Free Trial'
-                    : currentTier.trial || 'Active'}
-                </Badge>
+                    ? t('merchant.billing.trial')
+                    : t('merchant.billing.active')}
+                </StatusPill>
               </div>
-              <p className="text-slate-600 text-sm mt-1">
-                Who it’s for: {currentTier.whoItsFor} • Commission: {currentTier.commission}
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('merchant.billing.commission', { value: currentTier.commission })}
               </p>
             </div>
             {!hasStorefront && (
-              <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button asChild className="min-h-[44px] rounded-xl">
                 <a href={`${MARKETING_URL}/onboarding/starter?step=template`}>
                   {t('merchant.p.addOnlineStore14')}
                 </a>
@@ -234,22 +219,28 @@ export const BillingSetting = () => {
 
           {/* This month usage section (P4, P7) */}
           <div className="mt-6 rounded-xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card p-5 shadow-[var(--shadow-soft)]">
-            <h4 className="text-base font-semibold text-foreground">This month</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">You pay only when these happen.</p>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-                <span className="text-xs text-muted-foreground">Paid orders</span>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">0</p>
+            <h4 className="text-base font-semibold text-foreground">{t('merchant.billing.thisMonth')}</h4>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t('merchant.billing.payWhen')}</p>
+            {usageError ? (
+              <p className="mt-3 text-sm text-muted-foreground">{t('merchant.billing.usageError')}</p>
+            ) : (
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  { label: t('merchant.billing.paidOrders'), value: String(usageCount('ORDER_PAID')) },
+                  { label: t('merchant.billing.paidInvoices'), value: String(usageCount('INVOICE_PAID')) },
+                  { label: t('merchant.billing.costSoFar'), value: `$${Number(usage?.data?.totalAmount || 0).toFixed(2)}` },
+                ].map((tile) => (
+                  <div key={tile.label} className="rounded-xl border border-border bg-muted/30 p-4">
+                    <span className="text-sm text-muted-foreground">{tile.label}</span>
+                    {usageLoading ? (
+                      <div className="mt-2 h-7 w-16 animate-pulse rounded bg-muted" />
+                    ) : (
+                      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{tile.value}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-                <span className="text-xs text-muted-foreground">Paid invoices</span>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">0</p>
-              </div>
-              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-                <span className="text-xs text-muted-foreground">Cost so far</span>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">$0.00</p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* 3-Tier Plan Comparison */}
@@ -261,45 +252,42 @@ export const BillingSetting = () => {
                   key={plan.key}
                   className={`flex flex-col rounded-2xl border p-5 ${
                     plan.recommended
-                      ? 'border-blue-600 ring-1 ring-blue-600/20 bg-blue-50/10'
-                      : 'border-slate-200 bg-white'
+                      ? 'border-primary ring-1 ring-primary/20 bg-card'
+                      : 'border-border bg-card'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-lg font-bold text-slate-900">{plan.name}</span>
+                    <span className="text-lg font-bold text-foreground">{plan.name}</span>
                     {plan.recommended && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
                         <Sparkles className="h-3 w-3" />
                         14-day trial
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 text-2xl font-extrabold text-slate-900">
+                  <div className="mt-2 text-2xl font-extrabold text-foreground">
                     {plan.priceLabel}
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Who it’s for: {plan.whoItsFor}
-                  </p>
 
                   <ul className="mt-4 flex-1 space-y-2.5 border-t pt-4 text-xs">
                     {plan.features.map((feat: any) => (
                       <li
                         key={feat.label}
                         className={`flex items-start gap-2 ${
-                          feat.included ? 'text-slate-800 font-medium' : 'text-slate-400'
+                          feat.included ? 'text-foreground font-medium' : 'text-muted-foreground'
                         }`}
                       >
                         {feat.included ? (
-                          <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                          <Check className="h-4 w-4 shrink-0 text-[var(--rentify-color-success-text)]" />
                         ) : (
-                          <Minus className="h-4 w-4 shrink-0 text-slate-300" />
+                          <Minus className="h-4 w-4 shrink-0 text-muted-foreground" />
                         )}
                         <span>{feat.label}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <div className="mt-4 rounded-lg bg-slate-100 px-3 py-2 text-[11px] text-slate-600">
+                  <div className="mt-4 rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
                     <strong>{t('merchant.p.commission')}</strong> {plan.commission}
                   </div>
 
@@ -314,7 +302,7 @@ export const BillingSetting = () => {
                         variant={plan.recommended ? 'default' : 'outline'}
                         className={
                           plan.recommended
-                            ? 'w-full bg-blue-600 hover:bg-blue-700 text-white text-xs'
+                            ? 'w-full text-xs'
                             : 'w-full text-xs'
                         }
                       >
@@ -337,61 +325,6 @@ export const BillingSetting = () => {
         </CardContent>
       </Card>
 
-      {/* Payment Methods */}
-      <Card className="shadow-sm border-0">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">{t('merchant.p.paymentMethods')}</CardTitle>
-              <CardDescription>
-                {t('merchant.p.manageYourSavedPayout')}
-              </CardDescription>
-            </div>
-            <Button onClick={addPaymentMethod} className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>{t('merchant.p.addPaymentMethod')}</span>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {paymentMethods.map((method) => (
-              <div
-                key={method.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <CreditCard className="h-5 w-5 text-gray-600" />
-                  </div>
-                  <div>
-                    <div className="font-medium">
-                      {method.type} •••• {method.last4}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Status: {method.expiry}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {method.isDefault && (
-                    <Badge variant="secondary" className="bg-green-50 text-green-700">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      {t('merchant.p.default')}
-                    </Badge>
-                  )}
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Billing History */}
       <Card className="shadow-sm border-0">

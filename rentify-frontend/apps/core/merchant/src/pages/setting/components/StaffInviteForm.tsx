@@ -34,7 +34,7 @@ type PermissionKey =
   | 'manage_settings' 
   | 'manage_staff';
 
-const PERMISSIONS: PermissionKey[] = [
+export const PERMISSIONS: PermissionKey[] = [
   'manage_products', 
   'manage_orders', 
   'manage_invoices', 
@@ -44,15 +44,6 @@ const PERMISSIONS: PermissionKey[] = [
   'manage_staff'
 ];
 
-const permissionLabels: Record<PermissionKey, string> = {
-  manage_products: 'Products',
-  manage_orders: 'Orders',
-  manage_invoices: 'Invoices',
-  manage_pos: 'POS',
-  manage_analytics: 'Analytics',
-  manage_settings: 'Settings',
-  manage_staff: 'Staff',
-};
 
 type ContactMethod = 'email' | 'phone';
 
@@ -228,7 +219,7 @@ const StaffInviteForm: React.FC<StaffInviteFormProps> = ({
                   htmlFor={permission} 
                   className="text-sm font-normal cursor-pointer"
                 >
-                  {permissionLabels[permission]}
+                  {t(`merchant.staff.permissions.${permission}.title`)}
                 </Label>
               </div>
             ))}

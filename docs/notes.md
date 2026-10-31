@@ -863,3 +863,14 @@ actions, invented states and internal text on screen. Fixed in
   seconds after an action.
 - Settings › Payments returns 404 from `GET /api/payment-config/:websiteId` when
   no gateway is enabled; the page reads that as "Not connected".
+- (Open, wireframe alignment) Delivery & returns (M22): there is no field for
+  a store-written return policy in Core or Commerce, so the page shows
+  Rentify's rule (DEC-008) read-only.
+- (Open) Problem detail (M7) with Accept / Decline waits for the per-Store
+  buyer-report endpoint (RX-C01).
+- (Open) The staff Home (M29) shows no "today at the counter" numbers: a
+  cashier has no orders permission, and there is no counter summary endpoint.
+- Products: `/products/bulk` is the older table for import, export and
+  editing several products at once ("Edit several"). The main list is
+  `StoreCatalogPage`; the old Products tabs and chips in
+  `ProductManagementContent` were never rendered.

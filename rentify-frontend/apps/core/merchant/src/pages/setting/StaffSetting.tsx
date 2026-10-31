@@ -19,7 +19,7 @@ import {
   useResendStaffOtpMutation,
   useCreateStaffMutation,
 } from '@rentify/apis';
-import StaffInviteForm from './components/StaffInviteForm';
+import StaffInviteForm, { PERMISSIONS } from './components/StaffInviteForm';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Badge } from '@rentify/shared/ui/badge';
@@ -324,12 +324,7 @@ const StaffSetting: React.FC = () => {
       <Card className="shadow-sm border-0">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg font-semibold">{t('merchant.p.teamMembers')}</CardTitle>
-              <CardDescription>
-                {t('merchant.p.inviteAndManageStaff')}
-              </CardDescription>
-            </div>
+            <p className="text-sm text-muted-foreground">{t('merchant.staff.intro')}</p>
             <Button 
               onClick={() => {
                 if (!canAddStaff) {
@@ -340,10 +335,10 @@ const StaffSetting: React.FC = () => {
               }}
               disabled={!canAddStaff}
               title={disabledReason || undefined}
-              className={`gap-2 shadow-sm ${!canAddStaff ? 'opacity-60 cursor-not-allowed bg-slate-400' : ''}`}
+              className="min-h-[44px] shrink-0 gap-2 rounded-xl"
             >
-              <Plus className="h-4 w-4" />
-              {t('merchant.p.addStaffMember')}
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.staff.invite')}
             </Button>
           </div>
         </CardHeader>
@@ -360,7 +355,8 @@ const StaffSetting: React.FC = () => {
               </Button>
             </div>
           )}
-          {/* Filters and Search */}
+          {/* Filters and search, once there is someone to find */}
+          {staffList.length > 0 && (
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -383,6 +379,7 @@ const StaffSetting: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
+          )}
 
           {/* Staff Table */}
           <DataTable
@@ -398,13 +395,26 @@ const StaffSetting: React.FC = () => {
               title: t('merchant.p.noStaffMembersFound'),
               body: searchTerm ? t('merchant.table.staff.emptySearch') : t('merchant.table.staff.emptyInvite'),
               action: !searchTerm && (
-                <Button onClick={() => handleOpenDialog()} className="h-11 gap-2" disabled={!canAddStaff}>
-                  <Plus className="h-4 w-4" />
-                  {t('merchant.p.addStaffMember')}
+                <Button onClick={() => handleOpenDialog()} className="min-h-[44px] gap-2 rounded-xl" disabled={!canAddStaff}>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  {t('merchant.staff.invite')}
                 </Button>
               ),
             }}
           />
+
+          {/* What each permission allows (redesign M23) */}
+          <div className="rounded-xl border border-border p-4">
+            <h3 className="text-sm font-semibold text-foreground">{t('merchant.staff.whatTheyCanDo')}</h3>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              {PERMISSIONS.map((key) => (
+                <div key={key}>
+                  <dt className="text-sm font-medium text-foreground">{t(`merchant.staff.permissions.${key}.title`)}</dt>
+                  <dd className="text-sm text-muted-foreground">{t(`merchant.staff.permissions.${key}.body`)}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
 
           {/* Add/Edit Staff Dialog */}
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>

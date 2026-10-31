@@ -15,11 +15,18 @@ export default function DeliverySetting() {
   const storeId = (store as { id?: string } | null)?.id ?? null;
 
   return (
-    <SettingsLayout title={t('merchant.setup.deliveryTitle')} description={t('merchant.setup.deliverySettingDescription')} icon={<Truck />}>
+    <SettingsLayout title={t('merchant.settings.sections.delivery.title')} description={t('merchant.setup.deliverySettingDescription')} icon={<Truck />}>
       <Card className="border-transparent [box-shadow:var(--shadow-soft)]">
         <CardContent className="space-y-4 pt-6">
           <p className="text-sm text-muted-foreground">{t('merchant.setup.deliveryBody')}</p>
           <DeliveryFeeForm storeId={storeId} onSaved={() => void refresh()} />
+        </CardContent>
+      </Card>
+      {/* Returns follow Rentify's rule (DEC-008); a store-written policy has no backend field yet */}
+      <Card className="border-transparent [box-shadow:var(--shadow-soft)]">
+        <CardContent className="space-y-1 pt-6">
+          <h2 className="text-base font-semibold text-foreground">{t('merchant.settings.returnsTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('merchant.settings.returnsBody')}</p>
         </CardContent>
       </Card>
     </SettingsLayout>

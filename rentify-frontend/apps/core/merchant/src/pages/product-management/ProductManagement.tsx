@@ -218,7 +218,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'categories' ? 'categories' : 'products';
-  const [activeChip, setActiveChip] = React.useState<ProductFilterChip>('all');
+  const activeChip: ProductFilterChip = 'all';
 
   const handleTabChange = (tab: 'products' | 'categories') => {
     const next = new URLSearchParams(searchParams);
@@ -234,16 +234,6 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
     return filterProductsByChip((products as any) || [], activeChip);
   }, [products, activeChip]);
 
-  const chipCounts = useMemo(() => {
-    const list = (products as any) || [];
-    return {
-      all: list.length,
-      on_sale: list.filter((p: any) => typeof p.salePrice === 'number' && p.salePrice < p.price).length,
-      out_of_stock: list.filter((p: any) => p.stockQuantity <= 0).length,
-      hidden: list.filter((p: any) => p.marketplaceVisibility === false).length,
-      drafts: list.filter((p: any) => p.status === 'draft' || p.status === 'inactive').length,
-    };
-  }, [products]);
 
   const [entitlements, setEntitlements] = React.useState<any>(null);
 
@@ -878,46 +868,15 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
     <div className="min-h-full">
       {/* Consistent Header */}
       <PageHeader
-        title={t('dashboard.product.title')}
-        description={t('dashboard.product.manage_your_products')}
-        icon={Package}
+        title={t('merchant.products.bulkTitle')}
+        description={t('merchant.products.bulkHint')}
         actions={<HeaderActions />}
         breadcrumb={[
-          { label: 'Dashboard', href: '/overview' },
-          { label: t('dashboard.product.title') }
+          { label: t('dashboard.product.title'), href: '/products' },
+          { label: t('merchant.products.bulkTitle') }
         ]}
       />
 
-      {/* Wireframe M8/M10 Top Tabs: All products & Categories */}
-      <div className="border-b border-border/60 bg-background px-4 sm:px-6">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleTabChange('products')}
-            className={`flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'products'
-                ? 'border-primary text-primary font-semibold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <span>{t('dashboard.product.all_products') || 'All products'}</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-              {totalItems}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('categories')}
-            className={`flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'categories'
-                ? 'border-primary text-primary font-semibold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <span>{t('dashboard.product.categories') || 'Categories'}</span>
-          </button>
-        </div>
-      </div>
 
       {activeTab === 'categories' ? (
         <div className="p-4 sm:p-6 md:p-8 space-y-4">
@@ -928,38 +887,6 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         </div>
       ) : (
      <div className="p-4 sm:p-6 md:p-8 space-y-5">
-        {/* Wireframe M8 Filter Chips: All · On sale · Out of stock · Hidden from marketplace · Drafts */}
-        <div className="flex flex-wrap items-center gap-2">
-          {(
-            [
-              { key: 'all', label: 'All', count: chipCounts.all },
-              { key: 'on_sale', label: `On sale (${chipCounts.on_sale})`, count: chipCounts.on_sale },
-              { key: 'out_of_stock', label: `Out of stock (${chipCounts.out_of_stock})`, count: chipCounts.out_of_stock },
-              { key: 'hidden', label: 'Hidden from marketplace', count: chipCounts.hidden },
-              { key: 'drafts', label: 'Drafts', count: chipCounts.drafts },
-            ] as const
-          ).map((chip) => {
-            const isActive = activeChip === chip.key;
-            return (
-              <button
-                key={chip.key}
-                type="button"
-                onClick={() => setActiveChip(chip.key)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-semibold'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-                }`}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Select several to change price, stock or visibility together.
-        </p>
         {disabledReason && !isGracePeriod && !isSuspended && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs sm:text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
             <div className="flex items-center gap-2">

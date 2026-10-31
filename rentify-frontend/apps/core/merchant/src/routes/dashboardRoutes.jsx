@@ -9,6 +9,9 @@ const OnlineStorePage = lazy(() => import('../pages/online-store/OnlineStorePage
 const StoreDesign = lazy(() => import('../pages/store-design/StoreDesign'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
+const BulkProductManagement = lazy(() =>
+  import('../pages/product-management/ProductManagement').then((m) => ({ default: m.BulkProductManagement })),
+);
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
 const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
@@ -53,6 +56,7 @@ export const dashboardRoutes = {
     // Products (one list; /catalog and /products/manage redirect)
     { path: 'products', element: <ProductManagement /> },
     { path: 'products/manage', element: <Navigate to="/products" replace /> },
+    { path: 'products/bulk', element: <BulkProductManagement /> },
     { path: 'catalog', element: <Navigate to="/products" replace /> },
     { path: 'categories', element: <Navigate to="/products?tab=categories" replace /> },
     { path: 'products/:id', element: <ProductDetailView /> },

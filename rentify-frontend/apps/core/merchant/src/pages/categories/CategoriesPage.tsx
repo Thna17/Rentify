@@ -152,7 +152,8 @@ const Stat = ({ label, value, sub, loading }: { label: string; value: number; su
   </div>
 );
 
-export default function CategoriesPage() {
+/** `embedded`: shown as the Categories tab inside Products (redesign M10), without its own page frame. */
+export default function CategoriesPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { language } = useTranslation() as { language?: string };
   const text = copy[language === 'kh' ? 'km' : 'en'];
   const { websiteId, hasStorefront, hasMarketplace, view, store } = useChannels();
@@ -276,11 +277,11 @@ export default function CategoriesPage() {
   const pageHint = both || (!showStore && !showMarket) ? text.subtitle : showStore ? text.storeHint : text.marketHint;
 
   return (
-    <div className="min-h-full">
-      <div className="mx-auto max-w-[1100px] space-y-6 p-4 sm:p-6 md:p-8">
+    <div className={embedded ? '' : 'min-h-full'}>
+      <div className={embedded ? 'space-y-6' : 'mx-auto max-w-[1100px] space-y-6 p-4 sm:p-6 md:p-8'}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{text.title}</h1>
+            {embedded ? null : <h1 className="text-2xl font-semibold tracking-tight text-foreground">{text.title}</h1>}
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{pageHint}</p>
           </div>
           {showStore && websiteId && (

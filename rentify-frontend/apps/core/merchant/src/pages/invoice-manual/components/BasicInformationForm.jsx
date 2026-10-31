@@ -1,3 +1,4 @@
+import { useTranslation } from '@rentify/utils';
 import { 
   DollarSign,
   CreditCard,
@@ -17,19 +18,20 @@ import {
 } from '@rentify/shared/ui/select';
 
 export function BasicInformationForm({ invoiceData, updateField }) {
+  const { t } = useTranslation();
   return (
     <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+          <div className="p-2 rounded-lg bg-muted text-foreground">
             <Calendar className="w-4 h-4" />
           </div>
           <div>
             <CardTitle className="text-base font-semibold text-foreground">
-              Basic Information
+              {t('merchant.invoices.section.when')}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Invoice identifier, payment mode, and dates
+              {t('merchant.invoices.section.whenBody')}
             </p>
           </div>
         </div>

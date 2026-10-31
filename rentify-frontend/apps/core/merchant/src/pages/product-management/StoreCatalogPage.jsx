@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search, Truck } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { Card } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
@@ -14,9 +14,11 @@ import {
 } from '@rentify/shared/ui/dropdown-menu';
 import { useChannels } from '../../context/ChannelContext';
 import { useTranslation } from '@rentify/utils';
+import { StatusPill } from '../../components/data-table/StatusPill';
+import { FilterChips, PageShell, PageTitle, TabBar } from '../../components/page/PagePrimitives';
+import CategoriesPage from '../categories/CategoriesPage';
 
 const commerce = `${ECOMMERCE_API_ROOT}/api`;
-const ALL = 'all';
 
 async function getJson(url, options = {}) {
   const response = await fetch(url, { credentials: 'include', ...options });
@@ -32,101 +34,49 @@ const money = (value) => `$${Number(value || 0).toFixed(2)}`;
  * moderation, per-channel visibility and the Store's marketplace approval.
  */
 const marketplaceState = (product, storeApproval) => {
-  if (product.status !== 'active') return { label: 'Draft', tone: 'muted' };
-  if (product.marketplaceVisibility === false) return { label: 'Hidden', tone: 'muted' };
-  if (product.moderationStatus === 'rejected') return { label: 'Rejected', tone: 'danger' };
-  if (product.moderationStatus && product.moderationStatus !== 'approved') return { label: 'In review', tone: 'warning' };
-  // Listing is automatic (DEC-028); a Store that is not approved is still setting up or was paused by Rentify.
-  if (storeApproval === 'pending') return { label: 'Store not listed yet', tone: 'warning' };
-  if (storeApproval && storeApproval !== 'approved') return { label: 'Store paused', tone: 'danger' };
-  return { label: 'Live', tone: 'success' };
+  if (product.status !== 'active') return { key: 'draft', tone: 'neutral' };
+  if (product.marketplaceVisibility === false) return { key: 'hidden', tone: 'neutral' };
+  if (product.moderationStatus === 'rejected') return { key: 'rejected', tone: 'danger' };
+  if (product.moderationStatus && product.moderationStatus !== 'approved') return { key: 'review', tone: 'warning' };
+  // Listing is automatic; a Store that is not approved is still setting up or was paused by Rentify.
+  if (storeApproval === 'pending') return { key: 'storeNotListed', tone: 'warning' };
+  if (storeApproval && storeApproval !== 'approved') return { key: 'storePaused', tone: 'danger' };
+  return { key: 'live', tone: 'success' };
 };
 const storefrontState = (product, hasWebsite) => {
-  if (!hasWebsite) return { label: 'No website', tone: 'muted' };
-  if (product.status !== 'active') return { label: 'Draft', tone: 'muted' };
-  if (product.storefrontVisibility === false) return { label: 'Hidden', tone: 'muted' };
-  return { label: 'Live', tone: 'success' };
+  if (!hasWebsite) return { key: 'noWebsite', tone: 'neutral' };
+  if (product.status !== 'active') return { key: 'draft', tone: 'neutral' };
+  if (product.storefrontVisibility === false) return { key: 'hidden', tone: 'neutral' };
+  return { key: 'live', tone: 'success' };
 };
 
-const TONES = {
-  success: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
-  warning: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
-  danger: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20',
-  muted: 'bg-muted/80 text-muted-foreground border border-border/60',
+const FILTERS = ['all', 'on_sale', 'out_of_stock', 'hidden', 'drafts'];
+const stockOf = (product) => {
+  const variants = (product.ProductVariants || []).filter((v) => v.optionValues && Object.keys(v.optionValues).length);
+  return variants.length ? variants.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0) : Number(product.stockQuantity) || 0;
+};
+const matchesFilter = (product, filter) => {
+  if (filter === 'on_sale') return Number(product.compareAtPrice) > Number(product.price);
+  if (filter === 'out_of_stock') return product.status === 'active' && stockOf(product) <= 0;
+  if (filter === 'hidden') return product.marketplaceVisibility === false;
+  if (filter === 'drafts') return product.status !== 'active';
+  return true;
 };
 
-const DOT_TONES = {
-  success: 'bg-emerald-500',
-  warning: 'bg-amber-500',
-  danger: 'bg-rose-500',
-  muted: 'bg-muted-foreground/60',
-};
-
-const ChannelPill = ({ channel, state }) => (
-  <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES[state?.tone] || TONES.muted}`}>
-    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES[state?.tone] || DOT_TONES.muted}`} aria-hidden="true" />
-    {channel && <span className="font-semibold">{channel}</span>}
-    {channel && state?.label && <span className="opacity-40">·</span>}
-    {state?.label && <span>{state.label}</span>}
+/** "Market ✓  Store ✓" (redesign M8): where buyers can see the product, from API fields only. */
+const ChannelBadges = ({ market, store, showStore, t }) => (
+  <span className="flex flex-wrap gap-1.5">
+    <StatusPill tone={market.tone}>
+      {market.key === 'live' ? `${t('merchant.products.market')} ✓` : `${t('merchant.products.market')} · ${t(`merchant.products.state.${market.key}`)}`}
+    </StatusPill>
+    {showStore && (
+      <StatusPill tone={store.tone}>
+        {store.key === 'live' ? `${t('merchant.products.store')} ✓` : `${t('merchant.products.store')} · ${t(`merchant.products.state.${store.key}`)}`}
+      </StatusPill>
+    )}
   </span>
 );
 
-/**
- * Returns a consolidated channel status summary pill:
- * - "Both" (when active on both Marketplace and Storefront)
- * - "Marketplace" (when active only on Marketplace)
- * - "Online Store" (when active only on Online Store)
- * - "Draft" / "Hidden" (when not live)
- */
-const ProductStatusBadge = ({ product, market, store, hasStorefront }) => {
-  const isMarketLive = market?.label === 'Live';
-  const isStoreLive = hasStorefront && store?.label === 'Live';
-
-  if (product.status !== 'active') {
-    return (
-      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.muted}`}>
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.muted}`} aria-hidden="true" />
-        <span>Draft</span>
-      </span>
-    );
-  }
-
-  if (isMarketLive && isStoreLive) {
-    return (
-      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.success}`}>
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.success}`} aria-hidden="true" />
-        <span>Both</span>
-      </span>
-    );
-  }
-
-  if (isStoreLive) {
-    return (
-      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.success}`}>
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.success}`} aria-hidden="true" />
-        <span>Online Store</span>
-      </span>
-    );
-  }
-
-  if (isMarketLive) {
-    return (
-      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES.success}`}>
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES.success}`} aria-hidden="true" />
-        <span>Marketplace</span>
-      </span>
-    );
-  }
-
-  // Not live on either (e.g. Hidden, In review, Waiting for approval)
-  const primaryState = market?.label !== 'Draft' ? market : store;
-  return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES[primaryState?.tone] || TONES.muted}`}>
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_TONES[primaryState?.tone] || DOT_TONES.muted}`} aria-hidden="true" />
-      <span>{primaryState?.label || 'Hidden'}</span>
-    </span>
-  );
-};
 
 export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const { t } = useTranslation();
@@ -140,9 +90,10 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const [busyId, setBusyId] = useState(null);
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState(ALL);
+  const [filter, setFilter] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'categories' ? 'categories' : 'products';
   const [openId, setOpenId] = useState(null);
-  const [deliveryPolicy, setDeliveryPolicy] = useState(null);
   // Grace period and suspension lock new products; the reason is shown by the button
   const [entitlements, setEntitlements] = useState(null);
   useEffect(() => {
@@ -153,14 +104,16 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   }, []);
   const addLocked = entitlements ? entitlements.mutationsAllowed === false : false;
 
+  // Commerce returns at most 60 products per page
   async function refresh(id) {
-    const result = await getJson(`${commerce}/stores/${id}/products?limit=500`);
-    setProducts(result.products || []);
-  }
-
-  async function loadDelivery(id) {
-    const result = await getJson(`${commerce}/stores/${id}/marketplace-delivery`);
-    setDeliveryPolicy(result.policy);
+    const all = [];
+    for (let page = 1; page <= 50; page += 1) {
+      const result = await getJson(`${commerce}/stores/${id}/products?limit=60&page=${page}`);
+      const rows = result.products || [];
+      all.push(...rows);
+      if (rows.length < 60 || all.length >= Number(result.total || 0)) break;
+    }
+    setProducts(all);
   }
 
   async function load() {
@@ -173,9 +126,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
       const id = storeResult.data.id;
       setStoreId(id);
       setStoreApproval(storeResult.data?.marketplaceApprovalStatus || null);
-      // The product list must not disappear just because the delivery-fee call failed.
-      const [productsResult] = await Promise.allSettled([refresh(id), loadDelivery(id)]);
-      if (productsResult.status === 'rejected') throw productsResult.reason;
+      await refresh(id);
     } catch (error) {
       setLoadError(error.message);
     } finally {
@@ -200,97 +151,100 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
 
 
 
-  const categoryCounts = useMemo(() => products.reduce((counts, product) => {
-    const key = product.marketplaceCategory || 'Uncategorised';
-    counts[key] = (counts[key] || 0) + 1;
-    return counts;
-  }, {}), [products]);
+  const filterCounts = useMemo(
+    () => Object.fromEntries(FILTERS.map((id) => [id, products.filter((p) => matchesFilter(p, id)).length])),
+    [products],
+  );
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     return products.filter((product) =>
-      (categoryFilter === ALL || (product.marketplaceCategory || 'Uncategorised') === categoryFilter) &&
+      matchesFilter(product, filter) &&
       (!term || product.name?.toLowerCase().includes(term) || product.sku?.toLowerCase().includes(term)));
-  }, [products, query, categoryFilter]);
+  }, [products, query, filter]);
+
+  const setTab = (id) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === 'categories') next.set('tab', 'categories');
+    else next.delete('tab');
+    setSearchParams(next, { replace: true });
+  };
 
   const hasWebsite = (product) => Boolean(product.websiteId) || hasStorefront;
   const addProduct = () => navigate('/products/create');
   const editProduct = (product) => navigate(`/products/edit/${product.id}`);
 
   return (
-    <div className="min-h-full">
-      <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('merchant.p.products')}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t('merchant.p.onePriceAndOne')}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {hasStorefront && (
-              <Button variant="outline" className="h-11" onClick={() => navigate('/products/manage')}>
-                <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Bulk import &amp; export
+    <PageShell>
+        <PageTitle
+          title={t('merchant.p.products')}
+          description={t('merchant.p.onePriceAndOne')}
+          actions={
+            <>
+              {hasStorefront && (
+                <Button variant="outline" className="hidden min-h-[44px] rounded-xl sm:inline-flex" onClick={() => navigate('/products/bulk')}>
+                  <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> {t('merchant.products.bulk')}
+                </Button>
+              )}
+              {/* The dashboard banner explains a lock once; the button only says it is paused */}
+              <Button
+                onClick={addProduct}
+                className="min-h-[44px] rounded-xl"
+                disabled={addLocked}
+                title={addLocked ? t('merchant.products.addPaused') : undefined}
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" /> {t('merchant.p.addProduct')}
               </Button>
-            )}
-            {/* The dashboard banner explains a lock once; the button only says it is paused */}
-            <Button
-              onClick={addProduct}
-              className="h-11"
-              disabled={addLocked}
-              title={addLocked ? 'Paused until your subscription is renewed' : undefined}
-            >
-              <Plus className="mr-1.5 h-4 w-4" /> {t('merchant.p.addProduct')}
-            </Button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
+        <TabBar
+          label={t('merchant.p.products')}
+          items={[
+            { id: 'products', label: t('merchant.products.allProducts'), count: products.length || undefined },
+            { id: 'categories', label: t('merchant.products.categories') },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
 
+        {tab === 'categories' ? (
+          <CategoriesPage embedded />
+        ) : (
+        <>
         {message && (
           <p role="status" className="rounded-xl bg-muted px-4 py-3 text-sm text-foreground">{message}</p>
         )}
 
-        {/* Search + category filter */}
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input
-              aria-label={t('merchant.p.searchProducts')}
-              placeholder={t('merchant.p.searchByNameOr')}
-              className="h-11 pl-9"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-          {products.length > 0 && (
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label={t('merchant.p.filterByCategory')}>
-              {[[ALL, products.length], ...Object.entries(categoryCounts)].map(([key, count]) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={categoryFilter === key}
-                  onClick={() => setCategoryFilter(key)}
-                  className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors ${
-                    categoryFilter === key ? 'bg-foreground text-background' : 'bg-muted text-foreground hover:bg-muted/70'
-                  }`}
-                >
-                  {key === ALL ? 'All' : key}
-                  <span className="opacity-60">{count}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input
+            aria-label={t('merchant.p.searchProducts')}
+            placeholder={t('merchant.p.searchByNameOr')}
+            className="h-11 rounded-xl pl-9"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </div>
+        {products.length > 0 && (
+          <FilterChips
+            label={t('merchant.products.filter')}
+            items={FILTERS.map((id) => ({ id, label: t(`merchant.products.filters.${id}`), count: filterCounts[id] }))}
+            value={filter}
+            onChange={setFilter}
+          />
+        )}
 
         {/* Product list */}
-        <Card className="overflow-hidden border-transparent [box-shadow:var(--shadow-soft)]">
+        <Card className="gap-0 overflow-hidden border-transparent py-0 [box-shadow:var(--shadow-soft)]">
           {loading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
             </div>
           ) : loadError ? (
             <div role="alert" className="flex flex-col items-center gap-3 px-4 py-12 text-center">
-              <p className="text-sm text-destructive">Could not load your products. {loadError}</p>
+              <p className="text-sm text-destructive">{t('merchant.marketplace.loadError')}</p>
               <Button variant="outline" onClick={load}>{t('merchant.p.tryAgain')}</Button>
             </div>
           ) : products.length === 0 ? (
@@ -338,7 +292,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                           <span className="hidden min-w-0 md:block">
                             <span className="block truncate font-medium text-foreground">{product.name}</span>
                             <span className="block text-xs text-muted-foreground">
-                              {variants.length ? `${variants.length} variants` : product.sku}
+                              {variants.length ? t('merchant.products.variants', { count: variants.length }) : product.sku}
                             </span>
                           </span>
                         </button>
@@ -348,18 +302,13 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                           <button type="button" className="block w-full text-left" onClick={() => setOpenId(open ? null : product.id)}>
                             <span className="block truncate font-medium text-foreground">{product.name}</span>
                             <span className="block text-sm text-muted-foreground">
-                              {money(product.price)} · <span className={lowStock ? 'text-destructive' : ''}>{stock} in stock</span>
-                              {variants.length ? ` · ${variants.length} variants` : ''}
+                              {money(product.price)} · <span className={lowStock ? 'text-destructive' : ''}>{t('merchant.products.inStock', { count: stock })}</span>
+                              {variants.length ? ` · ${t('merchant.products.variants', { count: variants.length })}` : ''}
                             </span>
                           </button>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex flex-wrap gap-1.5">
-                              <ProductStatusBadge
-                                product={product}
-                                market={market}
-                                store={store}
-                                hasStorefront={hasWebsite(product)}
-                              />
+                              <ChannelBadges market={market} store={store} showStore={hasWebsite(product)} t={t} />
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -386,7 +335,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                                   disabled={busyId === product.id}
                                   onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
                                 >
-                                  <span>{product.status === 'active' ? 'Unpublish' : 'Publish'}</span>
+                                  <span>{t(product.status === 'active' ? 'merchant.products.unpublish' : 'merchant.products.publish')}</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -397,12 +346,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                         <span className="hidden text-sm font-medium md:block">{money(product.price)}</span>
                         <span className={`hidden text-sm md:block ${lowStock ? 'font-medium text-destructive' : ''}`}>{stock}</span>
                         <div className="hidden flex-wrap gap-1.5 md:flex">
-                          <ProductStatusBadge
-                            product={product}
-                            market={market}
-                            store={store}
-                            hasStorefront={hasWebsite(product)}
-                          />
+                          <ChannelBadges market={market} store={store} showStore={hasWebsite(product)} t={t} />
                         </div>
                         <div className="hidden justify-end md:flex">
                           <DropdownMenu>
@@ -430,7 +374,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                                 disabled={busyId === product.id}
                                 onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
                               >
-                                <span>{product.status === 'active' ? 'Unpublish' : 'Publish'}</span>
+                                <span>{t(product.status === 'active' ? 'merchant.products.unpublish' : 'merchant.products.publish')}</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -441,18 +385,18 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                         <li className="bg-muted/40 px-4 py-4">
                           <div className="grid gap-3 sm:grid-cols-2">
                             {[
-                              { name: 'Rentify Marketplace', short: 'marketplace', state: market, field: 'marketplaceVisibility', shown: product.marketplaceVisibility !== false },
+                              { name: t('merchant.home.marketplace'), short: 'market', state: market, field: 'marketplaceVisibility', shown: product.marketplaceVisibility !== false },
                               ...(hasWebsite(product)
-                                ? [{ name: 'Your online store', short: 'online store', state: store, field: 'storefrontVisibility', shown: product.storefrontVisibility !== false }]
+                                ? [{ name: t('merchant.orders.channels.storefront'), short: 'store', state: store, field: 'storefrontVisibility', shown: product.storefrontVisibility !== false }]
                                 : []),
                             ].map((channel) => (
                               <div key={channel.name} className="rounded-xl bg-background p-4">
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="font-medium text-foreground">{channel.name}</p>
-                                    <p className="text-sm text-muted-foreground">Price {money(product.price)} · Stock {stock}</p>
+                                    <p className="text-sm text-muted-foreground">{t('merchant.products.priceStock', { price: money(product.price), count: stock })}</p>
                                   </div>
-                                  <ChannelPill channel="" state={channel.state} />
+                                  <StatusPill tone={channel.state.tone}>{t(`merchant.products.state.${channel.state.key}`)}</StatusPill>
                                 </div>
                                 {!channel.disabled && (
                                   <Button
@@ -467,7 +411,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                                         : !channel.shown,
                                     })}
                                   >
-                                    {channel.shown ? `Hide from ${channel.short}` : `Show on ${channel.short}`}
+                                    {t(channel.shown ? `merchant.products.hideFrom.${channel.short}` : `merchant.products.showOn.${channel.short}`)}
                                   </Button>
                                 )}
                               </div>
@@ -480,7 +424,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                                 {variants.map((variant) => (
                                   <li key={variant.id} className="flex justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2">
                                     <span>{Object.values(variant.optionValues).join(' / ')}</span>
-                                    <span className="text-muted-foreground">{money(variant.price)} · {variant.stockQuantity} left</span>
+                                    <span className="text-muted-foreground">{money(variant.price)} · {t('merchant.home.left', { count: variant.stockQuantity })}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -497,7 +441,7 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                               disabled={busyId === product.id}
                               onClick={() => changeProduct(product, { status: product.status === 'active' ? 'draft' : 'active' })}
                             >
-                              {product.status === 'active' ? 'Unpublish (save as draft)' : 'Publish'}
+                              {t(product.status === 'active' ? 'merchant.products.unpublishDraft' : 'merchant.products.publish')}
                             </Button>
                           </div>
                         </li>
@@ -510,24 +454,11 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
           )}
         </Card>
 
-        {/* Delivery fee: set once, rarely changed; its home is Settings › Delivery */}
-        <Card className="border-transparent [box-shadow:var(--shadow-soft)]">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
-            <span className="flex items-center gap-3">
-              <Truck className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-              <span>
-                <span className="block font-medium text-foreground">{t('merchant.p.marketplaceDeliveryFee')}</span>
-                <span className="block text-sm text-muted-foreground">
-                  {deliveryPolicy ? t('merchant.setup.deliveryPerOrder', { fee: money(deliveryPolicy.flatFee) }) : t('merchant.setup.deliveryNotSet')}
-                </span>
-              </span>
-            </span>
-            <Button variant="outline" className="h-11" onClick={() => navigate('/settings/delivery')}>
-              {t('merchant.setup.deliveryManage')}
-            </Button>
-          </div>
-        </Card>
-      </div>
-    </div>
+        {products.length > 1 && (
+          <p className="text-sm text-muted-foreground">{t('merchant.products.bulkHint')}</p>
+        )}
+        </>
+        )}
+    </PageShell>
   );
 }
