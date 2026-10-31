@@ -56,36 +56,43 @@ const useApiQuery = <T,>(
   return { data, isLoading, error, refetch: fetchData };
 };
 
-export const useGetUsageSummaryQuery = ({
-  websiteId,
-  rangeDays,
-}: {
-  websiteId?: string | null;
-  rangeDays: number;
-}) => {
+export const useGetUsageSummaryQuery = (
+  {
+    websiteId,
+    rangeDays,
+  }: {
+    websiteId?: string | null;
+    rangeDays: number;
+  },
+  options?: { skip?: boolean }
+) => {
   const query = useMemo(
     () => buildQuery({ websiteId: websiteId || undefined, rangeDays }),
     [websiteId, rangeDays]
   );
   const url = `${API_BASE}/api/usage/summary?${query}`;
-  return useApiQuery<UsageSummaryResponse>(url, Boolean(websiteId));
+  const enabled = options?.skip ? false : Boolean(websiteId);
+  return useApiQuery<UsageSummaryResponse>(url, enabled);
 };
 
-export const useGetUsageBreakdownQuery = ({
-  websiteId,
-  from,
-  to,
-  eventType,
-  page,
-  pageSize,
-}: {
-  websiteId?: string | null;
-  from: string;
-  to: string;
-  eventType?: string;
-  page: number;
-  pageSize: number;
-}) => {
+export const useGetUsageBreakdownQuery = (
+  {
+    websiteId,
+    from,
+    to,
+    eventType,
+    page,
+    pageSize,
+  }: {
+    websiteId?: string | null;
+    from: string;
+    to: string;
+    eventType?: string;
+    page: number;
+    pageSize: number;
+  },
+  options?: { skip?: boolean }
+) => {
   const query = useMemo(
     () =>
       buildQuery({
@@ -99,20 +106,25 @@ export const useGetUsageBreakdownQuery = ({
     [websiteId, from, to, eventType, page, pageSize]
   );
   const url = `${API_BASE}/api/usage/breakdown?${query}`;
-  return useApiQuery<UsageBreakdownResponse>(url, Boolean(websiteId));
+  const enabled = options?.skip ? false : Boolean(websiteId);
+  return useApiQuery<UsageBreakdownResponse>(url, enabled);
 };
 
-export const useGetBillingSummaryQuery = ({
-  websiteId,
-  month,
-}: {
-  websiteId?: string | null;
-  month: string;
-}) => {
+export const useGetBillingSummaryQuery = (
+  {
+    websiteId,
+    month,
+  }: {
+    websiteId?: string | null;
+    month: string;
+  },
+  options?: { skip?: boolean }
+) => {
   const query = useMemo(
     () => buildQuery({ websiteId: websiteId || undefined, month }),
     [websiteId, month]
   );
   const url = `${API_BASE}/api/usage/billing?${query}`;
-  return useApiQuery<BillingSummaryResponse>(url, Boolean(websiteId));
+  const enabled = options?.skip ? false : Boolean(websiteId);
+  return useApiQuery<BillingSummaryResponse>(url, enabled);
 };

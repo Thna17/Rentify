@@ -85,6 +85,7 @@ interface Product {
   description?: string;
   costPrice?: number;
   variants?: ProductVariant[];
+  marketplaceVisibility?: boolean;
 }
 
 interface ProductVariant {

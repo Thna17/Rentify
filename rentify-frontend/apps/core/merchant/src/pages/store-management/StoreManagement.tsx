@@ -18,6 +18,26 @@ import { SavingIndicator } from './components/SavingIndicator';
 import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 
+const parseContentText = (val: unknown): string => {
+  if (typeof val === 'string') return val.trim();
+  if (typeof val === 'number') return String(val);
+  if (val && typeof val === 'object' && !Array.isArray(val)) {
+    const record = val as Record<string, unknown>;
+    for (const key of ['text', 'value', 'label', 'title']) {
+      if (typeof record[key] === 'string') return (record[key] as string).trim();
+      if (typeof record[key] === 'number') return String(record[key]);
+    }
+  }
+  return '';
+};
+
+const findContentText = (contents: any[], labels: string[]): string => {
+  const item = contents.find((c: any) =>
+    labels.some((l) => l.toLowerCase() === String(c?.label || '').toLowerCase())
+  );
+  return item ? parseContentText(item.value) : '';
+};
+
 export const StoreManagement = () => {
   const { t } = useTranslation();
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -58,17 +78,28 @@ export const StoreManagement = () => {
         borderRadius: {},
       };
 
+      const rawSocial = contents.find(
+        (c: any) => String(c?.label || '').toLowerCase() === 'social media'
+      )?.value;
+
       const transformedData = {
         shop: {
           id: websiteData.id,
           name:
-            contents.find((c: any) => c.label === 'Website Name')?.value || '',
+            findContentText(contents, ['Website Name', 'Site Title', 'Store Name']) ||
+            parseContentText(websiteData.siteTitle) ||
+            parseContentText(websiteData.storeName) ||
+            '',
           // Live address: the Rentify subdomain once published, else a connected domain.
           domain: websiteData.storefrontUrl || websiteData.domain || '',
           email:
-            contents.find((c: any) => c.label === 'Contact Email')?.value || '',
+            findContentText(contents, ['Contact Email', 'Email']) ||
+            parseContentText(websiteData.userEmail) ||
+            '',
           phone:
-            contents.find((c: any) => c.label === 'Phone Number')?.value || '',
+            findContentText(contents, ['Phone Number', 'Phone', 'Contact']) ||
+            parseContentText(websiteData.userPhoneNumber) ||
+            '',
           status: websiteData.status || 'active',
           theme: themeContent?.value?.colors
             ? {
@@ -79,12 +110,11 @@ export const StoreManagement = () => {
               }
             : defaultTheme,
         },
-        socialMedia: contents.find((c: any) => c.label === 'Social Media')
-          ?.value || {
-          facebook: '',
-          instagram: '',
-          twitter: '',
-          linkedin: '',
+        socialMedia: {
+          facebook: parseContentText(rawSocial?.facebook),
+          instagram: parseContentText(rawSocial?.instagram),
+          twitter: parseContentText(rawSocial?.twitter),
+          linkedin: parseContentText(rawSocial?.linkedin),
         },
         collections:
           contents.find((c: any) => c.label === 'Categories')?.value || [],
@@ -251,45 +281,63 @@ const handleSave = async (field: string, customValue?: string) => {
       // These use updateWebsiteContent
       
       let contentToUpdate;
-      let updateBody = { value: valueToSave };
+      let updateBody: any = { value: valueToSave };
 
-      // Map frontend field names to backend content labels
-      const fieldToLabelMap: Record<string, string> = {
-        'shop.name': 'Website Name',
-        'shop.email': 'Contact Email',
-        'shop.phone': 'Phone Number',
-        'socialMedia.facebook': 'Social Media',
-        'socialMedia.instagram': 'Social Media',
-        'socialMedia.twitter': 'Social Media',
-        'socialMedia.linkedin': 'Social Media',
+      // Map frontend field names to possible backend content labels
+      const fieldToLabelsMap: Record<string, string[]> = {
+        'shop.name': ['Website Name', 'Site Title', 'Store Name'],
+        'shop.email': ['Contact Email', 'Email'],
+        'shop.phone': ['Phone Number', 'Phone', 'Contact'],
+        'socialMedia.facebook': ['Social Media'],
+        'socialMedia.instagram': ['Social Media'],
+        'socialMedia.twitter': ['Social Media'],
+        'socialMedia.linkedin': ['Social Media'],
       };
 
-      if (fieldToLabelMap[field]) {
-        const label = fieldToLabelMap[field];
-        contentToUpdate = storeData.contents.find(
-          (c: any) => c.label === label
+      if (fieldToLabelsMap[field]) {
+        const candidateLabels = fieldToLabelsMap[field];
+        contentToUpdate = storeData.contents.find((c: any) =>
+          candidateLabels.some((l) => l.toLowerCase() === String(c?.label || '').toLowerCase())
         );
 
         if (!contentToUpdate) {
-          console.error(`Content not found for mapped label: "${label}"`);
+          console.error(`Content not found for mapped field: "${field}"`);
           return;
         }
 
         // Handle social media updates specially
         if (field.startsWith('socialMedia.')) {
           const socialKey = field.split('.')[1];
-          const currentSocial = storeData.socialMedia || {};
+          const currentSocial =
+            typeof storeData.socialMedia === 'object' && storeData.socialMedia !== null
+              ? storeData.socialMedia
+              : {};
           updateBody = {
             value: {
               ...currentSocial,
               [socialKey]: valueToSave,
             },
           };
+        } else if (
+          typeof contentToUpdate.value === 'object' &&
+          contentToUpdate.value !== null &&
+          'text' in contentToUpdate.value
+        ) {
+          updateBody = {
+            value: {
+              ...contentToUpdate.value,
+              text: valueToSave,
+            },
+          };
+        } else {
+          updateBody = {
+            value: valueToSave,
+          };
         }
       } else {
         // For other fields, try direct match
         contentToUpdate = storeData.contents.find(
-          (c: any) => c.label === field
+          (c: any) => String(c?.label || '').toLowerCase() === field.toLowerCase()
         );
       }
 
@@ -303,6 +351,26 @@ const handleSave = async (field: string, customValue?: string) => {
         label: contentToUpdate.label,
         body: updateBody
       });
+
+      if (field.startsWith('shop.')) {
+        const shopKey = field.split('.')[1];
+        setStoreData((prev: any) => ({
+          ...prev,
+          shop: {
+            ...prev.shop,
+            [shopKey]: valueToSave,
+          },
+        }));
+      } else if (field.startsWith('socialMedia.')) {
+        const socialKey = field.split('.')[1];
+        setStoreData((prev: any) => ({
+          ...prev,
+          socialMedia: {
+            ...prev.socialMedia,
+            [socialKey]: valueToSave,
+          },
+        }));
+      }
 
       await updateWebsiteContent({
         contentId: contentToUpdate.id,

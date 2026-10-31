@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 interface EditableFieldProps {
   field: string;
-  value: string;
+  value: any;
   label: string;
   type?: 'text' | 'email' | 'tel' | 'url';
   Icon: LucideIcon;
@@ -37,6 +37,15 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   t
 }) => {
   const isEditing = editingField === field;
+  
+  const displayValue =
+    typeof value === 'string'
+      ? value
+      : typeof value === 'number'
+      ? String(value)
+      : value && typeof value === 'object' && !Array.isArray(value)
+      ? String((value as any).text ?? (value as any).value ?? '')
+      : '';
   
   return (
     <div className="space-y-2">
@@ -74,11 +83,11 @@ export const EditableField: React.FC<EditableFieldProps> = ({
       ) : (
         <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
           <div 
-            onClick={() => onEdit(field, value)}
+            onClick={() => onEdit(field, displayValue)}
             className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors group"
           >
-            <span className={value ? "font-medium" : "text-muted-foreground"}>
-              {value || t(`dashboard.store_management.enter_${label.split('.').pop()?.toLowerCase()}`)}
+            <span className={displayValue ? "font-medium" : "text-muted-foreground"}>
+              {displayValue || t(`dashboard.store_management.enter_${label.split('.').pop()?.toLowerCase()}`)}
             </span>
             <Edit2 className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
