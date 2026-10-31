@@ -90,7 +90,7 @@ const PLAN_TIERS = [
       { label: 'Own storefront (*.rentifystore.shop)', included: true },
       { label: '5 Staff user accounts', included: true },
       { label: 'Counter POS & customer invoices', included: true },
-      { label: 'Custom domain browse (DEC-003)', included: true },
+      { label: 'Custom domain browse', included: true },
     ],
   },
 ];
@@ -180,8 +180,8 @@ export const BillingSetting = () => {
 
   return (
     <SettingsLayout
-      title={t('merchant.p.billingPlans')}
-      description="Manage your Rentify plan, storefront trial, and billing details"
+      title="Plan & billing"
+      description="Your plan, what you've used, and invoices from Rentify"
       icon={<CreditCard />}
     >
       {/* Grace / suspended status is shown once, by the dashboard layout banner. */}
@@ -230,6 +230,26 @@ export const BillingSetting = () => {
                 </a>
               </Button>
             )}
+          </div>
+
+          {/* This month usage section (P4, P7) */}
+          <div className="mt-6 rounded-xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card p-5 shadow-[var(--shadow-soft)]">
+            <h4 className="text-base font-semibold text-foreground">This month</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">You pay only when these happen.</p>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+                <span className="text-xs text-muted-foreground">Paid orders</span>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">0</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+                <span className="text-xs text-muted-foreground">Paid invoices</span>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">0</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+                <span className="text-xs text-muted-foreground">Cost so far</span>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">$0.00</p>
+              </div>
+            </div>
           </div>
 
           {/* 3-Tier Plan Comparison */}

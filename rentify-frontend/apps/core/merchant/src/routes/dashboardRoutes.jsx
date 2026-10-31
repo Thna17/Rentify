@@ -72,6 +72,7 @@ export const dashboardRoutes = {
 
     // Settings (one shell; /settings and /usage/* redirect)
     { path: 'settings', element: <Navigate to="/settings/account" replace /> },
+
     { path: 'settings/account', element: <AccountSettings /> },
     { path: 'settings/security', element: <SecuritySetting /> },
     { path: 'settings/staff', element: <StaffSetting /> },
