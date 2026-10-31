@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
-import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
+import { RENTIFY_API_BASE, DASHBOARD_URL } from '@rentify/shared/config/urls';
 import { LanguageToggle, Wordmark } from '../../components/site/SiteHeader';
 import { EASE } from '../../components/site/motion';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -117,6 +117,19 @@ const Onboarding = () => {
       setFormData((prev) => ({ ...prev, template }));
     }
   }, [templates, category, formData.templateChosen, formData.template?.id]);
+
+  // If the user already has a store, direct them to their dashboard
+  useEffect(() => {
+    fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const store = data?.data || data;
+        if (store && store.id) {
+          window.location.replace(`${(DASHBOARD_URL || 'https://rentify-seller.mekhla.digital').replace(/\/+$/, '')}/overview`);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   // Auto-fill contact details if the user is already authenticated
   useEffect(() => {

@@ -53,6 +53,7 @@ const RentifyLaptopShowcase = React.lazy(() => import('./components/RentifyLapto
 // Stack the product image above the copy on mobile; use two columns on laptops.
 const HeroSection = () => {
   const { t } = useLanguage();
+  const { trialPath, isAuthenticated } = useStartTrial();
   return (
   <section className="relative overflow-hidden bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,#e8f0ff_0%,#ffffff_100%)] pb-16 pt-6 sm:pb-20 sm:pt-10 lg:py-24">
     <div className="relative mx-auto grid w-full max-w-[1360px] items-center px-6 sm:px-10 lg:grid-cols-[1.05fr_1.15fr] lg:gap-14 lg:px-12 xl:px-16">
@@ -84,9 +85,11 @@ const HeroSection = () => {
         </p>
 
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4 lg:justify-start">
-          <Button size="lg" className="h-12 rounded-2xl bg-blue-600 px-8 text-base font-bold shadow-[0_14px_32px_rgba(37,99,235,0.26)] transition-all hover:scale-[1.03] hover:bg-blue-700 sm:h-14 sm:text-lg">
-            {t('site.home.hero.startTrial')} <ArrowRight className="ml-2 size-5" />
-          </Button>
+          <SmartLink to={trialPath} target={isAuthenticated ? '_self' : undefined} className="inline-block">
+            <Button size="lg" className="h-12 w-full rounded-2xl bg-blue-600 px-8 text-base font-bold shadow-[0_14px_32px_rgba(37,99,235,0.26)] transition-all hover:scale-[1.03] hover:bg-blue-700 sm:h-14 sm:w-auto sm:text-lg">
+              {isAuthenticated ? t('site.nav.dashboard') : t('site.home.hero.startTrial')} <ArrowRight className="ml-2 size-5" />
+            </Button>
+          </SmartLink>
           <Button variant="outline" size="lg" className="h-12 rounded-2xl border-slate-300 bg-white/80 px-8 text-base font-bold text-slate-800 transition-all hover:scale-[1.03] hover:bg-white sm:h-14 sm:text-lg">
             <PlayCircle className="mr-2 size-5 text-blue-600" /> {t('site.home.hero.watchDemo')}
           </Button>

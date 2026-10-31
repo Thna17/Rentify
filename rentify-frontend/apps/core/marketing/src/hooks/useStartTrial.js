@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useGetPackagesQuery } from '@rentify/apis';
+import useMarketingAuth from './useMarketingAuth';
 
 export const DEFAULT_PACKAGES = [
   {
@@ -54,6 +55,7 @@ export const DEFAULT_PACKAGES = [
 // Unified onboarding path: never make merchants choose at signup.
 const useStartTrial = () => {
   const { data: rawPackages = [], isLoading } = useGetPackagesQuery();
+  const { isAuthenticated, dashboardHref } = useMarketingAuth();
 
   return useMemo(() => {
     const list = Array.isArray(rawPackages) && rawPackages.length > 0
@@ -78,10 +80,12 @@ const useStartTrial = () => {
     return {
       packages: sorted,
       trial,
-      trialPath: '/start',
+      trialPath: isAuthenticated ? dashboardHref : '/start',
+      isAuthenticated,
+      dashboardHref,
       isLoading,
     };
-  }, [rawPackages, isLoading]);
+  }, [rawPackages, isLoading, isAuthenticated, dashboardHref]);
 };
 
 export default useStartTrial;
