@@ -2,10 +2,15 @@ const { PaymentGatewayConfig } = require("../../models");
 const axios = require("axios");
 const { encryptSecrets, decryptSecrets, splitConfig, sanitizeConfig } = require("./paymentConfigEncryption");
 
-const sanitizeRecord = (record) => ({
-  ...record.toJSON(),
-  config: sanitizeConfig(record.config),
-});
+const sanitizeRecord = (record) => {
+  const json = typeof record.toJSON === "function" ? record.toJSON() : record;
+  const rawConfig = record.config || {};
+  return {
+    ...json,
+    hasApiKey: Boolean(rawConfig.encryptedSecrets || rawConfig.apiKey),
+    config: sanitizeConfig(rawConfig),
+  };
+};
 
 exports.getPaymentConfig = async (req, res) => {
   try {

@@ -287,6 +287,8 @@ export {
   useDeletePackageMutation,
 } from './apis/packageApi';
 
+export { ECOMMERCE_API_ROOT, ECOMMERCE_API_BASE, RENTIFY_API_BASE } from './apiBase';
+
 const persistor = persistStore(store);
 
 export const useAppDispatch = () => useDispatch();
