@@ -8,9 +8,8 @@ Stores and Products are the marketplace source; normal Angular development
 routes now use Rentify APIs. Choices under **Decisions needed** remain open
 until the product owner answers them.
 
-**Development seller rule:** Core automatically approves a pending active
-Store only when `NODE_ENV=development` and
-`DEV_MARKETPLACE_AUTO_APPROVAL=true`, the owner has verified contact, and the
+**Automatic listing (DEC-028):** Core automatically approves a pending active
+Store in every environment when the owner has verified contact and the
 Store has a selected primary category. Rejected and suspended sellers stay
 blocked. Commerce still requires an active published Product, a valid
 marketplace category, pilot entitlement, and marketplace visibility for public

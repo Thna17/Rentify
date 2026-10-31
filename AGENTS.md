@@ -41,10 +41,11 @@ before changing cross-service behavior.
    separate and may be more specific. Storefront onboarding additionally
    chooses a template and creates a website linked to the store.
    Marketplace listing is enabled by default for storefront Stores, with a
-   merchant Store-level opt-out and later per-product override. Seller
-   approval still gates public marketplace selling. In local development,
-   Core may approve pending sellers automatically after verified contact and
-   primary category checks when `DEV_MARKETPLACE_AUTO_APPROVAL=true`.
+   merchant Store-level opt-out and later per-product override. Listing is
+   automatic (DEC-028): Core approves a pending active Store once its owner
+   is verified and it has a primary category, in every environment. There is
+   no seller application or review before selling; admins moderate afterwards
+   (suspend, needs changes, reject), and Core never overrides those decisions.
 5. Keep one identity and tenant authorization model across both onboarding
    paths. Do not equate `websiteId` with merchant or store identity.
 6. Treat checkout, stock reservation, refunds, and seller settlement as one

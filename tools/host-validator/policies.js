@@ -554,16 +554,6 @@ function checkFeatureFlags(env, targetEnv, report) {
     });
   }
 
-  // Developer auto-approval forbidden in production (DEC-007)
-  const devAutoApproval = String(env.DEV_MARKETPLACE_AUTO_APPROVAL || '').trim().toLowerCase() === 'true';
-  if (devAutoApproval && targetEnv === 'production') {
-    report.errors.push({
-      policy: 'Seller Moderation Policy (DEC-007)',
-      field: 'DEV_MARKETPLACE_AUTO_APPROVAL',
-      message: 'DEV_MARKETPLACE_AUTO_APPROVAL cannot be enabled in production (manual seller verification required)',
-    });
-  }
-
   // Custom domains browse-only (DEC-003, ADR 0002)
   const customDomainCheckout = String(env.CUSTOM_DOMAIN_CHECKOUT_ENABLED || '').trim().toLowerCase() === 'true';
   if (customDomainCheckout && (targetEnv === 'production' || targetEnv === 'staging')) {

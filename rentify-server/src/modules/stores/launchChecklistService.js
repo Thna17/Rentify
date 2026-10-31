@@ -15,36 +15,18 @@ function item(id, status, reasonCode = null, actionCode = null, detail = null) {
   };
 }
 
-function applicationStatus(store, application, prerequisitesComplete) {
-  if (store.marketplaceApprovalStatus === 'approved' || application?.status === 'approved') {
-    return item('seller_application', 'complete');
-  }
-  if (store.marketplaceApprovalStatus === 'suspended') {
-    return item('seller_application', 'failed', 'SELLER_SUSPENDED', 'CONTACT_SUPPORT', application?.reviewReason);
-  }
-  if (application?.status === 'pending') {
-    return item('seller_application', 'pending', 'APPLICATION_UNDER_REVIEW', null);
-  }
-  if (application?.status === 'needs_changes') {
-    return item('seller_application', 'failed', 'APPLICATION_NEEDS_CHANGES', 'UPDATE_APPLICATION', application.reviewReason);
-  }
-  if (application?.status === 'rejected') {
-    return item('seller_application', 'failed', 'APPLICATION_REJECTED', 'UPDATE_APPLICATION', application.reviewReason);
-  }
-  if (!prerequisitesComplete) {
-    return item('seller_application', 'blocked', 'APPLICATION_PREREQUISITES_MISSING', 'COMPLETE_REQUIRED_ITEMS');
-  }
-  return item('seller_application', 'incomplete', 'APPLICATION_NOT_SUBMITTED', 'SUBMIT_APPLICATION');
-}
-
-function approvalStatus(store, application) {
+// Marketplace listing is automatic (DEC-028): there is no seller application or review step.
+// A Store that is not approved is either still missing an automatic-listing requirement
+// (pending) or was moderated by an admin (suspended, needs_changes, rejected).
+function listingStatus(store, application, requirements) {
   const status = store.marketplaceApprovalStatus;
-  if (status === 'approved') return item('approval', 'complete');
-  if (status === 'suspended') return item('approval', 'failed', 'SELLER_SUSPENDED', 'CONTACT_SUPPORT', application?.reviewReason);
-  if (status === 'needs_changes') return item('approval', 'failed', 'APPROVAL_NEEDS_CHANGES', 'UPDATE_APPLICATION', application?.reviewReason);
-  if (status === 'rejected') return item('approval', 'failed', 'APPROVAL_REJECTED', 'UPDATE_APPLICATION', application?.reviewReason);
-  if (application?.status === 'pending') return item('approval', 'pending', 'APPROVAL_PENDING');
-  return item('approval', 'blocked', 'APPLICATION_REQUIRED_FOR_APPROVAL', 'SUBMIT_APPLICATION');
+  if (status === 'approved') return null;
+  if (status === 'suspended') return item('publication_marketplace', 'failed', 'SELLER_SUSPENDED', 'CONTACT_SUPPORT', application?.reviewReason);
+  if (status === 'needs_changes' || status === 'rejected') {
+    return item('publication_marketplace', 'failed', 'MARKETPLACE_LISTING_REMOVED', 'CONTACT_SUPPORT', application?.reviewReason);
+  }
+  const missing = requirements.find((entry) => entry.status !== 'complete');
+  return item('publication_marketplace', 'blocked', 'LISTING_REQUIREMENTS_MISSING', missing?.nextAction?.code || 'CONTACT_SUPPORT');
 }
 
 function storefrontStatus(website) {
@@ -76,12 +58,9 @@ function buildChecklist({ store, owner, website, application, commerceFacts, com
 
   const delivery = commerceStale
     ? item('delivery_policy', 'blocked', staleReasonCode, 'RETRY_CHECKLIST')
-    : application?.acceptsDeliveryResponsibility && commerceFacts.deliveryPolicyConfigured
+    : commerceFacts.deliveryPolicyConfigured
       ? item('delivery_policy', 'complete')
-      : item('delivery_policy', 'incomplete', application ? 'DELIVERY_POLICY_INCOMPLETE' : 'DELIVERY_POLICY_REQUIRED', application ? 'UPDATE_APPLICATION' : 'SUBMIT_APPLICATION');
-  const returns = application?.acceptsReturnsResponsibility && application?.acceptsRefundResponsibility
-    ? item('return_policy', 'complete')
-    : item('return_policy', 'incomplete', application ? 'RETURN_POLICY_INCOMPLETE' : 'RETURN_POLICY_REQUIRED', application ? 'UPDATE_APPLICATION' : 'SUBMIT_APPLICATION');
+      : item('delivery_policy', 'incomplete', 'DELIVERY_POLICY_REQUIRED', 'SET_DELIVERY_FEE');
 
   let product;
   if (commerceStale) product = item('first_product_sku', 'blocked', staleReasonCode, 'RETRY_CHECKLIST');
@@ -89,9 +68,6 @@ function buildChecklist({ store, owner, website, application, commerceFacts, com
   else if (!commerceFacts.hasValidSku) product = item('first_product_sku', 'incomplete', 'VALID_SKU_REQUIRED', 'ADD_SKU');
   else product = item('first_product_sku', 'complete');
 
-  const prerequisitesComplete = [storeDetails, contact, category, product].every((entry) => entry.status === 'complete');
-  const sellerApplication = applicationStatus(store, application, prerequisitesComplete);
-  const approval = approvalStatus(store, application);
   const storefront = storefrontStatus(website);
   const preview = product.status !== 'complete'
     ? item('preview', 'blocked', 'VALID_PRODUCT_REQUIRED_FOR_PREVIEW', product.nextAction?.code || 'ADD_PRODUCT')
@@ -100,12 +76,13 @@ function buildChecklist({ store, owner, website, application, commerceFacts, com
       : item('preview', 'complete', null, 'PREVIEW_STORE');
 
   let marketplacePublication;
+  const listing = listingStatus(store, application, [storeDetails, contact, category]);
   if (!store.marketplaceEnabled) marketplacePublication = item('publication_marketplace', 'blocked', 'MARKETPLACE_DISABLED', 'ENABLE_MARKETPLACE');
-  else if (approval.status === 'pending') marketplacePublication = item('publication_marketplace', 'pending', 'APPROVAL_PENDING');
-  else if (approval.status !== 'complete') marketplacePublication = item('publication_marketplace', 'blocked', 'APPROVAL_REQUIRED', approval.nextAction?.code || 'SUBMIT_APPLICATION');
+  else if (listing) marketplacePublication = listing;
   else if (commerceStale) marketplacePublication = item('publication_marketplace', 'blocked', staleReasonCode, 'RETRY_CHECKLIST');
-  else if (!commerceFacts.marketplaceProductReady || product.status !== 'complete') marketplacePublication = item('publication_marketplace', 'incomplete', 'MARKETPLACE_PRODUCT_NOT_READY', 'REVIEW_PRODUCT_VISIBILITY');
-  else if (delivery.status !== 'complete' || returns.status !== 'complete') marketplacePublication = item('publication_marketplace', 'blocked', 'POLICIES_REQUIRED_FOR_PUBLICATION', 'UPDATE_APPLICATION');
+  else if (product.status !== 'complete') marketplacePublication = item('publication_marketplace', 'blocked', 'VALID_PRODUCT_REQUIRED', product.nextAction?.code || 'ADD_PRODUCT');
+  else if (!commerceFacts.marketplaceProductReady) marketplacePublication = item('publication_marketplace', 'incomplete', 'MARKETPLACE_PRODUCT_NOT_READY', 'REVIEW_PRODUCT_VISIBILITY');
+  else if (delivery.status !== 'complete') marketplacePublication = item('publication_marketplace', 'blocked', 'DELIVERY_POLICY_REQUIRED', 'SET_DELIVERY_FEE');
   else marketplacePublication = item('publication_marketplace', 'complete', null, 'VIEW_MARKETPLACE');
 
   let storefrontPublication = null;
@@ -117,14 +94,14 @@ function buildChecklist({ store, owner, website, application, commerceFacts, com
     else storefrontPublication = item('publication_storefront', 'complete', null, 'VIEW_STOREFRONT');
   }
 
-  const items = [storeDetails, contact, category, delivery, returns, product, sellerApplication];
+  const items = [storeDetails, contact, category, delivery, product];
   if (storefront) items.push(storefront);
-  items.push(preview, approval, marketplacePublication);
+  items.push(preview, marketplacePublication);
   if (storefrontPublication) items.push(storefrontPublication);
   const completeCount = items.filter((entry) => entry.status === 'complete').length;
 
   return {
-    version: 1,
+    version: 2,
     observedAt: new Date().toISOString(),
     stale: commerceStale,
     staleReasonCode,

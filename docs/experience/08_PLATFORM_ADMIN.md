@@ -62,4 +62,4 @@ Packages (Free Pilot / Starter / Business: limits from entitlements), subscripti
 Activity logs (actor, action, target, before/after safe fields, correlation id, source case) with filters + export (maker‑checker). Security: MFA enroll/recovery codes, sessions inventory & revoke, step‑up prompts.
 
 ## 14. Settings & flags
-Platform settings read view; feature flags list (`DEV_MARKETPLACE_AUTO_APPROVAL`, onlinePayments=false, reviews, follow, builder) with environment and owner; changes via deployment config, not UI, in R1.
+Platform settings read view; feature flags list (onlinePayments=false, reviews, follow, builder) with environment and owner; changes via deployment config, not UI, in R1.

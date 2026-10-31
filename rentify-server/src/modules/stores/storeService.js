@@ -8,12 +8,11 @@ const { normalizeStoreCategory } = require('./storeCategories');
 const clean = (value, maxLength) =>
   typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 
-const developmentApprovalEnabled = () =>
-  process.env.DEV_MARKETPLACE_AUTO_APPROVAL === 'true' &&
-  process.env.NODE_ENV === 'development';
-
-const eligibleForDevelopmentApproval = (store, owner) =>
-  developmentApprovalEnabled() && store.status === 'active' &&
+// Marketplace listing is automatic (DEC-028): a pending Store is approved as soon as it is
+// active, has a reviewed primary category and a verified owner. Only pending moves to
+// approved; suspended, needs_changes and rejected are admin decisions and are never changed.
+const eligibleForAutomaticListing = (store, owner) =>
+  store.status === 'active' &&
   store.marketplaceApprovalStatus === 'pending' &&
   !store.needsCategoryReview && Boolean(normalizeStoreCategory(store.primaryCategory)) &&
   owner?.isVerified === true && Boolean(owner.email || owner.phoneNumber);
@@ -132,9 +131,8 @@ class StoreService {
   async createForOwner({ ownerUserId, name, primaryCategory, marketplaceEnabled = true, transaction }) {
     const id = randomUUID();
     const category = normalizeStoreCategory(primaryCategory);
-    const owner = developmentApprovalEnabled()
-      ? await User.findByPk(ownerUserId, { transaction }) : null;
-    const approval = eligibleForDevelopmentApproval({
+    const owner = await User.findByPk(ownerUserId, { transaction });
+    const approval = eligibleForAutomaticListing({
       status: 'active', marketplaceApprovalStatus: 'pending',
       primaryCategory: category, needsCategoryReview: !category,
     }, owner) ? 'approved' : 'pending';
@@ -165,9 +163,10 @@ class StoreService {
         changes.primaryCategory = category;
         changes.needsCategoryReview = false;
       }
-      const owner = developmentApprovalEnabled()
+      const candidate = approvalCandidate(existing, changes);
+      const owner = candidate.marketplaceApprovalStatus === 'pending'
         ? await User.findByPk(ownerUserId, { transaction }) : null;
-      if (eligibleForDevelopmentApproval(approvalCandidate(existing, changes), owner)) {
+      if (eligibleForAutomaticListing(candidate, owner)) {
         changes.marketplaceApprovalStatus = 'approved';
       }
       if (Object.keys(changes).length) {
@@ -234,9 +233,10 @@ class StoreService {
         const { validateMediaStoreOwnership } = require('../../utils/mediaSecurityValidator');
         validateMediaStoreOwnership(changes.logoUrl, store.id);
       }
-      const owner = developmentApprovalEnabled()
+      const candidate = approvalCandidate(store, changes);
+      const owner = candidate.marketplaceApprovalStatus === 'pending'
         ? await User.findByPk(ownerUserId, { transaction }) : null;
-      if (eligibleForDevelopmentApproval(approvalCandidate(store, changes), owner)) {
+      if (eligibleForAutomaticListing(candidate, owner)) {
         changes.marketplaceApprovalStatus = 'approved';
       }
       if (Object.keys(changes).length) {
@@ -251,6 +251,5 @@ class StoreService {
 }
 
 module.exports = new StoreService();
-module.exports.developmentApprovalEnabled = developmentApprovalEnabled;
-module.exports.eligibleForDevelopmentApproval = eligibleForDevelopmentApproval;
+module.exports.eligibleForAutomaticListing = eligibleForAutomaticListing;
 module.exports.storeLogoUrl = storeLogoUrl;

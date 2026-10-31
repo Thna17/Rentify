@@ -20,7 +20,6 @@ module.exports = {
   CORS_ALLOWED_ORIGINS: 'https://staging.rentifymarket.com,https://staging-auth.rentifymarket.com,https://staging-dashboard.rentifymarket.com,https://staging-admin.rentifymarket.com',
   AUTH_RETURN_URL_ALLOWLIST: 'https://staging.rentifymarket.com,https://staging-dashboard.rentifymarket.com,https://staging-admin.rentifymarket.com',
   CUTLUY_ENABLED: 'false',
-  DEV_MARKETPLACE_AUTO_APPROVAL: 'false',
   CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'false',
   MARKETPLACE_COD_CHECKOUT_ENABLED: 'true',
   JWT_SECRET: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
