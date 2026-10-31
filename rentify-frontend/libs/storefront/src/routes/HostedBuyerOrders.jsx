@@ -44,20 +44,40 @@ export const HostedBuyerOrders = ({ single = false }) => {
     if (!isKhqr || isPaid || !payment?.id) return;
 
     let active = true;
-    const interval = setInterval(async () => {
+    const pollStatus = async () => {
       try {
         const res = await fetch(`${ECOMMERCE_API_ROOT}/api/payment/payments/${encodeURIComponent(payment.id)}/check-status`, {
           credentials: 'include',
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.status === 'paid' || data?.status === 'completed') {
-          if (active) fetchOrders();
+        const status = String(data?.status || '').toLowerCase();
+        if (status === 'paid' || status === 'completed') {
+          if (active) {
+            setOrders((prev) =>
+              prev.map((ord) =>
+                ord.id === order.id
+                  ? {
+                      ...ord,
+                      status: ord.status === 'pending' ? 'processing' : ord.status,
+                      payment: {
+                        ...ord.payment,
+                        status: 'completed',
+                      },
+                    }
+                  : ord
+              )
+            );
+            fetchOrders();
+          }
         }
       } catch (e) {
         // ignore polling errors
       }
-    }, 5000);
+    };
+
+    pollStatus();
+    const interval = setInterval(pollStatus, 3000);
 
     return () => {
       active = false;

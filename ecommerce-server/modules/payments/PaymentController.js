@@ -121,7 +121,7 @@ exports.checkPaymentStatus = async (req, res) => {
                 timeout: 6000,
               });
 
-              const cutluyStatus = String(response.data?.status || "").toLowerCase();
+              const cutluyStatus = String(response.data?.status || response.data?.data?.status || "").toLowerCase();
               if (cutluyStatus === "paid" || cutluyStatus === "completed") {
                 await FulfillmentService.confirmOrderPayment(paymentId, {
                   provider: "cutluy",
