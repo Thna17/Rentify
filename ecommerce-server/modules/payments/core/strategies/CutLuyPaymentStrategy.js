@@ -53,8 +53,11 @@ class CutLuyPaymentStrategy extends PaymentStrategy {
       return await this.models.Payment.create(
         {
           orderId: order.id,
+          storeId: order.storeId,
           amount: rawAmount,
           paymentMethod: "cutluy",
+          gateway: "cutluy",
+          transactionId: providerPaymentId,
           status: PAYMENT_STATUS.PENDING,
           transactionData: {
             provider: "cutluy",

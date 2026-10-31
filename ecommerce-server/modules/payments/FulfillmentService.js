@@ -26,26 +26,38 @@ class FulfillmentService {
                 return { success: true, alreadyCompleted: true };
             }
 
-            if (payment.Order.status === "cancelled") {
-                throw new Error("Cannot confirm cancelled order");
+            let order = payment.Order;
+            if (!order && payment.orderId) {
+                order = await Order.findByPk(payment.orderId, { transaction: t, lock: t.LOCK.UPDATE });
             }
 
-            // 2. Update Order Status
-            const orderType = payment.Order.orderType;
-            const newStatus =
-                orderType === "pos" ? ORDER_STATUS.FULFILLED : ORDER_STATUS.PROCESSING;
+            if (order) {
+                if (order.status === "cancelled") {
+                    throw new Error("Cannot confirm cancelled order");
+                }
 
-            await payment.Order.update(
-                { status: newStatus },
-                { transaction: t }
-            );
+                // 2. Update Order Status
+                const orderType = order.orderType;
+                const newStatus =
+                    orderType === "pos" ? ORDER_STATUS.FULFILLED : ORDER_STATUS.PROCESSING;
+
+                await order.update(
+                    { status: newStatus, confirmedAt: new Date() },
+                    { transaction: t, byStateMachine: true }
+                );
+            }
 
             // 3. Deduct Stock
-            await updateStock(payment.orderId, "deduct", t);
+            if (payment.orderId) {
+                await updateStock(payment.orderId, "deduct", t);
+            }
 
             // 4. Update Payment Status
             const updatePayload = {
                 status: PAYMENT_STATUS.COMPLETED,
+                paidAt: new Date(),
+                collectedAmount: payment.amount,
+                collectedAt: new Date(),
                 transactionData: {
                     ...payment.transactionData,
                     verifiedAt: new Date(),
@@ -64,20 +76,22 @@ class FulfillmentService {
             await payment.update(updatePayload, { transaction: t });
 
             // 5. Update Invoice
-            const invoice = await Invoice.findOne({
-                where: { orderId: payment.orderId },
-                transaction: t,
-                lock: t.LOCK.UPDATE,
-            });
+            if (payment.orderId) {
+                const invoice = await Invoice.findOne({
+                    where: { orderId: payment.orderId },
+                    transaction: t,
+                    lock: t.LOCK.UPDATE,
+                });
 
-            if (invoice) {
-                await invoice.update(
-                    {
-                        status: "paid",
-                        paymentId: payment.id,
-                    },
-                    { transaction: t }
-                );
+                if (invoice) {
+                    await invoice.update(
+                        {
+                            status: "paid",
+                            paymentId: payment.id,
+                        },
+                        { transaction: t }
+                    );
+                }
             }
 
             return { success: true, orderId: payment.orderId };
