@@ -51,7 +51,7 @@ export const dashboardRoutes = {
     { path: 'products', element: <ProductManagement /> },
     { path: 'products/manage', element: <Navigate to="/products" replace /> },
     { path: 'catalog', element: <Navigate to="/products" replace /> },
-    { path: 'categories', element: <CategoriesPage /> },
+    { path: 'categories', element: <Navigate to="/products?tab=categories" replace /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },
