@@ -2,7 +2,6 @@
 // P3-ORD-001: Enforces order and fulfillment state machines, inventory invariants, and tenant ownership.
 
 const { Order, Payment, OrderItem, Product } = require("../../models");
-const { sendStatusUpdateEmail } = require("../notifications").emailService;
 const retryTransaction = require("../../utils/retryTransaction");
 const {
   PAYMENT_METHODS,
@@ -113,7 +112,6 @@ exports.confirmOrder = async (req, res) => {
       });
     });
 
-    await sendStatusUpdateEmail(result, "confirmed").catch(() => {});
     res.json(result);
   } catch (error) {
     const status = error.statusCode || 400;
@@ -146,7 +144,6 @@ exports.cancelOrder = async (req, res) => {
       include: [{ model: Payment, as: "Payment" }, { model: OrderItem, as: "OrderItems" }],
     });
 
-    await sendStatusUpdateEmail(result, "cancelled").catch(() => {});
     res.json(result);
   } catch (error) {
     const status = error.statusCode || 400;
