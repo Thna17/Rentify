@@ -83,7 +83,8 @@ const WORK_TABS = [
 
 export const InvoiceManual = () => {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState('list');
+  // /invoices?new=1 ("New order" on the Orders page) opens the form directly
+  const [viewMode, setViewMode] = useState(() => (new URLSearchParams(window.location.search).get('new') ? 'new' : 'list'));
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);

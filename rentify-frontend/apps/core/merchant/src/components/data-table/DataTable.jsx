@@ -32,7 +32,7 @@ import {
 
 // English fallbacks keep the table readable where no TranslationProvider is mounted (unit tests)
 const FALLBACK = {
-  showing: 'Showing {{from}}–{{to}} of {{total}} records',
+  showing: 'Showing {{from}}–{{to}} of {{total}}',
   rowsPerPage: 'Rows per page',
   pageOf: 'Page {{page}} of {{pages}}',
   firstPage: 'First page',

@@ -26,14 +26,15 @@ export function PageTitle({
   /** Shown from tablet width up only. */
   description?: ReactNode;
   actions?: ReactNode;
-  back?: { to: string; label: string };
+  /** `phoneOnly`: the back link is hidden from tablet width up (a side list replaces it). */
+  back?: { to: string; label: string; phoneOnly?: boolean };
 }) {
   return (
     <div className="space-y-3">
       {back && (
         <Link
           to={back.to}
-          className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className={`inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground ${back.phoneOnly ? 'md:hidden' : ''}`}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           {back.label}
