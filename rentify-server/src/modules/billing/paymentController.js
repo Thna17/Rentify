@@ -251,8 +251,25 @@ exports.checkPaymentStatus = async (req, res) => {
       const attempt = await PaymentAttempt.findOne({
         where: { businessReference: payment.id },
       });
-      if (attempt && attempt.status === "paid" && payment.status !== "completed") {
-        await payment.update({ status: "completed" });
+      if (attempt) {
+        if (attempt.status !== "paid" && payment.status === "pending") {
+          try {
+            const { cutluyReconciliationService } = require("./index");
+            const result = await cutluyReconciliationService.reconcilePaymentAttempt(attempt.id);
+            if (result.attempt?.status === "paid" || result.actionTaken === "mark_paid") {
+              await attempt.reload();
+            }
+          } catch (recErr) {
+            console.error("CutLuy payment status reconciliation error:", recErr.message);
+          }
+        }
+        if (attempt.status === "paid" && payment.status !== "completed") {
+          await payment.update({ status: "completed", transactionId: attempt.providerPaymentId });
+        } else if (attempt.status === "expired" && payment.status === "pending") {
+          await payment.update({ status: "expired" });
+        } else if (attempt.status === "failed" && payment.status === "pending") {
+          await payment.update({ status: "failed" });
+        }
       }
       return res.json(payment);
     }

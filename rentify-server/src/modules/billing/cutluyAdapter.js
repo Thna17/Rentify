@@ -210,6 +210,7 @@ class CutLuyAdapter {
           headers: {
             Authorization: `Bearer ${config.apiKey}`,
             'Content-Type': 'application/json',
+            'User-Agent': 'Rentify/1.0 (axios)',
           },
           timeout: 15000,
         });
@@ -316,6 +317,7 @@ class CutLuyAdapter {
         const res = await axios.get(`${config.apiBaseUrl}/v1/payments/${encodeURIComponent(providerPaymentId)}`, {
           headers: {
             Authorization: `Bearer ${config.apiKey}`,
+            'User-Agent': 'Rentify/1.0 (axios)',
           },
           timeout: 10000,
         });
