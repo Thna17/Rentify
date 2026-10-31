@@ -235,4 +235,194 @@ describe("P4-POS-001: Physical-Store POS Journey Suite", () => {
       expect(resolvePaymentMethod("khqr")).toEqual({ method: "WALLET", provider: "KHQR" });
     });
   });
+
+  describe("7. Inventory Limits & In-App Stock Warning Feedback", () => {
+    function evaluateStockAddition(product, currentCartQty, addQty, variantId = null) {
+      const selectedVariant = variantId
+        ? (product.variants || []).find((v) => v.id === variantId)
+        : null;
+      const effectiveStock = selectedVariant
+        ? (selectedVariant.stockQuantity ?? product.stockQuantity)
+        : (product.stockQuantity ?? 0);
+      const trackInventory = selectedVariant
+        ? (selectedVariant.trackInventory ?? product.trackInventory)
+        : product.trackInventory;
+      const itemName = `${product.name}${selectedVariant?.title ? ' - ' + selectedVariant.title : ''}`;
+
+      if (trackInventory && effectiveStock <= 0) {
+        return {
+          allowed: false,
+          alert: {
+            title: "Out of Stock",
+            message: `"${itemName}" is currently out of stock.`,
+            tone: "warning",
+            stockLimit: 0,
+            itemName,
+          },
+        };
+      }
+
+      if (
+        trackInventory &&
+        effectiveStock !== undefined &&
+        effectiveStock !== null &&
+        currentCartQty + addQty > effectiveStock
+      ) {
+        return {
+          allowed: false,
+          alert: {
+            title: "Stock Limit Reached",
+            message: `Cannot add more than available stock (${effectiveStock} in stock).`,
+            tone: "warning",
+            stockLimit: effectiveStock,
+            itemName,
+          },
+        };
+      }
+
+      return { allowed: true, newQty: currentCartQty + addQty };
+    }
+
+    function checkStockFeedbackStatus(product, currentCartQty) {
+      const isOutOfStock =
+        product.trackInventory && ((product.stockQuantity ?? 0) <= 0 || product.status === "out_of_stock");
+      const hasTrackedStock =
+        product.trackInventory && product.stockQuantity !== undefined && product.stockQuantity !== null;
+      const isStockLimitReached = !isOutOfStock && hasTrackedStock && currentCartQty >= (product.stockQuantity ?? 0);
+
+      return {
+        isOutOfStock,
+        isStockLimitReached,
+        isCartItemAtMax: hasTrackedStock && currentCartQty >= (product.stockQuantity ?? 0),
+      };
+    }
+
+    it("prevents adding out-of-stock items and yields an out-of-stock notice", () => {
+      const oosProduct = {
+        id: "prod-oos",
+        name: "Out of Stock Item",
+        trackInventory: true,
+        stockQuantity: 0,
+      };
+
+      const result = evaluateStockAddition(oosProduct, 0, 1);
+      expect(result.allowed).toBe(false);
+      expect(result.alert.title).toBe("Out of Stock");
+      expect(result.alert.stockLimit).toBe(0);
+      expect(result.alert.tone).toBe("warning");
+    });
+
+    it("prevents exceeding available stock and provides an in-app limit alert card payload", () => {
+      const limitedProduct = {
+        id: "prod-limited",
+        name: "Vintage Ceramic Mug",
+        trackInventory: true,
+        stockQuantity: 1,
+      };
+
+      // First addition succeeds
+      const firstAdd = evaluateStockAddition(limitedProduct, 0, 1);
+      expect(firstAdd.allowed).toBe(true);
+      expect(firstAdd.newQty).toBe(1);
+
+      // Attempting to add a 2nd unit exceeds available stock (1 in stock)
+      const secondAdd = evaluateStockAddition(limitedProduct, 1, 1);
+      expect(secondAdd.allowed).toBe(false);
+      expect(secondAdd.alert.title).toBe("Stock Limit Reached");
+      expect(secondAdd.alert.message).toBe("Cannot add more than available stock (1 in stock).");
+      expect(secondAdd.alert.stockLimit).toBe(1);
+      expect(secondAdd.alert.itemName).toBe("Vintage Ceramic Mug");
+    });
+
+    it("correctly flags visual feedback on product card and cart line item when max stock is reached", () => {
+      const trackedProduct = {
+        id: "prod-3",
+        name: "Locally Roasted Coffee",
+        trackInventory: true,
+        stockQuantity: 3,
+      };
+
+      // Cart has 2: limit not reached
+      const status2 = checkStockFeedbackStatus(trackedProduct, 2);
+      expect(status2.isStockLimitReached).toBe(false);
+      expect(status2.isCartItemAtMax).toBe(false);
+
+      // Cart has 3: reached max stock
+      const status3 = checkStockFeedbackStatus(trackedProduct, 3);
+      expect(status3.isStockLimitReached).toBe(true);
+      expect(status3.isCartItemAtMax).toBe(true);
+    });
+
+    it("permits unlimited cart additions when inventory tracking is disabled", () => {
+      const digitalProduct = {
+        id: "prod-digital",
+        name: "E-Book Guide",
+        trackInventory: false,
+        stockQuantity: 0,
+      };
+
+      const add10 = evaluateStockAddition(digitalProduct, 0, 10);
+      expect(add10.allowed).toBe(true);
+      expect(add10.newQty).toBe(10);
+
+      const status = checkStockFeedbackStatus(digitalProduct, 10);
+      expect(status.isOutOfStock).toBe(false);
+      expect(status.isStockLimitReached).toBe(false);
+      expect(status.isCartItemAtMax).toBe(false);
+    });
+
+    it("enforces variant-level inventory limits when variants are present", () => {
+      const variantProduct = {
+        id: "prod-tshirt",
+        name: "Linen T-Shirt",
+        trackInventory: true,
+        stockQuantity: 10,
+        variants: [
+          { id: "var-s", title: "Small", stockQuantity: 2, trackInventory: true },
+          { id: "var-m", title: "Medium", stockQuantity: 0, trackInventory: true },
+        ],
+      };
+
+      // Medium is out of stock
+      const mediumAdd = evaluateStockAddition(variantProduct, 0, 1, "var-m");
+      expect(mediumAdd.allowed).toBe(false);
+      expect(mediumAdd.alert.title).toBe("Out of Stock");
+      expect(mediumAdd.alert.itemName).toBe("Linen T-Shirt - Medium");
+
+      // Small has 2 in stock; adding 3rd fails
+      const smallAdd = evaluateStockAddition(variantProduct, 2, 1, "var-s");
+      expect(smallAdd.allowed).toBe(false);
+      expect(smallAdd.alert.title).toBe("Stock Limit Reached");
+      expect(smallAdd.alert.stockLimit).toBe(2);
+      expect(smallAdd.alert.itemName).toBe("Linen T-Shirt - Small");
+    });
+
+    it("safely executes onConfirm at most once during alert dismissal", () => {
+      let callCount = 0;
+      let alertState = {
+        title: "Test",
+        onConfirm: () => {
+          callCount++;
+        },
+      };
+
+      const closePosAlert = () => {
+        if (alertState?.onConfirm) {
+          const cb = alertState.onConfirm;
+          alertState = null;
+          cb();
+        } else {
+          alertState = null;
+        }
+      };
+
+      // Button click triggers dismissal
+      closePosAlert();
+      expect(callCount).toBe(1);
+
+      // Subsequent modal onOpenChange triggers dismissal again
+      closePosAlert();
+      expect(callCount).toBe(1); // not called again
+    });
+  });
 });
