@@ -13,6 +13,7 @@ describe('theme fallback', () => {
   test('uses Template 2 defaults when the merchant has no theme data', () => {
     const theme = resolveStorefrontTheme({ fallback: template2Theme });
     expect(theme.colors.primary).toBe('#4d8eff');
+    expect(theme.colors.surface).toBe('#131e30');
     expect(theme.colors['primary-foreground']).toBe('0.99 0 0');
   });
 
@@ -119,6 +120,15 @@ describe('dynamic theme application', () => {
     const second = primaryToken();
     expect(second).not.toBe(first);
     expect(document.querySelectorAll('#theme-style')).toHaveLength(1);
+  });
+
+  test('applies dark card and muted surfaces for the default dark theme', () => {
+    service.applyThemeToDOM(resolveStorefrontTheme({ fallback: template2Theme }));
+    const css = document.getElementById('theme-style').textContent;
+    expect(css).toMatch(/--card: 0\.\d+ 0\.\d+ \d+/);
+    const lightness = Number(css.match(/--card: ([\d.]+)/)[1]);
+    expect(lightness).toBeLessThan(0.4);
+    expect(css.match(/--muted: ([^;]+);/)[1]).toBe(css.match(/--card: ([^;]+);/)[1]);
   });
 
   test('never writes rejected merchant input into the stylesheet', () => {

@@ -9,8 +9,9 @@ export const template2Theme = {
     primary: '#4d8eff',
     secondary: '#17253b',
     accent: '#17253b',
-    // No `surface` here: the theme service writes it to --accent and --muted as
-    // well, which would flatten the soft sage accent to white.
+    // The shared theme service sets card, popover and muted colors from surface.
+    // Supply a dark surface so its light defaults cannot override this theme.
+    surface: '#131e30',
     background: '#0b1120',
     text: '#f7f9fc',
     textSecondary: '#a6b7cc',
