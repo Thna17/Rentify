@@ -111,7 +111,7 @@ function StepRow({ step, open }: { step: GuideStep; open: boolean }) {
         </p>
         {why && <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{why}</p>}
         {step.detail && (
-          <p className="mt-2 rounded-lg border-l-4 border-foreground/70 bg-muted px-3 py-2 text-[13px]">
+          <p className="mt-2 rounded-lg border-l-4 border-primary bg-primary/5 px-3 py-2 text-[13px]">
             <span className="font-semibold">{t('merchant.setup.messageFromRentify')}: </span>
             {step.detail}
           </p>
@@ -216,7 +216,7 @@ function OwnerSetupGuide() {
   const percent = Math.round((guide.doneCount / guide.totalCount) * 100);
 
   return (
-    <section aria-labelledby="setup-guide-title" className="overflow-hidden rounded-3xl border-2 border-foreground bg-card shadow-[var(--shadow-soft)]">
+    <section aria-labelledby="setup-guide-title" data-slot="card" className="overflow-hidden rounded-3xl bg-card shadow-[var(--shadow-soft)]">
       <div className="flex items-start gap-3 px-4 pb-3 pt-4 md:px-5">
         <div className="min-w-0 flex-1">
           <h2 id="setup-guide-title" className="text-[17px] font-semibold tracking-tight text-foreground">{t('merchant.setup.title')}</h2>

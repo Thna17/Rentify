@@ -61,7 +61,7 @@ const fadeUp = (delay: number) => ({
 });
 
 export const Surface = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
-  <div className={`rounded-3xl bg-card p-5 shadow-[var(--shadow-soft)] md:p-6 ${className}`}>{children}</div>
+  <div data-slot="card" className={`rounded-3xl bg-card p-5 shadow-[var(--shadow-soft)] md:p-6 ${className}`}>{children}</div>
 );
 
 export const SectionTitle = ({ title, meta }: { title: string; meta?: ReactNode }) => (
