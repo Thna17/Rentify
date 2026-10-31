@@ -23,7 +23,7 @@ import { POS_URL } from '@rentify/shared/config/urls';
 export const ALL_TABS = [
   // --- Group 1: Main places (no section heading) ---
   {
-    name: 'dashboard.overview',
+    name: 'merchant.bottomNav.home',
     label: 'Home',
     icon: LayoutGrid,
     path: 'overview',

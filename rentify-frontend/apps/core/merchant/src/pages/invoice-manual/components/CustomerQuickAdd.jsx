@@ -22,13 +22,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useTranslation } from '@rentify/utils';
+import { useCustomers } from '../../../hooks/useCustomers';
 
-const RECENT_CUSTOMERS = [
-  { name: 'John Smith', phone: '+1 (555) 123-4567', address: '123 Main St, NYC' },
-  { name: 'Sarah Johnson', phone: '+1 (555) 987-6543', address: '456 Oak Ave, LA' },
-  { name: 'Michael Brown', phone: '+1 (555) 456-7890', address: '789 Pine St, Chicago' },
-  { name: 'Emily Davis', phone: '+1 (555) 321-0987', address: '321 Elm St, Houston' }
-];
 
 export const CustomerQuickAdd = ({ 
   currentCustomer, 
@@ -40,7 +35,13 @@ export const CustomerQuickAdd = ({
   const [newCustomer, setNewCustomer] = useState(currentCustomer);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const filteredCustomers = RECENT_CUSTOMERS.filter(customer =>
+  // Real recent buyers of this Store; masked phone numbers (finished orders) are left out
+  const { customers } = useCustomers();
+  const recentCustomers = customers
+    .filter((c) => c.name)
+    .slice(0, 8)
+    .map((c) => ({ name: c.name, phone: c.phone && !c.phone.includes('*') ? c.phone : '', address: '' }));
+  const filteredCustomers = recentCustomers.filter(customer =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.phone.includes(searchQuery)
   );

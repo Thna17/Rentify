@@ -1,3 +1,4 @@
+import { useTranslation } from '@rentify/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
@@ -5,20 +6,21 @@ import { User, Phone, MapPin } from 'lucide-react';
 import { CustomerQuickAdd } from './CustomerQuickAdd';
 
 export const CustomerInformationForm = ({ invoiceData, updateField, handleCustomerSelect }) => {
+  const { t } = useTranslation();
   return (
     <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <div className="p-2 rounded-lg bg-muted text-foreground">
               <User className="w-4 h-4" />
             </div>
             <div>
               <CardTitle className="text-base font-semibold text-foreground">
-                Customer Information
+                {t('merchant.invoices.section.customer')}
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Recipient billing and contact details
+                {t('merchant.invoices.section.customerBody')}
               </p>
             </div>
           </div>

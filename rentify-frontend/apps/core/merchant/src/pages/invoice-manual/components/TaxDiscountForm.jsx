@@ -1,3 +1,4 @@
+import { useTranslation } from '@rentify/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
@@ -11,19 +12,20 @@ import {
 import { Percent } from 'lucide-react';
 
 export const TaxDiscountForm = ({ invoiceData, updateField }) => {
+  const { t } = useTranslation();
   return (
     <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <div className="p-2 rounded-lg bg-muted text-foreground">
             <Percent className="w-4 h-4" />
           </div>
           <div>
             <CardTitle className="text-base font-semibold text-foreground">
-              Taxes & Totals
+              {t('merchant.invoices.section.extras')}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Discounts, tax deductions, and calculated total
+              {t('merchant.invoices.section.extrasBody')}
             </p>
           </div>
         </div>

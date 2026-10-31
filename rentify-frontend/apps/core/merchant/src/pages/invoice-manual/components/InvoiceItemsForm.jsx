@@ -1,3 +1,4 @@
+import { useTranslation } from '@rentify/utils';
 import { 
   Trash2,
   Package,
@@ -9,18 +10,19 @@ import { Label } from '@rentify/shared/ui/label';
 import { ItemQuickAdd } from './ItemQuickAdd';
 
 export const InvoiceItemsForm = ({ invoiceData, addItem, updateItem, removeItem }) => {
+  const { t } = useTranslation();
   return (
     <Card className="border border-border/80 shadow-xs bg-card rounded-xl">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+            <div className="p-2 rounded-lg bg-muted text-foreground">
               <Package className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-semibold text-foreground">
-                  Invoice Items
+                  {t('merchant.invoices.section.items')}
                 </CardTitle>
                 {invoiceData.items.length > 0 && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
@@ -29,7 +31,7 @@ export const InvoiceItemsForm = ({ invoiceData, addItem, updateItem, removeItem 
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Add products or custom items to this invoice
+                {t('merchant.invoices.section.itemsBody')}
               </p>
             </div>
           </div>

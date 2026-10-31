@@ -1411,7 +1411,7 @@
       "onlineStore": "Online store",
       "openPos": "Open POS",
       "searchPages": "Search pages",
-      "searchPagesPlaceholder": "Search pages…",
+      "searchPagesPlaceholder": "Search orders, products, pages…",
       "seeAsBuyers": "See your store as buyers do",
       "sidebarNavigation": "Sidebar Navigation",
       "subscriptionSuspended": "Subscription suspended",
@@ -2516,8 +2516,8 @@
           "body": "Cash on delivery and KHQR through CutLuy"
         },
         "delivery": {
-          "title": "Delivery fee",
-          "body": "The flat fee buyers pay per order"
+          "title": "Delivery & returns",
+          "body": "Delivery fee per order, and how returns work"
         },
         "staff": {
           "title": "Staff & roles",
@@ -2535,7 +2535,9 @@
           "title": "Account & security",
           "body": "Your password"
         }
-      }
+      },
+      "returnsTitle": "Returns",
+      "returnsBody": "Buyers can ask to return an item within 7 days of delivery if it is damaged, defective, wrong, or not as described. You answer within 48 business hours in Returns & problems."
     },
     "customers": {
       "search": "Search name or phone",
@@ -2545,7 +2547,120 @@
       "seeOrders": "See orders"
     },
     "products": {
-      "moreActions": "More actions"
+      "moreActions": "More actions",
+      "allProducts": "All products",
+      "categories": "Categories",
+      "filter": "Show",
+      "filters": {
+        "all": "All",
+        "on_sale": "On sale",
+        "out_of_stock": "Out of stock",
+        "hidden": "Hidden from marketplace",
+        "drafts": "Drafts"
+      },
+      "market": "Market",
+      "store": "Store",
+      "state": {
+        "live": "Shown",
+        "draft": "Draft",
+        "hidden": "Hidden",
+        "rejected": "Removed by Rentify",
+        "review": "In review",
+        "storeNotListed": "Store not listed yet",
+        "storePaused": "Store paused",
+        "noWebsite": "No online store"
+      },
+      "bulk": "Edit several",
+      "bulkTitle": "Edit several products",
+      "bulkHint": "Import, export, or change the price, stock or status of several products together.",
+      "addPaused": "Paused until your subscription is renewed",
+      "variants": "{{count}} sizes or options",
+      "inStock": "{{count}} in stock",
+      "priceStock": "Price {{price}} · stock {{count}}",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "unpublishDraft": "Unpublish (save as draft)",
+      "hideFrom": {
+        "market": "Hide from the marketplace",
+        "store": "Hide from your online store"
+      },
+      "showOn": {
+        "market": "Show on the marketplace",
+        "store": "Show on your online store"
+      },
+      "compareHint": "The old price, shown crossed out",
+      "settingsLoadError": "We couldn't load your store settings. Refresh the page and try again."
+    },
+    "invoices": {
+      "section": {
+        "customer": "Customer",
+        "customerBody": "Who the bill is for",
+        "items": "Items",
+        "itemsBody": "Products from your catalog or anything else you sold",
+        "when": "Dates and payment",
+        "whenBody": "Invoice number, dates and how they pay",
+        "extras": "Discount and tax",
+        "extrasBody": "Optional"
+      },
+      "title": "Invoices",
+      "newTitle": "New invoice",
+      "newBody": "A bill for a customer, with a PDF you can send.",
+      "saveSend": "Save and send",
+      "preview": "Preview"
+    },
+    "staff": {
+      "intro": "Invite people who help you and choose what each one can do.",
+      "invite": "Invite",
+      "whatTheyCanDo": "What each permission allows",
+      "permissions": {
+        "manage_products": {
+          "title": "Products",
+          "body": "Add and edit products, prices and stock"
+        },
+        "manage_orders": {
+          "title": "Orders",
+          "body": "See orders, mark them delivered, record cash"
+        },
+        "manage_invoices": {
+          "title": "Invoices",
+          "body": "Create and send invoices"
+        },
+        "manage_pos": {
+          "title": "POS",
+          "body": "Sell at the counter"
+        },
+        "manage_analytics": {
+          "title": "Reports",
+          "body": "See sales and reports"
+        },
+        "manage_settings": {
+          "title": "Settings",
+          "body": "Change store settings"
+        },
+        "manage_staff": {
+          "title": "Staff",
+          "body": "Invite and remove staff"
+        }
+      }
+    },
+    "billing": {
+      "thisMonth": "This month",
+      "payWhen": "You pay Rentify only when these happen.",
+      "paidOrders": "Paid orders",
+      "paidInvoices": "Paid invoices",
+      "costSoFar": "Cost so far",
+      "usageError": "We couldn't load this month's usage.",
+      "suspended": "Suspended",
+      "grace": "Payment overdue",
+      "trial": "Free trial",
+      "active": "Active",
+      "commission": "Commission: {{value}}"
+    },
+    "staffHome": {
+      "role": "Staff",
+      "hello": "Hello, {{name}}",
+      "alsoYouCan": "You can also open",
+      "nothing": "Your account has no permissions yet. Ask the store owner to give you some."
     }
   }
 }

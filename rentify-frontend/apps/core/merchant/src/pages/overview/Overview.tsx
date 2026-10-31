@@ -10,6 +10,8 @@ import { openPosApp, storefrontDomain, storefrontUrl } from '../../utils/storeLi
 import { SetupGuideCard } from '../../app/features/setup-guide/SetupGuideCard';
 import { useSetupGuide } from '../../app/features/setup-guide/SetupGuideContext';
 import { StatusPill } from '../../components/data-table/StatusPill';
+import { useAccess } from '../../utils/access';
+import { StaffHome } from './StaffHome';
 import { FilterChips, PageShell, StatePanel } from '../../components/page/PagePrimitives';
 import { PaymentPill } from '../order-management/components/PaymentPill';
 import { countByTab, money, orderLabel, paymentKind, workTab, type WorkTab } from '../order-management/orderModel';
@@ -49,8 +51,14 @@ const LISTING_TONE = { listed: 'success', pending: 'info', paused: 'danger', off
 
 const greetingKey = (hour: number) => (hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening');
 
-/** Home (redesign M1, M2): what needs doing, today's numbers, where you sell, recent orders. */
+/** Home: staff who don't handle orders (a cashier) get their own Home (M29); everyone else gets M1/M2. */
 export const Overview = () => {
+  const access = useAccess();
+  return !access.isOwner && !access.can('manage_orders') ? <StaffHome /> : <OwnerHome />;
+};
+
+/** Home (redesign M1, M2): what needs doing, today's numbers, where you sell, recent orders. */
+const OwnerHome = () => {
   const { t } = useTranslation();
   const { profile } = useAuth() as { profile?: { name?: string } };
   const { store, hasStorefront, hasMarketplace, hasPos } = useChannels();

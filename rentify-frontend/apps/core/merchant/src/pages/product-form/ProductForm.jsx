@@ -516,6 +516,10 @@ export const ProductForm = ({ onClose, category }) => {
   const allImages = [...(formik.values.images || []), ...uploadedImages];
   const saving = createLoading || updateLoading || isUploading;
   const fieldError = (name) => (formik.touched[name] || formik.submitCount > 0) && formik.errors[name];
+  // Description sits under More options: open it when that is the field in error
+  useEffect(() => {
+    if (formik.submitCount > 0 && formik.errors.description) setShowMore(true);
+  }, [formik.submitCount, formik.errors.description]);
 
   if (productLoading && isEditMode) return <ProductFormSkeleton />;
 
@@ -524,11 +528,11 @@ export const ProductForm = ({ onClose, category }) => {
       {/* Header */}
       <div className="border-b bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
-          <Button type="button" variant="ghost" size="icon" aria-label={t('merchant.p2.backToProducts')} onClick={closeForm}>
+          <Button type="button" variant="ghost" size="icon" className="h-11 w-11" aria-label={t('merchant.p2.backToProducts')} onClick={closeForm}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold">{isEditMode ? 'Edit product' : 'Add product'}</h1>
+            <h1 className="truncate text-xl font-semibold">{isEditMode ? t('merchant.p.editProduct') : t('merchant.p.addProduct')}</h1>
             <p className="text-sm text-muted-foreground">{t('merchant.p2.fillInTheBasics')}</p>
           </div>
         </div>
@@ -543,7 +547,7 @@ export const ProductForm = ({ onClose, category }) => {
           <Alert variant="destructive">
             <AlertTitle>{t('merchant.p2.couldNotSave')}</AlertTitle>
             <AlertDescription>
-              {submitError || 'Could not load your store settings. Refresh the page and try again.'}
+              {submitError || t('merchant.products.settingsLoadError')}
             </AlertDescription>
           </Alert>
         )}
@@ -596,22 +600,6 @@ export const ProductForm = ({ onClose, category }) => {
                 placeholder={t('merchant.p2.eGCottonT')}
                 className="h-11"
                 value={formik.values.name}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-              />
-            </Field>
-            <Field
-              label={t('merchant.p2.description')}
-              htmlFor="description"
-              hint={`${formik.values.description.length}/1000`}
-              error={fieldError('description')}
-            >
-              <Textarea
-                id="description"
-                name="description"
-                rows={3}
-                placeholder={t('merchant.p2.whatIsItAnd')}
-                value={formik.values.description}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
               />
@@ -976,8 +964,24 @@ export const ProductForm = ({ onClose, category }) => {
           </button>
           {showMore && (
             <CardContent className="space-y-4 border-t pt-4">
+              <Field
+                label={t('merchant.p2.description')}
+                htmlFor="description"
+                hint={`${formik.values.description.length}/1000`}
+                error={fieldError('description')}
+              >
+                <Textarea
+                  id="description"
+                  name="description"
+                  rows={3}
+                  placeholder={t('merchant.p2.whatIsItAnd')}
+                  value={formik.values.description}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                />
+              </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={t('merchant.p2.compareAtPriceUsd')} htmlFor="comparePrice" hint="The old price, shown crossed out">
+                <Field label={t('merchant.p2.compareAtPriceUsd')} htmlFor="comparePrice" hint={t('merchant.products.compareHint')}>
                   <Input
                     id="comparePrice"
                     name="comparePrice"

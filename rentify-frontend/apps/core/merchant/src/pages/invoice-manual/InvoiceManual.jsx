@@ -424,9 +424,8 @@ export const InvoiceManual = () => {
   return (
     <div className="min-h-full">
       <PageHeader
-        title="New invoice"
-        description="Create and send a bill to your customer"
-        icon={FileText}
+        title={t('merchant.invoices.newTitle')}
+        description={t('merchant.invoices.newBody')}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -435,7 +434,7 @@ export const InvoiceManual = () => {
               className="min-h-[44px] px-3.5 gap-1.5"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Invoices</span>
+              <span>{t('merchant.invoices.title')}</span>
             </Button>
 
             {!isSaved ? (
@@ -447,12 +446,12 @@ export const InvoiceManual = () => {
                 {isSaving ? (
                   <>
                     <Save className="w-4 h-4 animate-spin" />
-                    <span>Saving...</span>
+                    <span>{t('merchant.common.saving')}</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>Save and send</span>
+                    <span>{t('merchant.invoices.saveSend')}</span>
                   </>
                 )}
               </Button>
@@ -497,14 +496,13 @@ export const InvoiceManual = () => {
               className="min-h-[44px] px-3.5 lg:hidden"
             >
               <Eye className="w-4 h-4" />
-              <span className="ml-1.5">Preview</span>
+              <span className="ml-1.5">{t('merchant.invoices.preview')}</span>
             </Button>
           </div>
         }
         breadcrumb={[
-          { label: 'Dashboard', href: '/overview' },
-          { label: 'Invoices', href: '#' },
-          { label: 'New invoice' },
+          { label: t('merchant.invoices.title'), href: '/invoices' },
+          { label: t('merchant.invoices.newTitle') },
         ]}
       />
 
@@ -522,25 +520,6 @@ export const InvoiceManual = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Form Section */}
           <div className="lg:col-span-6 xl:col-span-7 space-y-6 [&_input]:min-h-11 sm:[&_input]:min-h-0 [&_[role=combobox]]:min-h-11 sm:[&_[role=combobox]]:min-h-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
-                  <FileText className="w-4.5 h-4.5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-foreground">
-                    {t('merchant.p2.invoiceDetails')}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {t('merchant.p2.configureInvoiceDataRecipient')}
-                  </p>
-                </div>
-              </div>
-              <span className="shrink-0 whitespace-nowrap text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium border border-border/50">
-                {invoiceData.items.length} {invoiceData.items.length === 1 ? 'item' : 'items'}
-              </span>
-            </div>
-
             <InvoiceForm
               invoiceData={invoiceData}
               updateField={updateField}
