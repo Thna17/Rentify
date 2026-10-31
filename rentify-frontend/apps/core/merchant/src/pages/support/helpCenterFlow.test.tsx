@@ -2,39 +2,40 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import en from '../../../../../../libs/utils/src/locales/en.json';
 import { SupportPage } from './SupportPage';
 
-vi.mock('@rentify/utils', () => ({
-  useTranslation: () => ({ t: (k: string) => k, language: 'en' }),
-}));
+// English catalog lookup, so the test reads what a merchant reads
+const translate = (key: string, params: Record<string, unknown> = {}) => {
+  const value = key.split('.').reduce<any>((node, part) => node?.[part], en);
+  return typeof value === 'string' ? value.replace(/\{\{(\w+)\}\}/g, (_, name) => String(params[name] ?? '')) : key;
+};
+vi.mock('@rentify/utils', () => ({ useTranslation: () => ({ t: translate, language: 'en' }) }));
+vi.mock('./SupportCases', () => ({ default: () => <div data-testid="support-cases-mock">Support Cases Mock</div> }));
 
-vi.mock('./SupportCases', () => ({
-  default: () => <div data-testid="support-cases-mock">Support Cases Mock</div>,
-}));
+afterEach(() => cleanup());
 
-afterEach(() => {
-  cleanup();
-});
-
-describe('wireframe M25 Help Center', () => {
-  it('renders Help heading, contact buttons, and support cases', () => {
+describe('Help (redesign M25)', () => {
+  it('renders the heading, contact buttons and support cases', () => {
     render(<SupportPage />);
     expect(screen.getByRole('heading', { level: 1, name: 'Help' })).toBeTruthy();
-    expect(screen.getByPlaceholderText('Search help articles and questions…')).toBeTruthy();
     expect(screen.getByText('Telegram')).toBeTruthy();
     expect(screen.getByText('Email')).toBeTruthy();
     expect(screen.getByTestId('support-cases-mock')).toBeTruthy();
   });
 
-  it('filters FAQ items according to search query', () => {
+  it('filters questions by the search text', () => {
     render(<SupportPage />);
-    const searchInput = screen.getByPlaceholderText('Search help articles and questions…');
-
     expect(screen.getByText('How do I take cash on delivery?')).toBeTruthy();
     expect(screen.getByText('How do buyers return an item?')).toBeTruthy();
-
-    fireEvent.change(searchInput, { target: { value: 'cash on delivery' } });
+    fireEvent.change(screen.getByLabelText('Search questions'), { target: { value: 'cash on delivery' } });
     expect(screen.getByText('How do I take cash on delivery?')).toBeTruthy();
     expect(screen.queryByText('How do buyers return an item?')).toBeNull();
+  });
+
+  it('states the return window from DEC-008 (7 days), not 48 hours', () => {
+    render(<SupportPage />);
+    fireEvent.click(screen.getByText('How do buyers return an item?'));
+    expect(screen.getByText(/within 7 days of delivery/)).toBeTruthy();
   });
 });

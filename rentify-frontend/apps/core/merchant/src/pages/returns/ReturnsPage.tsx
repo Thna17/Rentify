@@ -1,63 +1,71 @@
-import React from 'react';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '@rentify/utils';
-import { AlertCircle, LifeBuoy, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
+import { Skeleton } from '@rentify/shared/ui/skeleton';
+import { useChannelOrders } from '../../hooks/useChannelOrders';
+import { StatusPill } from '../../components/data-table/StatusPill';
+import { PageShell, PageTitle, StatePanel } from '../../components/page/PagePrimitives';
+import { orderLabel, workTab } from '../order-management/orderModel';
 
-export const ReturnsPage: React.FC = () => {
+/**
+ * Returns & problems (redesign M6): orders with a buyer report (return request, complaint) or a
+ * failed delivery, from the order projection Commerce already returns. Store-level case handling
+ * with response deadlines (DEC-009) needs a buyer-report endpoint per Store; until then each item
+ * opens its order.
+ */
+export function ReturnsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { orders, loading, error, reload } = useChannelOrders('all', 'all');
+  const problems = useMemo(() => orders.filter((order) => workTab(order) === 'problems'), [orders]);
 
   return (
-    <div className="min-h-full">
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 md:px-8 md:py-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Returns & problems</h1>
-          <p className="mt-1 text-sm text-muted-foreground hidden sm:block">
-            Buyer return requests and complaints. Follows the 48-hour response deadline (DEC-009).
-          </p>
-        </div>
+    <PageShell width="medium">
+      <PageTitle title={t('merchant.returns.title')} description={t('merchant.returns.subtitle')} />
 
-        {/* Blocked state card per wireframe M6 note 2 */}
-        <div className="rounded-2xl border border-card-border bg-card p-6 shadow-soft text-center max-w-lg mx-auto my-8 space-y-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
-            <AlertCircle className="h-6 w-6" />
-          </div>
-          <div className="space-y-1">
-            <span className="inline-block rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
-              Needs backend integration
-            </span>
-            <h2 className="text-lg font-semibold text-foreground pt-2">Direct seller complaint queue is pending</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Buyers can submit return reports and Rentify staff triage them. The store-scoped report endpoint
-              (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">GET /api/stores/:id/reports</code>)
-              is planned in contract packet RX-C01.
-            </p>
-          </div>
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => navigate('/orders')}
-              className="rounded-xl h-10 px-4 text-xs sm:text-sm font-semibold w-full sm:w-auto"
-            >
-              <span>View store orders</span>
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/help')}
-              className="rounded-xl h-10 px-4 text-xs sm:text-sm font-semibold w-full sm:w-auto"
-            >
-              <LifeBuoy className="mr-1.5 h-4 w-4" />
-              <span>Contact support</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+      {loading ? (
+        <div className="space-y-2">{[0, 1].map((i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}</div>
+      ) : error ? (
+        <StatePanel
+          tone="error"
+          icon={<AlertCircle className="h-5 w-5" />}
+          title={t('merchant.orders.loadError')}
+          body={t('merchant.orders.loadErrorBody')}
+          action={<Button variant="outline" onClick={reload} className="min-h-[44px] rounded-xl">{t('merchant.common.retry')}</Button>}
+        />
+      ) : problems.length === 0 ? (
+        <StatePanel icon={<CheckCircle2 className="h-5 w-5" />} title={t('merchant.returns.empty')} body={t('merchant.returns.emptyBody')} />
+      ) : (
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)]">
+          {problems.map((order) => {
+            const latest = order.reports[order.reports.length - 1];
+            const type = latest?.type || 'delivery_failed';
+            return (
+              <li key={order.id}>
+                <Link to={`/orders/${order.id}`} className="flex min-h-[64px] items-center justify-between gap-3 p-4 hover:bg-muted/40">
+                  <span className="min-w-0 space-y-1">
+                    <StatusPill tone={type === 'delivery_failed' ? 'warning' : 'danger'}>{t(`merchant.orders.events.${type}`)}</StatusPill>
+                    <span className="block truncate text-sm font-semibold text-foreground">{orderLabel(order)}</span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {order.buyer?.name || t('merchant.orders.buyerUnknown')}
+                      {latest?.createdAt ? ` · ${new Date(latest.createdAt).toLocaleDateString()}` : ''}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <p className="text-sm text-muted-foreground">
+        {t('merchant.returns.policy')}{' '}
+        <Link to="/help" className="font-semibold text-foreground underline">{t('merchant.orders.detail.getHelp')}</Link>
+      </p>
+    </PageShell>
   );
-};
+}
 
 export default ReturnsPage;
