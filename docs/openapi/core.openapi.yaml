@@ -3171,6 +3171,39 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/payment/payway/callback:
+    post:
+      tags:
+        - Billing & Packages
+      summary: Handle ABA PayWay transaction callback
+      description: Ingests server-to-server transaction status callbacks from ABA PayWay.
+      operationId: paywayCallback
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tran_id:
+                  type: string
+                  description: ABA PayWay transaction ID
+              required:
+                - tran_id
+      responses:
+        '200':
+          description: Callback processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
   /api/packages:
     get:
       tags:

@@ -32,6 +32,6 @@ describe('Store-first onboarding state', () => {
   it('keeps English and Khmer onboarding catalogues in parity', () => {
     expect(Object.keys(startSellingCopy.KH).sort()).toEqual(Object.keys(startSellingCopy.EN).sort());
     expect(startSellingCopy.KH.title).toMatch(/[\u1780-\u17ff]/);
-    expect(startSellingCopy.EN.marketTitle).toBe('Marketplace only');
+    expect(startSellingCopy.EN.marketTitle).toBe('Marketplace');
   });
 });

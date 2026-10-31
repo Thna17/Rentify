@@ -4988,6 +4988,92 @@ paths:
           description: Webhook acknowledged
       operationId: post_api_payment_payments_cutluy_webhook
       security: []
+  /api/payments/aba-payway/config:
+    get:
+      tags:
+        - Payments
+      summary: Check ABA PayWay configuration status
+      responses:
+        "200":
+          description: PayWay config status
+      operationId: get_api_payments_aba_payway_config
+      security: []
+  /api/payments/aba-payway/checkout:
+    post:
+      tags:
+        - Payments
+      summary: Create ABA PayWay checkout transaction
+      security:
+        - customerAccessTokenCookie: []
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "201":
+          description: PayWay checkout created
+      operationId: post_api_payments_aba_payway_checkout
+  /api/payments/aba-payway/status/{orderId}:
+    get:
+      tags:
+        - Payments
+      summary: Check ABA PayWay payment status for order
+      security:
+        - customerAccessTokenCookie: []
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Order payment status
+      operationId: get_api_payments_aba_payway_status_orderId
+  /api/payments/aba-payway/mock/approve/{orderId}:
+    post:
+      tags:
+        - Payments
+      summary: Mock approve ABA PayWay payment in development
+      security:
+        - customerAccessTokenCookie: []
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Mock payment approved
+      operationId: post_api_payments_aba_payway_mock_approve_orderId
+  /api/payments/aba-payway/callback:
+    post:
+      tags:
+        - Payments
+      summary: Handle ABA PayWay server-to-server callback
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Callback processed
+      operationId: post_api_payments_aba_payway_callback
+      security: []
   /api/payment/orders/{orderId}/link:
     post:
       tags:
