@@ -1,0 +1,32 @@
+.atelier-home { background: oklch(var(--background)); color: oklch(var(--foreground)); }
+.atelier-hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 560px; }
+.atelier-intro { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: clamp(3rem, 7vw, 8rem); }
+.atelier-eyebrow { font-size: .68rem; font-weight: 700; letter-spacing: .2em; line-height: 1.6; text-transform: uppercase; color: #76685a; }
+.atelier-intro h1, .atelier-section h2 { font-family: Georgia, 'Noto Serif Khmer', serif; font-weight: 400; letter-spacing: -.035em; }
+.atelier-intro h1 { margin: 1.2rem 0; font-size: clamp(3rem, 5.5vw, 6.5rem); line-height: 1.06; overflow-wrap: anywhere; }
+.atelier-description { max-width: 25rem; color: #675d53; font-size: 1.05rem; line-height: 1.8; }
+.atelier-button { display: inline-flex; align-items: center; gap: 2rem; margin-top: 2rem; padding: 1rem 1.4rem; background: #302a25; color: white; font-weight: 600; }
+.atelier-button:hover { background: #594d40; }
+.atelier-button:focus-visible, .atelier-home a:focus-visible { outline: 3px solid #a45728; outline-offset: 4px; }
+.atelier-hero-image { position: relative; min-height: 420px; background: #e9e1d5; overflow: hidden; }
+.atelier-hero-image img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; }
+.atelier-image-placeholder { display: grid; place-items: center; height: 100%; min-height: 420px; background: linear-gradient(135deg,#e8ded0,#cfc0ac); color: #8d7862; }
+.atelier-image-placeholder span { font-size: clamp(7rem, 16vw, 15rem); opacity: .45; }
+.atelier-edit { position: absolute; top: 1rem; right: 1rem; }
+.atelier-content { max-width: 1440px; margin: auto; padding: 0 clamp(1.25rem, 5vw, 5rem); }
+.atelier-section { padding-top: clamp(4rem, 8vw, 8rem); }
+.atelier-empty-action { display: flex; justify-content: flex-end; padding-top: 2rem; }
+.atelier-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
+.atelier-section h2 { margin-top: .5rem; font-size: clamp(2.2rem, 4vw, 4rem); line-height: 1.1; }
+.atelier-categories { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: #d9cfc2; border: 1px solid #d9cfc2; }
+.atelier-categories a { min-height: 130px; padding: 1.5rem; background: #f8f5ef; display: flex; flex-direction: column; align-items: flex-start; gap: .7rem; }
+.atelier-categories a:hover { background: #eee7dc; }
+.atelier-categories span { font-size: .7rem; color: #76685a; }
+.atelier-categories strong { font-family: Georgia, 'Noto Serif Khmer', serif; font-size: 1.3rem; font-weight: 400; flex: 1; }
+.atelier-categories svg { align-self: flex-end; }
+.atelier-actions, .atelier-actions a, .atelier-closing a { display: flex; align-items: center; gap: .6rem; }
+.atelier-actions a, .atelier-closing a { font-size: .875rem; font-weight: 600; }
+.atelier-closing { margin-top: clamp(4rem, 8vw, 8rem); padding: 4rem 1rem; border-top: 1px solid #ddd3c7; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.atelier-closing span { color: #a08062; font-size: 2rem; }
+.atelier-closing p { font-family: Georgia, 'Noto Serif Khmer', serif; font-size: clamp(1.7rem, 3vw, 3rem); }
+@media (max-width: 700px) { .atelier-hero { grid-template-columns: 1fr; } .atelier-intro { padding: 3.5rem 1.5rem; } .atelier-hero-image, .atelier-image-placeholder { min-height: 340px; } .atelier-categories { grid-template-columns: repeat(2,1fr); } .atelier-section-heading { align-items: start; } }

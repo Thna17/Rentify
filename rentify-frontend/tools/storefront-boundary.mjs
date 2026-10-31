@@ -22,7 +22,7 @@ export const TEMPLATE_3_ENTRY = 'apps/templates/ecommerce/ecommerce-template-3/s
 // The single storefront app that serves every hosted store; it may load the templates.
 export const STOREFRONT_SHELL_ENTRY = 'apps/storefront/src/main.jsx';
 export const STOREFRONT_ENTRIES = [STOREFRONT_SHELL_ENTRY, TEMPLATE_1_ENTRY, TEMPLATE_2_ENTRY, TEMPLATE_3_ENTRY];
-const SERVABLE_TEMPLATES = /^apps\/templates\/ecommerce\/ecommerce-template-[123]\//;
+const SERVABLE_TEMPLATES = /^apps\/templates\/ecommerce\/ecommerce-template-[1234]\//;
 
 /** Modules a customer storefront must never load, with the reason reported. */
 export const FORBIDDEN_MODULES = [
