@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '@rentify/utils';
-import { AlertCircle, ChevronRight, ExternalLink, Package, Share2, Truck } from 'lucide-react';
+import { AlertCircle, ChevronRight, ExternalLink, Package, Palette, Share2, Truck } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
 import { useChannels } from '../../context/ChannelContext';
@@ -46,6 +46,12 @@ export function MarketplacePage() {
         </div>
         <p className="text-sm text-muted-foreground">{t(`merchant.marketplace.statusBody.${listing.status}`)}</p>
         <div className="flex flex-wrap gap-2">
+          <Button asChild className="min-h-[44px] rounded-xl">
+            <Link to="/marketplace/customization">
+              <Palette className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.marketplace.editDesign')}
+            </Link>
+          </Button>
           {listing.status === 'listed' && (
             <Button asChild variant="outline" className="min-h-[44px] rounded-xl">
               <a href={marketplaceStoreUrl(store)} target="_blank" rel="noreferrer">
@@ -121,6 +127,32 @@ export function MarketplacePage() {
             })}
           </ul>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold text-foreground">{t('merchant.marketplace.appearance')}</h2>
+        <Link
+          to="/marketplace/customization"
+          className="flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] hover:bg-muted/40"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground" aria-hidden="true">
+              <Palette className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-foreground">{t('merchant.marketplace.appearanceTitle')}</span>
+              <span className="block text-sm text-muted-foreground">{t('merchant.marketplace.appearanceBody')}</span>
+            </span>
+          </span>
+          <div className="flex items-center gap-2.5">
+            <span
+              className="h-5 w-5 rounded-full border border-border shadow-sm ring-1 ring-black/10 shrink-0"
+              style={{ backgroundColor: store?.marketplaceColor || '#4f46e5' }}
+              title={`Active color: ${store?.marketplaceColor || '#4f46e5'}`}
+            />
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          </div>
+        </Link>
       </section>
 
       <section className="space-y-3">

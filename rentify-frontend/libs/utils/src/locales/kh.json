@@ -2321,7 +2321,29 @@
       "delivery": "ការដឹកជញ្ជូន",
       "fee": "{{fee}} ក្នុងមួយការកុម្ម៉ង់",
       "feeMissing": "មិនទាន់កំណត់ — អ្នកទិញមិនអាចទូទាត់បានទេ រហូតដល់អ្នកកំណត់វា",
-      "feeUnknown": "កំណត់ថ្លៃថេរដែលអ្នកទិញបង់ក្នុងមួយការកុម្ម៉ង់"
+      "feeUnknown": "កំណត់ថ្លៃថេរដែលអ្នកទិញបង់ក្នុងមួយការកុម្ម៉ង់",
+      "editDesign": "កែប្រែការរចនា",
+      "appearance": "រូបរាងហាង",
+      "appearanceTitle": "រូបរាង និងពណ៌ចម្បង",
+      "appearanceBody": "ជ្រើសរើសពណ៌ចម្បងរបស់ហាងអ្នក និងមើលទិដ្ឋភាពនៅលើ Rentify Marketplace។",
+      "customizationTitle": "រូបរាងហាងនៅលើ Marketplace",
+      "customizationSubtitle": "កំណត់របៀបដែលហាងរបស់អ្នកបង្ហាញដល់អ្នកទិញនៅលើ Rentify Marketplace។",
+      "backToMarketplace": "ត្រឡប់ទៅកាន់ Marketplace",
+      "colorLabel": "ពណ៌ចម្បង",
+      "colorDescription": "ជ្រើសរើសពណ៌ចម្បងសម្រាប់ផ្លាក ប៊ូតុង និងបដាហាងរបស់អ្នក។",
+      "saveSuccess": "បានរក្សាទុករូបរាង Marketplace ដោយជោគជ័យ។",
+      "saveError": "មិនអាចរក្សាទុករូបរាង Marketplace បានទេ។ សូមព្យាយាមម្តងទៀត។",
+      "previewTitle": "ទិដ្ឋភាពជាក់ស្តែងនៅលើ Marketplace",
+      "previewSubtitle": "ការបង្ហាញគំរូនៃបដាហាង និងផលិតផលនៅលើ Rentify Marketplace។",
+      "shopProducts": "ទិញផលិតផល",
+      "verifiedMerchant": "អាជីវករដែលបានផ្ទៀងផ្ទាត់",
+      "colors": {
+        "indigo": "ពណ៌ស្វាយ Indigo",
+        "forest": "ពណ៌បៃតងចាស់ Forest",
+        "clay": "ពណ៌ដីឥដ្ឋ Clay",
+        "gold": "ពណ៌មាស Gold",
+        "midnight": "ពណ៌ខៀវចាស់ Midnight"
+      }
     },
     "help": {
       "title": "ជំនួយ",

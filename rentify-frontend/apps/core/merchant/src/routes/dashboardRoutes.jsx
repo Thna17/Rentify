@@ -30,6 +30,7 @@ const SharePage = lazy(() => import('../pages/share/SharePage'));
 const SupportPage = lazy(() => import('../pages/support/SupportPage'));
 const Customers = lazy(() => import('../pages/customers/Customers'));
 const MarketplacePage = lazy(() => import('../pages/marketplace/MarketplacePage'));
+const MarketplaceCustomization = lazy(() => import('../pages/marketplace/MarketplaceCustomization'));
 const ReturnsPage = lazy(() => import('../pages/returns/ReturnsPage'));
 const ComponentGallery = lazy(() => import('../pages/dev/ComponentGallery'));
 
@@ -70,6 +71,8 @@ export const dashboardRoutes = {
 
     // Channels & Operations
     { path: 'marketplace', element: <MarketplacePage /> },
+    { path: 'marketplace/customization', element: <MarketplaceCustomization /> },
+    { path: 'marketplace/design', element: <Navigate to="/marketplace/customization" replace /> },
     { path: 'returns', element: <ReturnsPage /> },
     { path: 'customers', element: <Customers /> },
     { path: 'invoices', element: <InvoiceManual /> },
