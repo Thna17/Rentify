@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { Order, OrderItem, Payment, Invoice, ShippingDetail, OrderEvent } = require('../../models');
-const { fail, uuid } = require('./marketplaceRules');
+const { fail, uuid, normalizePaymentMethod, normalizePaymentStatus } = require('./marketplaceRules');
 
 const CHANNELS = new Set(['marketplace', 'storefront', 'pos', 'invoice']);
 const STATUSES = new Set([
@@ -37,7 +37,9 @@ function paymentFacts(order, payment) {
   const amount = Number(payment.amount || order.totalAmount || 0);
   const collected = Number(payment.collectedAmount || 0);
   const refunded = Number(payment.refundedAmount || 0);
-  const isCod = String(payment.paymentMethod || '').toUpperCase() === 'COD';
+  const normMethod = normalizePaymentMethod(payment.paymentMethod);
+  const normStatus = normalizePaymentStatus(payment.status);
+  const isCod = normMethod === 'COD';
   const settled = ['completed', 'paid', 'refunded'].includes(payment.status);
   const due = settled ? 0 : Math.max(0, amount - collected);
   let codState = 'not_applicable';
@@ -48,7 +50,7 @@ function paymentFacts(order, payment) {
     else codState = 'due_on_delivery';
   }
   return {
-    method: payment.paymentMethod, status: payment.status, codState,
+    method: normMethod, status: normStatus, codState,
     amount: amount.toFixed(2), amountDue: due.toFixed(2),
     collectedAmount: collected.toFixed(2), refundedAmount: refunded.toFixed(2),
   };
@@ -124,6 +126,8 @@ function orderProjection(order, related = {}) {
       tax: String(order.taxTotal || '0.00'), shipping: String(order.shippingFee || '0.00'),
       total: String(order.totalAmount || '0.00'),
     },
+    paymentMethod: paymentFacts(order, payment).method,
+    paymentStatus: paymentFacts(order, payment).status,
     payment: paymentFacts(order, payment),
     buyer: {
       name: customer.name || shippingSnapshot.name || (channel === 'pos' ? 'Walk-in customer' : 'Customer'),

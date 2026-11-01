@@ -181,20 +181,33 @@ test('P2-HOST-001 Acceptance: Unsafe return URLs fail', () => {
 });
 
 test('P2-HOST-001 Acceptance: Incompatible feature flags fail', () => {
-  // 1. CutLuy enabled in production or staging (DEC-027)
-  const cutluyProd = validateHostConfig({ ...productionFixture, CUTLUY_ENABLED: 'true' }, {
+  // 1. PayWay retired in production or staging (DEC-029; CutLuy is the only online path)
+  const paywayProd = validateHostConfig({ ...productionFixture, PAYWAY_ENABLED: 'true' }, {
     targetEnv: 'production',
     throwOnError: false,
   });
-  assert.equal(cutluyProd.valid, false);
-  assert.ok(cutluyProd.errors.some((e) => e.policy === 'CutLuy Release 1 Policy (DEC-027)'));
+  assert.equal(paywayProd.valid, false);
+  assert.ok(paywayProd.errors.some((e) => e.policy === 'Release 1 Payment Policy (DEC-029)'));
 
-  const cutluyStaging = validateHostConfig({ ...stagingFixture, CUTLUY_ENABLED: 'true' }, {
+  const paywayStaging = validateHostConfig({ ...stagingFixture, PAYWAY_ENABLED: 'true' }, {
     targetEnv: 'staging',
     throwOnError: false,
   });
-  assert.equal(cutluyStaging.valid, false);
-  assert.ok(cutluyStaging.errors.some((e) => e.policy === 'CutLuy Release 1 Policy (DEC-027)'));
+  assert.equal(paywayStaging.valid, false);
+  assert.ok(paywayStaging.errors.some((e) => e.policy === 'Release 1 Payment Policy (DEC-029)'));
+
+  // 1b. CutLuy enabled in production and staging is approved under DEC-029
+  const cutluyApprovedProd = validateHostConfig({ ...productionFixture, CUTLUY_ENABLED: 'true' }, {
+    targetEnv: 'production',
+    throwOnError: false,
+  });
+  assert.equal(cutluyApprovedProd.valid, true);
+
+  const cutluyApprovedStaging = validateHostConfig({ ...stagingFixture, CUTLUY_ENABLED: 'true' }, {
+    targetEnv: 'staging',
+    throwOnError: false,
+  });
+  assert.equal(cutluyApprovedStaging.valid, true);
 
   // 3. Custom domain checkout enabled in production/staging (DEC-003, ADR 0002)
   const customDomainCheckout = validateHostConfig({ ...productionFixture, CUSTOM_DOMAIN_CHECKOUT_ENABLED: 'true' }, {
@@ -224,7 +237,7 @@ test('P2-HOST-001 Acceptance: Incompatible feature flags fail', () => {
     throwOnError: false,
   });
   assert.equal(codDisabled.valid, false);
-  assert.ok(codDisabled.errors.some((e) => e.policy === 'Release 1 Accepted Payment Method (DEC-026)'));
+  assert.ok(codDisabled.errors.some((e) => e.policy === 'Release 1 Accepted Payment Method (DEC-029)'));
 });
 
 test('P2-HOST-001 Acceptance: No credential value appears in output or logs', () => {

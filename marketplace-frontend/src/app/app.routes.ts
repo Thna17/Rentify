@@ -22,6 +22,8 @@ export const routes: Routes = [
       import('./pages/home.component').then((m) => m.HomeComponent),
     title: 'Rentify Marketplace',
   },
+  { path: 'campaigns', loadComponent: () => import('./pages/campaign.component').then(m => m.CampaignComponent), title: 'Campaigns | Rentify Marketplace' },
+  { path: 'campaigns/:slug', loadComponent: () => import('./pages/campaign.component').then(m => m.CampaignComponent), title: 'Campaign | Rentify Marketplace' },
   {
     path: 'products',
     loadComponent: () =>
@@ -85,17 +87,17 @@ export const routes: Routes = [
     title: 'Checkout | Rentify Marketplace',
   },
   {
-    // ABA PayWay KHQR (test-only; the server rejects it unless PAYWAY_ENABLED=true)
-    path: 'checkout/aba/:orderId',
+    // DEC-029: Online payment by KHQR through CutLuy
+    path: 'checkout/pay/:orderId',
     canActivate: [buyerGuard],
     loadComponent: () =>
       import('./pages/aba-payment.component').then((m) => m.AbaPaymentComponent),
-    title: 'Pay with ABA | Rentify Marketplace',
+    title: 'Pay with KHQR | Rentify Marketplace',
   },
   {
-    path: 'checkout/pay/:orderNumber',
-    pathMatch: 'full',
-    redirectTo: 'checkout',
+    // Backward compatibility redirect from retired ABA route
+    path: 'checkout/aba/:orderId',
+    redirectTo: 'checkout/pay/:orderId',
   },
   { path: 'checkout/shipping', pathMatch: 'full', redirectTo: 'checkout' },
   { path: 'checkout/payment', pathMatch: 'full', redirectTo: 'checkout' },

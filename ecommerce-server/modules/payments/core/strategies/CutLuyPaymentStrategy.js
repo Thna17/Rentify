@@ -18,6 +18,7 @@ class CutLuyPaymentStrategy extends PaymentStrategy {
       const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
       const referenceId = `ORDER-${order.id}`;
 
+      const idempotencyKey = order.checkoutKey ? `pos-checkout-${order.checkoutKey}` : `pos-order-${order.id}`;
       let cutluyData = null;
       try {
         const response = await axios.post(
@@ -32,6 +33,8 @@ class CutLuyPaymentStrategy extends PaymentStrategy {
               Authorization: `Bearer ${apiKey}`,
               "Content-Type": "application/json",
               "User-Agent": "Rentify/1.0 (axios)",
+              "Idempotency-Key": idempotencyKey,
+              "X-Idempotency-Key": idempotencyKey,
             },
             timeout: 10000,
           }
@@ -46,9 +49,16 @@ class CutLuyPaymentStrategy extends PaymentStrategy {
         );
       }
 
-      const providerPaymentId = cutluyData?.id || `cutluy_${order.id}`;
-      const checkoutUrl = cutluyData?.checkout_url || `https://cutluy.com/pay/${providerPaymentId}`;
-      const qrString = cutluyData?.qr_string || "";
+      const cutluyResult = cutluyData?.data || cutluyData;
+      const providerPaymentId = cutluyResult?.id;
+      if (!providerPaymentId) {
+        throw new Error("CutLuy payment creation failed: provider returned no payment identifier");
+      }
+      const checkoutUrl = cutluyResult?.checkout_url || cutluyResult?.payment_url;
+      const qrString = cutluyResult?.qr_string || cutluyResult?.raw_qr || cutluyResult?.qr || "";
+      if (!checkoutUrl && !qrString) {
+        throw new Error("CutLuy payment creation failed: provider returned no checkout URL or QR data");
+      }
 
       return await this.models.Payment.create(
         {

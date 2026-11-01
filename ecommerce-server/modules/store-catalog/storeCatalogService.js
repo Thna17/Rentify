@@ -753,6 +753,7 @@ module.exports = {
   listPublic,
   getPublic,
   getPublicationStatus,
+  eligibleStore,
   eligibleProductWhere,
   publicProduct,
   checkSkuUniqueness,

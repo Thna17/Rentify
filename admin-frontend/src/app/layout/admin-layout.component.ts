@@ -55,6 +55,7 @@ export class AdminLayoutComponent {
     ] },
     { label: 'adminNav.trustOps', items: [
       { path: '/support/cases', icon: 'flag', label: 'adminNav.support' },
+      { path: '/campaigns', icon: 'tag', label: 'Campaigns & events' },
       { path: '/operations/catalog', icon: 'shield', label: 'adminNav.catalogModeration' },
       { path: '/operations/maker-checker', icon: 'swap', label: 'adminNav.makerChecker' },
     ] },

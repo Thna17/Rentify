@@ -1051,7 +1051,13 @@
       "getStarted": "ចាប់ផ្ដើម",
       "menu": "ម៉ឺនុយ",
       "close": "បិទ",
-      "showcase": "តាំងបង្ហាញ"
+      "showcase": "តាំងបង្ហាញ",
+      "showcaseSingle": "អេក្រង់តែមួយ",
+      "showcaseSingleHint": "រឿងតែមួយ សម្រាប់ថេប្លេត ឬកុំព្យូទ័រ",
+      "showcaseWall": "ផ្ទាំងអេក្រង់ធំ",
+      "showcaseWallHint": "ផ្សាររួម ហាងអនឡាញ និងទូរស័ព្ទ លើអេក្រង់ធំតែមួយ",
+      "showcaseSite": "ទស្សនាគេហទំព័រ",
+      "showcaseSiteHint": "រំកិលដោយខ្លួនឯង តាមទំព័រដើម ដំណោះស្រាយ មុខងារ គំរូ និងតម្លៃ"
     },
     "common": {
       "startTrial": "ចាប់ផ្ដើមសាកល្បងឥតគិតថ្លៃ",
@@ -1378,6 +1384,174 @@
         "walkIn": "អតិថិជនផ្ទាល់",
         "stock": "ស្តុក",
         "inStock": "ក្នុងស្តុក"
+      },
+      "wall": "ផ្ទាំងអេក្រង់ធំ",
+      "site": {
+        "label": "ទស្សនាគេហទំព័រ",
+        "home": "ទំព័រដើម",
+        "stop": "បញ្ឈប់",
+        "paused": "បានផ្អាក"
+      }
+    },
+    "wall": {
+      "title": "ផ្ទាំងតាំងបង្ហាញ",
+      "tagline": "កាតាឡុកតែមួយ · គ្រប់ឆានែល",
+      "hint": "ចុច F ដើម្បីពេញអេក្រង់ · Space ដើម្បីផ្អាក",
+      "paused": "បានផ្អាក · ចុច Space ដើម្បីចាក់",
+      "viewAll": "មើលទាំងអស់",
+      "panels": {
+        "phone": "ផ្សាររួម · iPhone",
+        "storefront": "ហាងអនឡាញ",
+        "desktop": "ផ្សាររួម · កុំព្យូទ័រ"
+      },
+      "cat": {
+        "fashion": "សម្លៀកបំពាក់",
+        "food": "អាហារ",
+        "home": "គេហដ្ឋាន",
+        "beauty": "សម្ផស្ស",
+        "electronics": "អេឡិចត្រូនិក",
+        "kids": "កុមារ",
+        "arts": "សិល្បៈ",
+        "stores": "ហាង",
+        "gifts": "កាដូ",
+        "discount": "បញ្ចុះតម្លៃ"
+      },
+      "catLong": {
+        "fashion": "សម្លៀកបំពាក់ និងគ្រឿងតុបតែង",
+        "food": "អាហារ និងគ្រឿងទេស",
+        "home": "គេហដ្ឋាន និងការរស់នៅ",
+        "beauty": "សម្ផស្ស និងសុខុមាលភាព",
+        "electronics": "អេឡិចត្រូនិក",
+        "kids": "កុមារ និងគ្រួសារ",
+        "arts": "សិល្បៈ និងវប្បធម៌"
+      },
+      "m": {
+        "search": "ស្វែងរកផលិតផល ម៉ាក…",
+        "justLanded": "ទើបមកដល់",
+        "newArrivals": "ទំនិញថ្មី",
+        "everyWeek": "រៀងរាល់សប្ដាហ៍",
+        "seeNew": "មើលទំនិញថ្មី",
+        "popular": "ប្រភេទពេញនិយម",
+        "flashDeals": "ការបញ្ចុះតម្លៃពិសេស",
+        "endsIn": "បញ្ចប់ក្នុង",
+        "forYou": "ណែនាំសម្រាប់អ្នក",
+        "tabHome": "ទំព័រដើម",
+        "tabCategories": "ប្រភេទ",
+        "tabAccount": "គណនី",
+        "inStock": "មានក្នុងស្តុក {count}",
+        "about": "លក់ និងដឹកជញ្ជូនដោយ {store}។ បង់ប្រាក់សុទ្ធពេលទំនិញមកដល់។",
+        "added": "បានដាក់ក្នុងកន្ត្រក",
+        "eachStore": "ហាងនីមួយៗដឹកការកម្មង់របស់ខ្លួន",
+        "checkout": "ទូទាត់",
+        "deliverTo": "ដឹកជញ្ជូនទៅ",
+        "ordersCount": "ការកម្មង់ {count} · មួយក្នុងមួយហាង",
+        "items": "{count} មុខ",
+        "payment": "ការទូទាត់",
+        "codNote": "បង់ប្រាក់សុទ្ធពេលការកម្មង់នីមួយៗមកដល់។",
+        "placing": "កំពុងដាក់ការកម្មង់…",
+        "successBody": "ការកម្មង់ {count} · បង់ប្រាក់ពេលទទួលទំនិញ",
+        "continue": "បន្តទិញទំនិញ",
+        "chipAll": "ទាំងអស់",
+        "chipCleansers": "ផលិតផលលាងមុខ",
+        "chipBody": "ថែរក្សាខ្លួន",
+        "chipHair": "ថែរក្សាសក់",
+        "reviews": "មតិអតិថិជន",
+        "reviewCount": "មតិ {count}",
+        "review1": "ស្រាលលើស្បែក ហើយក្លិនក្រអូប។ មកដល់នៅថ្ងៃបន្ទាប់។",
+        "review2": "មុខស្រស់ និងស្អាត។ នឹងកម្មង់ម្ដងទៀត។",
+        "moreFrom": "ផលិតផលផ្សេងទៀតពី {store}"
+      },
+      "sf": {
+        "nav": {
+          "shop": "ហាង",
+          "new": "ទំនិញថ្មី",
+          "about": "អំពីយើង"
+        },
+        "search": "ស្វែងរកផលិតផល",
+        "shopNow": "ទិញឥឡូវ",
+        "ourStory": "រឿងរ៉ាវរបស់យើង",
+        "shopEdit": "មើលការជ្រើសរើស",
+        "featured": "ផលិតផលពិសេស",
+        "reviews": "មតិ {count}",
+        "deliveredBy": "ដឹកជញ្ជូនដោយ {store}",
+        "phone": {
+          "eyebrow": "ទំនិញថ្មី",
+          "title": "iPhone ចុងក្រោយ\nមានស្រាប់ថ្ងៃនេះ។",
+          "body": "ឧបករណ៍ដើម ដឹកជញ្ជូនទូទាំងភ្នំពេញ។"
+        },
+        "glow": {
+          "eyebrow": "ថែរក្សាស្បែក",
+          "title": "ស្បែកភ្លឺថ្លា\nដោយធម្មជាតិ។",
+          "body": "ផលិតផលលាងមុខស្រាលៗ សម្រាប់គ្រប់ប្រភេទស្បែក។"
+        },
+        "munchie": {
+          "eyebrow": "ម៉ោងញ៉ាំនំ",
+          "title": "នំចំណីសម្រាប់\nគ្រប់ចំណង់។",
+          "body": "នំស្រួយ ហឹរ និងផ្អែមដែលអ្នកចូលចិត្តពី LyLy។"
+        },
+        "thrift": {
+          "eyebrow": "សម្លៀកបំពាក់មួយទឹក",
+          "title": "ជីវិត\nទីពីរ។",
+          "body": "សម្លៀកបំពាក់មួយទឹក ជ្រើសរើសដោយដៃ រួចរាល់សម្រាប់ពាក់ម្ដងទៀត។"
+        },
+        "bright": {
+          "eyebrow": "ឆមាសថ្មី",
+          "title": "ត្រៀមចូលរៀន\nរួចរាល់។",
+          "body": "កាបូប ប៊ិច និងក្រដាស សម្រាប់គ្រប់ថ្នាក់។",
+          "sticker": "ជម្រើសឆមាសថ្មី"
+        },
+        "collections": "ទិញតាមបណ្ដុំ",
+        "newIn": "ទំនិញថ្មី",
+        "col": {
+          "bestSellers": "លក់ដាច់បំផុត",
+          "newArrivals": "ទើបមកដល់",
+          "onSale": "បញ្ចុះតម្លៃ"
+        },
+        "local": "គាំទ្រអាជីវកម្មខ្មែរក្នុងស្រុក",
+        "powered": "ដំណើរការដោយ Rentify"
+      },
+      "mk": {
+        "grouped": "ដឹកជញ្ជូនតាមហាង",
+        "deliverTo": "ដឹកជញ្ជូនទៅ",
+        "phnomPenh": "ភ្នំពេញ",
+        "allCategories": "ប្រភេទទាំងអស់",
+        "viewMore": "មើលបន្ថែម",
+        "madeIn": "ផលិតនៅកម្ពុជា",
+        "explore": "មើលបណ្ដុំទំនិញ",
+        "hero": {
+          "craft": "បង្កើតដោយ\nសិប្បករក្នុងស្រុក",
+          "fashion": "ស្លៀកពាក់\nបែបខ្មែរ",
+          "food": "ស្រស់ពី\nកសិដ្ឋានក្នុងស្រុក",
+          "beauty": "សម្ផស្សធម្មជាតិ\nផលិតនៅទីនេះ",
+          "home": "ធ្វើដោយដៃ\nសម្រាប់ផ្ទះអ្នក"
+        },
+        "shopByStore": "ទិញតាមហាង",
+        "fromStores": "ផលិតផល {count} ពី {stores} ហាង",
+        "sort": "តម្រៀប៖ ពេញនិយម",
+        "filter": {
+          "allStores": "ហាងទាំងអស់",
+          "price": "តម្លៃ",
+          "rating": "៤★ ឡើងទៅ",
+          "inStock": "មានក្នុងស្តុក"
+        },
+        "products": "ផលិតផល {count}",
+        "visitStore": "តាមដានហាង",
+        "tab": {
+          "products": "ផលិតផល",
+          "about": "អំពី",
+          "reviews": "មតិ"
+        },
+        "resultsFor": "លទ្ធផលសម្រាប់ “{q}”",
+        "callout": {
+          "welcome": "សូមស្វាគមន៍មកកាន់ផ្សាររួម Rentify",
+          "byCategory": "ទិញតាមប្រភេទ",
+          "oneMarketplace": "គ្រប់ប្រភេទនៅកន្លែងតែមួយ",
+          "localStores": "ផលិតផលពីហាងក្នុងស្រុក",
+          "storePage": "ហាងនីមួយៗមានទំព័រផ្ទាល់ខ្លួន",
+          "search": "ស្វែងរកគ្រប់ហាង",
+          "oneCart": "កន្ត្រកតែមួយ ចែកតាមហាង"
+        },
+        "inStore": "ផលិតផល {count} · {store}"
       }
     }
   },
@@ -1386,6 +1560,29 @@
   "onboarding.auto.plan": "គម្រោង {name} អាចប្តូរបានគ្រប់ពេល",
   "onboarding.auto.payment": "មិនចាំបាច់បង់ប្រាក់ថ្ងៃនេះទេ",
   "onboarding.auto.note": "Rentify រៀបចំផ្នែកទាំងនេះឱ្យអ្នក។ អ្នកអាចប្តូរវានៅពេលក្រោយក្នុងផ្ទាំងគ្រប់គ្រង។",
+  "onboarding.khqr.step": "ការទូទាត់ប្រាក់",
+  "onboarding.khqr.stepDesc": "ទូទាត់តាមរយៈ KHQR",
+  "onboarding.khqr.title": "ទូទាត់ជាមួយ KHQR",
+  "onboarding.khqr.description": "ស្កែនកូដជាមួយកម្មវិធីធនាគាររបស់អ្នក។ ហាងរបស់អ្នកនឹងត្រូវបានបង្កើតភ្លាមៗនៅពេលការទូទាត់ត្រូវបានបញ្ជាក់។",
+  "onboarding.khqr.scan": "ស្កែនជាមួយកម្មវិធី ABA Mobile ឬកម្មវិធីធនាគារណាមួយ",
+  "onboarding.khqr.expiresIn": "ផុតកំណត់ក្នុងរយៈពេល",
+  "onboarding.khqr.waiting": "កំពុងរង់ចាំការទូទាត់ប្រាក់",
+  "onboarding.khqr.openApp": "បើកក្នុងកម្មវិធីធនាគារ",
+  "onboarding.khqr.newQr": "បង្កើតកូដ QR ថ្មី",
+  "onboarding.khqr.expired": "កូដ QR នេះបានផុតកំណត់ហើយ។",
+  "onboarding.khqr.failed": "មិនអាចបង្កើតការទូទាត់ប្រាក់បានទេ។ សូមព្យាយាមម្តងទៀត។",
+  "onboarding.khqr.success": "ទទួលបានការទូទាត់ប្រាក់ជោគជ័យ",
+  "onboarding.khqr.successBody": "កំពុងនាំអ្នកទៅកាន់ជំហានចុងក្រោយ…",
+  "onboarding.khqr.signinTitle": "ចូលគណនីដើម្បីទូទាត់ប្រាក់",
+  "onboarding.khqr.signinBody": "ការទូទាត់ប្រាក់ត្រូវបានភ្ជាប់ជាមួយគណនី Rentify របស់អ្នក។ សូមចូលគណនី ហើយអ្នកនឹងត្រឡប់មកកាន់ទីនេះវិញ។",
+  "onboarding.khqr.signin": "ចូលគណនី",
+  "onboarding.khqr.summary": "សេចក្តីសង្ខេបការបញ្ជាទិញ",
+  "onboarding.khqr.plan": "គម្រោង",
+  "onboarding.khqr.period": "រយៈពេលបង់ប្រាក់",
+  "onboarding.khqr.noteTitle": "តម្លៃត្រូវបានកំណត់ដោយ Rentify",
+  "onboarding.khqr.noteBody": "ចំនួនទឹកប្រាក់នេះមកពីគម្រោងរបស់អ្នក ហើយនឹងត្រូវបានត្រួតពិនិត្យម្តងទៀតមុនពេលហាងត្រូវបានបង្កើត។",
+  "onboarding.khqr.verifying": "កំពុងផ្ទៀងផ្ទាត់ស្ថានភាពការទូទាត់…",
+  "onboarding.khqr.generating": "កំពុងបង្កើតកូដ KHQR…",
   "deployment.completed.description": "ហាងអនឡាញ និងទំព័រ Rentify Marketplace របស់អ្នករួចរាល់ហើយ។ មើលទាំងពីរខាងក្រោម។",
   "deployment.completed.marketTitle": "ទំព័រ Marketplace របស់អ្នក",
   "deployment.completed.marketDesc": "អ្នកទិញស្វែងរកហាង និងផលិតផលរបស់អ្នកនៅលើ Rentify Marketplace។",

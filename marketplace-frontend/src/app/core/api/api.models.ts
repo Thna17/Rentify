@@ -139,7 +139,7 @@ export type OrderStatus =
   | 'CANCELLED';
 
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'COD' | 'ABA_PAYWAY' | 'ABA_DEMO' | 'STRIPE_SANDBOX';
+export type PaymentMethod = 'COD' | 'KHQR' | 'ABA_PAYWAY' | 'ABA_DEMO' | 'STRIPE_SANDBOX';
 
 export interface ApiDeliveryInfo {
   fullName: string;

@@ -12,6 +12,7 @@ import { useSetupGuide } from '../../app/features/setup-guide/SetupGuideContext'
 import { StatusPill } from '../../components/data-table/StatusPill';
 import { useAccess } from '../../utils/access';
 import { StaffHome } from './StaffHome';
+import { CampaignInvitation } from '../campaigns/CampaignInvitation';
 import { PageShell, StatePanel } from '../../components/page/PagePrimitives';
 import { PaymentPill } from '../order-management/components/PaymentPill';
 import { countByTab, money, orderLabel, paymentKind, workTab, type WorkTab } from '../order-management/orderModel';
@@ -90,6 +91,7 @@ const OwnerHome = () => {
 
   return (
     <PageShell>
+      <CampaignInvitation />
       <div>
         <p className="text-sm font-semibold text-muted-foreground">{store?.name}</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{greeting}</h1>

@@ -137,16 +137,16 @@ merchant owns fulfillment, COD cash collection, and direct buyer refunds for
 their orders. Refund status must follow a recorded, confirmed manual refund
 action. POS and invoices must consume the same stock rules.
 
-**Launch payment scope:** Online purchases on both storefronts and the central
-marketplace use cash on delivery (COD) only. An order remains unpaid until
-cash collection is recorded and reconciled; placing or delivering an order
-must not mark it paid automatically. COD collection, cancellation,
-and return rules need explicit order and seller-level records. Existing online
-payment integrations are not part of the new buyer checkout at launch.
-Rentify does not collect or remit COD cash for buyer orders. Launch revenue is
-merchant subscription fees only, with no per-order marketplace commission.
-Marketplace-only merchants need a subscription entitlement that does not
-require a Website.
+**Launch payment scope (DEC-029):** Online purchases on both storefronts and the central
+marketplace offer Cash on Delivery (COD) and online KHQR payments through CutLuy.
+Direct ABA PayWay on marketplace checkout is retired. Buyers pay by KHQR through
+the merchant's own CutLuy account; money settles directly to the merchant. An order is
+paid only when Commerce confirms it with CutLuy (webhook or status check). No refunds
+in Release 1: paid orders cannot be cancelled from the dashboard. Unpaid KHQR orders
+are cancelled automatically after timeout (`KHQR_UNPAID_ORDER_TIMEOUT_MINUTES`, default 15m)
+and their stock is released. Rentify does not collect or remit COD cash for buyer orders.
+Launch revenue is merchant subscription fees only, with no per-order marketplace commission.
+Marketplace-only merchants need a subscription entitlement that does not require a Website.
 
 **Future payment and revenue direction (outside launch scope):** Keep one
 checkout/order authority, but select a settlement route by purchase channel.

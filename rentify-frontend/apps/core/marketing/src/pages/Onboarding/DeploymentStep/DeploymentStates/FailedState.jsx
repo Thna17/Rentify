@@ -16,10 +16,33 @@ export default function FailedState({ t, language, error, onRetry }) {
         {error || t('deployment.failed.description')}
       </p>
       
-      <Button onClick={onRetry} className="bg-gradient-to-r from-primary to-secondary">
-        <RefreshCw className="w-4 h-4 mr-2" />
-        {t('deployment.failed.retry')}
-      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Button onClick={onRetry} className="bg-gradient-to-r from-primary to-secondary">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          {t('deployment.failed.retry')}
+        </Button>
+        {error && String(error).toLowerCase().includes('payment') && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              try {
+                const raw = localStorage.getItem('rentify-onboarding');
+                if (raw) {
+                  const parsed = JSON.parse(raw);
+                  delete parsed.payment;
+                  localStorage.setItem('rentify-onboarding', JSON.stringify(parsed));
+                }
+              } catch {
+                // ignore
+              }
+              window.location.search = '?step=payment';
+            }}
+            className="border-primary text-primary hover:bg-primary/5"
+          >
+            {language === 'KH' ? 'ត្រឡប់ទៅជំហានទូទាត់ប្រាក់' : 'Return to Payment Step'}
+          </Button>
+        )}
+      </div>
 
       <div className="mt-6 text-left bg-red-50 rounded-lg p-4">
         <h4 className={`font-medium text-red-800 mb-2 ${language === 'KH' ? 'font-khmer' : ''}`}>

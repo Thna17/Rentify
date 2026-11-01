@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import { Maximize2, Minimize2, Pause, Play, RotateCcw } from 'lucide-react';
+import { Maximize2, Minimize2, MonitorPlay, Pause, Play, RotateCcw } from 'lucide-react';
 import { cn } from '@rentify/utils';
 import SiteHeader from '../../components/site/SiteHeader';
 import { EASE } from '../../components/site/motion';
@@ -179,6 +179,7 @@ const fullscreenElement = () => document.fullscreenElement || document.webkitFul
 const ShowcasePage = () => {
   const { t, language } = useLanguage();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const [elapsed, setElapsed] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [kiosk, setKiosk] = useState(params.get('kiosk') === '1');
@@ -359,6 +360,9 @@ const ShowcasePage = () => {
             </ControlButton>
             <ControlButton label={t('site.tour.restart')} onClick={restart}>
               <RotateCcw className="h-4 w-4" />
+            </ControlButton>
+            <ControlButton label={t('site.tour.wall')} onClick={() => navigate('/showcase/wall')}>
+              <MonitorPlay className="h-4 w-4" />
             </ControlButton>
             <ControlButton label={kiosk ? t('site.tour.exitFullscreen') : t('site.tour.fullscreen')} onClick={toggleKiosk}>
               {kiosk ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}

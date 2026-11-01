@@ -17,6 +17,7 @@ export const routes: Routes = [
   { path: '', canActivate: [adminGuard], component: AdminLayoutComponent, children: [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     { path: 'dashboard', loadComponent: operations, data: { section: 'dashboard' }, title: 'Overview | Rentify Admin' },
+    { path: 'campaigns', loadComponent: () => import('./pages/campaigns/campaigns.component').then(m => m.CampaignsComponent), title: 'Campaigns | Rentify Admin' },
     { path: 'analytics', loadComponent: analytics, title: 'Platform Analytics | Rentify Admin' },
     { path: 'security', loadComponent: security, title: 'Security & MFA | Rentify Admin' },
     { path: 'sessions', loadComponent: sessions, title: 'Active Sessions | Rentify Admin' },

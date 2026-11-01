@@ -11,7 +11,13 @@ export const TEMPLATE_LOADERS = {
   1: () => import('../../templates/ecommerce/ecommerce-template-1/src/entry'),
   2: () => import('../../templates/ecommerce/ecommerce-template-2/src/entry'),
   3: () => import('../../templates/ecommerce/ecommerce-template-3/src/entry'),
+  5: () => import('../../templates/ecommerce/ecommerce-template-5/src/entry'),
   4: () => import('../../templates/ecommerce/ecommerce-template-4/src/entry'),
+  6: () => import('../../templates/ecommerce/ecommerce-template-5/src/style-6'),
+  7: () => import('../../templates/ecommerce/ecommerce-template-5/src/style-7'),
+  8: () => import('../../templates/ecommerce/ecommerce-template-5/src/style-8'),
+  9: () => import('../../templates/ecommerce/ecommerce-template-5/src/style-9'),
+  10: () => import('../../templates/ecommerce/ecommerce-template-5/src/style-10'),
 };
 
 const lazyTemplates = {};

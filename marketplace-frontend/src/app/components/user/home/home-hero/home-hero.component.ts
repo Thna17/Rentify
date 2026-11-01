@@ -4,6 +4,7 @@ import { CatalogService } from '../../../../core/catalog/catalog.service';
 import { Category } from '../../../../core/catalog/catalog.models';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { PromoCardComponent } from '../../../shared/ui/promo-card/promo-card.component';
+import { CampaignService } from '../../../../core/campaigns/campaign.service';
 import { Promo } from '../../../../core/promos/promo.models';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { CategoryTextPipe } from '../../../../core/i18n/category-text.pipe';
@@ -112,11 +113,13 @@ const SLIDE_MS = 6000;
         </div>
       </div>
 
+      @if (visiblePromos().length) {
       <div class="promos">
         @for (p of visiblePromos(); track p.id) {
           <app-promo-card [promo]="p" format="compact" />
         }
       </div>
+      }
     </section>
   `,
   styles: [`
@@ -328,13 +331,13 @@ const SLIDE_MS = 6000;
       .dots button.on { width: 16px; background: var(--color-bg); }
 
       .promos {
-        display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 68%;
+        display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 92%;
         gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
         margin-inline: calc(var(--page-gutter, 16px) * -1); padding-inline: var(--page-gutter, 16px);
         scroll-padding-inline: var(--page-gutter, 16px);
       }
       .promos::-webkit-scrollbar { display: none; }
-      .promos app-promo-card { height: 84px; scroll-snap-align: start; }
+      .promos app-promo-card { height: auto; aspect-ratio: 3 / 1; scroll-snap-align: start; }
     }
     @media (prefers-reduced-motion: reduce) {
       .slide, .mega { transition: none; }
@@ -402,11 +405,11 @@ export class HomeHeroComponent {
   ];
 
 
-  protected readonly promos: Promo[] = [
-    { id: 'home', eyebrow: 'Make yourself at home', title: 'Small touches. Big difference.', cta: 'Shop home & living', link: '/categories/home-living', image: '/assets/promos/artisan-homeware.webp' },
-    { id: 'style', eyebrow: 'Find your own style', title: 'A little more you.', cta: 'Explore fashion', link: '/categories/fashion', image: '/assets/promos/khmer-fashion.webp' },
-    { id: 'pantry', eyebrow: 'Fresh inspiration', title: 'Good things for your pantry.', cta: 'Shop food & groceries', link: '/categories/food-groceries', image: '/assets/promos/local-pantry.webp' },
-  ];
+  private readonly campaigns = inject(CampaignService);
+  protected readonly promos = computed<Promo[]>(() => this.campaigns.campaigns().filter(c => c.homepage).map(c => ({
+    id: c.id, title: c.title, cta: 'Explore event', link: '/campaigns/' + c.slug,
+    image: c.bannerUrl, alt: c.title, imageOnly: true,
+  })));
 
   protected readonly slide = signal(0);
 
@@ -416,9 +419,9 @@ export class HomeHeroComponent {
    * forever — so they read as alive, not three static ads.
    */
   protected readonly visiblePromos = computed(() => {
-    const setCount = Math.floor(this.promos.length / 3) || 1;
+    const setCount = Math.floor(this.promos().length / 3) || 1;
     const set = this.slide() % setCount;
-    return this.promos.slice(set * 3, set * 3 + 3);
+    return this.promos().slice(set * 3, set * 3 + 3);
   });
 
   private rotation = setInterval(() => this.next(), SLIDE_MS);

@@ -13,6 +13,7 @@ function findModule(subPath) {
   const candidates = [
     resolve(rootDir, 'ecommerce-server/node_modules', subPath),
     resolve(rootDir, 'rentify-server/node_modules', subPath),
+    resolve(rootDir, 'rentify-frontend/node_modules', subPath),
     resolve(rootDir, 'node_modules', subPath),
   ];
   for (const candidate of candidates) {

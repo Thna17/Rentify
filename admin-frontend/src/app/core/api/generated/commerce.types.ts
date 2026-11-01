@@ -129,6 +129,35 @@ export namespace Commerce {
     websiteId?: string | null;
   }
 
+  export interface MarketplaceCampaign {
+    bannerUrl?: string;
+    description?: string;
+    endsAt?: string;
+    homepage?: boolean;
+    id?: Commerce.UUID;
+    minimumDiscount?: number;
+    priority?: number;
+    slug?: string;
+    startsAt?: string;
+    submissionEndsAt?: string;
+    title?: string;
+  }
+
+  export interface MarketplaceCampaignInput {
+    /** HTTPS URL or a bundled /assets/ path */
+    bannerUrl: string;
+    description?: string;
+    endsAt: string;
+    homepage?: boolean;
+    minimumDiscount: number;
+    priority?: number;
+    slug: string;
+    startsAt: string;
+    status?: string;
+    submissionEndsAt: string;
+    title: string;
+  }
+
   export interface MarketplaceCart {
     checkoutReady: boolean;
     currency: Commerce.Currency;
@@ -393,6 +422,63 @@ export namespace Commerce {
   }
 
   export interface Operations {
+    get_api_admin_campaigns: {
+      method: 'GET';
+      path: '/api/admin/campaigns';
+      parameters: {
+      };
+      response: {
+        campaigns?: Array<Commerce.MarketplaceCampaign>;
+      };
+    };
+    post_api_admin_campaigns: {
+      method: 'POST';
+      path: '/api/admin/campaigns';
+      parameters: {
+      };
+      body: Commerce.MarketplaceCampaignInput;
+      response: Record<string, any>;
+    };
+    get_api_admin_campaigns_campaignId: {
+      method: 'GET';
+      path: '/api/admin/campaigns/{campaignId}';
+      parameters: {
+        path: {
+          campaignId: string;
+        };
+      };
+      response: Record<string, any>;
+    };
+    patch_api_admin_campaigns_campaignId: {
+      method: 'PATCH';
+      path: '/api/admin/campaigns/{campaignId}';
+      parameters: {
+        path: {
+          campaignId: string;
+        };
+      };
+      body: (Commerce.MarketplaceCampaignInput & {
+        revision: number;
+      });
+      response: Record<string, any>;
+    };
+    post_api_admin_campaigns_campaignId_submissions_submissionId_decision: {
+      method: 'POST';
+      path: '/api/admin/campaigns/{campaignId}/submissions/{submissionId}/decision';
+      parameters: {
+        path: {
+          campaignId: string;
+          submissionId: string;
+        };
+      };
+      body: {
+        /** Required when rejecting. */
+        note: string;
+        revision: number;
+        status: "approved" | "rejected";
+      };
+      response: Record<string, any>;
+    };
     get_api_admin_operations_analytics: {
       method: 'GET';
       path: '/api/admin/operations/analytics';
@@ -1041,6 +1127,31 @@ export namespace Commerce {
       };
       response: Array<Commerce.Invoice>;
     };
+    get_api_marketplace_campaigns: {
+      method: 'GET';
+      path: '/api/marketplace/campaigns';
+      parameters: {
+      };
+      response: {
+        campaigns?: Array<Commerce.MarketplaceCampaign>;
+      };
+    };
+    get_api_marketplace_campaigns_slug: {
+      method: 'GET';
+      path: '/api/marketplace/campaigns/{slug}';
+      parameters: {
+        path: {
+          slug: string;
+        };
+        query?: {
+          limit?: number;
+          page?: number;
+          search?: string;
+          sort?: "price-asc" | "price-desc";
+        };
+      };
+      response: Record<string, any>;
+    };
     delete_api_marketplace_cart: {
       method: 'DELETE';
       path: '/api/marketplace/cart';
@@ -1649,6 +1760,20 @@ export namespace Commerce {
       body: Record<string, any>;
       response: any;
     };
+    get_api_payment_payments_public_methods_store_storeId: {
+      method: 'GET';
+      path: '/api/payment/payments/public-methods/store/{storeId}';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      response: {
+        businessName?: string;
+        cutluyEnabled?: boolean;
+        paymentMethods?: Array<string>;
+      };
+    };
     get_api_payment_payments_public_methods_websiteId: {
       method: 'GET';
       path: '/api/payment/payments/public-methods/{websiteId}';
@@ -1681,6 +1806,21 @@ export namespace Commerce {
         };
       };
       response: any;
+    };
+    post_api_payment_payments_paymentId_void: {
+      method: 'POST';
+      path: '/api/payment/payments/{paymentId}/void';
+      parameters: {
+        path: {
+          paymentId: string;
+        };
+      };
+      body?: {
+        reason?: string;
+      };
+      response: {
+        success?: boolean;
+      };
     };
     post_api_payments_aba_payway_callback: {
       method: 'POST';
@@ -2097,6 +2237,46 @@ export namespace Commerce {
       body: Record<string, any>;
       response: any;
     };
+    get_api_stores_storeId_campaigns: {
+      method: 'GET';
+      path: '/api/stores/{storeId}/campaigns';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      response: Record<string, any>;
+    };
+    post_api_stores_storeId_campaigns_campaignId_submissions: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/campaigns/{campaignId}/submissions';
+      parameters: {
+        path: {
+          campaignId: string;
+          storeId: string;
+        };
+      };
+      body: {
+        note?: string;
+        productId: Commerce.UUID;
+      };
+      response: Record<string, any>;
+    };
+    post_api_stores_storeId_campaigns_campaignId_submissions_submissionId_withdraw: {
+      method: 'POST';
+      path: '/api/stores/{storeId}/campaigns/{campaignId}/submissions/{submissionId}/withdraw';
+      parameters: {
+        path: {
+          campaignId: string;
+          storeId: string;
+          submissionId: string;
+        };
+      };
+      body: {
+        revision: number;
+      };
+      response: Record<string, any>;
+    };
     get_api_stores_storeId_marketplace_delivery: {
       method: 'GET';
       path: '/api/stores/{storeId}/marketplace-delivery';
@@ -2497,6 +2677,8 @@ export type CommerceErrorEnvelope = Commerce.ErrorEnvelope;
 export type CommerceErrorResponse = Commerce.ErrorResponse;
 export type CommerceFieldError = Commerce.FieldError;
 export type CommerceInvoice = Commerce.Invoice;
+export type CommerceMarketplaceCampaign = Commerce.MarketplaceCampaign;
+export type CommerceMarketplaceCampaignInput = Commerce.MarketplaceCampaignInput;
 export type CommerceMarketplaceCart = Commerce.MarketplaceCart;
 export type CommerceMarketplaceCartItem = Commerce.MarketplaceCartItem;
 export type CommerceMoney = Commerce.Money;

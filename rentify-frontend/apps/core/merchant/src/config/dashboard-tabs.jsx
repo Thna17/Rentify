@@ -1,4 +1,5 @@
 import {
+  Megaphone,
   LayoutGrid,
   BarChart2,
   Package,
@@ -124,6 +125,16 @@ export const ALL_TABS = [
     path: 'returns',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_orders',
+    section: 'more',
+  },
+  {
+    name: 'merchant.campaigns.navLabel',
+    label: 'Campaigns & events',
+    hint: 'Marketplace campaigns you can join',
+    icon: Megaphone,
+    path: 'campaigns',
+    roles: ['admin', 'user', 'staff'],
+    permission: 'manage_products',
     section: 'more',
   },
   {

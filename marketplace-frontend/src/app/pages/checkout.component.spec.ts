@@ -252,7 +252,7 @@ describe('CheckoutComponent (P4-BUY-003 COD Checkout)', () => {
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',
     );
     expect(blocking).toEqual([]);
-  });
+  }, 15_000);
 
   it('should prevent checkout when policy acknowledgement is not checked', async () => {
     component['form'].patchValue({

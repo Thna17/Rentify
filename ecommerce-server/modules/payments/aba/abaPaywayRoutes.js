@@ -5,7 +5,7 @@ const service = require('./abaPaywayService');
 
 /**
  * ABA PayWay routes (test-only). With PAYWAY_ENABLED unset every route except /config answers
- * 404, so Release 1 stays COD-only (DEC-026) unless a developer turns it on locally.
+ * 404; direct ABA PayWay is retired for Release 1 checkout (DEC-029; CutLuy is the sole online path).
  */
 const router = express.Router();
 

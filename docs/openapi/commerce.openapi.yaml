@@ -37,6 +37,8 @@ servers:
   - url: https://commerce.rentify.test
     description: CI and test environment gateway
 tags:
+  - name: Marketplace Campaigns
+    description: Admin-run marketplace campaigns, merchant product submissions and the public campaign pages
   - name: Marketplace Catalog
     description: Public product discovery, category taxonomy, and reviews on the central marketplace
   - name: Store Catalog
@@ -4971,6 +4973,44 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       operationId: get_api_payment_payments_public_methods_websiteId
       security: []
+  /api/payment/payments/public-methods/store/{storeId}:
+    get:
+      tags:
+        - Payments
+      summary: Get active public payment methods for store
+      description: Returns active public payment method options (e.g. COD, KHQR) for a store without revealing secret credentials.
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Public payment methods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentMethods:
+                    type: array
+                    items:
+                      type: string
+                  cutluyEnabled:
+                    type: boolean
+                  businessName:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error400"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      operationId: get_api_payment_payments_public_methods_store_storeId
+      security: []
   /api/payment/payments/{paymentId}:
     get:
       tags:
@@ -5008,6 +5048,53 @@ paths:
           description: Live payment status from provider
       operationId: get_api_payment_payments_paymentId_check_status
       security: []
+  /api/payment/payments/{paymentId}/void:
+    post:
+      tags:
+        - Payments
+      summary: Void pending payment
+      description: Voids a pending payment attempt (e.g. when POS cashier switches to cash) and cancels it at the provider.
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Payment voided successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          description: Payment already paid or completed
+        "502":
+          description: Provider gateway check or cancellation error
+      operationId: post_api_payment_payments_paymentId_void
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
   /api/payment/payments/cutluy/webhook:
     post:
       tags:
@@ -6369,6 +6456,366 @@ paths:
         "429":
           description: Telemetry rate limit exceeded
       operationId: post_api_analytics_events
+  /api/marketplace/campaigns:
+    get:
+      tags:
+        - Marketplace Campaigns
+      summary: List campaigns running on the marketplace now
+      security: []
+      description: Published campaigns whose start has passed and end has not, ordered by priority.
+      responses:
+        "200":
+          description: Active campaigns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  campaigns:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCampaign"
+      operationId: get_api_marketplace_campaigns
+  /api/marketplace/campaigns/{slug}:
+    get:
+      tags:
+        - Marketplace Campaigns
+      summary: Get one active campaign and its approved products
+      security: []
+      description: Only products whose approved submission still matches the product and meets the discount requirement are listed.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 120
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - price-asc
+              - price-desc
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 60
+      responses:
+        "200":
+          description: Campaign with its products
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Campaign not found or not running
+      operationId: get_api_marketplace_campaigns_slug
+  /api/admin/campaigns:
+    get:
+      tags:
+        - Marketplace Campaigns
+      summary: List all campaigns (admin)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Campaigns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  campaigns:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceCampaign"
+        "403":
+          description: Requires catalog:moderate
+      operationId: get_api_admin_campaigns
+    post:
+      tags:
+        - Marketplace Campaigns
+      summary: Create a campaign (admin)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketplaceCampaignInput"
+      responses:
+        "200":
+          description: Created campaign
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Invalid campaign
+        "409":
+          description: Campaign link already in use
+      operationId: post_api_admin_campaigns
+  /api/admin/campaigns/{campaignId}:
+    get:
+      tags:
+        - Marketplace Campaigns
+      summary: Get a campaign with its submissions (admin)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Campaign, submissions and products
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Campaign not found
+      operationId: get_api_admin_campaigns_campaignId
+    patch:
+      tags:
+        - Marketplace Campaigns
+      summary: Update a campaign (admin)
+      description: Requires the revision that was read. The campaign link (slug) cannot change.
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/MarketplaceCampaignInput"
+                - type: object
+                  required:
+                    - revision
+                  properties:
+                    revision:
+                      type: integer
+      responses:
+        "200":
+          description: Updated campaign
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Invalid campaign or stale revision
+        "404":
+          description: Campaign not found
+      operationId: patch_api_admin_campaigns_campaignId
+  /api/admin/campaigns/{campaignId}/submissions/{submissionId}/decision:
+    post:
+      tags:
+        - Marketplace Campaigns
+      summary: Approve or reject a merchant's product submission (admin)
+      security:
+        - userAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - note
+                - revision
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - approved
+                    - rejected
+                note:
+                  type: string
+                  maxLength: 1000
+                  description: Required when rejecting.
+                revision:
+                  type: integer
+      responses:
+        "200":
+          description: Updated submission
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Invalid decision
+        "404":
+          description: Submission not found
+        "409":
+          description: Withdrawn, campaign ended or product no longer eligible
+      operationId: post_api_admin_campaigns_campaignId_submissions_submissionId_decision
+  /api/stores/{storeId}/campaigns:
+    get:
+      tags:
+        - Marketplace Campaigns
+      summary: Campaigns a Store can join, with its submissions
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Open campaigns and the Store's submissions
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+      operationId: get_api_stores_storeId_campaigns
+  /api/stores/{storeId}/campaigns/{campaignId}/submissions:
+    post:
+      tags:
+        - Marketplace Campaigns
+      summary: Submit a product to a campaign
+      description: The product must be published on the marketplace and every active option must meet the campaign's discount requirement.
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+              properties:
+                productId:
+                  $ref: "#/components/schemas/UUID"
+                note:
+                  type: string
+                  maxLength: 1000
+      responses:
+        "200":
+          description: Submission
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Product not found
+        "409":
+          description: Campaign not accepting submissions, or product not eligible
+      operationId: post_api_stores_storeId_campaigns_campaignId_submissions
+  /api/stores/{storeId}/campaigns/{campaignId}/submissions/{submissionId}/withdraw:
+    post:
+      tags:
+        - Marketplace Campaigns
+      summary: Withdraw a product submission
+      security:
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - revision
+              properties:
+                revision:
+                  type: integer
+      responses:
+        "200":
+          description: Withdrawn submission
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Submission not found
+      operationId: post_api_stores_storeId_campaigns_campaignId_submissions_submissionId_withdraw
 components:
   securitySchemes:
     bearerAuth:
@@ -6422,6 +6869,81 @@ components:
       name: x-ops-token
       description: Shared operational secret for ops invoice reconciliation and telemetry.
   schemas:
+    MarketplaceCampaign:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        bannerUrl:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        submissionEndsAt:
+          type: string
+          format: date-time
+        minimumDiscount:
+          type: integer
+          minimum: 0
+          maximum: 100
+        homepage:
+          type: boolean
+        priority:
+          type: integer
+      additionalProperties: true
+    MarketplaceCampaignInput:
+      type: object
+      required:
+        - slug
+        - title
+        - bannerUrl
+        - startsAt
+        - endsAt
+        - submissionEndsAt
+        - minimumDiscount
+      properties:
+        slug:
+          type: string
+          maxLength: 100
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        title:
+          type: string
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 5000
+        bannerUrl:
+          type: string
+          maxLength: 1000
+          description: HTTPS URL or a bundled /assets/ path
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        submissionEndsAt:
+          type: string
+          format: date-time
+        minimumDiscount:
+          type: integer
+          minimum: 0
+          maximum: 100
+        status:
+          type: string
+        homepage:
+          type: boolean
+        priority:
+          type: integer
     UUID:
       type: string
       format: uuid
