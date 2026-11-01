@@ -2,25 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { useUpdateProfileMutation } from '@rentify/apis';
 import { useAuth, useTranslation } from '@rentify/utils';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@rentify/shared/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@rentify/shared/ui/alert-dialog';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { Separator } from '@rentify/shared/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
-import { 
-  User, Mail, Building, Phone, Globe, Save, Loader2, Edit,
-  Upload, X, CheckCircle2, AlertTriangle
-} from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
+import { Panel } from '../../components/page/PagePrimitives';
+import { Link } from 'react-router-dom';
 import { MarketplaceColorCard } from './components/MarketplaceColorCard';
 import { StoreLogoCard } from './components/StoreLogoCard';
 import { useChannels } from '../../context/ChannelContext';
@@ -32,7 +22,6 @@ export const AccountSettings = () => {
   const { profile } = useAuth();
   const { store, setStore } = useChannels();
   
-  const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const [profileData, setProfileData] = useState({
@@ -116,10 +105,9 @@ export const AccountSettings = () => {
         }
       }
 
-      setIsEditing(false);
       toast.success(t('merchant.p.profileUpdatedSuccessfully') || 'Profile updated successfully');
     } catch (error: any) {
-      toast.error(error?.data?.message || error?.message || t('merchant.p.failedToUpdateProfile') || 'Failed to update profile');
+      toast.error(t('merchant.p.failedToUpdateProfile'));
     }
   };
 
@@ -127,271 +115,83 @@ export const AccountSettings = () => {
     return (name || '').trim().split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
   };
 
-  const cancelEdit = () => {
-    setIsEditing(false);
-    setAvatarPreview(null);
-    setProfileData({
-      name: profile?.name || '',
-      email: profile?.email || '',
-      phone: profile?.phoneNumber || profile?.phone || '',
-      businessName: store?.name || profile?.businessName || '',
-      website: profile?.website || store?.websiteDomain || (store?.slug ? `${store.slug}.mekhla.digital` : '') || '',
-      bio: profile?.bio || '',
-    });
-  };
 
   return (
     <SettingsLayout
       title={t('merchant.settings.sections.account.title')}
       description={t('merchant.settings.sections.account.body')}
-      icon={<User />}
     >
-      <Card className="shadow-sm border-0">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">{t('merchant.p.profileInformation')}</CardTitle>
-              <CardDescription>
-                {t('merchant.p.updateYourPersonalDetails')}
-              </CardDescription>
-            </div>
-            {!isEditing ? (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2"
-              >
-                <Edit className="h-4 w-4" />
-                <span>{t('merchant.p.editProfile')}</span>
+      {/* Redesign M22 pattern: plain fields with hints, one Save at the end */}
+      <Panel className="space-y-5">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={avatarPreview || profile?.profileImage || profile?.avatar} />
+            <AvatarFallback className="bg-primary text-lg font-semibold text-primary-foreground">
+              {getInitials(profileData.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 space-y-1">
+            <Label htmlFor="avatar-upload" className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-input px-4 text-sm font-semibold">
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.profile.changePhoto')}
+            </Label>
+            <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} className="sr-only" />
+            <p className="text-sm text-muted-foreground">{t('merchant.p.jpgGifOrPng')}</p>
+            {avatarPreview && (
+              <Button variant="ghost" size="sm" onClick={removeAvatar} className="min-h-[44px] px-2 text-destructive">
+                {t('merchant.p.removePhoto')}
               </Button>
-            ) : (
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={cancelEdit}>
-                  {t('merchant.p.cancel')}
-                </Button>
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={isUpdating}
-                  className="flex items-center space-x-2"
-                >
-                  {isUpdating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  <span>{isUpdating ? 'Saving...' : 'Save Changes'}</span>
-                </Button>
-              </div>
             )}
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex items-center space-x-6 p-4 bg-muted rounded-lg">
-            <div className="relative">
-              <Avatar className="h-20 w-20 border-2 border-white shadow-sm">
-                <AvatarImage src={avatarPreview || profile?.profileImage || profile?.avatar} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-primary text-white text-lg font-semibold">
-                  {getInitials(profileData.name)}
-                </AvatarFallback>
-              </Avatar>
-              {isEditing && (
-                <div className="absolute -bottom-1 -right-1">
-                  <Label htmlFor="avatar-upload" className="cursor-pointer">
-                    <div className="bg-primary text-white p-1 rounded-full shadow-lg hover:bg-primary transition-colors">
-                      <Upload className="h-3 w-3" />
-                    </div>
-                  </Label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </div>
-              )}
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            { id: 'name', label: t('merchant.p.fullName'), placeholder: t('merchant.p.yourFullName') },
+            { id: 'businessName', label: t('merchant.p.businessName'), placeholder: t('merchant.p.yourBusinessName'), hint: t('merchant.profile.storeNameHint') },
+            { id: 'phone', label: t('merchant.p.phoneNumber'), placeholder: '012 345 678', type: 'tel' },
+            { id: 'email', label: t('merchant.p.emailAddress'), placeholder: 'name@example.com', type: 'email' },
+            { id: 'website', label: t('merchant.p.website'), placeholder: 'https://' },
+            { id: 'bio', label: t('merchant.p.bio'), placeholder: t('merchant.p.tellUsAboutYourself') },
+          ].map((field) => (
+            <div key={field.id} className="space-y-1.5">
+              <Label htmlFor={field.id} className="text-sm font-medium">{field.label}</Label>
+              <Input
+                id={field.id}
+                name={field.id}
+                type={field.type || 'text'}
+                value={(profileData as Record<string, string>)[field.id]}
+                onChange={handleProfileChange}
+                placeholder={field.placeholder}
+                className="h-11 rounded-xl"
+              />
+              {field.hint && <p className="text-sm text-muted-foreground">{field.hint}</p>}
             </div>
-            
-            <div className="flex-1">
-              <h3 className="font-medium text-foreground">{t('merchant.p.profilePhoto')}</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t('merchant.p.jpgGifOrPng')}
-              </p>
-              {isEditing && avatarPreview && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeAvatar}
-                  className="mt-2 text-[var(--rentify-color-danger-text)] hover:text-[var(--rentify-color-danger-text)] hover:bg-[var(--rentify-color-danger-subtle)]"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  {t('merchant.p.removePhoto')}
-                </Button>
-              )}
-            </div>
-          </div>
+          ))}
+        </div>
 
-          <Separator />
-
-          {/* Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">
-                  <User className="h-4 w-4 inline mr-2" />
-                  {t('merchant.p.fullName')}
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={profileData.name}
-                  onChange={handleProfileChange}
-                  disabled={!isEditing}
-                  placeholder={t('merchant.p.yourFullName')}
-                  className="disabled:bg-muted disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  <Mail className="h-4 w-4 inline mr-2" />
-                  {t('merchant.p.emailAddress')}
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={profileData.email}
-                  onChange={handleProfileChange}
-                  disabled={!isEditing}
-                  placeholder="your@email.com"
-                  className="disabled:bg-muted disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium">
-                  <Phone className="h-4 w-4 inline mr-2" />
-                  {t('merchant.p.phoneNumber')}
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={profileData.phone}
-                  onChange={handleProfileChange}
-                  disabled={!isEditing}
-                  placeholder="+1 (555) 000-0000"
-                  className="disabled:bg-muted disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="businessName" className="text-sm font-medium">
-                  <Building className="h-4 w-4 inline mr-2" />
-                  {t('merchant.p.businessName')}
-                </Label>
-                <Input
-                  id="businessName"
-                  name="businessName"
-                  value={profileData.businessName}
-                  onChange={handleProfileChange}
-                  disabled={!isEditing}
-                  placeholder={t('merchant.p.yourBusinessName')}
-                  className="disabled:bg-muted disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="website" className="text-sm font-medium">
-                  <Globe className="h-4 w-4 inline mr-2" />
-                  {t('merchant.p.website')}
-                </Label>
-                <Input
-                  id="website"
-                  name="website"
-                  value={profileData.website}
-                  onChange={handleProfileChange}
-                  disabled={!isEditing}
-                  placeholder="https://yourwebsite.com"
-                  className="disabled:bg-muted disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio" className="text-sm font-medium">
-                  {t('merchant.p.bio')}
-                </Label>
-                <Input
-                  id="bio"
-                  name="bio"
-                  value={profileData.bio}
-                  onChange={handleProfileChange}
-                  disabled={!isEditing}
-                  placeholder={t('merchant.p.tellUsAboutYourself')}
-                  className="disabled:bg-muted disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex justify-end">
+          <Button onClick={handleSaveProfile} disabled={isUpdating} className="min-h-[44px] rounded-xl px-6">
+            {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+            {isUpdating ? t('merchant.common.saving') : t('merchant.common.save')}
+          </Button>
+        </div>
+      </Panel>
 
       {/* The store's presentation belongs to its owner; staff do not see it. */}
       {profile?.role !== 'staff' && (
-        <div className="mt-6">
+        <>
           <StoreLogoCard />
-          <div className="mt-6"><MarketplaceColorCard /></div>
-        </div>
-      )}
-      {/* Danger Zone: Close store (moved from store-management per wireframe M17 and audit P3, P7) */}
-      {profile?.role !== 'staff' && (
-        <div className="mt-6">
-          <Card className="border border-destructive/20 bg-destructive/5 shadow-[var(--shadow-soft)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-destructive flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span>Close store</span>
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Permanently close your store and take down your storefront. Active orders and customer balances must be settled first.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10 min-h-[44px]"
-                  >
-                    Close store...
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Close this store?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will unpublish your online storefront and pause your marketplace listings. You can reopen by contacting support.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      onClick={() => toast.info('Store closure request submitted. Our support team will assist you.')}
-                    >
-                      Confirm closure
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardContent>
-          </Card>
-        </div>
+          <MarketplaceColorCard />
+          {/* There is no self-serve closure endpoint; Rentify closes a store on request */}
+          <Panel className="space-y-2">
+            <h2 className="text-base font-semibold text-foreground">{t('merchant.profile.closeTitle')}</h2>
+            <p className="text-sm text-muted-foreground">{t('merchant.profile.closeBody')}</p>
+            <Button asChild variant="outline" className="min-h-[44px] rounded-xl text-destructive">
+              <Link to="/help">{t('merchant.profile.closeAction')}</Link>
+            </Button>
+          </Panel>
+        </>
       )}
     </SettingsLayout>
   );

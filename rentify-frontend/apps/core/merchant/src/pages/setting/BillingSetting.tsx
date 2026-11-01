@@ -9,7 +9,6 @@ import {
 import { Button } from '@rentify/shared/ui/button';
 import { Badge } from '@rentify/shared/ui/badge';
 import {
-  CreditCard,
   Plus,
   Receipt,
   Calendar,
@@ -102,6 +101,8 @@ export const BillingSetting = () => {
   const { t } = useTranslation();
   const { hasStorefront } = useChannels();
   const [entitlements, setEntitlements] = useState<any>(null);
+  // Redesign M24: the plan list opens on request ("Compare plans")
+  const [showPlans, setShowPlans] = useState(false);
 
   useEffect(() => {
     fetch(`${RENTIFY_API_BASE}/api/stores/mine/entitlements`, { credentials: 'include' })
@@ -179,16 +180,11 @@ export const BillingSetting = () => {
     <SettingsLayout
       title={t('merchant.settings.sections.billing.title')}
       description={t('merchant.settings.sections.billing.body')}
-      icon={<CreditCard />}
     >
       {/* Grace / suspended status is shown once, by the dashboard layout banner. */}
       {/* Current Plan */}
-      <Card className="shadow-sm border-0">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">{t('merchant.p.currentPlan')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-muted/30 p-5 sm:flex-row sm:items-center">
+      <div className="space-y-6">
+          <div className="flex flex-col justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)] sm:flex-row sm:items-center">
             <div>
               <div className="flex items-center space-x-2.5">
                 <h3 className="text-xl font-semibold text-foreground">
@@ -208,6 +204,15 @@ export const BillingSetting = () => {
                 {t('merchant.billing.commission', { value: currentTier.commission })}
               </p>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={showPlans}
+              onClick={() => setShowPlans((open) => !open)}
+              className="min-h-[44px] rounded-xl"
+            >
+              {t(showPlans ? 'merchant.billing.hidePlans' : 'merchant.billing.comparePlans')}
+            </Button>
             {!hasStorefront && (
               <Button asChild className="min-h-[44px] rounded-xl">
                 <a href={`${MARKETING_URL}/onboarding/starter?step=template`}>
@@ -218,13 +223,13 @@ export const BillingSetting = () => {
           </div>
 
           {/* This month usage section (P4, P7) */}
-          <div className="mt-6 rounded-xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card p-5 shadow-[var(--shadow-soft)]">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
             <h4 className="text-base font-semibold text-foreground">{t('merchant.billing.thisMonth')}</h4>
             <p className="mt-0.5 text-sm text-muted-foreground">{t('merchant.billing.payWhen')}</p>
             {usageError ? (
               <p className="mt-3 text-sm text-muted-foreground">{t('merchant.billing.usageError')}</p>
             ) : (
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {[
                   { label: t('merchant.billing.paidOrders'), value: String(usageCount('ORDER_PAID')) },
                   { label: t('merchant.billing.paidInvoices'), value: String(usageCount('INVOICE_PAID')) },
@@ -244,7 +249,8 @@ export const BillingSetting = () => {
           </div>
 
           {/* 3-Tier Plan Comparison */}
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {showPlans && (
+          <div className="grid gap-4 md:grid-cols-3">
             {tiers.map((plan: any) => {
               const isCurrent = plan.key === activeTierKey;
               return (
@@ -322,14 +328,13 @@ export const BillingSetting = () => {
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
+          )}
+      </div>
 
       {/* Billing History */}
-      <Card className="shadow-sm border-0">
+      <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">{t('merchant.p.billingHistory')}</CardTitle>
+          <CardTitle className="text-base font-semibold">{t('merchant.p.billingHistory')}</CardTitle>
           <CardDescription>{t('merchant.p.yourPastPlanPayments')}</CardDescription>
         </CardHeader>
         <CardContent aria-live="polite">

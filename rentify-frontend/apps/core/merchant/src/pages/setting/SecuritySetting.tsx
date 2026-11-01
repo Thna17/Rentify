@@ -93,9 +93,9 @@ export const SecuritySetting = () => {
       icon={<Shield />}
     >
       {/* Change Password */}
-      <Card className="shadow-sm border-0">
+      <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">{t('merchant.p.changePassword')}</CardTitle>
+          <CardTitle className="text-base font-semibold">{t('merchant.p.changePassword')}</CardTitle>
           <CardDescription>
             {t('merchant.p.updateYourPasswordTo')}
           </CardDescription>

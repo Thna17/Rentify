@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, Loader2, Plus, X } from 'lucide-react';
+import { ChevronDown, Loader2, Plus, X } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -31,6 +31,7 @@ import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/url
 import { useChannels } from '../../context/ChannelContext';
 import { ImageUploader as ProductImageUploader } from './components/ImageUploader';
 import { uploadProductImages } from '../../services/productImages';
+import { PageTitle } from '../../components/page/PagePrimitives';
 import { useTranslation } from '@rentify/utils';
 
 const SKIN_TYPES = [
@@ -524,18 +525,14 @@ export const ProductForm = ({ onClose, category }) => {
   if (productLoading && isEditMode) return <ProductFormSkeleton />;
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-28">
-      {/* Header */}
-      <div className="border-b bg-background">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
-          <Button type="button" variant="ghost" size="icon" className="h-11 w-11" aria-label={t('merchant.p2.backToProducts')} onClick={closeForm}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold">{isEditMode ? t('merchant.p.editProduct') : t('merchant.p.addProduct')}</h1>
-            <p className="text-sm text-muted-foreground">{t('merchant.p2.fillInTheBasics')}</p>
-          </div>
-        </div>
+    <div className="min-h-full pb-28">
+      {/* Header: back link and title, like every other page (redesign M9) */}
+      <div className="mx-auto max-w-3xl px-4 pt-6 sm:px-6">
+        <PageTitle
+          back={{ to: '/products', label: t('merchant.p.products') }}
+          title={isEditMode ? t('merchant.p.editProduct') : t('merchant.p.addProduct')}
+          description={t('merchant.p2.fillInTheBasics')}
+        />
       </div>
 
       <form

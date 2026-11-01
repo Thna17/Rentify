@@ -97,23 +97,17 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
 
   const toggleMarketplace = async (enabled?: boolean) => {
     const next = typeof enabled === 'boolean' ? enabled : !hasMarketplace;
-    try {
-      const response = await fetch(`${RENTIFY_API_BASE}/api/stores/mine`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketplaceEnabled: next }),
-      });
-      const result = await response.json();
-      if (response.ok && result.data) {
-        setStore(result.data);
-        if (onStoreChange) onStoreChange(result.data);
-      }
-    } catch {
-      const updated = { ...store, marketplaceEnabled: next };
-      setStore(updated);
-      if (onStoreChange) onStoreChange(updated);
-    }
+    // The switch follows Core: nothing changes on screen unless the Store was saved
+    const response = await fetch(`${RENTIFY_API_BASE}/api/stores/mine`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketplaceEnabled: next }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.data) throw new Error(`Store update failed (${response.status})`);
+    setStore(result.data);
+    if (onStoreChange) onStoreChange(result.data);
   };
 
   // Remember explicit choices; otherwise open the appropriate seller workspace.

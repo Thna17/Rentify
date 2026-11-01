@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { Image as ImageIcon, X, Upload } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
+import { useTranslation } from '@rentify/utils';
 // Shadcn Components
 import { Button } from '@rentify/shared/ui/button';
 import { Badge } from '@rentify/shared/ui/badge';
@@ -29,6 +30,7 @@ export const ImageUploader = ({
   onRemoveImage,
   onValidationError,
 }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -132,37 +134,19 @@ export const ImageUploader = ({
           />
 
           <div className="flex flex-col items-center">
-            <Upload className="h-10 w-10 text-muted-foreground mb-3" />
-            <h4 className="font-medium text-lg mb-1">
-              Drop images here or click to upload
-            </h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Upload up to {maxImages - images.length} more images (JPG, PNG,
-              WebP, or GIF up to 5 MB each)
-            </p>
-            <Button type="button" variant="outline" disabled={isUploading}>
-              <Upload className="h-4 w-4 mr-2" />
-              Choose Files
+            <Upload className="mb-2 h-7 w-7 text-muted-foreground" aria-hidden="true" />
+            <p className="font-medium">{t('merchant.productForm.addPhotos')}</p>
+            <p className="mb-3 text-sm text-muted-foreground">{t('merchant.productForm.photoRules', { count: maxImages - images.length })}</p>
+            <Button type="button" variant="outline" disabled={isUploading} className="min-h-[44px] rounded-xl">
+              {t('merchant.productForm.choosePhotos')}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Info Text */}
-      <div className="flex items-start mt-4 text-muted-foreground">
-        <ImageIcon className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-        <div>
-          <p className="text-sm">
-            {images.length} of {maxImages} images uploaded.
-            {images.length > 0 &&
-              ' The first image will be used as the product cover.'}
-          </p>
-          <p className="text-sm mt-1">
-            Recommended: Use high-quality images with at least 1024x1024 pixels
-            for best results.
-          </p>
-        </div>
-      </div>
+      {images.length > 0 && (
+        <p className="mt-3 text-sm text-muted-foreground">{t('merchant.productForm.cover')}</p>
+      )}
     </div>
   );
 };

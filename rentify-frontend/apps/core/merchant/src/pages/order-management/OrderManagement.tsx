@@ -172,7 +172,7 @@ export function OrderManagement() {
         description={t('merchant.orders.subtitle')}
         actions={
           <>
-            <Button variant="outline" onClick={exportCsv} disabled={!shown.length} className="min-h-[44px] rounded-xl">
+            <Button variant="outline" onClick={exportCsv} disabled={!shown.length} className="hidden min-h-[44px] rounded-xl sm:inline-flex">
               <Download className="h-4 w-4" aria-hidden="true" />
               {t('merchant.orders.export')}
             </Button>

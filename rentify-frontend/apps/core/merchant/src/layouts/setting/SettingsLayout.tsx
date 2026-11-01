@@ -27,13 +27,15 @@ interface SettingsLayoutProps {
   children: ReactNode;
   /** Kept for callers that still pass one; settings pages don't show page icons. */
   icon?: ReactNode;
+  /** The section's main action, beside the title (e.g. Invite on Staff & roles). */
+  actions?: ReactNode;
 }
 
 /**
  * The one settings shell (audit P11): the dashboard's own page frame, a back link to the
  * Settings list on phones, and the section list beside the page from tablet width up.
  */
-export function SettingsLayout({ title, description, children }: SettingsLayoutProps) {
+export function SettingsLayout({ title, description, children, actions }: SettingsLayoutProps) {
   const { t } = useTranslation();
   return (
     <div className="min-h-full">
@@ -59,7 +61,7 @@ export function SettingsLayout({ title, description, children }: SettingsLayoutP
           </ul>
         </nav>
         <div className="min-w-0 space-y-5">
-          <PageTitle back={{ to: '/settings', label: t('merchant.settings.title'), phoneOnly: true }} title={title} description={description} />
+          <PageTitle back={{ to: '/settings', label: t('merchant.settings.title'), phoneOnly: true }} title={title} description={description} actions={actions} />
           <section aria-label={title} className="space-y-6">
             {children}
           </section>

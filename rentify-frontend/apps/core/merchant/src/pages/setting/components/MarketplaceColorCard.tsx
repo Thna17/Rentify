@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Palette } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { useChannels } from '../../../context/ChannelContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rentify/shared/ui/card';
@@ -31,8 +31,8 @@ export function MarketplaceColorCard() {
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save the color.'); }
     finally { setSaving(false); }
   };
-  return <Card>
-    <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5" />Marketplace color</CardTitle><CardDescription>Choose your store’s accent color on Rentify Marketplace. The shared layout stays the same. This does not change your storefront template or theme.</CardDescription></CardHeader>
+  return <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
+    <CardHeader><CardTitle className="text-base font-semibold">Marketplace color</CardTitle><CardDescription>Choose your store’s accent color on Rentify Marketplace. The shared layout stays the same. This does not change your storefront template or theme.</CardDescription></CardHeader>
     <CardContent className="space-y-4">
       <div role="group" aria-label="Marketplace accent color" className="flex flex-wrap gap-2">
         {COLORS.map(color => <button key={color.value} type="button" aria-pressed={selected === color.value} disabled={saving} onClick={() => { setSelected(color.value); setMessage(''); }} className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ borderColor: selected === color.value ? color.value : undefined }}><span className="grid h-5 w-5 place-items-center rounded-full text-white" style={{ background: color.value }}>{selected === color.value && <Check size={13} />}</span>{color.label}</button>)}
