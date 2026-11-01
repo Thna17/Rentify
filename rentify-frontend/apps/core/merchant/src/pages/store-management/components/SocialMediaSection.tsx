@@ -30,16 +30,16 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
   t,
   className
 }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }} 
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     className={className}
   >
-    <Card>
+    <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Share2 className="h-5 w-5 text-muted-foreground" />
-          <CardTitle>{t('dashboard.store_management.social_media')}</CardTitle>
+          <CardTitle className="text-base font-semibold">{t('dashboard.store_management.social_media')}</CardTitle>
         </div>
         <CardDescription>
           {t('dashboard.store_management.social_media_description')}
@@ -62,7 +62,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
             isUpdating={isUpdating}
             t={t}
           />
-          
+
           <EditableField
             field="socialMedia.instagram"
             value={storeData?.socialMedia?.instagram || ''}
@@ -78,7 +78,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
             isUpdating={isUpdating}
             t={t}
           />
-          
+
           <EditableField
             field="socialMedia.twitter"
             value={storeData?.socialMedia?.twitter || ''}
@@ -94,7 +94,7 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
             isUpdating={isUpdating}
             t={t}
           />
-          
+
           <EditableField
             field="socialMedia.linkedin"
             value={storeData?.socialMedia?.linkedin || ''}
@@ -120,9 +120,9 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
             </h4>
             <div className="flex gap-3">
               {storeData.socialMedia.facebook && (
-                <a 
-                  href={storeData.socialMedia.facebook} 
-                  target="_blank" 
+                <a
+                  href={storeData.socialMedia.facebook}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
                 >
@@ -130,9 +130,9 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                 </a>
               )}
               {storeData.socialMedia.instagram && (
-                <a 
-                  href={storeData.socialMedia.instagram} 
-                  target="_blank" 
+                <a
+                  href={storeData.socialMedia.instagram}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 bg-[var(--rentify-color-danger-base)] text-white rounded-lg hover:bg-[var(--rentify-color-danger-base)] transition-colors"
                 >
@@ -140,9 +140,9 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                 </a>
               )}
               {storeData.socialMedia.twitter && (
-                <a 
-                  href={storeData.socialMedia.twitter} 
-                  target="_blank" 
+                <a
+                  href={storeData.socialMedia.twitter}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
                 >
@@ -150,9 +150,9 @@ export const SocialMediaSection: React.FC<SocialMediaSectionProps> = ({
                 </a>
               )}
               {storeData.socialMedia.linkedin && (
-                <a 
-                  href={storeData.socialMedia.linkedin} 
-                  target="_blank" 
+                <a
+                  href={storeData.socialMedia.linkedin}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors"
                 >

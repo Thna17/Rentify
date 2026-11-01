@@ -1,30 +1,24 @@
-import { useLocation } from 'react-router-dom';
-import React, { useEffect, useState, useMemo } from 'react';
-import { useTranslation } from '@rentify/utils';
+import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useAuth, useTranslation } from '@rentify/utils';
+import { toast } from 'sonner';
 import {
   Download,
   Eye,
   Save,
+  Loader2,
   Settings,
-  FileText,
-  Bell,
   Plus,
-  ArrowLeft,
   Search,
-  CheckCircle2,
-  Clock,
   AlertCircle,
   RefreshCw,
   Receipt,
-  ExternalLink,
 } from 'lucide-react';
 
 // Shadcn components
-import { Alert, AlertTitle, AlertDescription } from '@rentify/shared/ui/alert';
 import { Button } from '@rentify/shared/ui/button';
 import { Label } from '@rentify/shared/ui/label';
 import { Badge } from '@rentify/shared/ui/badge';
-import { Card, CardContent } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
 import {
@@ -49,8 +43,7 @@ import {
   useGetInvoicesQuery,
 } from '@rentify/apis';
 import { useInvoice } from '../../hooks/useInvoice';
-import { useNotification } from '../../hooks/useNotification';
-import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+import { PageShell, PageTitle, StatePanel, TabBar } from '../../components/page/PagePrimitives';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { useChannels } from '../../context/ChannelContext';
 
@@ -75,22 +68,15 @@ const INITIAL_INVOICE_DATA = {
   paymentMethod: 'cash',
 };
 
-const WORK_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'unpaid', label: 'Unpaid' },
-  { id: 'paid', label: 'Paid' },
-  { id: 'drafts', label: 'Drafts' },
-];
+const WORK_TABS = ['all', 'unpaid', 'paid', 'drafts'];
 
 export const InvoiceManual = () => {
   const { t } = useTranslation();
   // /invoices?new=1 ("New order" on the Orders page) opens the form directly
-  const [viewMode, setViewMode] = useState(() => (new URLSearchParams(window.location.search).get('new') ? 'new' : 'list'));
-  // Also when already on Invoices and the address changes to ?new=1
+  // The address decides the view (/invoices?new=1 is the form), so the back link and Back both return to the list
   const { search } = useLocation();
-  useEffect(() => {
-    if (new URLSearchParams(search).get('new')) setViewMode('new');
-  }, [search]);
+  const navigate = useNavigate();
+  const viewMode = new URLSearchParams(search).get('new') ? 'new' : 'list';
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
@@ -121,34 +107,37 @@ export const InvoiceManual = () => {
     handleCustomerSelect,
   } = useInvoice(INITIAL_INVOICE_DATA);
 
-  const {
-    showNotification,
-    notificationMessage,
-    notificationType,
-    showSuccess,
-    showError,
-  } = useNotification();
 
-  const websiteName = 'Brathna Store';
+  // The seller block on the invoice: only the Store's real details (no address is stored yet)
   const { store } = useChannels();
+  const { profile } = useAuth();
+  const websiteName = store?.name || '';
   const companyInfo = {
-    name: store?.name || 'Rentify',
-    address: '456 Tech Avenue, Suite 200, San Francisco, CA 94102',
-    phone: '+1 (555) 987-6543',
-    email: 'hello@rentify.com',
-    website: store?.slug ? `${store.slug}.mekhla.digital` : 'www.rentify.com',
-    watermark: store?.name || 'Rentify',
-    logo: store?.logoUrl || 'https://i.ibb.co/hFhZHpkh/Logo.png',
+    name: store?.name || '',
+    address: '',
+    phone: profile?.phoneNumber || profile?.phone || '',
+    email: profile?.email || '',
+    website: store?.slug ? `${store.slug}.mekhla.digital` : '',
+    watermark: store?.name || '',
+    logo: store?.logoUrl || '',
+  };
+
+  const openNewInvoice = () => {
+    setIsSaved(false);
+    navigate('/invoices?new=1');
   };
 
   const handleSaveInvoice = async () => {
     setIsSaving(true);
     try {
       if (!invoiceData.customerName || invoiceData.items.length === 0) {
-        throw new Error(
-          invoiceData.customerName
-            ? t('dashboard.invoices.error_no_items')
-            : t('dashboard.invoices.error_customer_name')
+        throw Object.assign(
+          new Error(
+            invoiceData.customerName
+              ? t('dashboard.invoices.error_no_items')
+              : t('dashboard.invoices.error_customer_name')
+          ),
+          { isFormCheck: true }
         );
       }
 
@@ -213,7 +202,7 @@ export const InvoiceManual = () => {
       }).unwrap();
 
       setIsSaved(true);
-      showSuccess(t('dashboard.invoices.success_message'));
+      toast.success(t('dashboard.invoices.success_message'));
 
       updateField('id', response.invoice.id);
       updateField('invoiceNumber', response.invoice.invoiceNumber);
@@ -223,11 +212,8 @@ export const InvoiceManual = () => {
       refetchInvoices();
     } catch (error) {
       console.error('Failed to save invoice:', error);
-      showError(
-        error.data?.message ||
-          error.message ||
-          t('dashboard.invoices.error_save_failed')
-      );
+      // Our own checks say what to fix; anything else gets one plain message
+      toast.error(error?.isFormCheck ? error.message : t('dashboard.invoices.error_save_failed'));
     } finally {
       setIsSaving(false);
     }
@@ -263,200 +249,160 @@ export const InvoiceManual = () => {
   // Render M14: Invoices List View
   if (viewMode === 'list') {
     return (
-      <div className="min-h-full">
-        <PageHeader
-          title="Invoices"
-          description="Send bills to customers and track payments"
-          icon={Receipt}
+      <PageShell width="medium">
+        <PageTitle
+          title={t('merchant.invoices.title')}
+          description={t('merchant.invoices.listBody')}
           actions={
-            <Button
-              onClick={() => {
-                setIsSaved(false);
-                setViewMode('new');
-              }}
-              className="min-h-[44px] px-5 bg-primary text-primary-foreground font-medium shadow-sm flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New invoice</span>
+            <Button onClick={openNewInvoice} className="min-h-[44px] rounded-xl px-5">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.invoices.newTitle')}
             </Button>
           }
-          breadcrumb={[
-            { label: 'Dashboard', href: '/overview' },
-            { label: 'Invoices' },
-          ]}
         />
 
-        <div className="p-4 sm:p-6 md:p-8 space-y-5 max-w-5xl">
-          {/* Work Tabs (Screen M14) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[var(--rentify-color-border-subtle,#ece8e1)]">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-              {WORK_TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
-                        : 'bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search invoices..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 text-xs h-9 rounded-xl border border-[var(--rentify-color-border-subtle,#ece8e1)]"
-              />
-            </div>
-          </div>
-
-          {/* Invoices List / Content State */}
-          {isLoadingInvoices ? (
-            <div className="space-y-3">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card p-4 flex items-center justify-between"
-                >
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-32 rounded-lg" />
-                    <Skeleton className="h-4 w-48 rounded-lg" />
-                  </div>
-                  <div className="space-y-2 text-right">
-                    <Skeleton className="h-5 w-16 ml-auto rounded-lg" />
-                    <Skeleton className="h-4 w-12 ml-auto rounded-lg" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : isErrorInvoices ? (
-            <div className="rounded-2xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card p-10 text-center space-y-3">
-              <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
-              <p className="font-semibold text-foreground text-sm">Failed to load invoices</p>
-              <Button variant="outline" onClick={() => refetchInvoices()} className="min-h-[44px]">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry
-              </Button>
-            </div>
-          ) : filteredInvoices.length === 0 ? (
-            <div className="rounded-2xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card p-12 text-center space-y-3 shadow-[var(--shadow-soft)]">
-              <div className="p-3 bg-muted/30 text-muted-foreground rounded-2xl w-fit mx-auto border border-border/40">
-                <Receipt className="h-8 w-8" />
-              </div>
-              <div>
-                <h4 className="text-base font-semibold text-foreground">No invoices yet</h4>
-                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                  Create an invoice to send a bill to a customer and track when it gets paid.
-                </p>
-              </div>
-              <Button
-                onClick={() => {
-                  setIsSaved(false);
-                  setViewMode('new');
-                }}
-                className="min-h-[44px] px-5 mt-2 bg-primary text-primary-foreground font-medium shadow-sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New invoice
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {filteredInvoices.map((inv) => {
-                const invNumber = inv.invoiceNumber || `INV-${inv.id}`;
-                const customer = inv.customer?.name || inv.customerName || 'Customer';
-                const totalAmount = inv.total || inv.pricing?.total || 0;
-                const status = String(inv.status || 'unpaid').toLowerCase();
-                const isPaid = status === 'paid';
-                const isDraft = status === 'draft';
-
-                return (
-                  <Card
-                    key={inv.id || invNumber}
-                    className="border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-card shadow-[var(--shadow-soft)] hover:bg-muted/10 transition-colors"
-                  >
-                    <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-4">
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-sm text-foreground">
-                            {invNumber}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {customer} · {isPaid ? 'Paid' : `Due ${inv.dueDate || 'in 30 days'}`}
-                        </p>
-                      </div>
-
-                      <div className="text-right shrink-0 space-y-1">
-                        <p className="font-mono font-bold text-sm sm:text-base text-foreground">
-                          ${Number(totalAmount).toFixed(2)}
-                        </p>
-                        {isPaid ? (
-                          <Badge className="bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] border-[var(--rentify-color-success-border)] text-2xs px-2 py-0.5">
-                            Paid
-                          </Badge>
-                        ) : isDraft ? (
-                          <Badge variant="secondary" className="text-2xs px-2 py-0.5 text-muted-foreground">
-                            Draft
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] border-[var(--rentify-color-warning-border)] text-2xs px-2 py-0.5">
-                            Unpaid
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+        {/* Work tabs and search (Screen M14) */}
+        <TabBar
+          items={WORK_TABS.map((id) => ({ id, label: t(`merchant.invoices.tabs.${id}`) }))}
+          value={activeTab}
+          onChange={setActiveTab}
+          label={t('merchant.invoices.title')}
+        />
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input
+            type="search"
+            aria-label={t('merchant.invoices.search')}
+            placeholder={t('merchant.invoices.search')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-11 rounded-xl pl-9"
+          />
         </div>
-      </div>
+
+        {isLoadingInvoices ? (
+          <div className="space-y-3" aria-busy="true">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-32 rounded-lg" />
+                  <Skeleton className="h-4 w-48 rounded-lg" />
+                </div>
+                <div className="space-y-2 text-right">
+                  <Skeleton className="ml-auto h-5 w-16 rounded-lg" />
+                  <Skeleton className="ml-auto h-4 w-12 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : isErrorInvoices ? (
+          <StatePanel
+            tone="error"
+            icon={<AlertCircle className="h-5 w-5" />}
+            title={t('merchant.invoices.loadError')}
+            action={
+              <Button variant="outline" onClick={() => refetchInvoices()} className="min-h-[44px] rounded-xl">
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                {t('merchant.p.tryAgain')}
+              </Button>
+            }
+          />
+        ) : filteredInvoices.length === 0 ? (
+          rawInvoices.length === 0 ? (
+            <StatePanel
+              icon={<Receipt className="h-5 w-5" />}
+              title={t('merchant.invoices.emptyTitle')}
+              body={t('merchant.invoices.emptyBody')}
+              action={
+                <Button onClick={openNewInvoice} className="min-h-[44px] rounded-xl px-5">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  {t('merchant.invoices.newTitle')}
+                </Button>
+              }
+            />
+          ) : (
+            <StatePanel icon={<Search className="h-5 w-5" />} title={t('merchant.invoices.noMatch')} />
+          )
+        ) : (
+          <ul className="space-y-2.5">
+            {filteredInvoices.map((inv) => {
+              const invNumber = inv.invoiceNumber || `INV-${inv.id}`;
+              const customer = inv.customer?.name || inv.customerName || t('merchant.invoices.customer');
+              const totalAmount = inv.total || inv.pricing?.total || 0;
+              const status = String(inv.status || 'unpaid').toLowerCase();
+              const isPaid = status === 'paid';
+              const isDraft = status === 'draft';
+              // Only dates the invoice really has
+              const when = isPaid
+                ? t('merchant.invoices.tabs.paid')
+                : inv.dueDate
+                ? t('merchant.invoices.due', { date: inv.dueDate })
+                : null;
+
+              return (
+                <li
+                  key={inv.id || invNumber}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] sm:p-5"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-mono text-sm font-semibold text-foreground">{invNumber}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {customer}
+                      {when ? ` · ${when}` : ''}
+                    </p>
+                  </div>
+                  <div className="shrink-0 space-y-1 text-right">
+                    <p className="font-mono text-sm font-semibold text-foreground sm:text-base">
+                      ${Number(totalAmount).toFixed(2)}
+                    </p>
+                    {isPaid ? (
+                      <Badge className="border-[var(--rentify-color-success-border)] bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)]">
+                        {t('merchant.invoices.tabs.paid')}
+                      </Badge>
+                    ) : isDraft ? (
+                      <Badge variant="secondary">{t('merchant.invoices.draft')}</Badge>
+                    ) : (
+                      <Badge className="border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]">
+                        {t('merchant.invoices.tabs.unpaid')}
+                      </Badge>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </PageShell>
     );
   }
 
   // Render M15: New Invoice Form View
   return (
-    <div className="min-h-full">
-      <PageHeader
+    <PageShell>
+      <PageTitle
+        back={{ to: '/invoices', label: t('merchant.invoices.title') }}
         title={t('merchant.invoices.newTitle')}
         description={t('merchant.invoices.newBody')}
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setViewMode('list')}
-              className="min-h-[44px] px-3.5 gap-1.5"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{t('merchant.invoices.title')}</span>
+          <>
+            <Button variant="outline" onClick={() => setMobilePreviewOpen(true)} className="min-h-[44px] rounded-xl lg:hidden">
+              <Eye className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.invoices.preview')}
             </Button>
-
             {!isSaved ? (
               <Button
                 onClick={handleSaveInvoice}
                 disabled={isSaving}
-                className="min-h-[44px] px-5 bg-primary text-primary-foreground font-medium shadow-sm flex items-center gap-2"
+                className="min-h-[44px] rounded-xl px-5"
               >
                 {isSaving ? (
                   <>
-                    <Save className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                     <span>{t('merchant.common.saving')}</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
+                    <Save className="w-4 h-4" aria-hidden="true" />
                     <span>{t('merchant.invoices.saveSend')}</span>
                   </>
                 )}
@@ -480,10 +426,10 @@ export const InvoiceManual = () => {
                   {({ loading }) => (
                     <Button
                       disabled={loading}
-                      className="min-h-[44px] px-4 bg-primary text-primary-foreground font-medium shadow-sm flex items-center gap-2"
+                      className="min-h-[44px] rounded-xl px-4"
                     >
-                      <Download className="w-4 h-4" />
-                      <span>Download PDF</span>
+                      <Download className="w-4 h-4" aria-hidden="true" />
+                      <span>{t('merchant.invoices.downloadPdf')}</span>
                     </Button>
                   )}
                 </PDFDownloadLink>
@@ -496,33 +442,11 @@ export const InvoiceManual = () => {
               </div>
             )}
 
-            <Button
-              variant="outline"
-              onClick={() => setMobilePreviewOpen(true)}
-              className="min-h-[44px] px-3.5 lg:hidden"
-            >
-              <Eye className="w-4 h-4" />
-              <span className="ml-1.5">{t('merchant.invoices.preview')}</span>
-            </Button>
-          </div>
+          </>
         }
-        breadcrumb={[
-          { label: t('merchant.invoices.title'), href: '/invoices' },
-          { label: t('merchant.invoices.newTitle') },
-        ]}
       />
 
-      {showNotification && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Alert variant={notificationType === 'success' ? 'default' : 'destructive'}>
-            <Bell className="h-4 w-4" />
-            <AlertTitle>{notificationType === 'success' ? 'Success' : 'Error'}</AlertTitle>
-            <AlertDescription>{notificationMessage}</AlertDescription>
-          </Alert>
-        </div>
-      )}
-
-      <div className="p-4 sm:p-6 md:p-8">
+      <div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Form Section */}
           <div className="lg:col-span-6 xl:col-span-7 space-y-6 [&_input]:min-h-11 sm:[&_input]:min-h-0 [&_[role=combobox]]:min-h-11 sm:[&_[role=combobox]]:min-h-0">
@@ -539,44 +463,24 @@ export const InvoiceManual = () => {
           {/* Desktop Preview Section */}
           <div className="hidden lg:block lg:col-span-6 xl:col-span-5 sticky top-6 space-y-4">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] rounded-lg">
-                  <Eye className="w-4.5 h-4.5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-foreground">
-                      {t('merchant.p2.documentPreview')}
-                    </h3>
-                    <span className="text-2xs px-2 py-0.5 rounded-full bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] font-medium border border-[var(--rentify-color-success-border)]">
-                      Live A4
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Real-time document preview
-                  </p>
-                </div>
-              </div>
+              <h2 className="text-base font-semibold text-foreground">{t('merchant.invoices.preview')}</h2>
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2 text-xs h-9 rounded-lg">
-                    <Settings className="w-4 h-4 text-muted-foreground" />
-                    <span>Options</span>
+                  <Button variant="outline" className="min-h-[44px] rounded-xl">
+                    <Settings className="h-4 w-4" aria-hidden="true" />
+                    <span>{t('dashboard.invoices.options')}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-64 p-4 space-y-3">
-                  <div className="border-b border-border pb-2">
-                    <h4 className="font-semibold text-sm">Preview options</h4>
-                    <p className="text-xs text-muted-foreground">Customize invoice appearance</p>
-                  </div>
+                  <h3 className="border-b border-border pb-2 text-sm font-semibold">{t('dashboard.invoices.preview_options')}</h3>
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="toggle-watermark" className="text-xs font-medium cursor-pointer">Watermark</Label>
+                      <Label htmlFor="toggle-watermark" className="cursor-pointer text-sm font-medium">{t('dashboard.invoices.show_watermark')}</Label>
                       <Switch id="toggle-watermark" checked={showWatermark} onCheckedChange={setShowWatermark} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="toggle-signatures" className="text-xs font-medium cursor-pointer">Signatures</Label>
+                      <Label htmlFor="toggle-signatures" className="cursor-pointer text-sm font-medium">{t('dashboard.invoices.show_signatures')}</Label>
                       <Switch id="toggle-signatures" checked={showSignatures} onCheckedChange={setShowSignatures} />
                     </div>
                   </div>
@@ -602,7 +506,7 @@ export const InvoiceManual = () => {
       <Sheet open={mobilePreviewOpen} onOpenChange={setMobilePreviewOpen}>
         <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-muted/30">
           <SheetHeader className="mb-6">
-            <SheetTitle>Invoice preview</SheetTitle>
+            <SheetTitle>{t('merchant.invoices.preview')}</SheetTitle>
           </SheetHeader>
           <div className="flex justify-center p-2">
             <InvoicePreview
@@ -617,7 +521,7 @@ export const InvoiceManual = () => {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </PageShell>
   );
 };
 
