@@ -19,7 +19,7 @@ import { POS_URL } from '@rentify/shared/config/urls';
 
 // The navigation follows the wireframe sitemap (docs/experience/wireframes/rentify-ux-redesign.html):
 // Group 1 (main): Home · Orders · Products · Customers · Analytics · Invoices (no group title)
-// Group 2 (channels): Marketplace · Online store · Point of sale (title: "Sales channels")
+// Group 2 (channels): Online store · Marketplace · Point of sale (title: "Sales channels")
 // Group 3 (more): Returns & problems · Share your store · Settings · Help (title: "More")
 export const ALL_TABS = [
   // --- Group 1: Main places (no section heading) ---
@@ -80,18 +80,6 @@ export const ALL_TABS = [
 
   // --- Group 2: Sales channels ---
   {
-    name: 'dashboard.navigation.marketplace',
-    label: 'Marketplace',
-    hint: 'Rentify Marketplace listing and products',
-    icon: ShoppingBag,
-    path: 'marketplace',
-    roles: ['admin', 'user'],
-    permission: null,
-    ownerOnly: true,
-    channel: 'marketplace',
-    section: 'channels',
-  },
-  {
     name: 'dashboard.channels.online_store',
     label: 'Online store',
     hint: 'Your branded storefront website',
@@ -101,6 +89,18 @@ export const ALL_TABS = [
     permission: null,
     ownerOnly: true,
     channel: 'storefront',
+    section: 'channels',
+  },
+  {
+    name: 'dashboard.navigation.marketplace',
+    label: 'Marketplace',
+    hint: 'Rentify Marketplace listing and products',
+    icon: ShoppingBag,
+    path: 'marketplace',
+    roles: ['admin', 'user'],
+    permission: null,
+    ownerOnly: true,
+    channel: 'marketplace',
     section: 'channels',
   },
   {

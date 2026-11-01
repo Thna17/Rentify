@@ -24,7 +24,7 @@ export default function PlatformAnalytics() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState<Period>('30d');
   const [tab, setTab] = useState<ReportTab>('sales');
-  const { orders, loading, error, summary, reload } = useChannelOrders(period, 'all');
+  const { orders, loading, error, summary, reload } = useChannelOrders(period);
   const periodLabel = t(`merchant.reports.periods.${period}`);
 
   const channels = useMemo(

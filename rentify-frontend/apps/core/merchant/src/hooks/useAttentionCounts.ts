@@ -10,14 +10,17 @@ import { countByTab } from '../pages/order-management/orderModel';
  * so a count drops right after the merchant acts. Skipped for people without the orders permission.
  */
 export function useAttentionCounts(enabled: boolean) {
-  const { store } = useChannels();
+  const { store, view } = useChannels();
   const { pathname } = useLocation();
   const [counts, setCounts] = useState({ toAct: 0, problems: 0 });
 
   useEffect(() => {
     if (!enabled || !store?.id) return undefined;
     let active = true;
-    fetch(`${ECOMMERCE_API_ROOT}/api/stores/${store.id}/orders`, { credentials: 'include' })
+    const url = view && view !== 'all'
+      ? `${ECOMMERCE_API_ROOT}/api/stores/${store.id}/orders?channel=${view}`
+      : `${ECOMMERCE_API_ROOT}/api/stores/${store.id}/orders`;
+    fetch(url, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active || !Array.isArray(data?.orders)) return;
@@ -28,7 +31,7 @@ export function useAttentionCounts(enabled: boolean) {
     return () => {
       active = false;
     };
-  }, [enabled, store?.id, pathname]);
+  }, [enabled, store?.id, pathname, view]);
 
   return counts;
 }

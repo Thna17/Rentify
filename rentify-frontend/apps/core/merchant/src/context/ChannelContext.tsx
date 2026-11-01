@@ -120,8 +120,8 @@ export const ChannelProvider: React.FC<ChannelProviderProps> = ({
   });
   const availableViews: ChannelView[] = [
     'all',
-    ...(hasMarketplace ? (['marketplace'] as const) : []),
     ...(hasStorefront ? (['storefront'] as const) : []),
+    ...(hasMarketplace ? (['marketplace'] as const) : []),
     ...(posEnabled ? (['pos'] as const) : []),
   ];
   const view = resolveChannelView(savedView, availableViews);
