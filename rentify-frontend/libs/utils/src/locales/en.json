@@ -1432,7 +1432,8 @@
         "all": "All channels",
         "marketplace": "Marketplace",
         "storefront": "Online store",
-        "pos": "POS"
+        "pos": "POS",
+        "allShort": "All"
       }
     },
     "p": {
