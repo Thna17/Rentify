@@ -79,7 +79,7 @@ test('P2-ENT-001: Commerce Authoritative Entitlement Consumption & Safe Fallback
   assert.equal(evalFallback.version, 1);
   assert.equal(evalFallback.tier, 'free_pilot');
   assert.equal(evalFallback.capabilities.productLimit, 25);
-  assert.equal(evalFallback.capabilities.hostedCheckout, false);
+  assert.equal(evalFallback.capabilities.hostedCheckout, true);
 });
 
 test('P2-ENT-001: Product Limit & Mutation Lock Enforcement in Store Catalog Service', async (t) => {

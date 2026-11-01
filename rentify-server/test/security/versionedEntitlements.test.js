@@ -31,20 +31,20 @@ test('P2-ENT-001: Capability Model & Tier Configuration', () => {
   assert.ok(CAPABILITY_TIERS.business, 'Business tier must exist');
 
   // Verify plan display names are decoupled from machine keys
-  assert.equal(CAPABILITY_TIERS.free_pilot.displayName, 'Free Pilot');
+  assert.equal(CAPABILITY_TIERS.free_pilot.displayName, 'Free');
   assert.equal(CAPABILITY_TIERS.starter.displayName, 'Starter');
-  assert.equal(CAPABILITY_TIERS.business.displayName, 'Business');
+  assert.equal(CAPABILITY_TIERS.business.displayName, 'Pro');
 
   // Verify required capability keys for Free Pilot
   const pilotCaps = CAPABILITY_TIERS.free_pilot.capabilities;
   assert.equal(pilotCaps.marketplaceListing, true);
-  assert.equal(pilotCaps.website, false);
+  assert.equal(pilotCaps.website, true);
   assert.equal(pilotCaps.productLimit, 25);
   assert.equal(pilotCaps.staffLimit, 1);
   assert.equal(pilotCaps.pos, true);
   assert.equal(pilotCaps.invoices, true);
   assert.equal(pilotCaps.customDomainBrowse, false);
-  assert.equal(pilotCaps.hostedCheckout, false);
+  assert.equal(pilotCaps.hostedCheckout, true);
   assert.equal(pilotCaps.historicalOrderRead, true);
 
   // Verify required capability keys for Starter
@@ -79,11 +79,11 @@ test('P2-ENT-001: Legacy Package Compatibility Resolution', () => {
   assert.equal(resolveTier('pilot').tier, 'free_pilot');
 
   // Starter variations
-  assert.equal(resolveTier({ name: 'Starter', price: 15 }).tier, 'starter');
+  assert.equal(resolveTier({ name: 'Starter', price: 8 }).tier, 'starter');
   assert.equal(resolveTier('starter').tier, 'starter');
 
   // Business / Pro variations
-  assert.equal(resolveTier({ name: 'Pro', price: 10 }).tier, 'business');
+  assert.equal(resolveTier({ name: 'Pro', price: 15 }).tier, 'business');
   assert.equal(resolveTier({ name: 'Business Storefront', price: 35 }).tier, 'business');
   assert.equal(resolveTier('business').tier, 'business');
   assert.equal(resolveTier('pro').tier, 'business');
@@ -172,7 +172,7 @@ test('P2-ENT-001: Storefront 14-Day Trial & Subscription Lifecycle Transitions',
     status: 'trial',
     startDate: trialStart,
     endDate: trialEnd,
-    Package: { name: 'Starter', price: 15 },
+    Package: { name: 'Starter', price: 8 },
   };
 
   // Day 5: Active 14-day trial

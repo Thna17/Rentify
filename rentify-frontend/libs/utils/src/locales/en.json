@@ -1836,6 +1836,9 @@
       "noMatchesBody": "Try a different search or filter.",
       "products": {
         "title": "All products",
+        "catalogCapacity": "Product Capacity",
+        "limitReachedTitle": "You have reached the product limit of {{limit}} for your {{plan}} plan.",
+        "limitReachedDesc": "Upgrade your subscription plan to add more products to your store and marketplace listing.",
         "all": "All",
         "uncategorised": "Uncategorised",
         "noSku": "No SKU",
@@ -2730,7 +2733,9 @@
       "active": "Active",
       "commission": "Commission: {{value}}",
       "comparePlans": "Compare plans",
-      "hidePlans": "Hide plans"
+      "hidePlans": "Hide plans",
+      "upgrade": "Upgrade Plan",
+      "upgradeNow": "Upgrade Now"
     },
     "staffHome": {
       "role": "Staff",
