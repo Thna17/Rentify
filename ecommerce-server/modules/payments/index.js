@@ -6,4 +6,6 @@ module.exports = {
   get paymentConfigEncryption() { return require('./paymentConfigEncryption'); },
   get PaymentProcessor() { return require('./PaymentProcessor'); },
   get paymentUtils() { return require('./paymentUtils'); },
+  get CodStateError() { return require('./codErrors').CodStateError; },
+  get COD_ERROR_CODES() { return require('./codErrors').COD_ERROR_CODES; },
 };
