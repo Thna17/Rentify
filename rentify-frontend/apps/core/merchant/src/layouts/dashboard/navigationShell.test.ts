@@ -26,8 +26,8 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(findRedirect('products/manage')).toBe('/products');
     });
 
-    it('redirects /analytics to /reports', () => {
-      expect(findRedirect('analytics')).toBe('/reports');
+    it('redirects /reports to /analytics', () => {
+      expect(findRedirect('reports')).toBe('/analytics');
     });
 
     it('redirects /store-management to /online-store', () => {
@@ -67,7 +67,7 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       const moreTabs = visibleTabs.filter((t) => t.section === 'more').map((t) => t.path);
 
       // Group 1 (main): Home, Orders, Products, Customers, Reports, Invoices
-      expect(mainTabs).toEqual(['overview', 'orders', 'products', 'customers', 'reports', 'invoices']);
+      expect(mainTabs).toEqual(['overview', 'orders', 'products', 'customers', 'analytics', 'invoices']);
 
       // Group 2 (channels): Marketplace, Online store, Point of sale
       expect(channelTabs).toEqual(['marketplace', 'online-store', 'pos']);
@@ -133,7 +133,7 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(paths).not.toContain('orders');
       expect(paths).not.toContain('products');
       expect(paths).not.toContain('customers');
-      expect(paths).not.toContain('reports');
+      expect(paths).not.toContain('analytics');
       expect(paths).not.toContain('invoices');
       expect(paths).not.toContain('marketplace');
       expect(paths).not.toContain('online-store');

@@ -153,7 +153,7 @@ const OwnerHome = () => {
             <section>
               <SectionTitle
                 title={t('merchant.home.today')}
-                meta={<Link to="/reports" className="font-semibold text-foreground underline-offset-4 hover:underline">{t('merchant.home.reports')}</Link>}
+                meta={<Link to="/analytics" className="font-semibold text-foreground underline-offset-4 hover:underline">{t('merchant.home.analytics') || t('merchant.home.reports')}</Link>}
               />
               <div className="grid grid-cols-3 gap-3">
                 {[
