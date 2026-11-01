@@ -103,6 +103,6 @@ test('publishing refuses unknown templates and unconfigured hosting', async (t) 
   await assert.rejects(deploymentService.publishWebsite('w'), /HOSTED_STOREFRONT_DOMAIN/);
 
   process.env.HOSTED_STOREFRONT_DOMAIN = 'rentifystore.shop';
-  Website.findByPk.mock.mockImplementation(async () => fakeWebsite({ WebsiteTemplate: { websiteTemplateId: 9 } }));
-  await assert.rejects(deploymentService.publishWebsite('w'), /Template 9 cannot be published/);
+  Website.findByPk.mock.mockImplementation(async () => fakeWebsite({ WebsiteTemplate: { websiteTemplateId: 99 } }));
+  await assert.rejects(deploymentService.publishWebsite('w'), /Template 99 cannot be published/);
 });
