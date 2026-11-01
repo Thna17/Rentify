@@ -31,7 +31,7 @@ export function AppSidebar({
   const sidebarContent = (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground select-none">
       {/* Brand Header at top of sidebar */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4 sm:px-5">
+      <div className="flex h-16 shrink-0 items-center justify-between px-4 sm:px-5">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
             {store?.logoUrl ? (
