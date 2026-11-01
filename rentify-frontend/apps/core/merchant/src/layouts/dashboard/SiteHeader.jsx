@@ -168,52 +168,69 @@ export function SiteHeader({
 
   return (
     <header className="relative flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8 border-b border-border/40">
-      {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand */}
+      {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand when collapsed */}
       <div className="flex min-w-0 items-center gap-3">
         {isMobile ? (
-          <SheetTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
-              aria-label={t('merchant.shell.expandSidebar')}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
+          <>
+            <SheetTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
+                aria-label={t('merchant.shell.expandSidebar')}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
+                {store?.logoUrl ? (
+                  <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
+                ) : (
+                  'R'
+                )}
+              </div>
+              <div className="min-w-0 flex items-baseline gap-2">
+                <span className="text-[15px] font-semibold tracking-tight hidden sm:inline">Rentify</span>
+                <span className="truncate text-sm font-medium text-muted-foreground max-w-[140px]">
+                  {storeName}
+                </span>
+              </div>
+            </div>
+          </>
         ) : (
           !isSidebarOpen && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onSidebarToggle}
-              className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
-              aria-label={t('merchant.shell.expandSidebar')}
-              title={t('merchant.shell.expandSidebar')}
-            >
-              <PanelLeft className="h-5 w-5" />
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onSidebarToggle}
+                className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
+                aria-label={t('merchant.shell.expandSidebar')}
+                title={t('merchant.shell.expandSidebar')}
+              >
+                <PanelLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
+                  {store?.logoUrl ? (
+                    <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
+                  ) : (
+                    'R'
+                  )}
+                </div>
+                <div className="min-w-0 flex items-baseline gap-2">
+                  <span className="text-[15px] font-semibold tracking-tight hidden sm:inline">Rentify</span>
+                  <span className="truncate text-sm font-medium text-muted-foreground max-w-[140px] sm:max-w-[200px]">
+                    {storeName}
+                  </span>
+                </div>
+              </div>
+            </>
           )
         )}
-
-        {/* Brand Lockup: mark + name */}
-        <div className={`flex items-center gap-2.5 min-w-0 ${!isMobile && isSidebarOpen ? 'pl-2 sm:pl-3' : ''}`}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
-            {store?.logoUrl ? (
-              <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
-            ) : (
-              'R'
-            )}
-          </div>
-          <div className="min-w-0 flex items-baseline gap-2">
-            <span className="text-[15px] font-semibold tracking-tight hidden sm:inline">Rentify</span>
-            <span className="truncate text-sm font-medium text-muted-foreground max-w-[140px] sm:max-w-[200px]">
-              {storeName}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Center: Search Bar on Desktop; full-width bar on Mobile when active */}

@@ -19,6 +19,7 @@ export function AppSidebar({
   isMobile = false,
 }) {
   const { t } = useTranslation();
+  const storeName = store?.name || 'Rentify';
 
   const filteredTabs = searchFilter.trim()
     ? tabs.filter((item) => {
@@ -27,25 +28,41 @@ export function AppSidebar({
       })
     : tabs;
 
-
   const sidebarContent = (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground select-none">
-      {isMobile && (
-        <div className="flex h-14 items-center justify-end px-2">
+      {/* Brand Header at top of sidebar */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4 sm:px-5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
+            {store?.logoUrl ? (
+              <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
+            ) : (
+              'R'
+            )}
+          </div>
+          <div className="min-w-0 flex items-baseline gap-2">
+            <span className="text-[15px] font-semibold tracking-tight">Rentify</span>
+            <span className="truncate text-sm font-medium text-muted-foreground max-w-[110px]">
+              {storeName}
+            </span>
+          </div>
+        </div>
+
+        {isMobile && (
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setOpen(false)}
-            className="h-11 w-11 rounded-xl text-foreground/60 hover:text-foreground"
+            className="h-11 w-11 rounded-xl text-foreground/60 hover:text-foreground shrink-0"
             aria-label={t('merchant.shell.closeMenu')}
           >
             <X className="h-5 w-5" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 pt-1.5 pb-4 scrollbar-subtle">
+      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-subtle">
         <NavMain
           items={filteredTabs}
           currentTab={currentTab}
@@ -55,7 +72,6 @@ export function AppSidebar({
           }}
         />
       </div>
-
     </aside>
   );
 
