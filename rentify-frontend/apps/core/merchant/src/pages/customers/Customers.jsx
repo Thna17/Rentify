@@ -5,7 +5,8 @@ import { Input } from '@rentify/shared/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@rentify/shared/ui/sheet';
 import { useCustomers } from '../../hooks/useCustomers';
 import { useTranslation } from '@rentify/utils';
-import { FilterChips, PageShell, PageTitle } from '../../components/page/PagePrimitives';
+import { PageShell, PageTitle } from '../../components/page/PagePrimitives';
+import { useChannels } from '../../context/ChannelContext';
 import { DataTable } from '../../components/data-table';
 import { formatMoney } from '../../hooks/useChannelOrders';
 
@@ -17,13 +18,12 @@ const initials = (name) =>
     .map((w) => w[0]?.toUpperCase())
     .join('') || '?';
 
-const CHANNEL_CHIPS = ['all', 'marketplace', 'storefront', 'pos'];
-
 export const Customers = () => {
   const { t, formatDate } = useTranslation();
   const { customers, isLoading, isError, refetch } = useCustomers();
   const [query, setQuery] = useState('');
-  const [selectedChannel, setSelectedChannel] = useState('all');
+  // The header's channel switcher decides which customers show
+  const { view: selectedChannel } = useChannels();
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   const visible = useMemo(() => {
@@ -102,13 +102,6 @@ export const Customers = () => {
   return (
     <PageShell>
         <PageTitle title={t('merchant.p.customers')} description={t('merchant.p.everyoneWhoHasOrdered')} />
-
-        <FilterChips
-          label={t('merchant.orders.channelFilter')}
-          items={CHANNEL_CHIPS.map((id) => ({ id, label: t(`merchant.orders.channels.${id}`) }))}
-          value={selectedChannel}
-          onChange={setSelectedChannel}
-        />
 
         <DataTable
           title={t('merchant.table.customers.title')}

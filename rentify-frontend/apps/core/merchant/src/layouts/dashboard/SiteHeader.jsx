@@ -574,8 +574,8 @@ export function SiteHeader({
       </div>
     </header>
     {hasChannelChoice && (
-      <div className="shrink-0 overflow-x-auto border-b border-border/40 bg-background/80 px-4 py-2 [scrollbar-width:none] md:px-8 2xl:hidden">
-        <ChannelViewSwitcher />
+      <div className="shrink-0 border-b border-border/40 bg-background/80 px-4 py-2 md:px-8 2xl:hidden">
+        <ChannelViewSwitcher fill />
       </div>
     )}
     </>
