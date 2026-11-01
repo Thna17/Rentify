@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Palette } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { useChannels } from '../../../context/ChannelContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rentify/shared/ui/card';

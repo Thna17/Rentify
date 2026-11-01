@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ImagePlus, Loader2, Store, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rentify/shared/ui/card';
@@ -94,10 +94,7 @@ export const StoreLogoCard: React.FC = () => {
   return (
     <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <Store className="h-5 w-5" aria-hidden="true" />
-          Store logo
-        </CardTitle>
+        <CardTitle className="text-base font-semibold">Store logo</CardTitle>
         <CardDescription>Shown on your store card and store page in the Rentify Marketplace.</CardDescription>
       </CardHeader>
       <CardContent>
