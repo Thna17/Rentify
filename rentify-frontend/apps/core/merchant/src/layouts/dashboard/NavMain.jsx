@@ -5,7 +5,7 @@ import { Button } from '@rentify/shared/ui/button';
 import React from 'react';
 
 // Sidebar groups match the wireframe M_MENU exactly:
-// 1. main (Home, Orders, Products, Customers, Reports, Invoices) - no section header
+// 1. main (Home, Orders, Products, Customers, Analytics, Invoices) - no section header
 // 2. channels (Marketplace, Online store, Point of sale) - "Sales channels"
 // 3. more (Returns & problems, Share your store, Settings, Help) - "More"
 const SECTION_ORDER = ['main', 'channels', 'more'];

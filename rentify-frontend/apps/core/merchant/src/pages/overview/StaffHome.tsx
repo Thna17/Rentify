@@ -11,7 +11,7 @@ import { PageShell, Panel } from '../../components/page/PagePrimitives';
 const PLACES: { permission: StaffPermission; to: string; key: string }[] = [
   { permission: 'manage_products', to: '/products', key: 'manage_products' },
   { permission: 'manage_invoices', to: '/invoices', key: 'manage_invoices' },
-  { permission: 'manage_analytics', to: '/reports', key: 'manage_analytics' },
+  { permission: 'manage_analytics', to: '/analytics', key: 'manage_analytics' },
   { permission: 'manage_settings', to: '/settings', key: 'manage_settings' },
 ];
 

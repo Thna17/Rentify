@@ -373,9 +373,10 @@
       "inventory": "Inventory",
       "marketplace": "Marketplace",
       "pos": "POS",
-      "reports": "Reports",
+      "reports": "Analytics",
       "staff": "Staff",
-      "storefront": "Storefront"
+      "storefront": "Storefront",
+      "analytics": "Analytics"
     },
     "shell": {
       "account": "Account",
@@ -2318,11 +2319,11 @@
         "evening": "Good evening, {{name}}"
       },
       "allChannels": "All channels",
-      "afterFirstOrder": "Sales and reports appear here after your first order.",
+      "afterFirstOrder": "Sales and analytics appear here after your first order.",
       "loadError": "We couldn't load your store overview",
       "attention": "Needs your attention",
       "today": "Today",
-      "reports": "Reports",
+      "reports": "Analytics",
       "ordersToday": "Orders",
       "salesToday": "Sales",
       "whereYouSell": "Where you sell",
@@ -2340,7 +2341,8 @@
       "manage": "Manage",
       "stockOk": "Every product has more than 3 in stock.",
       "soldOut": "Sold out",
-      "left": "{{count}} left"
+      "left": "{{count}} left",
+      "analytics": "Analytics"
     },
     "marketplace": {
       "title": "Rentify Market",
@@ -2442,7 +2444,7 @@
       }
     },
     "reports": {
-      "title": "Reports",
+      "title": "Analytics",
       "subtitle": "Sales, products, channels and how buyers paid.",
       "period": "Period",
       "periods": {
@@ -2458,7 +2460,7 @@
         "payments": "Payments"
       },
       "limited": "Based on your latest {{count}} orders.",
-      "loadError": "We couldn't load your reports",
+      "loadError": "We couldn't load your analytics",
       "kpi": {
         "sales": "Sales",
         "orders": "Orders",

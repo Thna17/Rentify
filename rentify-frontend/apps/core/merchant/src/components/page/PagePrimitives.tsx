@@ -95,7 +95,7 @@ export function FilterChips<T extends string>({
   );
 }
 
-/** Work states of one list (Orders, Invoices, Reports). Underlined, scrolls sideways on phones. */
+/** Work states of one list (Orders, Invoices, Analytics). Underlined, scrolls sideways on phones. */
 export function TabBar<T extends string>({
   items,
   value,

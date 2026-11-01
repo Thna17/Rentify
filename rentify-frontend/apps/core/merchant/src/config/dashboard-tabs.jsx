@@ -18,7 +18,7 @@ import {
 import { POS_URL } from '@rentify/shared/config/urls';
 
 // The navigation follows the wireframe sitemap (docs/experience/wireframes/rentify-ux-redesign.html):
-// Group 1 (main): Home · Orders · Products · Customers · Reports · Invoices (no group title)
+// Group 1 (main): Home · Orders · Products · Customers · Analytics · Invoices (no group title)
 // Group 2 (channels): Marketplace · Online store · Point of sale (title: "Sales channels")
 // Group 3 (more): Returns & problems · Share your store · Settings · Help (title: "More")
 export const ALL_TABS = [
@@ -60,10 +60,10 @@ export const ALL_TABS = [
     section: 'main',
   },
   {
-    name: 'dashboard.navigation.reports',
-    label: 'Reports',
+    name: 'dashboard.navigation.analytics',
+    label: 'Analytics',
     icon: BarChart2,
-    path: 'reports',
+    path: 'analytics',
     roles: ['admin', 'user', 'staff'],
     permission: 'manage_analytics',
     section: 'main',

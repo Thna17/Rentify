@@ -41,9 +41,9 @@ export const dashboardRoutes = {
   children: [
     { index: true, element: <Navigate to="overview" replace /> },
     { path: 'overview', element: <Overview /> },
-    // Reports (replaces Analytics; /analytics redirects)
-    { path: 'reports', element: <PlatformAnalytics /> },
-    { path: 'analytics', element: <Navigate to="/reports" replace /> },
+    // Analytics (canonical /analytics; /reports redirects)
+    { path: 'analytics', element: <PlatformAnalytics /> },
+    { path: 'reports', element: <Navigate to="/analytics" replace /> },
 
     // Online store (replaces /store-management; /store-management redirects)
     { path: 'online-store', element: <OnlineStorePage /> },
