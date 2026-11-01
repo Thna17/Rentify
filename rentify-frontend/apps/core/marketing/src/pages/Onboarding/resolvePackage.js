@@ -4,7 +4,7 @@ const normalize = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9
 
 /**
  * Resolves the package for storefront onboarding.
- * Creating a storefront website unlocks Starter (≈$5/mo, 14-day free trial) or Pro (≈$10/mo, 14-day free trial).
+ * Creating a storefront website unlocks Starter (≈$8/mo, 14-day free trial) or Pro (≈$15/mo, 14-day free trial).
  */
 export const resolvePackage = (packages, requested) => {
   const source = Array.isArray(packages) && packages.length > 0 ? packages : DEFAULT_PACKAGES;
@@ -25,7 +25,7 @@ export const resolvePackage = (packages, requested) => {
 
   const starter =
     list.find((item) => normalize(item.name) === 'starter') ||
-    list.find((item) => Number(item.price) === 5);
+    list.find((item) => Number(item.price) === 8);
   return starter || [...list].sort((a, b) => Number(a.price) - Number(b.price))[0];
 };
 

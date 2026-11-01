@@ -21,28 +21,28 @@ const POLICY_CONSTANTS = {
 const CAPABILITY_TIERS = {
   free_pilot: {
     tier: 'free_pilot',
-    displayName: 'Free Pilot',
-    description: 'Marketplace-only six-month pilot for micro-merchants',
+    displayName: 'Free',
+    description: 'Free plan with branded storefront and marketplace listing',
     price: 0,
-    duration: '6 months',
-    isPilot: true,
+    duration: '1 month',
+    isPilot: false,
     capabilities: {
       marketplaceListing: true,
-      website: false,
+      website: true,
       productLimit: 25,
       staffLimit: 1,
       pos: true,
       invoices: true,
       customDomainBrowse: false,
-      hostedCheckout: false,
+      hostedCheckout: true,
       historicalOrderRead: true,
     },
   },
   starter: {
     tier: 'starter',
     displayName: 'Starter',
-    description: 'Shop with a counter or brand storefront',
-    price: 15,
+    description: 'Shop with storefront, counter POS, and 100-product catalog',
+    price: 8,
     duration: '1 month',
     trialDays: 14,
     capabilities: {
@@ -59,9 +59,9 @@ const CAPABILITY_TIERS = {
   },
   business: {
     tier: 'business',
-    displayName: 'Business',
-    description: 'Growing shop with custom domain and multiple staff',
-    price: 35,
+    displayName: 'Pro',
+    description: 'Growing shop with custom domain, 5 staff accounts, and 500-product catalog',
+    price: 15,
     duration: '1 month',
     trialDays: 14,
     capabilities: {
@@ -103,10 +103,13 @@ function resolveTier(pkgOrTier) {
   const name = String(pkgOrTier.name || '').toLowerCase();
   const price = Number(pkgOrTier.price || 0);
 
-  if (name.includes('business') || name.includes('pro') || name.includes('enterprise') || price >= 30) {
+  if (name.includes('starter')) {
+    return CAPABILITY_TIERS.starter;
+  }
+  if (name.includes('business') || name.includes('pro') || name.includes('enterprise') || price >= 15) {
     return CAPABILITY_TIERS.business;
   }
-  if (name.includes('starter') || (price > 0 && price <= 25)) {
+  if (price > 0 && price < 15) {
     return CAPABILITY_TIERS.starter;
   }
   return CAPABILITY_TIERS.free_pilot;
