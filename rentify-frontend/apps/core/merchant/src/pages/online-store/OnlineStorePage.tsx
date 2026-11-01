@@ -73,6 +73,9 @@ export function OnlineStorePage() {
         </div>
         <p className="text-sm text-muted-foreground">{t(`merchant.onlineStore.stateBody.${state}`)}</p>
         <div className="flex flex-wrap gap-2">
+          <Button asChild className="min-h-[44px] rounded-xl">
+            <Link to="/customization"><Palette className="h-4 w-4" aria-hidden="true" />{t('merchant.onlineStore.editDesign')}</Link>
+          </Button>
           {href && state === 'live' && (
             <Button asChild variant="outline" className="min-h-[44px] rounded-xl">
               <a href={href} target="_blank" rel="noreferrer">

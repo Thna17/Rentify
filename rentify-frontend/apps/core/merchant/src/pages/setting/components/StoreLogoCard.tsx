@@ -92,9 +92,9 @@ export const StoreLogoCard: React.FC = () => {
   };
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Store className="h-5 w-5" aria-hidden="true" />
           Store logo
         </CardTitle>

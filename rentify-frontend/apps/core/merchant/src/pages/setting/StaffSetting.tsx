@@ -26,13 +26,6 @@ import { Badge } from '@rentify/shared/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
 import { DataTable, StatusPill } from '../../components/data-table';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@rentify/shared/ui/card';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -318,32 +311,26 @@ const StaffSetting: React.FC = () => {
   return (
     <SettingsLayout
       title={t('merchant.settings.sections.staff.title')}
-      description={t('merchant.settings.sections.staff.body')}
-      icon={<Users className="h-5 w-5" />}
+      description={t('merchant.staff.intro')}
+      actions={
+          <Button 
+            onClick={() => {
+              if (!canAddStaff) {
+                toast.error(disabledReason || 'Action locked');
+                return;
+              }
+              handleOpenDialog();
+            }}
+            disabled={!canAddStaff}
+            title={disabledReason || undefined}
+            className="min-h-[44px] shrink-0 gap-2 rounded-xl"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            {t('merchant.staff.invite')}
+          </Button>
+      }
     >
-      <Card className="shadow-sm border-0">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <p className="text-sm text-muted-foreground">{t('merchant.staff.intro')}</p>
-            <Button 
-              onClick={() => {
-                if (!canAddStaff) {
-                  toast.error(disabledReason || 'Action locked');
-                  return;
-                }
-                handleOpenDialog();
-              }}
-              disabled={!canAddStaff}
-              title={disabledReason || undefined}
-              className="min-h-[44px] shrink-0 gap-2 rounded-xl"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              {t('merchant.staff.invite')}
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
+      <div className="space-y-6">
           {disabledReason && !isGracePeriod && !isSuspended && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] p-4 text-xs sm:text-sm text-[var(--rentify-color-warning-text)] shadow-sm">
               <div className="flex items-center gap-2">
@@ -433,8 +420,7 @@ const StaffSetting: React.FC = () => {
               />
             </DialogContent>
           </Dialog>
-        </CardContent>
-      </Card>
+      </div>
     </SettingsLayout>
   );
 };

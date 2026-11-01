@@ -2464,7 +2464,8 @@
       "detailsBody": "Name, logo and contact",
       "editTitle": "Look and content",
       "editSubtitle": "Text, colours, fonts, social links and collections on your online store.",
-      "domainNote": "If you connect your own domain, buyers can browse there and check out on your Rentify address."
+      "domainNote": "If you connect your own domain, buyers can browse there and check out on your Rentify address.",
+      "editDesign": "Edit design"
     },
     "payments": {
       "title": "Payments",
@@ -2657,13 +2658,40 @@
       "grace": "Payment overdue",
       "trial": "Free trial",
       "active": "Active",
-      "commission": "Commission: {{value}}"
+      "commission": "Commission: {{value}}",
+      "comparePlans": "Compare plans",
+      "hidePlans": "Hide plans"
     },
     "staffHome": {
       "role": "Staff",
       "hello": "Hello, {{name}}",
       "alsoYouCan": "You can also open",
       "nothing": "Your account has no permissions yet. Ask the store owner to give you some."
+    },
+    "profile": {
+      "changePhoto": "Change photo",
+      "storeNameHint": "Buyers see this name on the marketplace and your online store.",
+      "closeTitle": "Close your store",
+      "closeBody": "Rentify closes a store for you after open orders are finished. Ask us and we will walk you through it.",
+      "closeAction": "Ask Rentify to close my store"
+    },
+    "productForm": {
+      "addPhotos": "Add photos",
+      "photoRules": "Up to {{count}} more · JPG, PNG, WebP or GIF, 5 MB each",
+      "choosePhotos": "Choose photos",
+      "cover": "The first photo is the one buyers see first."
+    },
+    "prefs": {
+      "appLanguage": "App language",
+      "loadError": "Notification settings couldn't be loaded.",
+      "emailBody": "Order and account updates by email",
+      "telegramBody": "New-order alerts in Telegram",
+      "optionalBody": "Tips and product news from Rentify",
+      "posBody": "Show the point of sale in this dashboard",
+      "marketplaceBody": "List your products on Rentify Market",
+      "marketplaceOn": "Your store is on Rentify Market",
+      "marketplaceOff": "Your store is off Rentify Market",
+      "channelError": "We couldn't change this. Try again."
     }
   }
 }

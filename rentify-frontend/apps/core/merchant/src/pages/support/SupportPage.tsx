@@ -38,7 +38,7 @@ export function SupportPage() {
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-foreground">{t('merchant.help.contact')}</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           <a
             href="https://t.me/rentify_support"
             target="_blank"

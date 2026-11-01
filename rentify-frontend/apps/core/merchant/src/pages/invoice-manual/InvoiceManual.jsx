@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from '@rentify/utils';
 import {
   Download,
@@ -85,6 +86,11 @@ export const InvoiceManual = () => {
   const { t } = useTranslation();
   // /invoices?new=1 ("New order" on the Orders page) opens the form directly
   const [viewMode, setViewMode] = useState(() => (new URLSearchParams(window.location.search).get('new') ? 'new' : 'list'));
+  // Also when already on Invoices and the address changes to ?new=1
+  const { search } = useLocation();
+  useEffect(() => {
+    if (new URLSearchParams(search).get('new')) setViewMode('new');
+  }, [search]);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);

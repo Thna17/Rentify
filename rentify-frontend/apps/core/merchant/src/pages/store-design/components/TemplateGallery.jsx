@@ -81,7 +81,7 @@ export function TemplateGallery({ templates, isLoading, isError, onRetry, curren
 
   return (
     <div className="space-y-5">
-      <ul className="space-y-3" aria-label={t('merchant.storeDesign.tabs.templates')}>
+      <ul className="grid grid-cols-2 gap-3 lg:grid-cols-1" aria-label={t('merchant.storeDesign.tabs.templates')}>
         {templates.map((template) => {
           const id = template.websiteTemplateId;
           const selected = id === previewId;
@@ -92,7 +92,7 @@ export function TemplateGallery({ templates, isLoading, isError, onRetry, curren
                 type="button"
                 aria-pressed={selected}
                 onClick={() => onPreview(id)}
-                className={`flex min-h-11 w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`flex h-full min-h-11 w-full flex-col items-start gap-3 rounded-xl border p-4 text-left lg:flex-row transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   selected ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
@@ -110,7 +110,7 @@ export function TemplateGallery({ templates, isLoading, isError, onRetry, curren
                       </span>
                     )}
                   </span>
-                  <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">{template.description}</span>
+                  <span className="mt-1 line-clamp-2 hidden text-sm text-muted-foreground lg:block">{template.description}</span>
                 </span>
               </button>
             </li>

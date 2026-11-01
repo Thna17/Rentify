@@ -127,18 +127,9 @@ export default function SupportCases() {
   ], [text, language]);
 
   return (
-    <section className="rounded-2xl bg-muted/40 p-5 md:p-6" aria-labelledby="support-cases-title">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-background text-foreground">
-          <LifeBuoy className="h-5 w-5" aria-hidden="true" />
-        </div>
-        <div className="min-w-0">
-          <h2 id="support-cases-title" className="text-base font-semibold text-foreground">{text.title}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{text.description}</p>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2" aria-live="polite">
+    // The Help page titles this section ("Your support cases"), so no second heading here
+    <section aria-label={text.title}>
+      <div className="space-y-2" aria-live="polite">
         {selected && (
           <button
             type="button"

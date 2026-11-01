@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Globe, Palette, RefreshCw, Store } from 'lucide-react';
+import { AlertCircle, Globe, RefreshCw, Store } from 'lucide-react';
 import { useGetWebsiteQuery, useSwitchTemplateMutation, useSaveStorefrontContentMutation } from '@rentify/apis';
 import { useGetTemplatesQuery } from '@rentify/apis/apis/websiteTemplateApi';
 import { useCheckDeploymentStatusQuery } from '@rentify/apis/apis/deploymentApi';
 import { serializeLayout, TEMPLATE_SECTIONS } from '@rentify/storefront/preview';
 import { useTranslation } from '@rentify/utils';
-import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+import { PageTitle } from '../../components/page/PagePrimitives';
 import { MARKETING_URL } from '@rentify/shared/config/urls';
 import { Button } from '@rentify/shared/ui/button';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
@@ -109,16 +109,13 @@ export default function StoreDesign() {
   const previewedLabel = previewed ? templateName(previewed) : '';
 
   const header = (
-    <PageHeader
-      title={t('merchant.storeDesign.title')}
-      description={t('merchant.storeDesign.description')}
-      icon={Palette}
-      breadcrumb={[
-        { label: t('merchant.storeDesign.breadcrumbHome'), href: '/overview' },
-        { label: t('merchant.onlineStore.title'), href: '/online-store' },
-        { label: t('merchant.storeDesign.title') },
-      ]}
-    />
+    <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-4 sm:px-6 md:px-8">
+      <PageTitle
+        back={{ to: '/online-store', label: t('merchant.onlineStore.title') }}
+        title={t('merchant.storeDesign.title')}
+        description={t('merchant.storeDesign.description')}
+      />
+    </div>
   );
 
   let body;

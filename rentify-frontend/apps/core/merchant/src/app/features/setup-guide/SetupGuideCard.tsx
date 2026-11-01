@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@rentify/utils';
+import { toast } from 'sonner';
 import { AlertCircle, ArrowRight, ArrowUpRight, Check, ChevronDown, Clock3, HelpCircle, PartyPopper } from 'lucide-react';
 import { useChannels } from '../../../context/ChannelContext';
 import { useAccess } from '../../../utils/access';
@@ -49,6 +50,7 @@ const secondaryButton = `${actionButton} bg-foreground/[0.06] text-foreground ho
 
 /** Runs a guide action; shared by the card's steps so every button goes to the same place. */
 function useGuideAction() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { store, toggleMarketplace } = useChannels();
   const { refresh, setDeliverySheetOpen, guide } = useSetupGuide();
@@ -61,7 +63,7 @@ function useGuideAction() {
       case 'set_delivery_fee': return setDeliverySheetOpen(true);
       case 'edit_store': return navigate('/settings/account');
       case 'customize_storefront': return navigate('/online-store');
-      case 'enable_marketplace': return void toggleMarketplace(true).then(refresh);
+      case 'enable_marketplace': return void toggleMarketplace(true).then(refresh, () => toast.error(t('merchant.prefs.channelError')));
       case 'contact_support': return navigate('/help');
       case 'retry': return void refresh();
       case 'preview': {
