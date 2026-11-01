@@ -19,6 +19,12 @@ router.get("/:paymentId/status", PaymentController.getPaymentStatus);
 router.get("/payments/:paymentId/check-status", PaymentController.checkPaymentStatus);
 router.get("/:paymentId/check-status", PaymentController.checkPaymentStatus);
 
+// Payment cancellation / void (e.g. POS cashier switches to cash)
+router.post("/payments/:paymentId/void", PaymentController.voidPayment);
+router.post("/:paymentId/void", PaymentController.voidPayment);
+router.post("/payments/:paymentId/cancel", PaymentController.voidPayment);
+router.post("/:paymentId/cancel", PaymentController.voidPayment);
+
 // CutLuy Webhook for merchant store orders
 router.post("/payments/cutluy/webhook", PaymentController.handleCutluyWebhook);
 router.post("/cutluy/webhook", PaymentController.handleCutluyWebhook);

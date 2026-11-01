@@ -328,6 +328,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         try {
           const axios = require('axios');
           const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || 'https://cutluy.com').replace(/\/+$/, '');
+          const idempotencyKey = `marketplace-order-${order.id}`;
           const response = await axios.post(
             `${cutluyBaseUrl}/v1/payments`,
             {
@@ -341,21 +342,30 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'User-Agent': 'Rentify/1.0 (axios)',
+                'Idempotency-Key': idempotencyKey,
+                'X-Idempotency-Key': idempotencyKey,
               },
               timeout: 10000,
             }
           );
-          const cutluyData = response.data;
-          const providerPaymentId = cutluyData?.id || `cutluy_${order.id}`;
-          const checkoutUrl = cutluyData?.checkout_url || `https://cutluy.com/pay/${providerPaymentId}`;
-          const qrString = cutluyData?.qr_string || '';
+          const cutluyData = response.data?.data || response.data;
+          const providerPaymentId = cutluyData?.id;
+          if (!providerPaymentId) {
+            fail('CutLuy payment initialization failed: provider returned no payment identifier', 502, 'PAYMENT_GATEWAY_ERROR');
+          }
+          const checkoutUrl = cutluyData?.checkout_url || cutluyData?.payment_url;
+          const qrString = cutluyData?.qr_string || cutluyData?.raw_qr || cutluyData?.qr || '';
+          if (!checkoutUrl && !qrString) {
+            fail('CutLuy payment initialization failed: provider returned no checkout URL or QR data', 502, 'PAYMENT_GATEWAY_ERROR');
+          }
           transactionData = {
             provider: 'cutluy',
             providerPaymentId,
-            checkoutUrl,
+            checkoutUrl: checkoutUrl || '',
             rawQR: qrString,
-            qrCodeUrl: checkoutUrl,
+            qrCodeUrl: checkoutUrl || '',
             referenceId: `ORDER-${order.id}`,
+            idempotencyKey,
           };
         } catch (cutluyErr) {
           console.error('CutLuy payment creation error:', cutluyErr.response?.data || cutluyErr.message);

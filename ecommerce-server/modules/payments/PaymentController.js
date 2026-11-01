@@ -8,8 +8,9 @@ const { ORDER_STATUS, PAYMENT_STATUS } = require("../../utils/constants");
 const FulfillmentService = require("./FulfillmentService");
 const PaymentVerificationService = require("./PaymentVerificationService");
 const axios = require("axios");
-const { getPublicPaymentMethods } = require("./paymentConfigController");
+const { getPublicPaymentMethods, getStorePublicPaymentMethods } = require("./paymentConfigController");
 exports.getPublicPaymentMethods = getPublicPaymentMethods;
+exports.getStorePublicPaymentMethods = getStorePublicPaymentMethods;
 exports.getPaymentStatus = async (req, res) => {
   try {
     const { paymentId } = req.params;
@@ -268,13 +269,17 @@ exports.handleCutluyWebhook = async (req, res) => {
       }
     }
 
-    // Verify signature when header is present, or enforce in non-test environments if secret exists
+    // FAIL CLOSED: Webhook signature header and resolved signing secret are mandatory
     const signatureHeader = req.headers['x-cutluy-signature'] || req.headers['x-signature'];
-    if (signatureHeader || (webhookSecret && process.env.NODE_ENV === 'production')) {
-      const isValid = verifyCutluySignature(req, webhookSecret);
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid CutLuy webhook signature" });
-      }
+    if (!signatureHeader) {
+      return res.status(401).json({ error: "Missing CutLuy webhook signature header" });
+    }
+    if (!webhookSecret) {
+      return res.status(401).json({ error: "CutLuy webhook secret not configured" });
+    }
+    const isValid = verifyCutluySignature(req, webhookSecret);
+    if (!isValid) {
+      return res.status(401).json({ error: "Invalid CutLuy webhook signature" });
     }
 
     // Acknowledge non-payment events
@@ -283,18 +288,66 @@ exports.handleCutluyWebhook = async (req, res) => {
       return res.status(200).json({ received: true, note: `Status "${rawStatus}" acknowledged without action` });
     }
 
+    // Bind event: Validate amount and currency match database record to prevent tampering
+    const rawAmount = paymentData.amount !== undefined ? paymentData.amount : (paymentData.total !== undefined ? paymentData.total : body.amount);
+    const rawCurrency = String(paymentData.currency || body.currency || "USD").toUpperCase();
+    if (rawAmount !== undefined && rawAmount !== null) {
+      const parsedAmount = parseFloat(rawAmount);
+      const expectedAmount = parseFloat(payment.amount);
+      if (isNaN(parsedAmount) || Math.abs(parsedAmount - expectedAmount) > 0.009) {
+        console.error(`[CutLuy Webhook] Amount mismatch for payment ${payment.id}: expected ${expectedAmount}, received ${parsedAmount}`);
+        return res.status(400).json({ error: "Payment amount mismatch" });
+      }
+    }
+    if (rawCurrency !== (payment.currency || "USD").toUpperCase()) {
+      console.error(`[CutLuy Webhook] Currency mismatch for payment ${payment.id}: expected ${payment.currency}, received ${rawCurrency}`);
+      return res.status(400).json({ error: "Payment currency mismatch" });
+    }
+
     // Idempotency: order already paid
     if (payment.status === PAYMENT_STATUS.COMPLETED || payment.status === PAYMENT_STATUS.PAID) {
       return res.status(200).json({ received: true, alreadyCompleted: true });
     }
 
-    // If order was already cancelled or expired, log for support and do not reopen or duplicate inventory actions
-    if (order?.status === "cancelled" || payment.status === "expired") {
+    // If order was already cancelled or expired, record durable exception and do not reopen order or duplicate inventory restoration
+    if (order?.status === "cancelled" || payment.status === "expired" || payment.status === "cancelled") {
       console.warn(`[CutLuy Webhook] Late payment received for cancelled/expired order ${order?.id || payment.orderId} (payment ${payment.id})`);
+      
+      await payment.update({
+        transactionData: {
+          ...(payment.transactionData || {}),
+          latePayment: true,
+          latePaymentAt: new Date().toISOString(),
+          providerPaymentId,
+          latePaymentPayload: body,
+        },
+      });
+
+      const { OrderEvent } = require("../../models");
+      await OrderEvent.create({
+        orderId: order?.id || payment.orderId,
+        storeId: order?.storeId || payment.storeId,
+        actorId: "system:cutluy:webhook",
+        eventKey: `cutluy-late-payment-${providerPaymentId || payment.id}`,
+        type: "payment_exception",
+        amount: payment.amount,
+        details: {
+          exceptionType: "late_payment_after_cancellation",
+          provider: "cutluy",
+          providerPaymentId,
+          paymentId: payment.id,
+          orderStatus: order?.status,
+          paymentStatus: payment.status,
+          actionRequired: "merchant_manual_reconciliation",
+          receivedAt: new Date().toISOString(),
+        },
+      }).catch((e) => console.error("[CutLuy Webhook] Failed to record OrderEvent for late payment:", e.message));
+
       return res.status(200).json({
         received: true,
         latePayment: true,
-        note: "Order was already cancelled or expired; payment logged for merchant support review",
+        exceptionRecorded: true,
+        note: "Order was already cancelled or expired; durable exception recorded for merchant reconciliation",
       });
     }
 
@@ -308,6 +361,108 @@ exports.handleCutluyWebhook = async (req, res) => {
   } catch (error) {
     console.error("CutLuy webhook handler error:", error);
     return res.status(500).json({ error: "CutLuy webhook processing failed" });
+  }
+};
+
+/**
+ * Void or cancel a pending payment (used by POS when cashier switches to cash)
+ * Prevents double charging by checking provider state first before cancelling.
+ */
+exports.voidPayment = async (req, res) => {
+  const { paymentId } = req.params;
+  try {
+    const payment = await Payment.findByPk(paymentId, {
+      include: [{ model: Order }],
+    });
+    if (!payment) {
+      return res.status(404).json({ error: "Payment not found" });
+    }
+
+    if (payment.status === PAYMENT_STATUS.COMPLETED || payment.status === PAYMENT_STATUS.PAID) {
+      return res.status(409).json({
+        error: "Cannot void payment: payment was already completed",
+        alreadyPaid: true,
+        paymentStatus: payment.status,
+      });
+    }
+
+    // Verify with CutLuy if provider payment exists before cancelling
+    const providerPaymentId = payment.transactionData?.providerPaymentId || payment.transactionId;
+    if (providerPaymentId) {
+      const { PaymentGatewayConfig } = require("../../models");
+      const { decryptSecrets } = require("./paymentConfigEncryption");
+      const order = payment.Order;
+      const configWhere = [];
+      if (order?.websiteId) configWhere.push({ websiteId: order.websiteId, gateway: "cutluy", enabled: true });
+      if (payment.storeId) configWhere.push({ storeId: payment.storeId, gateway: "cutluy", enabled: true });
+
+      if (configWhere.length > 0) {
+        const cutluyConfig = await PaymentGatewayConfig.findOne({ where: { [Op.or]: configWhere } });
+        if (cutluyConfig) {
+          const cfg = cutluyConfig.config || {};
+          const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+          const apiKey = decrypted.apiKey || cfg.apiKey;
+          if (apiKey) {
+            try {
+              const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
+              const checkRes = await axios.get(`${cutluyBaseUrl}/v1/payments/${providerPaymentId}`, {
+                headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": "Rentify/1.0 (axios)" },
+                timeout: 5000,
+              });
+              const pStatus = String(checkRes.data?.status || checkRes.data?.data?.status || "").toLowerCase();
+              if (pStatus === "paid" || pStatus === "completed") {
+                await FulfillmentService.confirmOrderPayment(payment.id, {
+                  provider: "cutluy",
+                  transactionId: providerPaymentId,
+                  providerEvent: checkRes.data,
+                });
+                return res.status(409).json({
+                  error: "Cannot void payment: payment was completed at the provider",
+                  alreadyPaid: true,
+                  paymentStatus: "paid",
+                });
+              }
+            } catch (err) {
+              console.warn(`[voidPayment] CutLuy check failed for payment ${payment.id}:`, err.message);
+            }
+          }
+        }
+      }
+    }
+
+    const reason = req.body?.reason || "switched_to_cash";
+    await payment.update({
+      status: "cancelled",
+      transactionData: {
+        ...(payment.transactionData || {}),
+        voidedAt: new Date().toISOString(),
+        voidReason: reason,
+      },
+    });
+
+    const { OrderEvent } = require("../../models");
+    await OrderEvent.create({
+      orderId: payment.orderId,
+      storeId: payment.storeId,
+      actorId: req.user?.id ? `staff:${req.user.id}` : "pos:cashier",
+      eventKey: `payment-void-${payment.id}`,
+      type: "payment_voided",
+      amount: payment.amount,
+      details: {
+        paymentId: payment.id,
+        reason,
+      },
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment voided successfully",
+      paymentId: payment.id,
+      status: "cancelled",
+    });
+  } catch (error) {
+    console.error("Error voiding payment:", error);
+    return res.status(500).json({ error: "Failed to void payment" });
   }
 };
 

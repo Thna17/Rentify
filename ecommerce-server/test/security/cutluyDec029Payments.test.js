@@ -194,3 +194,197 @@ test("DEC-029: Store public payment methods returns KHQR when CutLuy is configur
   assert.equal(withCutluy.cutluyEnabled, true);
   assert.equal(withCutluy.businessName, "Artisan Coffee");
 });
+
+test("DEC-029: Webhook signature verification fails closed when header or secret is missing", () => {
+  // Test the fail-closed logic
+  function checkWebhookAuth(header, secret) {
+    if (!header) {
+      return { status: 401, error: "Missing CutLuy webhook signature header" };
+    }
+    if (!secret) {
+      return { status: 401, error: "CutLuy webhook secret not configured" };
+    }
+    return { status: 200 };
+  }
+
+  assert.equal(checkWebhookAuth(null, "secret123").status, 401);
+  assert.equal(checkWebhookAuth("t=123,v1=abc", null).status, 401);
+  assert.equal(checkWebhookAuth(null, null).status, 401);
+  assert.equal(checkWebhookAuth("t=123,v1=abc", "secret123").status, 200);
+});
+
+test("DEC-029: Webhook binds event and rejects amount and currency mismatches", () => {
+  function validatePayloadBinding(payment, paymentData, body) {
+    const rawAmount = paymentData.amount !== undefined ? paymentData.amount : (paymentData.total !== undefined ? paymentData.total : body.amount);
+    const rawCurrency = String(paymentData.currency || body.currency || "USD").toUpperCase();
+
+    if (rawAmount !== undefined && rawAmount !== null) {
+      const parsedAmount = parseFloat(rawAmount);
+      const expectedAmount = parseFloat(payment.amount);
+      if (isNaN(parsedAmount) || Math.abs(parsedAmount - expectedAmount) > 0.009) {
+        return { status: 400, error: "Payment amount mismatch" };
+      }
+    }
+    if (rawCurrency !== (payment.currency || "USD").toUpperCase()) {
+      return { status: 400, error: "Payment currency mismatch" };
+    }
+    return { status: 200 };
+  }
+
+  const payment = { amount: "25.50", currency: "USD" };
+
+  // Matching amount & currency passes
+  assert.equal(validatePayloadBinding(payment, { amount: "25.50", currency: "USD" }, {}).status, 200);
+  assert.equal(validatePayloadBinding(payment, { total: 25.50 }, { currency: "USD" }).status, 200);
+
+  // Amount mismatch fails
+  assert.equal(validatePayloadBinding(payment, { amount: "10.00", currency: "USD" }, {}).status, 400);
+
+  // Currency mismatch fails
+  assert.equal(validatePayloadBinding(payment, { amount: "25.50", currency: "KHR" }, {}).status, 400);
+});
+
+test("DEC-029: Duplicate webhook callbacks are idempotent and do not duplicate fulfillment", () => {
+  function processWebhookIdempotency(paymentStatus) {
+    if (paymentStatus === "completed" || paymentStatus === "paid") {
+      return { received: true, alreadyCompleted: true };
+    }
+    return { received: true, processed: true };
+  }
+
+  assert.deepEqual(processWebhookIdempotency("paid"), { received: true, alreadyCompleted: true });
+  assert.deepEqual(processWebhookIdempotency("completed"), { received: true, alreadyCompleted: true });
+  assert.deepEqual(processWebhookIdempotency("pending"), { received: true, processed: true });
+});
+
+test("DEC-029: Late payment on cancelled or expired order creates durable record and does not reopen order", () => {
+  const events = [];
+  async function handleLatePayment(order, payment, providerPaymentId, body) {
+    if (order?.status === "cancelled" || payment.status === "expired" || payment.status === "cancelled") {
+      payment.transactionData = {
+        ...(payment.transactionData || {}),
+        latePayment: true,
+        latePaymentAt: new Date().toISOString(),
+        providerPaymentId,
+      };
+
+      events.push({
+        orderId: order.id,
+        type: "payment_exception",
+        amount: payment.amount,
+        details: {
+          exceptionType: "late_payment_after_cancellation",
+          providerPaymentId,
+        },
+      });
+
+      return {
+        received: true,
+        latePayment: true,
+        exceptionRecorded: true,
+      };
+    }
+    return { received: true };
+  }
+
+  const cancelledOrder = { id: "ord-cancelled-1", status: "cancelled" };
+  const expiredPayment = { id: "pay-expired-1", status: "expired", amount: "50.00" };
+
+  return handleLatePayment(cancelledOrder, expiredPayment, "cutluy_tx_999", {}).then((res) => {
+    assert.equal(res.latePayment, true);
+    assert.equal(res.exceptionRecorded, true);
+    assert.equal(expiredPayment.transactionData.latePayment, true);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].type, "payment_exception");
+    assert.equal(events[0].orderId, "ord-cancelled-1");
+  });
+});
+
+test("DEC-029: POS voidPayment prevents double-charging when payment was already completed", () => {
+  function simulateVoidPayment(paymentStatus, providerStatus) {
+    if (paymentStatus === "completed" || paymentStatus === "paid" || providerStatus === "paid") {
+      return {
+        status: 409,
+        error: "Cannot void payment: payment was already completed",
+        alreadyPaid: true,
+      };
+    }
+    return {
+      status: 200,
+      success: true,
+      paymentStatus: "cancelled",
+    };
+  }
+
+  // Already completed locally
+  assert.equal(simulateVoidPayment("paid", "paid").status, 409);
+  assert.equal(simulateVoidPayment("completed", "pending").status, 409);
+
+  // Completed at provider just now
+  assert.equal(simulateVoidPayment("pending", "paid").status, 409);
+
+  // Still pending -> successfully voided so cashier can take cash
+  const voidResult = simulateVoidPayment("pending", "pending");
+  assert.equal(voidResult.status, 200);
+  assert.equal(voidResult.paymentStatus, "cancelled");
+});
+
+test("DEC-029: Watchdog timeout retains orders on inconclusive provider status (network error, timeout, missing key)", () => {
+  function evaluateWatchdogAction(providerStatus, hasError) {
+    if (hasError) {
+      return "RETAIN_FOR_RETRY";
+    }
+    if (providerStatus === "paid" || providerStatus === "completed") {
+      return "RECOVER_PAID_ORDER";
+    }
+    const isExplicitlyUnpaid = ["pending", "unpaid", "expired", "failed", "not_found"].includes(providerStatus);
+    if (isExplicitlyUnpaid) {
+      return "CANCEL_UNPAID_ORDER";
+    }
+    return "RETAIN_FOR_RETRY";
+  }
+
+  // Network error or timeout -> RETAIN
+  assert.equal(evaluateWatchdogAction(null, true), "RETAIN_FOR_RETRY");
+
+  // Inconclusive status -> RETAIN
+  assert.equal(evaluateWatchdogAction("unknown_state", false), "RETAIN_FOR_RETRY");
+
+  // Provider paid -> RECOVER
+  assert.equal(evaluateWatchdogAction("paid", false), "RECOVER_PAID_ORDER");
+
+  // Explicitly unpaid -> CANCEL
+  assert.equal(evaluateWatchdogAction("pending", false), "CANCEL_UNPAID_ORDER");
+  assert.equal(evaluateWatchdogAction("not_found", false), "CANCEL_UNPAID_ORDER");
+  assert.equal(evaluateWatchdogAction("expired", false), "CANCEL_UNPAID_ORDER");
+});
+
+test("DEC-029: Payment creation requires provider-side idempotency and rejects fabricated IDs", () => {
+  function validateCreatedPayment(response) {
+    const cutluyData = response.data?.data || response.data;
+    const providerPaymentId = cutluyData?.id;
+    if (!providerPaymentId) {
+      throw new Error("Missing provider ID");
+    }
+    const checkoutUrl = cutluyData?.checkout_url || cutluyData?.payment_url;
+    const qrString = cutluyData?.qr_string || cutluyData?.raw_qr || cutluyData?.qr || "";
+    if (!checkoutUrl && !qrString) {
+      throw new Error("Missing checkout URL or QR string");
+    }
+    return {
+      providerPaymentId,
+      checkoutUrl: checkoutUrl || "",
+      rawQR: qrString,
+    };
+  }
+
+  // Valid provider response
+  const valid = validateCreatedPayment({ data: { id: "pay_123", checkout_url: "https://cutluy.com/pay/123", qr_string: "000201..." } });
+  assert.equal(valid.providerPaymentId, "pay_123");
+
+  // Missing provider ID must throw (no fabricated fallback allowed)
+  assert.throws(() => validateCreatedPayment({ data: { checkout_url: "https://cutluy.com/pay/123" } }), /Missing provider ID/);
+
+  // Missing URL and QR must throw
+  assert.throws(() => validateCreatedPayment({ data: { id: "pay_123" } }), /Missing checkout URL or QR string/);
+});

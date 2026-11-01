@@ -127,6 +127,85 @@ class RecoveryWorker {
 
       for (const payment of timedOutPayments) {
         try {
+          const order = payment.Order;
+          if (!order || order.status === "cancelled") continue;
+
+          // Resolve CutLuy gateway credentials for provider verification
+          const queryWhere = [];
+          if (order.websiteId) queryWhere.push({ websiteId: order.websiteId, gateway: "cutluy", enabled: true });
+          if (payment.storeId) queryWhere.push({ storeId: payment.storeId, gateway: "cutluy", enabled: true });
+
+          let cutluyConfig = null;
+          if (queryWhere.length > 0) {
+            cutluyConfig = await PaymentGatewayConfig.findOne({ where: { [Op.or]: queryWhere } });
+          }
+
+          if (!cutluyConfig) {
+            console.warn(`[Watchdog] CutLuy config not found for payment ${payment.id} (order ${order.id}). Retaining for retry.`);
+            continue;
+          }
+
+          const cfg = cutluyConfig.config || {};
+          const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+          const apiKey = decrypted.apiKey || cfg.apiKey;
+          const providerPaymentId = payment.transactionData?.providerPaymentId || payment.transactionId;
+
+          if (!apiKey || !providerPaymentId) {
+            console.warn(`[Watchdog] Missing apiKey or providerPaymentId for payment ${payment.id}. Retaining for retry/reconciliation.`);
+            continue;
+          }
+
+          // Query CutLuy status BEFORE acquiring database locks (avoids holding locks during external HTTP calls)
+          let providerStatus = null;
+          let cutluyResponseData = null;
+          try {
+            const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
+            const response = await axios.get(`${cutluyBaseUrl}/v1/payments/${providerPaymentId}`, {
+              headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": "Rentify/1.0 (axios)" },
+              timeout: 6000,
+            });
+            cutluyResponseData = response.data?.data || response.data;
+            providerStatus = String(cutluyResponseData?.status || "").toLowerCase();
+          } catch (err) {
+            if (err.response && err.response.status === 404) {
+              providerStatus = "not_found";
+            } else {
+              // Network timeout, 5xx, or provider unreachable: INCONCLUSIVE
+              console.warn(`[Watchdog] CutLuy check failed for payment ${payment.id} (${err.message}). Retaining order for retry.`);
+              continue; // Retain order: do not assume unpaid!
+            }
+          }
+
+          // Case A: Buyer paid at provider -> recover order via confirmOrderPayment
+          // Note: Called outside any outer transaction to prevent deadlock with confirmOrderPayment's internal transaction
+          if (providerStatus === "paid" || providerStatus === "completed") {
+            await FulfillmentService.confirmOrderPayment(
+              payment.id,
+              {
+                provider: "cutluy",
+                transactionId: providerPaymentId,
+                providerEvent: cutluyResponseData,
+              },
+              true
+            );
+            console.log(`[Watchdog] Recovered paid order ${order.id} before cancellation`);
+            continue;
+          }
+
+          // Case B: Explicitly confirmed as unpaid/pending/expired/not_found by provider -> safely cancel order
+          const isExplicitlyUnpaid =
+            providerStatus === "pending" ||
+            providerStatus === "unpaid" ||
+            providerStatus === "expired" ||
+            providerStatus === "failed" ||
+            providerStatus === "not_found";
+
+          if (!isExplicitlyUnpaid) {
+            console.warn(`[Watchdog] Inconclusive status "${providerStatus}" for payment ${payment.id}. Retaining order.`);
+            continue;
+          }
+
+          // Atomic cancellation and stock restoration
           await sequelize.transaction(async (tx) => {
             const lockedPayment = await Payment.findByPk(payment.id, {
               include: [{ model: Order }],
@@ -138,60 +217,6 @@ class RecoveryWorker {
             const lockedOrder = lockedPayment.Order;
             if (!lockedOrder || lockedOrder.status === "cancelled") return;
 
-            // Before cancelling, ask CutLuy once more
-            let cutluyPaid = false;
-            let cutluyResponseData = null;
-
-            const queryWhere = [];
-            if (lockedOrder.websiteId) queryWhere.push({ websiteId: lockedOrder.websiteId, gateway: "cutluy", enabled: true });
-            if (lockedPayment.storeId) queryWhere.push({ storeId: lockedPayment.storeId, gateway: "cutluy", enabled: true });
-
-            if (queryWhere.length > 0) {
-              const cutluyConfig = await PaymentGatewayConfig.findOne({
-                where: { [Op.or]: queryWhere },
-                transaction: tx,
-              });
-
-              if (cutluyConfig) {
-                const cfg = cutluyConfig.config || {};
-                const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
-                const apiKey = decrypted.apiKey || cfg.apiKey;
-                const providerPaymentId = lockedPayment.transactionData?.providerPaymentId || lockedPayment.transactionId;
-
-                if (apiKey && providerPaymentId) {
-                  try {
-                    const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
-                    const response = await axios.get(`${cutluyBaseUrl}/v1/payments/${providerPaymentId}`, {
-                      headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": "Rentify/1.0 (axios)" },
-                      timeout: 6000,
-                    });
-                    const status = String(response.data?.status || response.data?.data?.status || "").toLowerCase();
-                    if (status === "paid" || status === "completed") {
-                      cutluyPaid = true;
-                      cutluyResponseData = response.data;
-                    }
-                  } catch (err) {
-                    console.warn(`[Watchdog] CutLuy final check failed for payment ${lockedPayment.id}:`, err.message);
-                  }
-                }
-              }
-            }
-
-            if (cutluyPaid) {
-              await FulfillmentService.confirmOrderPayment(
-                lockedPayment.id,
-                {
-                  provider: "cutluy",
-                  transactionId: lockedPayment.transactionData?.providerPaymentId || lockedPayment.transactionId,
-                  providerEvent: cutluyResponseData,
-                },
-                true
-              );
-              console.log(`[Watchdog] Recovered paid order ${lockedOrder.id} before cancellation`);
-              return;
-            }
-
-            // Not paid: cancel order, restore stock, expire payment
             console.log(`[Watchdog] Cancelling unpaid order ${lockedOrder.id} (payment ${lockedPayment.id}) - timeout reached (${timeoutMinutes}m)`);
             const { updateStock } = require("../inventory").stockService;
             if (lockedOrder.stockDeducted) {
@@ -210,15 +235,14 @@ class RecoveryWorker {
                   cancellationReason: "Not paid in time",
                   cancelledBy: "system",
                   cancelReasonCode: "unpaid_timeout",
+                  providerStatusConfirmed: providerStatus,
                 },
               },
               { transaction: tx, byStateMachine: true }
             );
 
             await lockedPayment.update(
-              {
-                status: "expired",
-              },
+              { status: "expired" },
               { transaction: tx }
             );
 
@@ -226,6 +250,7 @@ class RecoveryWorker {
               await OrderEvent.create(
                 {
                   orderId: lockedOrder.id,
+                  storeId: lockedOrder.storeId,
                   type: "order_cancelled",
                   amount: null,
                   details: {
@@ -233,6 +258,7 @@ class RecoveryWorker {
                     actor: "system",
                     resolution: "cancel",
                     timeoutMinutes,
+                    providerStatus,
                   },
                 },
                 { transaction: tx }

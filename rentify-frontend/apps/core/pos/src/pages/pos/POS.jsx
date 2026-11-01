@@ -1794,9 +1794,36 @@ export default function POS() {
                       variant="outline"
                       size="sm"
                       className="text-xs h-8 bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
-                      onClick={() => {
+                      onClick={async () => {
                         setKhqrTimedOut(false);
                         setKhqrPolling(false);
+                        if (activePaymentId) {
+                          try {
+                            const res = await fetch(`${ECOMMERCE_API_BASE}/api/payment/payments/${activePaymentId}/void`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              credentials: "include",
+                              body: JSON.stringify({ reason: "cashier_switched_to_cash" }),
+                            });
+                            const data = await res.json().catch(() => ({}));
+                            if (res.status === 409 && data.alreadyPaid) {
+                              showPosAlert({
+                                title: "Payment Already Received",
+                                message: "The customer paid by KHQR just now! Order is recorded as paid.",
+                                tone: "info",
+                              });
+                              setPaymentModalOpen(false);
+                              clearCart();
+                              setReceiptModalOpen(true);
+                              fetchProducts();
+                              return;
+                            }
+                          } catch (err) {
+                            console.warn("Failed to void pending KHQR payment:", err);
+                          }
+                        }
+                        setActivePaymentId(null);
+                        setKhqrData(null);
                         setPaymentMethod("cash");
                       }}
                     >

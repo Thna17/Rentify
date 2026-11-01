@@ -39,7 +39,7 @@ interface PaymentOption {
   labelKey: string;
   hintKey: string;
   icon: string;
-  badgeKey: string;
+  badgeKey?: string;
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
@@ -58,6 +58,7 @@ const KHQR_OPTION: PaymentOption = {
   labelKey: 'checkout.khqrLabel',
   hintKey: 'checkout.khqrHint',
   icon: 'qr-code',
+  badgeKey: 'checkout.available',
 };
 
 @Component({
