@@ -6,8 +6,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   IconPackage,
   IconAlertTriangle,
-  IconCurrencyDollar,
-  IconRefresh,
   IconEye,
 } from '@tabler/icons-react';
 
@@ -17,7 +15,7 @@ import { useRowExpansion } from '@rentify/shared/hooks/useRowExpansion';
 import { useProductManagementState } from '../../hooks/useProductManagementState';
 import { FilterBar } from '@rentify/shared/ui/components/FilterBar';
 import { BulkActionsBar } from '@rentify/shared/ui/components/BulkActionsBar';
-import { PageHeader } from '@rentify/shared/layouts/dashboard/PageHeader';
+import { PageShell, PageTitle, StatePanel } from '../../components/page/PagePrimitives';
 
 import { DetailDrawer } from '@rentify/shared/ui/components/DetailDrawer';
 import { ProductQuickActions } from './components/ProductQuickActions';
@@ -52,7 +50,7 @@ import { Badge } from '@rentify/shared/ui/badge';
 import { Button } from '@rentify/shared/ui/button';
 import { Card } from '@rentify/shared/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@rentify/shared/ui/alert';
-import { Download, Package, Plus, Upload } from 'lucide-react';
+import { Download, Plus, Upload } from 'lucide-react';
 import { useThemeService } from '@rentify/shared/hooks/useThemeService';
 import { useCreateBulkProductsMutation } from '@rentify/apis';
 // @ts-expect-error JavaScript helper has no declaration file yet.
@@ -644,112 +642,55 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
   const MobileProductCard = ({ product }: { product: Product }) => {
     const badges = computeChannelBadges(product as any, Boolean(websiteId));
     return (
-    <Card className="group relative p-4 mb-3 cursor-pointer transition-all duration-200 hover:shadow-md border border-[var(--rentify-color-border-subtle,#ece8e1)] rounded-2xl bg-card">
-      <div className="flex items-start justify-between gap-3">
-        {/* Product Image */}
-        <div className="relative flex-shrink-0">
-          <div className="relative h-16 w-16 rounded-xl bg-gradient-to-br from-muted to-muted flex items-center justify-center overflow-hidden shadow-sm">
-            {product.images?.[0]?.url ? (
-              <img
-                src={product.images[0].url}
-                alt={product.name}
-                className="h-16 w-16 rounded-xl object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center">
-                <IconPackage className="h-6 w-6 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground mt-1">{t('merchant.p.noImage')}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Status Indicator Dot */}
-          <div
-            className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-              product.status === PRODUCT_STATUS.ACTIVE
-                ? 'bg-[var(--rentify-color-success-base)]'
-                : product.status === PRODUCT_STATUS.LOW_STOCK
-                ? 'bg-[var(--rentify-color-warning-base)]'
-                : product.status === PRODUCT_STATUS.OUT_OF_STOCK
-                ? 'bg-[var(--rentify-color-danger-base)]'
-                : 'bg-muted-foreground'
-            }`}
-          />
+    <Card className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
+          {product.images?.[0]?.url ? (
+            <img src={product.images[0].url} alt="" className="h-16 w-16 object-cover" />
+          ) : (
+            <IconPackage className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+          )}
         </div>
 
-        {/* Product Info */}
-        <div className="flex-1 min-w-0 space-y-2">
-          <div>
-            <h4 className="font-semibold text-sm text-foreground truncate leading-tight">
-              {product.name}
-            </h4>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {product.sku || 'No SKU'}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Price */}
-              <div className="flex items-center gap-1 bg-gradient-to-r from-primary/10 to-primary/5 px-2 py-1 rounded-lg">
-                <IconCurrencyDollar className="h-3 w-3 text-primary" />
-                <span className="font-bold text-sm text-primary">
-                  ${product.price}
-                </span>
-              </div>
-
-              {/* Stock */}
-              <div
-                className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                  product.stockQuantity === 0
-                    ? 'bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)]'
-                    : product.stockQuantity < 10
-                    ? 'bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)]'
-                    : 'bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)]'
-                }`}
-              >
-                {product.stockQuantity} in stock
-              </div>
-            </div>
-          </div>
-
-          {/* Category & Status */}
-          <div className="flex items-center justify-between">
-            <Badge
-              variant="outline"
-              className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-border text-muted-foreground"
-            >
-              {product.Category?.name || t('dashboard.product.uncategorized')}
-            </Badge>
-
-            <ProductStatusBadge
-              product={product}
-              onStatusChange={handleStatusChange}
-              isMobile={true}
-            />
-          </div>
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="truncate text-sm font-semibold text-foreground">{product.name}</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-mono font-semibold text-foreground">${product.price}</span>
+            {' · '}
+            {t('merchant.products.inStock', { count: product.stockQuantity ?? 0 })}
+          </p>
+          <p className="truncate text-sm text-muted-foreground">
+            {product.Category?.name || t('dashboard.product.uncategorized')}
+          </p>
         </div>
 
-        {/* Action Button */}
         <Button
           variant="ghost"
           size="icon"
-          className="flex-shrink-0 h-8 w-8 rounded-lg bg-white/50 backdrop-blur-sm border border-border hover:border-primary/30 hover:bg-primary/5 transition-all duration-200"
+          className="h-11 w-11 shrink-0 rounded-xl"
+          aria-label={t('merchant.p.productDetails')}
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
             handleProductAction('view', product);
           }}
         >
-          <IconEye className="h-4 w-4 text-muted-foreground" />
+          <IconEye className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
         </Button>
       </div>
 
-      {/* Channel tags */}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
-        {badges.onMarketplace && <Badge variant="secondary" className="text-[11px] bg-[var(--rentify-color-success-subtle)] text-[var(--rentify-color-success-text)] border-[var(--rentify-color-success-border)]">Market ✓</Badge>}
-        {badges.onStorefront && <Badge variant="outline" className="text-[11px]">Store ✓</Badge>}
-        {badges.isOutOfStock && <Badge variant="destructive" className="text-[11px]">Out of stock</Badge>}
-        {badges.isHidden && <Badge variant="outline" className="text-[11px] text-muted-foreground border-dashed">Hidden</Badge>}
+      {/* Where buyers can see it, and its status */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {badges.onMarketplace && <Badge variant="outline">{t('merchant.products.market')} ✓</Badge>}
+          {badges.onStorefront && <Badge variant="outline">{t('merchant.products.store')} ✓</Badge>}
+          {badges.isOutOfStock && (
+            <Badge className="border-[var(--rentify-color-danger-border)] bg-[var(--rentify-color-danger-subtle)] text-[var(--rentify-color-danger-text)]">
+              {t('merchant.p.outOfStock')}
+            </Badge>
+          )}
+          {badges.isHidden && <Badge variant="outline" className="border-dashed text-muted-foreground">{t('merchant.p.hidden')}</Badge>}
+        </div>
+        <ProductStatusBadge product={product} onStatusChange={handleStatusChange} isMobile={false} />
       </div>
     </Card>
   );
@@ -763,63 +704,63 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         variant="outline"
         onClick={() => {
           if (!canAddProduct) {
-            showSnackbar(disabledReason || 'Action locked', 'error');
+            showSnackbar(disabledReason || t('merchant.bulk.locked'), 'error');
             return;
           }
           state.setIsBulkCreateOpen(true);
         }}
         disabled={!canAddProduct}
         title={disabledReason || undefined}
-        className="hidden sm:inline-flex items-center gap-2 h-10 border-[var(--rentify-color-border-subtle,#ece8e1)]"
+        className="hidden min-h-[44px] items-center gap-2 sm:inline-flex"
       >
         <Upload className="h-4 w-4" />
-        <span>Import</span>
+        <span>{t('merchant.bulk.import')}</span>
       </Button>
 
       {selected.length > 0 && (
         <Button
           variant="outline"
           onClick={handleBulkExport}
-          className="hidden sm:inline-flex items-center gap-2 h-10 border-[var(--rentify-color-border-subtle,#ece8e1)]"
+          className="hidden min-h-[44px] items-center gap-2 sm:inline-flex"
         >
           <Download className="h-4 w-4" />
-          <span>Export ({selected.length})</span>
+          <span>{t('merchant.bulk.export', { count: selected.length })}</span>
         </Button>
       )}
 
       <Button
         onClick={() => {
           if (!canAddProduct) {
-            showSnackbar(disabledReason || 'Action locked', 'error');
+            showSnackbar(disabledReason || t('merchant.bulk.locked'), 'error');
             return;
           }
           navigate('/products/create');
         }}
         disabled={!canAddProduct}
         title={disabledReason || undefined}
-        className="flex items-center gap-2 h-10 bg-primary text-primary-foreground hover:bg-primary/90"
+        className="flex min-h-[44px] items-center gap-2"
       >
         <Plus className="h-4 w-4" />
-        <span>Add product</span>
+        <span>{t('merchant.bulk.addProduct')}</span>
       </Button>
     </div>
   );
   
   
+  const pageTitle = (
+    <PageTitle
+      back={{ to: '/products', label: t('dashboard.product.title') }}
+      title={t('merchant.products.bulkTitle')}
+      description={t('merchant.products.bulkHint')}
+      actions={<HeaderActions />}
+    />
+  );
+
   if (isLoading) {
     return (
-      <div className="min-h-full">
-        <PageHeader
-          title={t('dashboard.product.title')}
-          description={t('dashboard.product.manage_your_products')}
-          icon={Package}
-          actions={<HeaderActions />}
-          breadcrumb={[
-            { label: 'Dashboard', href: '/overview' },
-            { label: t('dashboard.product.title') }
-          ]}
-        />
-        <div className="p-6 md:p-8">
+      <PageShell>
+        {pageTitle}
+        <div>
           <ReusableTable
             data={[]}
             columns={productColumns}
@@ -827,66 +768,42 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
             loadingSkeletonRows={8}
           />
         </div>
-      </div>
+      </PageShell>
     );
   }
   // Error state
   if (isError) {
     return (
-      <div className="min-h-full">
-        <PageHeader
-          title={t('dashboard.product.title')}
-          description={t('dashboard.product.manage_your_products')}
-          icon={Package}
-          actions={<HeaderActions />}
-          breadcrumb={[
-            { label: 'Dashboard', href: '/overview' },
-            { label: t('dashboard.product.title') }
-          ]}
-        />
-        <div className="p-6 md:p-8">
-          <Card className="p-6 max-w-md w-full text-center">
-            <IconAlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">
-              {t('dashboard.product.error_loading')}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {t('dashboard.product.error_loading_description')}
-            </p>
-            <Button onClick={refetch}>
-              <IconRefresh className="mr-2 h-4 w-4" />
-              {t('dashboard.product.retry')}
-            </Button>
-          </Card>
+      <PageShell>
+        {pageTitle}
+        <div>
+          <StatePanel
+            tone="error"
+            icon={<IconAlertTriangle className="h-5 w-5" />}
+            title={t('dashboard.product.error_loading')}
+            body={t('dashboard.product.error_loading_description')}
+            action={<Button onClick={refetch} className="min-h-[44px]">{t('dashboard.product.retry')}</Button>}
+          />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   // Main render
   return (
-    <div className="min-h-full">
-      {/* Consistent Header */}
-      <PageHeader
-        title={t('merchant.products.bulkTitle')}
-        description={t('merchant.products.bulkHint')}
-        actions={<HeaderActions />}
-        breadcrumb={[
-          { label: t('dashboard.product.title'), href: '/products' },
-          { label: t('merchant.products.bulkTitle') }
-        ]}
-      />
+    <PageShell>
+      {pageTitle}
 
 
       {activeTab === 'categories' ? (
-        <div className="p-4 sm:p-6 md:p-8 space-y-4">
-          <div className="rounded-xl border border-[var(--rentify-color-border-subtle,#ece8e1)] bg-muted/30 p-3 text-xs sm:text-sm text-muted-foreground">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs sm:text-sm text-muted-foreground">
             Your own categories appear as menus on your online store. On Rentify Market every product also has one Rentify category.
           </div>
           <CategoriesPage />
         </div>
       ) : (
-     <div className="p-4 sm:p-6 md:p-8 space-y-5">
+     <div className="space-y-5">
         {disabledReason && !isGracePeriod && !isSuspended && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-[var(--rentify-color-warning-border)] bg-[var(--rentify-color-warning-subtle)] p-4 text-xs sm:text-sm text-[var(--rentify-color-warning-text)] shadow-sm">
             <div className="flex items-center gap-2">
@@ -1022,7 +939,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
         onOpenChange={state.setIsProductDetailOpen}
         selectedItem={(state.selectedProductDetail as any) || undefined}
         title={t('merchant.p.productDetails')}
-        description="Complete product information and actions"
+        description={t('merchant.bulk.detailBody')}
         renderDetail={(product: Product) => (
           <ProductRowDetail
             product={product as any}
@@ -1123,7 +1040,7 @@ function ProductManagementContent({ websiteId }: { websiteId: string }): JSX.Ele
           isLoading={actionLoading.type === 'bulk-price-update'}
         />
       )}
-    </div>
+    </PageShell>
   );
 }
 

@@ -1,7 +1,7 @@
 // components/StoreInfoSection.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Store, Mail, Phone, Globe } from 'lucide-react';
+import { Store, Mail, Phone } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { EditableField } from './EditableField';
 
@@ -30,14 +30,14 @@ export const StoreInfoSection: React.FC<StoreInfoSectionProps> = ({
   t,
   className
 }) => (
-  <motion.div 
-    initial={{ opacity: 0, x: -20 }} 
+  <motion.div
+    initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
     className={className}
   >
-    <Card>
+    <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
       <CardHeader>
-        <CardTitle>{t('dashboard.store_management.store_information')}</CardTitle>
+        <CardTitle className="text-base font-semibold">{t('dashboard.store_management.store_information')}</CardTitle>
         <CardDescription>
           {t('dashboard.store_management.store_info_description')}
         </CardDescription>
@@ -59,13 +59,10 @@ export const StoreInfoSection: React.FC<StoreInfoSectionProps> = ({
             isUpdating={isUpdating}
             t={t}
           />
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              {t('dashboard.store_management.store_domain')}
-            </label>
-            <div className="flex items-center justify-between gap-3 p-3 bg-muted rounded-lg">
+            <p className="text-sm font-medium">{t('dashboard.store_management.store_domain')}</p>
+            <div className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5 text-sm">
               {storeData.shop.domain ? (
                 <a
                   href={/^https?:\/\//.test(storeData.shop.domain) ? storeData.shop.domain : `https://${storeData.shop.domain}`}
@@ -84,7 +81,7 @@ export const StoreInfoSection: React.FC<StoreInfoSectionProps> = ({
                 <span className="shrink-0 px-2 py-1 text-xs bg-[var(--rentify-color-warning-subtle)] text-[var(--rentify-color-warning-text)] rounded-full">{t('dashboard.store_management.store_not_published')}</span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
               {t('merchant.onlineStore.domainNote')}
             </p>
           </div>

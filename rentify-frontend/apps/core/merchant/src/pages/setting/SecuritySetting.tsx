@@ -1,212 +1,111 @@
 // security-setting.tsx
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@rentify/shared/ui/card';
 import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Label } from '@rentify/shared/ui/label';
-import { 
-  Shield, Lock, Loader2, Eye, EyeOff
-} from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
+import { Panel } from '../../components/page/PagePrimitives';
 import { useChangePasswordMutation } from '@rentify/apis';
 import { useTranslation } from '@rentify/utils';
 
+type Field = 'currentPassword' | 'newPassword' | 'confirmPassword';
+
+// Core's rule (users/userController changePassword): 8+ characters, a capital letter and a number
+const meetsRule = (value: string) => value.length >= 8 && /[A-Z]/.test(value) && /[0-9]/.test(value);
+
+const EMPTY = { currentPassword: '', newPassword: '', confirmPassword: '' };
+
 export const SecuritySetting = () => {
   const { t } = useTranslation();
-  // Use the mutation hook
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
-
-
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-
-  const [showPassword, setShowPassword] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-
-
-  const togglePasswordVisibility = (field: keyof typeof showPassword) => {
-    setShowPassword(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
+  const [passwordData, setPasswordData] = useState(EMPTY);
+  const [visible, setVisible] = useState<Record<Field, boolean>>({ currentPassword: false, newPassword: false, confirmPassword: false });
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
+
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
       toast.error(t('merchant.p.pleaseFillInAll'));
       return;
     }
-
+    if (!meetsRule(passwordData.newPassword)) {
+      toast.error(t('merchant.security.ruleError'));
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error(t('merchant.p.newPasswordsDoNot'));
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error(t('merchant.p.newPasswordMustBe'));
-      return;
-    }
-
     try {
-      // Call the API
       await changePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       }).unwrap();
-
-      // Reset form on success
-      setPasswordData({ 
-        currentPassword: '', 
-        newPassword: '', 
-        confirmPassword: '' 
-      });
-      
-      // Reset password visibility
-      setShowPassword({
-        current: false,
-        new: false,
-        confirm: false,
-      });
-
+      setPasswordData(EMPTY);
+      setVisible({ currentPassword: false, newPassword: false, confirmPassword: false });
       toast.success(t('merchant.p.passwordUpdatedSuccessfully'));
     } catch (error: any) {
-      // Handle API errors
       toast.error(t(error?.status === 400 || error?.status === 401 ? 'merchant.settings.passwordRejected' : 'merchant.settings.passwordError'));
     }
   };
 
+  const fields: { id: Field; label: string; autoComplete: string; hint?: string }[] = [
+    { id: 'currentPassword', label: t('merchant.p.currentPassword'), autoComplete: 'current-password' },
+    { id: 'newPassword', label: t('merchant.p.newPassword'), autoComplete: 'new-password', hint: t('merchant.security.rule') },
+    { id: 'confirmPassword', label: t('merchant.p.confirmNewPassword'), autoComplete: 'new-password' },
+  ];
 
   return (
     <SettingsLayout
       title={t('merchant.settings.sections.security.title')}
       description={t('merchant.settings.securityBody')}
-      icon={<Shield />}
     >
-      {/* Change Password */}
-      <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">{t('merchant.p.changePassword')}</CardTitle>
-          <CardDescription>
-            {t('merchant.p.updateYourPasswordTo')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-password">{t('merchant.p.currentPassword')}</Label>
-              <div className="relative">
-                <Input
-                  id="current-password"
-                  type={showPassword.current ? "text" : "password"}
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                  placeholder={t('merchant.p.enterYourCurrentPassword')}
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => togglePasswordVisibility('current')}
-                  aria-label={t(showPassword.current ? 'merchant.payments.hide' : 'merchant.payments.show')}
-                >
-                  {showPassword.current ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="new-password">{t('merchant.p.newPassword')}</Label>
-              <div className="relative">
-                <Input
-                  id="new-password"
-                  type={showPassword.new ? "text" : "password"}
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                  placeholder={t('merchant.p.enterYourNewPassword')}
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => togglePasswordVisibility('new')}
-                  aria-label={t(showPassword.new ? 'merchant.payments.hide' : 'merchant.payments.show')}
-                >
-                  {showPassword.new ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">{t('merchant.p.confirmNewPassword')}</Label>
-              <div className="relative">
-                <Input
-                  id="confirm-password"
-                  type={showPassword.confirm ? "text" : "password"}
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                  placeholder={t('merchant.p.confirmYourNewPassword')}
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => togglePasswordVisibility('confirm')}
-                  aria-label={t(showPassword.confirm ? 'merchant.payments.hide' : 'merchant.payments.show')}
-                >
-                  {showPassword.confirm ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            
-            <Button 
-              type="submit" 
-              disabled={isChangingPassword}
-              className="mt-4 w-full sm:w-auto"
-            >
-              {isChangingPassword ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  {t('merchant.p.updatingPassword')}
-                </>
-              ) : (
-                <>
-                  <Lock className="h-4 w-4 mr-2" />
-                  {t('merchant.p.updatePassword')}
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Redesign M22 pattern: plain fields with hints, one action at the end */}
+      <Panel>
+        <form onSubmit={handlePasswordChange} className="space-y-5" noValidate>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">{t('merchant.security.password')}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t('merchant.security.passwordBody')}</p>
+          </div>
 
+          {fields.map((field) => (
+            <div key={field.id} className="space-y-1.5">
+              <Label htmlFor={field.id} className="text-sm font-medium">{field.label}</Label>
+              <div className="relative">
+                <Input
+                  id={field.id}
+                  type={visible[field.id] ? 'text' : 'password'}
+                  autoComplete={field.autoComplete}
+                  value={passwordData[field.id]}
+                  onChange={(e) => setPasswordData({ ...passwordData, [field.id]: e.target.value })}
+                  aria-describedby={field.hint ? `${field.id}-hint` : undefined}
+                  className="h-11 rounded-xl pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setVisible({ ...visible, [field.id]: !visible[field.id] })}
+                  aria-label={t(visible[field.id] ? 'merchant.security.hide' : 'merchant.security.show')}
+                  aria-pressed={visible[field.id]}
+                  className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground"
+                >
+                  {visible[field.id] ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                </button>
+              </div>
+              {field.hint && <p id={`${field.id}-hint`} className="text-sm text-muted-foreground">{field.hint}</p>}
+            </div>
+          ))}
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isChangingPassword} className="min-h-[44px] rounded-xl px-6">
+              {isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {isChangingPassword ? t('merchant.p.updatingPassword') : t('merchant.security.submit')}
+            </Button>
+          </div>
+        </form>
+      </Panel>
     </SettingsLayout>
   );
 };

@@ -597,12 +597,11 @@ export const InvoicePDF = ({
             )}
             <View style={styles.companyDetails}>
               <Text style={styles.companyName}>{companyInfo.name}</Text>
-              <Text style={styles.companyText}>{companyInfo.address}</Text>
-              <Text style={styles.companyText}>Phone: {companyInfo.phone}</Text>
-              <Text style={styles.companyText}>Email: {companyInfo.email}</Text>
-              <Text style={styles.companyText}>
-                Website: {companyInfo.website}
-              </Text>
+              {/* Only the Store's real details; empty lines are left out */}
+              {companyInfo.address ? <Text style={styles.companyText}>{companyInfo.address}</Text> : null}
+              {companyInfo.phone ? <Text style={styles.companyText}>Phone: {companyInfo.phone}</Text> : null}
+              {companyInfo.email ? <Text style={styles.companyText}>Email: {companyInfo.email}</Text> : null}
+              {companyInfo.website ? <Text style={styles.companyText}>Website: {companyInfo.website}</Text> : null}
             </View>
           </View>
 

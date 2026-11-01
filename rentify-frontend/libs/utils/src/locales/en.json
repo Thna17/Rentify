@@ -2610,7 +2610,23 @@
       "newTitle": "New invoice",
       "newBody": "A bill for a customer, with a PDF you can send.",
       "saveSend": "Save and send",
-      "preview": "Preview"
+      "preview": "Preview",
+      "listBody": "Bills you sent to customers, and whether they are paid.",
+      "tabs": {
+        "all": "All",
+        "unpaid": "Unpaid",
+        "paid": "Paid",
+        "drafts": "Drafts"
+      },
+      "draft": "Draft",
+      "search": "Search invoice number or customer",
+      "loadError": "We couldn't load your invoices.",
+      "emptyTitle": "No invoices yet",
+      "emptyBody": "Create an invoice to bill a customer and track when it gets paid.",
+      "noMatch": "No invoices match",
+      "customer": "Customer",
+      "due": "due {{date}}",
+      "downloadPdf": "Download PDF"
     },
     "staff": {
       "intro": "Invite people who help you and choose what each one can do.",
@@ -2692,6 +2708,22 @@
       "marketplaceOn": "Your store is on Rentify Market",
       "marketplaceOff": "Your store is off Rentify Market",
       "channelError": "We couldn't change this. Try again."
+    },
+    "bulk": {
+      "import": "Import",
+      "export": "Export ({{count}})",
+      "addProduct": "Add product",
+      "locked": "Your plan doesn't allow this right now.",
+      "detailBody": "Product details and actions"
+    },
+    "security": {
+      "password": "Password",
+      "passwordBody": "Use a password you don't use anywhere else.",
+      "rule": "At least 8 characters, with a capital letter and a number.",
+      "ruleError": "Your new password needs at least 8 characters, a capital letter and a number.",
+      "show": "Show password",
+      "hide": "Hide password",
+      "submit": "Change password"
     }
   }
 }

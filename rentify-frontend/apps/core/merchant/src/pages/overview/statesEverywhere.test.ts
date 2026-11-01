@@ -32,8 +32,8 @@ describe('States everywhere (redesign M30)', () => {
   it('InvoiceManual.jsx implements skeleton, empty, error retry', () => {
     const file = read('invoice-manual/InvoiceManual.jsx');
     expect(file).toContain('Skeleton');
-    expect(file).toContain('Failed to load invoices');
-    expect(file).toContain('Retry');
-    expect(file).toContain('No invoices yet');
+    expect(file).toContain("t('merchant.invoices.loadError')");
+    expect(file).toContain('refetchInvoices()');
+    expect(file).toContain("t('merchant.invoices.emptyTitle')");
   });
 });

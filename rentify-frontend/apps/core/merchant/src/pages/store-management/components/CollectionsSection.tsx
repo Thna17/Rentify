@@ -85,20 +85,17 @@ export const CollectionsSection: React.FC<CollectionsSectionProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className={className}
     >
-      <Card>
+      <Card className="rounded-2xl border border-border shadow-[var(--shadow-soft)]">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Folder className="h-5 w-5 text-muted-foreground" />
-                {t('header.add_category')}
-              </CardTitle>
+              <CardTitle className="text-base font-semibold">{t('header.add_category')}</CardTitle>
               <CardDescription>
                 {t('dashboard.store_management.collections_description')}
               </CardDescription>
             </div>
-            <Button onClick={() => openDialog()} disabled={!websiteId}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={() => openDialog()} disabled={!websiteId} className="min-h-[44px] rounded-xl">
+              <Plus className="h-4 w-4" aria-hidden="true" />
               {t('header.add_category')}
             </Button>
           </div>
@@ -109,14 +106,13 @@ export const CollectionsSection: React.FC<CollectionsSectionProps> = ({
               {collections.map((collection: any) => (
                 <div
                   key={collection.id}
-                  className="flex items-center gap-3 p-4 bg-muted rounded-lg group"
+                  className="flex items-center gap-3 rounded-xl border border-border p-3"
                 >
-                  <Folder className="h-5 w-5 text-muted-foreground" />
                   <h4 className="flex-1 min-w-0 font-medium truncate">{collection.name}</h4>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl" aria-label={collection.name}>
+                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
