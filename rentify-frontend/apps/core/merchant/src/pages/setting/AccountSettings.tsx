@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { SettingsLayout } from '../../layouts/setting/SettingsLayout';
 import { Panel } from '../../components/page/PagePrimitives';
 import { Link } from 'react-router-dom';
-import { MarketplaceColorCard } from './components/MarketplaceColorCard';
 import { StoreLogoCard } from './components/StoreLogoCard';
 import { useChannels } from '../../context/ChannelContext';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
@@ -182,7 +181,6 @@ export const AccountSettings = () => {
       {profile?.role !== 'staff' && (
         <>
           <StoreLogoCard />
-          <MarketplaceColorCard />
           {/* There is no self-serve closure endpoint; Rentify closes a store on request */}
           <Panel className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">{t('merchant.profile.closeTitle')}</h2>

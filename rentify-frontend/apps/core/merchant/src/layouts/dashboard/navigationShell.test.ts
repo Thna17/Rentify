@@ -49,6 +49,10 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(findRedirect('support')).toBe('/help');
     });
 
+    it('redirects /marketplace/design to /marketplace/customization', () => {
+      expect(findRedirect('marketplace/design')).toBe('/marketplace/customization');
+    });
+
     it('serves /settings as the Settings list (no redirect)', () => {
       expect(findRedirect('settings')).toBeUndefined();
     });

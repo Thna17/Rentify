@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { CANONICAL_MARKETPLACE_COLORS } from './MarketplaceCustomization';
 
 describe('MR7 · Marketplace page and Share (Screens M16, M20)', () => {
   describe('Marketplace Page (Screen M16; DEC-028)', () => {
@@ -6,10 +7,11 @@ describe('MR7 · Marketplace page and Share (Screens M16, M20)', () => {
       const listingState = {
         title: 'Listed',
         description: 'Buyers can find and order from your store',
-        actions: ['View my store page', 'Share link'],
+        actions: ['Customize store', 'View my store page', 'Share link'],
       };
 
       expect(listingState.title).toBe('Listed');
+      expect(listingState.actions).toContain('Customize store');
       expect(listingState.actions).toContain('View my store page');
       expect(listingState.actions).toContain('Share link');
     });
@@ -44,6 +46,18 @@ describe('MR7 · Marketplace page and Share (Screens M16, M20)', () => {
       expect(turnedOffReason).toBe('Hidden · you turned it off');
     });
 
+    it('provides store appearance row linking to customization with active color circle', () => {
+      const appearanceSection = {
+        label: 'Store appearance',
+        description: 'Choose your store’s accent color and preview how it looks on Rentify Marketplace.',
+        targetRoute: '/marketplace/customization',
+        colorCircle: true,
+      };
+
+      expect(appearanceSection.targetRoute).toBe('/marketplace/customization');
+      expect(appearanceSection.colorCircle).toBe(true);
+    });
+
     it('links to flat delivery fee configuration (DEC-004)', () => {
       const deliverySection = {
         label: 'Delivery fee',
@@ -52,6 +66,27 @@ describe('MR7 · Marketplace page and Share (Screens M16, M20)', () => {
       };
 
       expect(deliverySection.targetRoute).toBe('/settings/delivery');
+    });
+  });
+
+  describe('Marketplace Customization (Screen M16 appearance)', () => {
+    it('supports 5 canonical accent colors matching OpenAPI schema', () => {
+      const canonicalColors = CANONICAL_MARKETPLACE_COLORS.map((c) => c.value);
+      expect(canonicalColors).toEqual([
+        '#4f46e5',
+        '#275643',
+        '#963827',
+        '#9a691b',
+        '#263750',
+      ]);
+    });
+
+    it('provides back navigation to /marketplace', () => {
+      const backNav = {
+        label: 'Back to Marketplace',
+        to: '/marketplace',
+      };
+      expect(backNav.to).toBe('/marketplace');
     });
   });
 

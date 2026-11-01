@@ -2349,7 +2349,29 @@
       "delivery": "Delivery",
       "fee": "{{fee}} per order",
       "feeMissing": "Not set — buyers can’t check out until you set it",
-      "feeUnknown": "Set the flat fee buyers pay per order"
+      "feeUnknown": "Set the flat fee buyers pay per order",
+      "editDesign": "Customize store",
+      "appearance": "Store appearance",
+      "appearanceTitle": "Look & accent color",
+      "appearanceBody": "Choose your store’s accent color and preview how it looks on Rentify Marketplace.",
+      "customizationTitle": "Marketplace store appearance",
+      "customizationSubtitle": "Choose how your store appears to buyers across the shared Rentify Marketplace.",
+      "backToMarketplace": "Back to Marketplace",
+      "colorLabel": "Accent color",
+      "colorDescription": "Select an accent color for your marketplace store badges, buttons, and store header.",
+      "saveSuccess": "Marketplace appearance saved.",
+      "saveError": "Could not save marketplace appearance. Please retry.",
+      "previewTitle": "Live marketplace preview",
+      "previewSubtitle": "Simulated view of your store header and product display on Rentify Marketplace.",
+      "shopProducts": "Shop products",
+      "verifiedMerchant": "Verified merchant",
+      "colors": {
+        "indigo": "Indigo",
+        "forest": "Forest",
+        "clay": "Clay",
+        "gold": "Gold",
+        "midnight": "Midnight"
+      }
     },
     "help": {
       "title": "Help",
