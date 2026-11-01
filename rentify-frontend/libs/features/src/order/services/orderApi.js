@@ -42,9 +42,9 @@ export const orderApi = createApi({
 
     // GET /websites/:websiteId/orders
     getOrderHistory: builder.query({
-      query: ({ websiteId, page = 1, limit = 10, status }) => ({
+      query: ({ websiteId, page = 1, limit = 10, status, channel }) => ({
         url: `/websites/${websiteId}/orders`,
-        params: { page, limit, status },
+        params: { page, limit, status, channel },
       }),
       providesTags: ['Order'],
     }),

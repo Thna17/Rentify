@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Check, Globe, ShoppingBag } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, Compass, Globe, MonitorPlay, ShoppingBag, Tablet } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
@@ -19,6 +19,16 @@ export const NAV_ITEMS = [
   { to: '/templates', key: 'site.nav.templates' },
   { to: '/pricing', key: 'site.nav.pricing' },
   { to: '/live-demo', key: 'site.nav.liveDemo' },
+  {
+    to: '/showcase',
+    key: 'site.nav.showcase',
+    // Ways to run the showcase: one screen, the three-screen wall, or a self-scrolling website tour
+    children: [
+      { to: '/showcase', key: 'site.nav.showcaseSingle', hint: 'site.nav.showcaseSingleHint', icon: Tablet },
+      { to: '/showcase/wall', key: 'site.nav.showcaseWall', hint: 'site.nav.showcaseWallHint', icon: MonitorPlay },
+      { to: '/?tour=1', key: 'site.nav.showcaseSite', hint: 'site.nav.showcaseSiteHint', icon: Compass },
+    ],
+  },
   { to: '/about', key: 'site.nav.about' },
 ];
 
@@ -133,6 +143,79 @@ export const LanguageToggle = ({ className, inline = false }) => {
   );
 };
 
+// Nav item that opens a small menu of choices
+const NavMenu = ({ item, active }) => {
+  const { t } = useLanguage();
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => setOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false);
+    };
+    const onKey = (event) => event.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={cn(
+          'inline-flex items-center gap-1 whitespace-nowrap text-[13px] transition-colors',
+          active ? 'font-medium text-[#1d1d1f]' : 'text-[#1d1d1f]/60 hover:text-[#1d1d1f]'
+        )}
+      >
+        {t(item.key)}
+        <ChevronDown className={cn('h-3 w-3 transition-transform duration-200', open && 'rotate-180')} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: EASE }}
+            className="absolute left-1/2 top-9 w-72 -translate-x-1/2 rounded-2xl bg-white/95 p-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.06] backdrop-blur-xl"
+          >
+            {item.children.map((child) => (
+              <Link
+                key={child.to}
+                to={child.to}
+                role="menuitem"
+                aria-current={pathname === child.to ? 'page' : undefined}
+                className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[#f5f5f7]"
+              >
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f5f5f7] text-[#1d1d1f]">
+                  <child.icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-medium text-[#1d1d1f]">{t(child.key)}</span>
+                  <span className="block text-[12px] leading-snug text-[#6e6e73]">{t(child.hint)}</span>
+                </span>
+                {pathname === child.to && <Check className="mt-1 h-4 w-4 shrink-0 text-[#0071e3]" />}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const MenuIcon = ({ open }) => (
   <span className="relative block h-3 w-[18px]" aria-hidden>
     <span
@@ -181,14 +264,16 @@ const SiteHeader = () => {
         <Container className="flex h-12 items-center justify-between md:h-[52px]">
           <Wordmark />
 
-          <nav className="hidden items-center gap-7 lg:flex" aria-label={t('site.nav.mainLabel')}>
-            {NAV_ITEMS.map((item) => (
+          <nav className="hidden items-center gap-6 xl:flex 2xl:gap-8" aria-label={t('site.nav.mainLabel')}>
+            {NAV_ITEMS.map((item) => item.children ? (
+              <NavMenu key={item.to} item={item} active={isActive(item.to)} />
+            ) : (
               <Link
                 key={item.to}
                 to={item.to}
                 aria-current={isActive(item.to) ? 'page' : undefined}
                 className={cn(
-                  'text-[13px] transition-colors',
+                  'whitespace-nowrap text-[13px] transition-colors',
                   isActive(item.to)
                     ? 'font-medium text-[#1d1d1f]'
                     : 'text-[#1d1d1f]/60 hover:text-[#1d1d1f]'
@@ -201,7 +286,7 @@ const SiteHeader = () => {
               href={MARKETPLACE_HREF}
               target="_blank"
               rel="noreferrer"
-              className="group inline-flex items-center gap-1.5 rounded-full border border-amber-200/90 bg-amber-50/90 px-3 py-1 text-[13px] font-medium text-amber-900 transition-all hover:border-amber-300 hover:bg-amber-100"
+              className="group inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-200/90 bg-amber-50/90 px-3 py-1 text-[13px] font-medium text-amber-900 transition-all hover:border-amber-300 hover:bg-amber-100"
             >
               <ShoppingBag className="h-3.5 w-3.5 text-amber-600" />
               <span>{t('site.nav.marketplace')}</span>
@@ -209,11 +294,11 @@ const SiteHeader = () => {
             </a>
           </nav>
 
-          <div className="hidden items-center gap-5 lg:flex">
+          <div className="hidden items-center gap-5 xl:flex">
             <LanguageToggle />
             <a
               href={AUTH_URL}
-              className="text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]"
+              className="whitespace-nowrap text-[13px] text-[#1d1d1f]/80 transition-colors hover:text-[#1d1d1f]"
             >
               {t('site.nav.signIn')}
             </a>
@@ -224,7 +309,7 @@ const SiteHeader = () => {
 
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center lg:hidden"
+            className="flex h-10 w-10 items-center justify-center xl:hidden"
             onClick={() => setOpen(true)}
             aria-label={t('site.nav.menu')}
             aria-expanded={open}
@@ -242,7 +327,7 @@ const SiteHeader = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className={cn('fixed inset-0 z-[60] overflow-y-auto bg-white antialiased md:hidden', font)}
+            className={cn('fixed inset-0 z-[60] overflow-y-auto bg-white antialiased xl:hidden', font)}
             role="dialog"
             aria-modal="true"
           >
@@ -280,6 +365,20 @@ const SiteHeader = () => {
                     >
                       {t(item.key)}
                     </Link>
+                    {item.children && (
+                      <div className="mb-1 ml-1 flex flex-col border-l border-black/10 pl-4">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.to}
+                            to={child.to}
+                            className="flex items-center gap-2.5 py-1.5 text-[17px] text-[#1d1d1f]/75"
+                          >
+                            <child.icon className="h-4 w-4" />
+                            {t(child.key)}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 ))}
                 <motion.div

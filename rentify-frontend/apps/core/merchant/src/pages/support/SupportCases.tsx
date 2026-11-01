@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, LifeBuoy } from 'lucide-react';
+import { DataTable, StatusPill } from '../../components/data-table';
 import { useTranslation } from '@rentify/utils';
 import { RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { Button } from '@rentify/shared/ui/button';
@@ -12,14 +13,20 @@ const copy = {
     empty: 'No support cases yet.', failed: 'Support cases could not be loaded.', retry: 'Try again', more: 'Load more', back: 'Back to cases',
     reply: 'Your response', send: 'Send response', sending: 'Sending…', sent: 'Response sent.',
     conflict: 'This case changed. Review the latest details before sending again.', closed: 'This case is closed to new responses.',
-    unavailable: 'The response could not be sent. Retry safely using the same request.' },
+    unavailable: 'The response could not be sent. Retry safely using the same request.',
+    caseColumn: 'Case', summaryColumn: 'Summary', statusColumn: 'Status', actionsColumn: 'Actions', open: 'Open' },
   km: { title: 'ករណីជំនួយ', description: 'តាមដានករណីរបស់ហាង និងឆ្លើយតបទៅក្រុមជំនួយ។', loading: 'កំពុងផ្ទុក…',
     empty: 'មិនទាន់មានករណីជំនួយទេ។', failed: 'មិនអាចផ្ទុកករណីជំនួយបានទេ។', retry: 'ព្យាយាមម្ដងទៀត', more: 'ផ្ទុកបន្ថែម', back: 'ត្រឡប់ទៅបញ្ជីករណី',
     reply: 'ការឆ្លើយតបរបស់អ្នក', send: 'ផ្ញើការឆ្លើយតប', sending: 'កំពុងផ្ញើ…', sent: 'បានផ្ញើការឆ្លើយតប។',
     conflict: 'ករណីនេះបានផ្លាស់ប្ដូរ។ សូមពិនិត្យព័ត៌មានថ្មីមុនផ្ញើម្ដងទៀត។', closed: 'ករណីនេះបានបិទសម្រាប់ការឆ្លើយតបថ្មី។',
-    unavailable: 'មិនអាចផ្ញើការឆ្លើយតបបានទេ។ អ្នកអាចព្យាយាមម្ដងទៀតដោយសុវត្ថិភាព។' },
+    unavailable: 'មិនអាចផ្ញើការឆ្លើយតបបានទេ។ អ្នកអាចព្យាយាមម្ដងទៀតដោយសុវត្ថិភាព។',
+    caseColumn: 'ករណី', summaryColumn: 'សេចក្តីសង្ខេប', statusColumn: 'ស្ថានភាព', actionsColumn: 'សកម្មភាព', open: 'បើក' },
 };
 const base = `${RENTIFY_API_BASE}/api/support/cases/mine`;
+const statusTones: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  open: 'info', triaged: 'info', in_progress: 'info', reopened: 'info', waiting_on_merchant: 'warning',
+  waiting_on_requester: 'neutral', escalated: 'danger', resolved: 'success', closed: 'neutral',
+};
 const statusLabels: Record<string, [string, string]> = {
   open: ['Open', 'បើក'], triaged: ['Triaged', 'បានពិនិត្យ'], in_progress: ['In progress', 'កំពុងដំណើរការ'],
   waiting_on_requester: ['Waiting for requester', 'រង់ចាំអ្នកស្នើសុំ'], waiting_on_merchant: ['Waiting for merchant', 'រង់ចាំអ្នកលក់'],
@@ -77,6 +84,48 @@ export default function SupportCases() {
     } finally { setSending(false); }
   };
 
+  const columns = useMemo(() => [
+    {
+      id: 'case',
+      accessorKey: 'caseNumber',
+      header: text.caseColumn,
+      meta: { sortable: true, mobileHideLabel: true },
+      cell: ({ getValue }: any) => <span className="font-medium tabular-nums text-foreground">{getValue()}</span>,
+    },
+    {
+      id: 'summary',
+      accessorKey: 'summary',
+      header: text.summaryColumn,
+      meta: { mobile: 'primary' },
+      cell: ({ getValue }: any) => <span className="block max-w-[28rem] truncate text-foreground">{getValue()}</span>,
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: text.statusColumn,
+      meta: { sortable: true, mobile: 'badge' },
+      cell: ({ getValue }: any) => <StatusPill tone={statusTones[getValue()] || 'neutral'}>{status(getValue())}</StatusPill>,
+    },
+    {
+      id: 'actions',
+      header: () => <span className="sr-only">{text.actionsColumn}</span>,
+      meta: { label: text.actionsColumn, align: 'right' },
+      enableSorting: false,
+      cell: ({ row }: any) => (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-11 md:h-9"
+          aria-label={`${text.open} ${row.original.caseNumber} · ${row.original.summary}`}
+          onClick={() => show(row.original.id)}
+        >
+          {text.open}<ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      ),
+    },
+  ], [text, language]);
+
   return (
     <section className="rounded-2xl bg-muted/40 p-5 md:p-6" aria-labelledby="support-cases-title">
       <div className="flex items-start gap-3">
@@ -99,33 +148,30 @@ export default function SupportCases() {
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />{text.back}
           </button>
         )}
-        {loading && <p role="status" className="text-xs text-muted-foreground">{text.loading}</p>}
-        {error && (
+        {selected && loading && <p role="status" className="text-xs text-muted-foreground">{text.loading}</p>}
+        {selected && error && (
           <div role="alert" className="rounded-xl bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
             {error}{' '}
-            <button type="button" className="font-semibold underline" onClick={() => selected ? show(selected.id) : load()}>{text.retry}</button>
+            <button type="button" className="font-semibold underline" onClick={() => show(selected.id)}>{text.retry}</button>
           </div>
         )}
-        {!selected && !loading && !error && cases.length === 0 && (
-          <p className="rounded-xl bg-background px-4 py-5 text-center text-xs text-muted-foreground">{text.empty}</p>
-        )}
 
-        {!selected && cases.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            onClick={() => show(item.id)}
-            className="flex w-full min-h-[56px] items-center gap-3 rounded-xl bg-background px-4 py-3 text-left transition-colors hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-foreground">{item.caseNumber} · {item.summary}</span>
-              <span className="text-xs text-muted-foreground">{status(item.status)}</span>
-            </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          </button>
-        ))}
-        {!selected && cursor && (
-          <Button variant="ghost" size="sm" disabled={loading} onClick={() => load(cursor)}>{text.more}</Button>
+        {!selected && (
+          <DataTable
+            ariaLabel={text.title}
+            columns={columns}
+            data={cases}
+            isLoading={loading && !cases.length}
+            isError={Boolean(error)}
+            errorTitle={error}
+            onRetry={() => load()}
+            empty={{ icon: LifeBuoy, title: text.empty, body: '' }}
+            onRowClick={(item: Case) => show(item.id)}
+            pagination={false}
+            footer={cursor ? (
+              <Button variant="ghost" size="sm" className="h-11" disabled={loading} onClick={() => load(cursor)}>{text.more}</Button>
+            ) : null}
+          />
         )}
 
         {selected && (

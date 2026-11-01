@@ -41,46 +41,48 @@ export const PaymentsSection = () => {
 
   return (
     <Section id="payments" tone="dark">
-      <Container className="grid items-center gap-16 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
-        <div>
-          <Reveal>
-            <Eyebrow className="text-[#2997ff]">{t(key('payments.eyebrow'))}</Eyebrow>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <Heading size="xl" className="mt-3 text-white">
-              {t(key('payments.title'))}
-            </Heading>
-          </Reveal>
-          <Reveal delay={0.16}>
-            <Lead className="mt-6 max-w-lg text-[#a1a1a6]">{t(key('payments.lead'))}</Lead>
-          </Reveal>
-          <Stagger className="mt-8 grid gap-4 sm:mt-12 sm:grid-cols-3 sm:gap-8 lg:grid-cols-1 lg:gap-6 xl:grid-cols-3" delay={0.2}>
-            {['f1', 'f2', 'f3'].map((fact) => (
-              <StaggerItem key={fact} className="border-t border-white/15 pt-4 sm:pt-5">
-                <p className="text-[15px] font-semibold text-white sm:text-[17px]">
-                  {t(key(`payments.${fact}.title`))}
-                </p>
-                <p className="mt-1.5 hidden text-[15px] leading-snug text-[#a1a1a6] sm:block">
-                  {t(key(`payments.${fact}.body`))}
-                </p>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </div>
+      <Container className="max-w-[1240px] px-6 sm:px-8 lg:px-12">
+        <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_1fr] lg:gap-12 xl:gap-16">
+          <div>
+            <Reveal>
+              <Eyebrow className="text-[#2997ff]">{t(key('payments.eyebrow'))}</Eyebrow>
+            </Reveal>
+            <Reveal delay={0.08}>
+              <Heading size="xl" className="mt-3 text-white">
+                {t(key('payments.title'))}
+              </Heading>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <Lead className="mt-6 max-w-lg text-[#a1a1a6]">{t(key('payments.lead'))}</Lead>
+            </Reveal>
+            <Stagger className="mt-8 grid gap-4 sm:mt-12 sm:grid-cols-3 sm:gap-8 lg:grid-cols-1 lg:gap-6 xl:grid-cols-3" delay={0.2}>
+              {['f1', 'f2', 'f3'].map((fact) => (
+                <StaggerItem key={fact} className="border-t border-white/15 pt-4 sm:pt-5">
+                  <p className="text-[15px] font-semibold text-white sm:text-[17px]">
+                    {t(key(`payments.${fact}.title`))}
+                  </p>
+                  <p className="mt-1.5 hidden text-[15px] leading-snug text-[#a1a1a6] sm:block">
+                    {t(key(`payments.${fact}.body`))}
+                  </p>
+                </StaggerItem>
+              ))}
+            </Stagger>
+          </div>
 
-        <div className="relative flex justify-center py-10">
-          <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(45%_45%_at_50%_50%,rgba(225,35,46,0.35),transparent_70%)] blur-2xl"
-            aria-hidden
-          />
-          <ScrollScale from={0.8}>
-            <motion.div
-              animate={reduce ? undefined : { y: [0, -12, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <KhqrCard className="w-[280px] md:w-[320px] 2xl:w-[380px]" />
-            </motion.div>
-          </ScrollScale>
+          <div className="relative flex justify-center py-10">
+            <div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(45%_45%_at_50%_50%,rgba(225,35,46,0.35),transparent_70%)] blur-2xl"
+              aria-hidden
+            />
+            <ScrollScale from={0.8}>
+              <motion.div
+                animate={reduce ? undefined : { y: [0, -12, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <KhqrCard className="w-[280px] md:w-[320px] 2xl:w-[380px]" />
+              </motion.div>
+            </ScrollScale>
+          </div>
         </div>
       </Container>
     </Section>
@@ -92,7 +94,7 @@ export const PosSection = () => {
 
   return (
     <Section id="pos" tone="gray">
-      <Container>
+      <Container className="max-w-[1240px] px-6 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-3xl text-center">
           <Reveal>
             <Eyebrow>{t(key('pos.eyebrow'))}</Eyebrow>
@@ -125,37 +127,39 @@ export const LanguageSection = () => {
 
   return (
     <Section tone="white">
-      <Container className="grid items-center gap-16 lg:grid-cols-2">
-        <div className="order-2 flex justify-center lg:order-1">
-          {/* The real Aura Botanicals store, in English and in Khmer */}
-          <Reveal className="flex w-full max-w-[520px] items-end justify-center">
-            {[
-              { src: storeEnglish, label: 'English', tilt: '-rotate-[4deg] translate-y-4' },
-              { src: storeKhmer, label: 'ខ្មែរ', tilt: 'rotate-[4deg] -ml-6 z-10' },
-            ].map(({ src, label, tilt }) => (
-              <div key={label} className={`relative w-1/2 ${tilt}`}>
-                <PhoneFrame>
-                  <Screen src={src} alt={`Aura Botanicals store in ${label}`} />
-                </PhoneFrame>
-                <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-[13px] font-medium text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06]">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </Reveal>
-        </div>
-        <div className="order-1 lg:order-2">
-          <Reveal>
-            <Eyebrow>{t(key('language.eyebrow'))}</Eyebrow>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <Heading size="lg" className="mt-3">
-              {t(key('language.title'))}
-            </Heading>
-          </Reveal>
-          <Reveal delay={0.16}>
-            <Lead className="mt-6 max-w-md">{t(key('language.lead'))}</Lead>
-          </Reveal>
+      <Container className="max-w-[1240px] px-6 sm:px-8 lg:px-12">
+        <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+          <div className="order-2 flex justify-center lg:order-1">
+            {/* The real Aura Botanicals store, in English and in Khmer */}
+            <Reveal className="flex w-full max-w-[520px] items-end justify-center">
+              {[
+                { src: storeEnglish, label: 'English', tilt: '-rotate-[4deg] translate-y-4' },
+                { src: storeKhmer, label: 'ខ្មែរ', tilt: 'rotate-[4deg] -ml-6 z-10' },
+              ].map(({ src, label, tilt }) => (
+                <div key={label} className={`relative w-1/2 ${tilt}`}>
+                  <PhoneFrame>
+                    <Screen src={src} alt={`Aura Botanicals store in ${label}`} />
+                  </PhoneFrame>
+                  <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-[13px] font-medium text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06]">
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </Reveal>
+          </div>
+          <div className="order-1 lg:order-2">
+            <Reveal>
+              <Eyebrow>{t(key('language.eyebrow'))}</Eyebrow>
+            </Reveal>
+            <Reveal delay={0.08}>
+              <Heading size="lg" className="mt-3">
+                {t(key('language.title'))}
+              </Heading>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <Lead className="mt-6 max-w-md">{t(key('language.lead'))}</Lead>
+            </Reveal>
+          </div>
         </div>
       </Container>
     </Section>

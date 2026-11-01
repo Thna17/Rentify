@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useGetOrderHistoryQuery } from '@rentify/apis';
 import { useTranslation } from '@rentify/utils';
+import { useChannels } from '../context/ChannelContext';
 
 export const ORDER_STATUS = {
   ALL: 'all',
@@ -21,6 +22,7 @@ export const ORDER_TYPE = {
 
 export const useOrderManagement = (websiteId) => {
   const { t } = useTranslation();
+  const { view } = useChannels();
   const [tabValue, setTabValue] = useState(ORDER_STATUS.ALL);
   const [orderTypeFilter, setOrderTypeFilter] = useState(ORDER_TYPE.ALL);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,10 +34,13 @@ export const useOrderManagement = (websiteId) => {
     severity: 'success',
   });
 
+  const channelParam = view === 'all' ? undefined : view;
+
   const { data, isLoading, isError, refetch } = useGetOrderHistoryQuery({
     websiteId,
     page,
     limit: rowsPerPage,
+    channel: channelParam,
   });
 
   const handleShowSnackbar = useCallback((message, severity = 'success') => {
@@ -66,6 +71,12 @@ export const useOrderManagement = (websiteId) => {
         orderTypeFilter === ORDER_TYPE.ALL ||
         order.orderType === orderTypeFilter;
 
+      const channelMatch =
+        view === 'all' ||
+        (view === 'marketplace' && order.salesChannel === 'marketplace') ||
+        (view === 'storefront' && (order.salesChannel === 'storefront' || (!order.salesChannel && order.orderType !== 'pos'))) ||
+        (view === 'pos' && (order.salesChannel === 'pos' || order.orderType === 'pos'));
+
       const searchMatch =
         searchTerm === '' ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,9 +84,9 @@ export const useOrderManagement = (websiteId) => {
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase());
 
-      return statusMatch && typeMatch && searchMatch;
+      return statusMatch && typeMatch && channelMatch && searchMatch;
     });
-  }, [data, tabValue, orderTypeFilter, searchTerm]);
+  }, [data, tabValue, orderTypeFilter, view, searchTerm]);
 
   const statusCounts = useMemo(() => {
     const counts = {

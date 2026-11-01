@@ -1,3 +1,4 @@
+import { CampaignInvitation } from '../campaigns/CampaignInvitation';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useAuth, useTranslation } from '@rentify/utils';
 import { motion } from 'framer-motion';
@@ -289,6 +290,7 @@ export const Overview = () => {
   return (
     <div className="min-h-full">
       <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 sm:px-6 md:px-8 md:py-8">
+        <CampaignInvitation />
         {/* Greeting + period */}
         <motion.div {...fadeUp(0)} className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>

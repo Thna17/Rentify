@@ -1,3 +1,4 @@
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -10,6 +11,9 @@ import Pricing from "./pages/pricing/Pricing";
 import Onboarding from "./pages/Onboarding/AdvancedOnboarding";
 
 import LiveDemoPage from "./pages/live-demo/LiveDemo";
+import ShowcasePage from "./pages/showcase/Showcase";
+import SiteTour from "./components/site/SiteTour";
+const ShowcaseWall = React.lazy(() => import("./pages/showcase-wall/ShowcaseWall"));
 // import NotFound from "./pages/NotFound";
 import BrowseTemplates from "./pages/template-browse";
 import TemplateDetailPage from "./pages/template-detail";
@@ -30,6 +34,8 @@ const App = () => (
           {/* <Toaster /> */}
           {/* <Sonner /> */}
           <BrowserRouter>
+            {/* Website tour: any page opened with ?tour=1 scrolls itself */}
+            <SiteTour />
             <Routes>
               <Route path="/" element={<Index />} />
   
@@ -37,6 +43,8 @@ const App = () => (
 
               <Route path="/solutions" element={<Solutions />} />
               <Route path="/live-demo" element={<LiveDemoPage />} />
+              <Route path="/showcase" element={<ShowcasePage />} />
+              <Route path="/showcase/wall" element={<React.Suspense fallback={<div className="h-screen bg-[#f4f6fb]" />}><ShowcaseWall /></React.Suspense>} />
 
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about" element={<About />} />

@@ -13,6 +13,7 @@ import { TranslateService } from '../../../../core/i18n/translate.service';
   standalone: true,
   imports: [RouterLink, IconComponent],
   host: {
+    '[class.artwork]': 'promo().imageOnly === true',
     '[class.card]': "format() === 'card'",
     '[class.compact]': "format() === 'compact'",
     '[class.featured]': "format() === 'featured'",
@@ -21,6 +22,8 @@ import { TranslateService } from '../../../../core/i18n/translate.service';
     @let p = promo();
     <a
       class="promo"
+      [class.image-only]="p.imageOnly"
+      [attr.aria-label]="p.imageOnly ? copy(p, 'alt') || copy(p, 'title') : null"
       [class.illustration]="p.imageMode === 'illustration'"
       [class.featured-promo]="format() === 'featured'"
       [style.background]="p.background ?? null"
@@ -28,6 +31,7 @@ import { TranslateService } from '../../../../core/i18n/translate.service';
       [queryParams]="p.params ?? {}"
     >
       <img [src]="p.image" [alt]="copy(p, 'alt')" loading="lazy" />
+      @if (!p.imageOnly) {
       <div class="scrim" [class.featured-scrim]="format() === 'featured'"></div>
 
       @if (format() === 'featured') {
@@ -97,10 +101,14 @@ import { TranslateService } from '../../../../core/i18n/translate.service';
           <em class="cta"><ui-icon name="arrow-right" [size]="13" /></em>
         </span>
       }
+      }
     </a>
   `,
   styles: [`
     :host { display: block; }
+    :host(.artwork.compact) { height: auto; aspect-ratio: 3 / 1; }
+    .promo.image-only { background: transparent; border-radius: 16px; }
+    .promo.image-only img { width: 100%; height: 100%; object-fit: contain; transform: none; }
     :host(.card) { height: 300px; }
     :host(.compact) { height: 124px; }
     :host(.featured) {

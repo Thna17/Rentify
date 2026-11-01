@@ -6,11 +6,13 @@ import DashboardLayout from '../layouts/dashboard/Layout';
 const Overview = lazy(() => import('../pages/overview/Overview'));
 const PlatformAnalytics = lazy(() => import('../pages/overview/PlatformAnalytics'));
 const StoreManagement = lazy(() => import('../pages/store-management/StoreManagement'));
+const StoreDesign = lazy(() => import('../pages/store-design/StoreDesign'));
 const ProductManagement = lazy(() => import('../pages/product-management/ProductManagement'));
 const BulkProductManagement = lazy(() =>
   import('../pages/product-management/ProductManagement').then((module) => ({ default: module.BulkProductManagement })));
 const StoreCatalogPage = lazy(() => import('../pages/product-management/StoreCatalogPage'));
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
+const CampaignsPage = lazy(() => import('../pages/campaigns/CampaignsPage'));
 const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
 const MarketplaceOrders = lazy(() => import('../pages/order-management/MarketplaceOrders'));
@@ -39,11 +41,12 @@ export const dashboardRoutes = {
     { path: 'overview', element: <Overview /> },
     { path: 'analytics', element: <PlatformAnalytics /> },
     { path: 'store-management', element: <StoreManagement /> },
-    { path: 'customization', element: <Navigate to="/store-management" replace /> },
-    { path: 'customization/:id', element: <Navigate to="/store-management" replace /> },
+    { path: 'customization', element: <StoreDesign /> },
+    { path: 'customization/:id', element: <Navigate to="/customization" replace /> },
     { path: 'products', element: <ProductManagement /> },
     { path: 'products/manage', element: <BulkProductManagement /> },
     { path: 'catalog', element: <StoreCatalogPage /> },
+    { path: 'campaigns', element: <CampaignsPage /> },
     { path: 'categories', element: <CategoriesPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },

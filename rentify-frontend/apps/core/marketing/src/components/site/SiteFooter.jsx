@@ -130,8 +130,8 @@ const SiteFooter = () => {
               })}
             </nav>
           )}
-          {/* Phones and tablets: actions sit right under the socials */}
-          <div className="lg:hidden">{badges}</div>
+          {/* Tablet only: actions sit right under the socials (hidden on mobile) */}
+          <div className="hidden sm:block lg:hidden">{badges}</div>
         </div>
 
         {/* Link columns: grid on tablet/desktop, accordions on phones */}

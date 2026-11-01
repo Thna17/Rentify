@@ -48,6 +48,9 @@ export const ALL_TABS = [
     section: 'sell',
   },
   {
+    name: 'Campaigns & events', label: 'Campaigns & events', icon: Tags, path: 'campaigns', roles: ['admin','user','staff'], permission: 'manage_products', section: 'grow', views: ['all','marketplace'],
+  },
+  {
     name: 'dashboard.categories',
     label: 'Categories',
     hint: 'Online store categories and marketplace categories',
@@ -215,56 +218,6 @@ export const ALL_TABS = [
     permission: 'settings',
     section: 'settings',
     inView: { storefront: { path: 'settings/account', label: 'Account' } },
-  },
-
-  // --- Online store: the storefront admin. Only shown in the Online store view;
-  // each item is an existing page. ---
-  {
-    name: 'Staff & roles',
-    label: 'Staff & roles',
-    hint: 'Invite people and set what they can do',
-    icon: UserCog,
-    path: 'settings/staff',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'settings',
-    ownerOnly: true,
-    channel: 'storefront',
-    views: ['storefront'],
-    section: 'store',
-  },
-  {
-    name: 'Payments',
-    label: 'Payments',
-    hint: 'KHQR and how customers pay',
-    icon: QrCode,
-    path: 'settings/payments',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'settings',
-    channel: 'storefront',
-    views: ['storefront'],
-    section: 'store',
-  },
-  {
-    name: 'Security',
-    label: 'Security',
-    hint: 'Password and sign-in protection',
-    icon: ShieldCheck,
-    path: 'settings/security',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'settings',
-    views: ['storefront'],
-    section: 'store',
-  },
-  {
-    name: 'Usage',
-    label: 'Usage',
-    hint: 'What your store has used this period',
-    icon: Gauge,
-    path: 'usage/dashboard',
-    roles: ['admin', 'user', 'staff'],
-    permission: 'manage_analytics',
-    views: ['storefront'],
-    section: 'store',
   },
 
   // --- Support: kept reachable, but folded under Settings rather than its

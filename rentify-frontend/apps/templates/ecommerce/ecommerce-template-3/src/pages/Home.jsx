@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useGetAllProductsQuery, useGetProductsByCategoryQuery } from '@rentify/storefront/api';
 import { useStorefrontCategories, useStorefrontWebsite } from '@rentify/storefront/website';
 import { trackStorefrontEvent } from '@rentify/storefront/analytics';
+import { LayoutSection, useSectionLayout } from '@rentify/storefront/preview';
 import { OwnerAddButton, OwnerEditButton, OwnerSectionPlaceholder } from '@rentify/storefront/owner/StorefrontOwner';
 import { useI18n } from '../i18n';
 import { catalogPath } from '../paths';
@@ -69,6 +70,7 @@ export default function Home() {
   const { websiteId, identity, content } = useStorefrontWebsite();
   const { categories } = useStorefrontCategories();
   const page = getTemplateContent(content, categories);
+  const layout = useSectionLayout(3);
   const hasVisit = page.visit.hours.length > 0 || Boolean(identity.location || identity.phone || page.visit.mapUrl);
   useDocumentTitle(null);
 
@@ -85,37 +87,51 @@ export default function Home() {
         note={page.hero.note}
         hours={page.visit.hours}
       />
-      {page.highlights.length ? <Highlights items={page.highlights} /> : <OwnerSectionPlaceholder section="Highlights" className="mt-8" />}
+      <div className="flex flex-col">
+        <LayoutSection layout={layout} id="highlights">
+          {page.highlights.length ? <Highlights items={page.highlights} /> : <OwnerSectionPlaceholder section="Highlights" className="mt-8" />}
+        </LayoutSection>
 
-      <SignatureSection signature={page.signature} websiteId={websiteId} />
+        <LayoutSection layout={layout} id="signature">
+          <SignatureSection signature={page.signature} websiteId={websiteId} />
+        </LayoutSection>
 
-      <div className="mt-16 sm:mt-24">
-        <MenuSection websiteId={websiteId} categories={categories} title={page.menu.title} note={page.menu.note} />
+        <LayoutSection layout={layout} id="menu">
+          <div className="mt-16 sm:mt-24">
+            <MenuSection websiteId={websiteId} categories={categories} title={page.menu.title} note={page.menu.note} />
+          </div>
+        </LayoutSection>
+
+        <LayoutSection layout={layout} id="feature">
+          {page.feature.title ? (
+            <div className="mt-16 sm:mt-24">
+              <FeatureBanner feature={page.feature} />
+            </div>
+          ) : (
+            <OwnerSectionPlaceholder section="Feature Banner" className="mt-16" />
+          )}
+        </LayoutSection>
+
+        <LayoutSection layout={layout} id="story">
+          {page.story.title ? (
+            <div className="mt-16 sm:mt-24">
+              <StoryBand story={page.story} />
+            </div>
+          ) : (
+            <OwnerSectionPlaceholder section="Our Story" className="mt-16" />
+          )}
+        </LayoutSection>
+
+        <LayoutSection layout={layout} id="visit">
+          {hasVisit ? (
+            <div className="mt-16 sm:mt-24">
+              <VisitSection visit={page.visit} identity={identity} />
+            </div>
+          ) : (
+            <OwnerSectionPlaceholder section="Visit Us" className="mt-16" />
+          )}
+        </LayoutSection>
       </div>
-
-      {page.feature.title ? (
-        <div className="mt-16 sm:mt-24">
-          <FeatureBanner feature={page.feature} />
-        </div>
-      ) : (
-        <OwnerSectionPlaceholder section="Feature Banner" className="mt-16" />
-      )}
-
-      {page.story.title ? (
-        <div className="mt-16 sm:mt-24">
-          <StoryBand story={page.story} />
-        </div>
-      ) : (
-        <OwnerSectionPlaceholder section="Our Story" className="mt-16" />
-      )}
-
-      {hasVisit ? (
-        <div className="mt-16 sm:mt-24">
-          <VisitSection visit={page.visit} identity={identity} />
-        </div>
-      ) : (
-        <OwnerSectionPlaceholder section="Visit Us" className="mt-16" />
-      )}
     </div>
   );
 }

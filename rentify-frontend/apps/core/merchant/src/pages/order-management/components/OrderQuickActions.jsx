@@ -18,7 +18,7 @@ import {
   IconEye,
 } from '@tabler/icons-react';
 
-export function QuickActionsDropdown({ order, onAction, onViewDetails }) {
+export function QuickActionsDropdown({ order, onAction, onViewDetails, hideWhenEmpty = false }) {
   const { t } = useTranslation();
 
   const getAvailableActions = useCallback((order) => {
@@ -75,6 +75,7 @@ export function QuickActionsDropdown({ order, onAction, onViewDetails }) {
   }, [onAction, order]);
 
   if (availableActions.length === 0) {
+    if (hideWhenEmpty) return null;
     return (
       <Badge variant="outline" className="text-xs text-muted-foreground px-2 py-1">
         {t('dashboard.order.no_actions')}
