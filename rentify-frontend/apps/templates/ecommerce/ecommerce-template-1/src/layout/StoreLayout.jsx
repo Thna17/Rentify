@@ -21,11 +21,11 @@ function ScrollToTop() {
   return null;
 }
 
-export function StoreLayout() {
+export function StoreLayout({ header, footer, minimal = false }) {
   const { t } = useI18n();
   const { websiteId, status, storeStatus, isLoading, error, refetch, identity } =
     useStorefrontWebsite();
-  const scenic = identity?.headerStyle !== 'classic';
+  const scenic = !minimal && identity?.headerStyle !== 'classic';
   const cart = useStorefrontCart();
 
   const isSuspendedOrInactive =
@@ -75,7 +75,7 @@ export function StoreLayout() {
           {t('nav.skip')}
         </a>
         <ScrollToTop />
-        <Header />
+        {header || <Header />}
         <main
           id="main"
           tabIndex={-1}
@@ -96,7 +96,7 @@ export function StoreLayout() {
             </Suspense>
           </div>
         </main>
-        <Footer />
+        {footer || <Footer />}
         <CartPill totals={cart.totals} currency={cart.currency} />
       </div>
     </StorefrontOwnerProvider>

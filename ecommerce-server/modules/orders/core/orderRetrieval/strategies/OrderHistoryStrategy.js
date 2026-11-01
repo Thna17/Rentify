@@ -6,7 +6,7 @@ class OrderHistoryStrategy extends BaseRetrievalStrategy {
   async execute(req, res) {
     try {
       const { websiteId } = req.params;
-      const { status, page = 1, limit = 10 } = req.query;
+      const { status, channel, page = 1, limit = 10 } = req.query;
       const { Op } = require('sequelize');
       
       const validStatuses = ['pending', 'confirmed', 'processing', 'completed', 'fulfilled', 'shipped', 'delivered', 'cancelled', 'refunded'];
@@ -31,6 +31,24 @@ class OrderHistoryStrategy extends BaseRetrievalStrategy {
         ? { [Op.or]: conditions }
         : (conditions[0] || { websiteId });
       if (status) where.status = status;
+      if (channel) {
+        if (channel === 'pos') {
+          where[Op.and] = [
+            ...(where[Op.and] || []),
+            { [Op.or]: [{ salesChannel: 'pos' }, { orderType: 'pos' }] }
+          ];
+        } else if (channel === 'marketplace') {
+          where.salesChannel = 'marketplace';
+        } else if (channel === 'storefront') {
+          where[Op.and] = [
+            ...(where[Op.and] || []),
+            {
+              salesChannel: { [Op.in]: ['storefront', null] },
+              orderType: { [Op.ne]: 'pos' }
+            }
+          ];
+        }
+      }
 
       const orders = await this.models.Order.findAndCountAll({
         where,
@@ -48,8 +66,9 @@ class OrderHistoryStrategy extends BaseRetrievalStrategy {
         orderDate: order.createdAt,
         paymentStatus: normalizePaymentStatus(order.Payment?.status),
         orderType: order.orderType,
+        salesChannel: order.salesChannel || (order.orderType === 'pos' ? 'pos' : (order.orderType === 'manual' ? 'invoice' : 'storefront')),
         items: order.OrderItems,
-        shippingDetails: order.shippingDetail
+        shippingDetails: order.shippingDetail || order.ShippingDetail || order.shippingInfo || order.customerInfo
       }));
 
       res.json({

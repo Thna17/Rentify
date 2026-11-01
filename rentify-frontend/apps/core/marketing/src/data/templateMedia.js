@@ -1,3 +1,4 @@
+import { EDITORIAL_STYLES } from '@rentify/storefront/editorialStyles';
 import beautyDesktop from '../assets/site/storefront-beauty-desktop.jpg';
 import beautyMobile from '../assets/site/storefront-beauty-mobile.jpg';
 import techDesktop from '../assets/site/storefront-tech-desktop.jpg';
@@ -45,6 +46,9 @@ export const SHOWCASE = {
 
 export const getTemplateMedia = (template) => {
   if (!template) return null;
+
+  const editorial = EDITORIAL_STYLES[template.websiteTemplateId];
+  if (editorial) return { desktop: editorial.preview || editorial.image, mobile: editorial.mobilePreview || editorial.image, storeName: editorial.name };
 
   // Check websiteTemplateId first
   if (template.websiteTemplateId && TEMPLATE_MEDIA[template.websiteTemplateId]) {

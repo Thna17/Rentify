@@ -57,6 +57,12 @@ const TEMPLATE_SECTIONS = Object.freeze({
   2: ['highlights', 'categories', 'newArrivals', 'feature', 'featured', 'needs', 'story'],
   3: ['highlights', 'signature', 'menu', 'feature', 'story', 'visit'],
   4: ['categories', 'newArrivals', 'closing'],
+  5: ['categories', 'newArrivals', 'about', 'reviews'],
+  6: ['categories', 'newArrivals', 'about', 'reviews'],
+  7: ['categories', 'newArrivals', 'about', 'reviews'],
+  8: ['categories', 'newArrivals', 'about', 'reviews'],
+  9: ['categories', 'newArrivals', 'about', 'reviews'],
+  10: ['categories', 'newArrivals', 'about', 'reviews'],
 });
 
 const safeImageUrl = (value, storeId) => {

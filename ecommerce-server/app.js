@@ -47,6 +47,7 @@ app.get('/ready', async (_req, res) => {
 app.use('/api/website-data', require('./modules/websites/websiteRoutes'));
 app.use('/api/store-access', require('./modules/store-access/storeAccessRoutes'));
 app.use('/api', require('./modules/store-catalog/storeCatalogRoutes'));
+app.use('/api', require('./modules/campaigns/campaignRoutes'));
 app.use('/api', require('./modules/orders/storePosRoutes'));
 app.use('/api', require('./modules/invoices/invoiceRoutes'));
 app.use('/api', require('./modules/checkout/marketplaceCheckoutRoutes'));

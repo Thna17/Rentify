@@ -288,6 +288,7 @@ const SORTS: { value: ProductSort; labelKey: string; defaultLabel: string }[] = 
     <app-footer />
   `,
   styles: [
+
     `
       /* Same tinted banner treatment as the category page — a plain white
          heading here was the odd one out next to every other listing page. */

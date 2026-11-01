@@ -16,6 +16,8 @@ export interface Promo {
   link: string;
   params?: Record<string, string>;
   image: string;
+  /** The supplied artwork already contains its headline and CTA. */
+  imageOnly?: boolean;
   alt?: string;
   /**
    * 'photo' (default): image fills the card.

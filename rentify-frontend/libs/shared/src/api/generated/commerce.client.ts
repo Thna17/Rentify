@@ -23,6 +23,153 @@ export class CommerceApiClient {
   }
 
   /**
+   * List all campaigns (admin)
+   * GET /api/admin/campaigns
+   */
+  async get_api_admin_campaigns(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      campaigns?: Array<Commerce.MarketplaceCampaign>;
+    }>> {
+    return this.transport.request<{
+      campaigns?: Array<Commerce.MarketplaceCampaign>;
+    }>({
+      method: 'GET',
+      path: '/api/admin/campaigns',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_campaigns */
+  async getApiAdminCampaigns(options: any = {}): Promise<ApiResponse<{
+      campaigns?: Array<Commerce.MarketplaceCampaign>;
+    }>> {
+    return (this as any).get_api_admin_campaigns(options);
+  }
+
+  /**
+   * Create a campaign (admin)
+   * POST /api/admin/campaigns
+   */
+  async post_api_admin_campaigns(options: {
+    body: Commerce.MarketplaceCampaignInput;
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'POST',
+      path: '/api/admin/campaigns',
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_campaigns */
+  async postApiAdminCampaigns(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).post_api_admin_campaigns(options);
+  }
+
+  /**
+   * Get a campaign with its submissions (admin)
+   * GET /api/admin/campaigns/{campaignId}
+   */
+  async get_api_admin_campaigns_campaignId(options: {
+    path: {
+      campaignId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'GET',
+      path: '/api/admin/campaigns/{campaignId}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_admin_campaigns_campaignId */
+  async getApiAdminCampaignsCampaignId(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).get_api_admin_campaigns_campaignId(options);
+  }
+
+  /**
+   * Update a campaign (admin)
+   * PATCH /api/admin/campaigns/{campaignId}
+   */
+  async patch_api_admin_campaigns_campaignId(options: {
+    path: {
+      campaignId: string;
+    };
+    body: (Commerce.MarketplaceCampaignInput & {
+      revision: number;
+    });
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'PATCH',
+      path: '/api/admin/campaigns/{campaignId}',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for patch_api_admin_campaigns_campaignId */
+  async patchApiAdminCampaignsCampaignId(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).patch_api_admin_campaigns_campaignId(options);
+  }
+
+  /**
+   * Approve or reject a merchant's product submission (admin)
+   * POST /api/admin/campaigns/{campaignId}/submissions/{submissionId}/decision
+   */
+  async post_api_admin_campaigns_campaignId_submissions_submissionId_decision(options: {
+    path: {
+      campaignId: string;
+      submissionId: string;
+    };
+    body: {
+      /** Required when rejecting. */
+      note: string;
+      revision: number;
+      status: "approved" | "rejected";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'POST',
+      path: '/api/admin/campaigns/{campaignId}/submissions/{submissionId}/decision',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_admin_campaigns_campaignId_submissions_submissionId_decision */
+  async postApiAdminCampaignsCampaignIdSubmissionsSubmissionIdDecision(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).post_api_admin_campaigns_campaignId_submissions_submissionId_decision(options);
+  }
+
+  /**
    * Get privacy-safe Commerce journey and financial metrics
    * GET /api/admin/operations/analytics
    */
@@ -1645,6 +1792,69 @@ export class CommerceApiClient {
   /** Alias for get_api_invoice_websites_websiteId_invoices */
   async getApiInvoiceWebsitesWebsiteIdInvoices(options: any): Promise<ApiResponse<Array<Commerce.Invoice>>> {
     return (this as any).get_api_invoice_websites_websiteId_invoices(options);
+  }
+
+  /**
+   * List campaigns running on the marketplace now
+   * GET /api/marketplace/campaigns
+   */
+  async get_api_marketplace_campaigns(options: {
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  } = {}): Promise<ApiResponse<{
+      campaigns?: Array<Commerce.MarketplaceCampaign>;
+    }>> {
+    return this.transport.request<{
+      campaigns?: Array<Commerce.MarketplaceCampaign>;
+    }>({
+      method: 'GET',
+      path: '/api/marketplace/campaigns',
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_marketplace_campaigns */
+  async getApiMarketplaceCampaigns(options: any = {}): Promise<ApiResponse<{
+      campaigns?: Array<Commerce.MarketplaceCampaign>;
+    }>> {
+    return (this as any).get_api_marketplace_campaigns(options);
+  }
+
+  /**
+   * Get one active campaign and its approved products
+   * GET /api/marketplace/campaigns/{slug}
+   */
+  async get_api_marketplace_campaigns_slug(options: {
+    path: {
+      slug: string;
+    };
+    query?: {
+      limit?: number;
+      page?: number;
+      search?: string;
+      sort?: "price-asc" | "price-desc";
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'GET',
+      path: '/api/marketplace/campaigns/{slug}',
+      pathParams: (options as any)?.path,
+      query: options?.query,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_marketplace_campaigns_slug */
+  async getApiMarketplaceCampaignsSlug(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).get_api_marketplace_campaigns_slug(options);
   }
 
   /**
@@ -4382,6 +4592,99 @@ export class CommerceApiClient {
   /** Alias for post_api_storefront_websiteId_my_orders_orderId_reports_type */
   async postApiStorefrontWebsiteIdMyOrdersOrderIdReportsType(options: any): Promise<ApiResponse<any>> {
     return (this as any).post_api_storefront_websiteId_my_orders_orderId_reports_type(options);
+  }
+
+  /**
+   * Campaigns a Store can join, with its submissions
+   * GET /api/stores/{storeId}/campaigns
+   */
+  async get_api_stores_storeId_campaigns(options: {
+    path: {
+      storeId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'GET',
+      path: '/api/stores/{storeId}/campaigns',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_stores_storeId_campaigns */
+  async getApiStoresStoreIdCampaigns(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).get_api_stores_storeId_campaigns(options);
+  }
+
+  /**
+   * Submit a product to a campaign
+   * POST /api/stores/{storeId}/campaigns/{campaignId}/submissions
+   */
+  async post_api_stores_storeId_campaigns_campaignId_submissions(options: {
+    path: {
+      campaignId: string;
+      storeId: string;
+    };
+    body: {
+      note?: string;
+      productId: Commerce.UUID;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/campaigns/{campaignId}/submissions',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_campaigns_campaignId_submissions */
+  async postApiStoresStoreIdCampaignsCampaignIdSubmissions(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).post_api_stores_storeId_campaigns_campaignId_submissions(options);
+  }
+
+  /**
+   * Withdraw a product submission
+   * POST /api/stores/{storeId}/campaigns/{campaignId}/submissions/{submissionId}/withdraw
+   */
+  async post_api_stores_storeId_campaigns_campaignId_submissions_submissionId_withdraw(options: {
+    path: {
+      campaignId: string;
+      storeId: string;
+      submissionId: string;
+    };
+    body: {
+      revision: number;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<Record<string, any>>> {
+    return this.transport.request<Record<string, any>>({
+      method: 'POST',
+      path: '/api/stores/{storeId}/campaigns/{campaignId}/submissions/{submissionId}/withdraw',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_stores_storeId_campaigns_campaignId_submissions_submissionId_withdraw */
+  async postApiStoresStoreIdCampaignsCampaignIdSubmissionsSubmissionIdWithdraw(options: any): Promise<ApiResponse<Record<string, any>>> {
+    return (this as any).post_api_stores_storeId_campaigns_campaignId_submissions_submissionId_withdraw(options);
   }
 
   /**

@@ -419,7 +419,7 @@ export class CatalogService {
 }
 
 /** Map a Rentify product onto the shape the UI renders. */
-const toProductFromRentify = (
+export const toProductFromRentify = (
   api: RentifyProduct,
   storeMap: Map<string, RentifyStore>,
 ): Product => {

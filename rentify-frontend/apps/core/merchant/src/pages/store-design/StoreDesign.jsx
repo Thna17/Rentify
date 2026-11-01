@@ -14,6 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@rentify/shared/ui/tab
 import { TemplateGallery, templateName } from './components/TemplateGallery';
 import { LayoutPanel } from './components/LayoutPanel';
 import { StorePreview } from './components/StorePreview';
+import { templateThemes } from '@rentify/shared/themes';
+import { StoreImages } from './components/StoreImages';
+import { BrandColors } from './components/BrandColors';
+import { EDITORIAL_STYLES } from '@rentify/storefront/editorialStyles';
 import { useLayoutDraft } from './useLayoutDraft';
 
 function Message({ icon: Icon, tone = 'muted', title, body, action }) {
@@ -81,6 +85,7 @@ export default function StoreDesign() {
     [templatesQuery.data]
   );
 
+  const [previewRevision, setPreviewRevision] = useState(0);
   const [previewId, setPreviewId] = useState(null);
   useEffect(() => {
     if (previewId === null && currentId) setPreviewId(currentId);
@@ -173,20 +178,21 @@ export default function StoreDesign() {
       );
     } else if (activeId) {
       preview = (
-        <StorePreview storeUrl={deployment.data.url} templateId={activeId} layout={serializeLayout(draft.layout)} t={t} />
+        <StorePreview key={previewRevision} storeUrl={deployment.data.url} templateId={activeId} layout={serializeLayout(draft.layout)} t={t} />
       );
     }
 
     body = (
       <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         <Tabs defaultValue="templates" className="min-w-0 lg:sticky lg:top-4">
-          <TabsList className="grid h-auto w-full grid-cols-2 p-1">
+          <TabsList className="grid h-auto w-full grid-cols-3 p-1">
             <TabsTrigger value="templates" className="min-h-11">
               {t('merchant.storeDesign.tabs.templates')}
             </TabsTrigger>
             <TabsTrigger value="layout" className="min-h-11">
               {t('merchant.storeDesign.tabs.layout')}
             </TabsTrigger>
+            <TabsTrigger value="colors" className="min-h-11">{t('merchant.storeDesign.colors.title')}</TabsTrigger>
           </TabsList>
           <TabsContent value="templates" className="mt-4">
             <TemplateGallery
@@ -201,6 +207,19 @@ export default function StoreDesign() {
               isApplying={switchState.isLoading}
               t={t}
             />
+          </TabsContent>
+          <TabsContent value="colors" className="mt-4 space-y-6">
+            <StoreImages websiteId={websiteId} content={website.data?.WebsiteContents || website.data?.content || []}
+              onSaved={() => { website.refetch(); setPreviewRevision((value) => value + 1); }} t={t} />
+            <BrandColors key={websiteId} websiteId={websiteId}
+              savedTheme={(website.data?.WebsiteContents || website.data?.content || []).find((item) => item.label === 'Theme Configuration')?.value || {}}
+              initialPalette={
+                (website.data?.selectedPalette && typeof website.data.selectedPalette === 'object'
+                  ? website.data.selectedPalette.colors || website.data.selectedPalette
+                  : templateThemes[currentId]?.[website.data?.selectedPalette]?.colors)
+                || EDITORIAL_STYLES[currentId]?.palette || website.data?.colorPalette
+              }
+              onSaved={() => setPreviewRevision((value) => value + 1)} t={t} />
           </TabsContent>
           <TabsContent value="layout" className="mt-4">
             <LayoutPanel

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { TEMPLATE_LOADERS, templateFor } from '../templates';
 
 describe('template selection', () => {
-  test('serves Templates 1 to 4 as lazy components', () => {
-    expect(Object.keys(TEMPLATE_LOADERS)).toEqual(['1', '2', '3', '4']);
+  test('serves Templates 1 to 10 as lazy components', () => {
+    expect(Object.keys(TEMPLATE_LOADERS)).toEqual(Array.from({ length: 10 }, (_, index) => String(index + 1)));
     const first = templateFor({ websiteTemplateId: 1 });
     expect(first?.$$typeof).toBe(Symbol.for('react.lazy'));
     // The same component is reused, so React does not remount the store on re-render.
