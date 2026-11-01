@@ -1,5 +1,5 @@
 export const getCurrentTabData = (pathname, tabs) => {
-  let currentPath = pathname.replace(/^\/+/, '');
+  let currentPath = (pathname || '').replace(/^\/+/, '').split('?')[0];
   if (!currentPath) {
     currentPath = 'overview';
   }
@@ -21,7 +21,7 @@ export const getCurrentTabData = (pathname, tabs) => {
     }
   }
 
-  // Fallback: match base tab if currentPath starts with tab.path (e.g. settings/account -> settings)
+  // Fallback: match base tab if currentPath starts with tab.path (e.g. settings/delivery -> settings)
   if (!matchedTab) {
     for (const tab of tabs) {
       if (

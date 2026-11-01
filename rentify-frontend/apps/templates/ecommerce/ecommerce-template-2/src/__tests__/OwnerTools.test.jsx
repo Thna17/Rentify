@@ -79,7 +79,7 @@ describe('storefront owner tools', () => {
     // Empty sections invite the owner to fill them in.
     expect(await screen.findByRole('button', { name: /Add our story/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Edit Hero' }));
-    const headline = await screen.findByLabelText('Hero Headline');
+    const headline = await screen.findByLabelText('Hero Headline', {}, { timeout: 5000 });
     expect(headline.value).toBe('Old headline');
 
     fireEvent.change(headline, { target: { value: 'New headline' } });

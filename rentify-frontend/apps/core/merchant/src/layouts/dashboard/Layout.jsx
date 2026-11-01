@@ -156,7 +156,7 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
   
   // Check if user has access to the current tab
   const hasAccessToCurrentTab = matchedTab
-    ? platformTabs.some((tab) => tab.path === matchedTab.path)
+    ? platformTabs.some((tab) => tab.path === matchedTab.path || (matchedTab.parentPath && tab.path === matchedTab.parentPath))
     : false;
 
   // A page this Store cannot use stays inside the dashboard (header and menu
