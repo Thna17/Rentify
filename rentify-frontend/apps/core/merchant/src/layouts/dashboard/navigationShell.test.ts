@@ -73,7 +73,7 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       expect(channelTabs).toEqual(['marketplace', 'online-store', 'pos']);
 
       // Group 3 (more): Returns & problems, Share your store, Settings, Help
-      expect(moreTabs).toEqual(['returns', 'share', 'settings', 'help']);
+      expect(moreTabs).toEqual(['returns', 'campaigns', 'share', 'settings', 'help']);
     });
   });
 

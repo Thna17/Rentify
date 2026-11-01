@@ -22,6 +22,8 @@ export const routes: Routes = [
       import('./pages/home.component').then((m) => m.HomeComponent),
     title: 'Rentify Marketplace',
   },
+  { path: 'campaigns', loadComponent: () => import('./pages/campaign.component').then(m => m.CampaignComponent), title: 'Campaigns | Rentify Marketplace' },
+  { path: 'campaigns/:slug', loadComponent: () => import('./pages/campaign.component').then(m => m.CampaignComponent), title: 'Campaign | Rentify Marketplace' },
   {
     path: 'products',
     loadComponent: () =>

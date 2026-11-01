@@ -708,6 +708,7 @@
       "processing": "Processing",
       "order_id": "Order ID",
       "customer": "Customer",
+      "channel": "Channel",
       "date": "Date",
       "amount": "Amount",
       "type": "Type",
@@ -721,6 +722,8 @@
       "online": "Online",
       "pos": "POS",
       "manual": "Invoice",
+      "marketplace": "Marketplace",
+      "storefront": "Online store",
       "clear_filters": "Clear",
       "no_orders_found": "No orders found",
       "adjust_filters": "Try adjusting your filters or search terms to find what you're looking for.",
@@ -1980,7 +1983,9 @@
         "signature": "Signature drinks",
         "menu": "Menu",
         "visit": "Visit us",
-        "closing": "Thank-you note"
+        "closing": "Thank-you note",
+        "about": "Store information",
+        "reviews": "Customer reviews"
       },
       "preview": {
         "label": "Store preview",
@@ -1996,6 +2001,25 @@
         "reload": "Reload preview",
         "openStore": "Open store",
         "errorTitle": "We couldn’t find your store address"
+      },
+      "colors": {
+        "title": "Branding",
+        "description": "Choose a coordinated three-color combination or customize each color. Saving updates your live storefront and keeps your other theme settings.",
+        "primary": "Accent",
+        "secondary": "Supporting color",
+        "background": "Background",
+        "save": "Save brand colors",
+        "saving": "Saving…",
+        "saved": "Brand colors saved.",
+        "error": "Could not save your colors. Please try again."
+      },
+      "images": {
+        "title": "Store images",
+        "logo": "Your logo",
+        "banner": "Replace main banner",
+        "hint": "Uploads update your live store. Add more slideshow images with the Hero editor in your storefront.",
+        "saved": "Image saved.",
+        "error": "Could not save your image. Please try again."
       }
     },
     "setup": {
@@ -2746,6 +2770,9 @@
       "show": "Show password",
       "hide": "Hide password",
       "submit": "Change password"
+    },
+    "campaigns": {
+      "navLabel": "Campaigns & events"
     }
   }
 }

@@ -102,3 +102,16 @@ export const templateThemes: Record<string, Record<string, Theme>> = {
 templateThemes['2'] = templateThemes['1'];
 // Template 3 (café) takes the same merchant palette keys.
 templateThemes['3'] = templateThemes['1'];
+
+// Editorial storefront family: each option combines three coordinated brand colors.
+const editorialPalettes = {
+  editorialHome: { primary: '#164b2b', secondary: '#f3f1eb', background: '#ffffff' },
+  midnightTech: { primary: '#2563eb', secondary: '#0b1728', background: '#ffffff' },
+  petalBeauty: { primary: '#ad2145', secondary: '#fce9ef', background: '#ffffff' },
+  freshMarket: { primary: '#236127', secondary: '#eef5df', background: '#ffffff' },
+  studioWear: { primary: '#ad3325', secondary: '#f5e9e2', background: '#ffffff' },
+  khmerAtelier: { primary: '#805020', secondary: '#f3eade', background: '#ffffff' },
+};
+for (const id of ['5', '6', '7', '8', '9', '10']) {
+  templateThemes[id] = Object.fromEntries(Object.entries(editorialPalettes).map(([name, colors]) => [name, { colors }]));
+}

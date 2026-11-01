@@ -13,6 +13,7 @@ const BulkProductManagement = lazy(() =>
   import('../pages/product-management/ProductManagement').then((m) => ({ default: m.BulkProductManagement })),
 );
 const ProductDetailView = lazy(() => import('../pages/product-management/ProductDetailView'));
+const CampaignsPage = lazy(() => import('../pages/campaigns/CampaignsPage'));
 const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'));
 const OrderManagement = lazy(() => import('../pages/order-management/OrderManagement'));
 const OrderDetailView = lazy(() => import('../pages/order-management/OrderDetailView'));
@@ -60,6 +61,7 @@ export const dashboardRoutes = {
     { path: 'products/bulk', element: <BulkProductManagement /> },
     { path: 'catalog', element: <Navigate to="/products" replace /> },
     { path: 'categories', element: <Navigate to="/products?tab=categories" replace /> },
+    { path: 'campaigns', element: <CampaignsPage /> },
     { path: 'products/:id', element: <ProductDetailView /> },
     { path: 'products/create', element: <ProductForm /> },
     { path: 'products/edit/:id', element: <ProductForm /> },
