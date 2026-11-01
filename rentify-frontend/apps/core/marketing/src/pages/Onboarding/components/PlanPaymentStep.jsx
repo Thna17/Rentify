@@ -15,48 +15,113 @@ const formatTime = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 
 // and only accepts this payment when the store is created.
 const PlanPaymentStep = ({ data, onUpdate, onNext }) => {
   const { t } = useLanguage();
-  const plan = data.package;
-  const paid = data.payment?.paymentId && data.payment?.packageId === plan?.id;
+  const plan = data?.package;
+  const initialPayment = data?.payment?.packageId === plan?.id ? data?.payment : null;
 
+  const [activePaymentId, setActivePaymentId] = useState(initialPayment?.paymentId || null);
   const [payment, setPayment] = useState(null);
-  const [state, setState] = useState(paid ? 'success' : 'idle');
+  // If there's an existing candidate payment from storage, verify it against the server first;
+  // NEVER trust localStorage blindly to mark a payment as successful.
+  const [state, setState] = useState(initialPayment?.paymentId ? 'verifying' : 'idle');
   const [countdown, setCountdown] = useState(0);
   const started = useRef(false);
+
   const [initiate] = useInitiateKHQRPaymentMutation();
-  const { data: status } = useCheckPaymentStatusQuery(payment?.paymentId, {
-    skip: !payment?.paymentId || state !== 'pending',
-    pollingInterval: 4000,
+
+  const shouldPoll = Boolean(activePaymentId) && (state === 'pending' || state === 'verifying');
+  const { data: status, error: statusError } = useCheckPaymentStatusQuery(activePaymentId, {
+    skip: !shouldPoll,
+    pollingInterval: 3000,
   });
 
-  const start = useCallback(async () => {
+  const startNewPayment = useCallback(async () => {
     setState('initiating');
+    setActivePaymentId(null);
+    setPayment(null);
     try {
-      const response = await initiate({ packageId: plan.id }).unwrap();
+      const response = await initiate({ packageId: plan?.id }).unwrap();
       setPayment(response);
-      setCountdown(Math.max(0, Math.floor((new Date(response.expiresAt) - Date.now()) / 1000)));
+      setActivePaymentId(response.paymentId);
+      onUpdate({
+        payment: {
+          paymentId: response.paymentId,
+          packageId: plan?.id,
+          method: 'khqr',
+          status: 'pending',
+        },
+      });
+      const expiresAtMs = response.expiresAt ? new Date(response.expiresAt).getTime() : Date.now() + 15 * 60 * 1000;
+      setCountdown(Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000)));
       setState('pending');
     } catch (error) {
+      onUpdate({ payment: null });
       setState(error?.status === 401 ? 'signin' : 'failed');
     }
-  }, [initiate, plan?.id]);
+  }, [initiate, onUpdate, plan?.id]);
 
   useEffect(() => {
-    if (paid || started.current || !plan?.id) return;
+    if (started.current || !plan?.id) return;
     started.current = true;
-    start();
-  }, [paid, plan?.id, start]);
+
+    if (!initialPayment?.paymentId) {
+      startNewPayment();
+    }
+  }, [initialPayment?.paymentId, plan?.id, startNewPayment]);
 
   useEffect(() => {
-    if (!status) return;
-    if (status.status === 'completed') {
-      setState('success');
-      onUpdate({ payment: { paymentId: status.id, packageId: plan.id, method: 'khqr' } });
-      const timer = setTimeout(onNext, 1600);
-      return () => clearTimeout(timer);
+    if (!shouldPoll) return undefined;
+
+    // 1. Verifying existing candidate payment from storage
+    if (state === 'verifying') {
+      if (statusError || (status && status.status !== 'completed' && status.status !== 'pending')) {
+        // Stale, missing, or mismatched payment in storage -> purge and initiate fresh payment
+        onUpdate({ payment: null });
+        startNewPayment();
+        return undefined;
+      }
+      if (status?.status === 'completed') {
+        setState('success');
+        onUpdate({
+          payment: {
+            paymentId: status.id,
+            packageId: plan?.id,
+            method: 'khqr',
+            status: 'completed',
+          },
+        });
+        const timer = setTimeout(onNext, 1600);
+        return () => clearTimeout(timer);
+      }
+      if (status?.status === 'pending') {
+        // Recover pending state
+        const expiresAtMs = status.expiresAt ? new Date(status.expiresAt).getTime() : Date.now() + 15 * 60 * 1000;
+        setCountdown(Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000)));
+        setState('pending');
+      }
+      return undefined;
     }
-    if (status.status === 'expired' || status.status === 'failed') setState(status.status);
+
+    // 2. Active pending payment state
+    if (state === 'pending' && status) {
+      if (status.status === 'completed') {
+        setState('success');
+        onUpdate({
+          payment: {
+            paymentId: status.id,
+            packageId: plan?.id,
+            method: 'khqr',
+            status: 'completed',
+          },
+        });
+        const timer = setTimeout(onNext, 1600);
+        return () => clearTimeout(timer);
+      }
+      if (status.status === 'expired' || status.status === 'failed') {
+        setState(status.status);
+      }
+    }
     return undefined;
-  }, [status?.status]);
+  }, [onNext, onUpdate, plan?.id, shouldPoll, startNewPayment, state, status, statusError]);
 
   useEffect(() => {
     if (state !== 'pending') return undefined;
@@ -73,6 +138,15 @@ const PlanPaymentStep = ({ data, onUpdate, onNext }) => {
   }, [state]);
 
   const signInUrl = `${AUTH_URL}/login?returnUrl=${encodeURIComponent(window.location.href)}`;
+  const qrPayload =
+    payment?.rawQR ||
+    payment?.qrString ||
+    payment?.qr_string ||
+    status?.transactionData?.rawQR ||
+    payment?.qrCodeUrl ||
+    payment?.checkoutUrl;
+
+  const appLink = payment?.qrCodeUrl || payment?.checkoutUrl || status?.transactionData?.checkoutUrl;
 
   return (
     <section>
@@ -108,10 +182,15 @@ const PlanPaymentStep = ({ data, onUpdate, onNext }) => {
             <>
               <div className="rounded-2xl bg-white p-3 ring-1 ring-black/[0.08]">
                 <div className="flex h-[240px] w-[240px] items-center justify-center">
-                  {state === 'pending' && payment?.rawQR ? (
-                    <QRCodeSVG value={payment.rawQR} size={240} level="M" />
-                  ) : state === 'initiating' ? (
-                    <span className="h-10 w-10 animate-spin rounded-full border-2 border-[#0071e3]/20 border-t-[#0071e3]" />
+                  {state === 'pending' && qrPayload ? (
+                    <QRCodeSVG value={qrPayload} size={240} level="M" />
+                  ) : state === 'initiating' || state === 'verifying' ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="h-10 w-10 animate-spin rounded-full border-2 border-[#0071e3]/20 border-t-[#0071e3]" />
+                      <span className="text-[13px] text-[#6e6e73]">
+                        {state === 'verifying' ? t('onboarding.khqr.verifying') : t('onboarding.khqr.generating')}
+                      </span>
+                    </div>
                   ) : (
                     <div className="text-[14px] text-[#6e6e73]">
                       {state === 'expired' ? t('onboarding.khqr.expired') : t('onboarding.khqr.failed')}
@@ -135,9 +214,9 @@ const PlanPaymentStep = ({ data, onUpdate, onNext }) => {
               )}
 
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {payment?.qrCodeUrl && state === 'pending' && (
+                {appLink && state === 'pending' && (
                   <a
-                    href={payment.qrCodeUrl}
+                    href={appLink}
                     target="_blank"
                     rel="noreferrer"
                     className="flex h-10 items-center gap-1.5 rounded-full bg-[#f5f5f7] px-4 text-[14px] text-[#1d1d1f] hover:bg-[#ebebed]"
@@ -149,7 +228,7 @@ const PlanPaymentStep = ({ data, onUpdate, onNext }) => {
                 {(state === 'expired' || state === 'failed') && (
                   <button
                     type="button"
-                    onClick={start}
+                    onClick={startNewPayment}
                     className="flex h-10 items-center gap-1.5 rounded-full bg-[#0071e3] px-5 text-[14px] font-medium text-white hover:bg-[#0077ed]"
                   >
                     <RefreshCw className="h-3.5 w-3.5" />

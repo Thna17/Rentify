@@ -104,6 +104,7 @@ const Onboarding = () => {
       setFormData((prev) => ({
         ...prev,
         package: packageData,
+        payment: null,
         pricing: { ...prev.pricing, basePrice: packageData.price || 0, totalPrice: 0 },
       }));
     }
@@ -138,15 +139,20 @@ const Onboarding = () => {
       .then((data) => {
         const u = data?.user || data?.data;
         if (u) {
-          setFormData((prev) => ({
-            ...prev,
-            businessDetails: {
-              ...prev.businessDetails,
-              email: prev.businessDetails?.email || u.email || '',
-              contact: prev.businessDetails?.contact || u.phoneNumber || '',
-              name: prev.businessDetails?.name || u.name || '',
-            },
-          }));
+          setFormData((prev) => {
+            const isDifferentUser = prev.savedUserId && prev.savedUserId !== u.id;
+            return {
+              ...prev,
+              savedUserId: u.id,
+              ...(isDifferentUser ? { payment: null } : {}),
+              businessDetails: {
+                ...prev.businessDetails,
+                email: prev.businessDetails?.email || u.email || '',
+                contact: prev.businessDetails?.contact || u.phoneNumber || '',
+                name: prev.businessDetails?.name || u.name || '',
+              },
+            };
+          });
         }
       })
       .catch(() => undefined);
@@ -258,7 +264,11 @@ const Onboarding = () => {
         case 3:
           return !!formData.package;
         case 'payment':
-          return formData.payment?.packageId === formData.package?.id;
+          return (
+            formData.payment?.packageId === formData.package?.id &&
+            Boolean(formData.payment?.paymentId) &&
+            formData.payment?.status === 'completed'
+          );
         default:
           return true;
       }

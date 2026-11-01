@@ -34,4 +34,22 @@ describe('Store-first onboarding state', () => {
     expect(startSellingCopy.KH.title).toMatch(/[\u1780-\u17ff]/);
     expect(startSellingCopy.EN.marketTitle).toBe('Marketplace');
   });
+
+  it('rejects stale or unverified client payment state without completed server status', () => {
+    const isPaymentStepComplete = (payment, plan) =>
+      Boolean(
+        payment?.packageId === plan?.id &&
+        payment?.paymentId &&
+        payment?.status === 'completed'
+      );
+
+    const plan = { id: 'starter-plan', price: 5 };
+    // Mismatched plan
+    expect(isPaymentStepComplete({ paymentId: 'pay-1', packageId: 'other-plan', status: 'completed' }, plan)).toBe(false);
+    // Missing completed status (stale or pending)
+    expect(isPaymentStepComplete({ paymentId: 'pay-1', packageId: 'starter-plan', status: 'pending' }, plan)).toBe(false);
+    expect(isPaymentStepComplete({ paymentId: 'pay-1', packageId: 'starter-plan' }, plan)).toBe(false);
+    // Verified completed payment
+    expect(isPaymentStepComplete({ paymentId: 'pay-1', packageId: 'starter-plan', status: 'completed' }, plan)).toBe(true);
+  });
 });
