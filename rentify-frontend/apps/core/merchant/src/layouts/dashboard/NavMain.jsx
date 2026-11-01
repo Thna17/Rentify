@@ -1,4 +1,5 @@
 import { useTranslation } from '@rentify/utils';
+import { useLocation } from 'react-router-dom';
 import { ArrowUpRight, Plus } from 'lucide-react';
 import { Button } from '@rentify/shared/ui/button';
 import React from 'react';
@@ -15,8 +16,53 @@ const DEFAULT_SECTION_TITLES = {
   more: 'More',
 };
 
+/**
+ * Determines whether a sidebar nav item should be highlighted as active.
+ * Handles subroutes (e.g. /settings/delivery -> Settings), query strings, and aliases.
+ */
+export const isNavItemActive = (item, currentPath = '', currentTab = null) => {
+  if (!item || item.externalHref || item.action) return false;
+  const itemPath = item.path;
+  const cleanPath = (currentPath || '').replace(/^\/+/, '').split('?')[0];
+  const tabPath = currentTab?.path;
+  const parentPath = currentTab?.parentPath;
+
+  if (itemPath === 'overview') {
+    return cleanPath === '' || cleanPath === 'overview' || (tabPath === 'overview' && cleanPath === '');
+  }
+
+  // Exact match on item path
+  if (cleanPath === itemPath || tabPath === itemPath) {
+    return true;
+  }
+
+  // Subroutes / parent-child match
+  if (
+    cleanPath.startsWith(`${itemPath}/`) ||
+    (tabPath && tabPath.startsWith(`${itemPath}/`)) ||
+    parentPath === itemPath
+  ) {
+    return true;
+  }
+
+  // Known route aliases
+  if (itemPath === 'products' && (cleanPath === 'categories' || cleanPath.startsWith('categories/'))) {
+    return true;
+  }
+  if (itemPath === 'online-store' && (cleanPath === 'customization' || cleanPath.startsWith('customization/'))) {
+    return true;
+  }
+  if (itemPath === 'marketplace' && (cleanPath.startsWith('marketplace/customization') || cleanPath.startsWith('marketplace/design'))) {
+    return true;
+  }
+
+  return false;
+};
+
 export function NavMain({ items, currentTab, onTabChange, extraChannelItems = [] }) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const currentPath = location?.pathname || '';
 
   const getLabel = (item) => {
     if (item.displayName) return item.displayName;
@@ -67,11 +113,7 @@ export function NavMain({ items, currentTab, onTabChange, extraChannelItems = []
 
           <ul className="flex flex-col gap-0.5">
             {sectionItems.map((item) => {
-              const isActive =
-                !item.externalHref &&
-                !item.action &&
-                (currentTab?.path === item.path ||
-                  (item.path !== 'overview' && currentTab?.path?.startsWith(`${item.path}/`)));
+              const isActive = isNavItemActive(item, currentPath, currentTab);
               const label = getLabel(item);
               const Icon = item.icon;
 

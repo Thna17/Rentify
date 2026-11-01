@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TABS } from '../../config/dashboard-tabs';
 import { filterTabsByUserRole } from '../../utils/filterTabsByUserRole';
+import { getCurrentTabData } from '../../utils/getCurrentTabData';
 import { dashboardRoutes } from '../../routes/dashboardRoutes';
+import { isNavItemActive } from './NavMain';
 
 describe('MR1 · Navigation Shell & Redirects', () => {
   describe('Sitemap Redirects', () => {
@@ -68,6 +70,41 @@ describe('MR1 · Navigation Shell & Redirects', () => {
 
       // Group 3 (more): Returns & problems, Share your store, Settings, Help
       expect(moreTabs).toEqual(['returns', 'share', 'settings', 'help']);
+    });
+  });
+
+  describe('Active Nav Item Resolution & Subroutes', () => {
+    const overviewItem = { path: 'overview', label: 'Home' };
+    const settingsItem = { path: 'settings', label: 'Settings' };
+    const marketplaceItem = { path: 'marketplace', label: 'Marketplace' };
+    const ordersItem = { path: 'orders', label: 'Orders' };
+
+    it('activates settings and does NOT activate overview on /settings/delivery', () => {
+      const { matchedTab } = getCurrentTabData('/settings/delivery', ALL_TABS);
+      expect(matchedTab?.parentPath || matchedTab?.path).toBe('settings');
+
+      expect(isNavItemActive(overviewItem, '/settings/delivery', matchedTab)).toBe(false);
+      expect(isNavItemActive(settingsItem, '/settings/delivery', matchedTab)).toBe(true);
+      expect(isNavItemActive(marketplaceItem, '/settings/delivery', matchedTab)).toBe(false);
+    });
+
+    it('activates overview on /overview and root /', () => {
+      expect(isNavItemActive(overviewItem, '/overview', { path: 'overview' })).toBe(true);
+      expect(isNavItemActive(overviewItem, '/', { path: 'overview' })).toBe(true);
+      expect(isNavItemActive(settingsItem, '/overview', { path: 'overview' })).toBe(false);
+    });
+
+    it('activates marketplace on /marketplace and /marketplace/customization', () => {
+      expect(isNavItemActive(marketplaceItem, '/marketplace', { path: 'marketplace' })).toBe(true);
+      expect(isNavItemActive(marketplaceItem, '/marketplace/customization', { path: 'marketplace/customization' })).toBe(true);
+      expect(isNavItemActive(overviewItem, '/marketplace', { path: 'marketplace' })).toBe(false);
+      expect(isNavItemActive(overviewItem, '/marketplace/customization', { path: 'marketplace/customization' })).toBe(false);
+    });
+
+    it('activates orders on /orders and order details /orders/123', () => {
+      expect(isNavItemActive(ordersItem, '/orders', { path: 'orders' })).toBe(true);
+      expect(isNavItemActive(ordersItem, '/orders/123', { path: 'orders/:id' })).toBe(true);
+      expect(isNavItemActive(overviewItem, '/orders/123', { path: 'orders/:id' })).toBe(false);
     });
   });
 

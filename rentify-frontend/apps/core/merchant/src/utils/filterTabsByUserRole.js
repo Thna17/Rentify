@@ -5,7 +5,7 @@ export const filterTabsByUserRole = (
   packageFeatures,
   channels = { hasStorefront: true, hasMarketplace: true, hasPos: true }
 ) => {
-  const role = userRole || 'user';
+  const role = userRole === 'owner' || userRole === 'merchant' ? 'user' : (userRole || 'user');
   const permissions = Array.isArray(userPermissions) ? userPermissions : [];
 
   return (tabs || []).filter((tab) => {
