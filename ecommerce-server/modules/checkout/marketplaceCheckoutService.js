@@ -244,8 +244,11 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         lines: lineSnapshots,
       };
 
+      // The provider reference must remain stable even if this transaction rolls back.
+      const digest = createHash('sha256').update(`rentify-order:${checkoutKey}`).digest('hex');
+      const stableOrderId = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-5${digest.slice(13, 16)}-a${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
       const order = await Order.create({
-        storeId, websiteId: channel === 'storefront' ? store.websiteId : null, buyerId, checkoutKey,
+        id: stableOrderId, storeId, websiteId: channel === 'storefront' ? store.websiteId : null, buyerId, checkoutKey,
         salesChannel: channel, deliveryStatus: 'pending', orderType: 'delivery',
         status: 'pending', subtotal: dollars(subtotal), totalAmount: dollars(total),
         taxTotal: '0.00', shippingFee: dollars(deliveryFee), discountTotal: '0.00', currency: 'USD',
@@ -380,6 +383,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         currency: 'USD',
         paymentMethod: paymentRecordMethod,
         gateway: effectiveGateway,
+        transactionId: transactionData?.providerPaymentId || null,
         status: 'pending',
         collectedAmount: '0.00',
         refundedAmount: '0.00',

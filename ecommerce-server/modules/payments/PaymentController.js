@@ -250,7 +250,7 @@ exports.handleCutluyWebhook = async (req, res) => {
     });
 
     if (!payment) {
-      return res.status(200).json({ received: true, note: "No payment found matching webhook reference" });
+      return res.status(503).json({ error: "Payment not yet available; retry webhook" });
     }
 
     // Verify incoming provider payment ID strictly matches stored provider transaction
@@ -404,110 +404,40 @@ exports.voidPayment = async (req, res) => {
       });
     }
 
-    // Verify with CutLuy if provider payment exists before cancelling
     const providerPaymentId = payment.transactionData?.providerPaymentId || payment.transactionId;
-    if (providerPaymentId) {
-      const { PaymentGatewayConfig } = require("../../models");
-      const { decryptSecrets } = require("./paymentConfigEncryption");
-      const order = req.order || payment.Order;
-      const configWhere = [];
-      if (order?.websiteId) configWhere.push({ websiteId: order.websiteId, gateway: "cutluy", enabled: true });
-      if (payment.storeId || order?.storeId) configWhere.push({ storeId: payment.storeId || order?.storeId, gateway: "cutluy", enabled: true });
-
-      let cutluyConfig = null;
-      if (configWhere.length > 0) {
-        cutluyConfig = await PaymentGatewayConfig.findOne({ where: { [Op.or]: configWhere } });
-      }
-
-      if (!cutluyConfig) {
-        return res.status(502).json({
-          error: "Cannot switch to cash: CutLuy payment configuration not found. Verification required before cash can be accepted.",
-        });
-      }
-
-      const cfg = cutluyConfig.config || {};
-      const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
-      const apiKey = decrypted.apiKey || cfg.apiKey;
-      if (!apiKey) {
-        return res.status(502).json({
-          error: "Cannot switch to cash: CutLuy API key not configured. Verification required before cash can be accepted.",
-        });
-      }
-
-      const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
-
-      // 1. Check live provider status
-      let checkRes;
-      try {
-        checkRes = await axios.get(`${cutluyBaseUrl}/v1/payments/${encodeURIComponent(providerPaymentId)}`, {
-          headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": "Rentify/1.0 (axios)" },
-          timeout: 5000,
-        });
-      } catch (err) {
-        if (err.response && err.response.status === 404) {
-          checkRes = { data: { status: "not_found" } };
-        } else {
-          console.error(`[voidPayment] CutLuy status check failed for payment ${payment.id}:`, err.message);
-          return res.status(502).json({
-            error: "Cannot switch to cash: Unable to verify payment status with payment gateway. Do not accept cash until status is confirmed.",
-          });
-        }
-      }
-
-      const pStatus = String(checkRes.data?.status || checkRes.data?.data?.status || "").toLowerCase();
-      if (pStatus === "paid" || pStatus === "completed") {
-        await FulfillmentService.confirmOrderPayment(payment.id, {
-          provider: "cutluy",
-          transactionId: providerPaymentId,
-          providerEvent: checkRes.data,
-        });
-        return res.status(409).json({
-          error: "Cannot void payment: payment was completed at the provider",
-          alreadyPaid: true,
-          paymentStatus: "paid",
-        });
-      }
-
-      // 2. If provider payment is pending, cancel with CutLuy to deactivate QR
-      if (pStatus === "pending") {
-        try {
-          await axios.post(
-            `${cutluyBaseUrl}/v1/payments/${encodeURIComponent(providerPaymentId)}/cancel`,
-            { reason: "cashier_switched_to_cash" },
-            {
-              headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": "Rentify/1.0 (axios)" },
-              timeout: 5000,
-            }
-          );
-        } catch (cancelErr) {
-          if (cancelErr.response && (cancelErr.response.status === 409 || cancelErr.response.data?.status === "paid")) {
-            await FulfillmentService.confirmOrderPayment(payment.id, {
-              provider: "cutluy",
-              transactionId: providerPaymentId,
-            });
-            return res.status(409).json({
-              error: "Cannot void payment: payment was completed at the provider",
-              alreadyPaid: true,
-              paymentStatus: "paid",
-            });
-          }
-          console.error(`[voidPayment] CutLuy cancel failed for payment ${payment.id}:`, cancelErr.message);
-          return res.status(502).json({
-            error: "Cannot switch to cash: Failed to deactivate QR payment at gateway. Do not accept cash until the QR is cancelled.",
-          });
-        }
-      }
+    if (!providerPaymentId) return res.status(502).json({ error: "Cannot verify payment with gateway" });
+    const { PaymentGatewayConfig } = require("../../models");
+    const { decryptSecrets } = require("./paymentConfigEncryption");
+    const order = req.order || payment.Order;
+    const conditions = [];
+    if (order?.websiteId) conditions.push({ websiteId: order.websiteId, gateway: "cutluy", enabled: true });
+    if (payment.storeId || order?.storeId) conditions.push({ storeId: payment.storeId || order.storeId, gateway: "cutluy", enabled: true });
+    const config = conditions.length ? await PaymentGatewayConfig.findOne({ where: { [Op.or]: conditions } }) : null;
+    const cfg = config?.config || {};
+    const secrets = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+    const apiKey = secrets.apiKey || cfg.apiKey;
+    if (!apiKey) return res.status(502).json({ error: "Cannot verify payment with gateway" });
+    const { getCutluyFinalStatus } = require("./cutluyFinalStatus");
+    const result = await getCutluyFinalStatus({ providerPaymentId, apiKey, reason: "cashier_switched_to_cash" });
+    if (["paid", "completed"].includes(result.status)) {
+      await FulfillmentService.confirmOrderPayment(payment.id, { provider: "cutluy", transactionId: providerPaymentId, providerEvent: result.data });
+      return res.status(409).json({ error: "Payment was completed at the provider", alreadyPaid: true });
     }
-
+    if (!["cancelled", "expired", "failed"].includes(result.status)) {
+      return res.status(502).json({ error: "Payment status is not confirmed. Do not accept cash." });
+    }
     const reason = req.body?.reason || "switched_to_cash";
-    await payment.update({
-      status: "cancelled",
-      transactionData: {
-        ...(payment.transactionData || {}),
-        voidedAt: new Date().toISOString(),
-        voidReason: reason,
-      },
+    const outcome = await sequelize.transaction(async (transaction) => {
+      const locked = await Payment.findByPk(payment.id, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!locked) return "missing";
+      if (["completed", "paid"].includes(locked.status)) return "paid";
+      if (locked.status !== "pending") return "unavailable";
+      await locked.update({ status: "cancelled", transactionData: {
+        ...(locked.transactionData || {}), voidedAt: new Date().toISOString(), voidReason: reason,
+      } }, { transaction });
+      return "cancelled";
     });
+    if (outcome !== "cancelled") return res.status(409).json({ error: "Payment state changed", alreadyPaid: outcome === "paid" });
 
     const { OrderEvent } = require("../../models");
     await OrderEvent.create({

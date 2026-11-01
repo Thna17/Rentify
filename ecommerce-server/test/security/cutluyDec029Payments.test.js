@@ -438,8 +438,11 @@ test("DEC-029: PaymentController.voidPayment prevents double payment by checking
   const origOrderEventCreate = OrderEvent.create;
   const origAxiosGet = axios.get;
   const origAxiosPost = axios.post;
+  const { sequelize } = require("../../config/db");
+  const origTransaction = sequelize.transaction;
 
   try {
+    sequelize.transaction = async (fn) => fn({ LOCK: { UPDATE: "UPDATE" } });
     let paymentCancelled = false;
     const mockPayment = {
       id: "pay-pos-1",
@@ -477,7 +480,7 @@ test("DEC-029: PaymentController.voidPayment prevents double payment by checking
     const res2 = createMockRes();
     await PaymentController.voidPayment({ params: { paymentId: "pay-pos-1" }, body: {} }, res2);
     assert.equal(res2.statusCode, 502);
-    assert.match(res2.body.error, /Unable to verify payment status/i);
+    assert.match(res2.body.error, /status is not confirmed/i);
 
     // 3. If CutLuy reports payment was already completed at provider -> 409 alreadyPaid: true
     let confirmedPaid = false;
@@ -495,10 +498,10 @@ test("DEC-029: PaymentController.voidPayment prevents double payment by checking
 
     // 4. If CutLuy reports pending -> successfully cancel at CutLuy to deactivate QR and void locally
     let cutluyCancelCalled = false;
-    axios.get = async () => ({
-      data: { status: "pending" },
-    });
+    let cancelledAtProvider = false;
+    axios.get = async () => ({ data: { status: cancelledAtProvider ? "cancelled" : "pending" } });
     axios.post = async (url) => {
+      cancelledAtProvider = true;
       if (url.includes("/cancel")) cutluyCancelCalled = true;
       return { data: { status: "cancelled" } };
     };
@@ -515,6 +518,7 @@ test("DEC-029: PaymentController.voidPayment prevents double payment by checking
     OrderEvent.create = origOrderEventCreate;
     axios.get = origAxiosGet;
     axios.post = origAxiosPost;
+    sequelize.transaction = origTransaction;
   }
 });
 
@@ -574,4 +578,27 @@ test("DEC-029: Watchdog timeout deactivates QR at CutLuy and retains order if ca
     evaluateWatchdogTransition({ providerStatus: "not_found" }),
     "CANCEL_UNPAID_ORDER"
   );
+});
+
+test("webhook asks provider to retry when payment has not committed", async (t) => {
+  t.mock.method(Payment, "findOne", async () => null);
+  const res = createMockRes();
+  await PaymentController.handleCutluyWebhook({ body: { id: "provider-early", status: "paid" }, headers: {} }, res);
+  assert.equal(res.statusCode, 503);
+});
+
+test("void cannot overwrite a payment completed while the gateway was queried", async (t) => {
+  const { sequelize } = require("../../config/db");
+  const payment = { id: "pay-race", orderId: "ord-race", status: "pending", storeId: TEST_STORE_ID,
+    transactionData: { providerPaymentId: "provider-race" }, Order: { id: "ord-race", storeId: TEST_STORE_ID } };
+  let updated = false;
+  t.mock.method(PaymentGatewayConfig, "findOne", async () => ({ config: { apiKey: "test" } }));
+  t.mock.method(axios, "get", async () => ({ data: { status: "cancelled" } }));
+  t.mock.method(sequelize, "transaction", async (fn) => fn({ LOCK: { UPDATE: "UPDATE" } }));
+  t.mock.method(Payment, "findByPk", async () => ({ ...payment, status: "completed", update: async () => { updated = true; } }));
+  const res = createMockRes();
+  await PaymentController.voidPayment({ params: { paymentId: payment.id }, payment, body: {} }, res);
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.body.alreadyPaid, true);
+  assert.equal(updated, false);
 });
