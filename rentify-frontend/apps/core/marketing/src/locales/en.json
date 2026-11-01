@@ -909,6 +909,8 @@
   "onboarding.khqr.period": "Billing period",
   "onboarding.khqr.noteTitle": "The price is set by Rentify.",
   "onboarding.khqr.noteBody": "The amount comes from your plan and is checked again before your store is created.",
+  "onboarding.khqr.verifying": "Verifying payment status…",
+  "onboarding.khqr.generating": "Generating KHQR…",
   "onboarding.templates.recommended": "Recommended for your store",
   "onboarding.auto.waiting": "Chosen for you after step 1",
   "onboarding.auto.design": "Picked for you: {name}",
