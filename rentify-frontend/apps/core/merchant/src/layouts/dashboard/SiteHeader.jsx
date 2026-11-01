@@ -168,8 +168,8 @@ export function SiteHeader({
 
   return (
     <header className="relative flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8 border-b border-border/40">
-      {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand when collapsed */}
-      <div className="flex min-w-0 items-center gap-3">
+      {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand when collapsed, plus Search Bar */}
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
         {isMobile ? (
           <>
             <SheetTrigger asChild>
@@ -231,11 +231,10 @@ export function SiteHeader({
             </>
           )
         )}
-      </div>
 
-      {/* Center: Search Bar on Desktop; full-width bar on Mobile when active */}
-      <div
-        ref={searchContainerRef}
+        {/* Search Bar on Left side */}
+        <div
+          ref={searchContainerRef}
         className={
           mobileSearchOpen
             ? 'absolute inset-x-4 top-3 z-40 sm:relative sm:inset-auto sm:top-auto sm:w-full sm:max-w-md'
@@ -374,6 +373,7 @@ export function SiteHeader({
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Right: Mobile search trigger + Notifications + User Account avatar dropdown */}
