@@ -55,10 +55,14 @@ const stockOf = (product) => {
   const variants = (product.ProductVariants || []).filter((v) => v.optionValues && Object.keys(v.optionValues).length);
   return variants.length ? variants.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0) : Number(product.stockQuantity) || 0;
 };
-const matchesFilter = (product, filter) => {
+const matchesFilter = (product, filter, view = 'all', hasStorefront = false) => {
   if (filter === 'on_sale') return Number(product.compareAtPrice) > Number(product.price);
   if (filter === 'out_of_stock') return product.status === 'active' && stockOf(product) <= 0;
-  if (filter === 'hidden') return product.marketplaceVisibility === false;
+  if (filter === 'hidden') {
+    if (view === 'storefront') return product.storefrontVisibility === false;
+    if (view === 'marketplace') return product.marketplaceVisibility === false;
+    return product.marketplaceVisibility === false || (hasStorefront && product.storefrontVisibility === false);
+  }
   if (filter === 'drafts') return product.status !== 'active';
   return true;
 };
@@ -81,7 +85,7 @@ const ChannelBadges = ({ market, store, showStore, t }) => (
 export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { store: channelStore, hasStorefront } = useChannels();
+  const { store: channelStore, hasStorefront, view } = useChannels();
   const [storeId, setStoreId] = useState(suppliedStoreId || null);
   const [storeApproval, setStoreApproval] = useState(channelStore?.marketplaceApprovalStatus || null);
   const [products, setProducts] = useState([]);
@@ -152,16 +156,16 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
 
 
   const filterCounts = useMemo(
-    () => Object.fromEntries(FILTERS.map((id) => [id, products.filter((p) => matchesFilter(p, id)).length])),
-    [products],
+    () => Object.fromEntries(FILTERS.map((id) => [id, products.filter((p) => matchesFilter(p, id, view, hasStorefront)).length])),
+    [products, view, hasStorefront],
   );
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     return products.filter((product) =>
-      matchesFilter(product, filter) &&
+      matchesFilter(product, filter, view, hasStorefront) &&
       (!term || product.name?.toLowerCase().includes(term) || product.sku?.toLowerCase().includes(term)));
-  }, [products, query, filter]);
+  }, [products, query, filter, view, hasStorefront]);
 
   const setTab = (id) => {
     const next = new URLSearchParams(searchParams);

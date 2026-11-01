@@ -69,8 +69,8 @@ describe('MR1 · Navigation Shell & Redirects', () => {
       // Group 1 (main): Home, Orders, Products, Customers, Reports, Invoices
       expect(mainTabs).toEqual(['overview', 'orders', 'products', 'customers', 'analytics', 'invoices']);
 
-      // Group 2 (channels): Marketplace, Online store, Point of sale
-      expect(channelTabs).toEqual(['marketplace', 'online-store', 'pos']);
+      // Group 2 (channels): Online store, Marketplace, Point of sale
+      expect(channelTabs).toEqual(['online-store', 'marketplace', 'pos']);
 
       // Group 3 (more): Returns & problems, Share your store, Settings, Help
       expect(moreTabs).toEqual(['returns', 'campaigns', 'share', 'settings', 'help']);

@@ -17,7 +17,7 @@ import { orderLabel, workTab } from '../order-management/orderModel';
  */
 export function ReturnsPage() {
   const { t } = useTranslation();
-  const { orders, loading, error, reload } = useChannelOrders('all', 'all');
+  const { orders, loading, error, reload } = useChannelOrders('all');
   const problems = useMemo(() => orders.filter((order) => workTab(order) === 'problems'), [orders]);
 
   return (

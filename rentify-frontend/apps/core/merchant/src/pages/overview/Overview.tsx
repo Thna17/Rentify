@@ -176,19 +176,6 @@ const OwnerHome = () => {
             <section>
               <SectionTitle title={t('merchant.home.whereYouSell')} />
               <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)]">
-                {hasMarketplace && (
-                  <ChannelRow
-                    to="/marketplace"
-                    icon={<ShoppingBag className="h-5 w-5" />}
-                    title={t('merchant.home.marketplace')}
-                    detail={
-                      listing.loading
-                        ? '…'
-                        : t('merchant.home.productsShown', { count: listing.shown.length })
-                    }
-                    end={<StatusPill tone={LISTING_TONE[listing.status]}>{t(`merchant.marketplace.status.${listing.status}`)}</StatusPill>}
-                  />
-                )}
                 {hasStorefront && (
                   <ChannelRow
                     to="/online-store"
@@ -208,6 +195,19 @@ const OwnerHome = () => {
                         </a>
                       ) : null
                     }
+                  />
+                )}
+                {hasMarketplace && (
+                  <ChannelRow
+                    to="/marketplace"
+                    icon={<ShoppingBag className="h-5 w-5" />}
+                    title={t('merchant.home.marketplace')}
+                    detail={
+                      listing.loading
+                        ? '…'
+                        : t('merchant.home.productsShown', { count: listing.shown.length })
+                    }
+                    end={<StatusPill tone={LISTING_TONE[listing.status]}>{t(`merchant.marketplace.status.${listing.status}`)}</StatusPill>}
                   />
                 )}
                 {hasPos && (

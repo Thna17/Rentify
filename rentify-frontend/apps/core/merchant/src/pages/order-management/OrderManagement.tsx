@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from '@rentify/utils';
 import { toast } from 'sonner';
@@ -35,13 +35,35 @@ export function OrderManagement() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { store, view } = useChannels();
+  const { store, view, setView, availableViews } = useChannels();
 
   // The header's channel switcher is the one channel control; a ?channel= link
   // (from Home, or channel=invoice) still narrows the list.
   const channelParam = searchParams.get('channel');
   const tabParam = searchParams.get('tab');
-  const channel: ChannelFilter = isChannel(channelParam) ? channelParam : view;
+  // Synchronize incoming ?channel= URL parameter with the channel switcher
+  useEffect(() => {
+    if (channelParam && availableViews.includes(channelParam as any) && channelParam !== view) {
+      setView(channelParam as any);
+    }
+  }, [channelParam, availableViews, view, setView]);
+
+  // When switcher view changes, update URL ?channel= query param accordingly
+  const prevViewRef = useRef(view);
+  useEffect(() => {
+    if (prevViewRef.current !== view) {
+      prevViewRef.current = view;
+      const next = new URLSearchParams(searchParams);
+      if (view === 'all') {
+        next.delete('channel');
+      } else {
+        next.set('channel', view);
+      }
+      setSearchParams(next, { replace: true });
+    }
+  }, [view, searchParams, setSearchParams]);
+
+  const channel: ChannelFilter = channelParam === 'invoice' ? 'invoice' : view;
   const [tab, setTab] = useState<WorkTab>(isWorkTab(tabParam) ? tabParam : 'deliver');
   const [query, setQuery] = useState('');
   const [orders, setOrders] = useState<any[]>([]);
