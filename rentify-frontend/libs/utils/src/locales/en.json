@@ -1426,7 +1426,14 @@
       "language": "Language",
       "closeMenu": "Close menu",
       "ordersToAct": "orders to act on",
-      "problemsToAnswer": "problems to answer"
+      "problemsToAnswer": "problems to answer",
+      "channelView": {
+        "label": "Show the dashboard for",
+        "all": "All channels",
+        "marketplace": "Marketplace",
+        "storefront": "Online store",
+        "pos": "POS"
+      }
     },
     "p": {
       "addProduct": "Add product",

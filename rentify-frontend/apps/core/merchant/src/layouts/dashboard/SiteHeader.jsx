@@ -11,6 +11,9 @@ import {
   SlidersHorizontal,
   Package,
   ShoppingBag,
+  ChevronDown,
+  ExternalLink,
+  MonitorSmartphone,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,6 +26,8 @@ import {
 } from '@rentify/shared/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@rentify/shared/ui/avatar';
 import { useChannels } from '../../context/ChannelContext';
+import { ChannelViewSwitcher, useHasChannelChoice } from '../../components/ChannelViewSwitcher';
+import { HOSTED_STOREFRONT_DOMAIN, MARKETPLACE_URL, POS_URL } from '@rentify/shared/config/urls';
 import { useAccess } from '../../utils/access';
 import { useChannelOrders, formatMoney } from '../../hooks/useChannelOrders';
 import { useGetManagedProductsQuery } from '@rentify/apis';
@@ -41,14 +46,28 @@ export function SiteHeader({
   onTabChange,
   searchFilter = '',
   setSearchFilter,
+  hasPos = false,
 }) {
   const { t, lang, setLanguage } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const access = useAccess();
   const { profile, role, handleLogout } = useAuth();
-  const { store } = useChannels();
+  const { store, hasStorefront } = useChannels();
   const storeName = store?.name || 'Rentify';
+  const hasChannelChoice = useHasChannelChoice();
+  const isKhmer = lang === 'kh' || lang === 'km';
+
+  // "View store": where buyers see this Store (marketplace page, online store)
+  const rawSlug = String(store?.slug || '').trim();
+  const slugOk = rawSlug && !/^store-[0-9a-f-]{20,}$/i.test(rawSlug);
+  const shopRef = store?.id || rawSlug;
+  const shopHref = shopRef ? `${(MARKETPLACE_URL || '').replace(/\/+$/, '')}/stores/${shopRef}` : null;
+  const siteHost = store?.websiteDomain || (slugOk ? `${rawSlug}.${HOSTED_STOREFRONT_DOMAIN || 'mekhla.digital'}` : null);
+  // Local dev hosts (x.localhost:4900) serve plain http
+  const siteHref = hasStorefront && siteHost
+    ? (/^https?:\/\//.test(siteHost) ? siteHost : `${/localhost|127\.0\.0\.1/.test(siteHost) ? 'http' : 'https'}://${siteHost}`)
+    : null;
 
   const { websiteData } = useThemeService();
   const websiteId = websiteData?.websiteId;
@@ -167,6 +186,7 @@ export function SiteHeader({
   };
 
   return (
+    <>
     <header className="relative flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8 border-b border-border/40">
       {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand when collapsed, plus Search Bar */}
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
@@ -376,8 +396,89 @@ export function SiteHeader({
         </div>
       </div>
 
-      {/* Right: Mobile search trigger + Notifications + User Account avatar dropdown */}
+      {/* Channel focus sits in the header on wide screens, in its own row below on smaller ones */}
+      {hasChannelChoice && <ChannelViewSwitcher className="hidden 2xl:inline-flex" />}
+
+      {/* Right: store links, POS, language, search on phones, notifications, account */}
       <div className="flex shrink-0 items-center justify-end gap-2">
+        {(shopHref || siteHref) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                aria-label={t('merchant.shell.viewStore')}
+                className="hidden h-11 rounded-xl px-3 text-sm font-semibold md:inline-flex"
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden xl:inline">{t('merchant.shell.viewStore')}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" collisionPadding={16} className="w-72 rounded-xl">
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                {t('merchant.shell.seeAsBuyers')}
+              </DropdownMenuLabel>
+              {siteHref && (
+                <DropdownMenuItem asChild>
+                  <a href={siteHref} target="_blank" rel="noreferrer" className="flex min-h-11 cursor-pointer items-start gap-3">
+                    <Globe className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block font-medium">{t('merchant.shell.onlineStore')}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{siteHost}</span>
+                    </span>
+                  </a>
+                </DropdownMenuItem>
+              )}
+              {shopHref && (
+                <DropdownMenuItem asChild>
+                  <a href={shopHref} target="_blank" rel="noreferrer" className="flex min-h-11 cursor-pointer items-start gap-3">
+                    <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block font-medium">{t('merchant.shell.marketplacePage')}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {store?.marketplaceApprovalStatus && store.marketplaceApprovalStatus !== 'approved'
+                          ? t('merchant.shell.publicOnceApproved')
+                          : t('merchant.shell.yourStoreOnMarketplace')}
+                      </span>
+                    </span>
+                  </a>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {hasPos && access.can('manage_pos') && (
+          <Button asChild className="hidden h-11 rounded-xl px-3 text-sm font-semibold md:inline-flex">
+            <a href={POS_URL} target="_blank" rel="noreferrer" aria-label={t('merchant.shell.openPos')}>
+              <MonitorSmartphone className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden xl:inline">{t('merchant.shell.openPos')}</span>
+            </a>
+          </Button>
+        )}
+
+        {/* Language: two words, each in its own language; on smaller screens it is in the account menu */}
+        <div role="radiogroup" aria-label={t('merchant.shell.language')} className="hidden items-center gap-0.5 rounded-xl bg-muted p-0.5 lg:inline-flex">
+          {[['en', 'English', false], ['kh', 'ខ្មែរ', true]].map(([code, label, khmer]) => {
+            const active = khmer === isKhmer;
+            return (
+              <button
+                key={code}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                lang={khmer ? 'km' : 'en'}
+                onClick={() => setLanguage(code)}
+                className={`min-h-11 rounded-[10px] px-3 text-sm font-semibold transition-colors ${
+                  active ? 'bg-card text-foreground shadow-[var(--shadow-soft)]' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         <Button
           variant="ghost"
           size="icon"
@@ -428,11 +529,11 @@ export function SiteHeader({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                className="cursor-pointer h-10 text-xs sm:text-sm"
-                onClick={() => setLanguage(lang === 'kh' || lang === 'km' ? 'en' : 'kh')}
+                className="cursor-pointer h-10 text-xs sm:text-sm lg:hidden"
+                onClick={() => setLanguage(isKhmer ? 'en' : 'kh')}
               >
                 <Globe className="mr-2.5 h-4 w-4 text-muted-foreground" />
-                <span>{lang === 'kh' || lang === 'km' ? 'English (ប្តូរ)' : 'ភាសាខ្មែរ (Switch)'}</span>
+                <span lang={isKhmer ? 'en' : 'km'}>{isKhmer ? 'English' : 'ខ្មែរ'}</span>
               </DropdownMenuItem>
               {access.isOwner && (
                 <>
@@ -472,6 +573,12 @@ export function SiteHeader({
         </DropdownMenu>
       </div>
     </header>
+    {hasChannelChoice && (
+      <div className="shrink-0 overflow-x-auto border-b border-border/40 bg-background/80 px-4 py-2 [scrollbar-width:none] md:px-8 2xl:hidden">
+        <ChannelViewSwitcher />
+      </div>
+    )}
+    </>
   );
 }
 

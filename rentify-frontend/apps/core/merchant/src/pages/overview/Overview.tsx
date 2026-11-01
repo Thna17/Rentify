@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, useTranslation } from '@rentify/utils';
 import { AlertTriangle, ChevronRight, ClipboardList, Globe, MonitorSmartphone, ShoppingBag } from 'lucide-react';
@@ -13,11 +13,10 @@ import { StatusPill } from '../../components/data-table/StatusPill';
 import { useAccess } from '../../utils/access';
 import { StaffHome } from './StaffHome';
 import { CampaignInvitation } from '../campaigns/CampaignInvitation';
-import { FilterChips, PageShell, StatePanel } from '../../components/page/PagePrimitives';
+import { PageShell, StatePanel } from '../../components/page/PagePrimitives';
 import { PaymentPill } from '../order-management/components/PaymentPill';
 import { countByTab, money, orderLabel, paymentKind, workTab, type WorkTab } from '../order-management/orderModel';
 
-type HomeChannel = 'all' | 'marketplace' | 'storefront' | 'pos';
 
 export const Surface = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
   <div data-slot="card" className={`rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)] md:p-6 ${className}`}>{children}</div>
@@ -62,19 +61,11 @@ export const Overview = () => {
 const OwnerHome = () => {
   const { t } = useTranslation();
   const { profile } = useAuth() as { profile?: { name?: string } };
-  const { store, hasStorefront, hasMarketplace, hasPos } = useChannels();
-  const [channel, setChannel] = useState<HomeChannel>('all');
+  // The header's channel switcher decides which channel Home shows
+  const { store, hasStorefront, hasMarketplace, hasPos, view: channel } = useChannels();
   const { orders, loading, error, reload } = useChannelOrders('all', 'all');
   const listing = useMarketplaceListing();
   const { guide, hidden: guideHidden, setHidden: setGuideHidden } = useSetupGuide();
-
-  const chips = useMemo(() => {
-    const list: { id: HomeChannel; label: string }[] = [{ id: 'all', label: t('merchant.home.allChannels') }];
-    if (hasMarketplace) list.push({ id: 'marketplace', label: t('merchant.orders.channels.marketplace') });
-    if (hasStorefront) list.push({ id: 'storefront', label: t('merchant.orders.channels.storefront') });
-    if (hasPos) list.push({ id: 'pos', label: t('merchant.orders.channels.pos') });
-    return list;
-  }, [t, hasMarketplace, hasStorefront, hasPos]);
 
   const inChannel = useMemo(
     () => (channel === 'all' ? orders : orders.filter((order) => order.channel === channel)),
@@ -105,8 +96,6 @@ const OwnerHome = () => {
         <p className="text-sm font-semibold text-muted-foreground">{store?.name}</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{greeting}</h1>
       </div>
-
-      {chips.length > 2 && <FilterChips label={t('merchant.orders.channelFilter')} items={chips} value={channel} onChange={setChannel} />}
 
       {/* The setup guide can be hidden; while it is unfinished, Home keeps a way back to it */}
       {guide && !guide.complete && guideHidden && (

@@ -1399,7 +1399,14 @@
       "language": "ភាសា",
       "closeMenu": "បិទម៉ឺនុយ",
       "ordersToAct": "ការកុម្ម៉ង់ត្រូវធ្វើ",
-      "problemsToAnswer": "បញ្ហាត្រូវឆ្លើយ"
+      "problemsToAnswer": "បញ្ហាត្រូវឆ្លើយ",
+      "channelView": {
+        "label": "បង្ហាញផ្ទាំងគ្រប់គ្រងសម្រាប់",
+        "all": "គ្រប់ឆានែល",
+        "marketplace": "ទីផ្សារ",
+        "storefront": "ហាងអនឡាញ",
+        "pos": "POS"
+      }
     },
     "p": {
       "addProduct": "បន្ថែមផលិតផល",
