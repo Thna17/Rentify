@@ -54,7 +54,7 @@ const PricingStep = ({ data, onUpdate }) => {
     });
   }, [selected?.id]);
 
-  const choose = (plan) => onUpdate({ package: plan, packageChosen: true });
+  const choose = (plan) => onUpdate({ package: plan, packageChosen: true, payment: null });
 
   return (
     <section>
