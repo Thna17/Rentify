@@ -7,7 +7,7 @@ import { Button } from '@rentify/shared/ui/button';
 import { Input } from '@rentify/shared/ui/input';
 import { Skeleton } from '@rentify/shared/ui/skeleton';
 import { ECOMMERCE_API_ROOT } from '@rentify/shared/config/urls';
-import { useChannels } from '../../context/ChannelContext';
+import { useChannels, type ChannelView } from '../../context/ChannelContext';
 import { StatusPill } from '../../components/data-table/StatusPill';
 import { FilterChips, PageShell, PageTitle, StatePanel, TabBar } from '../../components/page/PagePrimitives';
 import { RecordCashSheet } from './components/RecordCashSheet';
@@ -35,11 +35,21 @@ export function OrderManagement() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { store } = useChannels();
+  const { store, view, setView, availableViews } = useChannels();
 
+  // A ?channel= link wins; otherwise the header's channel choice. Channels the switcher
+  // knows are kept in it, so Orders, Home and the header always agree.
   const channelParam = searchParams.get('channel');
   const tabParam = searchParams.get('tab');
-  const channel: ChannelFilter = isChannel(channelParam) ? channelParam : 'all';
+  const channel: ChannelFilter = isChannel(channelParam) ? channelParam : view;
+  const changeChannel = (id: ChannelFilter) => {
+    if ((availableViews as string[]).includes(id)) {
+      setView(id as ChannelView);
+      setParam('channel', null);
+    } else {
+      setParam('channel', id);
+    }
+  };
   const [tab, setTab] = useState<WorkTab>(isWorkTab(tabParam) ? tabParam : 'deliver');
   const [query, setQuery] = useState('');
   const [orders, setOrders] = useState<any[]>([]);
@@ -200,7 +210,7 @@ export function OrderManagement() {
         label={t('merchant.orders.channelFilter')}
         items={CHANNEL_FILTERS.map((id) => ({ id, label: id === 'all' ? t('merchant.orders.channels.all') : channelName(id) }))}
         value={channel}
-        onChange={(id) => setParam('channel', id === 'all' ? null : id)}
+        onChange={changeChannel}
       />
 
       <TabBar
