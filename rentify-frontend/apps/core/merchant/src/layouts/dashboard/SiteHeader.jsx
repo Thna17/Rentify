@@ -199,7 +199,7 @@ export function SiteHeader({
         )}
 
         {/* Brand Lockup: mark + name */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`flex items-center gap-2.5 min-w-0 ${!isMobile && isSidebarOpen ? 'pl-2 sm:pl-3' : ''}`}>
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
             {store?.logoUrl ? (
               <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
