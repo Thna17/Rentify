@@ -1795,8 +1795,6 @@ export default function POS() {
                       size="sm"
                       className="text-xs h-8 bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
                       onClick={async () => {
-                        setKhqrTimedOut(false);
-                        setKhqrPolling(false);
                         if (activePaymentId) {
                           try {
                             const res = await fetch(`${ECOMMERCE_API_BASE}/api/payment/payments/${activePaymentId}/void`, {
@@ -1812,16 +1810,34 @@ export default function POS() {
                                 message: "The customer paid by KHQR just now! Order is recorded as paid.",
                                 tone: "info",
                               });
+                              setKhqrTimedOut(false);
+                              setKhqrPolling(false);
                               setPaymentModalOpen(false);
                               clearCart();
                               setReceiptModalOpen(true);
                               fetchProducts();
                               return;
                             }
+                            if (!res.ok) {
+                              showPosAlert({
+                                title: "Cannot Switch to Cash",
+                                message: data.error || "Could not cancel QR payment at gateway. Do not accept cash until status is confirmed.",
+                                tone: "danger",
+                              });
+                              return;
+                            }
                           } catch (err) {
-                            console.warn("Failed to void pending KHQR payment:", err);
+                            console.error("Failed to void pending KHQR payment:", err);
+                            showPosAlert({
+                              title: "Gateway Connection Error",
+                              message: "Failed to communicate with payment gateway. Do not accept cash until payment status is confirmed.",
+                              tone: "danger",
+                            });
+                            return;
                           }
                         }
+                        setKhqrTimedOut(false);
+                        setKhqrPolling(false);
                         setActivePaymentId(null);
                         setKhqrData(null);
                         setPaymentMethod("cash");

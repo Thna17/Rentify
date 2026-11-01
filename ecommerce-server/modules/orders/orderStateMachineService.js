@@ -13,6 +13,7 @@ const {
   StoreAccess,
   ProductVariant,
   InventoryBalance,
+  Payment,
 } = require('../../models');
 const { inventoryLedgerService } = require('../inventory');
 const { OrderStateError, ORDER_ERROR_CODES } = require('./orderErrors');
@@ -88,6 +89,22 @@ async function safeCreateEvent(data, tx) {
   } catch (err) {
     if (isDbConnectionError(err)) {
       return { id: data.id || randomUUID(), ...data };
+    }
+    throw err;
+  }
+}
+
+async function safeFindPayment(orderId, tx) {
+  try {
+    const rawTx = (tx && tx.transaction) ? tx.transaction : tx;
+    const txOption = (rawTx && (rawTx.uuid || rawTx.id)) ? { transaction: rawTx } : {};
+    return await Payment.findOne({
+      where: { orderId },
+      ...txOption,
+    });
+  } catch (err) {
+    if (isDbConnectionError(err)) {
+      return null;
     }
     throw err;
   }
@@ -636,7 +653,7 @@ async function cancelOrder(orderId, {
 
     // 4. Cancellability Checks
     // DEC-029: No refunds in Release 1. A paid KHQR order cannot be cancelled.
-    const payment = await Payment.findOne({ where: { orderId: order.id }, transaction: tx });
+    const payment = order.payment || order.Payment || await safeFindPayment(order.id, tx);
     if (payment) {
       const isPaid = payment.status === 'paid' || payment.status === 'completed';
       const isKhqr = ['khqr', 'cutluy'].includes(String(payment.paymentMethod || '').toLowerCase());

@@ -1649,6 +1649,20 @@ export namespace Commerce {
       body: Record<string, any>;
       response: any;
     };
+    get_api_payment_payments_public_methods_store_storeId: {
+      method: 'GET';
+      path: '/api/payment/payments/public-methods/store/{storeId}';
+      parameters: {
+        path: {
+          storeId: string;
+        };
+      };
+      response: {
+        businessName?: string;
+        cutluyEnabled?: boolean;
+        paymentMethods?: Array<string>;
+      };
+    };
     get_api_payment_payments_public_methods_websiteId: {
       method: 'GET';
       path: '/api/payment/payments/public-methods/{websiteId}';
@@ -1681,6 +1695,21 @@ export namespace Commerce {
         };
       };
       response: any;
+    };
+    post_api_payment_payments_paymentId_void: {
+      method: 'POST';
+      path: '/api/payment/payments/{paymentId}/void';
+      parameters: {
+        path: {
+          paymentId: string;
+        };
+      };
+      body?: {
+        reason?: string;
+      };
+      response: {
+        success?: boolean;
+      };
     };
     post_api_payments_aba_payway_callback: {
       method: 'POST';

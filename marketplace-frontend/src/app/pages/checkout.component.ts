@@ -39,7 +39,7 @@ interface PaymentOption {
   labelKey: string;
   hintKey: string;
   icon: string;
-  badgeKey?: string;
+  badgeKey: string;
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
@@ -256,7 +256,7 @@ const KHQR_OPTION: PaymentOption = {
                     <ui-icon [name]="option.icon" [size]="18" />
                     <div class="payment-title-row">
                       <strong>{{ option.labelKey | translate }}</strong>
-                      <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span>
+                      @if (option.badgeKey) { <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span> }
                     </div>
                   </label>
                 }

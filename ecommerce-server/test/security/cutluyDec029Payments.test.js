@@ -1,13 +1,49 @@
 // ecommerce-server/test/security/cutluyDec029Payments.test.js
-// DEC-029: Comprehensive test suite for CutLuy KHQR checkout, unpaid timeout, and paid order guards.
+// DEC-029: Comprehensive security and integration test suite for CutLuy KHQR checkout,
+// fail-closed webhooks, order cancellation guards, void/take-cash safety, and watchdog recovery.
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const crypto = require("crypto");
+const crypto = require("node:crypto");
 
 process.env.PAYMENT_CONFIG_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+
 const { normalizePaymentMethod, normalizePaymentStatus } = require("../../modules/payments/paymentUtils");
-const { ORDER_ERROR_CODES } = require("../../modules/orders/orderErrors");
+const { ORDER_ERROR_CODES, OrderStateError } = require("../../modules/orders/orderErrors");
+const { resolvePaymentMethod } = require("../../modules/checkout/marketplaceCheckoutService");
+const PaymentController = require("../../modules/payments/PaymentController");
+const FulfillmentService = require("../../modules/payments/FulfillmentService");
+const { Payment, Order, PaymentGatewayConfig, StoreAccess, OrderEvent } = require("../../models");
+const axios = require("axios");
+
+const TEST_STORE_ID = "11111111-1111-4111-8111-111111111111";
+const TEST_WEBSITE_ID = "22222222-2222-4222-8222-222222222222";
+
+function createMockRes() {
+  const res = {
+    statusCode: 200,
+    body: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+    send(data) {
+      this.body = data;
+      return this;
+    },
+  };
+  return res;
+}
+
+function createCutluySignature(rawBody, secret, timestamp = Math.floor(Date.now() / 1000)) {
+  const payloadToSign = `${timestamp}.${rawBody}`;
+  const hmac = crypto.createHmac("sha256", secret).update(payloadToSign).digest("hex");
+  return `t=${timestamp},v1=${hmac}`;
+}
 
 test("DEC-029: normalizePaymentMethod maps cutluy and khqr to KHQR, and cod to COD", () => {
   assert.equal(normalizePaymentMethod("cutluy"), "KHQR");
@@ -19,6 +55,7 @@ test("DEC-029: normalizePaymentMethod maps cutluy and khqr to KHQR, and cod to C
   assert.equal(normalizePaymentMethod("cash"), "CASH");
   assert.equal(normalizePaymentMethod("CASH"), "CASH");
   assert.equal(normalizePaymentMethod(null), "COD");
+  assert.equal(normalizePaymentMethod(undefined), "COD");
 });
 
 test("DEC-029: normalizePaymentStatus maps completed and paid to paid", () => {
@@ -29,40 +66,19 @@ test("DEC-029: normalizePaymentStatus maps completed and paid to paid", () => {
   assert.equal(normalizePaymentStatus("failed"), "failed");
   assert.equal(normalizePaymentStatus("expired"), "expired");
   assert.equal(normalizePaymentStatus(null), "pending");
+  assert.equal(normalizePaymentStatus(undefined), "pending");
 });
 
 test("DEC-029: ORDER_PAID_CANCEL_UNAVAILABLE error code is registered", () => {
   assert.equal(ORDER_ERROR_CODES.ORDER_PAID_CANCEL_UNAVAILABLE, "ORDER_PAID_CANCEL_UNAVAILABLE");
 });
 
-test("DEC-029: resolvePaymentMethod rejects retired ABA_PAYWAY with PAYMENT_METHOD_UNAVAILABLE", () => {
-  const { resolvePaymentMethod } = (() => {
-    // Test the logic implemented in marketplaceCheckoutService
-    function resolvePaymentMethod(requested) {
-      const value = String(requested || 'COD').toUpperCase();
-      if (value === 'KHQR' || value === 'CUTLUY') {
-        return 'KHQR';
-      }
-      if (value === 'ABA_PAYWAY') {
-        const error = new Error('ABA PayWay checkout is retired. Please pay with KHQR or cash on delivery.');
-        error.statusCode = 400;
-        error.code = 'PAYMENT_METHOD_UNAVAILABLE';
-        throw error;
-      }
-      if (value !== 'COD') {
-        const error = new Error('Unsupported payment method');
-        error.statusCode = 400;
-        error.code = 'PAYMENT_METHOD_UNAVAILABLE';
-        throw error;
-      }
-      return 'COD';
-    }
-    return { resolvePaymentMethod };
-  })();
-
+test("DEC-029: resolvePaymentMethod accepts KHQR and COD, and rejects retired ABA_PAYWAY", () => {
   assert.equal(resolvePaymentMethod("COD"), "COD");
   assert.equal(resolvePaymentMethod("KHQR"), "KHQR");
   assert.equal(resolvePaymentMethod("cutluy"), "KHQR");
+  assert.equal(resolvePaymentMethod("CUTLUY"), "KHQR");
+
   assert.throws(
     () => resolvePaymentMethod("ABA_PAYWAY"),
     (err) => err.code === "PAYMENT_METHOD_UNAVAILABLE" && err.statusCode === 400
@@ -73,59 +89,8 @@ test("DEC-029: resolvePaymentMethod rejects retired ABA_PAYWAY with PAYMENT_METH
   );
 });
 
-test("DEC-029: Webhook signature verification succeeds with valid HMAC and rejects forged payload", () => {
-  const secret = "test_webhook_secret_key_12345";
-  const rawBody = JSON.stringify({
-    event: "payment.completed",
-    data: {
-      id: "pay_test_123",
-      reference_id: "ORDER-ord-test-456",
-      status: "completed",
-    },
-  });
-
-  const timestamp = Math.floor(Date.now() / 1000);
-  const payloadToSign = `${timestamp}.${rawBody}`;
-  const validHmac = crypto.createHmac("sha256", secret).update(payloadToSign).digest("hex");
-  const validHeader = `t=${timestamp},v1=${validHmac}`;
-
-  // Helper verifying signature matching PaymentController implementation
-  function verify(header, bodyBuf, sec) {
-    if (!sec || !header) return false;
-    let sig = header.trim();
-    let ts = null;
-    if (header.includes("t=") && header.includes("v1=")) {
-      for (const part of header.split(",")) {
-        const [k, v] = part.split("=");
-        if (k && k.trim() === "t") ts = parseInt(v.trim(), 10);
-        if (k && k.trim() === "v1") sig = v.trim();
-      }
-    }
-    if (ts && !isNaN(ts)) {
-      if (Math.abs(Date.now() / 1000 - ts) > 600) return false;
-    }
-    const toSign = ts ? `${ts}.${bodyBuf.toString("utf8")}` : bodyBuf.toString("utf8");
-    const expected = crypto.createHmac("sha256", sec).update(toSign).digest("hex");
-    const expBuf = Buffer.from(expected, "utf8");
-    const actBuf = Buffer.from(sig, "utf8");
-    if (expBuf.length !== actBuf.length) return false;
-    return crypto.timingSafeEqual(expBuf, actBuf);
-  }
-
-  assert.equal(verify(validHeader, Buffer.from(rawBody), secret), true);
-  // Forged signature fails
-  assert.equal(verify(`t=${timestamp},v1=deadbeefdeadbeef`, Buffer.from(rawBody), secret), false);
-  // Stale signature (> 10m old) fails
-  const staleTimestamp = timestamp - 700;
-  const staleHmac = crypto.createHmac("sha256", secret).update(`${staleTimestamp}.${rawBody}`).digest("hex");
-  assert.equal(verify(`t=${staleTimestamp},v1=${staleHmac}`, Buffer.from(rawBody), secret), false);
-});
-
 test("DEC-029: Paid KHQR orders cannot be cancelled (no refunds in Release 1)", () => {
-  const { OrderStateError, ORDER_ERROR_CODES } = require("../../modules/orders/orderErrors");
-
-  // State machine cancellability guard simulation
-  function checkCancellability(order, payment) {
+  function evaluateCancellation(order, payment) {
     if (payment) {
       const isPaid = payment.status === "paid" || payment.status === "completed";
       const isKhqr = ["khqr", "cutluy"].includes(String(payment.paymentMethod || "").toLowerCase());
@@ -142,249 +107,471 @@ test("DEC-029: Paid KHQR orders cannot be cancelled (no refunds in Release 1)", 
 
   // Pending KHQR order is cancellable
   assert.equal(
-    checkCancellability({ id: "ord-1", status: "pending" }, { status: "pending", paymentMethod: "cutluy" }),
+    evaluateCancellation({ id: "ord-1", status: "pending" }, { status: "pending", paymentMethod: "cutluy" }),
     true
   );
 
   // Unpaid COD order is cancellable
   assert.equal(
-    checkCancellability({ id: "ord-2", status: "pending" }, { status: "pending", paymentMethod: "COD" }),
+    evaluateCancellation({ id: "ord-2", status: "pending" }, { status: "pending", paymentMethod: "COD" }),
     true
   );
 
   // Paid KHQR order MUST throw ORDER_PAID_CANCEL_UNAVAILABLE
   assert.throws(
-    () => checkCancellability({ id: "ord-3", status: "confirmed" }, { status: "paid", paymentMethod: "cutluy" }),
+    () => evaluateCancellation({ id: "ord-3", status: "confirmed" }, { status: "paid", paymentMethod: "cutluy" }),
     (err) => err.code === "ORDER_PAID_CANCEL_UNAVAILABLE" && err.statusCode === 400
   );
-
   assert.throws(
-    () => checkCancellability({ id: "ord-4", status: "confirmed" }, { status: "completed", paymentMethod: "khqr" }),
+    () => evaluateCancellation({ id: "ord-4", status: "confirmed" }, { status: "completed", paymentMethod: "khqr" }),
     (err) => err.code === "ORDER_PAID_CANCEL_UNAVAILABLE" && err.statusCode === 400
   );
 });
 
-test("DEC-029: Store public payment methods returns KHQR when CutLuy is configured and COD is always present", () => {
-  function computeStoreMethods(configs, storeName) {
-    const paymentMethods = ["COD"];
-    const hasKhqr = configs.some((c) => (c.gateway === "cutluy" || c.gateway === "khqr") && c.enabled);
-    if (hasKhqr) {
-      paymentMethods.push("KHQR");
-    }
-    const cutluyConfig = configs.find((c) => c.gateway === "cutluy");
-    return {
-      paymentMethods,
-      cutluyEnabled: Boolean(cutluyConfig?.enabled),
-      businessName: cutluyConfig?.config?.businessName || storeName || "",
-    };
+test("DEC-029: PaymentController.getStorePublicPaymentMethods returns KHQR when CutLuy is configured and COD is always present", async () => {
+  const origFindAll = PaymentGatewayConfig.findAll;
+  const origFindStore = StoreAccess.findByPk;
+
+  try {
+    // Store without CutLuy
+    PaymentGatewayConfig.findAll = async () => [];
+    StoreAccess.findByPk = async () => ({ id: TEST_STORE_ID, name: "My Corner Store" });
+
+    const req1 = { params: { storeId: TEST_STORE_ID } };
+    const res1 = createMockRes();
+    await PaymentController.getStorePublicPaymentMethods(req1, res1);
+
+    assert.equal(res1.statusCode, 200);
+    assert.deepEqual(res1.body.paymentMethods, ["COD"]);
+    assert.equal(res1.body.cutluyEnabled, false);
+    assert.equal(res1.body.businessName, "My Corner Store");
+
+    // Store with CutLuy enabled
+    PaymentGatewayConfig.findAll = async () => [
+      {
+        gateway: "cutluy",
+        enabled: true,
+        config: { businessName: "Artisan Roasters" },
+      },
+    ];
+
+    const req2 = { params: { storeId: TEST_STORE_ID } };
+    const res2 = createMockRes();
+    await PaymentController.getStorePublicPaymentMethods(req2, res2);
+
+    assert.equal(res2.statusCode, 200);
+    assert.deepEqual(res2.body.paymentMethods, ["COD", "KHQR"]);
+    assert.equal(res2.body.cutluyEnabled, true);
+    assert.equal(res2.body.businessName, "Artisan Roasters");
+  } finally {
+    PaymentGatewayConfig.findAll = origFindAll;
+    StoreAccess.findByPk = origFindStore;
   }
-
-  // Store without CutLuy
-  const noCutluy = computeStoreMethods([], "My Local Shop");
-  assert.deepEqual(noCutluy.paymentMethods, ["COD"]);
-  assert.equal(noCutluy.cutluyEnabled, false);
-  assert.equal(noCutluy.businessName, "My Local Shop");
-
-  // Store with CutLuy enabled
-  const withCutluy = computeStoreMethods(
-    [{ gateway: "cutluy", enabled: true, config: { businessName: "Artisan Coffee" } }],
-    "Artisan Coffee"
-  );
-  assert.deepEqual(withCutluy.paymentMethods, ["COD", "KHQR"]);
-  assert.equal(withCutluy.cutluyEnabled, true);
-  assert.equal(withCutluy.businessName, "Artisan Coffee");
 });
 
-test("DEC-029: Webhook signature verification fails closed when header or secret is missing", () => {
-  // Test the fail-closed logic
-  function checkWebhookAuth(header, secret) {
-    if (!header) {
-      return { status: 401, error: "Missing CutLuy webhook signature header" };
-    }
-    if (!secret) {
-      return { status: 401, error: "CutLuy webhook secret not configured" };
-    }
-    return { status: 200 };
-  }
-
-  assert.equal(checkWebhookAuth(null, "secret123").status, 401);
-  assert.equal(checkWebhookAuth("t=123,v1=abc", null).status, 401);
-  assert.equal(checkWebhookAuth(null, null).status, 401);
-  assert.equal(checkWebhookAuth("t=123,v1=abc", "secret123").status, 200);
-});
-
-test("DEC-029: Webhook binds event and rejects amount and currency mismatches", () => {
-  function validatePayloadBinding(payment, paymentData, body) {
-    const rawAmount = paymentData.amount !== undefined ? paymentData.amount : (paymentData.total !== undefined ? paymentData.total : body.amount);
-    const rawCurrency = String(paymentData.currency || body.currency || "USD").toUpperCase();
-
-    if (rawAmount !== undefined && rawAmount !== null) {
-      const parsedAmount = parseFloat(rawAmount);
-      const expectedAmount = parseFloat(payment.amount);
-      if (isNaN(parsedAmount) || Math.abs(parsedAmount - expectedAmount) > 0.009) {
-        return { status: 400, error: "Payment amount mismatch" };
-      }
-    }
-    if (rawCurrency !== (payment.currency || "USD").toUpperCase()) {
-      return { status: 400, error: "Payment currency mismatch" };
-    }
-    return { status: 200 };
-  }
-
-  const payment = { amount: "25.50", currency: "USD" };
-
-  // Matching amount & currency passes
-  assert.equal(validatePayloadBinding(payment, { amount: "25.50", currency: "USD" }, {}).status, 200);
-  assert.equal(validatePayloadBinding(payment, { total: 25.50 }, { currency: "USD" }).status, 200);
-
-  // Amount mismatch fails
-  assert.equal(validatePayloadBinding(payment, { amount: "10.00", currency: "USD" }, {}).status, 400);
-
-  // Currency mismatch fails
-  assert.equal(validatePayloadBinding(payment, { amount: "25.50", currency: "KHR" }, {}).status, 400);
-});
-
-test("DEC-029: Duplicate webhook callbacks are idempotent and do not duplicate fulfillment", () => {
-  function processWebhookIdempotency(paymentStatus) {
-    if (paymentStatus === "completed" || paymentStatus === "paid") {
-      return { received: true, alreadyCompleted: true };
-    }
-    return { received: true, processed: true };
-  }
-
-  assert.deepEqual(processWebhookIdempotency("paid"), { received: true, alreadyCompleted: true });
-  assert.deepEqual(processWebhookIdempotency("completed"), { received: true, alreadyCompleted: true });
-  assert.deepEqual(processWebhookIdempotency("pending"), { received: true, processed: true });
-});
-
-test("DEC-029: Late payment on cancelled or expired order creates durable record and does not reopen order", () => {
-  const events = [];
-  async function handleLatePayment(order, payment, providerPaymentId, body) {
-    if (order?.status === "cancelled" || payment.status === "expired" || payment.status === "cancelled") {
-      payment.transactionData = {
-        ...(payment.transactionData || {}),
-        latePayment: true,
-        latePaymentAt: new Date().toISOString(),
-        providerPaymentId,
-      };
-
-      events.push({
-        orderId: order.id,
-        type: "payment_exception",
-        amount: payment.amount,
-        details: {
-          exceptionType: "late_payment_after_cancellation",
-          providerPaymentId,
-        },
-      });
-
-      return {
-        received: true,
-        latePayment: true,
-        exceptionRecorded: true,
-      };
-    }
-    return { received: true };
-  }
-
-  const cancelledOrder = { id: "ord-cancelled-1", status: "cancelled" };
-  const expiredPayment = { id: "pay-expired-1", status: "expired", amount: "50.00" };
-
-  return handleLatePayment(cancelledOrder, expiredPayment, "cutluy_tx_999", {}).then((res) => {
-    assert.equal(res.latePayment, true);
-    assert.equal(res.exceptionRecorded, true);
-    assert.equal(expiredPayment.transactionData.latePayment, true);
-    assert.equal(events.length, 1);
-    assert.equal(events[0].type, "payment_exception");
-    assert.equal(events[0].orderId, "ord-cancelled-1");
+test("DEC-029: Webhook signature verification fails closed when header or secret is missing or invalid", async () => {
+  const secret = "test_webhook_secret_key_12345";
+  const rawBody = JSON.stringify({
+    event: "payment.completed",
+    data: { id: "pay_test_1", reference_id: "ORDER-ord-1", status: "completed", amount: "25.00", currency: "USD" },
   });
-});
 
-test("DEC-029: POS voidPayment prevents double-charging when payment was already completed", () => {
-  function simulateVoidPayment(paymentStatus, providerStatus) {
-    if (paymentStatus === "completed" || paymentStatus === "paid" || providerStatus === "paid") {
-      return {
-        status: 409,
-        error: "Cannot void payment: payment was already completed",
-        alreadyPaid: true,
-      };
-    }
-    return {
-      status: 200,
-      success: true,
-      paymentStatus: "cancelled",
-    };
+  const origFindPayment = Payment.findOne;
+  const origFindConfig = PaymentGatewayConfig.findOne;
+
+  try {
+    Payment.findOne = async () => ({
+      id: "pay-db-1",
+      orderId: "ord-1",
+      amount: "25.00",
+      currency: "USD",
+      status: "pending",
+      transactionId: "pay_test_1",
+      transactionData: { providerPaymentId: "pay_test_1" },
+      Order: { id: "ord-1", websiteId: TEST_WEBSITE_ID, status: "pending" },
+    });
+
+    // 1. Missing signature header -> 401
+    PaymentGatewayConfig.findOne = async () => ({
+      config: { webhookSecret: secret },
+    });
+    const req1 = { headers: {}, body: JSON.parse(rawBody), rawBody: Buffer.from(rawBody) };
+    const res1 = createMockRes();
+    await PaymentController.handleCutluyWebhook(req1, res1);
+    assert.equal(res1.statusCode, 401);
+    assert.match(res1.body.error, /Missing CutLuy webhook signature header/i);
+
+    // 2. Missing webhook secret -> 401
+    PaymentGatewayConfig.findOne = async () => null;
+    const validHeader = createCutluySignature(rawBody, secret);
+    const req2 = { headers: { "x-cutluy-signature": validHeader }, body: JSON.parse(rawBody), rawBody: Buffer.from(rawBody) };
+    const res2 = createMockRes();
+    await PaymentController.handleCutluyWebhook(req2, res2);
+    assert.equal(res2.statusCode, 401);
+    assert.match(res2.body.error, /CutLuy webhook secret not configured/i);
+
+    // 3. Invalid signature HMAC -> 401
+    PaymentGatewayConfig.findOne = async () => ({
+      config: { webhookSecret: secret },
+    });
+    const forgedHeader = `t=${Math.floor(Date.now() / 1000)},v1=deadbeefdeadbeef`;
+    const req3 = { headers: { "x-cutluy-signature": forgedHeader }, body: JSON.parse(rawBody), rawBody: Buffer.from(rawBody) };
+    const res3 = createMockRes();
+    await PaymentController.handleCutluyWebhook(req3, res3);
+    assert.equal(res3.statusCode, 401);
+    assert.match(res3.body.error, /Invalid CutLuy webhook signature/i);
+  } finally {
+    Payment.findOne = origFindPayment;
+    PaymentGatewayConfig.findOne = origFindConfig;
   }
-
-  // Already completed locally
-  assert.equal(simulateVoidPayment("paid", "paid").status, 409);
-  assert.equal(simulateVoidPayment("completed", "pending").status, 409);
-
-  // Completed at provider just now
-  assert.equal(simulateVoidPayment("pending", "paid").status, 409);
-
-  // Still pending -> successfully voided so cashier can take cash
-  const voidResult = simulateVoidPayment("pending", "pending");
-  assert.equal(voidResult.status, 200);
-  assert.equal(voidResult.paymentStatus, "cancelled");
 });
 
-test("DEC-029: Watchdog timeout retains orders on inconclusive provider status (network error, timeout, missing key)", () => {
-  function evaluateWatchdogAction(providerStatus, hasError) {
-    if (hasError) {
-      return "RETAIN_FOR_RETRY";
+test("DEC-029: Webhook binding requires provider payment ID, amount, and currency to match database record", async () => {
+  const secret = "test_webhook_secret_key_12345";
+  const origFindPayment = Payment.findOne;
+  const origFindConfig = PaymentGatewayConfig.findOne;
+
+  try {
+    const mockPayment = {
+      id: "pay-db-10",
+      orderId: "ord-10",
+      amount: "50.00",
+      currency: "USD",
+      status: "pending",
+      transactionId: "pay_cutluy_10",
+      transactionData: { providerPaymentId: "pay_cutluy_10" },
+      Order: { id: "ord-10", websiteId: TEST_WEBSITE_ID, status: "pending" },
+    };
+
+    Payment.findOne = async () => mockPayment;
+    PaymentGatewayConfig.findOne = async () => ({
+      config: { webhookSecret: secret },
+    });
+
+    async function sendSignedWebhook(payload) {
+      const rawBody = JSON.stringify(payload);
+      const sig = createCutluySignature(rawBody, secret);
+      const req = {
+        headers: { "x-cutluy-signature": sig },
+        body: payload,
+        rawBody: Buffer.from(rawBody),
+      };
+      const res = createMockRes();
+      await PaymentController.handleCutluyWebhook(req, res);
+      return res;
     }
+
+    // 1. Missing provider payment ID in payload -> 400
+    const resNoId = await sendSignedWebhook({
+      event: "payment.completed",
+      data: { reference_id: "ORDER-ord-10", amount: "50.00", currency: "USD", status: "completed" },
+    });
+    assert.equal(resNoId.statusCode, 400);
+    assert.match(resNoId.body.error, /Missing required provider payment ID/i);
+
+    // 2. Mismatched provider payment ID -> 400
+    const resWrongId = await sendSignedWebhook({
+      event: "payment.completed",
+      data: { id: "pay_cutluy_DIFFERENT", reference_id: "ORDER-ord-10", amount: "50.00", currency: "USD", status: "completed" },
+    });
+    assert.equal(resWrongId.statusCode, 400);
+    assert.match(resWrongId.body.error, /Provider payment ID mismatch/i);
+
+    // 3. Missing amount in payload -> 400
+    const resNoAmount = await sendSignedWebhook({
+      event: "payment.completed",
+      data: { id: "pay_cutluy_10", reference_id: "ORDER-ord-10", currency: "USD", status: "completed" },
+    });
+    assert.equal(resNoAmount.statusCode, 400);
+    assert.match(resNoAmount.body.error, /Missing required payment amount/i);
+
+    // 4. Mismatched amount in payload -> 400
+    const resWrongAmount = await sendSignedWebhook({
+      event: "payment.completed",
+      data: { id: "pay_cutluy_10", reference_id: "ORDER-ord-10", amount: "10.00", currency: "USD", status: "completed" },
+    });
+    assert.equal(resWrongAmount.statusCode, 400);
+    assert.match(resWrongAmount.body.error, /Payment amount mismatch/i);
+
+    // 5. Missing currency in payload -> 400
+    const resNoCurrency = await sendSignedWebhook({
+      event: "payment.completed",
+      data: { id: "pay_cutluy_10", reference_id: "ORDER-ord-10", amount: "50.00", status: "completed" },
+    });
+    assert.equal(resNoCurrency.statusCode, 400);
+    assert.match(resNoCurrency.body.error, /Missing required payment currency/i);
+
+    // 6. Mismatched currency in payload -> 400
+    const resWrongCurrency = await sendSignedWebhook({
+      event: "payment.completed",
+      data: { id: "pay_cutluy_10", reference_id: "ORDER-ord-10", amount: "50.00", currency: "KHR", status: "completed" },
+    });
+    assert.equal(resWrongCurrency.statusCode, 400);
+    assert.match(resWrongCurrency.body.error, /Payment currency mismatch/i);
+  } finally {
+    Payment.findOne = origFindPayment;
+    PaymentGatewayConfig.findOne = origFindConfig;
+  }
+});
+
+test("DEC-029: Duplicate webhook callbacks are idempotent and do not duplicate fulfillment", async () => {
+  const secret = "test_webhook_secret_key_12345";
+  const origFindPayment = Payment.findOne;
+  const origFindConfig = PaymentGatewayConfig.findOne;
+
+  try {
+    const mockPayment = {
+      id: "pay-db-20",
+      orderId: "ord-20",
+      amount: "30.00",
+      currency: "USD",
+      status: "paid", // already completed
+      transactionId: "pay_cutluy_20",
+      transactionData: { providerPaymentId: "pay_cutluy_20" },
+      Order: { id: "ord-20", websiteId: TEST_WEBSITE_ID, status: "confirmed" },
+    };
+
+    Payment.findOne = async () => mockPayment;
+    PaymentGatewayConfig.findOne = async () => ({
+      config: { webhookSecret: secret },
+    });
+
+    const payload = {
+      event: "payment.completed",
+      data: { id: "pay_cutluy_20", reference_id: "ORDER-ord-20", amount: "30.00", currency: "USD", status: "completed" },
+    };
+    const rawBody = JSON.stringify(payload);
+    const sig = createCutluySignature(rawBody, secret);
+    const req = {
+      headers: { "x-cutluy-signature": sig },
+      body: payload,
+      rawBody: Buffer.from(rawBody),
+    };
+    const res = createMockRes();
+
+    await PaymentController.handleCutluyWebhook(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.received, true);
+    assert.equal(res.body.alreadyCompleted, true);
+  } finally {
+    Payment.findOne = origFindPayment;
+    PaymentGatewayConfig.findOne = origFindConfig;
+  }
+});
+
+test("DEC-029: Late payment on cancelled order creates durable OrderEvent and fails closed if event fails", async () => {
+  const secret = "test_webhook_secret_key_12345";
+  const origFindPayment = Payment.findOne;
+  const origFindConfig = PaymentGatewayConfig.findOne;
+  const origOrderEventCreate = OrderEvent.create;
+
+  try {
+    let paymentUpdated = false;
+    const mockPayment = {
+      id: "pay-db-30",
+      orderId: "ord-30",
+      amount: "75.00",
+      currency: "USD",
+      status: "pending",
+      transactionId: "pay_cutluy_30",
+      transactionData: { providerPaymentId: "pay_cutluy_30" },
+      Order: { id: "ord-30", websiteId: TEST_WEBSITE_ID, status: "cancelled" }, // Order was cancelled due to timeout
+      update: async (data) => {
+        paymentUpdated = true;
+        mockPayment.transactionData = { ...mockPayment.transactionData, ...data.transactionData };
+      },
+    };
+
+    Payment.findOne = async () => mockPayment;
+    PaymentGatewayConfig.findOne = async () => ({
+      config: { webhookSecret: secret },
+    });
+
+    const eventsCreated = [];
+    OrderEvent.create = async (event) => {
+      eventsCreated.push(event);
+      return event;
+    };
+
+    const payload = {
+      event: "payment.completed",
+      data: { id: "pay_cutluy_30", reference_id: "ORDER-ord-30", amount: "75.00", currency: "USD", status: "completed" },
+    };
+    const rawBody = JSON.stringify(payload);
+    const sig = createCutluySignature(rawBody, secret);
+    const req = {
+      headers: { "x-cutluy-signature": sig },
+      body: payload,
+      rawBody: Buffer.from(rawBody),
+    };
+    const res = createMockRes();
+
+    await PaymentController.handleCutluyWebhook(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.latePayment, true);
+    assert.equal(res.body.exceptionRecorded, true);
+    assert.equal(paymentUpdated, true);
+    assert.equal(eventsCreated.length, 1);
+    assert.equal(eventsCreated[0].type, "payment_exception");
+    assert.equal(eventsCreated[0].details.exceptionType, "late_payment_after_cancellation");
+
+    // Test fail-closed: if OrderEvent.create throws, webhook returns 500 so CutLuy will retry
+    OrderEvent.create = async () => {
+      throw new Error("DB Connection Error on event creation");
+    };
+    const resFail = createMockRes();
+    await PaymentController.handleCutluyWebhook(req, resFail);
+    assert.equal(resFail.statusCode, 500);
+  } finally {
+    Payment.findOne = origFindPayment;
+    PaymentGatewayConfig.findOne = origFindConfig;
+    OrderEvent.create = origOrderEventCreate;
+  }
+});
+
+test("DEC-029: PaymentController.voidPayment prevents double payment by checking and cancelling at CutLuy", async () => {
+  const origFindByPk = Payment.findByPk;
+  const origConfigFind = PaymentGatewayConfig.findOne;
+  const origConfirmPayment = FulfillmentService.confirmOrderPayment;
+  const origOrderEventCreate = OrderEvent.create;
+  const origAxiosGet = axios.get;
+  const origAxiosPost = axios.post;
+
+  try {
+    let paymentCancelled = false;
+    const mockPayment = {
+      id: "pay-pos-1",
+      orderId: "ord-pos-1",
+      amount: "20.00",
+      currency: "USD",
+      status: "pending",
+      transactionId: "cutluy_provider_pos_1",
+      transactionData: { providerPaymentId: "cutluy_provider_pos_1" },
+      Order: { id: "ord-pos-1", websiteId: TEST_WEBSITE_ID, status: "pending" },
+      update: async (data) => {
+        if (data.status === "cancelled") paymentCancelled = true;
+      },
+    };
+
+    Payment.findByPk = async () => mockPayment;
+    PaymentGatewayConfig.findOne = async () => ({
+      config: { apiKey: "cutluy_api_key_test" },
+    });
+    OrderEvent.create = async () => ({ id: "ev-1" });
+
+    // 1. If payment is already completed -> 409 alreadyPaid: true
+    const mockPaidPayment = { ...mockPayment, status: "paid" };
+    Payment.findByPk = async () => mockPaidPayment;
+    const res1 = createMockRes();
+    await PaymentController.voidPayment({ params: { paymentId: "pay-pos-1" }, body: {} }, res1);
+    assert.equal(res1.statusCode, 409);
+    assert.equal(res1.body.alreadyPaid, true);
+
+    // 2. If CutLuy status check fails (unreachable) -> 502 (fails closed, do NOT switch to cash)
+    Payment.findByPk = async () => mockPayment;
+    axios.get = async () => {
+      throw new Error("Network timeout to CutLuy");
+    };
+    const res2 = createMockRes();
+    await PaymentController.voidPayment({ params: { paymentId: "pay-pos-1" }, body: {} }, res2);
+    assert.equal(res2.statusCode, 502);
+    assert.match(res2.body.error, /Unable to verify payment status/i);
+
+    // 3. If CutLuy reports payment was already completed at provider -> 409 alreadyPaid: true
+    let confirmedPaid = false;
+    FulfillmentService.confirmOrderPayment = async () => {
+      confirmedPaid = true;
+    };
+    axios.get = async () => ({
+      data: { status: "paid" },
+    });
+    const res3 = createMockRes();
+    await PaymentController.voidPayment({ params: { paymentId: "pay-pos-1" }, body: {} }, res3);
+    assert.equal(res3.statusCode, 409);
+    assert.equal(res3.body.alreadyPaid, true);
+    assert.equal(confirmedPaid, true);
+
+    // 4. If CutLuy reports pending -> successfully cancel at CutLuy to deactivate QR and void locally
+    let cutluyCancelCalled = false;
+    axios.get = async () => ({
+      data: { status: "pending" },
+    });
+    axios.post = async (url) => {
+      if (url.includes("/cancel")) cutluyCancelCalled = true;
+      return { data: { status: "cancelled" } };
+    };
+    const res4 = createMockRes();
+    await PaymentController.voidPayment({ params: { paymentId: "pay-pos-1" }, body: { reason: "cashier_take_cash" } }, res4);
+    assert.equal(res4.statusCode, 200);
+    assert.equal(res4.body.success, true);
+    assert.equal(cutluyCancelCalled, true);
+    assert.equal(paymentCancelled, true);
+  } finally {
+    Payment.findByPk = origFindByPk;
+    PaymentGatewayConfig.findOne = origConfigFind;
+    FulfillmentService.confirmOrderPayment = origConfirmPayment;
+    OrderEvent.create = origOrderEventCreate;
+    axios.get = origAxiosGet;
+    axios.post = origAxiosPost;
+  }
+});
+
+test("DEC-029: Watchdog timeout deactivates QR at CutLuy and retains order if cancellation is inconclusive", async () => {
+  function evaluateWatchdogTransition({ providerStatus, cancelSucceeded, cancelPaid }) {
+    if (providerStatus === "pending") {
+      if (cancelPaid) {
+        return "RECOVER_PAID_ORDER";
+      }
+      if (!cancelSucceeded) {
+        return "RETAIN_FOR_RETRY"; // Do NOT cancel while QR remains payable!
+      }
+      providerStatus = "cancelled";
+    }
+
     if (providerStatus === "paid" || providerStatus === "completed") {
       return "RECOVER_PAID_ORDER";
     }
-    const isExplicitlyUnpaid = ["pending", "unpaid", "expired", "failed", "not_found"].includes(providerStatus);
-    if (isExplicitlyUnpaid) {
+
+    const isConfirmedDead = ["cancelled", "expired", "failed", "not_found"].includes(providerStatus);
+    if (isConfirmedDead) {
       return "CANCEL_UNPAID_ORDER";
     }
     return "RETAIN_FOR_RETRY";
   }
 
-  // Network error or timeout -> RETAIN
-  assert.equal(evaluateWatchdogAction(null, true), "RETAIN_FOR_RETRY");
+  // Pending with successful cancel -> CANCEL_UNPAID_ORDER
+  assert.equal(
+    evaluateWatchdogTransition({ providerStatus: "pending", cancelSucceeded: true }),
+    "CANCEL_UNPAID_ORDER"
+  );
 
-  // Inconclusive status -> RETAIN
-  assert.equal(evaluateWatchdogAction("unknown_state", false), "RETAIN_FOR_RETRY");
+  // Pending with failed cancel -> RETAIN_FOR_RETRY (prevents double-payment!)
+  assert.equal(
+    evaluateWatchdogTransition({ providerStatus: "pending", cancelSucceeded: false }),
+    "RETAIN_FOR_RETRY"
+  );
 
-  // Provider paid -> RECOVER
-  assert.equal(evaluateWatchdogAction("paid", false), "RECOVER_PAID_ORDER");
+  // Pending but customer paid during cancel -> RECOVER_PAID_ORDER
+  assert.equal(
+    evaluateWatchdogTransition({ providerStatus: "pending", cancelPaid: true }),
+    "RECOVER_PAID_ORDER"
+  );
 
-  // Explicitly unpaid -> CANCEL
-  assert.equal(evaluateWatchdogAction("pending", false), "CANCEL_UNPAID_ORDER");
-  assert.equal(evaluateWatchdogAction("not_found", false), "CANCEL_UNPAID_ORDER");
-  assert.equal(evaluateWatchdogAction("expired", false), "CANCEL_UNPAID_ORDER");
-});
+  // Already paid -> RECOVER_PAID_ORDER
+  assert.equal(
+    evaluateWatchdogTransition({ providerStatus: "paid" }),
+    "RECOVER_PAID_ORDER"
+  );
 
-test("DEC-029: Payment creation requires provider-side idempotency and rejects fabricated IDs", () => {
-  function validateCreatedPayment(response) {
-    const cutluyData = response.data?.data || response.data;
-    const providerPaymentId = cutluyData?.id;
-    if (!providerPaymentId) {
-      throw new Error("Missing provider ID");
-    }
-    const checkoutUrl = cutluyData?.checkout_url || cutluyData?.payment_url;
-    const qrString = cutluyData?.qr_string || cutluyData?.raw_qr || cutluyData?.qr || "";
-    if (!checkoutUrl && !qrString) {
-      throw new Error("Missing checkout URL or QR string");
-    }
-    return {
-      providerPaymentId,
-      checkoutUrl: checkoutUrl || "",
-      rawQR: qrString,
-    };
-  }
-
-  // Valid provider response
-  const valid = validateCreatedPayment({ data: { id: "pay_123", checkout_url: "https://cutluy.com/pay/123", qr_string: "000201..." } });
-  assert.equal(valid.providerPaymentId, "pay_123");
-
-  // Missing provider ID must throw (no fabricated fallback allowed)
-  assert.throws(() => validateCreatedPayment({ data: { checkout_url: "https://cutluy.com/pay/123" } }), /Missing provider ID/);
-
-  // Missing URL and QR must throw
-  assert.throws(() => validateCreatedPayment({ data: { id: "pay_123" } }), /Missing checkout URL or QR string/);
+  // Expired or not found -> CANCEL_UNPAID_ORDER
+  assert.equal(
+    evaluateWatchdogTransition({ providerStatus: "expired" }),
+    "CANCEL_UNPAID_ORDER"
+  );
+  assert.equal(
+    evaluateWatchdogTransition({ providerStatus: "not_found" }),
+    "CANCEL_UNPAID_ORDER"
+  );
 });

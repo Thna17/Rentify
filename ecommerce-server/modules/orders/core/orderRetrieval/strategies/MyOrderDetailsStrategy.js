@@ -1,4 +1,4 @@
-const { normalizePaymentMethod, normalizePaymentStatus } = require('../../../../payments/paymentUtils');
+const { normalizePaymentMethod, normalizePaymentStatus } = require('../../../../payments').paymentUtils;
 // orderRetrieval/strategies/MyOrderDetailsStrategy.js
 const BaseRetrievalStrategy = require('./BaseRetrievalStrategy');
 

@@ -328,7 +328,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         try {
           const axios = require('axios');
           const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || 'https://cutluy.com').replace(/\/+$/, '');
-          const idempotencyKey = `marketplace-order-${order.id}`;
+          const idempotencyKey = checkoutKey ? `marketplace-checkout-${checkoutKey}` : `marketplace-cart-${cart.id}`;
           const response = await axios.post(
             `${cutluyBaseUrl}/v1/payments`,
             {
@@ -510,4 +510,4 @@ async function checkoutMultiStore({
 }
 
 module.exports = { getDeliveryPolicy, setDeliveryPolicy, getCart, setCartItem, updateCartItem, removeCartItem, clearCart, mergeCarts,
-  checkout, checkoutMultiStore, buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction, buyerReport, merchantOrders, merchantOrder, checkedProductAndVariant };
+  checkout, checkoutMultiStore, buyerOrders, buyerOrder, buyerOrderForStore, sellerOrders, orderEvents, buyerOrderEvents, merchantAction, buyerReport, merchantOrders, merchantOrder, checkedProductAndVariant, resolvePaymentMethod };

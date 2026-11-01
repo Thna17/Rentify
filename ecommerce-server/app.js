@@ -63,7 +63,7 @@ app.use('/api/cart', require('./modules/cart/cartRoutes'));
 app.use('/api/invoice', require('./modules/invoices/invoiceRoutes'));
 app.use('/api/merchant', require('./modules/orders/merchantRoutes'));
 app.use('/api/payment', require('./modules/payments/paymentRoutes'));
-app.use('/api/payments', require('./modules/payments/paymentRoutes'));
+
 // ABA PayWay (retired for Release 1 checkout per DEC-029; unmounted, code preserved inactive)
 // app.use('/api/payments/aba-payway', require('./modules/payments/aba/abaPaywayRoutes'));
 app.use('/api/order', require('./modules/orders/orderRoutes'));

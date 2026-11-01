@@ -192,16 +192,54 @@ class RecoveryWorker {
             continue;
           }
 
-          // Case B: Explicitly confirmed as unpaid/pending/expired/not_found by provider -> safely cancel order
-          const isExplicitlyUnpaid =
-            providerStatus === "pending" ||
-            providerStatus === "unpaid" ||
+          // Case B: If pending, cancel at CutLuy to deactivate QR code before local cancellation
+          if (providerStatus === "pending") {
+            try {
+              const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || "https://cutluy.com").replace(/\/+$/, "");
+              await axios.post(
+                `${cutluyBaseUrl}/v1/payments/${encodeURIComponent(providerPaymentId)}/cancel`,
+                { reason: "unpaid_order_timeout" },
+                {
+                  headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": "Rentify/1.0 (axios)" },
+                  timeout: 5000,
+                }
+              );
+              providerStatus = "cancelled";
+            } catch (cancelErr) {
+              if (cancelErr.response && (cancelErr.response.status === 409 || cancelErr.response.data?.status === "paid")) {
+                providerStatus = "paid";
+              } else if (cancelErr.response && cancelErr.response.status === 404) {
+                providerStatus = "not_found";
+              } else {
+                console.warn(`[Watchdog] Failed to cancel pending payment ${providerPaymentId} at CutLuy (${cancelErr.message}). Retaining order to prevent double-payment.`);
+                continue;
+              }
+            }
+          }
+
+          if (providerStatus === "paid" || providerStatus === "completed") {
+            await FulfillmentService.confirmOrderPayment(
+              payment.id,
+              {
+                provider: "cutluy",
+                transactionId: providerPaymentId,
+                providerEvent: cutluyResponseData,
+              },
+              true
+            );
+            console.log(`[Watchdog] Recovered paid order ${order.id} before cancellation`);
+            continue;
+          }
+
+          // Safe cancellation: only when confirmed as cancelled, expired, failed, or not_found
+          const isConfirmedDead =
+            providerStatus === "cancelled" ||
             providerStatus === "expired" ||
             providerStatus === "failed" ||
             providerStatus === "not_found";
 
-          if (!isExplicitlyUnpaid) {
-            console.warn(`[Watchdog] Inconclusive status "${providerStatus}" for payment ${payment.id}. Retaining order.`);
+          if (!isConfirmedDead) {
+            console.warn(`[Watchdog] Inconclusive or payable status "${providerStatus}" for payment ${payment.id}. Retaining order.`);
             continue;
           }
 
