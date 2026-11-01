@@ -4971,6 +4971,44 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       operationId: get_api_payment_payments_public_methods_websiteId
       security: []
+  /api/payment/payments/public-methods/store/{storeId}:
+    get:
+      tags:
+        - Payments
+      summary: Get active public payment methods for store
+      description: Returns active public payment method options (e.g. COD, KHQR) for a store without revealing secret credentials.
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Public payment methods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentMethods:
+                    type: array
+                    items:
+                      type: string
+                  cutluyEnabled:
+                    type: boolean
+                  businessName:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error400"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      operationId: get_api_payment_payments_public_methods_store_storeId
+      security: []
   /api/payment/payments/{paymentId}:
     get:
       tags:
@@ -5008,6 +5046,53 @@ paths:
           description: Live payment status from provider
       operationId: get_api_payment_payments_paymentId_check_status
       security: []
+  /api/payment/payments/{paymentId}/void:
+    post:
+      tags:
+        - Payments
+      summary: Void pending payment
+      description: Voids a pending payment attempt (e.g. when POS cashier switches to cash) and cancels it at the provider.
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Payment voided successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          description: Payment already paid or completed
+        "502":
+          description: Provider gateway check or cancellation error
+      operationId: post_api_payment_payments_paymentId_void
+      security:
+        - bearerAuth: []
+        - userAccessTokenCookie: []
+        - staffAccessTokenCookie: []
   /api/payment/payments/cutluy/webhook:
     post:
       tags:

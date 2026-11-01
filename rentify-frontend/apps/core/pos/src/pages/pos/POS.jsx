@@ -195,6 +195,8 @@ export default function POS() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [khqrData, setKhqrData] = useState(null);
   const [khqrPolling, setKhqrPolling] = useState(false);
+  const [khqrTimedOut, setKhqrTimedOut] = useState(false);
+  const [activePaymentId, setActivePaymentId] = useState(null);
 
   // Completed Order & Receipt State
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -645,8 +647,11 @@ export default function POS() {
       if (paymentMethod === "khqr" && khqrInfo) {
         setKhqrData(khqrInfo);
         setKhqrPolling(true);
+        setKhqrTimedOut(false);
+        const pid = result.payment?.id || orderRecord.id;
+        setActivePaymentId(pid);
         // Start polling payment status
-        pollPaymentStatus(result.payment?.id || orderRecord.id);
+        pollPaymentStatus(pid);
         return;
       }
 
@@ -774,12 +779,16 @@ export default function POS() {
     }
   };
 
-  // Poll KHQR status
+  // Poll KHQR status (DEC-029 & wireframe X3b)
   const pollPaymentStatus = async (paymentId) => {
     if (!paymentId) return;
+    setKhqrPolling(true);
+    setKhqrTimedOut(false);
+    setActivePaymentId(paymentId);
+
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${ECOMMERCE_API_BASE}/api/payments/${paymentId}/status`, {
+        const res = await fetch(`${ECOMMERCE_API_BASE}/api/payment/payments/${paymentId}/check-status`, {
           credentials: "include",
         });
         if (res.ok) {
@@ -787,6 +796,7 @@ export default function POS() {
           if (data.status === "completed" || data.status === "paid") {
             clearInterval(interval);
             setKhqrPolling(false);
+            setKhqrTimedOut(false);
             setPaymentModalOpen(false);
             clearCart();
             setReceiptModalOpen(true);
@@ -801,6 +811,7 @@ export default function POS() {
     setTimeout(() => {
       clearInterval(interval);
       setKhqrPolling(false);
+      setKhqrTimedOut(true);
     }, 120000);
   };
 
@@ -1737,7 +1748,7 @@ export default function POS() {
             </div>
           )}
 
-          {/* KHQR View */}
+          {/* KHQR View (DEC-029 & wireframe X3b) */}
           {paymentMethod === "khqr" && (
             <div className="flex flex-col items-center justify-center p-4 text-center space-y-3">
               <div className="h-44 w-44 rounded-2xl border-2 border-red-500/30 bg-white p-3 shadow-inner flex items-center justify-center">
@@ -1753,9 +1764,90 @@ export default function POS() {
                   <QrCode className="h-28 w-28 text-red-500 animate-pulse" />
                 )}
               </div>
-              <p className="text-xs text-muted-foreground font-medium">
-                Customer scans with Bakong or any Cambodian bank mobile app
+              <p className="text-xs text-muted-foreground font-medium" role="status">
+                {khqrPolling
+                  ? "Turn the screen to the customer. Waiting for payment…"
+                  : "Customer scans with Bakong or any Cambodian bank mobile app"}
               </p>
+
+              {khqrTimedOut && (
+                <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-3.5 space-y-2 text-left">
+                  <div className="font-semibold text-xs text-amber-900">Not confirmed after 2 minutes?</div>
+                  <div className="text-xs text-amber-800">
+                    Ask to see the customer's receipt, then check again. Don't hand over goods until it says Paid.
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8 bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
+                      onClick={() => {
+                        setKhqrTimedOut(false);
+                        if (activePaymentId) pollPaymentStatus(activePaymentId);
+                      }}
+                    >
+                      Check again
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8 bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
+                      onClick={async () => {
+                        if (activePaymentId) {
+                          try {
+                            const res = await fetch(`${ECOMMERCE_API_BASE}/api/payment/payments/${activePaymentId}/void`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              credentials: "include",
+                              body: JSON.stringify({ reason: "cashier_switched_to_cash" }),
+                            });
+                            const data = await res.json().catch(() => ({}));
+                            if (res.status === 409 && data.alreadyPaid) {
+                              showPosAlert({
+                                title: "Payment Already Received",
+                                message: "The customer paid by KHQR just now! Order is recorded as paid.",
+                                tone: "info",
+                              });
+                              setKhqrTimedOut(false);
+                              setKhqrPolling(false);
+                              setPaymentModalOpen(false);
+                              clearCart();
+                              setReceiptModalOpen(true);
+                              fetchProducts();
+                              return;
+                            }
+                            if (!res.ok) {
+                              showPosAlert({
+                                title: "Cannot Switch to Cash",
+                                message: data.error || "Could not cancel QR payment at gateway. Do not accept cash until status is confirmed.",
+                                tone: "danger",
+                              });
+                              return;
+                            }
+                          } catch (err) {
+                            console.error("Failed to void pending KHQR payment:", err);
+                            showPosAlert({
+                              title: "Gateway Connection Error",
+                              message: "Failed to communicate with payment gateway. Do not accept cash until payment status is confirmed.",
+                              tone: "danger",
+                            });
+                            return;
+                          }
+                        }
+                        setKhqrTimedOut(false);
+                        setKhqrPolling(false);
+                        setActivePaymentId(null);
+                        setKhqrData(null);
+                        setPaymentMethod("cash");
+                      }}
+                    >
+                      Take cash instead
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

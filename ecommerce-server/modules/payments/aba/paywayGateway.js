@@ -5,7 +5,7 @@ const { fail } = require('./errors');
  * ABA PayWay client, ported from KhmerCraft (apps/api/src/modules/payments/payway.gateway.ts).
  * Everything that speaks to ABA and nothing that knows what is being paid for.
  *
- * TEST-ONLY in Release 1: DEC-026 keeps buyer checkout COD-only, so this whole module is
+ * RETIRED in Release 1: DEC-029 retires direct ABA PayWay for buyer checkout (CutLuy is the sole online path); this module is
  * inert unless PAYWAY_ENABLED=true. The existing KHQR strategy in modules/payments is left
  * untouched ("frozen"); nothing new routes through it.
  *

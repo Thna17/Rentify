@@ -41,7 +41,8 @@ test("orderView includes payment id, paymentMethod, rawQR and qrCodeUrl", () => 
 
   const view = orderView(dummyOrder, [], dummyPayment);
   assert.equal(view.payment.id, "pay-1");
-  assert.equal(view.payment.paymentMethod, "cutluy");
+  assert.equal(view.payment.paymentMethod, "KHQR");
+  assert.equal(view.paymentMethod, "KHQR");
   assert.equal(view.payment.rawQR, "00020101021229...");
   assert.equal(view.payment.qrCodeUrl, "https://cutluy.com/pay/pay_123");
 });

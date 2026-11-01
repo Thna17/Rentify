@@ -26,6 +26,10 @@ class FulfillmentService {
                 return { success: true, alreadyCompleted: true };
             }
 
+            if (payment.status !== PAYMENT_STATUS.PENDING) {
+                throw new Error("Cannot confirm a payment that is no longer pending");
+            }
+
             let order = payment.Order;
             if (!order && payment.orderId) {
                 order = await Order.findByPk(payment.orderId, { transaction: t, lock: t.LOCK.UPDATE });

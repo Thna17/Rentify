@@ -119,7 +119,27 @@ async function checkedProductAndVariant(productId, variantId, store, transaction
   return { product, variant, unitPrice, currency: itemCurrency };
 }
 
+function normalizePaymentMethod(method) {
+  if (!method) return 'COD';
+  const m = String(method).trim().toUpperCase();
+  if (m === 'CUTLUY' || m === 'KHQR') return 'KHQR';
+  if (m === 'CASH') return 'CASH';
+  if (m === 'COD') return 'COD';
+  return m;
+}
+
+function normalizePaymentStatus(status) {
+  if (!status) return 'pending';
+  const s = String(status).trim().toLowerCase();
+  if (s === 'completed' || s === 'paid') return 'paid';
+  if (s === 'failed') return 'failed';
+  if (s === 'expired') return 'expired';
+  return s;
+}
+
 function orderView(order, items, payment) {
+  const normMethod = normalizePaymentMethod(payment?.paymentMethod || order.metadata?.paymentMethod || 'COD');
+  const normStatus = normalizePaymentStatus(payment?.status || (order.status === 'cancelled' ? 'failed' : 'pending'));
   return {
     id: order.id, orderNumber: order.orderNumber, storeId: order.storeId, websiteId: order.websiteId,
     buyerId: order.buyerId, status: order.status, deliveryStatus: order.deliveryStatus,
@@ -128,6 +148,8 @@ function orderView(order, items, payment) {
     salesChannel: order.salesChannel, subtotal: order.subtotal,
     deliveryFee: order.shippingFee, totalAmount: order.totalAmount, currency: order.currency,
     customerInfo: order.customerInfo, shippingInfo: order.shippingInfo,
+    paymentMethod: normMethod,
+    paymentStatus: normStatus,
     snapshot: order.orderSnapshot || null,
     items: items.map((item) => ({
       id: item.id,
@@ -139,9 +161,9 @@ function orderView(order, items, payment) {
     })),
     payment: payment && {
       id: payment.id,
-      paymentMethod: payment.paymentMethod,
-      method: payment.paymentMethod,
-      status: payment.status,
+      paymentMethod: normMethod,
+      method: normMethod,
+      status: normStatus,
       amount: payment.amount,
       amountDue: payment.amount,
       collectedAmount: payment.collectedAmount,
@@ -164,6 +186,8 @@ module.exports = {
   eligibleProduct,
   checkedProductAndVariant,
   orderView,
+  normalizePaymentMethod,
+  normalizePaymentStatus,
   Money,
   parseMinor,
   formatDecimal,

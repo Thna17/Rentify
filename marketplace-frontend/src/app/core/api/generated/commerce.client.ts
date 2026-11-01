@@ -3199,6 +3199,45 @@ export class CommerceApiClient {
   }
 
   /**
+   * Get active public payment methods for store
+   * GET /api/payment/payments/public-methods/store/{storeId}
+   */
+  async get_api_payment_payments_public_methods_store_storeId(options: {
+    path: {
+      storeId: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      businessName?: string;
+      cutluyEnabled?: boolean;
+      paymentMethods?: Array<string>;
+    }>> {
+    return this.transport.request<{
+      businessName?: string;
+      cutluyEnabled?: boolean;
+      paymentMethods?: Array<string>;
+    }>({
+      method: 'GET',
+      path: '/api/payment/payments/public-methods/store/{storeId}',
+      pathParams: (options as any)?.path,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for get_api_payment_payments_public_methods_store_storeId */
+  async getApiPaymentPaymentsPublicMethodsStoreStoreId(options: any): Promise<ApiResponse<{
+      businessName?: string;
+      cutluyEnabled?: boolean;
+      paymentMethods?: Array<string>;
+    }>> {
+    return (this as any).get_api_payment_payments_public_methods_store_storeId(options);
+  }
+
+  /**
    * Get active public payment methods for storefront
    * GET /api/payment/payments/public-methods/{websiteId}
    */
@@ -3286,6 +3325,43 @@ export class CommerceApiClient {
   /** Alias for get_api_payment_payments_paymentId_check_status */
   async getApiPaymentPaymentsPaymentIdCheckStatus(options: any): Promise<ApiResponse<any>> {
     return (this as any).get_api_payment_payments_paymentId_check_status(options);
+  }
+
+  /**
+   * Void pending payment
+   * POST /api/payment/payments/{paymentId}/void
+   */
+  async post_api_payment_payments_paymentId_void(options: {
+    path: {
+      paymentId: string;
+    };
+    body?: {
+      reason?: string;
+    };
+    headers?: Record<string, string>;
+    correlationId?: string;
+    credentials?: RequestCredentials;
+  }): Promise<ApiResponse<{
+      success?: boolean;
+    }>> {
+    return this.transport.request<{
+      success?: boolean;
+    }>({
+      method: 'POST',
+      path: '/api/payment/payments/{paymentId}/void',
+      pathParams: (options as any)?.path,
+      body: (options as any)?.body,
+      headers: options?.headers,
+      correlationId: options?.correlationId,
+      credentials: options?.credentials,
+    });
+  }
+
+  /** Alias for post_api_payment_payments_paymentId_void */
+  async postApiPaymentPaymentsPaymentIdVoid(options: any): Promise<ApiResponse<{
+      success?: boolean;
+    }>> {
+    return (this as any).post_api_payment_payments_paymentId_void(options);
   }
 
   /**

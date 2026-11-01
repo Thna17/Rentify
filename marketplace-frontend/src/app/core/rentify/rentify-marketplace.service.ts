@@ -109,6 +109,7 @@ export interface MarketplaceOrder {
   id: string;
   orderNumber: string;
   storeId: string;
+  storeName?: string;
   status: string;
   deliveryStatus: string;
   subtotal: string;
@@ -118,7 +119,19 @@ export interface MarketplaceOrder {
   shippingInfo?: { address?: string } | null;
   createdAt?: string;
   items: { productId: string; name: string; quantity: number; total: string }[];
-  payment: { status: string; amountDue: string; collectedAmount: string; refundedAmount: string } | null;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  payment: {
+    id?: string;
+    status: string;
+    paymentMethod?: string;
+    method?: string;
+    amountDue: string;
+    collectedAmount: string;
+    refundedAmount: string;
+    rawQR?: string | null;
+    qrCodeUrl?: string | null;
+  } | null;
 }
 
 /** KHQR returned by Commerce for an ABA PayWay order (test-only). */
@@ -327,6 +340,17 @@ export class RentifyMarketplaceService {
       },
       { headers: { 'Idempotency-Key': key } },
     );
+  }
+
+  // DEC-029: Online payment by KHQR through CutLuy
+  getStorePaymentMethods(storeId: string): Observable<{ paymentMethods: string[]; cutluyEnabled: boolean; businessName: string }> {
+    return this.http.get<{ paymentMethods: string[]; cutluyEnabled: boolean; businessName: string }>(
+      `${this.commerce}/api/payment/payments/public-methods/store/${storeId}`
+    );
+  }
+
+  checkPaymentStatus(paymentId: string): Observable<any> {
+    return this.http.get<any>(`${this.commerce}/api/payment/payments/${paymentId}/check-status`);
   }
 
   // ABA PayWay is test-only (DEC-026): the server says whether it is switched on

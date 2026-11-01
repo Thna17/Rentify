@@ -19,7 +19,11 @@ app.use(correlationMiddleware);
 app.use(helmetConfig);
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'default'));
 app.use(sessionConfig);
 app.use(sessionMiddleware);
@@ -59,8 +63,9 @@ app.use('/api/cart', require('./modules/cart/cartRoutes'));
 app.use('/api/invoice', require('./modules/invoices/invoiceRoutes'));
 app.use('/api/merchant', require('./modules/orders/merchantRoutes'));
 app.use('/api/payment', require('./modules/payments/paymentRoutes'));
-// ABA PayWay (test-only; inert unless PAYWAY_ENABLED=true, see DEC-026)
-app.use('/api/payments/aba-payway', require('./modules/payments/aba/abaPaywayRoutes'));
+
+// ABA PayWay (retired for Release 1 checkout per DEC-029; unmounted, code preserved inactive)
+// app.use('/api/payments/aba-payway', require('./modules/payments/aba/abaPaywayRoutes'));
 app.use('/api/order', require('./modules/orders/orderRoutes'));
 app.use('/api', require('./modules/notifications/notificationRoutes'));
 app.use("/api/payment-config", require('./modules/payments/paymentConfig'));

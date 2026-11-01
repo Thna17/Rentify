@@ -52,13 +52,13 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   },
 ];
 
-// Test-only: offered when Commerce reports PAYWAY_ENABLED (DEC-026 keeps Release 1 COD-only)
-const ABA_OPTION: PaymentOption = {
-  value: 'ABA_PAYWAY',
-  labelKey: 'checkout.abaLabel',
-  hintKey: 'checkout.abaHint',
+// DEC-029: Online payment by KHQR through CutLuy
+const KHQR_OPTION: PaymentOption = {
+  value: 'KHQR',
+  labelKey: 'checkout.khqrLabel',
+  hintKey: 'checkout.khqrHint',
   icon: 'qr-code',
-  badgeKey: 'checkout.testMode',
+  badgeKey: 'checkout.available',
 };
 
 @Component({
@@ -256,7 +256,7 @@ const ABA_OPTION: PaymentOption = {
                     <ui-icon [name]="option.icon" [size]="18" />
                     <div class="payment-title-row">
                       <strong>{{ option.labelKey | translate }}</strong>
-                      <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span>
+                      @if (option.badgeKey) { <span class="pay-badge pay-badge-active">{{ option.badgeKey | translate }}</span> }
                     </div>
                   </label>
                 }
@@ -978,11 +978,11 @@ export class CheckoutComponent implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly provinces = CAMBODIA_LOCATIONS;
-  private readonly abaEnabled = signal(false);
+  private readonly khqrEnabled = signal(false);
   // ABA pays one order at a time, so it is only offered when checking out a single store
   protected get paymentOptions(): PaymentOption[] {
     const singleStore = (this.activeStoreId() ? 1 : this.cart.getStoreCarts().filter((c) => c.items.length > 0).length) <= 1;
-    return this.abaEnabled() && singleStore ? [...PAYMENT_OPTIONS, ABA_OPTION] : PAYMENT_OPTIONS;
+    return this.khqrEnabled() && singleStore ? [...PAYMENT_OPTIONS, KHQR_OPTION] : PAYMENT_OPTIONS;
   }
   protected readonly method = signal<PaymentMethod>('COD');
   protected readonly attemptedSubmit = signal(false);
@@ -1003,10 +1003,15 @@ export class CheckoutComponent implements OnInit {
   ngOnInit(): void {
     this.seo.setPageTitle(`${this.translate.t('checkout.title')} | Rentify Marketplace`);
     this.initSavedAddresses();
-    if (typeof this.rentify.abaConfig === 'function') {
-      firstValueFrom(this.rentify.abaConfig())
-        .then((config) => this.abaEnabled.set(Boolean(config?.enabled)))
-        .catch(() => this.abaEnabled.set(false));
+    const storeCarts = this.cart.getStoreCarts().filter((c) => c.items.length > 0);
+    const storeId = this.activeStoreId() || (storeCarts.length === 1 ? storeCarts[0].storeId : null);
+    if (storeId && typeof this.rentify.getStorePaymentMethods === 'function') {
+      firstValueFrom(this.rentify.getStorePaymentMethods(storeId))
+        .then((res) => {
+          const hasKhqr = res?.paymentMethods?.includes('KHQR') || Boolean(res?.cutluyEnabled);
+          this.khqrEnabled.set(hasKhqr);
+        })
+        .catch(() => this.khqrEnabled.set(false));
     }
   }
 
@@ -1264,7 +1269,7 @@ export class CheckoutComponent implements OnInit {
               phone,
               fullAddress,
               idempotencyKey,
-              ...(this.method() === 'ABA_PAYWAY' ? (['ABA_PAYWAY'] as const) : []),
+              ...(this.method() === 'KHQR' ? (['KHQR'] as const) : []),
             ),
           );
 
@@ -1312,7 +1317,7 @@ export class CheckoutComponent implements OnInit {
               phone,
               fullAddress,
               idempotencyKey,
-              ...(this.method() === 'ABA_PAYWAY' ? (['ABA_PAYWAY'] as const) : []),
+              ...(this.method() === 'KHQR' ? (['KHQR'] as const) : []),
             ),
           );
 
@@ -1353,9 +1358,9 @@ export class CheckoutComponent implements OnInit {
       }
 
       this.uncertainSubmission.set(false);
-      // ABA orders go straight to the KHQR page; payment is confirmed there with ABA
-      if (this.method() === 'ABA_PAYWAY' && firstOrderId) {
-        await this.router.navigate(['/checkout/aba', firstOrderId]);
+      // KHQR orders go straight to the payment page; payment is confirmed there with CutLuy
+      if ((this.method() === 'KHQR' || (this.method() as string) === 'ABA_PAYWAY') && firstOrderId) {
+        await this.router.navigate(['/checkout/pay', firstOrderId]);
         return;
       }
       const orderNums = placedOrders.map((o) => o.orderNumber).join(',');

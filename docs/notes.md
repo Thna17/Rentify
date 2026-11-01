@@ -874,3 +874,8 @@ actions, invented states and internal text on screen. Fixed in
   editing several products at once ("Edit several"). The main list is
   `StoreCatalogPage`; the old Products tabs and chips in
   `ProductManagementContent` were never rendered.
+
+- (Open, DEC-029) Unpaid KHQR order timeout duration:
+  KHQR_UNPAID_ORDER_TIMEOUT_MINUTES is currently set to a 15-minute placeholder
+  in .env.example and code. Awaiting product owner confirmation on the exact
+  operational number.

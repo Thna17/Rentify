@@ -1,3 +1,4 @@
+const { normalizePaymentMethod, normalizePaymentStatus } = require('../../../../payments').paymentUtils;
 // orderRetrieval/strategies/OrderHistoryStrategy.js
 const BaseRetrievalStrategy = require('./BaseRetrievalStrategy');
 
@@ -42,10 +43,10 @@ class OrderHistoryStrategy extends BaseRetrievalStrategy {
       const formattedOrders = orders.rows.map(order => ({
         id: order.id,
         status: order.status,
-        paymentMethod: order.Payment?.paymentMethod,
+        paymentMethod: normalizePaymentMethod(order.Payment?.paymentMethod),
         totalAmount: order.totalAmount,
         orderDate: order.createdAt,
-        paymentStatus: order.Payment?.status,
+        paymentStatus: normalizePaymentStatus(order.Payment?.status),
         orderType: order.orderType,
         items: order.OrderItems,
         shippingDetails: order.shippingDetail

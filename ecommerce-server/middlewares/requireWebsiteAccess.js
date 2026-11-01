@@ -230,6 +230,25 @@ const requireOrderAccess = async (req, res, next) => {
   return res.status(403).json({ error: "Store access denied" });
 };
 
+const requirePaymentOrderAccess = async (req, res, next) => {
+  const { Payment, Order } = require("../models");
+  const paymentId = req.params.paymentId;
+  if (!paymentId) return res.status(400).json({ error: "Payment ID is required" });
+
+  const payment = await Payment.findByPk(paymentId, {
+    include: [{ model: Order, as: "Order", required: false }],
+  });
+  if (!payment) return res.status(404).json({ error: "Payment not found" });
+
+  req.payment = payment;
+  const order = payment.Order || (payment.orderId ? await Order.findByPk(payment.orderId) : null);
+  if (!order) return res.status(404).json({ error: "Order not found for payment" });
+
+  req.order = order;
+  req.params.orderId = order.id;
+  return requireOrderAccess(req, res, next);
+};
+
 const requireInvoiceAccess = async (req, res, next) => {
   const { Invoice, StoreAccess, WebsiteData, Order } = require("../models");
   const { invoiceId } = req.params;
@@ -409,4 +428,4 @@ const requirePlatformAdmin = (req, res, next) => {
   return next();
 };
 
-module.exports = { requireWebsiteAccess, requireWebsitePermission, requireOrderAccess, requireInvoiceAccess, requireCategoryAccess, requirePlatformAdmin, createRequireWebsiteAccess };
+module.exports = { requireWebsiteAccess, requireWebsitePermission, requireOrderAccess, requirePaymentOrderAccess, requireInvoiceAccess, requireCategoryAccess, requirePlatformAdmin, createRequireWebsiteAccess };
