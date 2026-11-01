@@ -62,8 +62,9 @@ const RELEASE_1_DECISIONS = {
   stagingHostedStorefrontParent: 'staging.rentifystore.shop',
   hostedPattern: 'https://<store>.rentifystore.shop',
   customDomainBrowseOnly: true,
-  codAcceptedPaymentOnly: true,
-  cutluyDeferredPhase: 'Phase 9',
+  codAcceptedPaymentOnly: false, // Superseded by DEC-029: KHQR via CutLuy or COD
+  onlinePaymentMethod: 'CutLuy KHQR (DEC-029)',
+  paywayRetired: true,
 };
 
 // DNS label RFC 1035: lowercase letters, digits, and internal hyphens, 1-63 chars
@@ -544,13 +545,13 @@ function checkAuthReturnUrls(env, targetEnv, report) {
  * Policy 7: Feature Flags and Release 1 Policies.
  */
 function checkFeatureFlags(env, targetEnv, report) {
-  // CutLuy deferred to Phase 9 (DEC-027)
-  const cutluyEnabled = String(env.CUTLUY_ENABLED || '').trim().toLowerCase() === 'true';
-  if (cutluyEnabled && (targetEnv === 'production' || targetEnv === 'staging')) {
+  // Direct ABA PayWay retired for Release 1 checkout (DEC-029; CutLuy is the only online path)
+  const paywayEnabled = String(env.PAYWAY_ENABLED || '').trim().toLowerCase() === 'true';
+  if (paywayEnabled && (targetEnv === 'production' || targetEnv === 'staging')) {
     report.errors.push({
-      policy: 'CutLuy Release 1 Policy (DEC-027)',
-      field: 'CUTLUY_ENABLED',
-      message: 'CutLuy QR payments are strictly deferred to Phase 9 and must be disabled (CUTLUY_ENABLED=false) for Release 1',
+      policy: 'Release 1 Payment Policy (DEC-029)',
+      field: 'PAYWAY_ENABLED',
+      message: 'Direct ABA PayWay checkout is retired for Release 1 (PAYWAY_ENABLED=false; DEC-029); CutLuy is the only online payment path',
     });
   }
 
@@ -573,12 +574,12 @@ function checkFeatureFlags(env, targetEnv, report) {
     });
   }
 
-  // Cash on Delivery accepted payment method (DEC-026)
+  // Cash on Delivery accepted payment method (DEC-029)
   if (env.MARKETPLACE_COD_CHECKOUT_ENABLED === 'false' && targetEnv === 'production') {
     report.errors.push({
-      policy: 'Release 1 Accepted Payment Method (DEC-026)',
+      policy: 'Release 1 Accepted Payment Method (DEC-029)',
       field: 'MARKETPLACE_COD_CHECKOUT_ENABLED',
-      message: 'Cash on Delivery (COD) is the mandatory accepted payment method for Release 1 online checkout',
+      message: 'Cash on Delivery (COD) is a mandatory accepted payment method for Release 1 online checkout (DEC-029)',
     });
   }
 }

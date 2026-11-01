@@ -13,6 +13,48 @@ const sanitizeRecord = (record) => {
   };
 };
 
+
+exports.getStorePublicPaymentMethods = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    if (!storeId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId)) {
+      return res.status(400).json({ error: "Invalid storeId" });
+    }
+
+    const store = await StoreAccess.findByPk(storeId);
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const whereConditions = [{ storeId, enabled: true }];
+    if (store.websiteId) {
+      whereConditions.push({ websiteId: store.websiteId, enabled: true });
+    }
+
+    const configs = await PaymentGatewayConfig.findAll({
+      where: { [Op.or]: whereConditions },
+      attributes: ["gateway", "enabled", "config"],
+      order: [["updatedAt", "DESC"]],
+    });
+
+    const paymentMethods = ["COD"];
+    const hasKhqr = configs.some((c) => (c.gateway === "cutluy" || c.gateway === "khqr") && c.enabled);
+    if (hasKhqr) {
+      paymentMethods.push("KHQR");
+    }
+
+    const cutluyConfig = configs.find((c) => c.gateway === "cutluy");
+    return res.json({
+      paymentMethods,
+      cutluyEnabled: Boolean(cutluyConfig?.enabled),
+      businessName: cutluyConfig?.config?.businessName || store.name || "",
+    });
+  } catch (error) {
+    console.error("Failed to fetch store public payment methods:", error);
+    return res.status(500).json({ error: "Failed to fetch store public payment methods" });
+  }
+};
+
 exports.getPublicPaymentMethods = async (req, res) => {
   try {
     const { websiteId } = req.params;

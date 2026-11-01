@@ -90,6 +90,9 @@ async function merchantAction({ storeId, orderId, actorId, eventKey, action, det
         const resolution = details.resolution;
         if (!['retry', 'cancel'].includes(resolution)) fail('Choose retry or cancel');
         if (resolution === 'cancel') {
+          if (payment && ['paid', 'completed'].includes(payment.status) && ['khqr', 'cutluy'].includes(String(payment.paymentMethod || '').toLowerCase())) {
+            fail('Paid KHQR orders cannot be cancelled because refunds are not supported in this release', 400, 'ORDER_PAID_CANCEL_UNAVAILABLE');
+          }
           if (order.stockDeducted) {
             const lines = await OrderItem.findAll({ where: { orderId }, transaction, order: [['productId', 'ASC']] });
             for (const line of lines) {

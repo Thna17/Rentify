@@ -635,6 +635,19 @@ async function cancelOrder(orderId, {
     await verifyActorAuthorization({ order, actor, action, transaction: tx });
 
     // 4. Cancellability Checks
+    // DEC-029: No refunds in Release 1. A paid KHQR order cannot be cancelled.
+    const payment = await Payment.findOne({ where: { orderId: order.id }, transaction: tx });
+    if (payment) {
+      const isPaid = payment.status === 'paid' || payment.status === 'completed';
+      const isKhqr = ['khqr', 'cutluy'].includes(String(payment.paymentMethod || '').toLowerCase());
+      if (isPaid && isKhqr) {
+        throw new OrderStateError(
+          ORDER_ERROR_CODES.ORDER_PAID_CANCEL_UNAVAILABLE,
+          'Paid KHQR orders cannot be cancelled because refunds are not supported in this release',
+          400
+        );
+      }
+    }
     const isPOSOrder = order.salesChannel === 'pos' || order.orderType === 'pos';
     if (order.status === ORDER_STATES.COMPLETED && !(isPOSOrder && !isBuyerActor)) {
       throw new OrderStateError(

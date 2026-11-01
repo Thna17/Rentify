@@ -1,3 +1,4 @@
+const { normalizePaymentMethod, normalizePaymentStatus } = require('../../../../payments/paymentUtils');
 // orderRetrieval/strategies/POSOrdersStrategy.js
 const BaseRetrievalStrategy = require('./BaseRetrievalStrategy');
 const { Op } = require('sequelize');
@@ -61,10 +62,10 @@ class POSOrdersStrategy extends BaseRetrievalStrategy {
       const formattedOrders = orders.map(order => ({
         id: order.id,
         status: order.status,
-        paymentMethod: order.Payment?.paymentMethod,
+        paymentMethod: normalizePaymentMethod(order.Payment?.paymentMethod),
         totalAmount: order.totalAmount,
         orderDate: order.createdAt,
-        paymentStatus: order.Payment?.status,
+        paymentStatus: normalizePaymentStatus(order.Payment?.status),
         items: (order.OrderItems || []).map(item => ({
           productId: item.productId,
           quantity: item.quantity,

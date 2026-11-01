@@ -55,16 +55,14 @@ async function findOrderByKey(checkoutKey, buyerId, transaction = null) {
   return orderView(order, items, payment);
 }
 
-// ABA PayWay is test-only (DEC-026 keeps Release 1 COD-only); anything else falls back to COD
-const paywayEnabled = () => String(process.env.PAYWAY_ENABLED || '').toLowerCase() === 'true';
+// DEC-029: Buyers pay by KHQR through CutLuy or Cash on Delivery. ABA PayWay is retired.
 function resolvePaymentMethod(requested) {
   const value = String(requested || 'COD').toUpperCase();
   if (value === 'KHQR' || value === 'CUTLUY') {
     return 'KHQR';
   }
   if (value === 'ABA_PAYWAY') {
-    if (!paywayEnabled()) fail('ABA PayWay is not available', 400, 'PAYMENT_METHOD_UNAVAILABLE');
-    return 'ABA_PAYWAY';
+    fail('ABA PayWay checkout is retired. Please pay with KHQR or cash on delivery.', 400, 'PAYMENT_METHOD_UNAVAILABLE');
   }
   if (value !== 'COD') fail('Unsupported payment method', 400, 'PAYMENT_METHOD_UNAVAILABLE');
   return 'COD';
@@ -257,7 +255,7 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
           paymentMethod: paymentMethod.toLowerCase(),
           deliveryTerms: paymentMethod === 'COD'
             ? 'Seller delivers and collects cash directly'
-            : 'Buyer pays by ABA PayWay (test); seller delivers',
+            : 'Buyer pays by KHQR; seller delivers',
           deliveryPolicyVersion: policy.version,
           commission: '0.00',
           snapshot: orderSnapshot,
@@ -304,58 +302,64 @@ async function checkout({ buyerId, storeId, checkoutKey, expectedTotalAmount, cu
         const { decryptSecrets } = require('../payments').paymentConfigEncryption;
         const whereConditions = [];
         if (order.websiteId) whereConditions.push({ websiteId: order.websiteId, gateway: 'cutluy', enabled: true });
+        if (store?.websiteId) whereConditions.push({ websiteId: store.websiteId, gateway: 'cutluy', enabled: true });
         if (order.storeId) whereConditions.push({ storeId: order.storeId, gateway: 'cutluy', enabled: true });
 
-        if (whereConditions.length > 0) {
-          const cutluyConfig = await PaymentGatewayConfig.findOne({
-            where: { [Op.or]: whereConditions },
-            transaction,
-          });
+        const cutluyConfig = whereConditions.length > 0
+          ? await PaymentGatewayConfig.findOne({
+              where: { [Op.or]: whereConditions },
+              transaction,
+            })
+          : null;
 
-          if (cutluyConfig) {
-            effectiveGateway = 'cutluy';
-            paymentRecordMethod = 'cutluy';
-            const cfg = cutluyConfig.config || {};
-            const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
-            const apiKey = decrypted.apiKey || cfg.apiKey;
-            if (apiKey) {
-              try {
-                const axios = require('axios');
-                const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || 'https://cutluy.com').replace(/\/+$/, '');
-                const response = await axios.post(
-                  `${cutluyBaseUrl}/v1/payments`,
-                  {
-                    amount: parseFloat(dollars(total)),
-                    currency: 'USD',
-                    reference_id: `ORDER-${order.id}`,
-                    description: `Order ${order.orderNumber || order.id}`,
-                  },
-                  {
-                    headers: {
-                      Authorization: `Bearer ${apiKey}`,
-                      'Content-Type': 'application/json',
-                      'User-Agent': 'Rentify/1.0 (axios)',
-                    },
-                    timeout: 10000,
-                  }
-                );
-                const cutluyData = response.data;
-                const providerPaymentId = cutluyData?.id || `cutluy_${order.id}`;
-                const checkoutUrl = cutluyData?.checkout_url || `https://cutluy.com/pay/${providerPaymentId}`;
-                const qrString = cutluyData?.qr_string || '';
-                transactionData = {
-                  provider: 'cutluy',
-                  providerPaymentId,
-                  checkoutUrl,
-                  rawQR: qrString,
-                  qrCodeUrl: checkoutUrl,
-                  referenceId: `ORDER-${order.id}`,
-                };
-              } catch (cutluyErr) {
-                console.error('CutLuy payment creation error:', cutluyErr.response?.data || cutluyErr.message);
-              }
+        if (!cutluyConfig) {
+          fail('Online payment with KHQR is not configured for this store', 400, 'PAYMENT_GATEWAY_NOT_CONFIGURED');
+        }
+
+        const cfg = cutluyConfig.config || {};
+        const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+        const apiKey = decrypted.apiKey || cfg.apiKey;
+        if (!apiKey) {
+          fail('Online payment with KHQR is not properly configured for this store', 400, 'PAYMENT_GATEWAY_NOT_CONFIGURED');
+        }
+
+        effectiveGateway = 'cutluy';
+        paymentRecordMethod = 'cutluy';
+        try {
+          const axios = require('axios');
+          const cutluyBaseUrl = (process.env.CUTLUY_API_BASE_URL || 'https://cutluy.com').replace(/\/+$/, '');
+          const response = await axios.post(
+            `${cutluyBaseUrl}/v1/payments`,
+            {
+              amount: parseFloat(dollars(total)),
+              currency: 'USD',
+              reference_id: `ORDER-${order.id}`,
+              description: `Order ${order.orderNumber || order.id}`,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Rentify/1.0 (axios)',
+              },
+              timeout: 10000,
             }
-          }
+          );
+          const cutluyData = response.data;
+          const providerPaymentId = cutluyData?.id || `cutluy_${order.id}`;
+          const checkoutUrl = cutluyData?.checkout_url || `https://cutluy.com/pay/${providerPaymentId}`;
+          const qrString = cutluyData?.qr_string || '';
+          transactionData = {
+            provider: 'cutluy',
+            providerPaymentId,
+            checkoutUrl,
+            rawQR: qrString,
+            qrCodeUrl: checkoutUrl,
+            referenceId: `ORDER-${order.id}`,
+          };
+        } catch (cutluyErr) {
+          console.error('CutLuy payment creation error:', cutluyErr.response?.data || cutluyErr.message);
+          fail('Failed to initialize CutLuy KHQR payment: ' + (cutluyErr.response?.data?.message || cutluyErr.message), 502, 'PAYMENT_GATEWAY_ERROR');
         }
       }
 

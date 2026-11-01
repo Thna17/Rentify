@@ -1,3 +1,4 @@
+const { normalizePaymentMethod, normalizePaymentStatus } = require('../../../../payments/paymentUtils');
 // orderRetrieval/strategies/MyOrdersStrategy.js
 const BaseRetrievalStrategy = require('./BaseRetrievalStrategy');
 
@@ -44,8 +45,8 @@ class MyOrdersStrategy extends BaseRetrievalStrategy {
           price: item.price,
           image: item.Product.images?.[0]?.url
         })),
-        paymentMethod: order.Payment?.paymentMethod,
-        paymentStatus: order.Payment?.status
+        paymentMethod: normalizePaymentMethod(order.Payment?.paymentMethod),
+        paymentStatus: normalizePaymentStatus(order.Payment?.status)
       }));
 
       res.json({

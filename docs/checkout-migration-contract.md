@@ -230,3 +230,7 @@ or full idempotency/retry and refund reconciliation.
 Commerce normalizes configured central platform origins to hostnames, matching request host extraction. This prevents a legacy WebsiteData `localhost` domain from misclassifying the central marketplace as a browse-only custom domain and returning `CUSTOM_DOMAIN_CART_DISABLED`. Registered merchant custom domains still fail closed for cart mutations. The marketplace guest Add to Cart flow now rolls back its optimistic item and reports an error when Commerce rejects persistence; it only reports success after the API accepts the item.
 
 The shared Commerce taxonomy also recognizes existing catalog aliases (including Phones & Tablets → Phones & Devices, clothing, beauty and school-supply labels) rather than rejecting these displayed listings during cart eligibility checks. Unknown categories remain rejected; existing product records and category labels are preserved.
+
+## Release 1 Online Payment Scope (DEC-029)
+
+Supersedes DEC-026 and DEC-027. Release 1 buyers pay by KHQR through CutLuy or Cash on Delivery (COD). Direct ABA PayWay on marketplace checkout is retired. Money settles directly to the merchant's CutLuy account. Orders are marked paid only upon CutLuy confirmation (webhook or status check). Unpaid KHQR orders are cancelled after timeout (`KHQR_UNPAID_ORDER_TIMEOUT_MINUTES`, default 15m) and their stock released. Paid KHQR orders cannot be cancelled (no refunds in Release 1).

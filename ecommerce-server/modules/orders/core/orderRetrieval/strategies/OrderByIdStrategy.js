@@ -1,3 +1,4 @@
+const { normalizePaymentMethod, normalizePaymentStatus } = require('../../../../payments/paymentUtils');
 // orderRetrieval/strategies/OrderByIdStrategy.js
 const BaseRetrievalStrategy = require('./BaseRetrievalStrategy');
 
@@ -33,11 +34,13 @@ class OrderByIdStrategy extends BaseRetrievalStrategy {
           Product: item.Product
         })),
         shippingDetail: order.ShippingDetail,
+        paymentMethod: normalizePaymentMethod(order.Payment?.paymentMethod),
+        paymentStatus: normalizePaymentStatus(order.Payment?.status),
         payment: order.Payment ? {
           id: order.Payment.id,
           amount: order.Payment.amount,
-          status: order.Payment.status,
-          paymentMethod: order.Payment.paymentMethod,
+          status: normalizePaymentStatus(order.Payment.status),
+          paymentMethod: normalizePaymentMethod(order.Payment.paymentMethod),
           qrCodeUrl: order.Payment.transactionData?.qrCodeUrl,
           rawQR: order.Payment.transactionData?.rawQR
         } : null,

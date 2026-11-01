@@ -173,16 +173,59 @@ exports.generatePaymentLink = async (req, res) => {
   }
 };
 
+
+
+function verifyCutluySignature(req, secret) {
+  if (!secret) return false;
+  const signatureHeader = req.headers['x-cutluy-signature'] || req.headers['x-signature'];
+  if (!signatureHeader) return false;
+
+  const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
+  let signature = signatureHeader.trim();
+  let timestamp = null;
+
+  if (signatureHeader.includes('t=') && signatureHeader.includes('v1=')) {
+    const parts = signatureHeader.split(',');
+    for (const part of parts) {
+      const [k, v] = part.split('=');
+      if (k && k.trim() === 't') timestamp = parseInt(v.trim(), 10);
+      if (k && k.trim() === 'v1') signature = v.trim();
+    }
+  }
+
+  // Freshness check: reject requests older than 10 minutes if timestamp supplied
+  if (timestamp && !isNaN(timestamp)) {
+    const ageSeconds = Math.abs(Date.now() / 1000 - timestamp);
+    if (ageSeconds > 600) {
+      return false;
+    }
+  }
+
+  const payloadToSign = timestamp ? `${timestamp}.${rawBody}` : rawBody;
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payloadToSign)
+    .digest('hex');
+
+  try {
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+    const actualBuf = Buffer.from(signature, 'utf8');
+    if (expectedBuf.length !== actualBuf.length) return false;
+    return crypto.timingSafeEqual(expectedBuf, actualBuf);
+  } catch {
+    return false;
+  }
+}
+
+
 exports.handleCutluyWebhook = async (req, res) => {
   try {
     const body = req.body || {};
-    const rawStatus = String(body.status || body.data?.status || "").toLowerCase();
-    const referenceId = String(body.reference_id || body.data?.reference_id || "").trim();
-    const providerPaymentId = body.id || body.data?.id || body.payment_id;
-
-    if (rawStatus !== "paid" && rawStatus !== "completed") {
-      return res.status(200).json({ received: true, note: `Status "${rawStatus}" acknowledged without action` });
-    }
+    // Extract payment details from data.payment (standard CutLuy shape) or fallback to data / top-level
+    const paymentData = body.data?.payment || body.data || body;
+    const rawStatus = String(paymentData.status || body.status || body.event || "").toLowerCase();
+    const referenceId = String(paymentData.reference_id || body.reference_id || "").trim();
+    const providerPaymentId = paymentData.id || body.id || body.payment_id;
 
     const orderId = referenceId.startsWith("ORDER-")
       ? referenceId.replace("ORDER-", "").trim()
@@ -197,14 +240,62 @@ exports.handleCutluyWebhook = async (req, res) => {
     }
 
     const payment = await Payment.findOne({
-      where: {
-        [Op.or]: queryConditions,
-        status: PAYMENT_STATUS.PENDING,
-      },
+      where: { [Op.or]: queryConditions },
+      include: [{ model: Order }],
     });
 
     if (!payment) {
-      return res.status(200).json({ received: true, note: "No pending payment found matching webhook reference" });
+      return res.status(200).json({ received: true, note: "No payment found matching webhook reference" });
+    }
+
+    // Resolve merchant CutLuy signing secret for verification
+    const { PaymentGatewayConfig } = require("../../models");
+    const { decryptSecrets } = require("./paymentConfigEncryption");
+    const order = payment.Order || (payment.orderId ? await Order.findByPk(payment.orderId) : null);
+    const configWhere = [];
+    if (order?.websiteId) configWhere.push({ websiteId: order.websiteId, gateway: "cutluy", enabled: true });
+    if (payment.storeId) configWhere.push({ storeId: payment.storeId, gateway: "cutluy", enabled: true });
+
+    let webhookSecret = process.env.CUTLUY_WEBHOOK_SECRET || null;
+    if (configWhere.length > 0) {
+      const cutluyConfig = await PaymentGatewayConfig.findOne({
+        where: { [Op.or]: configWhere },
+      });
+      if (cutluyConfig) {
+        const cfg = cutluyConfig.config || {};
+        const decrypted = cfg.encryptedSecrets ? decryptSecrets(cfg.encryptedSecrets) : {};
+        webhookSecret = decrypted.webhookSecret || decrypted.apiKey || cfg.webhookSecret || cfg.apiKey || webhookSecret;
+      }
+    }
+
+    // Verify signature when header is present, or enforce in non-test environments if secret exists
+    const signatureHeader = req.headers['x-cutluy-signature'] || req.headers['x-signature'];
+    if (signatureHeader || (webhookSecret && process.env.NODE_ENV === 'production')) {
+      const isValid = verifyCutluySignature(req, webhookSecret);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid CutLuy webhook signature" });
+      }
+    }
+
+    // Acknowledge non-payment events
+    const isCompleted = rawStatus === "paid" || rawStatus === "completed" || rawStatus === "payment.completed";
+    if (!isCompleted) {
+      return res.status(200).json({ received: true, note: `Status "${rawStatus}" acknowledged without action` });
+    }
+
+    // Idempotency: order already paid
+    if (payment.status === PAYMENT_STATUS.COMPLETED || payment.status === PAYMENT_STATUS.PAID) {
+      return res.status(200).json({ received: true, alreadyCompleted: true });
+    }
+
+    // If order was already cancelled or expired, log for support and do not reopen or duplicate inventory actions
+    if (order?.status === "cancelled" || payment.status === "expired") {
+      console.warn(`[CutLuy Webhook] Late payment received for cancelled/expired order ${order?.id || payment.orderId} (payment ${payment.id})`);
+      return res.status(200).json({
+        received: true,
+        latePayment: true,
+        note: "Order was already cancelled or expired; payment logged for merchant support review",
+      });
     }
 
     const result = await FulfillmentService.confirmOrderPayment(payment.id, {
@@ -219,3 +310,4 @@ exports.handleCutluyWebhook = async (req, res) => {
     return res.status(500).json({ error: "CutLuy webhook processing failed" });
   }
 };
+

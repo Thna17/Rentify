@@ -11,6 +11,8 @@ function findModule(subPath) {
   const candidates = [
     path.resolve(rootDir, 'ecommerce-server/node_modules', subPath),
     path.resolve(rootDir, 'rentify-server/node_modules', subPath),
+    path.resolve(rootDir, 'rentify-frontend/node_modules', subPath),
+    path.resolve(rootDir, 'rentify-frontend/node_modules', subPath),
     path.resolve(rootDir, 'node_modules', subPath),
   ];
   for (const candidate of candidates) {
