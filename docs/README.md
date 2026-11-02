@@ -95,6 +95,8 @@ code so implementation work can proceed without relying on chat history.
 - [Phase 5 final integration audit](audits/phase-5-final-completion.md) — merged
   lane evidence, P5 analytics definitions, acceptance mapping, verification,
   and the remaining blockers that keep the phase marked NOT COMPLETE.
+- [Storefront template readiness](storefront-template-readiness.md) — all ten
+  templates, merchant setup controls, verification evidence and remaining limits.
 - [Editorial Minimal storefront](editorial-minimal-storefront.md) — template 5,
   merchant customization, shared shopping routes and review availability.
 - [Notes and open questions](notes.md) — verified observations, unresolved

@@ -5,9 +5,10 @@ import techDesktop from '../assets/site/storefront-tech-desktop.jpg';
 import techMobile from '../assets/site/storefront-tech-mobile.jpg';
 import cafeDesktop from '../assets/site/storefront-cafe-desktop.jpg';
 import cafeMobile from '../assets/site/storefront-cafe-mobile.jpg';
-import atelierPreview from '../assets/site/storefront-atelier.svg';
+import atelierPreview from '../assets/site/storefront-atelier-generated.webp';
 
-// Screenshots of the live storefront templates, keyed by websiteTemplateId.
+// Template preview media, keyed by websiteTemplateId.
+// Atelier uses generated concept artwork; other entries use storefront screenshots.
 // Templates without screenshots fall back to a live preview of their demo.
 export const TEMPLATE_MEDIA = {
   1: {

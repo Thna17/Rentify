@@ -43,6 +43,18 @@ function personalizeTemplateContent(templateContents, businessData) {
     });
   }
 
+  // New templates may have no starter content. Keep merchant contact details
+  // from onboarding available to every storefront without inserting demo data.
+  for (const [label, aliases, value] of [
+    ['Phone Number', ['phone number', 'phone'], businessData?.phone || businessData?.contact],
+    ['Contact Email', ['contact email', 'email'], businessData?.email],
+    ['Locations', ['locations', 'location', 'address'], businessData?.location],
+  ]) {
+    if (typeof value === 'string' && value.trim() && !items.some(item => aliases.includes(String(item.label || '').toLowerCase()))) {
+      items.push({ category: 'Footer', label, type: 'text', value: { text: value.trim() } });
+    }
+  }
+
   return items;
 }
 
@@ -103,6 +115,7 @@ function applyBusinessPersonalization(label, value, businessData) {
     'Store Name': () => (name ? wrapText(name, value) : value),
     'Logo': () => (logo && typeof logo === 'string' ? wrapImage(logo, value) : value),
     'Store Logo': () => (logo && typeof logo === 'string' ? wrapImage(logo, value) : value),
+    'Contact Email': () => (businessData?.email ? wrapText(businessData.email, value) : value),
     'Phone Number': () => (phone ? wrapText(phone, value) : value),
     'Phone': () => (phone ? wrapText(phone, value) : value),
     'Locations': () => (location ? wrapText(location, value) : value),
@@ -121,7 +134,9 @@ function applyBusinessPersonalization(label, value, businessData) {
     })
   };
 
-  const personalizer = personalizationMap[label];
+  const contactAliases = { phone: 'Phone Number', email: 'Contact Email', address: 'Locations', location: 'Locations' };
+  const canonicalLabel = contactAliases[String(label).toLowerCase()] || label;
+  const personalizer = personalizationMap[canonicalLabel];
   return personalizer ? personalizer() : value;
 }
 

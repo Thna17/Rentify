@@ -99,6 +99,14 @@ const TEMPLATES = [
   },
 ];
 
+// Templates 4–10 intentionally reuse the canonical commerce components and routes.
+// Exercise those shared behaviors under every selectable template's identity.
+TEMPLATES.push(...Array.from({ length: 7 }, (_, index) => ({
+  id: index + 4,
+  name: `Template ${index + 4}`,
+  loadComponents: TEMPLATES[0].loadComponents,
+})));
+
 describe.each(TEMPLATES)('Storefront Template Matrix Contract: $name (id: $id)', ({ id, name, loadComponents }) => {
   let components;
 

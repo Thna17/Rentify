@@ -28,7 +28,7 @@ export default function Home() {
       <div className="atelier-intro">
         <p className="atelier-eyebrow">{khmer ? 'សូមស្វាគមន៍មកកាន់ហាងរបស់យើង' : 'WELCOME TO OUR STORE'}</p>
         <h1 id="atelier-title">{identity.heroHeadline || identity.name || (khmer ? 'ស្វែងរកអ្វីដែលអ្នកចូលចិត្ត' : 'Find something you love.')}</h1>
-        <p className="atelier-description">{khmer ? 'ស្វែងរកផលិតផលដែលអ្នកចូលចិត្ត និងទិញទំនិញតាមរបៀបរបស់អ្នក។' : 'Discover our collection and find something made for you.'}</p>
+        <p className="atelier-description">{identity.heroSubtitle || (khmer ? 'ស្វែងរកផលិតផលដែលអ្នកចូលចិត្ត និងទិញទំនិញតាមរបៀបរបស់អ្នក។' : 'Discover our collection and find something made for you.')}</p>
         <Link className="atelier-button" to={PATHS.PRODUCTS}>{t('home.shopNow')} <ArrowRight size={18} aria-hidden="true" /></Link>
       </div>
       <div className="atelier-hero-image">
