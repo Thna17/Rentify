@@ -188,7 +188,7 @@ export function SiteHeader({
   return (
     <>
     <header className="relative flex h-16 shrink-0 items-center justify-between gap-3 bg-background/80 px-4 text-foreground backdrop-blur-md md:px-8 border-b border-border/40">
-      {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand, plus Search Bar */}
+      {/* Left: Mobile hamburger + store brand, or Desktop sidebar toggle + brand when collapsed, plus Search Bar */}
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
         {isMobile ? (
           <>
@@ -203,10 +203,7 @@ export function SiteHeader({
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <div
-              onClick={() => navigate('/overview')}
-              className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
-            >
+            <div className="flex items-center gap-2.5 min-w-0">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
                 {store?.logoUrl ? (
                   <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
@@ -223,37 +220,36 @@ export function SiteHeader({
             </div>
           </>
         ) : (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onSidebarToggle}
-              className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
-              aria-label={isSidebarOpen ? t('merchant.shell.collapseSidebar') : t('merchant.shell.expandSidebar')}
-              title={isSidebarOpen ? t('merchant.shell.collapseSidebar') : t('merchant.shell.expandSidebar')}
-            >
-              <PanelLeft className="h-5 w-5" />
-            </Button>
-            <div
-              onClick={() => navigate('/overview')}
-              className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
-                {store?.logoUrl ? (
-                  <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
-                ) : (
-                  'R'
-                )}
+          !isSidebarOpen && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onSidebarToggle}
+                className="h-11 w-11 rounded-xl shrink-0 text-foreground/70 hover:text-foreground"
+                aria-label={t('merchant.shell.expandSidebar')}
+                title={t('merchant.shell.expandSidebar')}
+              >
+                <PanelLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-foreground text-background text-[15px] font-bold shadow-xs">
+                  {store?.logoUrl ? (
+                    <img src={store.logoUrl} alt={storeName} className="h-full w-full object-contain rounded-[10px]" />
+                  ) : (
+                    'R'
+                  )}
+                </div>
+                <div className="min-w-0 flex items-baseline gap-2">
+                  <span className="text-[15px] font-semibold tracking-tight hidden sm:inline">Rentify</span>
+                  <span className="truncate text-sm font-medium text-muted-foreground max-w-[140px] sm:max-w-[200px]">
+                    {storeName}
+                  </span>
+                </div>
               </div>
-              <div className="min-w-0 flex items-baseline gap-2">
-                <span className="text-[15px] font-semibold tracking-tight hidden sm:inline">Rentify</span>
-                <span className="truncate text-sm font-medium text-muted-foreground max-w-[140px] sm:max-w-[200px]">
-                  {storeName}
-                </span>
-              </div>
-            </div>
-          </>
+            </>
+          )
         )}
 
         {/* Search Bar on Left side */}
@@ -401,7 +397,7 @@ export function SiteHeader({
       </div>
 
       {/* Channel focus sits in the header on wide screens, in its own row below on smaller ones */}
-      {hasChannelChoice && <ChannelViewSwitcher className="hidden xl:inline-flex" />}
+      {hasChannelChoice && <ChannelViewSwitcher className="hidden 2xl:inline-flex" />}
 
       {/* Right: store links, POS, language, search on phones, notifications, account */}
       <div className="flex shrink-0 items-center justify-end gap-2">
@@ -578,7 +574,7 @@ export function SiteHeader({
       </div>
     </header>
     {hasChannelChoice && (
-      <div className="shrink-0 border-b border-border/40 bg-background/80 px-4 py-2 md:px-8 xl:hidden">
+      <div className="shrink-0 border-b border-border/40 bg-background/80 px-4 py-2 md:px-8 2xl:hidden">
         <ChannelViewSwitcher fill />
       </div>
     )}

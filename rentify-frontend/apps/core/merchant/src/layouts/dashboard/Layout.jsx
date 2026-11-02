@@ -189,60 +189,57 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
 
   return (
     <Sheet open={isMobile && sidebarOpen} onOpenChange={setSidebarOpen}>
-    <div className="flex h-screen flex-col bg-background">
-      <SiteHeader
-        user={profile}
-        onLogout={handleLogout}
-        currentTab={currentTabData}
-        onSidebarToggle={() => setSidebarOpen((open) => !open)}
-        isSidebarOpen={sidebarOpen}
-        userData={profile}
-        tabs={sidebarTabs}
-        onTabChange={handleTabChange}
-        searchFilter={searchFilter}
-        setSearchFilter={setSearchFilter}
-        hasPos={channels.hasPos}
-      />
+    <div className="flex h-screen bg-background">
+      {/* Desktop Sidebar - full height, border goes all the way up */}
+      {!isMobile && (
+        <AppSidebar
+          tabs={sidebarTabs}
+          currentTab={currentTabData}
+          onTabChange={handleTabChange}
+          userData={profile}
+          onLogout={handleLogout}
+          isOpen={sidebarOpen}
+          setOpen={setSidebarOpen}
+          hasStorefront={channels.hasStorefront}
+          channels={channels}
+          store={store}
+          searchFilter={searchFilter}
+        />
+      )}
 
-      <div className="flex min-h-0 flex-1">
-        {/* Desktop Sidebar */}
-        {!isMobile && (
-          <AppSidebar
-            tabs={sidebarTabs}
-            currentTab={currentTabData}
-            onTabChange={handleTabChange}
-            userData={profile}
-            onLogout={handleLogout}
-            isOpen={sidebarOpen}
-            setOpen={setSidebarOpen}
-            hasStorefront={channels.hasStorefront}
-            channels={channels}
-            store={store}
-            searchFilter={searchFilter}
-          />
-        )}
+      {/* Mobile Sidebar */}
+      {isMobile && (
+        <AppSidebar
+          isMobile
+          tabs={sidebarTabs}
+          currentTab={currentTabData}
+          onTabChange={handleTabChange}
+          userData={profile}
+          onLogout={handleLogout}
+          isOpen={sidebarOpen}
+          setOpen={setSidebarOpen}
+          hasStorefront={channels.hasStorefront}
+          channels={channels}
+          store={store}
+          searchFilter={searchFilter}
+        />
+      )}
 
-        {/* Mobile Sidebar */}
-        {isMobile && (
-          <AppSidebar
-            isMobile
-            tabs={sidebarTabs}
-            currentTab={currentTabData}
-            onTabChange={handleTabChange}
-            userData={profile}
-            onLogout={handleLogout}
-            isOpen={sidebarOpen}
-            setOpen={setSidebarOpen}
-            hasStorefront={channels.hasStorefront}
-            channels={channels}
-            store={store}
-            searchFilter={searchFilter}
-          />
-        )}
-
-        {/* Main Content Area */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <main className="flex-1 overflow-auto bg-muted/30 scrollbar-subtle">
+      {/* Main Content Area */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <SiteHeader
+          currentTab={currentTabData}
+          onSidebarToggle={() => setSidebarOpen((open) => !open)}
+          isSidebarOpen={sidebarOpen}
+          userData={profile}
+          tabs={sidebarTabs}
+          onTabChange={handleTabChange}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
+          hasPos={channels.hasPos}
+        />
+        
+        <main className="flex-1 overflow-auto bg-muted/30 scrollbar-subtle">
           {store?.entitlements?.isGracePeriod && (
             <SubscriptionNotice
               tone="warning"
@@ -298,7 +295,6 @@ export const DashboardLayoutContent = ({ store, setStore }) => {
         </main>
         {isMobile && <MobileBottomBar hasPos={channels.hasPos} />}
       </div>
-    </div>
       {/* Toasts: bottom on phones, above the tab bar; top-right on desktop (docs/experience 12 D). */}
       <Toaster
         position={isMobile ? 'bottom-center' : 'top-right'}
