@@ -200,6 +200,7 @@ export default function POS() {
   const [activePaymentId, setActivePaymentId] = useState(null);
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [pendingOrderRecord, setPendingOrderRecord] = useState(null);
+  const pollIntervalRef = useRef(null);
 
   // Completed Order & Receipt State
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -590,6 +591,10 @@ export default function POS() {
   };
 
   const closePaymentModal = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
     setPaymentModalOpen(false);
     setKhqrData(null);
     setKhqrPolling(false);
@@ -599,7 +604,7 @@ export default function POS() {
     setPendingOrderRecord(null);
   };
 
-  const finalizePOSOrder = async () => {
+  const finalizePOSOrder = async (overrideMethod = null) => {
     if (cart.length === 0 || !activeStoreId) return;
     if (user?.type === "staff" && !hasPosPermission) {
       showPosAlert({
@@ -610,6 +615,7 @@ export default function POS() {
       });
       return;
     }
+    const effectiveMethod = overrideMethod || paymentMethod;
     setProcessingPayment(true);
 
     const isUuid = (id) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -627,7 +633,8 @@ export default function POS() {
         sku: item.sku || "",
         name: item.name || "",
       })),
-      paymentMethod: paymentMethod === "khqr" ? "WALLET" : paymentMethod === "card" ? "CARD" : "cash",
+      paymentMethod: effectiveMethod === "khqr" ? "WALLET" : effectiveMethod === "card" ? "CARD" : "cash",
+      dynamicQR: effectiveMethod === "khqr",
       currency: "USD",
       cashierId: isUuid(user?.id) ? user.id : null,
       customerInfo: {
@@ -663,7 +670,7 @@ export default function POS() {
       const khqrInfo = result.khqrData || result.khqr;
 
       // Check if KHQR needs to be displayed
-      if (paymentMethod === "khqr" && khqrInfo) {
+      if (effectiveMethod === "khqr" && khqrInfo) {
         setKhqrData(khqrInfo);
         setKhqrPolling(true);
         setKhqrTimedOut(false);
@@ -678,7 +685,7 @@ export default function POS() {
       }
 
       // Record cash in till
-      if (paymentMethod === "cash") {
+      if (effectiveMethod === "cash") {
         const cashEvent = {
           id: `till-${Date.now()}`,
           type: "cash_in_sale",
@@ -701,7 +708,7 @@ export default function POS() {
         totalKHR,
         cashTendered: parseDecimal(cashTendered, totalUSD),
         changeDue: Math.max(0, parseDecimal(cashTendered, totalUSD) - totalUSD),
-        paymentMethod,
+        paymentMethod: effectiveMethod,
         cashierName: user?.name || "Cashier",
         storeName: activeStoreName,
         createdAt: new Date().toISOString(),
@@ -804,11 +811,15 @@ export default function POS() {
   // Poll KHQR status (DEC-029 & wireframe X3b)
   const pollPaymentStatus = async (paymentId, orderRec = null) => {
     if (!paymentId) return;
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
     setKhqrPolling(true);
     setKhqrTimedOut(false);
     setActivePaymentId(paymentId);
 
-    const interval = setInterval(async () => {
+    pollIntervalRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${ECOMMERCE_API_BASE}/api/payment/payments/${paymentId}/check-status`, {
           credentials: "include",
@@ -816,7 +827,10 @@ export default function POS() {
         if (res.ok) {
           const data = await res.json();
           if (data.status === "completed" || data.status === "paid") {
-            clearInterval(interval);
+            if (pollIntervalRef.current) {
+              clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
+            }
             setKhqrPolling(false);
             setKhqrTimedOut(false);
             setPaymentModalOpen(false);
@@ -846,7 +860,10 @@ export default function POS() {
     }, 2500);
 
     setTimeout(() => {
-      clearInterval(interval);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
       setKhqrPolling(false);
       setKhqrTimedOut(true);
     }, 120000);
@@ -856,12 +873,21 @@ export default function POS() {
   const handleConfirmManualKHQR = async () => {
     const orderIdToConfirm = activeOrderId || pendingOrderRecord?.id;
     if (!orderIdToConfirm || !activeStoreId) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
       setKhqrPolling(false);
       setKhqrTimedOut(false);
       setPaymentModalOpen(false);
       clearCart();
       setReceiptModalOpen(true);
       return;
+    }
+
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
 
     setProcessingPayment(true);
@@ -1776,7 +1802,12 @@ export default function POS() {
                   ? "border-red-600 bg-red-50 text-red-900 ring-2 ring-red-600/20"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
-              onClick={() => setPaymentMethod("khqr")}
+              onClick={() => {
+                setPaymentMethod("khqr");
+                if (!khqrData && !processingPayment) {
+                  finalizePOSOrder("khqr");
+                }
+              }}
             >
               <QrCode className="h-5 w-5 mb-1 text-red-600" />
               Bakong KHQR

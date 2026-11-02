@@ -310,6 +310,64 @@ test('P3-INV-002: 3. Counter KHQR fallback records KHQR_COUNTER and deducts stoc
   assert.equal(onHand, 5);
 });
 
+test('P3-INV-002: 3b. Dynamic POS KHQR creates pending order without premature stock deduction until paid', async (t) => {
+  const mockTx = createMockTx();
+  mockTxSupport(t, mockTx);
+
+  const store = { storeId: STORE_A, ownerUserId: OWNER_A, status: 'active' };
+  const variant = { id: SKU_A, storeId: STORE_A, productId: PROD_A, sku: 'SILK-RED', barcode: BARCODE_A, price: '10.00', currency: 'USD', status: 'active', stockQuantity: 50 };
+  const product = { id: PROD_A, storeId: STORE_A, name: 'Silk Scarf', price: '10.00', currency: 'USD', status: 'active', defaultSkuId: SKU_A, version: 1, ProductVariants: [variant] };
+
+  let onHand = 8;
+  const recordedMutations = [];
+
+  t.mock.method(StoreAccess, 'findByPk', async () => store);
+  t.mock.method(Product, 'findByPk', async () => product);
+  t.mock.method(ProductVariant, 'findByPk', async () => variant);
+  t.mock.method(ProductVariant, 'findOne', async () => variant);
+  t.mock.method(PaymentGatewayConfig, 'findAll', async () => []);
+  t.mock.method(Customer, 'findOne', async () => null);
+  t.mock.method(inventoryLedgerService, 'ensureBalance', async () => ({ onHand, reserved: 0, available: onHand }));
+  t.mock.method(inventoryLedgerService, 'mutateBalance', async (params) => {
+    recordedMutations.push(params);
+    onHand += params.changeOnHand;
+    return { balance: { onHand, reserved: 0, available: onHand } };
+  });
+
+  t.mock.method(Order, 'create', async (data) => ({
+    id: randomUUID(),
+    ...data,
+    async update(up) { Object.assign(this, up); return this; },
+    toJSON() { return { ...this }; },
+  }));
+  t.mock.method(OrderItem, 'create', async (data) => ({ ...data, toJSON: () => data }));
+  t.mock.method(Payment, 'create', async (data) => ({ ...data, toJSON: () => data }));
+  t.mock.method(Invoice, 'create', async (data) => ({ ...data, toJSON: () => data }));
+
+  const req = {
+    params: { storeId: STORE_A },
+    body: {
+      items: [{ productId: PROD_A, variantId: SKU_A, quantity: 2, price: '10.00' }],
+      paymentMethod: 'khqr',
+      dynamicQR: true,
+      currency: 'USD',
+    },
+    user: { id: 'staff-cashier-2', type: 'staff', permissions: ['pos'] },
+    headers: {},
+  };
+  const res = responseHelper();
+
+  await createPOSOrder(req, res);
+
+  assert.equal(res.statusCode, 201);
+  assert.equal(res.body.order.status, 'pending', 'Dynamic KHQR order must stay pending until payment verification');
+  assert.equal(res.body.order.stockDeducted, false, 'Stock must not be deducted prematurely before customer pays');
+  assert.equal(res.body.payment.status, 'pending', 'Payment record must be pending');
+  assert.equal(res.body.payment.transactionData.posData.method, 'KHQR_DYNAMIC');
+  assert.equal(recordedMutations.length, 0, 'No inventory deduction before payment confirmation');
+  assert.equal(onHand, 8, 'On-hand stock remains unchanged');
+});
+
 test('P3-INV-002: 4. Store and staff authorization: Staff with pos permission allowed; unpermitted/suspended rejected with 403', async (t) => {
   const storeA = { storeId: STORE_A, ownerUserId: OWNER_A, status: 'active' };
   const middleware = createRequireStoreAccess({
