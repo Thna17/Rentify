@@ -185,6 +185,11 @@ export function TemplateGallery({
                         {t('merchant.storeDesign.current')}
                       </span>
                     )}
+                    {selected && id !== currentId && (
+                      <span className="rounded-full bg-muted border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        Previewing
+                      </span>
+                    )}
                   </span>
                   <span className="mt-1 line-clamp-2 hidden text-sm text-muted-foreground lg:block">{style?.layoutDescription || template.description}</span>
                 </span>
@@ -196,8 +201,11 @@ export function TemplateGallery({
 
       <div className="space-y-3 rounded-xl bg-muted/50 p-4">
         <KeptContent t={t} />
-        {!isCurrent && (
-          <div className="space-y-2 pt-2">
+        {!isCurrent ? (
+          <div className="space-y-2 pt-2 border-t border-border/40">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Previewing: <strong className="text-foreground">{previewed ? templateName(previewed) : `Template ${previewId}`}</strong></span>
+            </div>
             <Button className="h-11 w-full" disabled={!onApply || isApplying} onClick={() => setConfirming(true)}>
               {t(isApplying ? 'merchant.storeDesign.saving' : 'merchant.storeDesign.useTemplate')}
             </Button>
@@ -207,6 +215,12 @@ export function TemplateGallery({
                 {t('merchant.storeDesign.switchBlocked')}
               </p>
             )}
+          </div>
+        ) : (
+          <div className="pt-2 border-t border-border/40 text-center text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 text-primary font-medium">
+              <Check className="h-4 w-4" /> {t('merchant.storeDesign.current')} ({previewed ? templateName(previewed) : ''})
+            </span>
           </div>
         )}
       </div>

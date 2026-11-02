@@ -527,7 +527,8 @@ class WebsiteController {
       return res.status(400).json({ code: 'INVALID_STOREFRONT_TEMPLATE', error: 'Choose a supported template' });
     }
     const template = await WebsiteTemplate.findByPk(templateId);
-    if (!template || ![1, 2, 3, 4].includes(Number(template.websiteTemplateId))) {
+    const num = Number(template?.websiteTemplateId);
+    if (!template || !Number.isInteger(num) || num < 1 || num > 10) {
       return res.status(400).json({ code: 'INVALID_STOREFRONT_TEMPLATE', error: 'Choose a supported template' });
     }
     await Website.sequelize.transaction(async (transaction) => {

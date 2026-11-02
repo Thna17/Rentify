@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useUploadImageMutation } from '@rentify/apis/apis/websiteApi';
 import { getStoreIdentity } from '@rentify/storefront/content';
 
@@ -15,8 +16,12 @@ export function StoreImages({ websiteId, content, onSaved, t }) {
       const result = await upload({ websiteId, file, ...(kind === 'logo' ? { isLogo: true } : { type: 'cover' }) }).unwrap();
       if (!result?.url) throw new Error('No image URL');
       setMessage(t('merchant.storeDesign.images.saved'));
+      toast.success(t('merchant.storeDesign.images.saved'));
       onSaved?.();
-    } catch { setMessage(t('merchant.storeDesign.images.error')); }
+    } catch {
+      setMessage(t('merchant.storeDesign.images.error'));
+      toast.error(t('merchant.storeDesign.images.error'));
+    }
     finally { event.target.value = ''; }
   };
   return <section className="space-y-4 border-b border-border pb-6">

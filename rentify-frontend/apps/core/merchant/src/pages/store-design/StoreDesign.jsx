@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Globe, RefreshCw, Store } from 'lucide-react';
+import { toast } from 'sonner';
 import { useGetWebsiteQuery, useSwitchTemplateMutation, useSaveStorefrontContentMutation } from '@rentify/apis';
 import { useGetTemplatesQuery } from '@rentify/apis/apis/websiteTemplateApi';
 import { useCheckDeploymentStatusQuery } from '@rentify/apis/apis/deploymentApi';
@@ -99,16 +100,25 @@ export default function StoreDesign() {
     try {
       await saveContent({ websiteId, fields: { 'Page Layout': { [activeId]: serializeLayout(draft.layout) } } }).unwrap();
       try { localStorage.removeItem(`rentify.storeDesign.layout.${websiteId}.${activeId}`); } catch { /* storage may be unavailable */ }
-      setMessage(t('merchant.storeDesign.saved'));
+      await website.refetch();
+      setPreviewRevision((v) => v + 1);
+      toast.success(t('merchant.storeDesign.saved'));
+    } catch {
+      toast.error(t('merchant.storeDesign.saveError'));
     }
-    catch { setMessage(t('merchant.storeDesign.saveError')); }
   };
   const applyTemplate = async (id) => {
     const template = templates.find((item) => item.websiteTemplateId === id);
     if (!template) return;
     setMessage('');
-    try { await switchTemplate({ websiteId, templateId: template.id }).unwrap(); setMessage(t('merchant.storeDesign.saved')); }
-    catch { setMessage(t('merchant.storeDesign.saveError')); }
+    try {
+      await switchTemplate({ websiteId, templateId: template.id }).unwrap();
+      await website.refetch();
+      setPreviewRevision((v) => v + 1);
+      toast.success(t('merchant.storeDesign.saved'));
+    } catch (err) {
+      toast.error(err?.data?.error || t('merchant.storeDesign.saveError'));
+    }
   };
   const previewed = templates.find((template) => template.websiteTemplateId === activeId);
   const previewedLabel = previewed ? templateName(previewed) : '';
@@ -183,59 +193,77 @@ export default function StoreDesign() {
     }
 
     body = (
-      <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <Tabs defaultValue="templates" className="min-w-0 lg:sticky lg:top-4">
-          <TabsList className="grid h-auto w-full grid-cols-3 p-1">
-            <TabsTrigger value="templates" className="min-h-11">
-              {t('merchant.storeDesign.tabs.templates')}
-            </TabsTrigger>
-            <TabsTrigger value="layout" className="min-h-11">
-              {t('merchant.storeDesign.tabs.layout')}
-            </TabsTrigger>
-            <TabsTrigger value="colors" className="min-h-11">{t('merchant.storeDesign.colors.title')}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="templates" className="mt-4">
-            <TemplateGallery
-              templates={templates}
-              isLoading={templatesQuery.isLoading}
-              isError={templatesQuery.isError}
-              onRetry={templatesQuery.refetch}
-              currentId={currentId}
-              previewId={activeId}
-              onPreview={setPreviewId}
-              onApply={applyTemplate}
-              isApplying={switchState.isLoading}
-              t={t}
-            />
-          </TabsContent>
-          <TabsContent value="colors" className="mt-4 space-y-6">
-            <StoreImages websiteId={websiteId} content={website.data?.WebsiteContents || website.data?.content || []}
-              onSaved={() => { website.refetch(); setPreviewRevision((value) => value + 1); }} t={t} />
-            <BrandColors key={websiteId} websiteId={websiteId}
-              savedTheme={(website.data?.WebsiteContents || website.data?.content || []).find((item) => item.label === 'Theme Configuration')?.value || {}}
-              initialPalette={
-                (website.data?.selectedPalette && typeof website.data.selectedPalette === 'object'
-                  ? website.data.selectedPalette.colors || website.data.selectedPalette
-                  : templateThemes[currentId]?.[website.data?.selectedPalette]?.colors)
-                || EDITORIAL_STYLES[currentId]?.palette || website.data?.colorPalette
-              }
-              onSaved={() => setPreviewRevision((value) => value + 1)} t={t} />
-          </TabsContent>
-          <TabsContent value="layout" className="mt-4">
-            <LayoutPanel
-              templateLabel={previewedLabel}
-              layout={draft.layout}
-              onMove={draft.move}
-              onToggle={draft.toggle}
-              onReset={draft.reset}
-              onSave={saveLayout}
-              saving={saveState.isLoading}
-              isDefault={draft.isDefault}
-              t={t}
-            />
-          </TabsContent>
-        </Tabs>
-        {preview}
+      <div className="grid items-start gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <Tabs defaultValue="templates" className="min-w-0">
+            <TabsList className="grid h-auto w-full grid-cols-3 p-1">
+              <TabsTrigger value="templates" className="min-h-11">
+                {t('merchant.storeDesign.tabs.templates')}
+              </TabsTrigger>
+              <TabsTrigger value="layout" className="min-h-11">
+                {t('merchant.storeDesign.tabs.layout')}
+              </TabsTrigger>
+              <TabsTrigger value="colors" className="min-h-11">{t('merchant.storeDesign.colors.title')}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="templates" className="mt-4">
+              <TemplateGallery
+                templates={templates}
+                isLoading={templatesQuery.isLoading}
+                isError={templatesQuery.isError}
+                onRetry={templatesQuery.refetch}
+                currentId={currentId}
+                previewId={activeId}
+                onPreview={setPreviewId}
+                onApply={applyTemplate}
+                isApplying={switchState.isLoading}
+                t={t}
+              />
+            </TabsContent>
+            <TabsContent value="colors" className="mt-4 space-y-6">
+              <StoreImages
+                websiteId={websiteId}
+                content={website.data?.WebsiteContents || website.data?.content || []}
+                onSaved={() => {
+                  website.refetch();
+                  setPreviewRevision((value) => value + 1);
+                }}
+                t={t}
+              />
+              <BrandColors
+                key={`${websiteId}-${activeId}`}
+                websiteId={websiteId}
+                savedTheme={(website.data?.WebsiteContents || website.data?.content || []).find((item) => item.label === 'Theme Configuration')?.value || {}}
+                initialPalette={
+                  (website.data?.selectedPalette && typeof website.data.selectedPalette === 'object'
+                    ? website.data.selectedPalette.colors || website.data.selectedPalette
+                    : templateThemes[activeId]?.[website.data?.selectedPalette]?.colors)
+                  || EDITORIAL_STYLES[activeId]?.palette || website.data?.colorPalette
+                }
+                onSaved={() => {
+                  website.refetch();
+                  setPreviewRevision((value) => value + 1);
+                }}
+                t={t}
+              />
+            </TabsContent>
+            <TabsContent value="layout" className="mt-4">
+              <LayoutPanel
+                templateLabel={previewedLabel}
+                layout={draft.layout}
+                onMove={draft.move}
+                onToggle={draft.toggle}
+                onReset={draft.reset}
+                onSave={saveLayout}
+                saving={saveState.isLoading}
+                isDefault={draft.isDefault}
+                t={t}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+        <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+          {preview}
+        </div>
       </div>
     );
   }

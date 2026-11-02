@@ -74,7 +74,7 @@ test('template switch validates the template and leaves content untouched', asyn
 });
 
 test('template switch rejects invalid or unsupported templates', async (t) => {
-  t.mock.method(WebsiteTemplate, 'findByPk', async () => ({ websiteTemplateId: 9 }));
+  t.mock.method(WebsiteTemplate, 'findByPk', async () => ({ websiteTemplateId: 99 }));
   for (const templateId of ['bad', '044c94e2-a47c-47d5-895b-33bc00eb5abb']) {
     const result = await call(websiteController.switchTemplate, { website: { id: 'website-1' }, body: { templateId } });
     assert.equal(result.statusCode, 400);

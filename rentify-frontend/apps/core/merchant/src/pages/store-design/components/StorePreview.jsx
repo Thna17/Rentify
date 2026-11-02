@@ -33,7 +33,12 @@ function PreviewFrame({ src, width, height, layout, title, t }) {
   // Layout changes reach the loaded store without a reload.
   useEffect(() => {
     if (state !== 'ready') return;
-    frameRef.current?.contentWindow?.postMessage({ type: PREVIEW_MESSAGE, layout }, new URL(src).origin);
+    try {
+      const origin = src.startsWith('http') ? new URL(src).origin : window.location.origin;
+      frameRef.current?.contentWindow?.postMessage({ type: PREVIEW_MESSAGE, layout }, origin);
+    } catch {
+      frameRef.current?.contentWindow?.postMessage({ type: PREVIEW_MESSAGE, layout }, '*');
+    }
   }, [layout, state, src]);
 
   return (
@@ -43,7 +48,7 @@ function PreviewFrame({ src, width, height, layout, title, t }) {
         style={{ width: width * scale, height: height * scale }}
       >
         <iframe
-          key={attempt}
+          key={`${src}-${attempt}`}
           ref={frameRef}
           src={src}
           title={title}
@@ -123,12 +128,26 @@ export function StorePreview({ storeUrl, templateId, layout, t }) {
           })}
         </div>
 
-        <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-xs sm:text-sm">
-          <a href={storeUrl} target="_blank" rel="noreferrer">
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            {t('merchant.storeDesign.preview.openStore')}
-          </a>
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setFrameSrc(`${src}&_r=${Date.now()}`)}
+            className="h-9 gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+            title={t('merchant.storeDesign.preview.reload')}
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">{t('merchant.storeDesign.preview.reload')}</span>
+          </Button>
+
+          <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-xs sm:text-sm">
+            <a href={storeUrl} target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              {t('merchant.storeDesign.preview.openStore')}
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="w-full">

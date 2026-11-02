@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useUpdateThemeConfigurationMutation } from '@rentify/apis/apis/websiteApi';
 import { EDITORIAL_STYLES } from '@rentify/storefront/editorialStyles';
 import { Button } from '@rentify/shared/ui/button';
@@ -55,9 +56,11 @@ export function BrandColors({
         theme: mergeBrandColors(savedTheme, palette),
       }).unwrap();
       setMessage(t('merchant.storeDesign.colors.saved'));
+      toast.success(t('merchant.storeDesign.colors.saved'));
       onSaved?.();
     } catch {
       setMessage(t('merchant.storeDesign.colors.error'));
+      toast.error(t('merchant.storeDesign.colors.error'));
     }
   };
   return (
