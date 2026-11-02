@@ -91,6 +91,38 @@ class POSOrderStrategy extends OrderTypeStrategy {
         // Fallback for POS counter-stand QR when merchant has no automated Bakong API credentials configured
         const PaymentModel = this.models?.Payment || require('../../../../../models').Payment;
         if (PaymentModel && typeof PaymentModel.create === 'function') {
+          let rawQR = null;
+          let md5Hash = null;
+          try {
+            const { BakongKHQR, IndividualInfo } = require("bakong-khqr");
+            let KHQR_CURRENCY_CODES = { KHR: "116", USD: "840" };
+            try {
+              const constants = require("../../../../../utils/constants");
+              if (constants.KHQR_CURRENCY_CODES) KHQR_CURRENCY_CODES = constants.KHQR_CURRENCY_CODES;
+            } catch {}
+            const bakongAccount = orderData.merchantConfig?.config?.bakongAccount ||
+              process.env.DEFAULT_BAKONG_ACCOUNT ||
+              process.env.BAKONG_MERCHANT_ACCOUNT ||
+              'rentify_store@bakong';
+            const businessName = orderData.merchantConfig?.config?.businessName || 'Rentify Store';
+            const businessCity = orderData.merchantConfig?.config?.businessCity || 'Phnom Penh';
+
+            const individualInfo = new IndividualInfo(bakongAccount, businessName, businessCity);
+            individualInfo.amount = parseFloat(order.totalAmount);
+            const rawCurr = (currency || 'USD').trim().toUpperCase();
+            individualInfo.currency = KHQR_CURRENCY_CODES[rawCurr] || "840";
+            individualInfo.expirationTimestamp = Date.now() + 15 * 60 * 1000;
+
+            const khqr = new BakongKHQR();
+            const result = khqr.generateIndividual(individualInfo);
+            if (result?.data?.qr) {
+              rawQR = result.data.qr;
+              md5Hash = result.data.md5;
+            }
+          } catch (khqrErr) {
+            console.warn("POS counter KHQR generation error:", khqrErr.message);
+          }
+
           payment = await PaymentModel.create(
             {
               orderId: order.id,
@@ -98,6 +130,8 @@ class POSOrderStrategy extends OrderTypeStrategy {
               paymentMethod: 'WALLET',
               status: 'completed',
               transactionData: {
+                rawQR,
+                md5Hash,
                 posData: {
                   terminalId: "POS_TERMINAL_1",
                   method: "KHQR_COUNTER",

@@ -92,7 +92,15 @@ exports.initiateKHQRPayment = async (req, res) => {
 
       const attempt = attemptResult.attempt;
       const checkoutUrl = attempt.checkoutUrl;
-      const rawQR = attempt.rawResponse?.qr_string || null;
+      const rawQR =
+        attempt.rawResponse?.qr_string ||
+        attempt.rawResponse?.raw_qr ||
+        attempt.rawResponse?.qr ||
+        attempt.rawResponse?.data?.qr_string ||
+        attempt.rawResponse?.data?.raw_qr ||
+        attempt.rawResponse?.data?.qr ||
+        attempt.qrString ||
+        null;
 
       await payment.update({
         transactionId: attempt.providerPaymentId,
@@ -118,45 +126,49 @@ exports.initiateKHQRPayment = async (req, res) => {
     }
 
     if (usePayway()) {
-      const tranId = payway.generateTranId();
-      const qr = await payway.createTransaction({
-        tranId,
-        amount,
-        items: [{ name: `${pkg.name || "Rentify"} plan`, quantity: 1, price: amount }],
-      });
-      const payment = await Payment.create({
-        userId,
-        amount,
-        currency: "USD",
-        paymentMethod: "payway",
-        status: "pending",
-        expiresAt: new Date(qr.expiresAt),
-        packageId: pkg.id,
-        transactionData: { qrCodeUrl: qr.deeplink, rawQR: qr.qrString, tranId },
-      });
-      return res.json({
-        paymentId: payment.id,
-        qrCodeUrl: qr.deeplink,
-        rawQR: qr.qrString,
-        amount,
-        expiresAt: qr.expiresAt,
-      });
+      try {
+        const tranId = payway.generateTranId();
+        const qr = await payway.createTransaction({
+          tranId,
+          amount,
+          items: [{ name: `${pkg.name || "Rentify"} plan`, quantity: 1, price: amount }],
+        });
+        const payment = await Payment.create({
+          userId,
+          amount,
+          currency: "USD",
+          paymentMethod: "payway",
+          status: "pending",
+          expiresAt: new Date(qr.expiresAt),
+          packageId: pkg.id,
+          transactionData: { qrCodeUrl: qr.deeplink, rawQR: qr.qrString, tranId },
+        });
+        return res.json({
+          paymentId: payment.id,
+          qrCodeUrl: qr.deeplink,
+          rawQR: qr.qrString,
+          amount,
+          expiresAt: qr.expiresAt,
+        });
+      } catch (paywayErr) {
+        console.warn("PayWay plan payment initiation failed, falling back to Bakong KHQR:", paywayErr.message);
+      }
     }
 
 
     const merchantConfig = {
-      bakongAccount: process.env.BAKONG_MERCHANT_ACCOUNT,
-      businessName: process.env.BAKONG_BUSINESS_NAME,
+      bakongAccount: process.env.BAKONG_MERCHANT_ACCOUNT || 'rentify_billing@bakong',
+      businessName: process.env.BAKONG_BUSINESS_NAME || 'Rentify Platform',
       businessCity: process.env.BAKONG_BUSINESS_CITY || "Phnom Penh",
       currency: process.env.BAKONG_CURRENCY || "USD",
-      bakongApiKey: process.env.BAKONG_API_KEY,
+      bakongApiKey: process.env.BAKONG_API_KEY || null,
     };
 
     // Generate unique reference ID
     const referenceId = `RENTIFY-${Date.now()}-${crypto
       .randomBytes(4)
       .toString("hex")}`;
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiration
 
     // Create payment record
     const payment = await Payment.create({
@@ -174,30 +186,32 @@ exports.initiateKHQRPayment = async (req, res) => {
 
     // The bank-app deeplink is a convenience; the QR itself is enough to pay
     let deeplink = null;
-    try {
-      const { data } = await axios.post(
-        `${process.env.BAKONG_API_URL}/v1/generate_deeplink_by_qr`,
-        {
-          qr: qrData.qrString,
-          sourceInfo: {
-            appIconUrl: "https://yourdomain.com/logo.png",
-            appName: "Choulweb",
-            appDeepLinkCallback:
-              process.env.PAYMENT_CALLBACK_URL || "https://yourdomain.com/payment/callback",
+    if (merchantConfig.bakongApiKey && process.env.BAKONG_API_URL) {
+      try {
+        const { data } = await axios.post(
+          `${process.env.BAKONG_API_URL}/v1/generate_deeplink_by_qr`,
+          {
+            qr: qrData.qrString,
+            sourceInfo: {
+              appIconUrl: process.env.APP_ICON_URL || "https://rentify.store/logo.png",
+              appName: "Rentify",
+              appDeepLinkCallback:
+                process.env.PAYMENT_CALLBACK_URL || "https://rentify.store/payment/callback",
+            },
           },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${merchantConfig.bakongApiKey}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 10000,
-        }
-      );
+          {
+            headers: {
+              Authorization: `Bearer ${merchantConfig.bakongApiKey}`,
+              "Content-Type": "application/json",
+            },
+            timeout: 5000,
+          }
+        );
 
-      deeplink = data?.data?.shortLink || null;
-    } catch (linkError) {
-      console.warn("Bakong deeplink unavailable:", linkError.message);
+        deeplink = data?.data?.shortLink || null;
+      } catch (linkError) {
+        console.warn("Bakong deeplink unavailable:", linkError.message);
+      }
     }
 
     // Update payment with transaction data
@@ -327,19 +341,18 @@ exports.checkPaymentStatus = async (req, res) => {
 
 // Helper function to generate KHQR string
 function generateKHQRString(merchantConfig, amount, referenceId, webhookUrl) {
-
-  if (!merchantConfig.bakongAccount || !merchantConfig.businessName) {
-    throw new Error("Merchant configuration incomplete");
-  }
+  const account = merchantConfig?.bakongAccount || process.env.BAKONG_MERCHANT_ACCOUNT || 'rentify_billing@bakong';
+  const name = merchantConfig?.businessName || process.env.BAKONG_BUSINESS_NAME || 'Rentify Platform';
+  const city = merchantConfig?.businessCity || 'Phnom Penh';
 
   if (isNaN(amount) || amount <= 0) {
     throw new Error("Invalid payment amount");
   }
 
   const individualInfo = new IndividualInfo(
-    merchantConfig.bakongAccount,
-    merchantConfig.businessName,
-    merchantConfig.businessCity
+    account,
+    name,
+    city
   );
 
   individualInfo.amount = amount;
@@ -347,7 +360,7 @@ function generateKHQRString(merchantConfig, amount, referenceId, webhookUrl) {
   const rawCurrency = merchantConfig?.currency || "USD";
   const normalizedCurrency = rawCurrency.trim().toUpperCase();
   individualInfo.currency = KHQR_CURRENCY_CODES[normalizedCurrency] || "840";
-  individualInfo.expirationTimestamp = individualInfo.timestamp + 5 * 60 * 1000;
+  individualInfo.expirationTimestamp = individualInfo.timestamp + 15 * 60 * 1000;
   individualInfo.additionalData = { webhookUrl, referenceId };
 
   const khqr = new BakongKHQR();

@@ -48,6 +48,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog.jsx";
 import { LoadingState, EmptyState } from "@/components/ui/feedback-state.jsx";
+import { QRCodeSVG } from "qrcode.react";
 import useStorePOS, { resolvePaymentMethod } from "@/hooks/useStorePOS.js";
 import { usePOSShell } from "@/components/layout/POSLayout.jsx";
 import {
@@ -197,6 +198,8 @@ export default function POS() {
   const [khqrPolling, setKhqrPolling] = useState(false);
   const [khqrTimedOut, setKhqrTimedOut] = useState(false);
   const [activePaymentId, setActivePaymentId] = useState(null);
+  const [activeOrderId, setActiveOrderId] = useState(null);
+  const [pendingOrderRecord, setPendingOrderRecord] = useState(null);
 
   // Completed Order & Receipt State
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -577,7 +580,23 @@ export default function POS() {
     if (cart.length === 0) return;
     setCashTendered(totalUSD.toFixed(2));
     setPaymentMethod("cash");
+    setKhqrData(null);
+    setKhqrPolling(false);
+    setKhqrTimedOut(false);
+    setActivePaymentId(null);
+    setActiveOrderId(null);
+    setPendingOrderRecord(null);
     setPaymentModalOpen(true);
+  };
+
+  const closePaymentModal = () => {
+    setPaymentModalOpen(false);
+    setKhqrData(null);
+    setKhqrPolling(false);
+    setKhqrTimedOut(false);
+    setActivePaymentId(null);
+    setActiveOrderId(null);
+    setPendingOrderRecord(null);
   };
 
   const finalizePOSOrder = async () => {
@@ -650,8 +669,11 @@ export default function POS() {
         setKhqrTimedOut(false);
         const pid = result.payment?.id || orderRecord.id;
         setActivePaymentId(pid);
+        setActiveOrderId(orderRecord.id);
+        setPendingOrderRecord(orderRecord);
+        setProcessingPayment(false);
         // Start polling payment status
-        pollPaymentStatus(pid);
+        pollPaymentStatus(pid, orderRecord);
         return;
       }
 
@@ -780,7 +802,7 @@ export default function POS() {
   };
 
   // Poll KHQR status (DEC-029 & wireframe X3b)
-  const pollPaymentStatus = async (paymentId) => {
+  const pollPaymentStatus = async (paymentId, orderRec = null) => {
     if (!paymentId) return;
     setKhqrPolling(true);
     setKhqrTimedOut(false);
@@ -798,6 +820,21 @@ export default function POS() {
             setKhqrPolling(false);
             setKhqrTimedOut(false);
             setPaymentModalOpen(false);
+            const ord = orderRec || pendingOrderRecord;
+            setCompletedOrder({
+              ...(ord || {}),
+              id: ord?.id || activeOrderId || paymentId,
+              items: cart,
+              subtotal,
+              discountAmount,
+              totalUSD,
+              totalKHR,
+              paymentMethod: "khqr",
+              cashierName: user?.name || "Cashier",
+              storeName: activeStoreName,
+              createdAt: new Date().toISOString(),
+              status: "completed",
+            });
             clearCart();
             setReceiptModalOpen(true);
             fetchProducts();
@@ -813,6 +850,69 @@ export default function POS() {
       setKhqrPolling(false);
       setKhqrTimedOut(true);
     }, 120000);
+  };
+
+  // Instant Cashier Confirmation for KHQR Counter Pay (DEC-029)
+  const handleConfirmManualKHQR = async () => {
+    const orderIdToConfirm = activeOrderId || pendingOrderRecord?.id;
+    if (!orderIdToConfirm || !activeStoreId) {
+      setKhqrPolling(false);
+      setKhqrTimedOut(false);
+      setPaymentModalOpen(false);
+      clearCart();
+      setReceiptModalOpen(true);
+      return;
+    }
+
+    setProcessingPayment(true);
+    try {
+      const res = await fetch(`${ECOMMERCE_API_BASE}/api/stores/${activeStoreId}/orders/pos/${orderIdToConfirm}/manual-khqr`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": `manual-khqr-${orderIdToConfirm}`,
+        },
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to confirm payment on server");
+      }
+
+      const data = await res.json();
+      setKhqrPolling(false);
+      setKhqrTimedOut(false);
+      setPaymentModalOpen(false);
+
+      setCompletedOrder({
+        ...(data.order || pendingOrderRecord || {}),
+        id: orderIdToConfirm,
+        items: cart,
+        subtotal,
+        discountAmount,
+        totalUSD,
+        totalKHR,
+        paymentMethod: "khqr",
+        cashierName: user?.name || "Cashier",
+        storeName: activeStoreName,
+        createdAt: new Date().toISOString(),
+        status: "completed",
+      });
+
+      clearCart();
+      setReceiptModalOpen(true);
+      fetchProducts();
+    } catch (err) {
+      console.error("Manual KHQR confirmation error:", err);
+      showPosAlert({
+        title: "Confirmation Failed",
+        message: err.message || "Failed to record KHQR payment. Please check with customer and try again.",
+        tone: "danger",
+      });
+    } finally {
+      setProcessingPayment(false);
+    }
   };
 
   // Till drawer event handlers
@@ -1642,7 +1742,7 @@ export default function POS() {
       )}
 
       {/* ── PAYMENT MODAL ─────────────────────────────────────────────────── */}
-      <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
+      <Dialog open={paymentModalOpen} onOpenChange={(open) => { if (!open) closePaymentModal(); else setPaymentModalOpen(true); }}>
         <DialogContent className="max-w-lg rounded-[28px] p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Select Payment Method</DialogTitle>
@@ -1660,7 +1760,11 @@ export default function POS() {
                   ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
-              onClick={() => setPaymentMethod("cash")}
+              onClick={() => {
+                setPaymentMethod("cash");
+                setKhqrData(null);
+                setKhqrPolling(false);
+              }}
             >
               <Banknote className="h-5 w-5 mb-1 text-emerald-600" />
               Cash
@@ -1684,7 +1788,11 @@ export default function POS() {
                   ? "border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-600/20"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
-              onClick={() => setPaymentMethod("card")}
+              onClick={() => {
+                setPaymentMethod("card");
+                setKhqrData(null);
+                setKhqrPolling(false);
+              }}
             >
               <CreditCard className="h-5 w-5 mb-1 text-blue-600" />
               Card
@@ -1750,31 +1858,75 @@ export default function POS() {
 
           {/* KHQR View (DEC-029 & wireframe X3b) */}
           {paymentMethod === "khqr" && (
-            <div className="flex flex-col items-center justify-center p-4 text-center space-y-3">
-              <div className="h-44 w-44 rounded-2xl border-2 border-red-500/30 bg-white p-3 shadow-inner flex items-center justify-center">
-                {khqrData?.rawQR ? (
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                      khqrData.rawQR
-                    )}`}
-                    alt="Bakong KHQR"
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <QrCode className="h-28 w-28 text-red-500 animate-pulse" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground font-medium" role="status">
-                {khqrPolling
-                  ? "Turn the screen to the customer. Waiting for payment…"
-                  : "Customer scans with Bakong or any Cambodian bank mobile app"}
-              </p>
+            <div className="flex flex-col items-center justify-center p-4 text-center space-y-3.5">
+              {khqrData?.rawQR ? (
+                <>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-full text-xs font-semibold border border-red-200">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                    Bakong KHQR • Scan to Pay
+                  </div>
+
+                  <div className="h-52 w-52 rounded-2xl border-2 border-red-500/40 bg-white p-3 shadow-md flex items-center justify-center">
+                    <QRCodeSVG
+                      value={khqrData.rawQR}
+                      size={184}
+                      level="M"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <div className="text-2xl font-bold font-mono text-slate-900 tracking-tight">
+                      {formatCurrency(totalUSD, "USD")}
+                    </div>
+                    <div className="text-xs font-mono text-slate-500">
+                      ≈ {formatCurrency(totalKHR, "KHR")}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground font-medium max-w-xs" role="status">
+                    {khqrPolling
+                      ? "Turn the screen to the customer. Scan with Bakong, ABA, Wing, or any Cambodian bank app."
+                      : "Customer scans with Bakong or any Cambodian bank mobile app"}
+                  </p>
+
+                  <div className="w-full pt-1">
+                    <Button
+                      type="button"
+                      className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm flex items-center justify-center gap-2"
+                      disabled={processingPayment}
+                      onClick={handleConfirmManualKHQR}
+                    >
+                      {processingPayment ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      Confirm Payment Received (Customer Paid)
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 space-y-3">
+                  <div className="h-24 w-24 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
+                    <QrCode className="h-12 w-12" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-slate-800">
+                      Counter KHQR Payment
+                    </div>
+                    <p className="text-xs text-muted-foreground max-w-xs">
+                      Click below to generate a valid Bakong KHQR code for {formatCurrency(totalUSD)}.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {khqrTimedOut && (
                 <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-3.5 space-y-2 text-left">
-                  <div className="font-semibold text-xs text-amber-900">Not confirmed after 2 minutes?</div>
+                  <div className="font-semibold text-xs text-amber-900">Not confirmed automatically after 2 minutes?</div>
                   <div className="text-xs text-amber-800">
-                    Ask to see the customer's receipt, then check again. Don't hand over goods until it says Paid.
+                    Ask to see the customer's phone confirmation screen. If paid, click "Confirm Payment Received" above.
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <Button
@@ -1818,27 +1970,15 @@ export default function POS() {
                               fetchProducts();
                               return;
                             }
-                            if (!res.ok) {
-                              showPosAlert({
-                                title: "Cannot Switch to Cash",
-                                message: data.error || "Could not cancel QR payment at gateway. Do not accept cash until status is confirmed.",
-                                tone: "danger",
-                              });
-                              return;
-                            }
                           } catch (err) {
                             console.error("Failed to void pending KHQR payment:", err);
-                            showPosAlert({
-                              title: "Gateway Connection Error",
-                              message: "Failed to communicate with payment gateway. Do not accept cash until payment status is confirmed.",
-                              tone: "danger",
-                            });
-                            return;
                           }
                         }
                         setKhqrTimedOut(false);
                         setKhqrPolling(false);
                         setActivePaymentId(null);
+                        setActiveOrderId(null);
+                        setPendingOrderRecord(null);
                         setKhqrData(null);
                         setPaymentMethod("cash");
                       }}
@@ -1852,24 +1992,60 @@ export default function POS() {
           )}
 
           <DialogFooter className="pt-2">
-            <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
+            <Button variant="outline" onClick={closePaymentModal}>
               Cancel
             </Button>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6"
-              disabled={processingPayment}
-              onClick={finalizePOSOrder}
-            >
-              {processingPayment ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
-                </>
+            {paymentMethod === "khqr" ? (
+              khqrData ? (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6"
+                  disabled={processingPayment}
+                  onClick={handleConfirmManualKHQR}
+                >
+                  {processingPayment ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-1.5 h-4 w-4" /> Confirm Payment Received
+                    </>
+                  )}
+                </Button>
               ) : (
-                <>
-                  <CheckCircle2 className="mr-1.5 h-4 w-4" /> Pay {formatCurrency(totalUSD)}
-                </>
-              )}
-            </Button>
+                <Button
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-6"
+                  disabled={processingPayment}
+                  onClick={finalizePOSOrder}
+                >
+                  {processingPayment ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="mr-1.5 h-4 w-4" /> Generate KHQR
+                    </>
+                  )}
+                </Button>
+              )
+            ) : (
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6"
+                disabled={processingPayment}
+                onClick={finalizePOSOrder}
+              >
+                {processingPayment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-1.5 h-4 w-4" /> Pay {formatCurrency(totalUSD)}
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

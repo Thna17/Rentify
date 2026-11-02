@@ -22,29 +22,29 @@ class KHQRPaymentStrategy extends PaymentStrategy {
       currency || 'USD'
     );
 
-    const { data } = await axios.post(
-      `${process.env.BAKONG_API_URL || 'https://api.bakong.nbc.gov.kh'}/v1/generate_deeplink_by_qr`,
-      {
-        qr: qrData.qrString,
-        sourceInfo: {
-          appIconUrl: "https://yourdomain.com/path/to/real/icon.png",  // FIX: Use a valid public HTTPS URL to an image (e.g., upload to S3 or your server)
-          appName: "Rentify",  // FIX: Use your actual app name
-          appDeepLinkCallback: process.env.PAYMENT_CALLBACK_URL || "https://your-public-domain.com/api/payments/callback",  // FIX: Use public URL (e.g., ngrok for local dev)
+    let deeplink = null;
+    try {
+      const { data } = await axios.post(
+        `${process.env.BAKONG_API_URL || 'https://api.bakong.nbc.gov.kh'}/v1/generate_deeplink_by_qr`,
+        {
+          qr: qrData.qrString,
+          sourceInfo: {
+            appIconUrl: process.env.APP_ICON_URL || "https://rentify.store/logo.png",
+            appName: "Rentify",
+            appDeepLinkCallback: process.env.PAYMENT_CALLBACK_URL || "https://rentify.store/api/payments/callback",
+          },
         },
-      },
-      {
-        headers: {
-          // FIX: Remove Authorization header, as it's not required for this endpoint per docs
-          "Content-Type": "application/json",
-        },
-        timeout: 10000,
-      }
-    );
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 5000,
+        }
+      );
 
-    const deeplink = data?.data?.shortLink || data?.shortLink;
-
-    if (!deeplink) {
-      throw new Error("Failed to generate deeplink from Bakong API");
+      deeplink = data?.data?.shortLink || data?.shortLink || null;
+    } catch (deeplinkErr) {
+      console.warn("Bakong deeplink unavailable, continuing with raw KHQR:", deeplinkErr.message);
     }
 
     return await this.models.Payment.create(
