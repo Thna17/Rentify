@@ -18,12 +18,14 @@ const ShowcaseWall = React.lazy(() => import("./pages/showcase-wall/ShowcaseWall
 import BrowseTemplates from "./pages/template-browse";
 import TemplateDetailPage from "./pages/template-detail";
 import useMarketingAuth from "./hooks/useMarketingAuth";
+import { AUTH_URL, MARKETING_URL } from "@rentify/shared/config/urls";
 
 // One onboarding only: every "create store" link lands on the sidebar flow.
 // If the merchant is already signed in AND has a store, send them straight to their dashboard.
 // If they have no store yet, allow them to complete onboarding.
+// If unauthenticated, redirect strictly to login with returnUrl pointing to onboarding.
 function StartRedirect() {
-  const { isAuthenticated, user, dashboardHref, isLoading } = useMarketingAuth();
+  const { isAuthenticated, user, dashboardHref, isLoading, authUrl } = useMarketingAuth();
   const { search } = useLocation();
 
   if (isLoading) return null;
@@ -37,7 +39,17 @@ function StartRedirect() {
   const plan = (params.get("plan") || "starter").toLowerCase();
   params.delete("plan");
   const rest = params.toString();
-  return <Navigate replace to={`/onboarding/${encodeURIComponent(plan)}${rest ? `?${rest}` : ""}`} />;
+  const targetPath = `/onboarding/${encodeURIComponent(plan)}${rest ? `?${rest}` : ""}`;
+
+  if (!isAuthenticated) {
+    const baseAuth = (authUrl || AUTH_URL || "https://rentify-auth.mekhla.digital").replace(/\/+$/, "");
+    const marketingOrigin = (MARKETING_URL || (typeof window !== "undefined" ? window.location.origin : "")).replace(/\/+$/, "");
+    const returnTarget = `${marketingOrigin}${targetPath}`;
+    window.location.replace(`${baseAuth}/login?returnUrl=${encodeURIComponent(returnTarget)}`);
+    return null;
+  }
+
+  return <Navigate replace to={targetPath} />;
 }
 const App = () => (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">

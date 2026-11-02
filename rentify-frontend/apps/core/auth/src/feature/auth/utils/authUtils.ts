@@ -119,7 +119,16 @@ export const resolveAuthDestination = ({
     return `${DASHBOARD_URL}/overview`;
   }
 
-  // Merchant without a store: redirect directly to onboarding
+  // Merchant without a store: return to explicit return URL if set, otherwise start
+  const isOnboardingUrl = redirectUrl.includes('/onboarding');
+  if (
+    hasExplicitReturnUrl &&
+    !isBareMarketingRoot &&
+    (returnDomain === marketingHost || returnDomain === dashboardHost || isOnboardingUrl)
+  ) {
+    return redirectUrl;
+  }
+
   return marketingStartUrl;
 };
 
