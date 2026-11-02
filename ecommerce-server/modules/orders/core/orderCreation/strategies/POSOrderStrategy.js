@@ -123,18 +123,21 @@ class POSOrderStrategy extends OrderTypeStrategy {
             console.warn("POS counter KHQR generation error:", khqrErr.message);
           }
 
+          const isDynamic = Boolean(orderData.dynamicQR || orderData.awaitingScan || orderData.isDynamicQR);
+          const paymentStatus = isDynamic ? 'pending' : 'completed';
+
           payment = await PaymentModel.create(
             {
               orderId: order.id,
               amount: order.totalAmount,
               paymentMethod: 'WALLET',
-              status: 'completed',
+              status: paymentStatus,
               transactionData: {
                 rawQR,
                 md5Hash,
                 posData: {
                   terminalId: "POS_TERMINAL_1",
-                  method: "KHQR_COUNTER",
+                  method: isDynamic ? "KHQR_DYNAMIC" : "KHQR_COUNTER",
                   timestamp: new Date(),
                 },
               },
@@ -143,7 +146,7 @@ class POSOrderStrategy extends OrderTypeStrategy {
             txOption
           );
 
-          if (!order.stockDeducted) {
+          if (!isDynamic && !order.stockDeducted) {
             await this.deductPosInventory(order, resolvedItems, cashierId, transaction);
             await order.update({
               status: 'completed',

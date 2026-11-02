@@ -286,6 +286,7 @@ exports.createPOSOrder = async (req, res) => {
       customerInfo,
       merchantConfig,
       currency,
+      dynamicQR: Boolean(req.body.dynamicQR || req.body.awaitingScan || req.body.isDynamicQR),
     });
 
     res.status(201).json({
