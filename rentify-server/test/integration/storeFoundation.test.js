@@ -15,6 +15,7 @@ test('public Store lookup returns only approved profile fields', async (t) => {
     return [{ id, name: 'Public Store' }];
   });
   assert.deepEqual(await storeService.listPublicStores(`${id},${id}`), [{ id, name: 'Public Store' }]);
+  assert.deepEqual(await storeService.listPublicStores(), [{ id, name: 'Public Store' }]);
   await assert.rejects(storeService.listPublicStores('bad-id'), { statusCode: 400 });
   assert.deepEqual(await storeService.listPublicStores(''), []);
   t.mock.method(Store, 'findOne', async (options) => {
@@ -99,6 +100,7 @@ test('automatic listing requires an active pending Store, a reviewed category an
   const owner = { isVerified: true, email: 'merchant@example.com' };
   assert.equal(storeService.eligibleForAutomaticListing(store, owner), true);
   assert.equal(storeService.eligibleForAutomaticListing(store, { isVerified: true, phoneNumber: '+85512345678' }), true);
+  assert.equal(storeService.eligibleForAutomaticListing(store, { isVerified: true, telegramUserId: '5034180330' }), true);
   assert.equal(storeService.eligibleForAutomaticListing({ ...store, needsCategoryReview: true }, owner), false);
   assert.equal(storeService.eligibleForAutomaticListing({ ...store, primaryCategory: null }, owner), false);
   assert.equal(storeService.eligibleForAutomaticListing({ ...store, status: 'inactive' }, owner), false);

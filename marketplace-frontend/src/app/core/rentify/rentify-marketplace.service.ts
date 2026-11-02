@@ -268,9 +268,13 @@ export class RentifyMarketplaceService {
     return this.http.get<RentifyProduct>(`${this.commerce}/api/marketplace/products/${id}`);
   }
 
-  stores(ids: string[]): Observable<{ data: RentifyStore[] }> {
+  stores(ids?: string[]): Observable<{ data: RentifyStore[] }> {
+    let params = new HttpParams();
+    if (ids && ids.length > 0) {
+      params = params.set('ids', ids.join(','));
+    }
     return this.http.get<{ data: RentifyStore[] }>(`${this.core}/api/stores/public`, {
-      params: new HttpParams().set('ids', ids.join(',')),
+      params,
     });
   }
 
