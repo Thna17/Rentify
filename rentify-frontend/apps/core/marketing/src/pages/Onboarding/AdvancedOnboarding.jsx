@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
-import { RENTIFY_API_BASE, DASHBOARD_URL } from '@rentify/shared/config/urls';
+import { RENTIFY_API_BASE, DASHBOARD_URL, AUTH_URL, MARKETING_URL } from '@rentify/shared/config/urls';
+import useMarketingAuth from '../../hooks/useMarketingAuth';
 import { LanguageToggle, Wordmark } from '../../components/site/SiteHeader';
 import { EASE } from '../../components/site/motion';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -119,44 +120,43 @@ const Onboarding = () => {
     }
   }, [templates, category, formData.templateChosen, formData.template?.id]);
 
+  const { isAuthenticated, user: authUser, dashboardHref, authUrl, isLoading: authLoading } = useMarketingAuth();
+
+  // Strict Login Redirect: if unauthenticated, redirect immediately to login
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      const baseAuth = (authUrl || AUTH_URL || 'https://rentify-auth.mekhla.digital').replace(/\/+$/, '');
+      const returnTarget = window.location.href;
+      window.location.replace(`${baseAuth}/login?returnUrl=${encodeURIComponent(returnTarget)}`);
+    }
+  }, [authLoading, isAuthenticated, authUrl]);
+
   // If the user already has a store, direct them to their dashboard
   useEffect(() => {
-    fetch(`${RENTIFY_API_BASE}/api/stores/mine`, { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const store = data?.data || data;
-        if (store && store.id) {
-          window.location.replace(`${(DASHBOARD_URL || 'https://rentify-seller.mekhla.digital').replace(/\/+$/, '')}/overview`);
-        }
-      })
-      .catch(() => undefined);
-  }, []);
+    if (!authLoading && isAuthenticated && authUser?.hasStore) {
+      window.location.replace(dashboardHref || `${(DASHBOARD_URL || 'https://rentify-seller.mekhla.digital').replace(/\/+$/, '')}/overview`);
+    }
+  }, [authLoading, isAuthenticated, authUser?.hasStore, dashboardHref]);
 
-  // Auto-fill contact details if the user is already authenticated
+  // Auto-fill contact details if the user is authenticated
   useEffect(() => {
-    fetch(`${RENTIFY_API_BASE}/api/auth/me`, { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const u = data?.user || data?.data;
-        if (u) {
-          setFormData((prev) => {
-            const isDifferentUser = prev.savedUserId && prev.savedUserId !== u.id;
-            return {
-              ...prev,
-              savedUserId: u.id,
-              ...(isDifferentUser ? { payment: null } : {}),
-              businessDetails: {
-                ...prev.businessDetails,
-                email: prev.businessDetails?.email || u.email || '',
-                contact: prev.businessDetails?.contact || u.phoneNumber || '',
-                name: prev.businessDetails?.name || u.name || '',
-              },
-            };
-          });
-        }
-      })
-      .catch(() => undefined);
-  }, []);
+    if (authUser) {
+      setFormData((prev) => {
+        const isDifferentUser = prev.savedUserId && prev.savedUserId !== authUser.id;
+        return {
+          ...prev,
+          savedUserId: authUser.id,
+          ...(isDifferentUser ? { payment: null } : {}),
+          businessDetails: {
+            ...prev.businessDetails,
+            email: prev.businessDetails?.email || authUser.email || '',
+            contact: prev.businessDetails?.contact || authUser.phoneNumber || '',
+            name: prev.businessDetails?.name || authUser.name || '',
+          },
+        };
+      });
+    }
+  }, [authUser]);
 
   // Every paid plan, trial or not, pays with KHQR before the store is created
   const isPaidPlan = Number(formData.package?.price || 0) > 0;
@@ -291,6 +291,19 @@ const Onboarding = () => {
       : t('onboarding.continue');
 
   const progress = (currentStep / steps.length) * 100;
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f5f7]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#0071e3] border-t-transparent" />
+          <span className="text-[13px] font-medium text-[#6e6e73]">
+            {t('onboarding.ui.loading') || 'Checking authentication...'}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('min-h-screen bg-[#f5f5f7] text-[#1d1d1f]', isKhmer && 'font-khmer')}>
