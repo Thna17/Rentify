@@ -441,10 +441,23 @@ export const ProductForm = ({ onClose, category }) => {
         setUploadedImages([]);
         closeForm();
       } catch (error) {
-        setSubmitError(
-          error?.data?.error || error?.message ||
-          `Could not ${isEditMode ? 'update' : 'create'} the product. Please try again.`
-        );
+        const errorData = error?.data || {};
+        const isLimit =
+          errorData?.code === 'PRODUCT_LIMIT_EXCEEDED' ||
+          String(errorData?.error || error?.message || '').includes('product limit') ||
+          String(errorData?.error || error?.message || '').includes('PRODUCT_LIMIT_EXCEEDED');
+
+        if (isLimit) {
+          setSubmitError(
+            errorData?.error ||
+            'Store product limit has been reached for your plan. Upgrade your plan in Settings > Billing to add more products.'
+          );
+        } else {
+          setSubmitError(
+            error?.data?.error || error?.message ||
+            `Could not ${isEditMode ? 'update' : 'create'} the product. Please try again.`
+          );
+        }
       } finally {
         setIsUploading(false);
         setUploadProgress(0);
@@ -543,8 +556,19 @@ export const ProductForm = ({ onClose, category }) => {
         {(submitError || productFormConfigError) && (
           <Alert variant="destructive">
             <AlertTitle>{t('merchant.p2.couldNotSave')}</AlertTitle>
-            <AlertDescription>
-              {submitError || t('merchant.products.settingsLoadError')}
+            <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span>{submitError || t('merchant.products.settingsLoadError')}</span>
+              {String(submitError).toLowerCase().includes('product limit') && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                  onClick={() => navigate('/settings/billing')}
+                >
+                  {t('merchant.billing.upgrade', 'Upgrade Plan')}
+                </Button>
+              )}
             </AlertDescription>
           </Alert>
         )}

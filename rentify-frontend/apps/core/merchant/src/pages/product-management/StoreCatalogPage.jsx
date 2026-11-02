@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, FileSpreadsheet, MoreHorizontal, Package, Pencil, Plus, Search } from 'lucide-react';
 import { ECOMMERCE_API_ROOT, RENTIFY_API_BASE } from '@rentify/shared/config/urls';
 import { Card } from '@rentify/shared/ui/card';
 import { Input } from '@rentify/shared/ui/input';
@@ -106,7 +106,10 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
       .then((result) => setEntitlements(result?.data || null))
       .catch(() => null);
   }, []);
-  const addLocked = entitlements ? entitlements.mutationsAllowed === false : false;
+  const productLimit = entitlements?.capabilities?.productLimit ?? 25;
+  const productCount = products.length;
+  const isLimitReached = Boolean(entitlements && productCount >= productLimit);
+  const addLocked = (entitlements ? entitlements.mutationsAllowed === false : false) || isLimitReached;
 
   // Commerce returns at most 60 products per page
   async function refresh(id) {
@@ -186,7 +189,13 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
           actions={
             <>
               {hasStorefront && (
-                <Button variant="outline" className="hidden min-h-[44px] rounded-xl sm:inline-flex" onClick={() => navigate('/products/bulk')}>
+                <Button
+                  variant="outline"
+                  className="hidden min-h-[44px] rounded-xl sm:inline-flex"
+                  onClick={() => navigate('/products/bulk')}
+                  disabled={addLocked}
+                  title={isLimitReached ? `Product limit reached (${productCount}/${productLimit}). Upgrade to add more products.` : undefined}
+                >
                   <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> {t('merchant.products.bulk')}
                 </Button>
               )}
@@ -195,7 +204,13 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
                 onClick={addProduct}
                 className="min-h-[44px] rounded-xl"
                 disabled={addLocked}
-                title={addLocked ? t('merchant.products.addPaused') : undefined}
+                title={
+                  isLimitReached
+                    ? `Product limit reached (${productCount}/${productLimit}). Upgrade to add more products.`
+                    : addLocked
+                    ? t('merchant.products.addPaused')
+                    : undefined
+                }
               >
                 <Plus className="h-4 w-4" aria-hidden="true" /> {t('merchant.p.addProduct')}
               </Button>
@@ -219,6 +234,72 @@ export default function StoreCatalogPage({ storeId: suppliedStoreId }) {
         <>
         {message && (
           <p role="status" className="rounded-xl bg-muted px-4 py-3 text-sm text-foreground">{message}</p>
+        )}
+
+        {/* Product Limit Usage Meter & Callout */}
+        {entitlements && (
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-soft)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <span className="text-sm font-semibold text-foreground">
+                  {t('merchant.products.catalogCapacity', 'Product Capacity')}: {productCount} / {productLimit} {t('merchant.p.products', 'Products')}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  ({entitlements.displayName || 'Current'} Plan)
+                </span>
+              </div>
+              {productLimit < 500 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1 text-xs text-primary hover:text-primary/90"
+                  onClick={() => navigate('/settings/billing')}
+                >
+                  {t('merchant.billing.upgrade', 'Upgrade Plan')} <ArrowUpRight className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+            <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  isLimitReached
+                    ? 'bg-destructive'
+                    : productCount / productLimit > 0.8
+                    ? 'bg-warning'
+                    : 'bg-primary'
+                }`}
+                style={{ width: `${Math.min(100, Math.round((productCount / productLimit) * 100))}%` }}
+              />
+            </div>
+            {isLimitReached && (
+              <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div className="flex-1">
+                  <p className="font-medium">
+                    {t('merchant.products.limitReachedTitle', {
+                      limit: productLimit,
+                      plan: entitlements.displayName || 'Starter',
+                      defaultValue: `You have reached the product limit of ${productLimit} for your ${entitlements.displayName || 'Starter'} plan.`
+                    })}
+                  </p>
+                  <p className="mt-0.5 text-xs opacity-90">
+                    {t(
+                      'merchant.products.limitReachedDesc',
+                      'Upgrade your subscription plan to add more products to your store and marketplace listing.'
+                    )}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg bg-destructive text-white hover:bg-destructive/90"
+                  onClick={() => navigate('/settings/billing')}
+                >
+                  {t('merchant.billing.upgradeNow', 'Upgrade Now')}
+                </Button>
+              </div>
+            )}
+          </div>
         )}
 
         <div className="relative">

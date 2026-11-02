@@ -117,7 +117,7 @@ function getStoreEntitlements(store) {
   return {
     version: store?.entitlementVersion || 1,
     tier: isPilot ? 'free_pilot' : (hasWebsite ? 'starter' : 'free_pilot'),
-    displayName: isPilot ? 'Free Pilot' : (hasWebsite ? 'Starter' : 'Free Pilot'),
+    displayName: isPilot ? 'Free' : (hasWebsite ? 'Starter' : 'Free'),
     lifecycleState: isSuspended ? 'suspended' : 'active',
     isTrial: false,
     isActive: !isSuspended,
@@ -127,13 +127,13 @@ function getStoreEntitlements(store) {
     mutationsAllowed: !isSuspended,
     capabilities: {
       marketplaceListing: !isSuspended && Boolean(store?.marketplaceEnabled ?? true),
-      website: hasWebsite,
+      website: true,
       productLimit: isPilot ? 25 : (hasWebsite ? 100 : 25),
       staffLimit: isPilot ? 1 : 2,
       pos: !isSuspended,
       invoices: !isSuspended,
       customDomainBrowse: false,
-      hostedCheckout: !isSuspended && hasWebsite,
+      hostedCheckout: !isSuspended,
       historicalOrderRead: true,
     },
     dates: {

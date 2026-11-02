@@ -10,13 +10,14 @@ import {
   planHasPos,
   planHasProTools,
   planHasStoreAndCatalog,
+  planTierKey,
   planWhoItsFor,
 } from '../../../utils/planFormat';
 
 const DEFAULT_PLANS = [
   { id: 'free', name: 'Free', price: 0 },
-  { id: 'starter', name: 'Starter', price: 5 },
-  { id: 'pro', name: 'Pro', price: 10 },
+  { id: 'starter', name: 'Starter', price: 8 },
+  { id: 'pro', name: 'Pro', price: 15 },
 ];
 
 const buildMatrixRows = () => [
@@ -41,13 +42,43 @@ const buildMatrixRows = () => [
     value: (plan, idx) => planHasOwnStorefront(plan, idx),
   },
   {
+    key: 'productsLimit',
+    label: 'Product limit',
+    value: (plan, idx) => {
+      const key = planTierKey(plan, idx);
+      if (key === 'free') return '25 products';
+      if (key === 'starter') return '100 products';
+      return '500 products';
+    },
+  },
+  {
+    key: 'staffAccounts',
+    label: 'Staff accounts',
+    value: (plan, idx) => {
+      const key = planTierKey(plan, idx);
+      if (key === 'free') return '1 account';
+      if (key === 'starter') return '2 accounts';
+      return '5 accounts';
+    },
+  },
+  {
     key: 'pos',
     label: 'POS at the counter',
     value: (plan, idx) => planHasPos(plan, idx),
   },
   {
+    key: 'customDomain',
+    label: 'Custom domain + Free SSL',
+    value: (plan, idx) => planTierKey(plan, idx) === 'pro',
+  },
+  {
+    key: 'telegramAlerts',
+    label: 'Telegram order notifications',
+    value: (plan, idx) => planTierKey(plan, idx) === 'pro',
+  },
+  {
     key: 'proTools',
-    label: 'Custom domain, staff accounts, analytics, marketing tools',
+    label: 'Analytics & marketing tools',
     value: (plan, idx) => planHasProTools(plan, idx),
   },
   {

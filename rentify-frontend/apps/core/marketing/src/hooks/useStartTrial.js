@@ -8,14 +8,14 @@ export const DEFAULT_PACKAGES = [
     name: 'Free',
     price: 0,
     duration: 'Unlimited',
-    description: 'For Facebook sellers and new sellers starting on Rentify Marketplace.',
-    features: ['basic-dashboard', 'product-management', 'order-management', 'marketplace-selling'],
-    limits: { products: 500, staff: 1, storage: 1024, commissionText: 'Only on marketplace orders' },
+    description: 'For micro-sellers and new sellers starting on Rentify with their own storefront.',
+    features: ['basic-dashboard', 'product-management', 'order-management', 'marketplace-selling', 'store', 'pos', 'invoice'],
+    limits: { products: 25, staff: 1, storage: 1024, commissionText: 'Only on marketplace orders' },
   },
   {
     id: '44444444-4444-4444-8444-444444444442',
     name: 'Starter',
-    price: 5,
+    price: 8,
     duration: '14-day free trial',
     description: 'For shops with a counter or brand ready for their own storefront and POS.',
     features: [
@@ -27,12 +27,12 @@ export const DEFAULT_PACKAGES = [
       'pos',
       'invoice',
     ],
-    limits: { products: 5000, staff: 2, storage: 5120, trialDays: 14, commissionText: 'Only on marketplace orders' },
+    limits: { products: 100, staff: 2, storage: 5120, trialDays: 14, commissionText: 'Only on marketplace orders' },
   },
   {
     id: '44444444-4444-4444-8444-444444444443',
     name: 'Pro',
-    price: 10,
+    price: 15,
     duration: '14-day free trial',
     description: 'For growing shops needing custom domains, staff accounts, analytics, and marketing tools.',
     features: [
@@ -48,7 +48,7 @@ export const DEFAULT_PACKAGES = [
       'advanced-analytics',
       'marketing-tools',
     ],
-    limits: { products: -1, staff: 15, storage: 51200, trialDays: 14, commissionText: 'Only on marketplace orders' },
+    limits: { products: 500, staff: 5, storage: 20480, trialDays: 14, commissionText: 'Only on marketplace orders' },
   },
 ];
 
@@ -72,7 +72,7 @@ const useStartTrial = () => {
         (plan) =>
           plan.id === '44444444-4444-4444-8444-444444444442' ||
           plan.name?.toLowerCase() === 'starter' ||
-          Number(plan.price) === 5
+          Number(plan.price) === 8
       ) ||
       sorted[0] ||
       null;

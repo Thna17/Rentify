@@ -53,8 +53,8 @@ export const planTierKey = (plan, index = 0) => {
   const name = String(plan?.name || '').trim().toLowerCase();
   const price = Number(plan?.price || 0);
   if (name === 'free' || (price === 0 && index === 0)) return 'free';
-  if (name === 'starter' || (price > 0 && price <= 5)) return 'starter';
-  if (name === 'pro' || price >= 10) return 'pro';
+  if (name === 'starter' || (price > 0 && price <= 8)) return 'starter';
+  if (name === 'pro' || price >= 15) return 'pro';
   if (index === 0) return 'free';
   if (index === 1) return 'starter';
   return 'pro';
@@ -63,9 +63,9 @@ export const planTierKey = (plan, index = 0) => {
 export const planWhoItsFor = (plan, index = 0) => {
   if (plan?.limits?.whoItsFor) return plan.limits.whoItsFor;
   const key = planTierKey(plan, index);
-  if (key === 'free') return 'Facebook seller, new seller';
+  if (key === 'free') return 'Micro-seller, new seller';
   if (key === 'starter') return 'Shop with a counter or brand';
-  return 'Growing shop';
+  return 'Growing shop & brand';
 };
 
 export const planCommission = (plan) =>
@@ -73,14 +73,7 @@ export const planCommission = (plan) =>
 
 export const planHasStoreAndCatalog = () => true;
 export const planHasMarketplace = () => true;
-
-export const planHasOwnStorefront = (plan, index = 0) => {
-  if (typeof plan?.limits?.ownStorefront === 'boolean') {
-    return plan.limits.ownStorefront;
-  }
-  const key = planTierKey(plan, index);
-  return key === 'starter' || key === 'pro' || Number(plan?.price) > 0;
-};
+export const planHasOwnStorefront = () => true;
 
 export const planHasPos = (plan, index = 0) => {
   if (typeof plan?.limits?.pos === 'boolean') {
@@ -95,7 +88,7 @@ export const planHasProTools = (plan, index = 0) => {
     return plan.limits.proTools;
   }
   const key = planTierKey(plan, index);
-  return key === 'pro' || Number(plan?.price) >= 10;
+  return key === 'pro' || Number(plan?.price) >= 15;
 };
 
 export const formatColumnHeading = (plan, index = 0) => {

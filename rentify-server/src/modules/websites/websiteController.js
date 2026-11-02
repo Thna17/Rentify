@@ -42,10 +42,6 @@ class WebsiteController {
             allPackages.find((p) => Number(p.price) > 0) ||
             allPackages[0];
           if (matchedByName) packageId = matchedByName.id;
-        } else if (String(matchedById.name || '').toLowerCase() === 'free') {
-          // Creating a storefront website unlocks the Starter 14-day free trial
-          const starterPkg = allPackages.find((p) => String(p.name || '').toLowerCase() === 'starter');
-          if (starterPkg) packageId = starterPkg.id;
         }
       }
     } catch {
