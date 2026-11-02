@@ -1,4 +1,5 @@
 const deploymentService = require('./deploymentService');
+const { assignSubdomain } = require('./hostedSubdomainService');
 const { logger } = require('../../utils/logger');
 const { hostedStorefrontUrl } = require('../../utils/hostedStorefrontOrigin');
 const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
@@ -22,10 +23,18 @@ exports.publishWebsite = async (req, res) => {
 /** GET /api/deployments/:websiteId/status — current publish state and address. */
 exports.checkDeploymentStatus = async (req, res) => {
   const { website } = req;
+  let subdomain = website.subdomain;
+  if (!subdomain && website && website.id) {
+    try {
+      subdomain = await assignSubdomain(website);
+    } catch (e) {
+      logger.warn(`Could not assign preview subdomain: ${e.message}`);
+    }
+  }
   res.json({
     status: website.status === 'active' ? 'READY' : String(website.status).toUpperCase(),
-    url: website.subdomain ? hostedStorefrontUrl(website.subdomain) : null,
-    subdomain: website.subdomain || null,
+    url: subdomain ? hostedStorefrontUrl(subdomain) : null,
+    subdomain: subdomain || null,
   });
 };
 
