@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@rentify/utils';
 import { EASE } from '../../../components/site/motion';
@@ -123,3 +123,23 @@ export const Success = ({ open, icon: Icon, title, body, children }) => (
     )}
   </AnimatePresence>
 );
+
+// Give the demo its own canvas so narrow screens show the complete page,
+// including the stock summary, rather than cropping oversized UI.
+export function ShowcaseViewport({ children }) {
+  const frame = useRef(null);
+  const [canvas, setCanvas] = useState(null);
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (!width || !height) return;
+      const scale = Math.min(0.9, width / 460, height / 650);
+      setCanvas({ width: width / scale, height: height / scale, scale });
+    });
+    observer.observe(frame.current);
+    return () => observer.disconnect();
+  }, []);
+  return <div ref={frame} className="relative h-full w-full overflow-hidden" data-showcase-viewport>
+    {canvas && <div className="absolute left-0 top-0 origin-top-left" style={{ width: canvas.width, height: canvas.height, transform: `scale(${canvas.scale})` }}>{children}</div>}
+  </div>;
+}

@@ -15,6 +15,8 @@ import {
   StorefrontScene,
 } from './components/ChannelScenes';
 
+import { ShowcaseViewport } from './components/ShowcaseKit';
+
 const TICK = 100;
 // A visitor who pauses and walks away should not leave the booth frozen
 const AUTO_RESUME = 15000;
@@ -330,7 +332,7 @@ const ShowcasePage = () => {
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.6, ease: EASE }}
                 >
-                  <SceneView step={step} stock={stock} />
+                  <ShowcaseViewport><SceneView step={step} stock={stock} /></ShowcaseViewport>
                 </motion.div>
               </AnimatePresence>
               <AnimatePresence>

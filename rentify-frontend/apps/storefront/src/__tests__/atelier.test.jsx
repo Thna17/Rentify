@@ -29,10 +29,12 @@ describe('Atelier storefront', () => {
   afterEach(cleanup);
   test('uses merchant identity and real catalog links', () => {
     state.categories = [{ id: 'cat-1', name: 'Crafts' }];
+    state.identity.heroSubtitle = 'My merchant description';
     state.result = { isSuccess: true, data: { products: [{ id: 'p1', name: 'Handmade vase' }] } };
     render(<MemoryRouter><Home /></MemoryRouter>);
     expect(screen.getByRole('heading', { name: 'Lotus' })).toBeTruthy();
     expect(screen.getByText('Handmade vase')).toBeTruthy();
+    expect(screen.getByText('My merchant description')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Crafts/ }).getAttribute('href')).toContain('cat-1');
   });
   test('shows loading, empty and Khmer content', () => {

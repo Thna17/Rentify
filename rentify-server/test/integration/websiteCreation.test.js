@@ -15,7 +15,7 @@ const businessData = {
   primaryCategory: 'Fashion',
 };
 
-function setupCreation(t, { failSubscription = false } = {}) {
+function setupCreation(t, { failSubscription = false, templateNumber = 1 } = {}) {
   const calls = [];
   const transaction = {
     finished: false,
@@ -23,7 +23,7 @@ function setupCreation(t, { failSubscription = false } = {}) {
     async rollback() { calls.push('rollback'); this.finished = 'rollback'; },
   };
   const pkg = { id: 'package-1', name: 'Trial', limits: {}, features: {}, get() { return this; } };
-  const template = { websiteTemplateId: 1, TemplateContents: [] };
+  const template = { websiteTemplateId: templateNumber, TemplateContents: [] };
   const user = { id: 'user-1', name: 'Merchant', email: 'merchant@example.test' };
   const website = {
     id: 'website-1',
@@ -283,3 +283,18 @@ test('paid subscription keeps the existing website foreign key', async (t) => {
   const result = await subscriptionService.createPaidSubscription('user-1', 'package-1', 'payment-1');
   assert.equal(result.websiteId, 'website-1');
 });
+
+for (let templateNumber = 1; templateNumber <= 10; templateNumber += 1) {
+  test(`template ${templateNumber} provisions a merchant website, subscription and canonical Store projection`, async (t) => {
+    const { website, calls } = setupCreation(t, { templateNumber });
+    let contents;
+    WebsiteContent.bulkCreate.mock.mockImplementation(async (items) => { contents = items; });
+    const result = await websiteService.createWebsiteWithTrial({ userId: 'user-1', templateId: `template-${templateNumber}`, packageId: 'package-1', businessData });
+    assert.equal(result, website);
+    assert.equal(result._ecommerceData.websiteTemplateId, templateNumber);
+    assert.equal(result._ecommerceData.storeId, 'store-1');
+    assert.ok(contents.some(item => item.label === 'Website Name' && item.value.text === businessData.name));
+    assert.ok(contents.some(item => item.label === 'Contact Email' && item.value.text === businessData.email));
+    assert.equal(calls.at(-1), 'commit');
+  });
+}
