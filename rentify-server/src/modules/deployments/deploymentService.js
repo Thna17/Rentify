@@ -1,10 +1,12 @@
 // services/deploymentService.js
-const { Website, WebsiteTemplate } = require('../../models');
+const { Website, WebsiteTemplate, Store, User } = require('../../models');
 const { logger } = require('../../utils/logger');
 const { getMerchantCache } = require('../../utils/cache');
 const { hostedStorefrontDomain, hostedStorefrontUrl } = require('../../utils/hostedStorefrontOrigin');
 const { assignSubdomain } = require('./hostedSubdomainService');
 const ecommerceSyncService = require('../commerce-sync').ecommerceSyncService;
+const storeSyncService = require('../commerce-sync').storeSyncService;
+const { storeService } = require('../stores');
 
 /**
  * Templates served by the single storefront app
@@ -43,6 +45,29 @@ class DeploymentService {
       lastDeployment: publishedAt,
       deploymentHistory: [...history, { type: 'hosted-subdomain', url, at: publishedAt.toISOString() }].slice(-20),
     });
+
+    if (website.storeId) {
+      try {
+        const store = await Store.findByPk(website.storeId);
+        if (store) {
+          const owner = await User.findByPk(store.ownerUserId);
+          const updates = {};
+          if (store.status !== 'active') {
+            updates.status = 'active';
+          }
+          if (store.marketplaceApprovalStatus === 'pending' && storeService.eligibleForAutomaticListing(store, owner)) {
+            updates.marketplaceApprovalStatus = 'approved';
+          }
+          if (Object.keys(updates).length) {
+            await store.update({ ...updates, projectionVersion: store.projectionVersion + 1 });
+            await storeSyncService.queueStore(store, { websiteId: website.id });
+          }
+        }
+      } catch (err) {
+        logger.warn('Failed to ensure store status on website publish', { websiteId: website.id, error: err.message });
+      }
+    }
+
     await ecommerceSyncService.updateWebsiteStatus(website.id, 'active', new URL(url).host);
     await getMerchantCache().invalidateWebsiteCache(website.id);
 

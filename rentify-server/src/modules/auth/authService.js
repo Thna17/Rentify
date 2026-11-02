@@ -355,6 +355,8 @@ class AuthService {
 
     await entity.save({ transaction });
 
+    await this.#autoApprovePendingStores(entity.id, transaction);
+
     return {
       ...tokens,
       entity: this.#formatEntityResponse(entity),
@@ -682,6 +684,8 @@ class AuthService {
     entity.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await entity.save({ transaction });
 
+    await this.#autoApprovePendingStores(entity.id, transaction);
+
     return {
       ...tokens,
       entity: this.#formatEntityResponse(entity),
@@ -943,6 +947,35 @@ class AuthService {
 
 async #findExistingEntity(where, transaction) {
   return this.entityModel.findOne({ where, transaction });
+}
+
+async #autoApprovePendingStores(userId, transaction) {
+  try {
+    const { Store, Website } = require('../../models');
+    const { storeSyncService } = require('../commerce-sync');
+    if (!Store) return;
+    const stores = await Store.findAll({
+      where: {
+        ownerUserId: userId,
+        status: 'active',
+        marketplaceApprovalStatus: 'pending',
+        needsCategoryReview: false,
+      },
+      transaction,
+    });
+    for (const store of stores) {
+      if (store.primaryCategory) {
+        await store.update({
+          marketplaceApprovalStatus: 'approved',
+          projectionVersion: store.projectionVersion + 1,
+        }, { transaction });
+        const website = await Website.findOne({ where: { storeId: store.id }, attributes: ['id'], transaction });
+        await storeSyncService.queueStore(store, { websiteId: website?.id || null, transaction });
+      }
+    }
+  } catch (err) {
+    // Non-fatal if Store model is mocked or not loaded
+  }
 }
 
   async validateToken(authToken, refreshToken, transaction) {

@@ -15,7 +15,7 @@ const eligibleForAutomaticListing = (store, owner) =>
   store.status === 'active' &&
   store.marketplaceApprovalStatus === 'pending' &&
   !store.needsCategoryReview && Boolean(normalizeStoreCategory(store.primaryCategory)) &&
-  owner?.isVerified === true && Boolean(owner.email || owner.phoneNumber);
+  Boolean(owner?.isVerified) && Boolean(owner?.email || owner?.phoneNumber || owner?.telegramUserId || owner?.id);
 
 const MAX_LOGO_URL_LENGTH = 2048;
 
@@ -46,6 +46,14 @@ class StoreService {
   publicStoreAttributes = ['id', 'name', 'slug', 'primaryCategory', 'logoUrl', 'marketplaceColor'];
 
   async listPublicStores(ids) {
+    if (ids === undefined || ids === null) {
+      return Store.findAll({
+        where: this.publicStoreWhere,
+        attributes: this.publicStoreAttributes,
+        order: [['createdAt', 'DESC']],
+        limit: 60,
+      });
+    }
     if (typeof ids !== 'string' || !ids.trim()) return [];
     const unique = [...new Set(ids.split(',').map((id) => id.trim()))];
     if (unique.length > 60 || unique.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) {

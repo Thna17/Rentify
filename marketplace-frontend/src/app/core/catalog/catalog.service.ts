@@ -75,22 +75,34 @@ export class CatalogService {
         ),
       ].slice(0, 60);
       let storeMap = new Map<string, RentifyStore>();
-      if (storeIds.length > 0) {
-        try {
-          const storeRes = await firstValueFrom(this.rentify.stores(storeIds));
-          const storesList = (storeRes.data || []).map(toStoreFromRentify);
-          storesList.sort((a, b) => {
-            const aCurated = isCuratedStore(a);
-            const bCurated = isCuratedStore(b);
-            if (aCurated !== bCurated) return aCurated ? -1 : 1;
-            return a.name.localeCompare(b.name);
-          });
-          storeMap = new Map((storeRes.data || []).map((s) => [s.id, s]));
-          this._stores.set(storesList);
-          this.storesLoaded.set(true);
-        } catch {
-          // Store fetching failure is non-fatal for catalog display
+      try {
+        const storeRes = await firstValueFrom(this.rentify.stores());
+        const storesList = (storeRes.data || []).map(toStoreFromRentify);
+        storeMap = new Map((storeRes.data || []).map((s) => [s.id, s]));
+
+        const missingIds = storeIds.filter((id) => !storeMap.has(id));
+        if (missingIds.length > 0) {
+          try {
+            const extraRes = await firstValueFrom(this.rentify.stores(missingIds));
+            for (const s of extraRes.data || []) {
+              storeMap.set(s.id, s);
+              storesList.push(toStoreFromRentify(s));
+            }
+          } catch {
+            // ignore
+          }
         }
+
+        storesList.sort((a, b) => {
+          const aCurated = isCuratedStore(a);
+          const bCurated = isCuratedStore(b);
+          if (aCurated !== bCurated) return aCurated ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+        this._stores.set(storesList);
+        this.storesLoaded.set(true);
+      } catch {
+        // Store fetching failure is non-fatal for catalog display
       }
 
       const mappedProducts = all.map((p) => toProductFromRentify(p, storeMap));
@@ -116,40 +128,38 @@ export class CatalogService {
     this.storesLoaded.set(false);
     this.storeError.set('');
     try {
-      let storeIds = [
+      const response = await firstValueFrom(this.rentify.stores());
+      const storesList = (response.data || []).map(toStoreFromRentify);
+      const storeMap = new Map(storesList.map((s) => [s.id, s]));
+
+      // Also merge any store IDs from existing products
+      const productStoreIds = [
         ...new Set(
           this.products()
             .map((p) => p.storeId)
             .filter((id): id is string => Boolean(id) && UUID_REGEX.test(id)),
         ),
       ].slice(0, 60);
-      if (storeIds.length === 0) {
+      const missingIds = productStoreIds.filter((id) => !storeMap.has(id));
+      if (missingIds.length > 0) {
         try {
-          const res = await firstValueFrom(this.rentify.products({ page: 1, limit: 60 }));
-          storeIds = [
-            ...new Set(
-              (res.products || [])
-                .map((p) => p.storeId)
-                .filter((id): id is string => Boolean(id) && UUID_REGEX.test(id)),
-            ),
-          ].slice(0, 60);
+          const extraRes = await firstValueFrom(this.rentify.stores(missingIds));
+          for (const s of (extraRes.data || []).map(toStoreFromRentify)) {
+            storeMap.set(s.id, s);
+            storesList.push(s);
+          }
         } catch {
           // ignore
         }
       }
-      if (storeIds.length > 0) {
-        const response = await firstValueFrom(this.rentify.stores(storeIds));
-        const storesList = (response.data || []).map(toStoreFromRentify);
-        storesList.sort((a, b) => {
-          const aCurated = isCuratedStore(a);
-          const bCurated = isCuratedStore(b);
-          if (aCurated !== bCurated) return aCurated ? -1 : 1;
-          return a.name.localeCompare(b.name);
-        });
-        this._stores.set(storesList);
-      } else {
-        this._stores.set([]);
-      }
+
+      storesList.sort((a, b) => {
+        const aCurated = isCuratedStore(a);
+        const bCurated = isCuratedStore(b);
+        if (aCurated !== bCurated) return aCurated ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+      this._stores.set(storesList);
     } catch {
       this._stores.set([]);
       this.storeError.set(
